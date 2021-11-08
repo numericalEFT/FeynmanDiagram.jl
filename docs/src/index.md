@@ -4,7 +4,7 @@ CurrentModule = ExpressionTree
 
 # ExpressionTree
 
-Documentation for [ExpressionTree](https://github.com/houpc/ExpressionTree.jl).
+Documentation for [ExpressionTree](https://github.com/numericalEFT/ExpressionTree.jl).
 
 ```@index
 ```
