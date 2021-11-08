@@ -19,5 +19,5 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/houpc/ExpressionTree.jl",
+    repo="github.com/numericalEFT/ExpressionTree.jl",
 )
