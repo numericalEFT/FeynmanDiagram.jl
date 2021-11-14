@@ -41,13 +41,11 @@ Parquet.showTree(ver4, para, verbose = 1, depth = 3)
 io = open("./test.newick", "w")
 write(io, Parquet.newick(ver4))
 close(io)
-'''
+```
 
 Run the above script will print out the tree on the terminal,
 ![terminal](docs/figures/terminal_example.png?raw=true "Terminal Ouptut")
 
 and generate a visualization of tree using the ete3 python3 package,
 ![ete](docs/figures/ete_example.png?raw=true "Ete3 visualization")
-
-![test](ete_example.png "ete")
 
