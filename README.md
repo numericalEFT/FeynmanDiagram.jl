@@ -47,6 +47,7 @@ Run the above script will print out the tree on the terminal,
 ![terminal](docs/figures/terminal_example.png?raw=true "Terminal Ouptut")
 
 and generate a visualization of tree using the ete3 python3 package,
-![terminal](docs/figures/ete_example.png?raw=true "Ete3 visualization")
+![ete](docs/figures/ete_example.png?raw=true "Ete3 visualization")
 
+![test](ete_example.png "ete")
 
