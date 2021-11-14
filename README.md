@@ -10,7 +10,7 @@ This library includes several algorithms to generate the optimized expression tr
 
 ## Parquet Algorithm
 
-The ExpressionTree.Parquet model uses parquet equations to generate high-order Feynman diagrams. In this representation, a 4-point one-particle-irreducible (1PI) diagram of loop order $N$ is a product of a left and a right 4-point 1PI subdiagrams (loop order $M$ and loop order $N-M$ where $M=0, 1, ..., N$). Note that there are three ways to glue the left and right subdiagrams: the particle-hole channel (Parquet.T), the particle-hole exchange channel (Parquet.U) and the particle-particle channel (Parquet.S). Each of them could have a counter-term (Parquet.TC, Parquet.UC and Parquet.SC).
+The ExpressionTree.Parquet model uses parquet equations to generate high-order Feynman diagrams. In this representation, a 4-point one-particle-irreducible (1PI) diagram of loop order N is a product of a left and a right 4-point 1PI subdiagrams (loop order M and loop order N-M where M=0, 1, ..., N). Note that there are three ways to glue the left and right subdiagrams: the particle-hole channel (Parquet.T), the particle-hole exchange channel (Parquet.U) and the particle-particle channel (Parquet.S). Each of them could have a counter-term (Parquet.TC, Parquet.UC and Parquet.SC).
 
 ```julia
 using AbstractTrees, StaticArrays, ExpressionTree
