@@ -8,7 +8,7 @@ chan = [Parquet.T, Parquet.U, Parquet.S]
 
 para = Parquet.Para(chan, [1, 2])
 
-ver4 = Parquet.Ver4{Weight}(2, 1, para)
+ver4 = Parquet.Ver4{Weight}(1, 1, para)
 
 ########## use AbstractTrees interface to print/manipulate the tree
 print_tree(ver4)

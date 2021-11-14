@@ -24,8 +24,8 @@ chan = [Parquet.T, Parquet.U, Parquet.S]
 # Generate the parameter for the expression tree. The second argument lists the possible number of imaginary-time variables in the bare 4-vertex (namely, the bare interaction of your model). For example, the instaneous Coulomb interaction only has one time variable, while the retared effective interaction has two time variables.
 para = Parquet.Para(chan, [1, 2]) 
 
-# Generate an expression tree for a set of 4-vertex diagrams with loop order 2, initial imaginary-time index 1, and the parameter set para.
-ver4 = Parquet.Ver4{Weight}(2, 1, para) 
+# Generate an expression tree for a set of 4-vertex diagrams with loop order 1, initial imaginary-time index 1, and the parameter set para.
+ver4 = Parquet.Ver4{Weight}(1, 1, para) 
 
 # use AbstractTrees interface to print/manipulate the tree
 print_tree(ver4)
@@ -42,5 +42,11 @@ io = open("./test.newick", "w")
 write(io, Parquet.newick(ver4))
 close(io)
 '''
+
+Run the above script will print out the tree on the terminal,
+![terminal](docs/figures/terminal_example.png?raw=true "Terminal Ouptut")
+
+and generate a visualization of tree using the ete3 python3 package,
+![terminal](docs/figures/ete_example.png?raw=true "Ete3 visualization")
 
 
