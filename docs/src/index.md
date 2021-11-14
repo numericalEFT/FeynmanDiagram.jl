@@ -16,7 +16,7 @@ Modules = [ExpressionTree]
 ## Library Outline
 ```@contents
 Pages = [
-    "lib/parquet.md",
+    "parquet.md",
 ]
 Depth = 1
 ```
