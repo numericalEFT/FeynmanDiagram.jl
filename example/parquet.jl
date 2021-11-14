@@ -24,4 +24,4 @@ print_tree(ver4)
 # close(io)
 
 ########## use ete3 package to visualize tree
-# Parquet.showTree(ver4, para, verbose=1, depth=3)  # visualize tree using python3 package ete3
+Parquet.showTree(ver4, para, verbose = 1, depth = 3)  # visualize tree using python3 package ete3
