@@ -12,3 +12,11 @@ Documentation for [ExpressionTree](https://github.com/numericalEFT/ExpressionTre
 ```@autodocs
 Modules = [ExpressionTree]
 ```
+
+## Library Outline
+```@contents
+Pages = [
+    "lib/parquet.md",
+]
+Depth = 1
+```
