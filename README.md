@@ -45,7 +45,9 @@ close(io)
 
 Run the above script will print out the tree on the terminal,
 ![terminal](docs/figures/terminal_example.png?raw=true "Terminal Ouptut")
+where the 4-pair (t1, t2, t3, t4) gives the imaginary-time indices of the four legs (left in, left out, right in, right out). For each channel, the loop order of the left and the right subdiagrams is given.
 
 and generate a visualization of tree using the ete3 python3 package,
 ![ete](docs/figures/ete_example.png?raw=true "Ete3 visualization")
+where "lp" stands for the loop order of the current set of the 4-vertex diagrams.
 
