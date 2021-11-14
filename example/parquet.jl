@@ -15,7 +15,8 @@ print_tree(ver4)
 
 # [println(node) for node in Leaves(ver4)]  #print all loopNum=0 ver4
 
-# [println(node) for node in PostOrderDFS(ver4)]  # iterator ver4 in depth-first search (children before parents)
+println("Iterate the tree use the AbstractTrees interface: ")
+[println(node) for node in PostOrderDFS(ver4)]  # iterator ver4 in depth-first search (children before parents)
 # [println(node) for node in PreOrderDFS(ver4)]  # iterator ver4 (parents before children)
 
 ########## print tree to a newick format file  ##############

@@ -32,7 +32,7 @@ end
 struct Green{W}
     Tpair::Vector{Tuple{Int,Int}}
     weight::Vector{W}
-    function Green{W}() where {W} 
+    function Green{W}() where {W}
         return new{W}([], [])
     end
 end
@@ -74,7 +74,7 @@ struct Bubble{_Ver4,W} # template Bubble to avoid mutually recursive struct
         @assert oL < ver4.loopNum "LVer loopNum must be smaller than the ver4 loopNum"
 
         idbub = _id[1] # id vector will be updated later, so store the current id as the bubble id
-        _id[1] += 1  
+        _id[1] += 1
 
         oR = ver4.loopNum - 1 - oL # loopNum of the right vertex
         LTidx = ver4.Tidx  # the first τ index of the left vertex
@@ -91,8 +91,8 @@ struct Bubble{_Ver4,W} # template Bubble to avoid mutually recursive struct
             error("chan $chan isn't implemented!")
         end
 
-        Lver = _Ver4{W}(oL, LTidx, para; chan=LsubVer, level=level + 1, id=_id)
-        Rver = _Ver4{W}(oR, RTidx, para; chan=RsubVer, level=level + 1, id=_id)
+        Lver = _Ver4{W}(oL, LTidx, para; chan = LsubVer, level = level + 1, id = _id)
+        Rver = _Ver4{W}(oR, RTidx, para; chan = RsubVer, level = level + 1, id = _id)
 
         @assert Lver.Tidx == ver4.Tidx "Lver Tidx must be equal to vertex4 Tidx! LoopNum: $(ver4.loopNum), LverLoopNum: $(Lver.loopNum), chan: $chan"
 
@@ -128,7 +128,7 @@ struct Bubble{_Ver4,W} # template Bubble to avoid mutually recursive struct
                 ###### test if the internal + exteranl variables is equal to the total 8 variables of the left and right sub-vertices ############
                 Total1 = vcat(collect(LvT), collect(RvT))
                 Total2 = vcat(collect(GT0), collect(GTx), collect(VerT))
-                @assert compare(Total1, Total2) "chan $(ChanName[chan]): G0=$GT0, Gx=$GTx, external=$VerT don't match with Lver4 $LvT and Rver4 $RvT" 
+                @assert compare(Total1, Total2) "chan $(ChanName[chan]): G0=$GT0, Gx=$GTx, external=$VerT don't match with Lver4 $LvT and Rver4 $RvT"
 
                 push!(map, IdxMap(lt, rt, GT0idx, GTxidx, VerTidx))
             end
@@ -162,7 +162,7 @@ struct Ver4{W}
     ###### vertex topology information #####################
     id::Int
     level::Int
-    
+
     #######  vertex properties   ###########################
     loopNum::Int
     chan::Vector{Int} # list of channels
@@ -176,7 +176,7 @@ struct Ver4{W}
     Tpair::Vector{Tuple{Int,Int,Int,Int}}
     weight::Vector{W}
 
-    function Ver4{W}(loopNum, tidx, para::Para; chan=para.chan, level=1, id=[1, ]) where {W}
+    function Ver4{W}(loopNum, tidx, para::Para; chan = para.chan, level = 1, id = [1,]) where {W}
         g = @SVector [Green{W}() for i = 1:16]
         ver4 = new{W}(id[1], level, loopNum, chan, tidx, g, [], [], [])
         id[1] += 1
@@ -184,7 +184,7 @@ struct Ver4{W}
         if loopNum == 0
             # bare interaction may have one, two or four independent tau variables
             if 1 in para.interactionTauNum  # instantaneous interaction
-                addTidx(ver4, (tidx, tidx, tidx, tidx)) 
+                addTidx(ver4, (tidx, tidx, tidx, tidx))
             end
             if 2 in para.interactionTauNum  # interaction with incoming and outing τ varibales
                 addTidx(ver4, (tidx, tidx, tidx + 1, tidx + 1))  # direct dynamic interaction
@@ -196,7 +196,7 @@ struct Ver4{W}
             end
         else # loopNum>0
             for c in para.chan
-                for ol = 0:loopNum - 1
+                for ol = 0:loopNum-1
                     bubble = Bubble{Ver4,W}(ver4, c, ol, para, level, id)
                     if length(bubble.map) > 0  # if zero, bubble diagram doesn't exist
                         push!(ver4.bubble, bubble)
@@ -221,12 +221,12 @@ function compare(A, B)
         end
         Z = (idx = findfirst(x -> x == e, Z)) > 0 ? deleteat!(Z, idx) : Z
     end
-    return length(Z) == 0 
+    return length(Z) == 0
 end
 
 function test(ver4)
     if length(ver4.bubble) == 0
-    return
+        return
     end
 
     G = ver4.G
@@ -236,22 +236,22 @@ function test(ver4)
             LverT, RverT = collect(Lver.Tpair[map.lv]), collect(Rver.Tpair[map.rv]) # 8 τ variables relevant for this bubble
             G1T, GxT = collect(G[1].Tpair[map.G0]), collect(G[bub.chan].Tpair[map.Gx]) # 4 internal variables
             ExtT = collect(ver4.Tpair[map.ver]) # 4 external variables
-            @assert compare(vcat(G1T, GxT, ExtT), vcat(LverT, RverT)) "chan $(ChanName[bub.chan]): G1=$G1T, Gx=$GxT, external=$ExtT don't match with Lver4 $LverT and Rver4 $RverT" 
-end
-end
+            @assert compare(vcat(G1T, GxT, ExtT), vcat(LverT, RverT)) "chan $(ChanName[bub.chan]): G1=$G1T, Gx=$GxT, external=$ExtT don't match with Lver4 $LverT and Rver4 $RverT"
+        end
+    end
 end
 
-function tpair(ver4, MaxT=18)
+function tpair(ver4, MaxT = 18)
     s = "\u001b[31m$(ver4.id):\u001b[0m"
     if ver4.loopNum > 0
         s *= "$(ver4.loopNum)lp, T$(length(ver4.Tpair))⨁ "
-        else
+    else
         s *= "⨁ "
     end
     # if ver4.loopNum <= 1
     for (ti, T) in enumerate(ver4.Tpair)
         if ti <= MaxT
-            s *= "($(T[1]),$(T[2]),$(T[3]),$(T[4]))" 
+            s *= "($(T[1]),$(T[2]),$(T[3]),$(T[4]))"
         else
             s *= "..."
             break
@@ -260,6 +260,8 @@ function tpair(ver4, MaxT=18)
     # end
     return s
 end
+
+##### Generate Reverse Polish notation for ver4 #################
 
 ##### pretty print of Bubble and Ver4  ##########################
 Base.show(io::IO, bub::Bubble) = AbstractTrees.printnode(io::IO, bub)
@@ -278,7 +280,7 @@ end
 function iterate(ver4::Ver4{W}) where {W}
     if length(ver4.bubble) == 0
         return nothing
-        else
+    else
         return (ver4.bubble[1], 1)
     end
 end
@@ -290,8 +292,8 @@ end
 function iterate(ver4::Ver4{W}, state) where {W}
     if state >= length(ver4.bubble) || length(ver4.bubble) == 0
         return nothing
-        else
-        return (ver4.bubble[state + 1], state + 1)
+    else
+        return (ver4.bubble[state+1], state + 1)
     end
 end
 
@@ -300,14 +302,16 @@ function iterate(bub::Bubble{Ver4{W},W}, state::Bool) where {W}
     return (bub.Rver, true)
 end
 
-Base.IteratorSize(::Type{Ver4{W}}) where W = Base.SizeUnknown()
-Base.eltype(::Type{Ver4{W}}) where W = Ver4{W}
+Base.IteratorSize(::Type{Ver4{W}}) where {W} = Base.SizeUnknown()
+Base.eltype(::Type{Ver4{W}}) where {W} = Ver4{W}
 
-Base.IteratorSize(::Type{Bubble{Ver4{W},W}}) where W = Base.SizeUnknown()
-Base.eltype(::Type{Bubble{Ver4{W},W}}) where W = Bubble{Ver4{W},W}
+Base.IteratorSize(::Type{Bubble{Ver4{W},W}}) where {W} = Base.SizeUnknown()
+Base.eltype(::Type{Bubble{Ver4{W},W}}) where {W} = Bubble{Ver4{W},W}
 
 AbstractTrees.printnode(io::IO, ver4::Ver4) = print(io, tpair(ver4))
 AbstractTrees.printnode(io::IO, bub::Bubble) = print(io, "\u001b[32m$(bub.id): $(ChanName[bub.chan]) $(bub.Lver.loopNum)Ⓧ $(bub.Rver.loopNum)\u001b[0m")
+
+
 
 
 # function eval(ver4::Ver4, KinL, KoutL, KinR, KoutR, Kidx::Int, fast=false)
@@ -404,72 +408,4 @@ AbstractTrees.printnode(io::IO, bub::Bubble) = print(io, "\u001b[32m$(bub.id): $
 #         end
 
 #     end
-# end
-
-# function _expandBubble(children, text, style, bub::Bubble, parent)
-#     push!(children, zeros(Int, 0))
-#     @assert parent == length(children)
-#     dict = Dict(
-#         I => ("I", "yellow"),
-#         T => ("T", "red"),
-#         TC => ("Tc", "pink"),
-#         U => ("U", "blue"),
-#         UC => ("Uc", "navy"),
-#         S => ("S", "green"),
-#     )
-#     push!(text, "$(dict[bub.chan][1])\n$(bub.Lver.loopNum)-$(bub.Rver.loopNum)")
-#     push!(style, "fill:$(dict[bub.chan][2])")
-
-#     current = length(children) + 1
-#     push!(children[parent], current)
-#     _expandVer4(children, text, style, bub.Lver, current) # left vertex 
-
-#     current = length(children) + 1
-#     push!(children[parent], current)
-#     _expandVer4(children, text, style, bub.Rver, current) # right vertex
-# end
-
-# function _expandVer4(children, text, style, ver4::Ver4, parent)
-#     push!(children, zeros(Int, 0))
-#     @assert parent == length(children)
-#     # println("Ver4: $(ver4.level), Bubble: $(length(ver4.bubble))")
-#     if ver4.loopNum > 0
-#         info = "O$(ver4.loopNum)\nT[$(length(ver4.Tpair))]\n"
-#         for t in ver4.Tpair
-#             info *= "[$(t[1]) $(t[2]) $(t[3]) $(t[4])]\n"
-#         end
-#     else
-#         info = "O$(ver4.loopNum)"
-#     end
-#     push!(text, info)
-
-#     ver4.inBox ? push!(style, "stroke-dasharray:3,2") : push!(style, "")
-
-#     for bub in ver4.bubble
-#         # println(bub.chan)
-#         current = length(children) + 1
-#         push!(children[parent], current)
-#         _expandBubble(children, text, style, bub, current)
-#     end
-# end
-
-# function visualize(ver4::Ver4)
-#     children, text, style = (Vector{Vector{Int}}(undef, 0), [], [])
-#     _expandVer4(children, text, style, ver4, 1)
-
-#     # text = ["one\n(second line)", "2", "III", "four"]
-#     # style = ["", "fill:red", "r:14", "opacity:0.7"]
-#     # link_style = ["", "stroke:blue", "", "stroke-width:10px"]
-#     tooltip = ["pops", "up", "on", "hover"]
-#     t = D3Trees.D3Tree(
-#         children,
-#         text=text,
-#         style=style,
-#         tooltip=tooltip,
-#         # link_style = link_style,
-#         title="Vertex4 Tree",
-#         init_expand=2,
-#     )
-
-#     D3Trees.inchrome(t)
 # end
