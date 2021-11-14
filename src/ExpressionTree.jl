@@ -1,4 +1,6 @@
 module ExpressionTree
+include("tree.jl")
+export Tree
 
 include("parquet/parquet.jl")
 export Parquet
