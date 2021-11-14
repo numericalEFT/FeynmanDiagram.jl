@@ -47,7 +47,9 @@ Run the above script will print out the tree on the terminal,
 ![terminal](docs/figures/terminal_example.png?raw=true "Terminal Ouptut")
 where the 4-pair (t1, t2, t3, t4) gives the imaginary-time indices of the four legs (left in, left out, right in, right out). For each channel, the loop order of the left and the right subdiagrams is given.
 
-and generate a visualization of tree using the ete3 python3 package,
+If you have installed ete3 python3 package (http://etetoolkit.org/), you will get a visualization of tree by running the above script,
 ![ete](docs/figures/ete_example.png?raw=true "Ete3 visualization")
 where "lp" stands for the loop order of the current set of the 4-vertex diagrams.
+
+Note that we rely on "PyCall.jl" to call the ete3 python functions from julia. Therefore, you have to install ete3 python package use the python distribution associated with PyCall. According to the tutorial of PyCall (https://github.com/JuliaPy/PyCall.jl), "by default on Mac and Windows systems, Pkg.add("PyCall") or Pkg.build("PyCall") will use the Conda.jl package to install a minimal Python distribution (via Miniconda) that is private to Julia (not in your PATH). You can use the Conda Julia package to install more Python packages, and import Conda to print the Conda.PYTHONDIR directory where python was installed. On GNU/Linux systems, PyCall will default to using the python3 program (if any, otherwise python) in your PATH."
 
