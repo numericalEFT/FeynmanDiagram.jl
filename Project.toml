@@ -3,6 +3,11 @@ uuid = "e424a512-dbd9-41ff-9883-094748823e72"
 authors = ["Pengcheng Hou"]
 version = "0.1.0"
 
+[deps]
+AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
+PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+
 [compat]
 julia = "1.4"
 
