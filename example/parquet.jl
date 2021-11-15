@@ -6,7 +6,7 @@ const Weight = SVector{2,Float64}
 
 chan = [Parquet.T, Parquet.U, Parquet.S]
 
-para = Parquet.Para(chan, [1, 2])
+para = Parquet.Para{Weight}(chan, [1, 2], 2, -1)
 
 ver4 = Parquet.Ver4{Weight}(1, 1, para)
 
@@ -27,4 +27,4 @@ println("Iterate the tree use the AbstractTrees interface: ")
 ########## use ete3 package to visualize tree
 # Parquet.showTree(ver4, para, verbose = 1, depth = 3)  # visualize tree using python3 package ete3
 
-Parquet.diagramTree(ver4)
+# Parquet.diagramTree(ver4)

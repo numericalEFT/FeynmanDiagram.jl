@@ -8,12 +8,18 @@ Parameters to generate diagrams using Parquet algorithm
 - `chan`: list of channels of sub-vertices
 - `interactionTauNum`: τ degrees of freedom of the bare interaction
 """
-struct Para
+struct Para{W<:Number}
     chan::Vector{Int}
     F::Vector{Int}
     V::Vector{Int}
     interactionTauNum::Vector{Int} # list of possible τ degrees of freedom of the bare interaction 0, 2, or 4
-    function Para(chan, interactionTauNum)
+    spin::Int #spin factor
+    fermiSign::Int #-1 for fermionic system
+
+    tree::DiagTree.Weight{W}
+    propagators::DiagTree.PropagatorKT{W}
+
+    function Para{W}(chan, interactionTauNum, spin, fermiSign) where {W}
 
         for tnum in interactionTauNum
             @assert tnum == 1 || tnum == 2 || tnum == 4
@@ -25,7 +31,10 @@ struct Para
         F = intersect(chan, Fchan)
         V = intersect(chan, Vchan)
 
-        return new(chan, F, V, interactionTauNum)
+        propagators = Vector{DiagTree.PropagatorKT}(undef, 0)
+        tree = Vector{DiagTree.Weight{Float64}}(undef, 0)
+
+        return new(chan, F, V, interactionTauNum, spin, fermiSign, tree, propagators)
     end
 end
 
@@ -176,7 +185,7 @@ struct Ver4{W}
     Tpair::Vector{Tuple{Int,Int,Int,Int}}
     weight::Vector{W}
 
-    function Ver4{W}(loopNum, tidx, para::Para; chan = para.chan, level = 1, id = [1,]) where {W}
+    function Ver4{W}(loopNum, tidx, para::Para{W}; chan = para.chan, level = 1, id = [1,]) where {W}
         g = @SVector [Green{W}() for i = 1:16]
         ver4 = new{W}(id[1], level, loopNum, chan, tidx, g, [], [], [])
         id[1] += 1
@@ -310,32 +319,43 @@ AbstractTrees.printnode(io::IO, ver4::Ver4) = print(io, tpair(ver4))
 AbstractTrees.printnode(io::IO, bub::Bubble) = print(io, "\u001b[32m$(bub.id): $(ChanName[bub.chan]) $(bub.Lver.loopNum)Ⓧ $(bub.Rver.loopNum)\u001b[0m")
 
 ################## Generate Expression Tree ########################
-function expressionTree(ver4::Ver4{W}) where {W}
-    propagators = Vector{DiagTree.PropagatorKT}(undef, 0)
-    weights = Vector{DiagTree.Weight{Float64}}(undef, 0)
-    # iterator ver4 in depth-first search (children before parents)
-    println(W)
-    for node in PostOrderDFS(ver4)
-        if typeof(node) <: Ver4
-            if node.loopNum == 0
-                push!(propagators, DiagTree.PropagatorKT())
-            else
-            end
-        else if typeof(node) <: Bubble
-
-        else
-            error("not implemented!")
-        end
-    end
-
-end
-
-    function PropagatorKT(_type, _order, _Kidx, _Tidx)
-
-# function eval(ver4::Ver4, KinL, KoutL, KinR, KoutR, Kidx::Int, fast = false)
+# function expressionTree(ver4::Ver4{W}, para::Para, tree, propagators, extK, spin, isFermion) where {W}
+#     if isnothing(propagators) || isnothing(tree)
+#         propagators = Vector{DiagTree.PropagatorKT}(undef, 0)
+#         tree = Vector{DiagTree.Weight{Float64}}(undef, 0)
+#     end
+#     inL, outL, inR, outR = extK[1], extK[2], extK[3], extK[4]
 #     if ver4.loopNum == 0
-#         ver4.weight[1] = interaction(KinL, KoutL, KinR, KoutR, ver4.inBox, norm(varK[0])) :
-#         ver4.weight[1] = interaction(KinL, KoutL, KinR, KoutR, ver4.inBox)
+#         if (1 in para.interactionTauNum) && (2 in para.interactionTauNum)
+#             push!(propagators, DiagTree.PropagatorKT(1, 1, inL - outL, (ver4.Tidx[1], ver4.Tidx[3])))
+#             push!(propagators, DiagTree.PropagatorKT(1, 1, inL - outR, (ver4.Tidx[1], ver4.Tidx[3])))
+#             push!(propagators, DiagTree.PropagatorKT(2, 1, inL - outL, (ver4.Tidx[1], ver4.Tidx[3])))
+#             push!(propagators, DiagTree.PropagatorKT(2, 1, inL - outR, (ver4.Tidx[1], ver4.Tidx[3])))
+#         else
+#             error("not implemented!")
+#         end
+#         # else
+#     else
+
+#     end
+
+#     println(propagators)
+
+# end
+
+# macro evalGreen(eval, G, K)
+#     return $eval(G, K)
+# end
+
+# macro evalInteraction(evalInt, K, τ)
+#     return $evalInt(K, τ)
+# end
+
+# function eval(ver4::Ver4, evalG, evalInt, KinL, KoutL, KinR, KoutR, Kidx::Int, fast = false)
+#     if ver4.loopNum == 0
+#         vd, ve, wd, we = evalInt(KinL, KoutL, KinR, KoutR, )
+#         ver4.weight[1] = evalInt(KinL-KoutL)
+#         ver4.weight[1] = evalInt(, ver4.inBox)
 #         return
 #     end
 
@@ -345,19 +365,19 @@ end
 #     end
 #     G = ver4.G
 #     K, Kt, Ku, Ks = (varK[Kidx], ver4.K[1], ver4.K[2], ver4.K[3])
-#     eval(G[1], K, varT)
+#     evalG(G[1], K)
 #     bubWeight = counterBubble(K)
 
 #     for c in ver4.chan
 #         if c == T || c == TC
 #             Kt .= KoutL .+ K .- KinL
 #             if (!ver4.inBox)
-#                 eval(G[T], Kt)
+#                 evalG(G[T], Kt)
 #             end
 #         elseif c == U || c == UC
 #             # can not be in box!
 #             Ku .= KoutR .+ K .- KinL
-#             eval(G[U], Ku)
+#             evalG(G[U], Ku)
 #         else
 #             # S channel, and cann't be in box!
 #             Ks .= KinL .+ KinR .- K

@@ -9,12 +9,10 @@ struct PropagatorKT <: AbstractPropagator
     order::Int #the propagator may have an internal order (say, a Green's function diagram with multiple self-energy sub-diagrams)
     Kidx::Vector{Int} #loop basis of the momentum
     Tidx::Tuple{Int,Int}
-    weightIdx::Int #link to the weight struct
 
     function PropagatorKT(_type, _order, _Kidx, _Tidx)
         return new(_type, _order, _Kidx, _Tidx)
     end
-
 end
 
 mutable struct Weight{W<:Number}
@@ -28,6 +26,8 @@ mutable struct Weight{W<:Number}
     #### link to the other weight ##########
     parent::Int
     child::Vector{Int}
+    operation::Int #0: multiply, 1: add, 2: subtract
+    factor::W #symmetry factor, Fermi factor, spin factor
 
     function Weight{W}(_parent) where {W}
         new{W}(0, 0, 0, false, W(0), W(0), _parent, [])
