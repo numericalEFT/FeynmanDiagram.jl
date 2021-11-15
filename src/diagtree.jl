@@ -1,16 +1,30 @@
 module DiagTree
 using ..Var
 
-abstract type AbstractWeight end
+abstract type AbstractPropagator end
 
-struct PropagatorKT{Weight} <: AbstractWeight
-    id::Int
-    type::Int
-    order::Int
-    version::Int
-    Kidx::Int
+struct PropagatorKT <: AbstractPropagator
+    type::Int #1: Green's function, 2: interaction
+    order::Int #the propagator may have an internal order (say, a Green's function diagram with multiple self-energy sub-diagrams)
+    Kidx::Vector{Int} #loop basis of the momentum
     Tidx::Tuple{Int,Int}
-    weight::Weight
+    weightIdx::Int #link to the weight struct
+
+    function PropagatorKT(_type, _order, _Kidx, _Tidx)
+        return new(_type, _order, _Kidx, _Tidx)
+    end
+
+end
+
+mutable struct Weight{W<:Number}
+    type::Int #type of the weight, Green's function, interaction, node of some intermediate step
+    propagatorIdx::Int #if the weight is for a propagator, then this is the index of the propagator in the propagator table
+    version::Int128
+    excited::Bool #if set to excited, then the current weight needs to be replaced with the new weight
+    current::W
+    new::W
+    leftWeightIdx::Int
+    rightWeightIdx::Int
 end
 
 # ##### pretty print of Bubble and Ver4  ##########################

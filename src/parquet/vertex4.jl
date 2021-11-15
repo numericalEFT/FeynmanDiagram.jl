@@ -309,17 +309,19 @@ Base.eltype(::Type{Bubble{Ver4{W},W}}) where {W} = Bubble{Ver4{W},W}
 AbstractTrees.printnode(io::IO, ver4::Ver4) = print(io, tpair(ver4))
 AbstractTrees.printnode(io::IO, bub::Bubble) = print(io, "\u001b[32m$(bub.id): $(ChanName[bub.chan]) $(bub.Lver.loopNum)Ⓧ $(bub.Rver.loopNum)\u001b[0m")
 
-################### Generate Expression Tree ########################
-function expressionTree(ver4, PropagatorType)
-    propagators = Vector{PropagatorType}
+################## Generate Expression Tree ########################
+function diagramTree(ver4)
+    propagators = Vector{DiagTree.PropagatorKT}(undef, 0)
+    weights = Vector{DiagTree.Weight{Float64}}(undef, 0)
+    # iterator ver4 in depth-first search (children before parents)
+    for node in PostOrderDFS(ver4)
+        println(typeof(node))
+    end
+
 end
 
-
-
-
-# function eval(ver4::Ver4, KinL, KoutL, KinR, KoutR, Kidx::Int, fast=false)
+# function eval(ver4::Ver4, KinL, KoutL, KinR, KoutR, Kidx::Int, fast = false)
 #     if ver4.loopNum == 0
-#         DiagType == POLAR ?
 #         ver4.weight[1] = interaction(KinL, KoutL, KinR, KoutR, ver4.inBox, norm(varK[0])) :
 #         ver4.weight[1] = interaction(KinL, KoutL, KinR, KoutR, ver4.inBox)
 #         return
@@ -372,9 +374,9 @@ end
 #         gWeight = 0.0
 #         for (l, Lw) in enumerate(b.Lver.weight)
 #             for (r, Rw) in enumerate(b.Rver.weight)
-#                 map = b.map[(l - 1) * rN + r]
+#                 map = b.map[(l-1)*rN+r]
 
-#                     if ver4.inBox || c == TC || c == UC
+#                 if ver4.inBox || c == TC || c == UC
 #                     gWeight = bubWeight * Factor
 #                 else
 #                     gWeight = G[1].weight[map.G] * G[c].weight[map.Gx] * Factor
