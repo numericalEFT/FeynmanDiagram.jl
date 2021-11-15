@@ -1,6 +1,9 @@
 module ExpressionTree
-include("tree.jl")
-export Tree
+include("variable.jl")
+export Var
+
+include("diagtree.jl")
+export DiagTree
 
 include("parquet/parquet.jl")
 export Parquet

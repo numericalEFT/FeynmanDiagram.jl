@@ -261,8 +261,6 @@ function tpair(ver4, MaxT = 18)
     return s
 end
 
-##### Generate Reverse Polish notation for ver4 #################
-
 ##### pretty print of Bubble and Ver4  ##########################
 Base.show(io::IO, bub::Bubble) = AbstractTrees.printnode(io::IO, bub)
 Base.show(io::IO, ver4::Ver4) = AbstractTrees.printnode(io::IO, ver4)
@@ -310,6 +308,11 @@ Base.eltype(::Type{Bubble{Ver4{W},W}}) where {W} = Bubble{Ver4{W},W}
 
 AbstractTrees.printnode(io::IO, ver4::Ver4) = print(io, tpair(ver4))
 AbstractTrees.printnode(io::IO, bub::Bubble) = print(io, "\u001b[32m$(bub.id): $(ChanName[bub.chan]) $(bub.Lver.loopNum)Ⓧ $(bub.Rver.loopNum)\u001b[0m")
+
+################### Generate Expression Tree ########################
+function expressionTree(ver4, PropagatorType)
+    propagators = Vector{PropagatorType}
+end
 
 
 
