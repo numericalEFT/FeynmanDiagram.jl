@@ -1,5 +1,6 @@
 module DiagTree
 using ..Var
+using AbstractTrees
 
 abstract type AbstractPropagator end
 
@@ -23,9 +24,44 @@ mutable struct Weight{W<:Number}
     excited::Bool #if set to excited, then the current weight needs to be replaced with the new weight
     current::W
     new::W
-    leftWeightIdx::Int
-    rightWeightIdx::Int
+
+    #### link to the other weight ##########
+    parent::Int
+    child::Vector{Int}
+
+    function Weight{W}(_parent) where {W}
+        new{W}(0, 0, 0, false, W(0), W(0), _parent, [])
+    end
 end
+
+Base.show(io::IO, w::Weight{W}) where {W} = print(io, "Type: $(w.type), Prop: $(w.propagatorIdx), curr: $(w.current)")
+
+function addChild(tree::Vector{Weight{W}}, _parent) where {W}
+    push!(tree, Weight{W}(_parent))
+    idx = length(tree) #the index of the last element, which is the new weight node
+    push!(tree[_parent].child, idx)
+    return idx
+end
+
+# function leftchild(tree::Vector{Weight{W}}, _parent) where {W}
+#     if tree[_parent].left >= 0 #valid left and right idx must be positive
+#         error("left child is already assigned")
+#     end
+#     push!(tree, Weight{W}(_parent), -1, -1)
+#     idx = length(tree) #the index of the last element, which is the new weight node
+#     tree[_parent].left = idx
+#     return idx
+# end
+
+# function rightchild(tree::Vector{Weight{W}}, _parent) where {W}
+#     if tree[_parent].right >= 0 #valid left and right idx must be positive
+#         error("left child is already assigned")
+#     end
+#     push!(tree, Weight{W}(_parent), -1, -1)
+#     idx = length(tree) #the index of the last element, which is the new weight node
+#     tree[_parent].left = idx
+#     return idx
+# end
 
 # ##### pretty print of Bubble and Ver4  ##########################
 # Base.show(io::IO, bub::Bubble) = AbstractTrees.printnode(io::IO, bub)

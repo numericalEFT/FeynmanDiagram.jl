@@ -310,15 +310,27 @@ AbstractTrees.printnode(io::IO, ver4::Ver4) = print(io, tpair(ver4))
 AbstractTrees.printnode(io::IO, bub::Bubble) = print(io, "\u001b[32m$(bub.id): $(ChanName[bub.chan]) $(bub.Lver.loopNum)Ⓧ $(bub.Rver.loopNum)\u001b[0m")
 
 ################## Generate Expression Tree ########################
-function diagramTree(ver4)
+function expressionTree(ver4::Ver4{W}) where {W}
     propagators = Vector{DiagTree.PropagatorKT}(undef, 0)
     weights = Vector{DiagTree.Weight{Float64}}(undef, 0)
     # iterator ver4 in depth-first search (children before parents)
+    println(W)
     for node in PostOrderDFS(ver4)
-        println(typeof(node))
+        if typeof(node) <: Ver4
+            if node.loopNum == 0
+                push!(propagators, DiagTree.PropagatorKT())
+            else
+            end
+        else if typeof(node) <: Bubble
+
+        else
+            error("not implemented!")
+        end
     end
 
 end
+
+    function PropagatorKT(_type, _order, _Kidx, _Tidx)
 
 # function eval(ver4::Ver4, KinL, KoutL, KinR, KoutR, Kidx::Int, fast = false)
 #     if ver4.loopNum == 0
