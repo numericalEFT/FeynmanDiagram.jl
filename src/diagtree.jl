@@ -1,18 +1,17 @@
-module Tree
+module DiagTree
+using ..Var
 
-struct Leaf{Info,Weight}
+abstract type AbstractWeight end
+
+struct PropagatorKT{Weight} <: AbstractWeight
     id::Int
     type::Int
-    info::Info
+    order::Int
+    version::Int
+    Kidx::Int
+    Tidx::Tuple{Int,Int}
     weight::Weight
-    function Leaf{Info,Weight}(_id, _type, _info::Info, _weight) where {Info,Weight}
-        return new{Info,Weight}(_id, _type, _info, _weight)
-    end
 end
-
-# struct Node
-#     leaf::Array{Int}
-# end
 
 # ##### pretty print of Bubble and Ver4  ##########################
 # Base.show(io::IO, bub::Bubble) = AbstractTrees.printnode(io::IO, bub)
