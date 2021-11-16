@@ -9,15 +9,15 @@
     N = length(Tidx)
 
     ############# Test G with symmetry ############################
-    idx = [DiagTree.addPropagator(propagators, :G, 1, Tidx[i], Kidx[i], Gsymmetry) for i = 1:N]
+    idx = [DiagTree.add!(propagators, :G, 1, Kidx[i], Tidx[i], Gsymmetry) for i = 1:N]
     @test idx == [1, 1, 1, 1]
     ############# Test G without symmetry ############################
-    idx = [DiagTree.addPropagator(propagators, :G, 1, Tidx[i], Kidx[i], []) for i = 1:N]
+    idx = [DiagTree.add!(propagators, :G, 1, Kidx[i], Tidx[i], []) for i = 1:N]
     @test idx == [1, 2, 3, 4]
     ############# Test W with symmetry ############################
-    idx = [DiagTree.addPropagator(propagators, :W, 1, Tidx[i], Kidx[i], Wsymmetry) for i = 1:N]
+    idx = [DiagTree.add!(propagators, :W, 1, Kidx[i], Tidx[i], Wsymmetry) for i = 1:N]
     @test idx == [5, 5, 5, 5]
     ############# Test W without symmetry ############################
-    idx = [DiagTree.addPropagator(propagators, :W, 1, Tidx[i], Kidx[i], []) for i = 1:N]
+    idx = [DiagTree.add!(propagators, :W, 1, Kidx[i], Tidx[i], []) for i = 1:N]
     @test idx == [5, 6, 7, 8]
 end
