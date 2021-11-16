@@ -1,3 +1,6 @@
+const Node = DiagTree.Node
+const Propagator = DiagTree.PropagatorKT
+
 """
 Para(chan, interactionTauNum)
 
@@ -16,8 +19,8 @@ struct Para{W<:Number}
     spin::Int #spin factor
     fermiSign::Int #-1 for fermionic system
 
-    tree::DiagTree.Weight{W}
-    propagators::DiagTree.PropagatorKT{W}
+    tree::Vector{Node{W}}
+    propagators::Vector{Propagator}
 
     function Para{W}(chan, interactionTauNum, spin, fermiSign) where {W}
 
@@ -31,8 +34,8 @@ struct Para{W<:Number}
         F = intersect(chan, Fchan)
         V = intersect(chan, Vchan)
 
-        propagators = Vector{DiagTree.PropagatorKT}(undef, 0)
-        tree = Vector{DiagTree.Weight{Float64}}(undef, 0)
+        propagators = Vector{Propagator}(undef, 0)
+        tree = Vector{DiagTree.Node{W}}(undef, 0)
 
         return new(chan, F, V, interactionTauNum, spin, fermiSign, tree, propagators)
     end

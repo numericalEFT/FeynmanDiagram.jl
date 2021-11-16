@@ -1,4 +1,6 @@
 module DiagTree
+# export PropagatorKT, Weight, addChild
+
 using ..Var
 using AbstractTrees
 
@@ -15,7 +17,7 @@ struct PropagatorKT <: AbstractPropagator
     end
 end
 
-mutable struct Weight{W<:Number}
+mutable struct Node{W<:Number}
     type::Int #type of the weight, Green's function, interaction, node of some intermediate step
     propagatorIdx::Int #if the weight is for a propagator, then this is the index of the propagator in the propagator table
     version::Int128
@@ -29,15 +31,15 @@ mutable struct Weight{W<:Number}
     operation::Int #0: multiply, 1: add, 2: subtract
     factor::W #symmetry factor, Fermi factor, spin factor
 
-    function Weight{W}(_parent) where {W}
+    function Node{W}(_parent) where {W}
         new{W}(0, 0, 0, false, W(0), W(0), _parent, [])
     end
 end
 
-Base.show(io::IO, w::Weight{W}) where {W} = print(io, "Type: $(w.type), Prop: $(w.propagatorIdx), curr: $(w.current)")
+Base.show(io::IO, w::Node{W}) where {W} = print(io, "Type: $(w.type), Prop: $(w.propagatorIdx), curr: $(w.current)")
 
-function addChild(tree::Vector{Weight{W}}, _parent) where {W}
-    push!(tree, Weight{W}(_parent))
+function addChild(tree::Vector{Node{W}}, _parent) where {W}
+    push!(tree, Node{W}(_parent))
     idx = length(tree) #the index of the last element, which is the new weight node
     push!(tree[_parent].child, idx)
     return idx

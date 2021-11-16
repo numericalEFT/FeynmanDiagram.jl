@@ -2,13 +2,13 @@ using ExpressionTree
 using AbstractTrees
 # using NewickTree
 using StaticArrays
-const Weight = SVector{2,Float64}
+# const Weight = SVector{2,Float64}
 
 chan = [Parquet.T, Parquet.U, Parquet.S]
 
-para = Parquet.Para{Weight}(chan, [1, 2], 2, -1)
+para = Parquet.Para{Float64}(chan, [1, 2], 2, -1)
 
-ver4 = Parquet.Ver4{Weight}(1, 1, para)
+ver4 = Parquet.Ver4{Float64}(1, 1, para)
 
 ########## use AbstractTrees interface to print/manipulate the tree
 print_tree(ver4)
