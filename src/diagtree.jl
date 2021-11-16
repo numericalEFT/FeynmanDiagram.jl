@@ -7,7 +7,7 @@ using AbstractTrees
 abstract type AbstractPropagator end
 
 struct PropagatorKT <: AbstractPropagator
-    type::Int #1: Green's function, 2: interaction
+    type::Symbol #1: Green's function, 2: interaction
     order::Int #the propagator may have an internal order (say, a Green's function diagram with multiple self-energy sub-diagrams)
     Kidx::Vector{Int} #loop basis of the momentum
     Tidx::Tuple{Int,Int}
@@ -16,6 +16,27 @@ struct PropagatorKT <: AbstractPropagator
         return new(_type, _order, _Kidx, _Tidx)
     end
 end
+
+compareTidx(Tidx1, Tidx2, hasTimeReversal) = hasTimeReversal ? ((Tidx1 == Tidx2) || (Tidx1 == (Tidx2[2], Tidx2[1]))) : Tidx1 == Tidx2
+compareKidx(Kidx1, Kidx2, hasMirrorSymmetry) = hasMirrorSymmetry ? ((Kidx1 ≈ Kidx2) || (Kidx1 ≈ -Kidx2)) : Kidx1 ≈ Kidx2
+
+# add new propagators to the propagator list
+function addPropagator(propagators::Vector{PropagatorKT}, type::Symbol, order, _Tidx, _Kidx, _symmetry)
+    # println("checking:", _Tidx, ", ", _Kidx)
+    for (i, p) in enumerate(propagators)
+        if p.type == type && p.order == order
+            Tflag = compareTidx(p.Tidx, _Tidx, (:particlehole in _symmetry || :timereversal in _symmetry))
+            Kflag = compareKidx(p.Kidx, _Kidx, :mirror in _symmetry)
+            # println(p.Tidx, ", ", p.Kidx, ", ", Tflag, ", ", Kflag, " with ", ((p.Kidx ≈ _Kidx) || (p.Kidx ≈ -_Kidx)))
+            if Tflag && Kflag
+                return i
+            end
+        end
+    end
+    push!(propagators, PropagatorKT(type, order, _Kidx, _Tidx))
+    return length(propagators)
+end
+
 
 mutable struct Node{W<:Number}
     type::Int #type of the weight, Green's function, interaction, node of some intermediate step
