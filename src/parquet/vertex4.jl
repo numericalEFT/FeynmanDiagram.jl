@@ -213,10 +213,10 @@ struct Ver4{W}
             end
 
             if (1 in para.interactionTauNum) && (2 in para.interactionTauNum)
-                push!(para.propagators, Propagator(:V, 1, inL - outL, (ver4.Tidx[1], ver4.Tidx[3])))
-                push!(para.propagators, Propagator(:V, 1, inL - outR, (ver4.Tidx[1], ver4.Tidx[3])))
-                push!(para.propagators, Propagator(:W, 1, inL - outL, (ver4.Tidx[1], ver4.Tidx[3])))
-                push!(para.propagators, Propagator(:W, 1, inL - outR, (ver4.Tidx[1], ver4.Tidx[3])))
+                add!(para.propagators, :V, 1, inL - outL, (ver4.Tidx[1], ver4.Tidx[3]), para.Wsymmetry)
+                add!(para.propagators, :V, 1, inL - outR, (ver4.Tidx[1], ver4.Tidx[3]), para.Wsymmetry)
+                add!(para.propagators, :W, 1, inL - outL, (ver4.Tidx[1], ver4.Tidx[3]), para.Wsymmetry)
+                add!(para.propagators, :W, 1, inL - outR, (ver4.Tidx[1], ver4.Tidx[3]), para.Wsymmetry)
             else
                 error("not implemented!")
             end
