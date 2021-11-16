@@ -83,7 +83,7 @@ struct Bubble{_Ver4,W} # template Bubble to avoid mutually recursive struct
     Rver::_Ver4
     map::Vector{IdxMap}
 
-    function Bubble{_Ver4,W}(ver4::_Ver4, chan::Int, oL::Int, para::Para, level::Int, _id::Vector{Int}) where {_Ver4,W}
+    function Bubble{_Ver4,W}(ver4::_Ver4, legK, chan::Int, oL::Int, para::Para, level::Int, _id::Vector{Int}) where {_Ver4,W}
         @assert chan in para.chan "$chan isn't a bubble channels!"
         @assert oL < ver4.loopNum "LVer loopNum must be smaller than the ver4 loopNum"
 
@@ -94,19 +94,36 @@ struct Bubble{_Ver4,W} # template Bubble to avoid mutually recursive struct
         LTidx = ver4.Tidx  # the first τ index of the left vertex
         maxTauNum = maximum(para.interactionTauNum) # maximum tau number for each bare interaction
         RTidx = LTidx + (oL + 1) * maxTauNum + 1  # the first τ index of the right sub-vertex
+        Kidx = ver4.Kidx
+        LKidx, RKidx = Kidx + 1, Kidx + 1 + b.Lver.loopNum
 
-        if chan == T || chan == U
+
+        inL, inR, outL, outR = legK[INL], legK[OUTL], legK[INR], legK[OUTR]
+        K = similar(inL) .* 0
+        K[Kidx] = 1 # K = [0, ... , 1, ... , 0]
+
+        if c == T
+            Kt .= outL .+ K .- inL
+            LLegK = [inL, outL, Kt, K]
+            RLegK = [K, Kt, inR, outR]
             LsubVer = para.F
             RsubVer = para.chan
-        elseif chan == S
-            LsubVer = para.V
+        elseif c == U
+            Ku .= outR .+ K .- inL
+            LLegK = [inL, outR, Ku, K]
+            RLegK = [K, Ku, inR, outL]
+            LsubVer = para.F
             RsubVer = para.chan
         else
-            error("chan $chan isn't implemented!")
+            Ks .= inL .+ inR .- K
+            LLegK = [inL, Ks, inR, K]
+            RLegK = [K, outL, Ks, outR]
+            LsubVer = para.V
+            RsubVer = para.chan
         end
 
-        Lver = _Ver4{W}(oL, LTidx, para; chan = LsubVer, level = level + 1, id = _id)
-        Rver = _Ver4{W}(oR, RTidx, para; chan = RsubVer, level = level + 1, id = _id)
+        Lver = _Ver4{W}(oL, LTidx, LKidx, LLegK, para; chan = LsubVer, level = level + 1, id = _id)
+        Rver = _Ver4{W}(oR, RTidx, RKidx, RLegK, para; chan = RsubVer, level = level + 1, id = _id)
 
         @assert Lver.Tidx == ver4.Tidx "Lver Tidx must be equal to vertex4 Tidx! LoopNum: $(ver4.loopNum), LverLoopNum: $(Lver.loopNum), chan: $chan"
 
@@ -181,6 +198,8 @@ struct Ver4{W}
     loopNum::Int
     chan::Vector{Int} # list of channels
     Tidx::Int # inital Tidx
+    Kidx::Int # inital K
+    legK::Vector{Vector{Int}}
 
     ######  components of vertex  ##########################
     G::SVector{16,Green}  # large enough to host all Green's function
@@ -191,10 +210,11 @@ struct Ver4{W}
     propagatorIdx::Vector{Int}
     weight::Vector{W}
 
-    function Ver4{W}(loopNum, tidx, para::Para{W}; chan = para.chan, level = 1, id = [1,]) where {W}
+    function Ver4{W}(loopNum, tidx, kidx, legK, para::Para{W}; chan = para.chan, level = 1, id = [1,]) where {W}
         g = @SVector [Green{W}() for i = 1:16]
-        ver4 = new{W}(id[1], level, loopNum, chan, tidx, g, [], [], [], [])
+        ver4 = new{W}(id[1], level, loopNum, chan, tidx, kidx, legK, g, [], [], [], [])
         id[1] += 1
+        inL, inR, outL, outR = legK[INL], legK[INR], legK[OUTL], legK[OUTR]
         @assert loopNum >= 0
         if loopNum == 0
             # bare interaction may have one, two or four independent tau variables
@@ -202,28 +222,27 @@ struct Ver4{W}
                 # we keep two copies because the direct and exchange may have different spin indices
                 addTidx(ver4, (tidx, tidx, tidx, tidx)) #direct
                 addTidx(ver4, (tidx, tidx, tidx, tidx)) #exchange
+                idx1 = add!(para.propagators, :V, 1, inL - outL, (ver4.Tidx[1], ver4.Tidx[3]), para.Wsymmetry)
+                idx2 = add!(para.propagators, :V, 1, inL - outR, (ver4.Tidx[1], ver4.Tidx[3]), para.Wsymmetry)
+                push!(propagatorIdx, idx1)
+                push!(propagatorIdx, idx2)
             end
             if 2 in para.interactionTauNum  # interaction with incoming and outing τ varibales
                 addTidx(ver4, (tidx, tidx, tidx + 1, tidx + 1))  # direct dynamic interaction
                 addTidx(ver4, (tidx, tidx + 1, tidx + 1, tidx))  # exchange dynamic interaction
+                idx1 = add!(para.propagators, :W, 1, inL - outL, (ver4.Tidx[1], ver4.Tidx[3]), para.Wsymmetry)
+                idx2 = add!(para.propagators, :W, 1, inL - outR, (ver4.Tidx[1], ver4.Tidx[3]), para.Wsymmetry)
+                push!(propagatorIdx, idx1)
+                push!(propagatorIdx, idx2)
             end
             if 4 in para.interactionTauNum  # interaction with incoming and outing τ varibales
                 addTidx(ver4, (tidx, tidx + 1, tidx + 2, tidx + 3))  # direct dynamic interaction
                 addTidx(ver4, (tidx, tidx + 3, tidx + 2, tidx + 1))  # exchange dynamic interaction
             end
-
-            if (1 in para.interactionTauNum) && (2 in para.interactionTauNum)
-                add!(para.propagators, :V, 1, inL - outL, (ver4.Tidx[1], ver4.Tidx[3]), para.Wsymmetry)
-                add!(para.propagators, :V, 1, inL - outR, (ver4.Tidx[1], ver4.Tidx[3]), para.Wsymmetry)
-                add!(para.propagators, :W, 1, inL - outL, (ver4.Tidx[1], ver4.Tidx[3]), para.Wsymmetry)
-                add!(para.propagators, :W, 1, inL - outR, (ver4.Tidx[1], ver4.Tidx[3]), para.Wsymmetry)
-            else
-                error("not implemented!")
-            end
         else # loopNum>0
             for c in para.chan
                 for ol = 0:loopNum-1
-                    bubble = Bubble{Ver4,W}(ver4, c, ol, para, level, id)
+                    bubble = Bubble{Ver4,W}(ver4, legK, c, ol, para, level, id)
                     if length(bubble.map) > 0  # if zero, bubble diagram doesn't exist
                         push!(ver4.bubble, bubble)
                     end
