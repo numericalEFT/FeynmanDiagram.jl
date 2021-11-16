@@ -18,11 +18,13 @@ struct Para{W<:Number}
     interactionTauNum::Vector{Int} # list of possible τ degrees of freedom of the bare interaction 0, 2, or 4
     spin::Int #spin factor
     fermiSign::Int #-1 for fermionic system
+    Gsymmetry::Vector{Symbol}
+    Wsymmetry::Vector{Symbol}
 
     tree::Vector{Node{W}}
     propagators::Vector{Propagator}
 
-    function Para{W}(chan, interactionTauNum, spin, fermiSign) where {W}
+    function Para{W}(chan, interactionTauNum, spin, fermiSign, _Gsymmetry, _Wsymmetry) where {W}
 
         for tnum in interactionTauNum
             @assert tnum == 1 || tnum == 2 || tnum == 4
@@ -37,7 +39,7 @@ struct Para{W<:Number}
         propagators = Vector{Propagator}(undef, 0)
         tree = Vector{DiagTree.Node{W}}(undef, 0)
 
-        return new(chan, F, V, interactionTauNum, spin, fermiSign, tree, propagators)
+        return new(chan, F, V, interactionTauNum, spin, fermiSign, _Gsymmetry, _Wsymmetry, tree, propagators)
     end
 end
 
@@ -186,17 +188,20 @@ struct Ver4{W}
 
     ####### weight and tau table of the vertex  ###############
     Tpair::Vector{Tuple{Int,Int,Int,Int}}
+    propagatorIdx::Vector{Int}
     weight::Vector{W}
 
     function Ver4{W}(loopNum, tidx, para::Para{W}; chan = para.chan, level = 1, id = [1,]) where {W}
         g = @SVector [Green{W}() for i = 1:16]
-        ver4 = new{W}(id[1], level, loopNum, chan, tidx, g, [], [], [])
+        ver4 = new{W}(id[1], level, loopNum, chan, tidx, g, [], [], [], [])
         id[1] += 1
         @assert loopNum >= 0
         if loopNum == 0
             # bare interaction may have one, two or four independent tau variables
             if 1 in para.interactionTauNum  # instantaneous interaction
-                addTidx(ver4, (tidx, tidx, tidx, tidx))
+                # we keep two copies because the direct and exchange may have different spin indices
+                addTidx(ver4, (tidx, tidx, tidx, tidx)) #direct
+                addTidx(ver4, (tidx, tidx, tidx, tidx)) #exchange
             end
             if 2 in para.interactionTauNum  # interaction with incoming and outing τ varibales
                 addTidx(ver4, (tidx, tidx, tidx + 1, tidx + 1))  # direct dynamic interaction
@@ -205,6 +210,15 @@ struct Ver4{W}
             if 4 in para.interactionTauNum  # interaction with incoming and outing τ varibales
                 addTidx(ver4, (tidx, tidx + 1, tidx + 2, tidx + 3))  # direct dynamic interaction
                 addTidx(ver4, (tidx, tidx + 3, tidx + 2, tidx + 1))  # exchange dynamic interaction
+            end
+
+            if (1 in para.interactionTauNum) && (2 in para.interactionTauNum)
+                push!(para.propagators, Propagator(:V, 1, inL - outL, (ver4.Tidx[1], ver4.Tidx[3])))
+                push!(para.propagators, Propagator(:V, 1, inL - outR, (ver4.Tidx[1], ver4.Tidx[3])))
+                push!(para.propagators, Propagator(:W, 1, inL - outL, (ver4.Tidx[1], ver4.Tidx[3])))
+                push!(para.propagators, Propagator(:W, 1, inL - outR, (ver4.Tidx[1], ver4.Tidx[3])))
+            else
+                error("not implemented!")
             end
         else # loopNum>0
             for c in para.chan
