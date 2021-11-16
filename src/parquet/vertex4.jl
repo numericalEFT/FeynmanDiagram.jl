@@ -95,31 +95,32 @@ struct Bubble{_Ver4,W} # template Bubble to avoid mutually recursive struct
         maxTauNum = maximum(para.interactionTauNum) # maximum tau number for each bare interaction
         RTidx = LTidx + (oL + 1) * maxTauNum + 1  # the first τ index of the right sub-vertex
         Kidx = ver4.Kidx
-        LKidx, RKidx = Kidx + 1, Kidx + 1 + b.Lver.loopNum
-
+        LKidx, RKidx = Kidx + 1, Kidx + 1 + oL
 
         inL, inR, outL, outR = legK[INL], legK[OUTL], legK[INR], legK[OUTR]
         K = similar(inL) .* 0
         K[Kidx] = 1 # K = [0, ... , 1, ... , 0]
 
-        if c == T
-            Kt .= outL .+ K .- inL
+        if chan == T
+            Kt = outL .+ K .- inL
             LLegK = [inL, outL, Kt, K]
             RLegK = [K, Kt, inR, outR]
             LsubVer = para.F
             RsubVer = para.chan
-        elseif c == U
-            Ku .= outR .+ K .- inL
+        elseif chan == U
+            Ku = outR .+ K .- inL
             LLegK = [inL, outR, Ku, K]
             RLegK = [K, Ku, inR, outL]
             LsubVer = para.F
             RsubVer = para.chan
-        else
-            Ks .= inL .+ inR .- K
+        elseif chan == S
+            Ks = inL .+ inR .- K
             LLegK = [inL, Ks, inR, K]
             RLegK = [K, outL, Ks, outR]
             LsubVer = para.V
             RsubVer = para.chan
+        else
+            error("not implemented!")
         end
 
         Lver = _Ver4{W}(oL, LTidx, LKidx, LLegK, para; chan = LsubVer, level = level + 1, id = _id)
@@ -221,19 +222,20 @@ struct Ver4{W}
             if 1 in para.interactionTauNum  # instantaneous interaction
                 # we keep two copies because the direct and exchange may have different spin indices
                 addTidx(ver4, (tidx, tidx, tidx, tidx)) #direct
-                addTidx(ver4, (tidx, tidx, tidx, tidx)) #exchange
-                idx1 = add!(para.propagators, :V, 1, inL - outL, (ver4.Tidx[1], ver4.Tidx[3]), para.Wsymmetry)
-                idx2 = add!(para.propagators, :V, 1, inL - outR, (ver4.Tidx[1], ver4.Tidx[3]), para.Wsymmetry)
-                push!(propagatorIdx, idx1)
-                push!(propagatorIdx, idx2)
             end
             if 2 in para.interactionTauNum  # interaction with incoming and outing τ varibales
+                addTidx(ver4, (tidx, tidx, tidx, tidx)) #direct
+                addTidx(ver4, (tidx, tidx, tidx, tidx)) #exchange
                 addTidx(ver4, (tidx, tidx, tidx + 1, tidx + 1))  # direct dynamic interaction
                 addTidx(ver4, (tidx, tidx + 1, tidx + 1, tidx))  # exchange dynamic interaction
-                idx1 = add!(para.propagators, :W, 1, inL - outL, (ver4.Tidx[1], ver4.Tidx[3]), para.Wsymmetry)
-                idx2 = add!(para.propagators, :W, 1, inL - outR, (ver4.Tidx[1], ver4.Tidx[3]), para.Wsymmetry)
-                push!(propagatorIdx, idx1)
-                push!(propagatorIdx, idx2)
+                idx1 = DiagTree.add!(para.propagators, :V, 1, inL - outL, (tidx, tidx + 1), para.Wsymmetry)
+                idx2 = DiagTree.add!(para.propagators, :V, 1, inL - outR, (tidx, tidx + 1), para.Wsymmetry)
+                idx3 = DiagTree.add!(para.propagators, :W, 1, inL - outL, (tidx, tidx + 1), para.Wsymmetry)
+                idx4 = DiagTree.add!(para.propagators, :W, 1, inL - outR, (tidx, tidx + 1), para.Wsymmetry)
+                push!(ver4.propagatorIdx, idx1)
+                push!(ver4.propagatorIdx, idx2)
+                push!(ver4.propagatorIdx, idx3)
+                push!(ver4.propagatorIdx, idx4)
             end
             if 4 in para.interactionTauNum  # interaction with incoming and outing τ varibales
                 addTidx(ver4, (tidx, tidx + 1, tidx + 2, tidx + 3))  # direct dynamic interaction
