@@ -29,11 +29,11 @@ struct Para
     end
 end
 
-struct Green{W}
+struct Green
     Tpair::Vector{Tuple{Int,Int}}
-    weight::Vector{W}
-    function Green{W}() where {W}
-        return new{W}([], [])
+    weight::Vector{Float64}
+    function Green()
+        return new([], [])
     end
 end
 
@@ -177,7 +177,7 @@ struct Ver4{W}
     weight::Vector{W}
 
     function Ver4{W}(loopNum, tidx, para::Para; chan = para.chan, level = 1, id = [1,]) where {W}
-        g = @SVector [Green{W}() for i = 1:16]
+        g = @SVector [Green() for i = 1:16]
         ver4 = new{W}(id[1], level, loopNum, chan, tidx, g, [], [], [])
         id[1] += 1
         @assert loopNum >= 0

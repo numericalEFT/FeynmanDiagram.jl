@@ -12,13 +12,22 @@ const kF = (dim == 3) ? (9π / (2spin))^(1 / 3) / rs : sqrt(4 / spin) / rs
 const EF = kF^2 / (2me)
 const beta = 25
 const β = beta / EF
-const mass2 = 0.01
+const mass2 = 1.0
 const NF = (dim == 3) ? spin * me * kF / 2 / π^2 : spin * me / 2 / π
 
-const Weight = SVector{2,Float64}
-const Base.abs(w::Weight) = abs(w[1]) + abs(w[2]) # define abs(Weight)
+# const Weight = SVector{2,Float64}
 const INL, OUTL, INR, OUTR = 1, 2, 3, 4
 const DI, EX = 1, 2
 # const Nf = (D==3) ? 
+
+mutable struct Weight <: FieldVector{2,Float64}
+    d::Float64
+    e::Float64
+    Weight() = new(0.0, 0.0)
+    Weight(d, e) = new(d, e)
+end
+
+const Base.zero(::Type{Weight}) = Weight(0.0, 0.0)
+const Base.abs(w::Weight) = abs(w.d) + abs(w.e) # define abs(Weight)
 
 println("rs=$rs, β=$β, kF=$kF, EF=$EF, mass2=$mass2")
