@@ -6,15 +6,13 @@ using MCIntegration
 using Lehmann
 
 using ExpressionTree
-using AbstractTrees
-# using NewickTree
 using StaticArrays
 
 include("parameter.jl")
 include("interaction.jl")
 
 
-const steps = 1e6
+const steps = 1e5
 const isF = false
 const Nk = 16
 const θgrid = [k * 2π / Nk for k = 0:Nk-1]
@@ -46,9 +44,11 @@ function integrand(config)
     if config.curr == 1
         extKidx = config.var[3][1]
         KinL, KoutL, KinR, KoutR = RefK, RefK, ExtK[extKidx], ExtK[extKidx]
-        eval(config, KinL, KoutL, KinR, KoutR, 1, true)
+        eval(config, config.para.ver4, KinL, KoutL, KinR, KoutR, 1, true)
         w = config.para.ver4.weight
-        return w[1] .+ w[2] .+ w[3] .+ w[4]
+        wd = w[1].d + w[2].d + w[3].d + w[4].d
+        we = w[1].e + w[2].e + w[3].e + w[4].e
+        return Weight(wd, we)
     else
         error("impossible!")
     end
@@ -60,7 +60,8 @@ function measure(config)
     # println(config.observable[1][1])
     if config.curr == 1
         weight = integrand(config)
-        config.observable[extKidx] += weight / abs(weight) * factor
+        config.observable[extKidx, 1] += weight.d / abs(weight) * factor
+        config.observable[extKidx, 2] += weight.e / abs(weight) * factor
     else
         return
     end
@@ -73,9 +74,8 @@ function evalG(G, K, varT)
     end
 end
 
-function eval(config, KinL, KoutL, KinR, KoutR, Kidx::Int, fast = false)
+function eval(config, ver4, KinL, KoutL, KinR, KoutR, Kidx::Int, fast = false)
     para = config.para
-    ver4 = para.ver4
     varK, varT = config.var[1], config.var[2]
 
     if ver4.loopNum == 0
@@ -83,52 +83,57 @@ function eval(config, KinL, KoutL, KinR, KoutR, Kidx::Int, fast = false)
         qe = KinL - KoutR
         τIn, τOut = varT[ver4.Tidx], varT[ver4.Tidx+1]
         vd, wd, ve, we = vertexDynamic(para, qd, qe, τIn, τOut)
-        ver4.weight[1][DI] = vd
-        ver4.weight[1][EX] = ve
-        ver4.weight[2][DI] = wd
-        ver4.weight[3][EX] = we
+        ver4.weight[1].d = vd
+        ver4.weight[1].e = ve
+        ver4.weight[2].d = wd
+        ver4.weight[3].e = we
         return
     end
 
     # LoopNum>=1
     for w in ver4.weight
-        w *= 0.0 # initialize all weights
+        w.d, w.e = 0.0, 0.0 # initialize all weights
     end
     G = ver4.G
     K = varK[Kidx]
     evalG(G[1], K, varT)
     PhaseFactor = 1.0 / (2π)^dim
+    Kt, Ku, Ks = similar(K), similar(K), similar(K) #Kt, Ku and Ks will be re-created later, slow in performance
 
     for c in ver4.chan
-        if c == T
-            Kt .= KoutL .+ K .- KinL
-            evalG(G[T], Kt, varT)
-        elseif c == U
+        if c == Parquet.T
+            Kt = KoutL + K - KinL
+            evalG(G[c], Kt, varT)
+        elseif c == Parquet.U
             # can not be in box!
-            Ku .= KoutR .+ K .- KinL
-            evalG(G[U], Ku, varT)
-        else
+            Ku = KoutR + K - KinL
+            evalG(G[c], Ku, varT)
+        elseif c == Parquet.S
             # S channel, and cann't be in box!
-            Ks .= KinL .+ KinR .- K
-            evalG(G[S], Ks, varT)
+            Ks = KinL + KinR - K
+            evalG(G[c], Ks, varT)
+        else
+            error("not impossible!")
         end
     end
     for b in ver4.bubble
         c = b.chan
-        Factor = SymFactor[c] * PhaseFactor
+        Factor = Parquet.SymFactor[c] * PhaseFactor
         Llopidx = Kidx + 1
         Rlopidx = Kidx + 1 + b.Lver.loopNum
 
-        if c == T
+        if c == Parquet.T
             eval(config, b.Lver, KinL, KoutL, Kt, K, Llopidx)
             eval(config, b.Rver, K, Kt, KinR, KoutR, Rlopidx)
-        elseif c == U
+        elseif c == Parquet.U
             eval(config, b.Lver, KinL, KoutR, Ku, K, Llopidx)
             eval(config, b.Rver, K, Ku, KinR, KoutL, Rlopidx)
-        else
+        elseif c == Parquet.S
             # S channel
             eval(config, b.Lver, KinL, Ks, KinR, K, Llopidx)
             eval(config, b.Rver, K, KoutL, Ks, KoutR, Rlopidx)
+        else
+            error("not implemented")
         end
 
         rN = length(b.Rver.weight)
@@ -137,7 +142,7 @@ function eval(config, KinL, KoutL, KinR, KoutR, Kidx::Int, fast = false)
             for (r, Rw) in enumerate(b.Rver.weight)
                 map = b.map[(l-1)*rN+r]
 
-                gWeight = G[1].weight[map.G] * G[c].weight[map.Gx] * Factor
+                gWeight = G[1].weight[map.G0] * G[c].weight[map.Gx] * Factor
 
                 if fast && ver4.level == 1
                     pair = ver4.Tpair[map.ver]
@@ -150,26 +155,24 @@ function eval(config, KinL, KoutL, KinR, KoutR, Kidx::Int, fast = false)
                             varT[pair[INL]] - varT[pair[OUTL]] + varT[pair[INR]] -
                             varT[pair[OUTR]]
                     end
-                    gWeight *= cos(2.0 * pi / Beta * dT)
+                    gWeight *= cos(2π / β * dT)
                     w = ver4.weight[c]
                 else
                     w = ver4.weight[map.ver]
                 end
 
-                if c == T
-                    w[DI] +=
-                        gWeight *
-                        (Lw[DI] * Rw[DI] * SPIN + Lw[DI] * Rw[EX] + Lw[EX] * Rw[DI])
-                    w[EX] += gWeight * Lw[EX] * Rw[EX]
-                elseif c == U
-                    w[DI] += gWeight * Lw[EX] * Rw[EX]
-                    w[EX] +=
-                        gWeight *
-                        (Lw[DI] * Rw[DI] * SPIN + Lw[DI] * Rw[EX] + Lw[EX] * Rw[DI])
-                else
+                if c == Parquet.T
+                    w.d += gWeight * (Lw.d * Rw.d * spin + Lw.d * Rw.e + Lw.e * Rw.d)
+                    w.e += gWeight * Lw.e * Rw.e
+                elseif c == Parquet.U
+                    w.d += gWeight * Lw.e * Rw.e
+                    w.e += gWeight * (Lw.d * Rw.d * spin + Lw.d * Rw.e + Lw.e * Rw.d)
+                elseif c == Parquet.S
                     # S channel,  see the note "code convention"
-                    w[DI] += gWeight * (Lw[DI] * Rw[EX] + Lw[EX] * Rw[DI])
-                    w[EX] += gWeight * (Lw[DI] * Rw[DI] + Lw[EX] * Rw[EX])
+                    w.d += gWeight * (Lw.d * Rw.e + Lw.e * Rw.d)
+                    w.e += gWeight * (Lw.d * Rw.d + Lw.e * Rw.e)
+                else
+                    error("not implemented")
                 end
 
             end
@@ -183,16 +186,21 @@ function MC()
 
     K = MCIntegration.FermiK(dim, kF, 0.2 * kF, 10.0 * kF)
     T = MCIntegration.Tau(β, β / 2.0)
-    ExtKidx = MCIntegration.Discrete(0, Nk - 1)
+    ExtKidx = MCIntegration.Discrete(1, Nk)
 
     dof = [[1, 4, 1],] # K, T, ExtKidx
-    obs = zeros(2) # observable for the Fock diagram 
+    obs = zeros(Nk, 2) # observable for the Fock diagram 
 
     config = MCIntegration.Configuration(steps, (K, T, ExtKidx), dof, obs; para = para)
     avg, std = MCIntegration.sample(config, integrand, measure; print = 0, Nblock = 16)
     if isnothing(avg) == false
-        for (ki, theta) in θgrid
-            @printf("%10.6f   %10.6f ± %10.6f\n", theta, avg[ki] / NF, std[ki] / NF)
+        println("Direct ver4: ")
+        for (ki, theta) in enumerate(θgrid)
+            @printf("%10.6f   %10.6f ± %10.6f\n", theta, avg[ki, 1] / NF, std[ki, 1] / NF)
+        end
+        println("Exchange ver4: ")
+        for (ki, theta) in enumerate(θgrid)
+            @printf("%10.6f   %10.6f ± %10.6f\n", theta, avg[ki, 2] / NF, std[ki, 2] / NF)
         end
     end
 
