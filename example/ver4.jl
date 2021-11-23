@@ -15,7 +15,7 @@ include("interaction.jl")
 const steps = 1e5
 const isF = false
 const Nk = 16
-const θgrid = [k * 2π / Nk for k = 0:Nk-1]
+const θgrid = collect(LinRange(0.0, π, Nk)) # external angle grid
 const ExtK = [@SVector [kF * cos(θ), kF * sin(θ), 0.0] for θ in θgrid]
 const RefK = @SVector [kF, 0.0, 0.0]
 
@@ -32,7 +32,8 @@ struct Para{Q,T}
         dW0 = TwoPoint.dWRPA(vqinv, qgrid.grid, τgrid.grid, dim, EF, kF, β, spin, me) # dynamic part of the effective interaction
 
 
-        chan = [Parquet.T, Parquet.U, Parquet.S]
+        # chan = [Parquet.T, Parquet.U, Parquet.S]
+        chan = [Parquet.T]
         para = Parquet.Para(chan, [1, 2])
         ver4 = Parquet.Ver4{Weight}(loopOrder, 1, para)
 
@@ -74,6 +75,17 @@ function evalG(G, K, varT)
     end
 end
 
+function phase(varT, Tpair)
+
+    tInL, tOutL, tInR, tOutR = varT[Tpair[INL]], varT[Tpair[OUTL]], varT[Tpair[INR]],
+    varT[Tpair[OUTR]]
+    if (isF)
+        return cos(π / β * ((tInL + tOutL) - (tInR + tOutR)))
+    else
+        return cos(π / β * ((tInL - tOutL) + (tInR - tOutR)))
+    end
+end
+
 function eval(config, ver4, KinL, KoutL, KinR, KoutR, Kidx::Int, fast = false)
     para = config.para
     varK, varT = config.var[1], config.var[2]
@@ -83,10 +95,14 @@ function eval(config, ver4, KinL, KoutL, KinR, KoutR, Kidx::Int, fast = false)
         qe = KinL - KoutR
         τIn, τOut = varT[ver4.Tidx], varT[ver4.Tidx+1]
         vd, wd, ve, we = vertexDynamic(para, qd, qe, τIn, τOut)
-        ver4.weight[1].d = vd
+        ver4.weight[1].d = 0.0
         ver4.weight[1].e = ve
-        ver4.weight[2].d = wd
+        # ver4.weight[2].d = wd
         ver4.weight[3].e = we
+        ver4.weight[2].d = 0.0
+        ver4.weight[2].e = 0.0
+        ver4.weight[3].d = 0.0
+        # ver4.weight[3].e = 0.0
         return
     end
 
@@ -145,17 +161,7 @@ function eval(config, ver4, KinL, KoutL, KinR, KoutR, Kidx::Int, fast = false)
                 gWeight = G[1].weight[map.G0] * G[c].weight[map.Gx] * Factor
 
                 if fast && ver4.level == 1
-                    pair = ver4.Tpair[map.ver]
-                    if (isF)
-                        dT =
-                            varT[pair[INL]] + varT[pair[OUTL]] - varT[pair[INR]] -
-                            varT[pair[OUTR]]
-                    else
-                        dT =
-                            varT[pair[INL]] - varT[pair[OUTL]] + varT[pair[INR]] -
-                            varT[pair[OUTR]]
-                    end
-                    gWeight *= cos(2π / β * dT)
+                    gWeight *= phase(varT, ver4.Tpair[map.ver])
                     w = ver4.weight[c]
                 else
                     w = ver4.weight[map.ver]
@@ -194,13 +200,15 @@ function MC()
     config = MCIntegration.Configuration(steps, (K, T, ExtKidx), dof, obs; para = para)
     avg, std = MCIntegration.sample(config, integrand, measure; print = 0, Nblock = 16)
     if isnothing(avg) == false
+        avg *= NF
+        std *= NF
         println("Direct ver4: ")
         for (ki, theta) in enumerate(θgrid)
-            @printf("%10.6f   %10.6f ± %10.6f\n", theta, avg[ki, 1] / NF, std[ki, 1] / NF)
+            @printf("%10.6f   %10.6f ± %10.6f\n", theta, avg[ki, 1], std[ki, 1])
         end
         println("Exchange ver4: ")
         for (ki, theta) in enumerate(θgrid)
-            @printf("%10.6f   %10.6f ± %10.6f\n", theta, avg[ki, 2] / NF, std[ki, 2] / NF)
+            @printf("%10.6f   %10.6f ± %10.6f\n", theta, avg[ki, 2], std[ki, 2])
         end
     end
 
