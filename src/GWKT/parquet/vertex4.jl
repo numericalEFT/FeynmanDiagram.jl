@@ -1,5 +1,5 @@
 const Node = DiagTree.Node
-const Propagator = DiagTree.PropagatorKT
+const Propagator = DiagTree.Propagator
 
 """
 Para(chan, interactionTauNum)

@@ -1,6 +1,6 @@
 @testset "DiagTree" begin
+    DiagTree = GWKT.DiagTree
     # Write your tests here.
-    propagators = Vector{DiagTree.PropagatorKT}(undef, 0)
     Gsymmetry = [:mirror, :particlehole]
     Wsymmetry = [:mirror, :timereversal]
     kbasis = [1, 0, 1, 1]
@@ -9,15 +9,19 @@
     N = length(Tidx)
 
     ############# Test G with symmetry ############################
-    idx = [DiagTree.add!(propagators, :G, 1, Kidx[i], Tidx[i], Gsymmetry) for i = 1:N]
+    diag = DiagTree.Diagrams{Float64}(Gsymmetry, Wsymmetry)
+    idx = [DiagTree.addPropagator!(diag, :G, 1, Kidx[i], Tidx[i])[1] for i = 1:N]
     @test idx == [1, 1, 1, 1]
     ############# Test G without symmetry ############################
-    idx = [DiagTree.add!(propagators, :G, 1, Kidx[i], Tidx[i], []) for i = 1:N]
+    diag = DiagTree.Diagrams{Float64}([], Wsymmetry)
+    idx = [DiagTree.addPropagator!(diag, :G, 1, Kidx[i], Tidx[i])[1] for i = 1:N]
     @test idx == [1, 2, 3, 4]
     ############# Test W with symmetry ############################
-    idx = [DiagTree.add!(propagators, :W, 1, Kidx[i], Tidx[i], Wsymmetry) for i = 1:N]
-    @test idx == [5, 5, 5, 5]
+    diag = DiagTree.Diagrams{Float64}(Gsymmetry, Wsymmetry)
+    idx = [DiagTree.addPropagator!(diag, :W, 1, Kidx[i], Tidx[i])[1] for i = 1:N]
+    @test idx == [1, 1, 1, 1]
     ############# Test W without symmetry ############################
-    idx = [DiagTree.add!(propagators, :W, 1, Kidx[i], Tidx[i], []) for i = 1:N]
-    @test idx == [5, 6, 7, 8]
+    diag = DiagTree.Diagrams{Float64}(Gsymmetry, [])
+    idx = [DiagTree.addPropagator!(diag, :W, 1, Kidx[i], Tidx[i])[1] for i = 1:N]
+    @test idx == [1, 2, 3, 4]
 end
