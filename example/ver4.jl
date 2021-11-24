@@ -13,9 +13,9 @@ include("interaction.jl")
 
 
 const steps = 1e5
-const isF = false
+const isF = true
 const Nk = 16
-const θgrid = collect(LinRange(0.0, π, Nk)) # external angle grid
+const θgrid = collect(LinRange(0.1, π, Nk)) # external angle grid
 const ExtK = [@SVector [kF * cos(θ), kF * sin(θ), 0.0] for θ in θgrid]
 const RefK = @SVector [kF, 0.0, 0.0]
 
@@ -33,7 +33,7 @@ struct Para{Q,T}
 
 
         # chan = [Parquet.T, Parquet.U, Parquet.S]
-        chan = [Parquet.T]
+        chan = [Parquet.S]
         para = Parquet.Para(chan, [1, 2])
         ver4 = Parquet.Ver4{Weight}(loopOrder, 1, para)
 
@@ -46,9 +46,23 @@ function integrand(config)
         extKidx = config.var[3][1]
         KinL, KoutL, KinR, KoutR = RefK, RefK, ExtK[extKidx], ExtK[extKidx]
         eval(config, config.para.ver4, KinL, KoutL, KinR, KoutR, 1, true)
-        w = config.para.ver4.weight
-        wd = w[1].d + w[2].d + w[3].d + w[4].d
-        we = w[1].e + w[2].e + w[3].e + w[4].e
+        ver4 = config.para.ver4
+        w = ver4.weight
+        wd, we = 0.0, 0.0
+        # for c in [Parquet.T, Parquet.U, Parquet.S]
+        #     #     # println(c, ", ", Parquet.SymFactor[c])
+        #     wd += w[c].d * Parquet.SymFactor[c]
+        #     we += w[c].e * Parquet.SymFactor[c]
+        # end
+        wd = w[Parquet.S].d * Parquet.SymFactor[Parquet.S]
+        we = w[Parquet.S].e * Parquet.SymFactor[Parquet.S]
+        # @assert Parquet.SymFactor[Parquet.S] ≈ -0.5
+        # wd = w[Parquet.S].d * (0.5)
+        # we = w[Parquet.S].e * (0.5)
+        # @assert w[Parquet.S].d * Parquet.SymFactor[Parquet.S] ≈ wd
+        # @assert w[Parquet.S].e * Parquet.SymFactor[Parquet.S] ≈ we
+        # @assert Parquet.S
+        # exit()
         return Weight(wd, we)
     else
         error("impossible!")
@@ -61,8 +75,12 @@ function measure(config)
     # println(config.observable[1][1])
     if config.curr == 1
         weight = integrand(config)
+        # println(weight.d, ", ", weight.e)
+        # println(extKidx)
         config.observable[extKidx, 1] += weight.d / abs(weight) * factor
         config.observable[extKidx, 2] += weight.e / abs(weight) * factor
+        # println(config.observable[:, 1])
+
     else
         return
     end
@@ -95,14 +113,20 @@ function eval(config, ver4, KinL, KoutL, KinR, KoutR, Kidx::Int, fast = false)
         qe = KinL - KoutR
         τIn, τOut = varT[ver4.Tidx], varT[ver4.Tidx+1]
         vd, wd, ve, we = vertexDynamic(para, qd, qe, τIn, τOut)
-        ver4.weight[1].d = 0.0
+
+        # ver4.weight[1].d = 0.0
+        # ver4.weight[1].e = 0.0
+        # ver4.weight[2].d = 0.0
+        # ver4.weight[2].e = 0.0
+        # ver4.weight[3].d = 0.0
+        # ver4.weight[3].e = 0.0
+
+        ver4.weight[1].d = vd
         ver4.weight[1].e = ve
-        # ver4.weight[2].d = wd
-        ver4.weight[3].e = we
-        ver4.weight[2].d = 0.0
+        ver4.weight[2].d = wd
         ver4.weight[2].e = 0.0
         ver4.weight[3].d = 0.0
-        # ver4.weight[3].e = 0.0
+        ver4.weight[3].e = we
         return
     end
 
@@ -118,15 +142,15 @@ function eval(config, ver4, KinL, KoutL, KinR, KoutR, Kidx::Int, fast = false)
 
     for c in ver4.chan
         if c == Parquet.T
-            Kt = KoutL + K - KinL
+            @. Kt = KoutL + K - KinL
             evalG(G[c], Kt, varT)
         elseif c == Parquet.U
             # can not be in box!
-            Ku = KoutR + K - KinL
+            @. Ku = KoutR + K - KinL
             evalG(G[c], Ku, varT)
         elseif c == Parquet.S
             # S channel, and cann't be in box!
-            Ks = KinL + KinR - K
+            @. Ks = KinL + KinR - K
             evalG(G[c], Ks, varT)
         else
             error("not impossible!")
@@ -168,11 +192,13 @@ function eval(config, ver4, KinL, KoutL, KinR, KoutR, Kidx::Int, fast = false)
                 end
 
                 if c == Parquet.T
-                    w.d += gWeight * (Lw.d * Rw.d * spin + Lw.d * Rw.e + Lw.e * Rw.d)
+                    # w.d += gWeight * (Lw.d * Rw.d * spin + Lw.d * Rw.e + Lw.e * Rw.d)
+                    # w.d += gWeight * (Lw.d * Rw.e + Lw.e * Rw.d)
                     w.e += gWeight * Lw.e * Rw.e
                 elseif c == Parquet.U
                     w.d += gWeight * Lw.e * Rw.e
-                    w.e += gWeight * (Lw.d * Rw.d * spin + Lw.d * Rw.e + Lw.e * Rw.d)
+                    # w.e += gWeight * (Lw.d * Rw.d * spin + Lw.d * Rw.e + Lw.e * Rw.d)
+                    w.e += gWeight * (+Lw.d * Rw.e + Lw.e * Rw.d)
                 elseif c == Parquet.S
                     # S channel,  see the note "code convention"
                     w.d += gWeight * (Lw.d * Rw.e + Lw.e * Rw.d)
@@ -194,11 +220,16 @@ function MC()
     T = MCIntegration.Tau(β, β / 2.0)
     ExtKidx = MCIntegration.Discrete(1, Nk)
 
+    # for (ti, t) in enumerate(T.data)
+    #     t[1] = β * rand()
+    #     t[2] = β * rand()
+    # end
+
     dof = [[1, 4, 1],] # K, T, ExtKidx
     obs = zeros(Nk, 2) # observable for the Fock diagram 
 
     config = MCIntegration.Configuration(steps, (K, T, ExtKidx), dof, obs; para = para)
-    avg, std = MCIntegration.sample(config, integrand, measure; print = 0, Nblock = 16)
+    avg, std = MCIntegration.sample(config, integrand, measure; print = 10, Nblock = 16)
     if isnothing(avg) == false
         avg *= NF
         std *= NF

@@ -26,7 +26,7 @@ struct Para{Q,T}
     qgrid::Q
     τgrid::T
     function Para(AngSize)
-        extAngle = collect(LinRange(0.0, π, AngSize)) # external angle grid
+        extAngle = collect(LinRange(0.1, π, AngSize)) # external angle grid
         qgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, 6 * kF], [0.0, 2kF], 16, 0.01 * kF, 8)
         τgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, β], [0.0, β], 16, β * 1e-4, 8)
 
@@ -68,11 +68,16 @@ function eval_T(config)
 
     # possible green's functions on the top
     ϵ1, ϵ2 = (dot(k1, k1) - kF^2) / (2me), (dot(k2, k2) - kF^2) / (2me)
+
     gt1 = Spectral.kernelFermiT(t2[1] - t1[1], ϵ1, β)
-
-
     gt2 = Spectral.kernelFermiT(t1[1] - t2[1], ϵ2, β)
     # wd += 1.0 / β * 1.0 / β * gt1 * gt2 / (2π)^3 * phase(t1[1], t1[1], t2[1], t2[1])
+    # println(k1)
+    # println(k2)
+    # println(t1)
+    # println(t2)
+
+    # wd += 1.0 / β * 1.0 / β * gt1 * gt2 / (2π)^3
 
     # gt3 = Spectral.kernelFermiT(t1[1] - t2[2], ϵ2, β)
     # G = gt1 * gt3 / (2π)^3 * phase(t1[1], t1[1], t2[2], t2[1])
@@ -158,6 +163,9 @@ function eval_T(config)
     ##################################################
 
     # println(weight)
+    # return Weight(wd, we)
+    # println("weight ", wd)
+    # exit(0)
     return Weight(wd, we)
 end
 
@@ -166,7 +174,8 @@ function measure(config)
     factor = 1.0 / config.reweight[config.curr]
     if config.curr == 1
         weight = integrand(config)
-        # println(weight)
+        # println(weight.d)
+        # exit(0)
         config.observable[angidx, 1] += weight.d / abs(weight) * factor
         config.observable[angidx, 2] += weight.e / abs(weight) * factor
     else
@@ -178,6 +187,11 @@ function run()
     T = MCIntegration.TauPair(β, β / 2.0)
     K = MCIntegration.FermiK(dim, kF, 0.2 * kF, 10.0 * kF)
     Ext = MCIntegration.Discrete(1, AngSize) # external variable is specified
+
+    for (ti, t) in enumerate(T.data)
+        t[1] = β * rand()
+        t[2] = β * rand()
+    end
 
     dof = [[2, 1, 1],]
     obs = zeros(Float64, (AngSize, 2))

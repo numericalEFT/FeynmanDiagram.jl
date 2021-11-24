@@ -51,6 +51,15 @@ linear interpolation of data(x, y)
     return gx
 end
 
+function lindhard(x)
+    if (abs(x) < 1.0e-4)
+        return 1.0
+    elseif (abs(x - 1.0) < 1.0e-4)
+        return 0.5
+    else
+        return 0.5 - (x^2 - 1) / 4.0 / x * log(abs((1 + x) / (1 - x)))
+    end
+end
 
 function interactionDynamic(para, qd, τIn, τOut)
 
@@ -66,12 +75,27 @@ function interactionDynamic(para, qd, τIn, τOut)
         wd = vd * linear2D(para.dW0, para.qgrid, para.τgrid, kDiQ, dτ) # dynamic interaction, don't forget the singular factor vq
     end
 
-    return vd / β, wd
+    # return vd / β, wd
+
+    vd = 4π * e0^2 / (kDiQ^2 + mass2 + 4π * e0^2 * NF * lindhard(kDiQ / 2.0 / kF)) / β
+    vd -= wd
+    return vd, wd
+end
+
+function interactionStatic(para, qd, τIn, τOut)
+
+    dτ = abs(τOut - τIn)
+
+    kDiQ = sqrt(dot(qd, qd))
+    vd = 4π * e0^2 / (kDiQ^2 + mass2) / β
+    return vd, 0.0
 end
 
 function vertexDynamic(para, qd, qe, τIn, τOut)
-    vd, wd = interactionDynamic(para, qd, τIn, τOut)
-    ve, we = interactionDynamic(para, qe, τIn, τOut)
+    # vd, wd = interactionDynamic(para, qd, τIn, τOut)
+    # ve, we = interactionDynamic(para, qe, τIn, τOut)
+    vd, wd = interactionStatic(para, qd, τIn, τOut)
+    ve, we = interactionStatic(para, qe, τIn, τOut)
 
     return -vd, -wd, ve, we
 end
