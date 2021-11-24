@@ -47,15 +47,16 @@ function integrand(config)
         KinL, KoutL, KinR, KoutR = RefK, RefK, ExtK[extKidx], ExtK[extKidx]
         eval(config, config.para.ver4, KinL, KoutL, KinR, KoutR, 1, true)
         ver4 = config.para.ver4
-        w = ver4.weight
-        wd, we = 0.0, 0.0
+        # w = ver4.weight
+        # wd, we = 0.0, 0.0
         # for c in [Parquet.T, Parquet.U, Parquet.S]
         #     #     # println(c, ", ", Parquet.SymFactor[c])
         #     wd += w[c].d * Parquet.SymFactor[c]
         #     we += w[c].e * Parquet.SymFactor[c]
         # end
-        wd = w[Parquet.S].d * Parquet.SymFactor[Parquet.S]
-        we = w[Parquet.S].e * Parquet.SymFactor[Parquet.S]
+        # wd = w[Parquet.S].d * Parquet.SymFactor[Parquet.S]
+        # we = w[Parquet.S].e * Parquet.SymFactor[Parquet.S]
+        # wd = 0.0
         # @assert Parquet.SymFactor[Parquet.S] ≈ -0.5
         # wd = w[Parquet.S].d * (0.5)
         # we = w[Parquet.S].e * (0.5)
@@ -63,7 +64,9 @@ function integrand(config)
         # @assert w[Parquet.S].e * Parquet.SymFactor[Parquet.S] ≈ we
         # @assert Parquet.S
         # exit()
-        return Weight(wd, we)
+        # return Weight(wd, we)
+        # return Weight(0.0, config.para.ver4.weight[4].e * Parquet.SymFactor[4])
+        return Weight(0.0, config.para.ver4.weight[4].e * (-0.5))
     else
         error("impossible!")
     end
