@@ -18,13 +18,13 @@ struct Momentum
 end
 
 struct Propagator
-    type::Symbol #1: Green's function, 2: interaction
+    type::Int #1: Green's function, 2: interaction
     order::Int #the propagator may have an internal order (say, a Green's function diagram with multiple self-energy sub-diagrams)
     Kidx::Int #loop basis of the momentum
     Tidx::Tuple{Int,Int}
 
-    function Propagator(_type, _order, _Kidx, _Tidx)
-        return new(_type, _order, _Kidx, _Tidx)
+    function Propagator(_type::Int, _order, _Kidx, _Tidx)
+        return new(_type, _order, _Kidx, Tuple(_Tidx))
     end
 end
 
@@ -48,19 +48,17 @@ mutable struct Node{W}
 end
 
 struct Diagrams{W}
-    Gsymmetry::Vector{Symbol}
-    Wsymmetry::Vector{Symbol}
     momenta::Vector{Momentum}
     propagators::Vector{Propagator}
     tree::Vector{Node{W}}
     rootIdx::Int #index of the root of the diagram tree
     # loopNum::Int
     # tauNum::Int
-    function Diagrams{W}(Gsymmetry = [], Wsymmetry = []) where {W}
+    function Diagrams{W}() where {W}
         momenta = Vector{Momentum}(undef, 0)
         propagators = Vector{Propagator}(undef, 0)
         tree = Vector{Node{W}}(undef, 0)
-        return new(Gsymmetry, Wsymmetry, momenta, propagators, tree, 0)
+        return new(momenta, propagators, tree, 0)
     end
 end
 
@@ -80,10 +78,9 @@ function addNode!(diagrams::Diagrams{W}, propagatorIdx) where {W}
     node = Node{W}(-1)
     node.propagatorIdx = propagatorIdx
     push!(tree, node)
+    diagrams.rootIdx = length(tree)
     return length(tree) #index of the new node
 end
-
-
 
 compareTidx(Tidx1, Tidx2, hasTimeReversal) = hasTimeReversal ? ((Tidx1 == Tidx2) || (Tidx1 == (Tidx2[2], Tidx2[1]))) : Tidx1 == Tidx2
 compareKidx(Kidx1, Kidx2, hasMirrorSymmetry) = hasMirrorSymmetry ? ((Kidx1 ≈ Kidx2) || (Kidx1 ≈ -Kidx2)) : Kidx1 ≈ Kidx2
@@ -100,15 +97,8 @@ function addMomentum!(diagrams::Diagrams, _Kbasis, _symmetry)
 end
 
 # add new propagators to the propagator list
-function addPropagator!(diagrams::Diagrams, type::Symbol, order, _Kbasis, _Tidx)
+function addPropagator!(diagrams::Diagrams, type::Int, order, _Kbasis, _Tidx, _symmetry = [])
     propagators = diagrams.propagators
-    if type == :G
-        _symmetry = diagrams.Gsymmetry
-    elseif type == :V || type == :W
-        _symmetry = diagrams.Wsymmetry
-    else
-        error("not implemented!")
-    end
 
     _Kidx, isNewK = addMomentum!(diagrams, _Kbasis, _symmetry)
 
