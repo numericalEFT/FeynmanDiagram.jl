@@ -58,12 +58,12 @@ end
 
     # root = addNode!(diag, 0)
     # addChild!(diag, root)
-    gg_n = addNode!(diag, MUL, 1.0, [g1, g2], [])
-    vdd = addNode!(diag, MUL, 1.0, [v1d, v2d], [])
-    vde = addNode!(diag, MUL, 1.0, [v1d, v2e], [])
-    ved = addNode!(diag, MUL, 1.0, [v1e, v2d], [])
-    vee = addNode!(diag, MUL, 1.0, [v1e, v2e], [])
-    vsum = addNode!(diag, ADD, 1.0, [], [vdd, vde, ved, vee])
-    root = addNode!(diag, MUL, factor, [], [gg_n, vsum])
+    gg_n = DiagTree.addNode!(diag, MUL, 1.0, [g1, g2], [])
+    vdd = DiagTree.addNode!(diag, MUL, 1.0, [v1d, v2d], [])
+    vde = DiagTree.addNode!(diag, MUL, 1.0, [v1d, v2e], [])
+    ved = DiagTree.addNode!(diag, MUL, 1.0, [v1e, v2d], [])
+    vee = DiagTree.addNode!(diag, MUL, 1.0, [v1e, v2e], [])
+    vsum = DiagTree.addNode!(diag, ADD, 1.0, [], [vdd, vde, ved, vee])
+    root = DiagTree.addNode!(diag, MUL, factor, [], [gg_n, vsum])
 
 end
