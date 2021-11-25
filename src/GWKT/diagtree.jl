@@ -28,8 +28,8 @@ struct Propagator{W}
     curr::W
     new::W
 
-    function Propagator{W}(_type::Int, _order, _Kidx, _Tidx)
-        return new(_type, _order, _Kidx, Tuple(_Tidx), 0, false, W(0), W(0))
+    function Propagator{W}(_type::Int, _order, _Kidx, _Tidx) where {W}
+        return new{W}(_type, _order, _Kidx, Tuple(_Tidx), 0, false, W(0), W(0))
     end
 end
 
@@ -77,13 +77,12 @@ function addChild(tree::Vector{Node{W}}, _parent) where {W}
     return idx
 end
 
-function addNode!(diagrams::Diagrams{W}, propagatorIdx) where {W}
+function addNode!(diagrams::Diagrams{W}) where {W}
     tree = diagrams.tree
     node = Node{W}(-1)
-    node.propagatorIdx = propagatorIdx
     push!(tree, node)
     diagrams.rootIdx = length(tree)
-    return length(tree) #index of the new node
+    return tree[end] #index of the new node
 end
 
 compareTidx(Tidx1, Tidx2, hasTimeReversal) = hasTimeReversal ? ((Tidx1 == Tidx2) || (Tidx1 == (Tidx2[2], Tidx2[1]))) : Tidx1 == Tidx2
@@ -101,14 +100,10 @@ function addMomentum!(diagrams::Diagrams, _Kbasis, _symmetry)
 end
 
 # add new propagators to the propagator list
-function addPropagator!(diagrams::Diagrams, type::Int, order, _Kbasis, _Tidx, _symmetry = [])
+function addPropagator!(diagrams::Diagrams{W}, type::Int, order, _Kbasis, _Tidx, _symmetry = []) where {W}
     propagators = diagrams.propagators
 
     _Kidx, isNewK = addMomentum!(diagrams, _Kbasis, _symmetry)
-
-    # for (i, n) in enumerate(diagrams.tree)
-    #     p = n.
-    # end
 
     for (i, p) in enumerate(propagators)
         if p.type == type && p.order == order
@@ -118,7 +113,7 @@ function addPropagator!(diagrams::Diagrams, type::Int, order, _Kbasis, _Tidx, _s
             end
         end
     end
-    push!(propagators, Propagator(type, order, _Kidx, _Tidx))
+    push!(propagators, Propagator{W}(type, order, _Kidx, _Tidx))
     return length(propagators), true #new propagator
 end
 
