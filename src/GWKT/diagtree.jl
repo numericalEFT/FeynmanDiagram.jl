@@ -30,7 +30,6 @@ end
 
 mutable struct Node{W}
     type::Int #type of the weight, Green's function, interaction, node of some intermediate step
-    propagatorIdx::Int #if the weight is for a propagator, then this is the index of the propagator in the propagator table
     version::Int128
     excited::Bool #if set to excited, then the current weight needs to be replaced with the new weight
     curr::W
@@ -38,12 +37,13 @@ mutable struct Node{W}
 
     #### link to the other nodes ##########
     parent::Int
+    objIdx::Int #if the weight is for a propagator, then this is the index of the propagator in the propagator table
     child::Vector{Int} #if the Node is a leaf, then child stores the index of propagator, otherwise, it stores the indices of the child nodes
     operation::Int #0: multiply, 1: add, 2: subtract
     factor::W #symmetry factor, Fermi factor, spin factor
 
     function Node{W}(_parent) where {W}
-        new{W}(0, 0, 0, false, W(0), W(0), _parent, [])
+        new{W}(0, 0, 0, false, W(0), W(0), _parent, 0, [], 0, 0.0)
     end
 end
 
@@ -101,6 +101,10 @@ function addPropagator!(diagrams::Diagrams, type::Int, order, _Kbasis, _Tidx, _s
     propagators = diagrams.propagators
 
     _Kidx, isNewK = addMomentum!(diagrams, _Kbasis, _symmetry)
+
+    # for (i, n) in enumerate(diagrams.tree)
+    #     p = n.
+    # end
 
     for (i, p) in enumerate(propagators)
         if p.type == type && p.order == order
