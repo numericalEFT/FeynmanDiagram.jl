@@ -35,7 +35,7 @@ end
 
 mutable struct Node{W}
     operation::Int #0: multiply, 1: add, 2: subtract
-    factor::W #symmetry factor, Fermi factor, spin factor
+    factor::Float64 #symmetry factor, Fermi factor, spin factor
     version::Int128
     excited::Bool #if set to excited, then the current weight needs to be replaced with the new weight
     curr::W
@@ -46,8 +46,11 @@ mutable struct Node{W}
     propagators::Vector{Int}
     nodes::Vector{Int} #if the Node is a leaf, then child stores the index of propagator, otherwise, it stores the indices of the child nodes
 
-    function Node{W}(_parent) where {W}
+    function Node{W}(_parent = 0) where {W}
         new{W}(0, 1.0, 0, false, W(0), W(0), _parent, [], [])
+    end
+    function Node{W}(operation::Int, factor, propagators::Vector{Int} = [], nodes::Vector{Int} = [], _parent = 0) where {W}
+        new{W}(operation, factor, 0, false, W(0), W(0), _parent, propagators, nodes)
     end
 end
 
@@ -77,9 +80,9 @@ function addChild(tree::Vector{Node{W}}, _parent) where {W}
     return idx
 end
 
-function addNode!(diagrams::Diagrams{W}) where {W}
+function addNode!(diagrams::Diagrams{W}, operation::Int, propagators::Vector{Int} = [], nodes::Vector{Int} = [], factor) where {W}
     tree = diagrams.tree
-    node = Node{W}(-1)
+    node = Node{W}(operation, factor, propagators, nodes)
     push!(tree, node)
     diagrams.rootIdx = length(tree)
     return tree[end] #index of the new node
