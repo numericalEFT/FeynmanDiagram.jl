@@ -1,4 +1,5 @@
 using ExpressionTree
+using MCIntegration
 using Test
 
 include("diagtree.jl")
