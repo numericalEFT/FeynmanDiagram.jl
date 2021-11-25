@@ -49,12 +49,12 @@ mutable struct Node{W}
     function Node{W}(_parent = 0) where {W}
         new{W}(0, 1.0, 0, false, W(0), W(0), _parent, [], [])
     end
-    function Node{W}(operation::Int, factor, propagators::Vector{Int} = [], nodes::Vector{Int} = [], _parent = 0) where {W}
+    function Node{W}(operation::Int, factor, propagators = [], nodes = [], _parent = 0) where {W}
         new{W}(operation, factor, 0, false, W(0), W(0), _parent, propagators, nodes)
     end
 end
 
-struct Diagrams{W}
+mutable struct Diagrams{W}
     momenta::Vector{Momentum}
     propagators::Vector{Propagator}
     tree::Vector{Node{W}}
@@ -80,7 +80,7 @@ function addChild(tree::Vector{Node{W}}, _parent) where {W}
     return idx
 end
 
-function addNode!(diagrams::Diagrams{W}, operation::Int, propagators::Vector{Int} = [], nodes::Vector{Int} = [], factor) where {W}
+function addNode!(diagrams::Diagrams{W}, operation::Int, factor, propagators = [], nodes = []) where {W}
     tree = diagrams.tree
     node = Node{W}(operation, factor, propagators, nodes)
     push!(tree, node)
