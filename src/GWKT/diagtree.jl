@@ -85,7 +85,7 @@ function addNode!(diagrams::Diagrams{W}, operation::Int, propagators::Vector{Int
     node = Node{W}(operation, factor, propagators, nodes)
     push!(tree, node)
     diagrams.rootIdx = length(tree)
-    return tree[end] #index of the new node
+    return length(tree) #index of the new node
 end
 
 compareTidx(Tidx1, Tidx2, hasTimeReversal) = hasTimeReversal ? ((Tidx1 == Tidx2) || (Tidx1 == (Tidx2[2], Tidx2[1]))) : Tidx1 == Tidx2

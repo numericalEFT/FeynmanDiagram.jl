@@ -53,6 +53,17 @@ end
     v2d, _ = DiagTree.addPropagator!(diag, Wtype, 0, [0, 0, 1, 0], [2, 2], Wsym)
     v2e, _ = DiagTree.addPropagator!(diag, Wtype, 0, [0, 1, 0, -1], [2, 2], Wsym)
 
+    MUL, ADD = 0, 1
+    factor = 1.0 / (2π)^3
+
     # root = addNode!(diag, 0)
     # addChild!(diag, root)
+    gg_n = addNode!(diag, MUL, 1.0, [g1, g2], [])
+    vdd = addNode!(diag, MUL, 1.0, [v1d, v2d], [])
+    vde = addNode!(diag, MUL, 1.0, [v1d, v2e], [])
+    ved = addNode!(diag, MUL, 1.0, [v1e, v2d], [])
+    vee = addNode!(diag, MUL, 1.0, [v1e, v2e], [])
+    vsum = addNode!(diag, ADD, 1.0, [], [vdd, vde, ved, vee])
+    root = addNode!(diag, MUL, factor, [], [gg_n, vsum])
+
 end
