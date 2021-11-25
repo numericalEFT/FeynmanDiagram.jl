@@ -17,19 +17,25 @@ struct Momentum
     end
 end
 
-struct Propagator
+struct Propagator{W}
     type::Int #1: Green's function, 2: interaction
     order::Int #the propagator may have an internal order (say, a Green's function diagram with multiple self-energy sub-diagrams)
     Kidx::Int #loop basis of the momentum
     Tidx::Tuple{Int,Int}
 
-    function Propagator(_type::Int, _order, _Kidx, _Tidx)
-        return new(_type, _order, _Kidx, Tuple(_Tidx))
+    version::Int128
+    excited::Bool #if set to excited, then the current weight needs to be replaced with the new weight
+    curr::W
+    new::W
+
+    function Propagator{W}(_type::Int, _order, _Kidx, _Tidx)
+        return new(_type, _order, _Kidx, Tuple(_Tidx), 0, false, W(0), W(0))
     end
 end
 
 mutable struct Node{W}
-    type::Int #type of the weight, Green's function, interaction, node of some intermediate step
+    operation::Int #0: multiply, 1: add, 2: subtract
+    factor::W #symmetry factor, Fermi factor, spin factor
     version::Int128
     excited::Bool #if set to excited, then the current weight needs to be replaced with the new weight
     curr::W
@@ -37,13 +43,11 @@ mutable struct Node{W}
 
     #### link to the other nodes ##########
     parent::Int
-    objIdx::Int #if the weight is for a propagator, then this is the index of the propagator in the propagator table
-    child::Vector{Int} #if the Node is a leaf, then child stores the index of propagator, otherwise, it stores the indices of the child nodes
-    operation::Int #0: multiply, 1: add, 2: subtract
-    factor::W #symmetry factor, Fermi factor, spin factor
+    propagators::Vector{Int}
+    nodes::Vector{Int} #if the Node is a leaf, then child stores the index of propagator, otherwise, it stores the indices of the child nodes
 
     function Node{W}(_parent) where {W}
-        new{W}(0, 0, 0, false, W(0), W(0), _parent, 0, [], 0, 0.0)
+        new{W}(0, 1.0, 0, false, W(0), W(0), _parent, [], [])
     end
 end
 
