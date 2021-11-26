@@ -28,6 +28,7 @@
 end
 
 @testset "Diagrams" begin
+
     """
         k1-k3                     k2+k3 
         |                         | 
@@ -41,10 +42,13 @@ end
         |                         | 
         k1                        k2
     """
+    # We only consider the direct part of the above diagram
     DiagTree = GWKT.DiagTree
     Gsym = [:mirror]
     Wsym = [:mirror, :timereversal]
     Gtype, Wtype = 1, 2
+    spin = 2.0
+
     diag = DiagTree.Diagrams{Float64}()
     g1, _ = DiagTree.addPropagator!(diag, Gtype, 0, [0, 0, 1, 1], [1, 2], Gsym)
     g2, _ = DiagTree.addPropagator!(diag, Gtype, 0, [0, 0, 0, 1], [2, 1], Gsym)
@@ -53,17 +57,15 @@ end
     v2d, _ = DiagTree.addPropagator!(diag, Wtype, 0, [0, 0, 1, 0], [2, 2], Wsym)
     v2e, _ = DiagTree.addPropagator!(diag, Wtype, 0, [0, 1, 0, -1], [2, 2], Wsym)
 
-    MUL, ADD = 0, 1
-    factor = 1.0 / (2π)^3
+    MUL, ADD = 1, 2
 
-    # root = addNode!(diag, 0)
-    # addChild!(diag, root)
     gg_n = DiagTree.addNode!(diag, MUL, 1.0, [g1, g2], [])
-    vdd = DiagTree.addNode!(diag, MUL, 1.0, [v1d, v2d], [])
+    vdd = DiagTree.addNode!(diag, MUL, spin, [v1d, v2d], [])
     vde = DiagTree.addNode!(diag, MUL, 1.0, [v1d, v2e], [])
     ved = DiagTree.addNode!(diag, MUL, 1.0, [v1e, v2d], [])
-    vee = DiagTree.addNode!(diag, MUL, 1.0, [v1e, v2e], [])
-    vsum = DiagTree.addNode!(diag, ADD, 1.0, [], [vdd, vde, ved, vee])
-    root = DiagTree.addNode!(diag, MUL, factor, [], [gg_n, vsum])
+    vsum = DiagTree.addNode!(diag, ADD, 1.0, [], [vdd, vde, ved])
+    root = DiagTree.addNode!(diag, MUL, 1.0, [], [gg_n, vsum])
+
+    DiagTree.showTree(diag)
 
 end
