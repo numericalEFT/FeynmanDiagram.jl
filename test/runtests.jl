@@ -1,5 +1,8 @@
 using ExpressionTree
-using Test
+using Lehmann
+using Test, LinearAlgebra, Random
+
+include("diagtree.jl")
 
 @testset "ExpressionTree.jl" begin
     # Write your tests here.
