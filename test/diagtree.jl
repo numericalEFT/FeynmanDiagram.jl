@@ -106,6 +106,6 @@ end
     # println(Weight)
     @test DiagTree.evalNaive(diag, evalPropagator2, varK, varT) ≈ Weight
 
-    DiagTree.showTree(diag)
+    # DiagTree.showTree(diag)
 
 end
