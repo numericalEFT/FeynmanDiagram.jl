@@ -2,13 +2,15 @@ using ExpressionTree
 using AbstractTrees
 # using NewickTree
 using StaticArrays
-const Weight = SVector{2,Float64}
+# const Weight = SVector{2,Float64}
+
+Parquet = GWKT.Parquet
 
 chan = [Parquet.T, Parquet.U, Parquet.S]
 
 para = Parquet.Para(chan, [1, 2])
 
-ver4 = Parquet.Ver4{Weight}(1, 1, para)
+ver4 = Parquet.Ver4{Float64}(1, 1, para)
 
 ########## use AbstractTrees interface to print/manipulate the tree
 print_tree(ver4)
@@ -27,4 +29,4 @@ println("Iterate the tree use the AbstractTrees interface: ")
 ########## use ete3 package to visualize tree
 # Parquet.showTree(ver4, para, verbose = 1, depth = 3)  # visualize tree using python3 package ete3
 
-Parquet.diagramTree(ver4)
+# Parquet.diagramTree(ver4)
