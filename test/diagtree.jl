@@ -49,13 +49,12 @@ end
     Gtype, Wtype = 1, 2
     spin = 2.0
     kF, β, mass2 = 1.919, 0.5, 1.0
-    K1 = K2 = [kF, 0.0, 0.0]
-    K3 = [0.5 * kF, 0.5 * kF, 0.0]
-    K4 = [0.0, kF, 0.0]
-    varK = [K1, K2, K3, K4]
-    varT = [0.2 * β, 0.3 * β]
+    varK = [rand(3) for i = 1:4] #k1, k2, k3, k4
+    varT = [rand() * β, rand() * β]
 
     diag = DiagTree.Diagrams{Float64}()
+
+    #construct the propagator table
     gK = [[0, 0, 1, 1], [0, 0, 0, 1]]
     gT = [[1, 2], [2, 1]]
     g = [DiagTree.addPropagator!(diag, Gtype, 0, gK[i], gT[i], Gsym)[1] for i = 1:2]
@@ -68,8 +67,9 @@ end
     veT = [[1, 1], [2, 2]]
     ve = [DiagTree.addPropagator!(diag, Wtype, 0, veK[i], veT[i], Wsym)[1] for i = 1:2]
 
-    MUL, ADD = 1, 2
 
+    # contruct the tree
+    MUL, ADD = 1, 2
     gg_n = DiagTree.addNode!(diag, MUL, 1.0, [g[1], g[2]], [])
     vdd = DiagTree.addNode!(diag, MUL, spin, [vd[1], vd[2]], [])
     vde = DiagTree.addNode!(diag, MUL, -1.0, [vd[1], ve[2]], [])
@@ -81,6 +81,7 @@ end
     evalPropagator1(type, K, Tidx, varT) = 1.0
     @test DiagTree.evalNaive(diag, evalPropagator1, varK, varT) ≈ -2 + 1 * spin
 
+    #more sophisticated test of the weight evaluation
     function evalPropagator2(type, K, Tidx, varT)
         if type == Gtype
             ϵ = dot(K, K) / 2 - kF^2
