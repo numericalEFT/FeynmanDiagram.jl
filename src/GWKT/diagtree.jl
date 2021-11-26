@@ -3,7 +3,9 @@ using PyCall, Printf
 # export PropagatorKT, Weight, addChild
 export Diagrams, Momentum, Propagator, addMomentum!, addPropagator!, Node, addChild
 
-struct Momentum
+include("treeEval.jl")
+
+mutable struct Momentum
     basis::Vector{Int} #loop basis of the momentum
     curr::Vector{Float64}
     new::Vector{Float64}
@@ -18,7 +20,7 @@ struct Momentum
     end
 end
 
-struct Propagator{W}
+mutable struct Propagator{W}
     type::Int #1: Green's function, 2: interaction
     order::Int #the propagator may have an internal order (say, a Green's function diagram with multiple self-energy sub-diagrams)
     Kidx::Int #loop basis of the momentum

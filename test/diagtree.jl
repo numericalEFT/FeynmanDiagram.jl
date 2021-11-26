@@ -48,23 +48,63 @@ end
     Wsym = [:mirror, :timereversal]
     Gtype, Wtype = 1, 2
     spin = 2.0
+    kF, β, mass2 = 1.919, 0.5, 1.0
+    K1 = K2 = [kF, 0.0, 0.0]
+    K3 = [0.5 * kF, 0.5 * kF, 0.0]
+    K4 = [0.0, kF, 0.0]
+    varK = [K1, K2, K3, K4]
+    varT = [0.2 * β, 0.3 * β]
 
     diag = DiagTree.Diagrams{Float64}()
-    g1, _ = DiagTree.addPropagator!(diag, Gtype, 0, [0, 0, 1, 1], [1, 2], Gsym)
-    g2, _ = DiagTree.addPropagator!(diag, Gtype, 0, [0, 0, 0, 1], [2, 1], Gsym)
-    v1d, _ = DiagTree.addPropagator!(diag, Wtype, 0, [0, 0, 1, 0], [1, 1], Wsym)
-    v1e, _ = DiagTree.addPropagator!(diag, Wtype, 0, [1, 0, -1, -1], [1, 1], Wsym)
-    v2d, _ = DiagTree.addPropagator!(diag, Wtype, 0, [0, 0, 1, 0], [2, 2], Wsym)
-    v2e, _ = DiagTree.addPropagator!(diag, Wtype, 0, [0, 1, 0, -1], [2, 2], Wsym)
+    gK = [[0, 0, 1, 1], [0, 0, 0, 1]]
+    gT = [[1, 2], [2, 1]]
+    g = [DiagTree.addPropagator!(diag, Gtype, 0, gK[i], gT[i], Gsym)[1] for i = 1:2]
+
+    vdK = [[0, 0, 1, 0], [0, 0, 1, 0]]
+    vdT = [[1, 1], [2, 2]]
+    vd = [DiagTree.addPropagator!(diag, Wtype, 0, vdK[i], vdT[i], Wsym)[1] for i = 1:2]
+
+    veK = [[1, 0, -1, -1], [0, 1, 0, -1]]
+    veT = [[1, 1], [2, 2]]
+    ve = [DiagTree.addPropagator!(diag, Wtype, 0, veK[i], veT[i], Wsym)[1] for i = 1:2]
 
     MUL, ADD = 1, 2
 
-    gg_n = DiagTree.addNode!(diag, MUL, 1.0, [g1, g2], [])
-    vdd = DiagTree.addNode!(diag, MUL, spin, [v1d, v2d], [])
-    vde = DiagTree.addNode!(diag, MUL, 1.0, [v1d, v2e], [])
-    ved = DiagTree.addNode!(diag, MUL, 1.0, [v1e, v2d], [])
+    gg_n = DiagTree.addNode!(diag, MUL, 1.0, [g[1], g[2]], [])
+    vdd = DiagTree.addNode!(diag, MUL, spin, [vd[1], vd[2]], [])
+    vde = DiagTree.addNode!(diag, MUL, -1.0, [vd[1], ve[2]], [])
+    ved = DiagTree.addNode!(diag, MUL, -1.0, [ve[1], vd[2]], [])
     vsum = DiagTree.addNode!(diag, ADD, 1.0, [], [vdd, vde, ved])
     root = DiagTree.addNode!(diag, MUL, 1.0, [], [gg_n, vsum])
+
+    #make sure the total number of diagrams are correct
+    evalPropagator1(type, K, Tidx, varT) = 1.0
+    @test DiagTree.evalNaive(diag, evalPropagator1, varK, varT) ≈ -2 + 1 * spin
+
+    function evalPropagator2(type, K, Tidx, varT)
+        if type == Gtype
+            ϵ = dot(K, K) / 2 - kF^2
+            τ = varT[Tidx[2]] - varT[Tidx[1]]
+            return Spectral.kernelFermiT(τ, ϵ, β)
+        elseif type == Wtype
+            return 8π / (dot(K, K) + mass2)
+        else
+            error("not implemented")
+        end
+    end
+
+    getK(basis, varK) = sum([basis[i] * K for (i, K) in enumerate(varK)])
+
+    gw = [evalPropagator2(Gtype, getK(gK[i], varK), gT[i], varT) for i = 1:2]
+    vdw = [evalPropagator2(Wtype, getK(vdK[i], varK), vdT[i], varT) for i = 1:2]
+    vew = [evalPropagator2(Wtype, getK(veK[i], varK), veT[i], varT) for i = 1:2]
+
+    Vweight = spin * vdw[1] * vdw[2] - vdw[1] * vew[2] - vew[1] * vdw[2]
+    Weight = gw[1] * gw[2] * Vweight
+
+    # println(DiagTree.evalNaive(diag, evalPropagator2, varK, varT))
+    # println(Weight)
+    @test DiagTree.evalNaive(diag, evalPropagator2, varK, varT) ≈ Weight
 
     DiagTree.showTree(diag)
 

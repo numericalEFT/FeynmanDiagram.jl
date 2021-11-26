@@ -1,6 +1,6 @@
 using ExpressionTree
-using MCIntegration
-using Test
+using Lehmann
+using Test, LinearAlgebra
 
 include("diagtree.jl")
 
