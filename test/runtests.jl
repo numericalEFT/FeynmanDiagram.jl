@@ -1,6 +1,6 @@
 using ExpressionTree
 using Lehmann
-using Test, LinearAlgebra
+using Test, LinearAlgebra, Random
 
 include("diagtree.jl")
 
