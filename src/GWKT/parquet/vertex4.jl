@@ -1,6 +1,3 @@
-const Node = DiagTree.Node
-const Propagator = DiagTree.Propagator
-
 """
 Para(chan, interactionTauNum)
 
@@ -11,17 +8,12 @@ Parameters to generate diagrams using Parquet algorithm
 - `chan`: list of channels of sub-vertices
 - `interactionTauNum`: τ degrees of freedom of the bare interaction
 """
-struct Para{W<:Number}
+struct Para
     chan::Vector{Int}
     F::Vector{Int}
     V::Vector{Int}
     interactionTauNum::Vector{Int} # list of possible τ degrees of freedom of the bare interaction 0, 2, or 4
-    spin::Int #spin factor
-    fermiSign::Int #-1 for fermionic system
-
-    diagrams::DiagTree.Diagrams{W}
-
-    function Para{W}(chan, interactionTauNum, spin, fermiSign, _Gsymmetry, _Wsymmetry) where {W}
+    function Para(chan, interactionTauNum)
 
         for tnum in interactionTauNum
             @assert tnum == 1 || tnum == 2 || tnum == 4
@@ -33,16 +25,15 @@ struct Para{W<:Number}
         F = intersect(chan, Fchan)
         V = intersect(chan, Vchan)
 
-        diagrams = DiagTree.Diagrams{W}(_Gsymmetry, _Wsymmetry)
-        return new(chan, F, V, interactionTauNum, spin, fermiSign, diagrams)
+        return new(chan, F, V, interactionTauNum)
     end
 end
 
-struct Green{W}
+struct Green
     Tpair::Vector{Tuple{Int,Int}}
-    weight::Vector{W}
-    function Green{W}() where {W}
-        return new{W}([], [])
+    weight::Vector{Float64}
+    function Green()
+        return new([], [])
     end
 end
 
@@ -78,7 +69,7 @@ struct Bubble{_Ver4,W} # template Bubble to avoid mutually recursive struct
     Rver::_Ver4
     map::Vector{IdxMap}
 
-    function Bubble{_Ver4,W}(ver4::_Ver4, legK, chan::Int, oL::Int, para::Para, level::Int, _id::Vector{Int}) where {_Ver4,W}
+    function Bubble{_Ver4,W}(ver4::_Ver4, chan::Int, oL::Int, para::Para, level::Int, _id::Vector{Int}) where {_Ver4,W}
         @assert chan in para.chan "$chan isn't a bubble channels!"
         @assert oL < ver4.loopNum "LVer loopNum must be smaller than the ver4 loopNum"
 
@@ -89,37 +80,19 @@ struct Bubble{_Ver4,W} # template Bubble to avoid mutually recursive struct
         LTidx = ver4.Tidx  # the first τ index of the left vertex
         maxTauNum = maximum(para.interactionTauNum) # maximum tau number for each bare interaction
         RTidx = LTidx + (oL + 1) * maxTauNum + 1  # the first τ index of the right sub-vertex
-        Kidx = ver4.Kidx
-        LKidx, RKidx = Kidx + 1, Kidx + 1 + oL
 
-        inL, inR, outL, outR = legK[INL], legK[OUTL], legK[INR], legK[OUTR]
-        K = similar(inL) .* 0
-        K[Kidx] = 1 # K = [0, ... , 1, ... , 0]
-
-        if chan == T
-            Kt = outL .+ K .- inL
-            LLegK = [inL, outL, Kt, K]
-            RLegK = [K, Kt, inR, outR]
-            LsubVer = para.F
-            RsubVer = para.chan
-        elseif chan == U
-            Ku = outR .+ K .- inL
-            LLegK = [inL, outR, Ku, K]
-            RLegK = [K, Ku, inR, outL]
+        if chan == T || chan == U
             LsubVer = para.F
             RsubVer = para.chan
         elseif chan == S
-            Ks = inL .+ inR .- K
-            LLegK = [inL, Ks, inR, K]
-            RLegK = [K, outL, Ks, outR]
             LsubVer = para.V
             RsubVer = para.chan
         else
-            error("not implemented!")
+            error("chan $chan isn't implemented!")
         end
 
-        Lver = _Ver4{W}(oL, LTidx, LKidx, LLegK, para; chan = LsubVer, level = level + 1, id = _id)
-        Rver = _Ver4{W}(oR, RTidx, RKidx, RLegK, para; chan = RsubVer, level = level + 1, id = _id)
+        Lver = _Ver4{W}(oL, LTidx, para; chan = LsubVer, level = level + 1, id = _id)
+        Rver = _Ver4{W}(oR, RTidx, para; chan = RsubVer, level = level + 1, id = _id)
 
         @assert Lver.Tidx == ver4.Tidx "Lver Tidx must be equal to vertex4 Tidx! LoopNum: $(ver4.loopNum), LverLoopNum: $(Lver.loopNum), chan: $chan"
 
@@ -194,8 +167,6 @@ struct Ver4{W}
     loopNum::Int
     chan::Vector{Int} # list of channels
     Tidx::Int # inital Tidx
-    Kidx::Int # inital K
-    legK::Vector{Vector{Int}}
 
     ######  components of vertex  ##########################
     G::SVector{16,Green}  # large enough to host all Green's function
@@ -203,37 +174,21 @@ struct Ver4{W}
 
     ####### weight and tau table of the vertex  ###############
     Tpair::Vector{Tuple{Int,Int,Int,Int}}
-    nodeIdx::Vector{Int}
     weight::Vector{W}
 
-    function Ver4{W}(loopNum, tidx, kidx, legK, para::Para{W}; chan = para.chan, level = 1, id = [1,]) where {W}
-        g = @SVector [Green{W}() for i = 1:16]
-        ver4 = new{W}(id[1], level, loopNum, chan, tidx, kidx, legK, g, [], [], [], [])
+    function Ver4{W}(loopNum, tidx, para::Para; chan = para.chan, level = 1, id = [1,]) where {W}
+        g = @SVector [Green() for i = 1:16]
+        ver4 = new{W}(id[1], level, loopNum, chan, tidx, g, [], [], [])
         id[1] += 1
-        inL, inR, outL, outR = legK[INL], legK[INR], legK[OUTL], legK[OUTR]
         @assert loopNum >= 0
         if loopNum == 0
             # bare interaction may have one, two or four independent tau variables
             if 1 in para.interactionTauNum  # instantaneous interaction
-                # we keep two copies because the direct and exchange may have different spin indices
-                addTidx(ver4, (tidx, tidx, tidx, tidx)) #direct
+                addTidx(ver4, (tidx, tidx, tidx, tidx))
             end
             if 2 in para.interactionTauNum  # interaction with incoming and outing τ varibales
-                addTidx(ver4, (tidx, tidx, tidx, tidx)) #direct
-                addTidx(ver4, (tidx, tidx, tidx, tidx)) #exchange
                 addTidx(ver4, (tidx, tidx, tidx + 1, tidx + 1))  # direct dynamic interaction
                 addTidx(ver4, (tidx, tidx + 1, tidx + 1, tidx))  # exchange dynamic interaction
-                kidx1 = DiagTree.addMomentum!(para.diagrams, inL - outL)
-                kidx2 = DiagTree.addMomentum!(para.diagrams, inL - outR)
-                pidx1 = DiagTree.addPropagator!(para.diagrams, :V, 1, kidx1, (tidx, tidx + 1))
-                pidx2 = DiagTree.addPropagator!(para.diagrams, :V, 1, kidx2, (tidx, tidx + 1))
-                pidx3 = DiagTree.addPropagator!(para.diagrams, :W, 1, kidx1, (tidx, tidx + 1))
-                pidx4 = DiagTree.addPropagator!(para.diagrams, :W, 1, kidx2, (tidx, tidx + 1))
-                # push!(ver4.propagatorIdx)
-                push!(ver4.propagatorIdx, idx1)
-                push!(ver4.propagatorIdx, idx2)
-                push!(ver4.propagatorIdx, idx3)
-                push!(ver4.propagatorIdx, idx4)
             end
             if 4 in para.interactionTauNum  # interaction with incoming and outing τ varibales
                 addTidx(ver4, (tidx, tidx + 1, tidx + 2, tidx + 3))  # direct dynamic interaction
@@ -242,7 +197,7 @@ struct Ver4{W}
         else # loopNum>0
             for c in para.chan
                 for ol = 0:loopNum-1
-                    bubble = Bubble{Ver4,W}(ver4, legK, c, ol, para, level, id)
+                    bubble = Bubble{Ver4,W}(ver4, c, ol, para, level, id)
                     if length(bubble.map) > 0  # if zero, bubble diagram doesn't exist
                         push!(ver4.bubble, bubble)
                     end
@@ -355,43 +310,20 @@ AbstractTrees.printnode(io::IO, ver4::Ver4) = print(io, tpair(ver4))
 AbstractTrees.printnode(io::IO, bub::Bubble) = print(io, "\u001b[32m$(bub.id): $(ChanName[bub.chan]) $(bub.Lver.loopNum)Ⓧ $(bub.Rver.loopNum)\u001b[0m")
 
 ################## Generate Expression Tree ########################
-# function expressionTree(ver4::Ver4{W}, para::Para, tree, propagators, extK, spin, isFermion) where {W}
-#     if isnothing(propagators) || isnothing(tree)
-#         propagators = Vector{DiagTree.PropagatorKT}(undef, 0)
-#         tree = Vector{DiagTree.Weight{Float64}}(undef, 0)
-#     end
-#     inL, outL, inR, outR = extK[1], extK[2], extK[3], extK[4]
+function diagramTree(ver4)
+    propagators = Vector{DiagTree.PropagatorKT}(undef, 0)
+    weights = Vector{DiagTree.Weight{Float64}}(undef, 0)
+    # iterator ver4 in depth-first search (children before parents)
+    for node in PostOrderDFS(ver4)
+        println(typeof(node))
+    end
+
+end
+
+# function eval(ver4::Ver4, KinL, KoutL, KinR, KoutR, Kidx::Int, fast = false)
 #     if ver4.loopNum == 0
-#         if (1 in para.interactionTauNum) && (2 in para.interactionTauNum)
-#             push!(propagators, DiagTree.PropagatorKT(1, 1, inL - outL, (ver4.Tidx[1], ver4.Tidx[3])))
-#             push!(propagators, DiagTree.PropagatorKT(1, 1, inL - outR, (ver4.Tidx[1], ver4.Tidx[3])))
-#             push!(propagators, DiagTree.PropagatorKT(2, 1, inL - outL, (ver4.Tidx[1], ver4.Tidx[3])))
-#             push!(propagators, DiagTree.PropagatorKT(2, 1, inL - outR, (ver4.Tidx[1], ver4.Tidx[3])))
-#         else
-#             error("not implemented!")
-#         end
-#         # else
-#     else
-
-#     end
-
-#     println(propagators)
-
-# end
-
-# macro evalGreen(eval, G, K)
-#     return $eval(G, K)
-# end
-
-# macro evalInteraction(evalInt, K, τ)
-#     return $evalInt(K, τ)
-# end
-
-# function eval(ver4::Ver4, evalG, evalInt, KinL, KoutL, KinR, KoutR, Kidx::Int, fast = false)
-#     if ver4.loopNum == 0
-#         vd, ve, wd, we = evalInt(KinL, KoutL, KinR, KoutR, )
-#         ver4.weight[1] = evalInt(KinL-KoutL)
-#         ver4.weight[1] = evalInt(, ver4.inBox)
+#         ver4.weight[1] = interaction(KinL, KoutL, KinR, KoutR, ver4.inBox, norm(varK[0])) :
+#         ver4.weight[1] = interaction(KinL, KoutL, KinR, KoutR, ver4.inBox)
 #         return
 #     end
 
@@ -401,19 +333,19 @@ AbstractTrees.printnode(io::IO, bub::Bubble) = print(io, "\u001b[32m$(bub.id): $
 #     end
 #     G = ver4.G
 #     K, Kt, Ku, Ks = (varK[Kidx], ver4.K[1], ver4.K[2], ver4.K[3])
-#     evalG(G[1], K)
+#     eval(G[1], K, varT)
 #     bubWeight = counterBubble(K)
 
 #     for c in ver4.chan
 #         if c == T || c == TC
 #             Kt .= KoutL .+ K .- KinL
 #             if (!ver4.inBox)
-#                 evalG(G[T], Kt)
+#                 eval(G[T], Kt)
 #             end
 #         elseif c == U || c == UC
 #             # can not be in box!
 #             Ku .= KoutR .+ K .- KinL
-#             evalG(G[U], Ku)
+#             eval(G[U], Ku)
 #         else
 #             # S channel, and cann't be in box!
 #             Ks .= KinL .+ KinR .- K
