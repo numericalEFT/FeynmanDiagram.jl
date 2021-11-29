@@ -29,6 +29,14 @@ println("Iterate the tree use the AbstractTrees interface: ")
 ########## use ete3 package to visualize tree
 # Parquet.showTree(ver4, para, verbose = 1, depth = 3)  # visualize tree using python3 package ete3
 
-KinL, KoutL = [1, 0, 0, 0]
-KinR, KoutR = [0, 1, 0, 0]
-Parquet.diagramTree(ver4, KinL, KoutL, KinR, KoutR, 1, Float64)
+para = Parquet.Para([Parquet.T,], [1,])
+KinL = KoutL = [1, 0, 0]
+KinR = KoutR = [0, 1, 0]
+legK = [KinL, KoutL, KinR, KoutR]
+Gsym = [:mirror]
+Wsym = [:mirror, :timereversal]
+spin = 2
+diag, ver4 = Parquet.diagramTree(para, 1, legK, 3, 1, Float64, Gsym, Wsym, spin)
+
+print_tree(ver4)
+GWKT.DiagTree.showTree(diag)

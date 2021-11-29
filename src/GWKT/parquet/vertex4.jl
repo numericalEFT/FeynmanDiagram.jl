@@ -312,14 +312,57 @@ AbstractTrees.printnode(io::IO, ver4::Ver4) = print(io, tpair(ver4))
 AbstractTrees.printnode(io::IO, bub::Bubble) = print(io, "\u001b[32m$(bub.id): $(ChanName[bub.chan]) $(bub.Lver.loopNum)Ⓧ $(bub.Rver.loopNum)\u001b[0m")
 
 ################## Generate Expression Tree ########################
-struct NodeInfo
+mutable struct NodeInfo
     isPropagator::Bool #is a propagator or a node
     di::Int #index to the direct term
     ex::Int #index to the exchange term
+    function NodeInfo(isPropagator, di = -1, ex = -1)
+        return new(isPropagator, di, ex)
+    end
+end
+
+function Base.zero(::Type{NodeInfo})
+    return NodeInfo(false, -1, -1)
+end
+
+function addNode(diag, node::NodeInfo, nidx, isDirect)
+    MUL, ADD = 1, 2
+    if isDirect
+        if node.di < 0
+            new = DiagTree.addNode!(diag, ADD, 1.0, [], [nidx,])
+            node.di = new
+        else
+            diagnode = diag.tree[node.di]
+            push!(diagnode.nodes, nidx)
+        end
+    else
+        if node.ex < 0
+            new = DiagTree.addNode!(diag, ADD, 1.0, [], [nidx,])
+            node.ex = new
+        else
+            diagnode = diag.tree[node.ex]
+            push!(diagnode.nodes, nidx)
+        end
+    end
+end
+
+function split(g1, g2, Lw, Rw, isLdirect, isRdirect)
+    propagators = [g1, g2]
+    nodes = []
+    if Lw.isPropagator
+        push!(propagators, isLdirect ? Lw.di : Lw.ex)
+    else
+        push!(nodes, isLdirect ? Lw.di : Lw.ex)
+    end
+    if Rw.isPropagator
+        push!(propagators, isRdirect ? Rw.di : Rw.ex)
+    else
+        push!(nodes, isRdirect ? Rw.di : Rw.ex)
+    end
+    return propagators, nodes
 end
 
 function diagramTree(para::Para, loopNum::Int, legK, Kidx::Int, Tidx::Int, WeightType, Gsym, Wsym, spin, factor = 1.0, diag = nothing, ver4 = nothing)
-    println("hello")
     if isnothing(diag)
         diag = DiagTree.Diagrams{WeightType}()
     end
@@ -349,9 +392,14 @@ function diagramTree(para::Para, loopNum::Int, legK, Kidx::Int, Tidx::Int, Weigh
         else
             error("not implemented!")
         end
+        return diag, ver4
     end
 
     # LoopNum>=1
+    for w in ver4.weight
+        w = NodeInfo(false)
+    end
+
     K, Kt, Ku, Ks = similar(KinL), similar(KinL), similar(KinL), similar(KinL)
     G = ver4.G
 
@@ -370,7 +418,7 @@ function diagramTree(para::Para, loopNum::Int, legK, Kidx::Int, Tidx::Int, Weigh
 
     for b in ver4.bubble
         c = b.chan
-        Factor = SymFactor[c] * PhaseFactor
+        # Factor = SymFactor[c] * PhaseFactor
         Llopidx = Kidx + 1
         Rlopidx = Kidx + 1 + b.Lver.loopNum
         Lver, Rver = b.Lver, b.Rver
@@ -386,34 +434,42 @@ function diagramTree(para::Para, loopNum::Int, legK, Kidx::Int, Tidx::Int, Weigh
             LLegK = [KinL, Ks, KinR, K]
             RLegK = [K, KoutL, Ks, KoutR]
         end
-        Lfactor = diagramTree(para, Lver.loopNum, LLegK, Llopidx, Lver.Tidx, WeightType, Gsym, Wsym, spin, diag, Lver)
-        Rfactor = diagramTree(para, Rver.loopNum, RLegK, Rlopidx, Rver.Tidx, WeightType, Gsym, Wsym, spin, diag, Rver)
+        diagramTree(para, Lver.loopNum, LLegK, Llopidx, Lver.Tidx, WeightType, Gsym, Wsym, spin, 1.0, diag, Lver)
+        diagramTree(para, Rver.loopNum, RLegK, Rlopidx, Rver.Tidx, WeightType, Gsym, Wsym, spin, 1.0, diag, Rver)
 
+        rN = length(b.Rver.weight)
         for (l, Lw) in enumerate(b.Lver.weight)
             for (r, Rw) in enumerate(b.Rver.weight)
                 map = b.map[(l-1)*rN+r]
-                g0 = DiagTree.addPropagator!(diag, GType, Gorder, K, collect(G[1].Tpair[map.G]), Gsym)[1]
+                g0 = DiagTree.addPropagator!(diag, GType, Gorder, K, collect(G[1].Tpair[map.G0]), Gsym)[1]
                 gc = DiagTree.addPropagator!(diag, GType, Gorder, K, collect(G[c].Tpair[map.Gx]), Gsym)[1]
 
                 w = ver4.weight[map.ver]
 
                 if c == T
-                    gg_n = DiagTree.addNode!(diag, MUL, 1.0, [g[1], g[2]], [])
-                    ndd = DiagTree.addNode!(diag, MUL,)
+                    #direct
+                    ps, ns = split(g0, gc, Lw, Rw, true, true)
+                    ndd = DiagTree.addNode!(diag, MUL, spin * SymFactor[T], ps, ns)
+                    ps, ns = split(g0, gc, Lw, Rw, true, false)
+                    nde = DiagTree.addNode!(diag, MUL, SymFactor[T], ps, ns)
+                    ps, ns = split(g0, gc, Lw, Rw, false, true)
+                    ned = DiagTree.addNode!(diag, MUL, SymFactor[T], ps, ns)
+                    nt = DiagTree.addNode!(diag, MUL, 1.0, [], [ndd, nde, ned])
+                    addNode(diag, w, nt, true)
 
+                    #exchange
+                    ps, ns = split(g0, gc, Lw, Rw, false, false)
+                    nee = DiagTree.addNode!(diag, MUL, spin * SymFactor[T], ps, ns)
+                    addNode(diag, w, nee, false)
                 elseif c == U
-
+                    error("not implemented!")
                 elseif c == S
-
+                    error("not implemented!")
                 else
                     error("not implemented!")
                 end
 
 
-                #                 if c == T || c == TC
-                #                     w[DI] +=
-                #                         gWeight *
-                #                         (Lw[DI] * Rw[DI] * SPIN + Lw[DI] * Rw[EX] + Lw[EX] * Rw[DI])
                 #                     w[EX] += gWeight * Lw[EX] * Rw[EX]
                 #                 elseif c == U || c == UC
                 #                     w[DI] += gWeight * Lw[EX] * Rw[EX]
@@ -429,6 +485,7 @@ function diagramTree(para::Para, loopNum::Int, legK, Kidx::Int, Tidx::Int, Weigh
             end
         end
     end
+    return diag, ver4
 end
 
 # function eval(ver4::Ver4, KinL, KoutL, KinR, KoutR, Kidx::Int, fast = false)
