@@ -43,6 +43,8 @@ mutable struct Node{W}
     factor::Float64 #symmetry factor, Fermi factor, spin factor
     version::Int128
     excited::Bool #if set to excited, then the current weight needs to be replaced with the new weight
+    extK::Vector{Int}
+    extT::Vector{Int}
     curr::W
     new::W
 
@@ -52,10 +54,10 @@ mutable struct Node{W}
     nodes::Vector{Int} #if the Node is a leaf, then child stores the index of propagator, otherwise, it stores the indices of the child nodes
 
     function Node{W}(_parent = 0) where {W}
-        new{W}(1, 0, 1.0, 0, false, W(0), W(0), _parent, [], [])
+        new{W}(1, 0, 1.0, 0, false, [], [], W(0), W(0), _parent, [], [])
     end
-    function Node{W}(id, operation::Int, factor, propagators = [], nodes = [], _parent = 0) where {W}
-        new{W}(id, operation, factor, 0, false, W(0), W(0), _parent, propagators, nodes)
+    function Node{W}(id, operation::Int, factor, propagators = [], nodes = []; extK = [], extT = [], parent = 0) where {W}
+        new{W}(id, operation, factor, 0, false, extK, extT, W(0), W(0), parent, propagators, nodes)
     end
 end
 
@@ -87,7 +89,7 @@ function addChild(tree::Vector{Node{W}}, _parent) where {W}
     return idx
 end
 
-function addNode!(diagrams::Diagrams{W}, operation::Int, factor, propagators = [], nodes = [], isRoot = false) where {W}
+function addNode!(diagrams::Diagrams{W}, operation::Int, factor, propagators = [], nodes = []; isRoot = false, extT = [], extK = []) where {W}
     tree = diagrams.tree
     idx = length(tree) + 1
     # make sure that the propagators already exist
@@ -98,7 +100,7 @@ function addNode!(diagrams::Diagrams{W}, operation::Int, factor, propagators = [
     for n in nodes
         @assert (1 <= n <= length(diagrams.tree)) || n == -1
     end
-    node = Node{W}(idx, operation, factor, propagators, nodes)
+    node = Node{W}(idx, operation, factor, propagators, nodes; extT = extT, extK = extK)
     push!(tree, node)
     if isRoot
         push!(diagrams.root, idx)
@@ -159,6 +161,10 @@ function showTree(diag::Diagrams, _root = diag.root[end]; verbose = 0, depth = 9
 
     function info(node)
         s = "N$(node.id):"
+        if isempty(node.extT) == false
+            s *= "$(node.extT), "
+        end
+
         if node.operation == 1
             if (node.factor ≈ 1.0) == false
                 s *= @sprintf("%3.1f", node.factor)
