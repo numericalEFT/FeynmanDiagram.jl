@@ -8,6 +8,8 @@ using Lehmann
 using ExpressionTree
 using StaticArrays
 
+Parquet = GWKT.Parquet
+
 include("parameter.jl")
 include("interaction.jl")
 

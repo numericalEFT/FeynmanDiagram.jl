@@ -25,14 +25,15 @@ mutable struct Propagator{W}
     order::Int #the propagator may have an internal order (say, a Green's function diagram with multiple self-energy sub-diagrams)
     Kidx::Int #loop basis of the momentum
     Tidx::Tuple{Int,Int}
+    factor::Float64 #additional factor, for example, if the propagator is an exchange interaction, then factor = -1.0
 
     version::Int128
     excited::Bool #if set to excited, then the current weight needs to be replaced with the new weight
     curr::W
     new::W
 
-    function Propagator{W}(_type::Int, _order, _Kidx, _Tidx) where {W}
-        return new{W}(_type, _order, _Kidx, Tuple(_Tidx), 0, false, W(0), W(0))
+    function Propagator{W}(_type::Int, _order::Int, _Kidx, _Tidx, _factor = 1.0) where {W}
+        return new{W}(_type, _order, _Kidx, Tuple(_Tidx), _factor, 0, false, W(0), W(0))
     end
 end
 
@@ -110,7 +111,7 @@ function addMomentum!(diagrams::Diagrams, _Kbasis, _symmetry)
 end
 
 # add new propagators to the propagator list
-function addPropagator!(diagrams::Diagrams{W}, type::Int, order, _Kbasis, _Tidx, _symmetry = []) where {W}
+function addPropagator!(diagrams::Diagrams{W}, type::Int, order::Int, _Kbasis, _Tidx, _symmetry = [], _factor = 1.0) where {W}
     propagators = diagrams.propagators
 
     _Kidx, isNewK = addMomentum!(diagrams, _Kbasis, _symmetry)
@@ -123,7 +124,7 @@ function addPropagator!(diagrams::Diagrams{W}, type::Int, order, _Kbasis, _Tidx,
             end
         end
     end
-    push!(propagators, Propagator{W}(type, order, _Kidx, _Tidx))
+    push!(propagators, Propagator{W}(type, order, _Kidx, _Tidx, _factor))
     return length(propagators), true #new propagator
 end
 
