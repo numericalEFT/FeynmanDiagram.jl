@@ -147,6 +147,7 @@ end
 - `tidx`: the first τ variable index. It is also the τ variable of the left incoming electron for all 4-vertex diagrams
 - `para`: parameters
 - `chan`: list of channels of the current 4-vertex. If not specified, it is set to be `para.chan`
+- `interactionTauNum`: list of possible τ degrees of freedom of the bare interaction 0, 2, or 4
 - `level`: level in the diagram tree
 - `id`: the first element will be used as the id of the Ver4. All nodes in the tree will be labeled in preorder depth-first search
 
@@ -166,6 +167,7 @@ struct Ver4{W}
     #######  vertex properties   ###########################
     loopNum::Int
     chan::Vector{Int} # list of channels
+    interactionTauNum::Vector{Int}
     Tidx::Int # inital Tidx
 
     ######  components of vertex  ##########################
@@ -178,7 +180,7 @@ struct Ver4{W}
 
     function Ver4{W}(loopNum, tidx, para::Para; chan = para.chan, level = 1, id = [1,]) where {W}
         g = @SVector [Green() for i = 1:16]
-        ver4 = new{W}(id[1], level, loopNum, chan, tidx, g, [], [], [])
+        ver4 = new{W}(id[1], level, loopNum, chan, para.interactionTauNum, tidx, g, [], [], [])
         id[1] += 1
         @assert loopNum >= 0
         if loopNum == 0
@@ -310,14 +312,123 @@ AbstractTrees.printnode(io::IO, ver4::Ver4) = print(io, tpair(ver4))
 AbstractTrees.printnode(io::IO, bub::Bubble) = print(io, "\u001b[32m$(bub.id): $(ChanName[bub.chan]) $(bub.Lver.loopNum)Ⓧ $(bub.Rver.loopNum)\u001b[0m")
 
 ################## Generate Expression Tree ########################
-function diagramTree(ver4)
-    propagators = Vector{DiagTree.PropagatorKT}(undef, 0)
-    weights = Vector{DiagTree.Weight{Float64}}(undef, 0)
-    # iterator ver4 in depth-first search (children before parents)
-    for node in PostOrderDFS(ver4)
-        println(typeof(node))
+struct NodeInfo
+    isPropagator::Bool #is a propagator or a node
+    di::Int #index to the direct term
+    ex::Int #index to the exchange term
+end
+
+function diagramTree(para::Para, loopNum::Int, legK, Kidx::Int, Tidx::Int, WeightType, Gsym, Wsym, spin, factor = 1.0, diag = nothing, ver4 = nothing)
+    println("hello")
+    if isnothing(diag)
+        diag = DiagTree.Diagrams{WeightType}()
+    end
+    if isnothing(ver4) #at the top level, the ver4 has not yet been created
+        ver4 = Ver4{NodeInfo}(loopNum, Tidx, para)
+    end
+    KinL, KoutL, KinR = legK[1], legK[2], legK[3]
+    KoutR = KinL + KinR - KoutL
+    GType, VType, WType = 1, 2, 3
+    Gorder, Vorder, Worder = 0, 1, 1
+    MUL, ADD = 1, 2
+
+    qd = KinL - KoutL
+    qe = KinR - KoutL
+    Tidx = ver4.Tidx
+    if ver4.loopNum == 0
+        if 1 in ver4.interactionTauNum
+            vd = DiagTree.addPropagator!(diag, VType, Vorder, qd, [Tidx, Tidx], Wsym, -1.0)[1]
+            ve = DiagTree.addPropagator!(diag, VType, Vorder, qe, [Tidx, Tidx], Wsym, 1.0)[1]
+            ver4.weight[1] = NodeInfo(true, vd, ve)
+        elseif 2 in ver4.interactionTauNum
+            wd = DiagTree.addPropagator!(diag, WType, Worder, qd, [Tidx, Tidx + 1], Wsym, -1.0)[1]
+            we = DiagTree.addPropagator!(diag, WType, Worder, qe, [Tidx, Tidx + 1], Wsym, 1.0)[1]
+            #time-dependent interaction has different time configurations for the direct and exchange components
+            ver4.weight[2] = NodeInfo(true, wd, -1)
+            ver4.weight[3] = NodeInfo(true, -1, we)
+        else
+            error("not implemented!")
+        end
     end
 
+    # LoopNum>=1
+    K, Kt, Ku, Ks = similar(KinL), similar(KinL), similar(KinL), similar(KinL)
+    G = ver4.G
+
+    K = zero(KinL)
+    K[Kidx] = 1
+
+    for c in ver4.chan
+        if c == T
+            Kt = KoutL + K - KinL
+        elseif c == U
+            Ku = KoutR + K - KinL
+        else
+            Ks = KinL + KinR - K
+        end
+    end
+
+    for b in ver4.bubble
+        c = b.chan
+        Factor = SymFactor[c] * PhaseFactor
+        Llopidx = Kidx + 1
+        Rlopidx = Kidx + 1 + b.Lver.loopNum
+        Lver, Rver = b.Lver, b.Rver
+        LLegK, RLegK = [], []
+        if c == T
+            LLegK = [KinL, KoutL, Kt, K]
+            RLegK = [K, Kt, KinR, KoutR]
+        elseif c == U
+            LLegK = [KinL, KoutR, Ku, K]
+            RLegK = [K, Ku, KinR, KoutL]
+        else
+            # S channel
+            LLegK = [KinL, Ks, KinR, K]
+            RLegK = [K, KoutL, Ks, KoutR]
+        end
+        Lfactor = diagramTree(para, Lver.loopNum, LLegK, Llopidx, Lver.Tidx, WeightType, Gsym, Wsym, spin, diag, Lver)
+        Rfactor = diagramTree(para, Rver.loopNum, RLegK, Rlopidx, Rver.Tidx, WeightType, Gsym, Wsym, spin, diag, Rver)
+
+        for (l, Lw) in enumerate(b.Lver.weight)
+            for (r, Rw) in enumerate(b.Rver.weight)
+                map = b.map[(l-1)*rN+r]
+                g0 = DiagTree.addPropagator!(diag, GType, Gorder, K, collect(G[1].Tpair[map.G]), Gsym)[1]
+                gc = DiagTree.addPropagator!(diag, GType, Gorder, K, collect(G[c].Tpair[map.Gx]), Gsym)[1]
+
+                w = ver4.weight[map.ver]
+
+                if c == T
+                    gg_n = DiagTree.addNode!(diag, MUL, 1.0, [g[1], g[2]], [])
+                    ndd = DiagTree.addNode!(diag, MUL,)
+
+                elseif c == U
+
+                elseif c == S
+
+                else
+                    error("not implemented!")
+                end
+
+
+                #                 if c == T || c == TC
+                #                     w[DI] +=
+                #                         gWeight *
+                #                         (Lw[DI] * Rw[DI] * SPIN + Lw[DI] * Rw[EX] + Lw[EX] * Rw[DI])
+                #                     w[EX] += gWeight * Lw[EX] * Rw[EX]
+                #                 elseif c == U || c == UC
+                #                     w[DI] += gWeight * Lw[EX] * Rw[EX]
+                #                     w[EX] +=
+                #                         gWeight *
+                #                         (Lw[DI] * Rw[DI] * SPIN + Lw[DI] * Rw[EX] + Lw[EX] * Rw[DI])
+                #                 else
+                #                     # S channel,  see the note "code convention"
+                #                     w[DI] += gWeight * (Lw[DI] * Rw[EX] + Lw[EX] * Rw[DI])
+                #                     w[EX] += gWeight * (Lw[DI] * Rw[DI] + Lw[EX] * Rw[EX])
+                #                 end
+
+            end
+        end
+    end
 end
 
 # function eval(ver4::Ver4, KinL, KoutL, KinR, KoutR, Kidx::Int, fast = false)

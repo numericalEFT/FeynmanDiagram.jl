@@ -11,19 +11,23 @@
 
     ############# Test G with symmetry ############################
     diag = DiagTree.Diagrams{Float64}()
-    idx = [DiagTree.addPropagator!(diag, Gtype, 1, Kidx[i], Tidx[i], Gsymmetry)[1] for i = 1:N]
+    idx = [DiagTree.addPropagator!(diag, Gtype, 0, Kidx[i], Tidx[i], Gsymmetry)[1] for i = 1:N]
+    #G has an order 0
     @test idx == [1, 1, 1, 1]
     ############# Test G without symmetry ############################
     diag = DiagTree.Diagrams{Float64}()
-    idx = [DiagTree.addPropagator!(diag, Gtype, 1, Kidx[i], Tidx[i], [])[1] for i = 1:N]
+    idx = [DiagTree.addPropagator!(diag, Gtype, 0, Kidx[i], Tidx[i], [])[1] for i = 1:N]
+    #G has an order 0
     @test idx == [1, 2, 3, 4]
     ############# Test W with symmetry ############################
     diag = DiagTree.Diagrams{Float64}()
     idx = [DiagTree.addPropagator!(diag, Wtype, 1, Kidx[i], Tidx[i], Wsymmetry)[1] for i = 1:N]
+    #W has an order 1
     @test idx == [1, 1, 1, 1]
     ############# Test W without symmetry ############################
     diag = DiagTree.Diagrams{Float64}()
     idx = [DiagTree.addPropagator!(diag, Wtype, 1, Kidx[i], Tidx[i], [])[1] for i = 1:N]
+    #W has an order 1
     @test idx == [1, 2, 3, 4]
 end
 
@@ -58,14 +62,17 @@ end
     gK = [[0, 0, 1, 1], [0, 0, 0, 1]]
     gT = [[1, 2], [2, 1]]
     g = [DiagTree.addPropagator!(diag, Gtype, 0, gK[i], gT[i], Gsym)[1] for i = 1:2]
+    # G order is 0
 
     vdK = [[0, 0, 1, 0], [0, 0, 1, 0]]
     vdT = [[1, 1], [2, 2]]
-    vd = [DiagTree.addPropagator!(diag, Wtype, 0, vdK[i], vdT[i], Wsym)[1] for i = 1:2]
+    vd = [DiagTree.addPropagator!(diag, Wtype, 1, vdK[i], vdT[i], Wsym)[1] for i = 1:2]
+    # W order is 1
 
     veK = [[1, 0, -1, -1], [0, 1, 0, -1]]
     veT = [[1, 1], [2, 2]]
-    ve = [DiagTree.addPropagator!(diag, Wtype, 0, veK[i], veT[i], Wsym)[1] for i = 1:2]
+    ve = [DiagTree.addPropagator!(diag, Wtype, 1, veK[i], veT[i], Wsym)[1] for i = 1:2]
+    # W order is 1
 
 
     # contruct the tree
@@ -76,6 +83,8 @@ end
     ved = DiagTree.addNode!(diag, MUL, -1.0, [ve[1], vd[2]], [])
     vsum = DiagTree.addNode!(diag, ADD, 1.0, [], [vdd, vde, ved])
     root = DiagTree.addNode!(diag, MUL, 1.0, [], [gg_n, vsum])
+
+    # DiagTree.showTree(diag)
 
     #make sure the total number of diagrams are correct
     evalPropagator1(type, K, Tidx, varT) = 1.0
@@ -107,6 +116,5 @@ end
     # println(Weight)
     @test DiagTree.evalNaive(diag, evalPropagator2, varK, varT) ≈ Weight
 
-    # DiagTree.showTree(diag)
 
 end
