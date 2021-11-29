@@ -65,14 +65,14 @@ mutable struct Diagrams{W}
     momenta::Vector{Momentum}
     propagators::Vector{Propagator}
     tree::Vector{Node{W}}
-    rootIdx::Int #index of the root of the diagram tree
+    root::Vector{Int} #index of the root of the diagram tree
     # loopNum::Int
     # tauNum::Int
     function Diagrams{W}() where {W}
         momenta = Vector{Momentum}(undef, 0)
         propagators = Vector{Propagator}(undef, 0)
         tree = Vector{Node{W}}(undef, 0)
-        return new(momenta, propagators, tree, 0)
+        return new(momenta, propagators, tree, [])
     end
 end
 
@@ -87,20 +87,22 @@ function addChild(tree::Vector{Node{W}}, _parent) where {W}
     return idx
 end
 
-function addNode!(diagrams::Diagrams{W}, operation::Int, factor, propagators = [], nodes = []) where {W}
+function addNode!(diagrams::Diagrams{W}, operation::Int, factor, propagators = [], nodes = [], isRoot = false) where {W}
     tree = diagrams.tree
     idx = length(tree) + 1
     # make sure that the propagators already exist
     for p in propagators
-        @assert 1 <= p <= length(diagrams.propagators)
+        @assert (1 <= p <= length(diagrams.propagators)) || p == -1
     end
     # make sure that the nodes already exist
     for n in nodes
-        @assert 1 <= n <= length(diagrams.tree)
+        @assert (1 <= n <= length(diagrams.tree)) || n == -1
     end
     node = Node{W}(idx, operation, factor, propagators, nodes)
     push!(tree, node)
-    diagrams.rootIdx = idx
+    if isRoot
+        push!(diagrams.root, idx)
+    end
     return idx #index of the new node
 end
 
@@ -147,7 +149,7 @@ end
 - `verbose=0`: the amount of information to show
 - `depth=999`: deepest level of the diagram tree to show
 """
-function showTree(diag::Diagrams, _root = diag.rootIdx; verbose = 0, depth = 999)
+function showTree(diag::Diagrams, _root = diag.root[end]; verbose = 0, depth = 999)
     tree = diag.tree
     K = diag.momenta
     root = tree[_root]
@@ -182,11 +184,19 @@ function showTree(diag::Diagrams, _root = diag.rootIdx; verbose = 0, depth = 999
         nt.add_face(name_face, column = 0, position = "branch-top")
 
         for child in node.nodes
-            treeview(tree[child], level + 1, nt)
+            if child != -1
+                treeview(tree[child], level + 1, nt)
+            else
+                nnt = nt.add_child(name = "0")
+            end
         end
         for pidx in node.propagators
-            p = diag.propagators[pidx]
-            nnt = nt.add_child(name = "P$pidx: typ $(p.type), K $(K[p.Kidx].basis), T $(p.Tidx)")
+            if pidx != -1
+                p = diag.propagators[pidx]
+                nnt = nt.add_child(name = "P$pidx: typ $(p.type), K $(K[p.Kidx].basis), T $(p.Tidx)")
+            else
+                nnt = nt.add_child(name = "0")
+            end
 
             # name_face = ete.TextFace(nnt.name, fgcolor = "black", fsize = 10)
             # nnt.add_face(name_face, column = 0, position = "branch-top")
