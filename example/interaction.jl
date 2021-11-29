@@ -92,10 +92,10 @@ function interactionStatic(para, qd, τIn, τOut)
 end
 
 function vertexDynamic(para, qd, qe, τIn, τOut)
-    # vd, wd = interactionDynamic(para, qd, τIn, τOut)
-    # ve, we = interactionDynamic(para, qe, τIn, τOut)
-    vd, wd = interactionStatic(para, qd, τIn, τOut)
-    ve, we = interactionStatic(para, qe, τIn, τOut)
+    vd, wd = interactionDynamic(para, qd, τIn, τOut)
+    ve, we = interactionDynamic(para, qe, τIn, τOut)
+    # vd, wd = interactionStatic(para, qd, τIn, τOut)
+    # ve, we = interactionStatic(para, qe, τIn, τOut)
 
     return -vd, -wd, ve, we
 end
