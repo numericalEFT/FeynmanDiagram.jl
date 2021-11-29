@@ -79,7 +79,7 @@ struct Bubble{_Ver4,W} # template Bubble to avoid mutually recursive struct
         oR = ver4.loopNum - 1 - oL # loopNum of the right vertex
         LTidx = ver4.Tidx  # the first τ index of the left vertex
         maxTauNum = maximum(para.interactionTauNum) # maximum tau number for each bare interaction
-        RTidx = LTidx + (oL + 1) * maxTauNum + 1  # the first τ index of the right sub-vertex
+        RTidx = LTidx + (oL + 1) * maxTauNum   # the first τ index of the right sub-vertex
 
         if chan == T || chan == U
             LsubVer = para.F
@@ -346,8 +346,8 @@ function addNode(diag, node::NodeInfo, nidx, isDirect)
     end
 end
 
-function split(g1, g2, Lw, Rw, isLdirect, isRdirect)
-    propagators = [g1, g2]
+function split(gc, Lw, Rw, isLdirect, isRdirect)
+    propagators = [gc,]
     nodes = []
     if Lw.isPropagator
         push!(propagators, isLdirect ? Lw.di : Lw.ex)
@@ -448,19 +448,23 @@ function diagramTree(para::Para, loopNum::Int, legK, Kidx::Int, Tidx::Int, Weigh
 
                 if c == T
                     #direct
-                    ps, ns = split(g0, gc, Lw, Rw, true, true)
+                    ps, ns = split(gc, Lw, Rw, true, true)
                     ndd = DiagTree.addNode!(diag, MUL, spin * SymFactor[T], ps, ns)
-                    ps, ns = split(g0, gc, Lw, Rw, true, false)
+                    ps, ns = split(gc, Lw, Rw, true, false)
                     nde = DiagTree.addNode!(diag, MUL, SymFactor[T], ps, ns)
-                    ps, ns = split(g0, gc, Lw, Rw, false, true)
+                    ps, ns = split(gc, Lw, Rw, false, true)
                     ned = DiagTree.addNode!(diag, MUL, SymFactor[T], ps, ns)
-                    nt = DiagTree.addNode!(diag, MUL, 1.0, [], [ndd, nde, ned])
-                    addNode(diag, w, nt, true)
+                    nt = DiagTree.addNode!(diag, ADD, 1.0, [], [ndd, nde, ned])
+                    ntg = DiagTree.addNode!(diag, MUL, 1.0, [g0,], [nt,])
+                    addNode(diag, w, ntg, true)
+                    # DiagTree.showTree(diag, ntg)
 
                     #exchange
-                    ps, ns = split(g0, gc, Lw, Rw, false, false)
-                    nee = DiagTree.addNode!(diag, MUL, spin * SymFactor[T], ps, ns)
+                    ps, ns = split(gc, Lw, Rw, false, false)
+                    push!(ps, g0)
+                    nee = DiagTree.addNode!(diag, MUL, SymFactor[T], ps, ns)
                     addNode(diag, w, nee, false)
+                    # DiagTree.showTree(diag)
                 elseif c == U
                     error("not implemented!")
                 elseif c == S

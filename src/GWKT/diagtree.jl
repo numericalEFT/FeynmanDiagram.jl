@@ -90,6 +90,14 @@ end
 function addNode!(diagrams::Diagrams{W}, operation::Int, factor, propagators = [], nodes = []) where {W}
     tree = diagrams.tree
     idx = length(tree) + 1
+    # make sure that the propagators already exist
+    for p in propagators
+        @assert 1 <= p <= length(diagrams.propagators)
+    end
+    # make sure that the nodes already exist
+    for n in nodes
+        @assert 1 <= n <= length(diagrams.tree)
+    end
     node = Node{W}(idx, operation, factor, propagators, nodes)
     push!(tree, node)
     diagrams.rootIdx = idx
@@ -139,10 +147,10 @@ end
 - `verbose=0`: the amount of information to show
 - `depth=999`: deepest level of the diagram tree to show
 """
-function showTree(diag::Diagrams; verbose = 0, depth = 999)
+function showTree(diag::Diagrams, _root = diag.rootIdx; verbose = 0, depth = 999)
     tree = diag.tree
     K = diag.momenta
-    root = tree[diag.rootIdx]
+    root = tree[_root]
 
     # pushfirst!(PyVector(pyimport("sys")."path"), @__DIR__) #comment this line if no need to load local python module
     ete = PyCall.pyimport("ete3")

@@ -39,4 +39,7 @@ spin = 2
 diag, ver4 = Parquet.diagramTree(para, 1, legK, 3, 1, Float64, Gsym, Wsym, spin)
 
 print_tree(ver4)
-GWKT.DiagTree.showTree(diag)
+nodeDi = length(diag.tree) - 2 #the last second node is for ve*vec
+nodeEx = length(diag.tree)
+GWKT.DiagTree.showTree(diag, nodeDi)
+GWKT.DiagTree.showTree(diag, nodeEx)
