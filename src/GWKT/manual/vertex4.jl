@@ -4,16 +4,19 @@ using ExpressionTree
 # Parquet = GWKT.Parquet
 # Gtype, Wtype = 1, 2
 
+MUL, ADD = 1, 2
 """
 Build tree with KinL = KoutL = [1, 0, 0, 0], KinR = KoutR = [0, 1, 0]
 """
 function build(chan, legK, kidx, spin, irreducible, Gsym, Wsym)
     diag = DiagTree.Diagrams{Float64}()
     if 1 in chan
-        Td, Te = buildT(diag, legK, kidx, spin, irreducible, Gsym, Wsym)
-        println(Td)
+        dir, ex = buildT(diag, legK, kidx, spin, irreducible, Gsym, Wsym)
     end
-    return diag, Td, Te
+
+    rootDir = DiagTree.addNode!(diag, ADD, 1.0, [], dir, isRoot = true)
+    rootEx = DiagTree.addNode!(diag, ADD, 1.0, [], ex, isRoot = true)
+    return diag, rootDir, rootEx
 end
 
 function addG(diag, K, T::Vector{Tuple{Int,Int}}, Gsym)
@@ -21,11 +24,13 @@ function addG(diag, K, T::Vector{Tuple{Int,Int}}, Gsym)
 end
 
 function addV(diag, K, Wsym) #direct and exchange V
-    return [DiagTree.addPropagator!(diag, 2, 1, K[i], (1, 1), Wsym)[1] for i = 1:2] # V order is 1
+    factor = [1.0, -1.0]
+    return [DiagTree.addPropagator!(diag, 2, 1, K[i], (1, 1), Wsym, factor[i])[1] for i = 1:2] # V order is 1
 end
 
 function addW(diag, K, T::Tuple{Int,Int}, Wsym) #direct and exchange W, both have the same tau variables
-    return [DiagTree.addPropagator!(diag, 3, 1, K[i], T, Wsym)[1] for i = 1:2] # W order is 1
+    factor = [1.0, -1.0]
+    return [DiagTree.addPropagator!(diag, 3, 1, K[i], T, Wsym, factor[i])[1] for i = 1:2] # W order is 1
 end
 
 function Tpair(Tidx, isBare, isDirect)
@@ -57,7 +62,7 @@ function buildT(diag, legK, kidx, spin, irreducible, Gsym, Wsym)
     Sym = -1.0
     INL, OUTL, INR, OUTR = 1, 2, 3, 4
     D, E = 1, 2
-    KinL, KinR, KoutL, KoutR = legK
+    KinL, KoutL, KinR, KoutR = legK
     qd = KinL - KoutL
     K = zero(KinL)
     K[kidx] = 1
@@ -81,7 +86,6 @@ function buildT(diag, legK, kidx, spin, irreducible, Gsym, Wsym)
     end
 
     function makeTree!(isLbare, isRbare)
-        MUL, ADD = 1, 2
         if irreducible == false
             g, Lw, Rw, extT = map(isLbare, isRbare, true, true)
             vdd = DiagTree.addNode!(diag, MUL, spin * Sym, [g[1], g[2], Lw[D], Rw[D]], [], extT = extT)
@@ -89,8 +93,8 @@ function buildT(diag, legK, kidx, spin, irreducible, Gsym, Wsym)
             vde = DiagTree.addNode!(diag, MUL, Sym, [g[1], g[2], Lw[D], Rw[E]], [], extT = extT)
             g, Lw, Rw, extT = map(isLbare, isRbare, false, true)
             ved = DiagTree.addNode!(diag, MUL, Sym, [g[1], g[2], Lw[E], Rw[D]], [], extT = extT)
-            # append!(Td, [vdd, vde, ved])
-            push!(Td, DiagTree.addNode!(diag, ADD, 1.0, [], [vdd, vde, ved]))
+            append!(Td, [vdd, vde, ved])
+            # push!(Td, DiagTree.addNode!(diag, ADD, 1.0, [], [vdd, vde, ved]))
         end
         g, Lw, Rw, extT = map(isLbare, isRbare, false, false)
         push!(Te, DiagTree.addNode!(diag, MUL, Sym, [g[1], g[2], Lw[E], Rw[E]], []; extT = extT))
