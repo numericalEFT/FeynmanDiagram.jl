@@ -57,7 +57,7 @@ mutable struct Node{W}
         new{W}(1, 0, 1.0, 0, false, [], [], W(0), W(0), _parent, [], [])
     end
     function Node{W}(id, operation::Int, factor, propagators = [], nodes = []; extK = [], extT = [], parent = 0) where {W}
-        new{W}(id, operation, factor, 0, false, extK, extT, W(0), W(0), parent, propagators, nodes)
+        new{W}(id, operation, factor, 0, false, collect(extK), collect(extT), W(0), W(0), parent, propagators, nodes)
     end
 end
 
@@ -125,7 +125,6 @@ end
 # add new propagators to the propagator list
 function addPropagator!(diagrams::Diagrams{W}, type::Int, order::Int, _Kbasis, _Tidx, _symmetry = [], _factor = 1.0) where {W}
     propagators = diagrams.propagators
-
     _Kidx, isNewK = addMomentum!(diagrams, _Kbasis, _symmetry)
 
     for (i, p) in enumerate(propagators)
@@ -139,6 +138,14 @@ function addPropagator!(diagrams::Diagrams{W}, type::Int, order::Int, _Kbasis, _
     push!(propagators, Propagator{W}(type, order, _Kidx, _Tidx, _factor))
     return length(propagators), true #new propagator
 end
+
+# function addPropagator!(diagrams::Diagrams{W}, type::Int, order::Int, _Kbasis, _Tidx::Vector{Tuple{Int,Int}}, _symmetry = [], _factor = 1.0) where {W}
+#     @assert length(_Kbasis) == length(_Tidx)
+#     pidx = []
+#     for (ti, tidx) in enumerate(_Tidx)
+#         kbasis = _Kbasis[ti]
+#     end
+# end
 
 """
     showTree(ver4, para::Para; verbose=0, depth=999)
@@ -162,7 +169,7 @@ function showTree(diag::Diagrams, _root = diag.root[end]; verbose = 0, depth = 9
     function info(node)
         s = "N$(node.id):"
         if isempty(node.extT) == false
-            s *= "$(node.extT), "
+            s *= "T$(Tuple(node.extT)), "
         end
 
         if node.operation == 1
