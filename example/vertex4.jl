@@ -60,11 +60,11 @@ function eval_T(config)
     θ = para.extAngle[Ang[1]] # angle of the external momentum on the right
     KInR = [kF * cos(θ), kF * sin(θ), 0.0]
 
-    # vld, wld, vle, wle = vertexDynamic(para, Qd, KInL - k1, t1[1], t1[2])
-    # vrd, wrd, vre, wre = vertexDynamic(para, Qd, KInR - k2, t2[1], t2[2])
+    vld, wld, vle, wle = vertexDynamic(para, Qd, KInL - k1, t1[1], t1[2])
+    vrd, wrd, vre, wre = vertexDynamic(para, Qd, KInR - k2, t2[1], t2[2])
 
-    vld, wld, vle, wle = vertexStatic(para, Qd, KInL - k1, t1[1], t1[2])
-    vrd, wrd, vre, wre = vertexStatic(para, Qd, KInR - k2, t2[1], t2[2])
+    # vld, wld, vle, wle = vertexStatic(para, Qd, KInL - k1, t1[1], t1[2])
+    # vrd, wrd, vre, wre = vertexStatic(para, Qd, KInR - k2, t2[1], t2[2])
 
     wd, we = 0.0, 0.0
 

@@ -45,7 +45,7 @@ struct Para{Q,T}
         Gsym = [:mirror]
         Wsym = [:mirror, :timereversal]
         diag, dir, ex = Manual.build(chan, legK, 3, spin, irreducible, Gsym, Wsym)
-        DiagTree.showTree(diag, ex)
+        # DiagTree.showTree(diag, ex)
 
         return new{typeof(qgrid),typeof(τgrid)}(dW0, qgrid, τgrid, diag, dir, ex)
     end
@@ -70,9 +70,9 @@ end
         v, w = interactionDynamic(para, K, τin, τout)
         # v, w = interactionStatic(para, K, τin, τout)
         if type == 2 #v
-            return v * factor
+            return -v * factor
         elseif type == 3 #W
-            return w * factor
+            return -w * factor
         else
             error("not implemented!")
         end
@@ -87,10 +87,147 @@ function integrand(config)
         para = config.para
         wd, we = DiagTree.evalNaive(para.diag, evalPropagator, varK, varT, [para.dir, para.ex], phase, para)
         factor = 1 / (2π)^dim
-        return Weight(wd * factor, we * factor)
+        wd *= factor
+        we *= factor
+        # weight = eval_T(config, RefK, ExtK[extKidx])
+        # @assert abs(weight.d + wd) < 1e-10 "wd: $(weight.d) != $wd"
+        # @assert abs(weight.e + we) < 1e-10 "we: $(weight.e) != $we"
+        return Weight(wd, we)
     else
         error("impossible!")
     end
+end
+
+function phaseT(tInL, tOutL, tInR, tOutR)
+    if (isF)
+        return cos(π * ((tInL + tOutL) - (tInR + tOutR)) / β)
+    else
+        return cos(π * ((tInL - tOutL) + (tInR - tOutR)) / β)
+    end
+end
+
+function eval_T(config, KInL, KInR)
+    para = config.para
+    K, T, Ang = config.var[1], config.var[2], config.var[3]
+    k1, k2 = K[1], K[1]
+    t1, t2 = [T[1], T[2]], [T[3], T[4]] # t1, t2 both have two tau variables
+    # θ = para.extAngle[Ang[1]] # angle of the external momentum on the right
+    # KInR = [kF * cos(θ), kF * sin(θ), 0.0]
+    Qd = zero(k1)
+
+    vld, wld, vle, wle = vertexDynamic(para, Qd, Vector(KInL) - k1, t1[1], t1[2])
+    vrd, wrd, vre, wre = vertexDynamic(para, Qd, Vector(KInR) - k2, t2[1], t2[2])
+
+    # vld, wld, vle, wle = vertexStatic(para, Qd, KInL - k1, t1[1], t1[2])
+    # vrd, wrd, vre, wre = vertexStatic(para, Qd, KInR - k2, t2[1], t2[2])
+
+    wd, we = 0.0, 0.0
+
+    # possible green's functions on the top
+    ϵ1, ϵ2 = (dot(k1, k1) - kF^2) / (2me), (dot(k2, k2) - kF^2) / (2me)
+
+    gt1 = Spectral.kernelFermiT(t2[1] - t1[1], ϵ1, β)
+    gt2 = Spectral.kernelFermiT(t1[1] - t2[1], ϵ2, β)
+    # wd += 1.0 / β * 1.0 / β * gt1 * gt2 / (2π)^3 * phase(t1[1], t1[1], t2[1], t2[1])
+    # println(k1)
+    # println(k2)
+    # println(t1)
+    # println(t2)
+
+    # wd += 1.0 / β * 1.0 / β * gt1 * gt2 / (2π)^3
+
+    # gt3 = Spectral.kernelFermiT(t1[1] - t2[2], ϵ2, β)
+    # G = gt1 * gt3 / (2π)^3 * phase(t1[1], t1[1], t2[2], t2[1])
+    # wd += G * (vld * wre)
+
+    # wd += spin * (vld + wld) * (vrd + wrd) * gt1 * gt2 / (2π)^3 * phase(t1[1], t1[1], t2[1], t2[1])
+    # println(vld, ", ", wld, "; ", vrd, ", ", wld, ", ", wd)
+
+    ############## Diagram v x v ######################
+    """
+      KInL                      KInR
+       |                         | 
+  t1.L ↑     t1.L       t2.L     ↑ t2.L
+       |-------------->----------|
+       |       |    k1    |      |
+       |   ve  |          |  ve  |
+       |       |    k2    |      |
+       |--------------<----------|
+  t1.L ↑    t1.L        t2.L     ↑ t2.L
+       |                         | 
+      KInL                      KInR
+"""
+    gd1 = Spectral.kernelFermiT(t1[1] - t2[1], ϵ2, β)
+    G = gt1 * gd1 / (2π)^3 * phaseT(t1[1], t1[1], t2[1], t2[1])
+    we += G * (vle * vre)
+    # println(G * (vle * vre) * (2π)^3)
+    ##################################################
+
+    ############## Diagram w x v ######################
+    """
+      KInL                      KInR
+       |                         | 
+  t1.R ↑     t1.L       t2.L     ↑ t2.L
+       |-------------->----------|
+       |       |    k1    |      |
+       |   we  |          |  ve  |
+       |       |    k2    |      |
+       |--------------<----------|
+  t1.L ↑    t1.R        t2.L     ↑ t2.L
+       |                         | 
+      KInL                      KInR
+    """
+    gd2 = Spectral.kernelFermiT(t1[2] - t2[1], ϵ2, β)
+    G = gt1 * gd2 / (2π)^3 * phaseT(t1[1], t1[2], t2[1], t2[1])
+    we += G * (wle * vre)
+    # println(G * (wle * vre) * (2π)^3)
+    ##################################################
+
+    ############## Diagram v x w ######################
+    """
+      KInL                      KInR
+       |                         | 
+  t1.L ↑     t1.L       t2.L     ↑ t2.L
+       |-------------->----------|
+       |       |    k1    |      |
+       |   ve  |          |  we  |
+       |       |    k2    |      |
+       |--------------<----------|
+  t1.L ↑    t1.L        t2.R     ↑ t2.R
+       |                         | 
+      KInL                      KInR
+    """
+    gd3 = Spectral.kernelFermiT(t1[1] - t2[2], ϵ2, β)
+    G = gt1 * gd3 / (2π)^3 * phaseT(t1[1], t1[1], t2[2], t2[1])
+    we += G * (vle * wre)
+    # println(G * (vle * wre) * (2π)^3)
+    ##################################################
+
+    ############## Diagram w x w ######################
+    """
+      KInL                      KInR
+       |                         | 
+  t1.R ↑     t1.L       t2.L     ↑ t2.L
+       |-------------->----------|
+       |       |    k1    |      |
+       |   we  |          |  we  |
+       |       |    k2    |      |
+       |--------------<----------|
+  t1.L ↑    t1.R        t2.R     ↑ t2.R
+       |                         | 
+      KInL                      KInR
+"""
+    gd4 = Spectral.kernelFermiT(t1[2] - t2[2], ϵ2, β)
+    G = gt1 * gd4 / (2π)^3 * phaseT(t1[1], t1[2], t2[2], t2[1])
+    we += G * (wle * wre)
+    # println(G * (wle * wre) * (2π)^3)
+    ##################################################
+
+    # println(weight)
+    # return Weight(wd, we)
+    # println("weight ", wd)
+    # exit(0)
+    return Weight(wd, we)
 end
 
 function measure(config)

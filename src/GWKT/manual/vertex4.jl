@@ -23,9 +23,9 @@ function addG(diag, K, T::Vector{Tuple{Int,Int}}, Gsym)
     return [DiagTree.addPropagator!(diag, 1, 0, K[i], T[i], Gsym)[1] for i = 1:length(T)] # G order is 0
 end
 
-function addV(diag, K, Wsym) #direct and exchange V
+function addV(diag, K, T::Tuple{Int,Int}, Wsym) #direct and exchange V
     factor = [1.0, -1.0]
-    return [DiagTree.addPropagator!(diag, 2, 1, K[i], (1, 1), Wsym, factor[i])[1] for i = 1:2] # V order is 1
+    return [DiagTree.addPropagator!(diag, 2, 1, K[i], T, Wsym, factor[i])[1] for i = 1:2] # V order is 1
 end
 
 function addW(diag, K, T::Tuple{Int,Int}, Wsym) #direct and exchange W, both have the same tau variables
@@ -80,8 +80,8 @@ function buildT(diag, legK, kidx, spin, irreducible, Gsym, Wsym)
 
         #construct the Momentum table, momentum configurations are independent of tau
         LwK, RwK = [qd, KinL - K], [qd, KinR - (K - qd)]
-        Lw = isLbare ? addV(diag, LwK, Wsym) : addW(diag, LwK, (1, 2), Wsym)
-        Rw = isRbare ? addV(diag, RwK, Wsym) : addW(diag, RwK, (3, 4), Wsym)
+        Lw = isLbare ? addV(diag, LwK, (1, 2), Wsym) : addW(diag, LwK, (1, 2), Wsym)
+        Rw = isRbare ? addV(diag, RwK, (3, 4), Wsym) : addW(diag, RwK, (3, 4), Wsym)
         return g, Lw, Rw, extT
     end
 
