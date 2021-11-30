@@ -1,18 +1,19 @@
 using ExpressionTree
 
-DiagTree = GWKT.DiagTree
-Parquet = GWKT.Parquet
-Gtype, Wtype = 1, 2
+# DiagTree = GWKT.DiagTree
+# Parquet = GWKT.Parquet
+# Gtype, Wtype = 1, 2
 
 """
 Build tree with KinL = KoutL = [1, 0, 0, 0], KinR = KoutR = [0, 1, 0]
 """
-function build(chan, legK, spin, irreducible, Gsym, Wsym)
+function build(chan, legK, kidx, spin, irreducible, Gsym, Wsym)
     diag = DiagTree.Diagrams{Float64}()
-    if T in chan
-        Td, Te = buildT(diag, legK, spin, irreducible, Gsym, Wsym)
+    if 1 in chan
+        Td, Te = buildT(diag, legK, kidx, spin, irreducible, Gsym, Wsym)
+        println(Td)
     end
-    return Td, Te
+    return diag, Td, Te
 end
 
 function addG(diag, K, T::Vector{Tuple{Int,Int}}, Gsym)
@@ -39,7 +40,7 @@ function Tpair(Tidx, isBare, isDirect)
     end
 end
 
-function buildT(diag, legK, spin, irreducible, Gsym, Wsym)
+function buildT(diag, legK, kidx, spin, irreducible, Gsym, Wsym)
     """
         k1-q                      k2+q  
         |                         | 
@@ -54,12 +55,12 @@ function buildT(diag, legK, spin, irreducible, Gsym, Wsym)
         k1                        k2
     """
     Sym = -1.0
-    L, R = 1, 2
     INL, OUTL, INR, OUTR = 1, 2, 3, 4
     D, E = 1, 2
     KinL, KinR, KoutL, KoutR = legK
     qd = KinL - KoutL
-    K = [0, 0, 0, 1]
+    K = zero(KinL)
+    K[kidx] = 1
     Td, Te = [], []
 
     function map(isLbare, isRbare, isLdirect, isRdirect)
@@ -113,7 +114,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
     Wsym = [:mirror, :timereversal]
 
     diag = DiagTree.Diagrams{Float64}()
-    Td, Te = buildT(diag, legK, 2, false, Gsym, Wsym)
+    Td, Te = buildT(diag, legK, 2, 4, false, Gsym, Wsym)
     for t in Td
         DiagTree.showTree(diag, t)
     end
