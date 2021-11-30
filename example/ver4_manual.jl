@@ -17,8 +17,8 @@ include("interaction.jl")
 
 
 const steps = 1e5
-const isF = false
-const irreducible = true #one interaction irreduble diagrams or not
+const isF = true
+const isProper = true #one interaction irreduble diagrams or not
 const hasBubble = false #allow the bubble diagram or not
 const Nk = 16
 const θgrid = collect(LinRange(0.1, π, Nk)) # external angle grid
@@ -45,7 +45,7 @@ struct Para{Q,T}
         legK = [KinL, KoutL, KinR, KoutR]
         Gsym = [:mirror]
         Wsym = [:mirror, :timereversal]
-        diag, dir, ex = Manual.build(chan, legK, 3, spin, irreducible, hasBubble, Gsym, Wsym)
+        diag, dir, ex = Manual.build(chan, legK, 3, spin, isProper, hasBubble, Gsym, Wsym)
         # DiagTree.showTree(diag, ex)
 
         return new{typeof(qgrid),typeof(τgrid)}(dW0, qgrid, τgrid, diag, dir, ex)
@@ -68,8 +68,8 @@ end
         ϵ = (dot(K, K) - kF^2) / (2me)
         return Spectral.kernelFermiT(τout - τin, ϵ, β) * factor
     else
-        # v, w = interactionDynamic(para, K, τin, τout)
-        v, w = interactionStatic(para, K, τin, τout)
+        v, w = interactionDynamic(para, K, τin, τout)
+        # v, w = interactionStatic(para, K, τin, τout)
         if type == 2 #v
             return -v * factor
         elseif type == 3 #W
@@ -87,7 +87,7 @@ function integrand(config)
         varK = [RefK, ExtK[extKidx], K[1]]
         para = config.para
         wd, we = DiagTree.evalNaive(para.diag, evalPropagator, varK, varT, [para.dir, para.ex], phase, para)
-        factor = 1 / (2π)^dim
+        factor = 1 / (2π)^dim / β
         wd *= factor
         we *= factor
         # weight = eval_TU(config, RefK, RefK, ExtK[extKidx], ExtK[extKidx], false)
