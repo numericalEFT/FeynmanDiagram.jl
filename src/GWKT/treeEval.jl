@@ -42,10 +42,11 @@ function evalNaive(diag::Diagrams{W}, evalPropagator, varK, varT, root = nothing
             error("not implemented")
         end
 
+        node.curr *= node.factor
         if isnothing(phase) == false && (isempty(node.extK) == false || isempty(node.extT) == false)
             node.curr *= phase(varK, varT, node.extK, node.extT)
+            # println(node.id, ": ", node.curr)
         end
-        node.curr *= node.factor
     end
 
     if isnothing(root) == false
