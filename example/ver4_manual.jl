@@ -18,7 +18,8 @@ include("interaction.jl")
 
 const steps = 1e5
 const isF = false
-const irreducible = true
+const irreducible = true #one interaction irreduble diagrams or not
+const hasBubble = false #allow the bubble diagram or not
 const Nk = 16
 const θgrid = collect(LinRange(0.1, π, Nk)) # external angle grid
 const ExtK = [@SVector [kF * cos(θ), kF * sin(θ), 0.0] for θ in θgrid]
@@ -38,13 +39,13 @@ struct Para{Q,T}
         vqinv = [(q^2 + mass2) / (4π * e0^2) for q in qgrid.grid]
         dW0 = TwoPoint.dWRPA(vqinv, qgrid.grid, τgrid.grid, dim, EF, kF, β, spin, me) # dynamic part of the effective interaction
 
-        chan = [1,]
+        chan = [3,]
         KinL = KoutL = [1, 0, 0]
         KinR = KoutR = [0, 1, 0]
         legK = [KinL, KoutL, KinR, KoutR]
         Gsym = [:mirror]
         Wsym = [:mirror, :timereversal]
-        diag, dir, ex = Manual.build(chan, legK, 3, spin, irreducible, Gsym, Wsym)
+        diag, dir, ex = Manual.build(chan, legK, 3, spin, irreducible, hasBubble, Gsym, Wsym)
         # DiagTree.showTree(diag, ex)
 
         return new{typeof(qgrid),typeof(τgrid)}(dW0, qgrid, τgrid, diag, dir, ex)
@@ -67,8 +68,8 @@ end
         ϵ = (dot(K, K) - kF^2) / (2me)
         return Spectral.kernelFermiT(τout - τin, ϵ, β) * factor
     else
-        v, w = interactionDynamic(para, K, τin, τout)
-        # v, w = interactionStatic(para, K, τin, τout)
+        # v, w = interactionDynamic(para, K, τin, τout)
+        v, w = interactionStatic(para, K, τin, τout)
         if type == 2 #v
             return -v * factor
         elseif type == 3 #W
@@ -89,7 +90,7 @@ function integrand(config)
         factor = 1 / (2π)^dim
         wd *= factor
         we *= factor
-        # weight = eval_T(config, RefK, ExtK[extKidx])
+        # weight = eval_TU(config, RefK, RefK, ExtK[extKidx], ExtK[extKidx], false)
         # @assert abs(weight.d + wd) < 1e-10 "wd: $(weight.d) != $wd"
         # @assert abs(weight.e + we) < 1e-10 "we: $(weight.e) != $we"
         return Weight(wd, we)
@@ -98,7 +99,11 @@ function integrand(config)
     end
 end
 
-function phaseT(tInL, tOutL, tInR, tOutR)
+function phaseT(tInL, tOutL, tInR, tOutR, isT)
+    if isT == false
+        tOutL, tOutR = tOutR, tOutL
+    end
+
     if (isF)
         return cos(π * ((tInL + tOutL) - (tInR + tOutR)) / β)
     else
@@ -106,14 +111,15 @@ function phaseT(tInL, tOutL, tInR, tOutR)
     end
 end
 
-function eval_T(config, KInL, KInR)
+function eval_TU(config, KInL, KOutL, KInR, KOutR, isT)
     para = config.para
     K, T, Ang = config.var[1], config.var[2], config.var[3]
-    k1, k2 = K[1], K[1]
+    Qd = isT ? KInL - KOutL : KInL - KOutR
+    k1, k2 = K[1], K[1] - Qd
     t1, t2 = [T[1], T[2]], [T[3], T[4]] # t1, t2 both have two tau variables
     # θ = para.extAngle[Ang[1]] # angle of the external momentum on the right
     # KInR = [kF * cos(θ), kF * sin(θ), 0.0]
-    Qd = zero(k1)
+    # Qd = zero(k1)
 
     vld, wld, vle, wle = vertexDynamic(para, Qd, Vector(KInL) - k1, t1[1], t1[2])
     vrd, wrd, vre, wre = vertexDynamic(para, Qd, Vector(KInR) - k2, t2[1], t2[2])
@@ -158,7 +164,7 @@ function eval_T(config, KInL, KInR)
       KInL                      KInR
 """
     gd1 = Spectral.kernelFermiT(t1[1] - t2[1], ϵ2, β)
-    G = gt1 * gd1 / (2π)^3 * phaseT(t1[1], t1[1], t2[1], t2[1])
+    G = gt1 * gd1 / (2π)^3 * phaseT(t1[1], t1[1], t2[1], t2[1], isT)
     we += G * (vle * vre)
     # println(G * (vle * vre) * (2π)^3)
     ##################################################
@@ -178,7 +184,7 @@ function eval_T(config, KInL, KInR)
       KInL                      KInR
     """
     gd2 = Spectral.kernelFermiT(t1[2] - t2[1], ϵ2, β)
-    G = gt1 * gd2 / (2π)^3 * phaseT(t1[1], t1[2], t2[1], t2[1])
+    G = gt1 * gd2 / (2π)^3 * phaseT(t1[1], t1[2], t2[1], t2[1], isT)
     we += G * (wle * vre)
     # println(G * (wle * vre) * (2π)^3)
     ##################################################
@@ -198,7 +204,7 @@ function eval_T(config, KInL, KInR)
       KInL                      KInR
     """
     gd3 = Spectral.kernelFermiT(t1[1] - t2[2], ϵ2, β)
-    G = gt1 * gd3 / (2π)^3 * phaseT(t1[1], t1[1], t2[2], t2[1])
+    G = gt1 * gd3 / (2π)^3 * phaseT(t1[1], t1[1], t2[2], t2[1], isT)
     we += G * (vle * wre)
     # println(G * (vle * wre) * (2π)^3)
     ##################################################
@@ -218,7 +224,7 @@ function eval_T(config, KInL, KInR)
       KInL                      KInR
 """
     gd4 = Spectral.kernelFermiT(t1[2] - t2[2], ϵ2, β)
-    G = gt1 * gd4 / (2π)^3 * phaseT(t1[1], t1[2], t2[2], t2[1])
+    G = gt1 * gd4 / (2π)^3 * phaseT(t1[1], t1[2], t2[2], t2[1], isT)
     we += G * (wle * wre)
     # println(G * (wle * wre) * (2π)^3)
     ##################################################
@@ -227,7 +233,11 @@ function eval_T(config, KInL, KInR)
     # return Weight(wd, we)
     # println("weight ", wd)
     # exit(0)
-    return Weight(wd, we)
+    if isT
+        return Weight(wd, we)
+    else
+        return Weight(-we, -wd)
+    end
 end
 
 function measure(config)

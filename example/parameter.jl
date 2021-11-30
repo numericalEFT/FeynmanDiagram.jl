@@ -30,4 +30,4 @@ end
 const Base.zero(::Type{Weight}) = Weight(0.0, 0.0)
 const Base.abs(w::Weight) = abs(w.d) + abs(w.e) # define abs(Weight)
 
-println("rs=$rs, β=$β, kF=$kF, EF=$EF, mass2=$mass2")
+println("rs=$rs, β=$β, kF=$kF, EF=$EF, mass2=$mass2, NF=$NF")
