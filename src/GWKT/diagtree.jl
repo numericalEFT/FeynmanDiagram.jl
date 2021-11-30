@@ -3,8 +3,6 @@ using PyCall, Printf
 # export PropagatorKT, Weight, addChild
 export Diagrams, Momentum, Propagator, addMomentum!, addPropagator!, Node, addChild
 
-include("treeEval.jl")
-
 mutable struct Momentum
     basis::Vector{Int} #loop basis of the momentum
     curr::Vector{Float64}
@@ -90,6 +88,9 @@ function addChild(tree::Vector{Node{W}}, _parent) where {W}
 end
 
 function addNode!(diagrams::Diagrams{W}, operation::Int, factor, propagators = [], nodes = []; isRoot = false, extT = [], extK = []) where {W}
+    if isempty(propagators) && isempty(nodes)
+        return -1
+    end
     tree = diagrams.tree
     idx = length(tree) + 1
     # make sure that the propagators already exist
@@ -123,19 +124,19 @@ function addMomentum!(diagrams::Diagrams, _Kbasis, _symmetry)
 end
 
 # add new propagators to the propagator list
-function addPropagator!(diagrams::Diagrams{W}, type::Int, order::Int, _Kbasis, _Tidx, _symmetry = [], _factor = 1.0) where {W}
+function addPropagator!(diagrams::Diagrams{W}, type::Int, order::Int, _Kbasis, _Tidx, symmetry = [], factor = 1.0) where {W}
     propagators = diagrams.propagators
-    _Kidx, isNewK = addMomentum!(diagrams, _Kbasis, _symmetry)
+    _Kidx, isNewK = addMomentum!(diagrams, _Kbasis, symmetry)
 
     for (i, p) in enumerate(propagators)
         if p.type == type && p.order == order
-            Tflag = compareTidx(p.Tidx, _Tidx, (:particlehole in _symmetry || :timereversal in _symmetry))
+            Tflag = compareTidx(p.Tidx, _Tidx, (:particlehole in symmetry || :timereversal in symmetry))
             if Tflag && p.Kidx == _Kidx
                 return i, false #existing propagator
             end
         end
     end
-    push!(propagators, Propagator{W}(type, order, _Kidx, _Tidx, _factor))
+    push!(propagators, Propagator{W}(type, order, _Kidx, _Tidx, factor))
     return length(propagators), true #new propagator
 end
 
@@ -206,7 +207,8 @@ function showTree(diag::Diagrams, _root = diag.root[end]; verbose = 0, depth = 9
         for pidx in node.propagators
             if pidx != -1
                 p = diag.propagators[pidx]
-                nnt = nt.add_child(name = "P$pidx: typ $(p.type), K $(K[p.Kidx].basis), T $(p.Tidx)")
+                factor = @sprintf("%3.1f", p.factor)
+                nnt = nt.add_child(name = "P$pidx: typ $(p.type), K$(K[p.Kidx].basis), T$(p.Tidx), $factor")
             else
                 nnt = nt.add_child(name = "0")
             end
@@ -239,4 +241,5 @@ function showTree(diag::Diagrams, _root = diag.root[end]; verbose = 0, depth = 9
     t.show(tree_style = ts)
 end
 
+include("treeEval.jl")
 end
