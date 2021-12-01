@@ -16,7 +16,7 @@ include("parameter.jl")
 include("interaction.jl")
 
 
-const steps = 1e5
+const steps = 1e7
 const isF = true
 const isProper = true #one interaction irreduble diagrams or not
 const hasBubble = false #allow the bubble diagram or not
@@ -29,9 +29,9 @@ struct Para{Q,T}
     dW0::Matrix{Float64}
     qgrid::Q
     τgrid::T # dedicated τgrid for dynamic interaction
-    diag::DiagTree.Diagrams{Float64}
-    dir::Int
-    ex::Int
+    diag::Vector{DiagTree.Diagrams{Float64}}
+    dir::Vector{Int}
+    ex::Vector{Int}
     function Para(loopOrder::Int)
         qgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, 6 * kF], [0.0, 2kF], 16, 0.01 * kF, 8)
         τgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, β], [0.0, β], 16, β * 1e-4, 8)
@@ -39,13 +39,18 @@ struct Para{Q,T}
         vqinv = [(q^2 + mass2) / (4π * e0^2) for q in qgrid.grid]
         dW0 = TwoPoint.dWRPA(vqinv, qgrid.grid, τgrid.grid, dim, EF, kF, β, spin, me) # dynamic part of the effective interaction
 
-        chan = [3,]
+        # chan = [1, 2, 3]
         KinL = KoutL = [1, 0, 0]
         KinR = KoutR = [0, 1, 0]
         legK = [KinL, KoutL, KinR, KoutR]
         Gsym = [:mirror]
         Wsym = [:mirror, :timereversal]
-        diag, dir, ex = Manual.build(chan, legK, 3, spin, isProper, hasBubble, Gsym, Wsym)
+        diag1, dir1, ex1 = Manual.build([1,], legK, 3, spin, isProper, hasBubble, Gsym, Wsym)
+        diag2, dir2, ex2 = Manual.build([2,], legK, 3, spin, isProper, hasBubble, Gsym, Wsym)
+        diag3, dir3, ex3 = Manual.build([3,], legK, 3, spin, isProper, hasBubble, Gsym, Wsym)
+        diag = [diag1, diag2, diag3]
+        dir = [dir1, dir2, dir3]
+        ex = [ex1, ex2, ex3]
         # DiagTree.showTree(diag, ex)
 
         return new{typeof(qgrid),typeof(τgrid)}(dW0, qgrid, τgrid, diag, dir, ex)
@@ -83,10 +88,11 @@ end
 function integrand(config)
     if config.curr == 1
         extKidx = config.var[3][1]
+        chan = config.var[4][1]
         K, varT = config.var[1], config.var[2]
         varK = [RefK, ExtK[extKidx], K[1]]
         para = config.para
-        wd, we = DiagTree.evalNaive(para.diag, evalPropagator, varK, varT, [para.dir, para.ex], phase, para)
+        wd, we = DiagTree.evalNaive(para.diag[chan], evalPropagator, varK, varT, [para.dir[chan], para.ex[chan]], phase, para)
         factor = 1 / (2π)^dim / β
         wd *= factor
         we *= factor
@@ -243,11 +249,12 @@ end
 function measure(config)
     factor = 1.0 / config.reweight[config.curr]
     extKidx = config.var[3][1]
+    chan = config.var[4][1]
     # println(config.observable[1][1])
     if config.curr == 1
         weight = integrand(config)
-        config.observable[extKidx, 1] += weight.d / abs(weight) * factor
-        config.observable[extKidx, 2] += weight.e / abs(weight) * factor
+        config.observable[extKidx, chan, 1] += weight.d / abs(weight) * factor
+        config.observable[extKidx, chan, 2] += weight.e / abs(weight) * factor
     else
         return
     end
@@ -259,27 +266,37 @@ function MC()
     K = MCIntegration.FermiK(dim, kF, 0.2 * kF, 10.0 * kF)
     T = MCIntegration.Tau(β, β / 2.0)
     ExtKidx = MCIntegration.Discrete(1, Nk)
+    Chan = MCIntegration.Discrete(1, 3)
 
     # for (ti, t) in enumerate(T.data)
     #     t[1] = β * rand()
     #     t[2] = β * rand()
     # end
 
-    dof = [[1, 4, 1],] # K, T, ExtKidx
-    obs = zeros(Nk, 2) # observable for the Fock diagram 
+    dof = [[1, 4, 1, 1],] # K, T, ExtKidx
+    obs = zeros(Nk, 3, 2) # observable for the Fock diagram 
 
-    config = MCIntegration.Configuration(steps, (K, T, ExtKidx), dof, obs; para = para)
+    config = MCIntegration.Configuration(steps, (K, T, ExtKidx, Chan), dof, obs; para = para)
     avg, std = MCIntegration.sample(config, integrand, measure; print = 10, Nblock = 16)
+
+    function info(idx, chan, di)
+        if chan == 4 #print the sum of all channels
+            return @sprintf("   %8.4f ±%8.4f", sum(avg[idx, :, di]), sum(std[idx, :, di]))
+        else
+            return @sprintf("   %8.4f ±%8.4f", avg[idx, chan, di], std[idx, chan, di])
+        end
+    end
+
     if isnothing(avg) == false
         avg *= NF
         std *= NF
         println("Direct ver4: ")
         for (ki, theta) in enumerate(θgrid)
-            @printf("%10.6f   %10.6f ± %10.6f\n", theta, avg[ki, 1], std[ki, 1])
+            println(@sprintf("%8.4f", theta) * info(ki, 1, 1) * info(ki, 2, 1) * info(ki, 3, 1) * info(ki, 4, 1))
         end
         println("Exchange ver4: ")
         for (ki, theta) in enumerate(θgrid)
-            @printf("%10.6f   %10.6f ± %10.6f\n", theta, avg[ki, 2], std[ki, 2])
+            println(@sprintf("%8.4f", theta) * info(ki, 1, 2) * info(ki, 2, 2) * info(ki, 3, 2) * info(ki, 4, 2))
         end
     end
 
