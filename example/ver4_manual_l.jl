@@ -16,7 +16,7 @@ include("parameter.jl")
 include("interaction.jl")
 
 
-const steps = 1e7
+const steps = 1e8
 const isF = true
 const isProper = true #one interaction irreduble diagrams or not
 const hasBubble = false #allow the bubble diagram or not
@@ -304,7 +304,7 @@ function MC()
     obs = zeros(Nk, 3, 2) # observable for the Fock diagram 
 
     config = MCIntegration.Configuration(steps, (K, T, X, Chan), dof, obs; para = para)
-    avg, std = MCIntegration.sample(config, integrand, measure; print = -1, Nblock = 16, reweight = 1e5)
+    avg, std = MCIntegration.sample(config, integrand, measure; print = 0, Nblock = 16, reweight = 1e5)
 
     function info(idx, chan, di)
         if chan == 4 #print the sum of all channels
