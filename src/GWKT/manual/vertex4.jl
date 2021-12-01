@@ -136,6 +136,82 @@ function buildTU(diag, legK, kidx, spin, irreducible, hasBubble, Gsym, Wsym, isT
     end
 end
 
+# function buildTUC(diag, legK, kidx, spin, irreducible, hasBubble, Gsym, Wsym, isT)
+#     """
+#         k1-q                      k2+q  
+#         |                         | 
+#     t1.L ↑     t1.L       t2.L     ↑ t2.L
+#         |-------------->----------|
+#         |       |    k4    |      |
+#         |   v   |          |  v   |
+#         |       |  k4-q    |      |
+#         |--------------<----------|
+#     t1.L ↑    t1.L        t2.L     ↑ t2.L
+#         |                         | 
+#         k1                        k2
+#     """
+#     Sym = isT ? -1.0 : 1.0
+#     INL, OUTL, INR, OUTR = 1, 2, 3, 4
+#     D, E = 1, 2
+#     KinL, KoutL, KinR, KoutR = legK
+
+#     if isT == false
+#         KoutL, KoutR = KoutR, KoutL
+#     end
+
+#     qd = KinL - KoutL
+#     K = zero(KinL)
+#     K[kidx] = 1
+#     Kc = K - qd
+#     Td, Te = [], []
+
+#     function map(isLbare, isRbare, isLdirect, isRdirect)
+#         Lt = Tpair(1, isLbare, isLdirect)
+#         Rt = Tpair(3, isRbare, isRdirect)
+
+#         extT = isT ? (Lt[INL], Lt[INL], Rt[INR], Rt[INR]) : (Lt[INL], Rt[INR], Rt[INR], Lt[INL])
+#         # construct tau table for Green's functions, e.g, (1, 3) means G(t3-t1)
+#         gT = [(Lt[OUTR], Rt[INL]), (Rt[OUTL], Lt[INR])]
+#         gK = [K, K]
+#         g = addG(diag, gK, gT, Gsym)
+
+#         #construct the Momentum table, momentum configurations are independent of tau
+#         LwK, RwK = [qd, KinL - K], [qd, KinR - Kc]
+#         Lw = isLbare ? addV(diag, LwK, (1, 2), Wsym) : addW(diag, LwK, (1, 2), Wsym)
+#         Rw = isRbare ? addV(diag, RwK, (3, 4), Wsym) : addW(diag, RwK, (3, 4), Wsym)
+#         return g, Lw, Rw, extT
+#     end
+
+#     function makeTree!(isLbare, isRbare)
+#         if irreducible == false || isT == false #U channel diagram always has those terms
+#             if hasBubble
+#                 g, Lw, Rw, extT = map(isLbare, isRbare, true, true)
+#                 push!(Td, DiagTree.addNode!(diag, MUL, spin * Sym, [g[1], g[2], Lw[D], Rw[D]], [], extT = extT))
+#             end
+#             g, Lw, Rw, extT = map(isLbare, isRbare, true, false)
+#             vde = DiagTree.addNode!(diag, MUL, Sym, [g[1], g[2], Lw[D], Rw[E]], [], extT = extT)
+#             g, Lw, Rw, extT = map(isLbare, isRbare, false, true)
+#             ved = DiagTree.addNode!(diag, MUL, Sym, [g[1], g[2], Lw[E], Rw[D]], [], extT = extT)
+#             append!(Td, [vde, ved])
+#             # push!(Td, DiagTree.addNode!(diag, ADD, 1.0, [], [vdd, vde, ved]))
+#         end
+#         g, Lw, Rw, extT = map(isLbare, isRbare, false, false)
+#         push!(Te, DiagTree.addNode!(diag, MUL, Sym, [g[1], g[2], Lw[E], Rw[E]], []; extT = extT))
+#     end
+
+
+#     # construct the propagator table
+#     makeTree!(true, true) #vxv
+#     makeTree!(true, false) #vxw
+#     makeTree!(false, true) #wxv
+#     makeTree!(false, false) #wxw
+#     if isT
+#         return Td, Te
+#     else
+#         return Te, Td
+#     end
+# end
+
 function buildS(diag, legK, kidx, Gsym, Wsym)
     # Sym = -0.5
     Sym = -1.0
