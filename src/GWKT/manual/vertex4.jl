@@ -137,7 +137,8 @@ function buildTU(diag, legK, kidx, spin, irreducible, hasBubble, Gsym, Wsym, isT
 end
 
 function buildS(diag, legK, kidx, Gsym, Wsym)
-    Sym = -0.5
+    # Sym = -0.5
+    Sym = -1.0
     INL, OUTL, INR, OUTR = 1, 2, 3, 4
     D, E = 1, 2
     KinL, KoutL, KinR, KoutR = legK
@@ -168,17 +169,15 @@ function buildS(diag, legK, kidx, Gsym, Wsym)
     end
 
     function makeTree!(isLbare, isRbare)
-        g, Lw, Rw, extT = map(isLbare, isRbare, true, false)
-        vde = DiagTree.addNode!(diag, MUL, Sym, [g[1], g[2], Lw[D], Rw[E]], [], extT = extT)
+        # g, Lw, Rw, extT = map(isLbare, isRbare, true, false)
+        # push!(Sd, DiagTree.addNode!(diag, MUL, Sym, [g[1], g[2], Lw[D], Rw[E]], [], extT = extT))
         g, Lw, Rw, extT = map(isLbare, isRbare, false, true)
-        ved = DiagTree.addNode!(diag, MUL, Sym, [g[1], g[2], Lw[E], Rw[D]], [], extT = extT)
-        append!(Sd, [vde, ved])
+        push!(Sd, DiagTree.addNode!(diag, MUL, Sym, [g[1], g[2], Lw[E], Rw[D]], [], extT = extT))
 
         g, Lw, Rw, extT = map(isLbare, isRbare, true, true)
-        vdd = DiagTree.addNode!(diag, MUL, Sym, [g[1], g[2], Lw[D], Rw[D]], [], extT = extT)
-        g, Lw, Rw, extT = map(isLbare, isRbare, false, false)
-        vee = DiagTree.addNode!(diag, MUL, Sym, [g[1], g[2], Lw[E], Rw[E]], [], extT = extT)
-        append!(Se, [vdd, vee])
+        push!(Se, DiagTree.addNode!(diag, MUL, Sym, [g[1], g[2], Lw[D], Rw[D]], [], extT = extT))
+        # g, Lw, Rw, extT = map(isLbare, isRbare, false, false)
+        # push!(Se, DiagTree.addNode!(diag, MUL, Sym, [g[1], g[2], Lw[E], Rw[E]], [], extT = extT))
     end
     # construct the propagator table
     makeTree!(true, true) #vxv

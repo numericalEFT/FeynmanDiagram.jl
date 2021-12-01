@@ -131,7 +131,7 @@ function addPropagator!(diagrams::Diagrams{W}, type::Int, order::Int, _Kbasis, _
     for (i, p) in enumerate(propagators)
         if p.type == type && p.order == order
             Tflag = compareTidx(p.Tidx, _Tidx, (:particlehole in symmetry || :timereversal in symmetry))
-            if Tflag && p.Kidx == _Kidx
+            if Tflag && p.Kidx == _Kidx && p.factor ≈ factor
                 return i, false #existing propagator
             end
         end

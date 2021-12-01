@@ -16,7 +16,7 @@ include("parameter.jl")
 include("interaction.jl")
 
 
-const steps = 1e7
+const steps = 1e6
 const isF = true
 const isProper = true #one interaction irreduble diagrams or not
 const hasBubble = false #allow the bubble diagram or not
@@ -45,13 +45,14 @@ struct Para{Q,T}
         legK = [KinL, KoutL, KinR, KoutR]
         Gsym = [:mirror]
         Wsym = [:mirror, :timereversal]
-        diag1, dir1, ex1 = Manual.build([1,], legK, 3, spin, isProper, hasBubble, Gsym, Wsym)
+        diag1, dir1, ex1 = Manual.build([1, 2, 3], legK, 3, spin, isProper, hasBubble, Gsym, Wsym)
         diag2, dir2, ex2 = Manual.build([2,], legK, 3, spin, isProper, hasBubble, Gsym, Wsym)
         diag3, dir3, ex3 = Manual.build([3,], legK, 3, spin, isProper, hasBubble, Gsym, Wsym)
         diag = [diag1, diag2, diag3]
         dir = [dir1, dir2, dir3]
         ex = [ex1, ex2, ex3]
-        # DiagTree.showTree(diag, ex)
+        # DiagTree.showTree(diag1, dir1)
+        # DiagTree.showTree(diag3, dir3)
 
         return new{typeof(qgrid),typeof(τgrid)}(dW0, qgrid, τgrid, diag, dir, ex)
     end
@@ -277,7 +278,7 @@ function MC()
     obs = zeros(Nk, 3, 2) # observable for the Fock diagram 
 
     config = MCIntegration.Configuration(steps, (K, T, ExtKidx, Chan), dof, obs; para = para)
-    avg, std = MCIntegration.sample(config, integrand, measure; print = 10, Nblock = 16)
+    avg, std = MCIntegration.sample(config, integrand, measure; print = -1, Nblock = 16, reweight = 1e5)
 
     function info(idx, chan, di)
         if chan == 4 #print the sum of all channels
