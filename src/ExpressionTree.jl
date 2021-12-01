@@ -1,9 +1,7 @@
 module ExpressionTree
-include("tree.jl")
-export Tree
 
-include("parquet/parquet.jl")
-export Parquet
+include("GWKT/GWKT.jl")
+export GWKT
 
 # Write your package code here.
 
