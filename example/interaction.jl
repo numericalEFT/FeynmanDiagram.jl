@@ -71,6 +71,8 @@ function KOstatic(Fp, Fm, z, mr, qgrid)
         Π = mr * NF * lindhard(q / 2 / kF)
         Wp[qi] = (4π * e0^2 + fp * q^2) / ((1 + fp * Π) * q^2 + 4π * e0^2 * Π) - fp
         Wm[qi] = fm / (1 + fm * Π) - fm
+        # Wp[qi] = (4π * e0^2 + fp * q^2) / ((1 + fp * Π) * q^2 + 4π * e0^2 * Π)
+        # Wm[qi] = fm / (1 + fm * Π)
     end
     return Wp, Wm
 end

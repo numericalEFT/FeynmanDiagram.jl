@@ -13,7 +13,7 @@ vqinv = [(q^2 + mass2) / (4π * e0^2) for q in qgrid.grid]
 # dW0 = TwoPoint.dWRPA(vqinv, qgrid.grid, τgrid.grid, dim, EF, kF, β, spin, me) # dynamic part of the effective interaction
 # qgrid = collect(1:10)
 # dW0 = zeros(10)
-Fp, Fm = -1.0, -0.5
+Fp, Fm = -1.0, -0.0
 qs = [2 * kF * sin(θ / 2) for θ in θgrid.grid]
 Wp, Wm = KOstatic(Fp, Fm, 1.0, 1.0, qs)
 Wp .*= NF
@@ -28,8 +28,15 @@ Wm0 = Interp.integrate1D(Wm .* sin.(θgrid.grid), θgrid) / 2
 println(Wp0)
 println(Wm0)
 
-println("Ans:")
+println("l=0:")
 
-println(-(Wp0 - 3 * Wm0) / 2)
-println(-(Wp0 + Wm0) / 2)
+println(-(Wp0 + 3 * Wm0) / 2)
+println(-(Wp0 - Wm0) / 2)
+
+Wp1 = Interp.integrate1D(Wp .* cos.(θgrid.grid) .* sin.(θgrid.grid), θgrid) / 2
+Wm1 = Interp.integrate1D(Wm .* cos.(θgrid.grid) .* sin.(θgrid.grid), θgrid) / 2
+
+println("l=1:")
+println(-(Wp1 + 3 * Wm1) / 2)
+println(-(Wp1 - Wm1) / 2)
 
