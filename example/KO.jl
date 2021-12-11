@@ -5,18 +5,18 @@ using Plots
 include("parameter.jl")
 include("interaction.jl")
 
-qgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, 6 * kF], [0.0, 2kF], 16, 0.01 * kF, 8)
+qgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, 12 * kF], [0.0, 2kF], 32, 0.001 * kF, 16)
 τgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, β], [0.0, β], 16, β * 1e-4, 8)
-θgrid = CompositeGrid.LogDensedGrid(:gauss, [0.0, π], [0.0, π], 4, 0.1, 8)
+θgrid = CompositeGrid.LogDensedGrid(:gauss, [0.0, π], [0.0, π], 16, 0.001, 16)
 # θgrid = CompositeGrid.SimpleGrid.Uniform{Float64}([0.0, π], 128)
 
 vqinv = [(q^2 + mass2) / (4π * e0^2) for q in qgrid.grid]
 # dW0 = TwoPoint.dWRPA(vqinv, qgrid.grid, τgrid.grid, dim, EF, kF, β, spin, me) # dynamic part of the effective interaction
 # qgrid = collect(1:10)
 # dW0 = zeros(10)
-Fp, Fm = -1.0, -0.0
+Fp, Fm = -0.0, -0.0
 # cp, cm = 0.4, -0.0
-cp, cm = -0.456, 0.0
+cp, cm = -0.0, 0.0
 qs = [2 * kF * sin(θ / 2) for θ in θgrid.grid]
 Wp, Wm = KOstatic(Fp, Fm, cp, cm, 1.0, qs)
 Wp .*= NF
@@ -58,10 +58,11 @@ println("l=1:")
 println("before flip: ", Wp1, Wm1)
 println("F1+=", -(Wp1 + 3 * Wm1) / 2)
 println("F1-=", -(Wp1 - Wm1) / 2)
+println("m^*/m = ", 1 / (1 + (Wp1 + 3 * Wm1) / 2))
 
-p = plot(cos.(θgrid.grid), Ws, label = "Fs(θ)", xlabel = "cos(θ)", ylabel = "F")
-plot!(p, cos.(θgrid.grid), Wa, label = "Fa(θ)")
-display(p)
-readline()
+# p = plot(cos.(θgrid.grid), Ws, label = "Fs(θ)", xlabel = "cos(θ)", ylabel = "F")
+# plot!(p, cos.(θgrid.grid), Wa, label = "Fa(θ)")
+# display(p)
+# readline()
 
 
