@@ -98,6 +98,7 @@ function interactionDynamic(para, qd, τIn, τOut)
 
     return vd / β, wd
 
+    #TODO introduce a fake tau variable to alleviate sign cancellation between the static and the dynamic interactions
     # vd = 4π * e0^2 / (kDiQ^2 + mass2 + 4π * e0^2 * NF * lindhard(kDiQ / 2.0 / kF)) / β
     # vd -= wd
     # return vd, wd
