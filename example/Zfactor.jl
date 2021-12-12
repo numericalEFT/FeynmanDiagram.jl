@@ -55,8 +55,8 @@ function measure(config)
     # println(config.observable[1][1])
     if config.curr == 1
         weight = integrand(config)
-        config.observable[1] += weight * sin(π / β * τ) / abs(weight) * factor
-        config.observable[2] += weight * sin(3π / β * τ) / abs(weight) * factor
+        config.observable[1] += weight * sin(-π / β * τ) / abs(weight) * factor
+        config.observable[2] += weight * sin(π / β * τ) / abs(weight) * factor
     else
         return
     end
