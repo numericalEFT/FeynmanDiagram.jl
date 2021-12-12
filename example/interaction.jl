@@ -87,7 +87,7 @@ function interactionDynamic(para, qd, τIn, τOut)
     dτ = abs(τOut - τIn)
 
     kDiQ = sqrt(dot(qd, qd))
-    vd = 4π * e0^2 / (kDiQ^2 + mass2)
+    vd = 4π * e0^2 / (kDiQ^2 + mass2) + fp
     if kDiQ <= para.qgrid.grid[1]
         q = para.qgrid.grid[1] + 1.0e-6
         wd = vd * linear2D(para.dW0, para.qgrid, para.τgrid, q, dτ)
@@ -96,11 +96,11 @@ function interactionDynamic(para, qd, τIn, τOut)
         wd = vd * linear2D(para.dW0, para.qgrid, para.τgrid, kDiQ, dτ) # dynamic interaction, don't forget the singular factor vq
     end
 
-    # return vd / β, wd
+    return vd / β, wd
 
-    vd = 4π * e0^2 / (kDiQ^2 + mass2 + 4π * e0^2 * NF * lindhard(kDiQ / 2.0 / kF)) / β
-    vd -= wd
-    return vd, wd
+    # vd = 4π * e0^2 / (kDiQ^2 + mass2 + 4π * e0^2 * NF * lindhard(kDiQ / 2.0 / kF)) / β
+    # vd -= wd
+    # return vd, wd
 end
 
 function interactionStatic(para, qd, τIn, τOut)

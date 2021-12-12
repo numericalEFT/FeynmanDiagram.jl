@@ -7,7 +7,7 @@ const me = 0.5  # electron mass
 const dim = 3    # dimension (D=2 or 3, doesn't work for other D!!!)
 const spin = 2  # number of spins
 
-const rs = 1.0
+const rs = 5.0
 const kF = (dim == 3) ? (9π / (2spin))^(1 / 3) / rs : sqrt(4 / spin) / rs
 const EF = kF^2 / (2me)
 const beta = 25
@@ -15,6 +15,8 @@ const β = beta / EF
 const mass2 = 1e-6
 const NF = (dim == 3) ? spin * me * kF / 2 / π^2 : spin * me / 2 / π
 const qTF = sqrt(4π * e0^2 * NF)
+const fp = -1.0
+const fm = -0.0
 
 # const Weight = SVector{2,Float64}
 const INL, OUTL, INR, OUTR = 1, 2, 3, 4
