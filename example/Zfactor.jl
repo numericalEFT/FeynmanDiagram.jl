@@ -5,7 +5,7 @@ using Parameters, Random
 using MCIntegration
 using Lehmann
 
-const steps = 1e8
+const steps = 1e7
 
 include("parameter.jl")
 include("interaction.jl")
@@ -22,7 +22,8 @@ struct Para{Q,T}
         τgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, β], [0.0, β], 16, β * 1e-4, 8)
 
         vqinv = [(q^2 + mass2) / (4π * e0^2) for q in qgrid.grid]
-        dW0 = TwoPoint.dWRPA(vqinv, qgrid.grid, τgrid.grid, dim, EF, kF, β, spin, me) # dynamic part of the effective interaction
+        # dW0 = TwoPoint.dWRPA(vqinv, qgrid.grid, τgrid.grid, dim, EF, kF, β, spin, me) # dynamic part of the effective interaction
+        dW0 = TwoPoint.dWKO(vqinv, qgrid.grid, τgrid.grid, dim, EF, kF, β, spin, me, fp, fm) # dynamic part of the effective interaction
         return new{typeof(qgrid),typeof(τgrid)}(dW0, qgrid, τgrid)
     end
 end
@@ -55,8 +56,8 @@ function measure(config)
     # println(config.observable[1][1])
     if config.curr == 1
         weight = integrand(config)
-        config.observable[1] += weight * sin(-π / β * τ) / abs(weight) * factor
-        config.observable[2] += weight * sin(π / β * τ) / abs(weight) * factor
+        config.observable[1] += weight * sin(π / β * τ) / abs(weight) * factor
+        config.observable[2] += weight * sin(3π / β * τ) / abs(weight) * factor
     else
         return
     end

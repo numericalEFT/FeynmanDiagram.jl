@@ -16,7 +16,7 @@ include("parameter.jl")
 include("interaction.jl")
 
 
-const steps = 1e7
+const steps = 1e8
 const isF = false
 const isProper = true #one interaction irreduble diagrams or not
 const hasBubble = false #allow the bubble diagram or not
@@ -37,7 +37,8 @@ struct Para{Q,T}
         τgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, β], [0.0, β], 16, β * 1e-4, 8)
 
         vqinv = [(q^2 + mass2) / (4π * e0^2) for q in qgrid.grid]
-        dW0 = TwoPoint.dWRPA(vqinv, qgrid.grid, τgrid.grid, dim, EF, kF, β, spin, me) # dynamic part of the effective interaction
+        # dW0 = TwoPoint.dWRPA(vqinv, qgrid.grid, τgrid.grid, dim, EF, kF, β, spin, me) # dynamic part of the effective interaction
+        dW0 = TwoPoint.dWKO(vqinv, qgrid.grid, τgrid.grid, dim, EF, kF, β, spin, me, fp, fm) # dynamic part of the effective interaction
 
         # chan = [1, 2, 3]
         KinL = KoutL = [1, 0, 0]
