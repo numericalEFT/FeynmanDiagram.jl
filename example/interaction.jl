@@ -75,7 +75,7 @@ function KOstatic(Fp, Fm, cp, cm, mr, qgrid)
         # Wm[qi] = fm / (1 + fm * Π) - fm
         # Wp[qi] = (4π * e0^2 + fp * q^2) / ((1 + fp * Π) * q^2 + 4π * e0^2 * Π) + cp
         # Wm[qi] = fm / (1 + fm * Π) + cm
-        Wp[qi] = (4π * e0^2 + fp * q^2) / ((1 + fp * Π) * q^2 + 4π * e0^2 * Π)
+        Wp[qi] = (4π * e0^2 + fp * (q^2 + mass2)) / ((1 + fp * Π) * (q^2 + mass2) + 4π * e0^2 * Π)
         Wm[qi] = fm / (1 + fm * Π)
     end
     return Wp, Wm
@@ -96,12 +96,12 @@ function interactionDynamic(para, qd, τIn, τOut)
         wd = vd * linear2D(para.dW0, para.qgrid, para.τgrid, kDiQ, dτ) # dynamic interaction, don't forget the singular factor vq
     end
 
-    return vd / β, wd
+    # return vd / β, wd
 
     #TODO introduce a fake tau variable to alleviate sign cancellation between the static and the dynamic interactions
-    # vd = 4π * e0^2 / (kDiQ^2 + mass2 + 4π * e0^2 * NF * lindhard(kDiQ / 2.0 / kF)) / β
-    # vd -= wd
-    # return vd, wd
+    vd = 4π * e0^2 / (kDiQ^2 + mass2 + 4π * e0^2 * NF * lindhard(kDiQ / 2.0 / kF)) / β
+    vd -= wd
+    return vd, wd
 end
 
 function interactionStatic(para, qd, τIn, τOut)

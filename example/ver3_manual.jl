@@ -16,7 +16,7 @@ include("parameter.jl")
 include("interaction.jl")
 
 
-const steps = 1e8
+const steps = 1e7
 const isF = false
 const isProper = true #one interaction irreduble diagrams or not
 const hasBubble = false #allow the bubble diagram or not
