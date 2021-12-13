@@ -4,6 +4,7 @@ using ElectronGas
 using Parameters, Random
 using MCIntegration
 using Lehmann
+using Plots
 
 using ExpressionTree
 using StaticArrays
@@ -16,7 +17,7 @@ include("parameter.jl")
 include("interaction.jl")
 
 
-const steps = 1e6
+const steps = 1e8
 const isF = true
 const isProper = true #one interaction irreduble diagrams or not
 const hasBubble = false #allow the bubble diagram or not
@@ -299,6 +300,39 @@ function MC()
         for (ki, theta) in enumerate(θgrid)
             println(@sprintf("%8.4f", theta) * info(ki, 1, 2) * info(ki, 2, 2) * info(ki, 3, 2) * info(ki, 4, 2))
         end
+
+        ### mass2 dependent parameters ####
+        gamma3 = 0.626
+        we0 = 0.36609 #exchange W_0 interaction projected to F_s/F_a
+        ####################################
+        Fp = Fm = cp = cm = 0.0
+        qs = [2 * kF * sin(θ / 2) for θ in θgrid]
+        Wp, Wm = KOstatic(Fp, Fm, cp, cm, 1.0, qs)
+
+        Wp .*= NF
+        Wm .*= NF
+
+        Ws = (Wp + 3 * Wm) / 2
+        Wa = (Wp - Wm) / 2
+
+        dWs = avg[:, 1, 1] .+ avg[:, 1, 2] ./ 2 .- we0 * 2 * gamma3
+        dWa = avg[:, 1, 2] ./ 2 .- we0 * 2 * gamma3
+
+        dWs_err = std[:, 1, 1] .+ std[:, 1, 2] ./ 2
+        dWa_err = std[:, 1, 2] ./ 2
+
+        println(dWs)
+        println(dWa)
+
+        p = plot(cos.(θgrid), -Ws, label = "Ws0", xlabel = "cos(θ)")
+        plot!(p, cos.(θgrid), -Wa, label = "Wa0")
+        plot!(p, cos.(θgrid), -dWs, ribbon = dWs_err, fillalpha = 0.1, label = "Ws1")
+        plot!(p, cos.(θgrid), -dWa, ribbon = dWs_err, fillalpha = 0.1, label = "Wa1")
+        plot!(p, cos.(θgrid), -Ws - dWs, ribbon = dWs_err, fillalpha = 0.3, label = "Ws0+Ws1")
+        plot!(p, cos.(θgrid), -Wa - dWa, ribbon = dWs_err, fillalpha = 0.3, label = "Ws0+Ws1")
+        display(p)
+        readline()
+        savefig(p, "test.pdf")
     end
 
 end

@@ -16,7 +16,7 @@ include("parameter.jl")
 include("interaction.jl")
 
 
-const steps = 1e8
+const steps = 1e7
 const isF = true
 const isProper = true #one interaction irreduble diagrams or not
 const hasBubble = false #allow the bubble diagram or not
@@ -134,7 +134,6 @@ end
 #     ϵ1, ϵ2 = (dot(k1, k1) - kF^2) / (2me), (dot(k2, k2) - kF^2) / (2me)
 
 #     gt1 = Spectral.kernelFermiT(t2[1] - t1[1], ϵ1, β)
-#     gt2 = Spectral.kernelFermiT(t1[1] - t2[1], ϵ1, β)
 
 #     gd1 = Spectral.kernelFermiT(t1[1] - t2[1], ϵ2, β)
 #     G = gt1 * gd1 / (2π)^3 * phaseT(t1[1], t1[1], t2[1], t2[1], isT)
@@ -325,6 +324,33 @@ function MC()
         for (ki, l) in enumerate(lgrid)
             println(@sprintf("%8.4f", l) * info(ki, 1, 2) * info(ki, 2, 2) * info(ki, 3, 2) * info(ki, 4, 2))
         end
+
+        Fp = Fm = cp = cm = 0.0
+        θgrid = CompositeGrid.LogDensedGrid(:gauss, [0.0, π], [0.0, π], 16, 0.001, 16)
+        qs = [2 * kF * sin(θ / 2) for θ in θgrid.grid]
+        Wp, Wm = KOstatic(Fp, Fm, cp, cm, 1.0, qs)
+
+        Wp .*= NF
+        Wm .*= NF
+
+        Ws = -(Wp + 3 * Wm) / 2
+        Wa = -(Wp - Wm) / 2
+        # Ws .+= Fp - (cp - 3 * cm) / 2
+        # Wa .+= Fm + (cp - 3 * cm) / 2
+        # println(Ws)
+        Ws0 = Interp.integrate1D(Ws .* sin.(θgrid.grid), θgrid) / 2
+        Wa0 = Interp.integrate1D(Wa .* sin.(θgrid.grid), θgrid) / 2
+        println("l=0:")
+        # println("before flip: ", Ws0, Wa0)
+        println("F0+=", -Ws0)
+        println("F0-=", -Wa0)
+
+        println("l=0 correction: ")
+        dfd, dfd_err = avg[1, 1, 1], std[1, 1, 1]
+        dfe, dfe_err = avg[1, 1, 2], std[1, 1, 2]
+        println("dF0+=", dfd + dfe / 2, "  ± ", dfd_err + dfe_err / 2)
+        println("dF0-=", dfe / 2, "  ± ", dfe_err / 2)
+
     end
 
 end
