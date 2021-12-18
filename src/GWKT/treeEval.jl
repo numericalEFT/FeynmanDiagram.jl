@@ -1,4 +1,4 @@
-function evalNaive(diag, evalPropagator, varK, varT)
+function evalNaive(diag::Diagrams{W}, evalPropagator, varK, varT, root = nothing, phase = nothing, para = nothing) where {W}
     momenta = diag.momenta
     propagators = diag.propagators
     tree = diag.tree
@@ -16,7 +16,7 @@ function evalNaive(diag, evalPropagator, varK, varT)
     #calculate propagators
     for p in propagators
         K = momenta[p.Kidx].curr
-        p.curr = evalPropagator(p.type, K, p.Tidx, varT)
+        p.curr = evalPropagator(p.type, K, p.Tidx, varT, p.factor, para)
     end
 
     #calculate diagram tree
@@ -29,6 +29,7 @@ function evalNaive(diag, evalPropagator, varK, varT)
             for nidx in node.nodes
                 node.curr *= tree[nidx].curr
             end
+
         elseif node.operation == 2 #sum
             node.curr = 0.0
             for pidx in node.propagators
@@ -42,7 +43,15 @@ function evalNaive(diag, evalPropagator, varK, varT)
         end
 
         node.curr *= node.factor
+        if isnothing(phase) == false && (isempty(node.extK) == false || isempty(node.extT) == false)
+            node.curr *= phase(varK, varT, node.extK, node.extT)
+            # println(node.id, ": ", node.curr)
+        end
     end
 
-    return tree[end].curr
+    if isnothing(root) == false
+        return [r == -1 ? W(0) : tree[r].curr for r in root]
+    else
+        return tree[end].curr
+    end
 end

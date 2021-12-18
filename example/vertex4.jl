@@ -62,7 +62,9 @@ function eval_T(config)
 
     vld, wld, vle, wle = vertexDynamic(para, Qd, KInL - k1, t1[1], t1[2])
     vrd, wrd, vre, wre = vertexDynamic(para, Qd, KInR - k2, t2[1], t2[2])
-    # wld, wle, wrd, wre = 0.0, 0.0, 0.0, 0.0
+
+    # vld, wld, vle, wle = vertexStatic(para, Qd, KInL - k1, t1[1], t1[2])
+    # vrd, wrd, vre, wre = vertexStatic(para, Qd, KInR - k2, t2[1], t2[2])
 
     wd, we = 0.0, 0.0
 
