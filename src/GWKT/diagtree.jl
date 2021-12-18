@@ -3,8 +3,6 @@ using PyCall, Printf
 # export PropagatorKT, Weight, addChild
 export Diagrams, Momentum, Propagator, addMomentum!, addPropagator!, Node, addChild
 
-include("treeEval.jl")
-
 mutable struct Momentum
     basis::Vector{Int} #loop basis of the momentum
     curr::Vector{Float64}
@@ -25,14 +23,15 @@ mutable struct Propagator{W}
     order::Int #the propagator may have an internal order (say, a Green's function diagram with multiple self-energy sub-diagrams)
     Kidx::Int #loop basis of the momentum
     Tidx::Tuple{Int,Int}
+    factor::Float64 #additional factor, for example, if the propagator is an exchange interaction, then factor = -1.0
 
     version::Int128
     excited::Bool #if set to excited, then the current weight needs to be replaced with the new weight
     curr::W
     new::W
 
-    function Propagator{W}(_type::Int, _order, _Kidx, _Tidx) where {W}
-        return new{W}(_type, _order, _Kidx, Tuple(_Tidx), 0, false, W(0), W(0))
+    function Propagator{W}(_type::Int, _order::Int, _Kidx, _Tidx, _factor = 1.0) where {W}
+        return new{W}(_type, _order, _Kidx, Tuple(_Tidx), _factor, 0, false, W(0), W(0))
     end
 end
 
@@ -42,6 +41,8 @@ mutable struct Node{W}
     factor::Float64 #symmetry factor, Fermi factor, spin factor
     version::Int128
     excited::Bool #if set to excited, then the current weight needs to be replaced with the new weight
+    extK::Vector{Int}
+    extT::Vector{Int}
     curr::W
     new::W
 
@@ -51,10 +52,10 @@ mutable struct Node{W}
     nodes::Vector{Int} #if the Node is a leaf, then child stores the index of propagator, otherwise, it stores the indices of the child nodes
 
     function Node{W}(_parent = 0) where {W}
-        new{W}(1, 0, 1.0, 0, false, W(0), W(0), _parent, [], [])
+        new{W}(1, 0, 1.0, 0, false, [], [], W(0), W(0), _parent, [], [])
     end
-    function Node{W}(id, operation::Int, factor, propagators = [], nodes = [], _parent = 0) where {W}
-        new{W}(id, operation, factor, 0, false, W(0), W(0), _parent, propagators, nodes)
+    function Node{W}(id, operation::Int, factor, propagators = [], nodes = []; extK = [], extT = [], parent = 0) where {W}
+        new{W}(id, operation, factor, 0, false, collect(extK), collect(extT), W(0), W(0), parent, propagators, nodes)
     end
 end
 
@@ -64,14 +65,14 @@ mutable struct Diagrams{W}
     momenta::Vector{Momentum}
     propagators::Vector{Propagator}
     tree::Vector{Node{W}}
-    rootIdx::Int #index of the root of the diagram tree
+    root::Vector{Int} #index of the root of the diagram tree
     # loopNum::Int
     # tauNum::Int
     function Diagrams{W}() where {W}
         momenta = Vector{Momentum}(undef, 0)
         propagators = Vector{Propagator}(undef, 0)
         tree = Vector{Node{W}}(undef, 0)
-        return new(momenta, propagators, tree, 0)
+        return new(momenta, propagators, tree, [])
     end
 end
 
@@ -86,12 +87,25 @@ function addChild(tree::Vector{Node{W}}, _parent) where {W}
     return idx
 end
 
-function addNode!(diagrams::Diagrams{W}, operation::Int, factor, propagators = [], nodes = []) where {W}
+function addNode!(diagrams::Diagrams{W}, operation::Int, factor, propagators = [], nodes = []; isRoot = false, extT = [], extK = []) where {W}
+    if isempty(propagators) && isempty(nodes)
+        return -1
+    end
     tree = diagrams.tree
     idx = length(tree) + 1
-    node = Node{W}(idx, operation, factor, propagators, nodes)
+    # make sure that the propagators already exist
+    for p in propagators
+        @assert (1 <= p <= length(diagrams.propagators)) || p == -1
+    end
+    # make sure that the nodes already exist
+    for n in nodes
+        @assert (1 <= n <= length(diagrams.tree)) || n == -1
+    end
+    node = Node{W}(idx, operation, factor, propagators, nodes; extT = extT, extK = extK)
     push!(tree, node)
-    diagrams.rootIdx = idx
+    if isRoot
+        push!(diagrams.root, idx)
+    end
     return idx #index of the new node
 end
 
@@ -110,22 +124,29 @@ function addMomentum!(diagrams::Diagrams, _Kbasis, _symmetry)
 end
 
 # add new propagators to the propagator list
-function addPropagator!(diagrams::Diagrams{W}, type::Int, order, _Kbasis, _Tidx, _symmetry = []) where {W}
+function addPropagator!(diagrams::Diagrams{W}, type::Int, order::Int, _Kbasis, _Tidx, symmetry = [], factor = 1.0) where {W}
     propagators = diagrams.propagators
-
-    _Kidx, isNewK = addMomentum!(diagrams, _Kbasis, _symmetry)
+    _Kidx, isNewK = addMomentum!(diagrams, _Kbasis, symmetry)
 
     for (i, p) in enumerate(propagators)
         if p.type == type && p.order == order
-            Tflag = compareTidx(p.Tidx, _Tidx, (:particlehole in _symmetry || :timereversal in _symmetry))
-            if Tflag && p.Kidx == _Kidx
+            Tflag = compareTidx(p.Tidx, _Tidx, (:particlehole in symmetry || :timereversal in symmetry))
+            if Tflag && p.Kidx == _Kidx && p.factor ≈ factor
                 return i, false #existing propagator
             end
         end
     end
-    push!(propagators, Propagator{W}(type, order, _Kidx, _Tidx))
+    push!(propagators, Propagator{W}(type, order, _Kidx, _Tidx, factor))
     return length(propagators), true #new propagator
 end
+
+# function addPropagator!(diagrams::Diagrams{W}, type::Int, order::Int, _Kbasis, _Tidx::Vector{Tuple{Int,Int}}, _symmetry = [], _factor = 1.0) where {W}
+#     @assert length(_Kbasis) == length(_Tidx)
+#     pidx = []
+#     for (ti, tidx) in enumerate(_Tidx)
+#         kbasis = _Kbasis[ti]
+#     end
+# end
 
 """
     showTree(ver4, para::Para; verbose=0, depth=999)
@@ -138,16 +159,20 @@ end
 - `verbose=0`: the amount of information to show
 - `depth=999`: deepest level of the diagram tree to show
 """
-function showTree(diag::Diagrams; verbose = 0, depth = 999)
+function showTree(diag::Diagrams, _root = diag.root[end]; verbose = 0, depth = 999)
     tree = diag.tree
     K = diag.momenta
-    root = tree[diag.rootIdx]
+    root = tree[_root]
 
     # pushfirst!(PyVector(pyimport("sys")."path"), @__DIR__) #comment this line if no need to load local python module
     ete = PyCall.pyimport("ete3")
 
     function info(node)
         s = "N$(node.id):"
+        if isempty(node.extT) == false
+            s *= "T$(Tuple(node.extT)), "
+        end
+
         if node.operation == 1
             if (node.factor ≈ 1.0) == false
                 s *= @sprintf("%3.1f", node.factor)
@@ -173,11 +198,20 @@ function showTree(diag::Diagrams; verbose = 0, depth = 999)
         nt.add_face(name_face, column = 0, position = "branch-top")
 
         for child in node.nodes
-            treeview(tree[child], level + 1, nt)
+            if child != -1
+                treeview(tree[child], level + 1, nt)
+            else
+                nnt = nt.add_child(name = "0")
+            end
         end
         for pidx in node.propagators
-            p = diag.propagators[pidx]
-            nnt = nt.add_child(name = "P$pidx: typ $(p.type), K $(K[p.Kidx].basis), T $(p.Tidx)")
+            if pidx != -1
+                p = diag.propagators[pidx]
+                factor = @sprintf("%3.1f", p.factor)
+                nnt = nt.add_child(name = "P$pidx: typ $(p.type), K$(K[p.Kidx].basis), T$(p.Tidx), $factor")
+            else
+                nnt = nt.add_child(name = "0")
+            end
 
             # name_face = ete.TextFace(nnt.name, fgcolor = "black", fsize = 10)
             # nnt.add_face(name_face, column = 0, position = "branch-top")
@@ -207,4 +241,5 @@ function showTree(diag::Diagrams; verbose = 0, depth = 999)
     t.show(tree_style = ts)
 end
 
+include("treeEval.jl")
 end
