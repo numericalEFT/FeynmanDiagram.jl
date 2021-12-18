@@ -18,7 +18,7 @@ mutable struct CachedObject{PARA,T}
     new::T
     version::Int128
     excited::Bool #if set to excited, then the current weight needs to be replaced with the new weight
-    function CachedObject(para::P, curr::T, id, version = 1, excited = false)
+    function CachedObject(para::P, curr::T, id, version = 1, excited = false) where {P,T}
         return new{P,T}(para, id, curr, curr, version, excited)
     end
 end
@@ -60,10 +60,10 @@ function append(pool::Pool, para, curr)
     return id, true #new momentum
 end
 
-struct Collection
-    pool::Pool
+struct Collection{O<:CachedObject}
+    pool::Pool{O}
     idx::Vector{Int}
-    function Collection(pool::Pool, idx = [])
+    function Collection(pool::Pool{O}, idx = []) where {O<:CachedObject}
         return new(pool, idx)
     end
 end
