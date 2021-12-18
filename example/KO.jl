@@ -14,7 +14,7 @@ vqinv = [(q^2 + mass2) / (4π * e0^2) for q in qgrid.grid]
 # dW0 = TwoPoint.dWRPA(vqinv, qgrid.grid, τgrid.grid, dim, EF, kF, β, spin, me) # dynamic part of the effective interaction
 # qgrid = collect(1:10)
 # dW0 = zeros(10)
-Fp, Fm = -0.0, -0.0
+Fp, Fm = -1.0, -0.0
 # cp, cm = 0.4, -0.0
 cp, cm = -0.0, 0.0
 qs = [2 * kF * sin(θ / 2) for θ in θgrid.grid]
@@ -39,8 +39,8 @@ println(Interp.integrate1D(Ws .* sin.(θgrid.grid), θgrid) / 2)
 println(Interp.integrate1D(Wa .* sin.(θgrid.grid), θgrid) / 2)
 # Ws .+= Fp + (cp - 3 * cm) / 2
 # Wa .+= Fm - (cp - 3 * cm) / 2
-Ws .+= Fp - (cp - 3 * cm) / 2
-Wa .+= Fm + (cp - 3 * cm) / 2
+# Ws .+= Fp - (cp - 3 * cm) / 2
+# Wa .+= Fm + (cp - 3 * cm) / 2
 Wuu = Ws + Wa
 Wud = Ws - Wa
 # println(Ws)

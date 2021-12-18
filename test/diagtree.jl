@@ -87,11 +87,11 @@ end
     # DiagTree.showTree(diag)
 
     #make sure the total number of diagrams are correct
-    evalPropagator1(type, K, Tidx, varT) = 1.0
+    evalPropagator1(type, K, Tidx, varT, factor = 1.0, para = nothing) = 1.0
     @test DiagTree.evalNaive(diag, evalPropagator1, varK, varT) ≈ -2 + 1 * spin
 
     #more sophisticated test of the weight evaluation
-    function evalPropagator2(type, K, Tidx, varT)
+    function evalPropagator2(type, K, Tidx, varT, factor = 1.0, para = nothing)
         if type == Gtype
             ϵ = dot(K, K) / 2 - kF^2
             τ = varT[Tidx[2]] - varT[Tidx[1]]
