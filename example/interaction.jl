@@ -71,12 +71,12 @@ function KOstatic(Fp, Fm, cp, cm, mr, qgrid)
 
     for (qi, q) in enumerate(qgrid)
         Π = mr * NF * lindhard(q / 2 / kF)
-        # Wp[qi] = (4π * e0^2 + fp * q^2) / ((1 + fp * Π) * q^2 + 4π * e0^2 * Π) - fp
-        # Wm[qi] = fm / (1 + fm * Π) - fm
+        Wp[qi] = (4π * e0^2 + fp * q^2) / ((1 + fp * Π) * q^2 + 4π * e0^2 * Π) - fp
+        Wm[qi] = fm / (1 + fm * Π) - fm
         # Wp[qi] = (4π * e0^2 + fp * q^2) / ((1 + fp * Π) * q^2 + 4π * e0^2 * Π) + cp
         # Wm[qi] = fm / (1 + fm * Π) + cm
-        Wp[qi] = (4π * e0^2 + fp * (q^2 + mass2)) / ((1 + fp * Π) * (q^2 + mass2) + 4π * e0^2 * Π)
-        Wm[qi] = fm / (1 + fm * Π)
+        # Wp[qi] = (4π * e0^2 + fp * (q^2 + mass2)) / ((1 + fp * Π) * (q^2 + mass2) + 4π * e0^2 * Π)
+        # Wm[qi] = fm / (1 + fm * Π)
     end
     return Wp, Wm
 end

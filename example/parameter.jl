@@ -12,7 +12,7 @@ const kF = (dim == 3) ? (9π / (2spin))^(1 / 3) / rs : sqrt(4 / spin) / rs
 const EF = kF^2 / (2me)
 const beta = 25
 const β = beta / EF
-const mass2 = 0.01
+const mass2 = 1e-6
 const NF = (dim == 3) ? spin * me * kF / 2 / π^2 : spin * me / 2 / π
 const qTF = sqrt(4π * e0^2 * NF)
 const fp = -0.0
