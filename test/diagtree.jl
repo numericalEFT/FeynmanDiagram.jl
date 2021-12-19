@@ -1,3 +1,15 @@
+@testset "Pool" begin
+    pool = DiagTree.Pool{Int64,Float64}()
+    DiagTree.append(pool, 1, 2.0)
+    DiagTree.append(pool, 2, 3.0)
+    DiagTree.append(pool, 3, 4.0)
+
+    v = view(pool, [1, 3])
+    v[1].curr = 1.5
+
+    @test pool[1].curr ≈ v[1].curr #test view only returns the reference
+end
+
 @testset "DiagTree" begin
     DiagTree = GWKT.DiagTree
     # Write your tests here.
