@@ -23,19 +23,43 @@ mutable struct CachedObject{PARA,T}
     end
 end
 
-struct Pool{O<:CachedObject}
-    pool::Vector{O}
+Base.show(io::IO, obj::CachedObject) = print(io, "id: $(obj.id), para: $(obj.para) curr: $(obj.curr)")
 
-    function Pool{O}()
-        return new{O}([])
+struct Pool{P,T}
+    pool::Vector{CachedObject{P,T}}
+
+    function Pool{P,T}() where {P,T}
+        pool = Vector{CachedObject{P,T}}(undef, 0)
+        return new{P,T}(pool)
     end
-    function Pool(obj::Vector{O})
-        return new{O}(obj)
+    function Pool(obj::Vector{CachedObject{P,T}}) where {P,T}
+        return new{P,T}(obj)
     end
 end
 
 Base.length(pool::Pool) = length(pool.pool)
 Base.size(pool::Pool) = size(pool.pool)
+Base.show(io::IO, pool::Pool) = print(io, pool.pool)
+Base.view(pool::Pool, inds...) where {N} = Base.view(pool.pool, inds...)
+
+#index interface for Pool
+Base.getindex(pool::Pool, i) = pool.pool[i]
+Base.setindex!(pool::Pool, v, i) = setindex!(pool.pool, v, i)
+Base.firstindex(pool::Pool) = 1
+Base.lastindex(pool::Pool) = length(pool)
+
+function append(pool, para::P, curr::T) where {P,T}
+    # @assert para isa eltype(pool.pool)
+    for (oi, o) in enumerate(pool.pool)
+        if o.para == para
+            return oi, false #existing obj
+        end
+    end
+    id = length(pool)
+    push!(pool.pool, CachedObject(para, curr, id))
+    return id, true #new momentum
+end
+
 
 # function append(pool::Pool, obj::CachedObject)
 #     for (oi, o) in enumerate(pool)
@@ -47,23 +71,23 @@ Base.size(pool::Pool) = size(pool.pool)
 #     return length(pool), true #new momentum
 # end
 
-function append(pool::Pool, para, curr)
-    @assert para isa eltype(pool.pool)
+# function append(pool::Pool, para, curr)
+#     @assert para isa eltype(pool.pool)
 
-    for (oi, o) in enumerate(pool)
-        if o.para == para
-            return oi, false #existing obj
-        end
-    end
-    id = length(pool)
-    push!(pool, CachedObject(para, curr, id))
-    return id, true #new momentum
-end
+#     for (oi, o) in enumerate(pool)
+#         if o.para == para
+#             return oi, false #existing obj
+#         end
+#     end
+#     id = length(pool)
+#     push!(pool, CachedObject(para, curr, id))
+#     return id, true #new momentum
+# end
 
-struct Collection{O<:CachedObject}
-    pool::Pool{O}
-    idx::Vector{Int}
-    function Collection(pool::Pool{O}, idx = []) where {O<:CachedObject}
-        return new(pool, idx)
-    end
-end
+# struct SubPool{O}
+#     pool::Pool{O}
+#     idx::Vector{Int}
+#     function Collection(pool::Pool{O}, idx = []) where {O<:CachedObject}
+#         return new(pool, idx)
+#     end
+# end
