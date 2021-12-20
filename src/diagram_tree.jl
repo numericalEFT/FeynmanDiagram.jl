@@ -15,6 +15,16 @@ struct Node{PARA,T}
     end
 end
 
+Base.:(==)(a::Node{P,T}, b::Node{P,T}) where {P,T} = Base.isequal(a, b)
+function Base.isequal(a::Node{P,T}, b::Node{P,T}) where {P,T}
+    # only parent is allowed to be different
+    if (isequal(a.para, b.para) == false) || (a.operation != b.operation) || (a.components != b.components) || (a.child != b.child)
+        return false
+    else
+        return true
+    end
+end
+
 mutable struct Diagrams{V,P,NODE,W}
     variable::V
     propagator::P
