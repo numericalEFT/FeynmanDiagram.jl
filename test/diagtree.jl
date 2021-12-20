@@ -18,7 +18,11 @@
     @test pool[1].curr ≈ new #test view only returns the reference
 
 
-    println(Var.Momentum{3,Float64}([1.0, 2.0, 2.0]))
+    # println(Var.Momentum{3,Float64}([1.0, 2.0, 2.0]))
+    symmetry = Var.refection(Float64, 3)
+    a = Var.VectorVariable([1.0, 2.0, 2.0], [symmetry,])
+    b = Var.VectorVariable([-1.0, -2.0, -2.0], [symmetry,])
+    println(a == b)
 end
 
 @testset "DiagTree" begin
