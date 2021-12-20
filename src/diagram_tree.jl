@@ -1,5 +1,6 @@
 module DiagTree
 include("pool.jl")
+using ..Var
 
 struct Node{PARA,T}
     para::PARA

@@ -16,6 +16,9 @@
     # end
 
     @test pool[1].curr ≈ new #test view only returns the reference
+
+
+    println(Var.Momentum{3,Float64}([1.0, 2.0, 2.0]))
 end
 
 @testset "DiagTree" begin

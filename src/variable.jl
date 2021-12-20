@@ -1,16 +1,19 @@
 module Var
 using StaticArrays
 
-abstract type DerivedVariable end
+abstract type CachedVariable end
 
-# mutable struct Momentum{D<:Int,T<:Number} <: DerivedVariable
-#     id::Int
-#     version::Int
-#     basis::Vector{Int}
-#     K::SVector{D,T}
-#     function Momentum{D,T}(_id, _basis, _K = @SVector rand(T, D), _version = 0) where {D<:Int,T<:Number}
-#         return new(_id, _version, _basis, _K)
-#     end
-# end
+mutable struct Momentum{D,T} <: CachedVariable
+    symmetry::Symbol
+    basis::Vector{T}
+    function Momentum{D,T}(_basis, _symmetry = :none) where {D,T}
+        return new(_symmetry, _basis)
+    end
+end
 
+# mutable struct TauPair{N<:Int}
+
+# const CachedMomentum = CachedObject{Momentum,MVector}
+
+# macro 
 end
