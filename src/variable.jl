@@ -19,7 +19,7 @@ using LinearAlgebra
 # end
 
 function refection(Type, D::Int)
-    return (-diagm(ones(D)), zeros(Type, (D, D)))
+    return (-diagm(ones(D)), zeros(Type, D))
 end
 
 # function particleHole(::type, N::Int, β)
@@ -27,27 +27,37 @@ end
 # end
 
 struct VectorVariable{T}
-    symmetry::Vector{Tuple{Matrix{T},Matrix{T}}}
+    symmetry::Vector{Tuple{Matrix{T},Vector{T}}}
     basis::Vector{T}
     function VectorVariable(_basis, _symmetry = [])
         for sym in _symmetry
             @assert size(sym[1])[1] == length(_basis) "rotation operator size $(size(sym[1])) doesn't match with the basis size $(length(_basis))"
             @assert size(sym[1])[2] == length(_basis) "rotation operator size $(size(sym[1])) doesn't match with the basis size $(length(_basis))"
-            @assert size(sym[2])[1] == length(_basis) "translation operator size $(size(sym[2])) doesn't match with the basis size $(length(_basis))"
-            @assert size(sym[2])[2] == length(_basis) "translation operator size $(size(sym[2])) doesn't match with the basis size $(length(_basis))"
+            @assert length(sym[2]) == length(_basis) "translation operator size $(length(sym[2])) doesn't match with the basis size $(length(_basis))"
         end
         return new{eltype(_basis)}(_symmetry, _basis)
     end
 end
 
 function Base.isequal(a::VectorVariable{T}, b::VectorVariable{T}) where {T}
-    if a ≈ b
+    if length(a.symmetry) != length(b.symmetry)
+        return false
+    end
+
+    for (si, sym) in enumerate(a.symmetry)
+        if !(sym[1] ≈ b.symmetry[si][1]) || !(sym[2] ≈ b.symmetry[si][2])
+            return false
+        end
+    end
+
+    if a.basis ≈ b.basis
         return true
     end
 
-    for sym in symmetry
+    for sym in a.symmetry
+
         rotation, translation = sym[1], sym[2]
-        if rotation * a + translation ≈ b
+        if rotation * a.basis .+ translation ≈ b.basis
             return true
         end
     end

@@ -11,18 +11,16 @@
     # println(typeof(v))
 
 
-    # for (oi, o) in enumerate(pool)
-    #     println(oi, ",   ", o)
-    # end
-
     @test pool[1].curr ≈ new #test view only returns the reference
 
 
-    # println(Var.Momentum{3,Float64}([1.0, 2.0, 2.0]))
+    # test symmetry operator
     symmetry = Var.refection(Float64, 3)
     a = Var.VectorVariable([1.0, 2.0, 2.0], [symmetry,])
     b = Var.VectorVariable([-1.0, -2.0, -2.0], [symmetry,])
-    println(a == b)
+    c = Var.VectorVariable([1.0, 2.0, 2.0], [])
+    @test isequal(a, b)
+    @test isequal(a, c) == false #two vectors are different if the symmetries are different, regardless of the basis 
 end
 
 @testset "DiagTree" begin
