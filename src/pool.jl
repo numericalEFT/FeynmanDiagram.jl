@@ -1,7 +1,7 @@
 """
-    mutable struct CachedObject{O,T}
+    mutable struct Cache{O,T}
 
-        CachedOjects are too heavy so that one wants to cache their status without evaluating them on the fly.
+        Cache an object that is so heavy that one wants to cache their status without evaluating them on the fly.
         The user should defines a compare 
 
     object::O : parameters that are needed to evaluate the object
@@ -12,7 +12,7 @@
     version::Int128 : the current version
     excited::Bool : if set to excited, then the current status needs to be replaced with the new status
 """
-mutable struct CachedObject{O,T}
+mutable struct Cache{O,T}
     object::O
     id::Int
     factor::T
@@ -20,21 +20,21 @@ mutable struct CachedObject{O,T}
     new::T
     version::Int128
     excited::Bool #if set to excited, then the current weight needs to be replaced with the new weight
-    function CachedObject(object::O, curr::T, id, version = 1, excited = false) where {O,T}
+    function Cache(object::O, curr::T, id, version = 1, excited = false) where {O,T}
         return new{O,T}(object, id, T(1.0), curr, curr, version, excited)
     end
 end
 
-Base.show(io::IO, obj::CachedObject) = print(io, "id $(obj.id): para: $(obj.para) curr: $(obj.curr)")
+Base.show(io::IO, obj::Cache) = print(io, "id $(obj.id): para: $(obj.para) curr: $(obj.curr)")
 
 struct Pool{O,T}
-    pool::Vector{CachedObject{O,T}}
+    pool::Vector{Cache{O,T}}
 
     function Pool{O,T}() where {O,T}
-        pool = Vector{CachedObject{O,T}}(undef, 0)
+        pool = Vector{Cache{O,T}}(undef, 0)
         return new{O,T}(pool)
     end
-    function Pool(obj::Vector{CachedObject{O,T}}) where {O,T}
+    function Pool(obj::Vector{Cache{O,T}}) where {O,T}
         return new{O,T}(obj)
     end
 end
@@ -75,7 +75,7 @@ function append(pool, object::O, curr::T) where {O,T}
         end
     end
     id = length(pool)
-    push!(pool.pool, CachedObject(object, curr, id))
+    push!(pool.pool, Cache(object, curr, id))
     return id, true #new momentum
 end
 
