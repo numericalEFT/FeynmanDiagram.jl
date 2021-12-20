@@ -4,10 +4,18 @@
     DiagTree.append(pool, 2, 3.0)
     DiagTree.append(pool, 3, 4.0)
 
-    v = view(pool, [1, 3])
-    v[1].curr = 1.5
+    v = DiagTree.SubPool(pool, [1, 3])
+    # v = view(pool, [1, 3])
+    new = 1.5
+    v.pool[v.idx[1]].curr = new
+    # println(typeof(v))
 
-    @test pool[1].curr ≈ v[1].curr #test view only returns the reference
+
+    # for (oi, o) in enumerate(pool)
+    #     println(oi, ",   ", o)
+    # end
+
+    @test pool[1].curr ≈ new #test view only returns the reference
 end
 
 @testset "DiagTree" begin
