@@ -15,12 +15,12 @@
 
 
     # test symmetry operator
-    symmetry = Var.refection(Float64, 3)
-    a = Var.VectorVariable([1.0, 2.0, 2.0], [symmetry,])
-    b = Var.VectorVariable([-1.0, -2.0, -2.0], [symmetry,])
-    c = Var.VectorVariable([1.0, 2.0, 2.0], [])
-    @test isequal(a, b)
-    @test isequal(a, c) == false #two vectors are different if the symmetries are different, regardless of the basis 
+    # symmetry = Var.refection(Float64, 3)
+    a = Var.VectorVariable([1.0, 2.0, 2.0])
+    b = Var.VectorVariable([-1.0, -2.0, -2.0])
+    c = Var.VectorVariable([1.0, 2.0, 2.0])
+    @test isequal(a, c)
+    @test isequal(a, b) == false #two vectors are different if the symmetries are different, regardless of the basis 
 
     #test Node
     node1 = DiagTree.Node(1; components = [[1, 2], [3, 4]], child = [1, 2])
@@ -54,18 +54,22 @@ end
     varK = [rand(D) for i = 1:4] #k1, k2, k3, k4
     varT = [rand() * β, rand() * β]
 
-    calcK(varK, basis) = [varK[i] .* basis[i] for i = 1:length(varK)]
+    # reflection = Var.refection(Float64, D)
 
-    reflection = Var.refection(Float64, D)
+    # println(typeof(varK))
+    Mom = Var.VectorVariable{Vector{Vector{Float64}},Float64}
+    Tpair = Var.ScalarVariable{Vector{Float64},Tuple{Int,Int}}
+    # Base.isequal(a::Mom, b::Mom) = (Mom.basis ≈ Mom.basis) || (Mom.basis ≈ -Mom.basis)
 
-    Mom = Var.VectorVariable{Float64}
-    Tpair = Var.VectorVariable{Float64}
+    calcK(k::Mom) = sum([k.para[i] .* k.basis[i] for i = 1:length(k.para)])
+    calcT(t::Tpair) = t.para[t.basis[2]] - t.para[t.basis[1]]
+
 
     G = DiagTree.Propagator{Tuple{Int,Int}}
     V = DiagTree.Propagator{Int}
 
     MomPool = DiagTree.Pool{Mom,Vector{Float64}}()
-    TpairPool = DiagTree.Pool{Tpair,Vector{Float64}}()
+    TpairPool = DiagTree.Pool{Tpair,Float64}()
 
     GPool = DiagTree.Pool{G,Float64}()
     VPool = DiagTree.Pool{V,Float64}()
@@ -73,11 +77,14 @@ end
     diag = DiagTree.Diagrams{Float64}((MomPool, TpairPool), (GPool, VPool))
 
     #construct the propagator table
-    gKbasis = [[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0]]
-    gTbasis = [[1, 2], [2, 1]]
+    gK = [[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0]]
+    gT = [(1, 2), (2, 1)]
 
-    DiagTree.append(MomPool, Mom(gKbasis[1], [reflection,]), calcK(varK, gKbasis[1]))
-    DiagTree.append(MomPool, Mom(gKbasis[2], [reflection,]), calcK(varK, gKbasis[2]))
+    DiagTree.append(MomPool, Mom(gK[1], varK), calcK)
+    DiagTree.append(MomPool, Mom(gK[2], varK), calcK)
+
+    DiagTree.append(TpairPool, Tpair(gT[1], varT), calcT)
+    DiagTree.append(TpairPool, Tpair(gT[2], varT), calcT)
 
     # DiagTree.append(TpairPool, Tpair(gTbasis[1]), calcK(gT))
 
