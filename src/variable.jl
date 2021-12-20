@@ -38,7 +38,13 @@ struct VectorVariable{T}
         return new{eltype(_basis)}(_symmetry, _basis)
     end
 end
+"""
+Base.:(==)(a::VectorVariable, b::VectorVariable) = Base.isequal(a, b)
+function Base.isequal(a::VectorVariable{T}, b::VectorVariable{T}) where {T}
 
+Compare two vectors with the function isequal or the operator ==
+"""
+Base.:(==)(a::VectorVariable, b::VectorVariable) = Base.isequal(a, b)
 function Base.isequal(a::VectorVariable{T}, b::VectorVariable{T}) where {T}
     if length(a.symmetry) != length(b.symmetry)
         return false
