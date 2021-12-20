@@ -2,6 +2,26 @@ module DiagTree
 include("pool.jl")
 using ..Var
 
+
+struct Propagator{PARA}
+    para::PARA
+    order::Int
+    variable::Vector{Int}
+    function Propagator(order, variable = [], para::P = 0) where {P}
+        return new{P}(para, variable, order)
+    end
+end
+
+function Base.isequal(a::Propagator{P}, b::Propagator{P}) where {P}
+    if (isequal(a.para, b.para) == false) || (a.order != b.order) || (a.variable != b.variable)
+        return false
+    else
+        return true
+    end
+end
+Base.:(==)(a::Propagator{P}, b::Propagator{P}) where {P} = Base.isequal(a, b)
+
+
 struct Node{PARA}
     para::PARA
     operation::Int #1: multiply, 2: add, ...
@@ -15,7 +35,6 @@ struct Node{PARA}
     end
 end
 
-Base.:(==)(a::Node{P}, b::Node{P}) where {P} = Base.isequal(a, b)
 function Base.isequal(a::Node{P}, b::Node{P}) where {P}
     # only parent is allowed to be different
     if (isequal(a.para, b.para) == false) || (a.operation != b.operation) || (a.components != b.components) || (a.child != b.child)
@@ -24,6 +43,7 @@ function Base.isequal(a::Node{P}, b::Node{P}) where {P}
         return true
     end
 end
+Base.:(==)(a::Node{P}, b::Node{P}) where {P} = Base.isequal(a, b)
 
 mutable struct Diagrams{V,P,NODE,W}
     variable::V

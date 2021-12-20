@@ -26,6 +26,8 @@
     node1 = DiagTree.Node(1; components = [[1, 2], [3, 4]], child = [1, 2])
     node2 = DiagTree.Node(1; components = [[1, 2], [3, 4]], child = [1, 2])
     @test (node1 != node2) == false
+
+    #test diagram
 end
 
 @testset "DiagTree" begin
