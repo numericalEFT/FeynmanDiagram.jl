@@ -15,17 +15,16 @@
 mutable struct Cache{O,T}
     object::O
     id::Int
-    factor::T
     curr::T
     new::T
     version::Int128
     excited::Bool #if set to excited, then the current weight needs to be replaced with the new weight
     function Cache(object::O, curr::T, id, version = 1, excited = false) where {O,T}
-        return new{O,T}(object, id, T(1.0), curr, curr, version, excited)
+        return new{O,T}(object, id, curr, curr, version, excited)
     end
 end
 
-Base.show(io::IO, obj::Cache) = print(io, "id $(obj.id): para: $(obj.para) curr: $(obj.curr)")
+Base.show(io::IO, obj::Cache) = print(io, "id $(obj.id): obj: $(obj.object) curr: $(obj.curr)")
 
 struct Pool{O,T}
     pool::Vector{Cache{O,T}}
@@ -80,9 +79,15 @@ function append(pool, object, curr = zero(fieldtype(typeof(pool), 2)))
             return oi, false #existing obj
         end
     end
+
     id = length(pool)
+
     push!(pool.pool, Cache(object, curr, id))
     return id, true #new momentum
+end
+
+function append(pool, object, evaluate::Function)
+    append(pool, object, evaluate(object))
 end
 
 

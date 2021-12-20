@@ -3,12 +3,13 @@ include("pool.jl")
 using ..Var
 
 
-struct Propagator{PARA}
+struct Propagator{PARA,F}
     para::PARA
     order::Int
+    factor::F
     variable::Vector{Int}
-    function Propagator(order, variable = [], para::P = 0) where {P}
-        return new{P}(para, variable, order)
+    function Propagator(order, variable = [], factor::F = 1.0, para::P = 0) where {F,P}
+        return new{P,F}(para, variable, order)
     end
 end
 
@@ -21,23 +22,23 @@ function Base.isequal(a::Propagator{P}, b::Propagator{P}) where {P}
 end
 Base.:(==)(a::Propagator{P}, b::Propagator{P}) where {P} = Base.isequal(a, b)
 
-
-struct Node{PARA}
+struct Node{PARA,W}
     para::PARA
     operation::Int #1: multiply, 2: add, ...
+    factor::W
     components::Vector{Vector{Int}}
     child::Vector{Int}
     parent::Int # parent id
     # child::SubArray{CachedObject{Node{PARA, P},W},1,Vector{CachedObject{NODE,W}},Tuple{Vector{Int64}},false}
 
-    function Node(operation::Int; components = [[]], child = [], parent = 0, para::P = 0) where {P}
-        return new{P}(para, operation, components, child, parent)
+    function Node(operation::Int; components = [[]], child = [], parent = 0, factor::W = 1.0, para::P = 0) where {W,P}
+        return new{W,P}(para, operation, factor, components, child, parent)
     end
 end
 
 function Base.isequal(a::Node{P}, b::Node{P}) where {P}
     # only parent is allowed to be different
-    if (isequal(a.para, b.para) == false) || (a.operation != b.operation) || (a.components != b.components) || (a.child != b.child)
+    if (isequal(a.para, b.para) == false) || (a.operation != b.operation) || (a.components != b.components) || (a.child != b.child) || (a.factor != b.factor)
         return false
     else
         return true
@@ -45,10 +46,10 @@ function Base.isequal(a::Node{P}, b::Node{P}) where {P}
 end
 Base.:(==)(a::Node{P}, b::Node{P}) where {P} = Base.isequal(a, b)
 
-mutable struct Diagrams{V,P,NODE,W}
+mutable struct Diagrams{V,P,PARA,W}
     variable::V
     propagator::P
-    tree::Pool{NODE,W}
+    tree::Pool{Node{PARA,W},W}
     root::Vector{Int}
     # root::SubArray{CachedObject{NODE,W},1,Vector{CachedObject{NODE,W}},Tuple{Vector{Int64}},false}
     #SubArray has 5 type parameters. The first two are the standard element type and dimensionality. 
@@ -57,12 +58,34 @@ mutable struct Diagrams{V,P,NODE,W}
     #it's a boolean that represents whether the index types support fast linear indexing.
     # loopNum::Int
     # tauNum::Int
-    function Diagrams{NODE,W}(var::V, propagator::P) where {V,P,NODE,W}
-        return new{V,P,NODE,W}(var, propagator, Pool{NODE,W}(), [])
+    function Diagrams{PARA,W}(var::V, propagator::P) where {V,P,PARA,W}
+        return new{V,P,NODE,W}(var, propagator, Pool{Node{PARA,W},W}(), [])
     end
     function Diagrams{W}(var::V, propagator::P) where {V,P,W}
-        return new{V,P,Node{Int},W}(var, propagator, Pool{Node{Int},W}(), [])
+        PARA = Int
+        return new{V,P,PARA,W}(var, propagator, Pool{Node{PARA,W},W}(), [])
     end
 end
+
+# function addPropagator(diag::Diagrams, index, basis, curr, order, factor::F = 1.0, para::P = 0) where {F,P}
+#     @assert length(basis) == length(curr) == length(variable)
+
+#     PARA = fieldtype(propagator[i], 1)
+#     FACTOR = fieldtype(propagator[i], 2)
+#     factor = FACTOR(factor)
+#     para = PARA(para)
+
+#     if length(basis) == 1
+#         vidx = append(variable, basis, curr)
+#         return append(diag.propagator[index], Propagator{PARA,FACTOR}(order, [vidx,], factor, para), curr)
+#     else
+#         for (b, bi) in enumerate(basis)
+#             # @assert typeof(b) ==  
+#             append(variable[bi], basis[bi], curr[bi])
+#         end
+#     end
+# end
+
+
 
 end
