@@ -1,21 +1,35 @@
 module DiagTree
 include("pool.jl")
 
-# mutable struct Node{W,PARA,COM}
+# struct Node{PARA,P}
 #     para::PARA
-#     factor::Float64 #symmetry factor, Fermi factor, spin factor
-#     operation::Int #1: multiply, 2: add
+#     operation::Int #1: multiply, 2: add, ...
+#     propagator::P # tuple of CachedObject that host possible components (Nodes, propagators, ...)
 
-#     #### link to the other nodes and components ##########
 #     parent::Int # parent id
-#     nodes::Vector{Int} # store the indices of the child nodes
-#     components::COM # tuple of Vector{Int} that host other components
+#     # child::SubArray{CachedObject{Node{PARA, P},W},1,Vector{CachedObject{NODE,W}},Tuple{Vector{Int64}},false}
 
-#     function Node{W}(_parent = 0) where {W}
-#         new{W}(1, 0, 1.0, 0, false, [], [], W(0), W(0), _parent, [], [])
+#     function Node(para::P, operation::Int, branch::B, parent = 0) where {P,B}
+#         return new{P,B}(para, operation, branch, parent)
 #     end
-#     function Node{W}(id, operation::Int, factor, propagators = [], nodes = []; extK = [], extT = [], parent = 0) where {W}
-#         new{W}(id, operation, factor, 0, false, collect(extK), collect(extT), W(0), W(0), parent, propagators, nodes)
+# end
+
+# mutable struct Diagrams{V,P,NODE,W}
+#     variable::V
+#     propagator::P
+#     tree::Pool{NODE,W}
+#     # root::SubArray{CachedObject{NODE,W},1,Vector{CachedObject{NODE,W}},Tuple{Vector{Int64}},false}
+#     #SubArray has 5 type parameters. The first two are the standard element type and dimensionality. 
+#     #The next is the type of the parent AbstractArray. The most heavily-used is the fourth parameter, 
+#     #a Tuple of the types of the indices for each dimension. The final one, L, is only provided as a convenience for dispatch;
+#     #it's a boolean that represents whether the index types support fast linear indexing.
+#     # loopNum::Int
+#     # tauNum::Int
+#     function Diagrams(var::V, propagator::V) where {W}
+#         momenta = Vector{Momentum}(undef, 0)
+#         propagators = Vector{Propagator}(undef, 0)
+#         tree = Vector{Node{W}}(undef, 0)
+#         return new(momenta, propagators, tree, [])
 #     end
 # end
 
