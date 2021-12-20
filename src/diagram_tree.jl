@@ -2,7 +2,7 @@ module DiagTree
 include("pool.jl")
 using ..Var
 
-struct Node{PARA,T}
+struct Node{PARA}
     para::PARA
     operation::Int #1: multiply, 2: add, ...
     components::Vector{Vector{Int}}
@@ -10,13 +10,13 @@ struct Node{PARA,T}
     parent::Int # parent id
     # child::SubArray{CachedObject{Node{PARA, P},W},1,Vector{CachedObject{NODE,W}},Tuple{Vector{Int64}},false}
 
-    function Node(para::P, operation::Int, components = [[]], child = [], parent = 0) where {P,B}
-        return new{P,B}(para, operation, components, child, parent)
+    function Node(operation::Int; components = [[]], child = [], parent = 0, para::P = 0) where {P}
+        return new{P}(para, operation, components, child, parent)
     end
 end
 
-Base.:(==)(a::Node{P,T}, b::Node{P,T}) where {P,T} = Base.isequal(a, b)
-function Base.isequal(a::Node{P,T}, b::Node{P,T}) where {P,T}
+Base.:(==)(a::Node{P}, b::Node{P}) where {P} = Base.isequal(a, b)
+function Base.isequal(a::Node{P}, b::Node{P}) where {P}
     # only parent is allowed to be different
     if (isequal(a.para, b.para) == false) || (a.operation != b.operation) || (a.components != b.components) || (a.child != b.child)
         return false

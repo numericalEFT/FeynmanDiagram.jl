@@ -21,6 +21,11 @@
     c = Var.VectorVariable([1.0, 2.0, 2.0], [])
     @test isequal(a, b)
     @test isequal(a, c) == false #two vectors are different if the symmetries are different, regardless of the basis 
+
+    #test Node
+    node1 = DiagTree.Node(1; components = [[1, 2], [3, 4]], child = [1, 2])
+    node2 = DiagTree.Node(1; components = [[1, 2], [3, 4]], child = [1, 2])
+    @test (node1 != node2) == false
 end
 
 @testset "DiagTree" begin
