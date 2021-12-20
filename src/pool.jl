@@ -67,7 +67,13 @@ function Base.iterate(pool::Pool, state)
     end
 end
 
-function append(pool, object::O, curr::T) where {O,T}
+# function append(pool, object)
+
+#     curr = zero()
+#     append
+# end
+
+function append(pool, object, curr = zero(fieldtype(typeof(pool), 2)))
     # @assert para isa eltype(pool.pool)
     for (oi, o) in enumerate(pool.pool)
         if o.object == object

@@ -58,10 +58,10 @@ mutable struct Diagrams{V,P,NODE,W}
     # loopNum::Int
     # tauNum::Int
     function Diagrams{NODE,W}(var::V, propagator::P) where {V,P,NODE,W}
-        # momenta = Vector{Momentum}(undef, 0)
-        # propagators = Vector{Propagator}(undef, 0)
-        # tree = Vector{Node{W}}(undef, 0)
         return new{V,P,NODE,W}(var, propagator, Pool{NODE,W}(), [])
+    end
+    function Diagrams{W}(var::V, propagator::P) where {V,P,W}
+        return new{V,P,Node{Int},W}(var, propagator, Pool{Node{Int},W}(), [])
     end
 end
 

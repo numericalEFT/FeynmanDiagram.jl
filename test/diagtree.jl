@@ -30,6 +30,116 @@
     #test diagram
 end
 
+@testset "Generic Diagrams" begin
+
+    """
+        k1-k3                     k2+k3 
+        |                         | 
+    t1.L ↑     t1.L       t2.L     ↑ t2.L
+        |-------------->----------|
+        |       |  k3+k4   |      |
+        |   v   |          |  v   |
+        |       |    k4    |      |
+        |--------------<----------|
+    t1.L ↑    t1.L        t2.L     ↑ t2.L
+        |                         | 
+        k1                        k2
+    """
+    # We only consider the direct part of the above diagram
+    Gtype, Wtype = 1, 2
+    spin = 2.0
+    D = 3
+    kF, β, mass2 = 1.919, 0.5, 1.0
+
+    varK = [rand(D) for i = 1:4] #k1, k2, k3, k4
+    varT = [rand() * β, rand() * β]
+
+    calcK(varK, basis) = [varK[i] .* basis[i] for i = 1:length(varK)]
+
+    reflection = Var.refection(Float64, D)
+
+    Mom = Var.VectorVariable{Float64}
+    Tpair = Var.VectorVariable{Float64}
+
+    G = DiagTree.Propagator{Tuple{Int,Int}}
+    V = DiagTree.Propagator{Int}
+
+    MomPool = DiagTree.Pool{Mom,Vector{Float64}}()
+    TpairPool = DiagTree.Pool{Tpair,Vector{Float64}}()
+
+    GPool = DiagTree.Pool{G,Float64}()
+    VPool = DiagTree.Pool{V,Float64}()
+
+    diag = DiagTree.Diagrams{Float64}((MomPool, TpairPool), (GPool, VPool))
+
+    #construct the propagator table
+    gKbasis = [[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0]]
+    gTbasis = [[1, 2], [2, 1]]
+
+    DiagTree.append(MomPool, Mom(gKbasis[1], [reflection,]), calcK(varK, gKbasis[1]))
+    DiagTree.append(MomPool, Mom(gKbasis[2], [reflection,]), calcK(varK, gKbasis[2]))
+
+    # DiagTree.append(TpairPool, Tpair(gTbasis[1]), calcK(gT))
+
+
+    # g = [DiagTree.addPropagator!(diag, Gtype, 0, gK[i], gT[i], Gsym)[1] for i = 1:2]
+    # # G order is 0
+
+    # vdK = [[0, 0, 1, 0], [0, 0, 1, 0]]
+    # vdT = [[1, 1], [2, 2]]
+    # vd = [DiagTree.addPropagator!(diag, Wtype, 1, vdK[i], vdT[i], Wsym)[1] for i = 1:2]
+    # # W order is 1
+
+    # veK = [[1, 0, -1, -1], [0, 1, 0, -1]]
+    # veT = [[1, 1], [2, 2]]
+    # ve = [DiagTree.addPropagator!(diag, Wtype, 1, veK[i], veT[i], Wsym)[1] for i = 1:2]
+    # # W order is 1
+
+
+    # # contruct the tree
+    # MUL, ADD = 1, 2
+    # gg_n = DiagTree.addNode!(diag, MUL, 1.0, [g[1], g[2]], [])
+    # vdd = DiagTree.addNode!(diag, MUL, spin, [vd[1], vd[2]], [])
+    # vde = DiagTree.addNode!(diag, MUL, -1.0, [vd[1], ve[2]], [])
+    # ved = DiagTree.addNode!(diag, MUL, -1.0, [ve[1], vd[2]], [])
+    # vsum = DiagTree.addNode!(diag, ADD, 1.0, [], [vdd, vde, ved])
+    # root = DiagTree.addNode!(diag, MUL, 1.0, [], [gg_n, vsum])
+
+    # # DiagTree.showTree(diag)
+
+    # #make sure the total number of diagrams are correct
+    # evalPropagator1(type, K, Tidx, varT, factor = 1.0, para = nothing) = 1.0
+    # @test DiagTree.evalNaive(diag, evalPropagator1, varK, varT) ≈ -2 + 1 * spin
+
+    # #more sophisticated test of the weight evaluation
+    # function evalPropagator2(type, K, Tidx, varT, factor = 1.0, para = nothing)
+    #     if type == Gtype
+    #         ϵ = dot(K, K) / 2 - kF^2
+    #         τ = varT[Tidx[2]] - varT[Tidx[1]]
+    #         return Spectral.kernelFermiT(τ, ϵ, β)
+    #     elseif type == Wtype
+    #         return 8π / (dot(K, K) + mass2)
+    #     else
+    #         error("not implemented")
+    #     end
+    # end
+
+    # getK(basis, varK) = sum([basis[i] * K for (i, K) in enumerate(varK)])
+
+    # gw = [evalPropagator2(Gtype, getK(gK[i], varK), gT[i], varT) for i = 1:2]
+    # vdw = [evalPropagator2(Wtype, getK(vdK[i], varK), vdT[i], varT) for i = 1:2]
+    # vew = [evalPropagator2(Wtype, getK(veK[i], varK), veT[i], varT) for i = 1:2]
+
+    # Vweight = spin * vdw[1] * vdw[2] - vdw[1] * vew[2] - vew[1] * vdw[2]
+    # Weight = gw[1] * gw[2] * Vweight
+
+    # # println(DiagTree.evalNaive(diag, evalPropagator2, varK, varT))
+    # # println(Weight)
+    # @test DiagTree.evalNaive(diag, evalPropagator2, varK, varT) ≈ Weight
+
+
+end
+
 @testset "DiagTree" begin
     DiagTree = GWKT.DiagTree
     # Write your tests here.
