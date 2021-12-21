@@ -7,7 +7,7 @@ const ADD, MUL = 1, 2
 include("pool.jl")
 
 # struct Propagator, Node and Diagram
-include("diagrams.jl")
+include("object.jl")
 
 # IO operations
 include("io.jl")
