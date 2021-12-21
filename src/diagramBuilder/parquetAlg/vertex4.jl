@@ -14,10 +14,13 @@ struct Para
     F::Vector{Int}
     V::Vector{Int}
     interactionTauNum::Vector{Int} # list of possible τ degrees of freedom of the bare interaction 0, 2, or 4
-    greenType::DataType
-    interactionType::DataType
-    nodeType::DataType
-    function Para(chan, interactionTauNum, greenType, interactionType, spin = 1)
+    greenWeightType::DataType
+    # interactionWeightType::DataType
+    verWeightType::DataType
+
+    greenFactorType::DataType
+    verFactorType::DataType
+    function Para(chan, interactionTauNum, greenWeightType, verWeightType; greenFactorType = Float64, verFactorType = Float64, spin = 1)
 
         for tnum in interactionTauNum
             @assert tnum == 1 || tnum == 2 || tnum == 4
@@ -29,9 +32,7 @@ struct Para
         F = intersect(chan, Fchan)
         V = intersect(chan, Vchan)
 
-        nodeType = promote_type(greenType, interactionType)
-
-        return new(chan, spin, F, V, interactionTauNum, greenType, interactionType, nodeType)
+        return new(chan, spin, F, V, interactionTauNum, greenWeightType, verWeightType, greenFactorType, verWeightType)
     end
 end
 

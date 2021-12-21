@@ -1,9 +1,9 @@
 ################## Generate Expression Tree ########################
-# mutable struct NodeInfo
-#     isPropagator::Bool #is a propagator or a node
+# mutable struct verWeight
+#     isInteraction::Bool #is a propagator or a node
 #     di::Int #index to the direct term
 #     ex::Int #index to the exchange term
-#     function NodeInfo(isPropagator, di = -1, ex = -1)
+#     function NodeInfo(isInteraction, di = -1, ex = -1)
 #         return new(isPropagator, di, ex)
 #     end
 # end
@@ -49,7 +49,34 @@
 #     return propagators, nodes
 # end
 
-function buildTree(para::Para, loopNum::Int, legK, Kidx::Int, Tidx::Int, factor = 1.0, diag = nothing, ver4 = nothing)
+function _newDiagrams(para::Para, legK, evalK::Function)
+    Kbasis = Vector{Float64}
+    GTbasis = Tuple{Int,Int}
+    if maximum(para.interactionTauNum) == 2
+        WTbasis = Tuple{Int,Int}
+        Kpool = DiagTree.Pool{Kbasis,Vector{Float64}}()
+        Tpool = DiagTree.Pool{Tbasis,Float64}()
+    elseif maximum(para.interactionTauNum) == 1
+        WTbasis = Int
+    else
+        error("not implemented!")
+    end
+
+    # weightType = promote_type(para.greenWeightType, para.interactionWeightType)
+
+    G = DiagTree.Propagator{Int,para.greenFactorType}
+    W = DiagTree.Propagator{Int,para.verFactorType}
+
+    GPool = DiagTree.Pool{G,para.greenWeightType}()
+    WPool = DiagTree.Pool{W,para.verWeightType}()
+
+    # gorder, vorder = 0, 1
+
+
+    diag = DiagTree.Diagrams{Float64,Float64}((MomPool, TpairPool), (GPool, VPool))
+end
+
+function buildTree(para::Para, loopNum::Int, legK, evalK::Function; Kidx::Int, Tidx::Int, factor = 1.0, diag = nothing, ver4 = nothing)
     if isnothing(diag)
         diag = DiagTree.Diagrams{WeightType}()
     end
