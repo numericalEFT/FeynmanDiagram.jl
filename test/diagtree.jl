@@ -77,7 +77,7 @@ end
     Cache = DiagTree.Cache
 
     MomPool = DiagTree.Pool{Cache{MomBasis,Vector{Float64}}}()
-    TpairPool = DiagTree.Pool{Cache{TpairBasis,Float64}}()
+    TpairPool = DiagTree.Pool{TpairBasis}()
 
     GPool = DiagTree.Pool{Cache{G,Float64}}()
     VPool = DiagTree.Pool{Cache{V,Float64}}()

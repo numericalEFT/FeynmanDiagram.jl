@@ -32,7 +32,8 @@ mutable struct Cache{O,T}
     end
 end
 
-Base.show(io::IO, obj::Cache) = print(io, "id $(obj.id): obj: $(obj.object) curr: $(obj.curr)")
+# Base.show(io::IO, obj::Cache) = print(io, "id $(obj.id): obj: $(obj.object) curr: $(obj.curr)")
+Base.show(io::IO, obj::Cache) = print(io, "obj: $(obj.object) curr: $(obj.curr)")
 
 """
     struct Pool{O}
@@ -133,17 +134,22 @@ function Base.iterate(pool::PoolwithParameter, state)
     end
 end
 
-# function append(pool, object)
-
-#     curr = zero()
-#     append
-# end
+function isCached(pool)
+    ObjectInPoolType = eltype(pool.pool)
+    return ObjectInPoolType <: Cache
+end
 
 function append(pool, object, curr, isCached)
     # @assert para isa eltype(pool.pool)
     for (oi, o) in enumerate(pool.pool)
-        if o.object == object
-            return oi #existing obj
+        if isCached
+            if o.object == object
+                return oi #existing obj
+            end
+        else
+            if o == object
+                return oi #existing obj
+            end
         end
     end
 

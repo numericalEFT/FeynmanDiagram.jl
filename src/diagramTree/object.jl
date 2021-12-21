@@ -124,8 +124,7 @@ function addPropagator(diag::Diagrams, index::Int, order::Int, basis::AbstractVe
     vidx = zeros(length(basis))
     for (bi, b) in enumerate(basis)
         # b[1]: basis, b[2]: initialize variable (curr)
-        ObjectInPoolType = eltype(basisPool[bi].pool)
-        if ObjectInPoolType <: Cache
+        if isCached(basisPool[bi])
             vidx[bi] = append(basisPool[bi], b[1], b[2], true)
         else
             vidx[bi] = append(basisPool[bi], b[1], b[2], false)
