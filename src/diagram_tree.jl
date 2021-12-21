@@ -105,10 +105,15 @@ end
 
 function printBasisPool(diag::Diagrams)
     Nmax = maximum([length(b) for b in diag.basisPool])
+    print("index  ")
+    for (bi, b) in enumerate(diag.basisPool)
+        print("basis#$bi  ")
+    end
+    print("\n")
     for i = 1:Nmax
-        print("$i  ")
+        print("$i   ")
         for b in diag.basisPool
-            if length(b) <= i
+            if length(b) >= i
                 cachedobj = b[i]
                 print("$(cachedobj.object)  ")
             end
