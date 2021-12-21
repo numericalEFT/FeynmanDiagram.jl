@@ -9,18 +9,18 @@ struct Propagator{PARA,F}
     factor::F
     variable::Vector{Int}
     function Propagator(order, variable = [], factor::F = 1.0, para::P = 0) where {F,P}
-        return new{P,F}(para, variable, order)
+        return new{P,F}(para, order, factor, variable)
     end
 end
 
-function Base.isequal(a::Propagator{P}, b::Propagator{P}) where {P}
+function Base.isequal(a::Propagator{P,F}, b::Propagator{P,F}) where {P,F}
     if (isequal(a.para, b.para) == false) || (a.order != b.order) || (a.variable != b.variable)
         return false
     else
         return true
     end
 end
-Base.:(==)(a::Propagator{P}, b::Propagator{P}) where {P} = Base.isequal(a, b)
+Base.:(==)(a::Propagator{P,F}, b::Propagator{P,F}) where {P,F} = Base.isequal(a, b)
 
 struct Node{PARA,W}
     para::PARA
@@ -67,25 +67,32 @@ mutable struct Diagrams{V,P,PARA,W}
     end
 end
 
-# function addPropagator(diag::Diagrams, index, basis, curr, order, factor::F = 1.0, para::P = 0) where {F,P}
-#     @assert length(basis) == length(curr) == length(variable)
+function addPropagator(diag::Diagrams, index, order, basis, currVar, factor = 1, para = 0, curr = 0)
+    variablePool = diag.variable
+    propagator = diag.propagator
+    @assert length(basis) == length(variablePool) == length(currVar)
 
-#     PARA = fieldtype(propagator[i], 1)
-#     FACTOR = fieldtype(propagator[i], 2)
-#     factor = FACTOR(factor)
-#     para = PARA(para)
+    PARA = fieldtype(fieldtype(eltype(fieldtype(typeof(propagator[index]), :pool)), :object), :para)
+    FACTOR = fieldtype(eltype(fieldtype(typeof(propagator[index]), :pool)), :curr)
+    println(PARA, "\n ", FACTOR)
 
-#     if length(basis) == 1
-#         vidx = append(variable, basis, curr)
-#         return append(diag.propagator[index], Propagator{PARA,FACTOR}(order, [vidx,], factor, para), curr)
-#     else
-#         for (b, bi) in enumerate(basis)
-#             # @assert typeof(b) ==  
-#             append(variable[bi], basis[bi], curr[bi])
-#         end
-#     end
-# end
+    # PARA = fieldtype(typeof(propagator[index]), 1)
+    # FACTOR = fieldtype(typeof(propagator[index]), 2)
+    factor = FACTOR(factor)
+    para = PARA(para)
+    curr = FACTOR(curr)
 
+    vidx = zeros(length(basis))
 
+    if length(basis) == 1
+        vidx[1], _ = append(variablePool, basis, currVar)
+    else
+        vidx = zeros(length(basis))
+        for (bi, b) in enumerate(basis)
+            vidx[bi], _ = append(variablePool[bi], b, currVar[bi])
+        end
+    end
+    return append(diag.propagator[index], Propagator(order, vidx, factor, para), curr)
+end
 
 end
