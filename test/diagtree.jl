@@ -72,34 +72,24 @@ end
 
     G = DiagTree.Propagator{Int,Float64}
     V = DiagTree.Propagator{Int,Float64}
-    gorder = 0
-    vorder = 1
+    gorder, vorder = 0, 1
 
-    # MomPool = DiagTree.PoolwithParameter{MomBasis,Vector{Float64}}(varK)
-    # TpairPool = DiagTree.PoolwithParameter{TpairBasis,Float64}(varT)
     MomPool = DiagTree.Pool{MomBasis,Vector{Float64}}()
     TpairPool = DiagTree.Pool{TpairBasis,Float64}()
 
     GPool = DiagTree.Pool{G,Float64}()
     VPool = DiagTree.Pool{V,Float64}()
 
-    # function addPropagator(diag::Diagrams, index, order, basis, evalVar = nothing, evalPropagator = nothing, factor::F = 1.0, para::P = 0) where {F,P}
     diag = DiagTree.Diagrams{Float64,Float64}((MomPool, TpairPool), (GPool, VPool))
 
     # #construct the propagator table
     gK = [[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0]]
     gT = [(1, 2), (2, 1)]
-
     g = [DiagTree.addPropagator(diag, 1, gorder, [(gK[i], K0), (gT[i], T0)]) for i = 1:2]
-
-    # # G order is 0
 
     vdK = [[0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 1.0, 0.0]]
     vdT = [[1, 1], [2, 2]]
-
     vd = [DiagTree.addPropagator(diag, 2, vorder, [(vdK[i], K0),]) for i = 1:2]
-    # vd = [DiagTree.addPropagator!(diag, Wtype, 1, vdK[i], vdT[i], Wsym)[1] for i = 1:2]
-    # # W order is 1
 
     veK = [[1, 0, -1, -1], [0, 1, 0, -1]]
     veT = [[1, 1], [2, 2]]
@@ -115,16 +105,9 @@ end
     ved = DiagTree.addNode(diag, MUL, [[], [ve[1], vd[2]]], [], factor = -1.0)
     vsum = DiagTree.addNode(diag, ADD, [[], []], [vdd, vde, ved], factor = 1.0)
     root = DiagTree.addNode(diag, MUL, [[], []], [ggn, vsum], factor = 1.0)
+    push!(diag.root, root)
 
-    # MUL, ADD = 1, 2
-    # gg_n = DiagTree.addNode!(diag, MUL, 1.0, [g[1], g[2]], [])
-    # vdd = DiagTree.addNode!(diag, MUL, spin, [vd[1], vd[2]], [])
-    # vde = DiagTree.addNode!(diag, MUL, -1.0, [vd[1], ve[2]], [])
-    # ved = DiagTree.addNode!(diag, MUL, -1.0, [ve[1], vd[2]], [])
-    # vsum = DiagTree.addNode!(diag, ADD, 1.0, [], [vdd, vde, ved])
-    # root = DiagTree.addNode!(diag, MUL, 1.0, [], [gg_n, vsum])
-
-    # # DiagTree.showTree(diag)
+    DiagTree.showTree(diag)
 
     # #make sure the total number of diagrams are correct
     # evalPropagator1(type, K, Tidx, varT, factor = 1.0, para = nothing) = 1.0

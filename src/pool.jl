@@ -129,7 +129,6 @@ function append(pool, object, curr)
         end
     end
 
-    id = length(pool)
 
     CACHEDOBJECT = eltype(pool.pool)
     O = fieldtype(CACHEDOBJECT, :object)
@@ -141,7 +140,9 @@ function append(pool, object, curr)
     # println("O: ", O)
     # println("W: ", W)
 
+    id = length(pool) + 1
     push!(pool.pool, Cache{O,W}(object, curr, id))
+
     return id #new momentum
 end
 
