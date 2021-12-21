@@ -10,10 +10,14 @@ Parameters to generate diagrams using Parquet algorithm
 """
 struct Para
     chan::Vector{Int}
+    spin::Int
     F::Vector{Int}
     V::Vector{Int}
     interactionTauNum::Vector{Int} # list of possible τ degrees of freedom of the bare interaction 0, 2, or 4
-    function Para(chan, interactionTauNum)
+    greenType::DataType
+    interactionType::DataType
+    nodeType::DataType
+    function Para(chan, interactionTauNum, greenType, interactionType, spin = 1)
 
         for tnum in interactionTauNum
             @assert tnum == 1 || tnum == 2 || tnum == 4
@@ -25,7 +29,9 @@ struct Para
         F = intersect(chan, Fchan)
         V = intersect(chan, Vchan)
 
-        return new(chan, F, V, interactionTauNum)
+        nodeType = promote_type(greenType, interactionType)
+
+        return new(chan, spin, F, V, interactionTauNum, greenType, interactionType, nodeType)
     end
 end
 
@@ -138,14 +144,14 @@ struct Bubble{_Ver4,W} # template Bubble to avoid mutually recursive struct
 end
 
 """
-    Ver4{W}(loopNum, tidx, para::Para; chan=nothing, level=1, id=[1, ]) where {W}
+    function Ver4{W}(para::Para, loopNum, tidx = 1; chan = para.chan, level = 1, id = [1,]) where {W}
 
     Generate 4-vertex diagrams using Parquet Algorithm
 
 #Arguments
+- `para`: parameters
 - `loopNum`: momentum loop degrees of freedom of the 4-vertex diagrams
 - `tidx`: the first τ variable index. It is also the τ variable of the left incoming electron for all 4-vertex diagrams
-- `para`: parameters
 - `chan`: list of channels of the current 4-vertex. If not specified, it is set to be `para.chan`
 - `interactionTauNum`: list of possible τ degrees of freedom of the bare interaction 0, 2, or 4
 - `level`: level in the diagram tree
@@ -178,7 +184,7 @@ struct Ver4{W}
     Tpair::Vector{Tuple{Int,Int,Int,Int}}
     weight::Vector{W}
 
-    function Ver4{W}(loopNum, tidx, para::Para; chan = para.chan, level = 1, id = [1,]) where {W}
+    function Ver4{W}(para::Para, loopNum, tidx = 1; chan = para.chan, level = 1, id = [1,]) where {W}
         g = @SVector [Green() for i = 1:16]
         ver4 = new{W}(id[1], level, loopNum, chan, para.interactionTauNum, tidx, g, [], [], [])
         id[1] += 1

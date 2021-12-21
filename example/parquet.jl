@@ -8,9 +8,9 @@ Parquet = Builder.Parquet
 
 chan = [Parquet.T, Parquet.U, Parquet.S]
 
-para = Parquet.Para(chan, [1, 2])
+para = Parquet.Para(chan, [1, 2], Float64, Float64, 2)
 
-ver4 = Parquet.Ver4{Float64}(1, 1, para)
+ver4 = Parquet.Ver4{Float64}(para, 1, 1)
 
 ########## use AbstractTrees interface to print/manipulate the tree
 print_tree(ver4)
