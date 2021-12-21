@@ -101,8 +101,9 @@ end
     # vd = [DiagTree.addPropagator!(diag, Wtype, 1, vdK[i], vdT[i], Wsym)[1] for i = 1:2]
     # # W order is 1
 
-    # veK = [[1, 0, -1, -1], [0, 1, 0, -1]]
-    # veT = [[1, 1], [2, 2]]
+    veK = [[1.0, 0.0, -1.0, -1.0], [0.0, 1.0, 0.0, -1.0]]
+    veT = [[1, 1], [2, 2]]
+    ve = [DiagTree.addPropagator(diag, 2, vorder, (veK[i],), (K0,))[1] for i = 1:2]
     # ve = [DiagTree.addPropagator!(diag, Wtype, 1, veK[i], veT[i], Wsym)[1] for i = 1:2]
     # # W order is 1
 
