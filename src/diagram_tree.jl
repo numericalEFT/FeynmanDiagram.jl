@@ -34,7 +34,10 @@ struct Node{PARA,F}
     parent::Int # parent id
     # child::SubArray{CachedObject{Node{PARA, P},W},1,Vector{CachedObject{NODE,W}},Tuple{Vector{Int64}},false}
 
-    function Node(operation::Int; components = [[]], child = [], parent = 0, factor::F = 1.0, para::P = 0) where {F,P}
+    function Node(operation::Int, components = [[]], child = [], factor::F = 1.0, parent = 0, para::P = 0) where {F,P}
+        return new{P,F}(para, operation, factor, components, child, parent)
+    end
+    function Node{P,F}(operation::Int, components = [[]], child = [], factor = 1.0, parent = 0, para = 0) where {F,P}
         return new{P,F}(para, operation, factor, components, child, parent)
     end
 end
@@ -52,7 +55,7 @@ Base.:(==)(a::Node{P}, b::Node{P}) where {P} = Base.isequal(a, b)
 mutable struct Diagrams{V,P,PARA,F,W}
     basisPool::V
     propagatorPool::P
-    tree::Pool{Node{PARA,F},W}
+    nodePool::Pool{Node{PARA,F},W}
     root::Vector{Int}
     # root::SubArray{CachedObject{NODE,W},1,Vector{CachedObject{NODE,W}},Tuple{Vector{Int64}},false}
     #SubArray has 5 type parameters. The first two are the standard element type and dimensionality. 
@@ -88,6 +91,27 @@ function addPropagator(diag::Diagrams, index::Int, order::Int, basis::AbstractVe
     end
     prop = Propagator{PARA,F}(order, vidx, factor, para)
     return append(diag.propagatorPool[index], prop, currWeight)
+end
+
+# function Node{F, P}(operation::Int, components = [[]], child = [], parent = 0, factor = 1.0, para = 0) where {F,P}
+# function addNode(diag::Diagrams, operator, components::Vector{AbstractVector}, childNodes::AbstractVector; factor = 1.0, parent = 0, para = 0, currWeight = 0)
+function addNode(diag::Diagrams, operator, components, childNodes; factor = 1.0, parent = 0, para = 0, currWeight = 0.0)
+    nodePool = diag.nodePool
+    @assert length(components) == length(diag.propagatorPool) "each element of the components is an index vector of the corresponding propagator"
+
+    _NodePool = typeof(nodePool)
+    _CachedNode = eltype(fieldtype(_NodePool, :pool))
+    _Node = fieldtype(_CachedNode, :object)
+    PARA = fieldtype(_Node, :para)
+    F = fieldtype(_Node, :factor)
+
+    node = Node{PARA,F}(operator, components, childNodes, factor, parent, para)
+
+    # println("para: ", PARA)
+    # println("F: ", F)
+    # println("node: ", node)
+    nidx = append(nodePool, node, currWeight)
+    return nidx
 end
 
 end

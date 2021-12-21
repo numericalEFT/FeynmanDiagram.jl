@@ -16,16 +16,16 @@
 
     # test symmetry operator
     # symmetry = Var.refection(Float64, 3)
-    a = Var.VectorVariable([1.0, 2.0, 2.0])
-    b = Var.VectorVariable([-1.0, -2.0, -2.0])
-    c = Var.VectorVariable([1.0, 2.0, 2.0])
-    @test isequal(a, c)
-    @test isequal(a, b) == false #two vectors are different if the symmetries are different, regardless of the basis 
+    # a = Var.VectorVariable([1.0, 2.0, 2.0])
+    # b = Var.VectorVariable([-1.0, -2.0, -2.0])
+    # c = Var.VectorVariable([1.0, 2.0, 2.0])
+    # @test isequal(a, c)
+    # @test isequal(a, b) == false #two vectors are different if the symmetries are different, regardless of the basis 
 
     #test Node
-    node1 = DiagTree.Node(1; components = [[1, 2], [3, 4]], child = [1, 2])
-    node2 = DiagTree.Node(1; components = [[1, 2], [3, 4]], child = [1, 2])
-    @test (node1 != node2) == false
+    # node1 = DiagTree.Node(1; components = [[1, 2], [3, 4]], child = [1, 2])
+    # node2 = DiagTree.Node(1; components = [[1, 2], [3, 4]], child = [1, 2])
+    # @test (node1 != node2) == false
 
     #test diagram
 end
@@ -107,8 +107,15 @@ end
     # ve = [DiagTree.addPropagator!(diag, Wtype, 1, veK[i], veT[i], Wsym)[1] for i = 1:2]
     # # W order is 1
 
-
     # # contruct the tree
+    MUL, ADD = 1, 2
+    ggn = DiagTree.addNode(diag, MUL, [[g[1], g[2]], []], [], factor = 1.0)
+    vdd = DiagTree.addNode(diag, MUL, [[], [vd[1], vd[2]]], [], factor = spin)
+    vde = DiagTree.addNode(diag, MUL, [[], [vd[1], ve[2]]], [], factor = -1.0)
+    ved = DiagTree.addNode(diag, MUL, [[], [ve[1], vd[2]]], [], factor = -1.0)
+    vsum = DiagTree.addNode(diag, ADD, [[], []], [vdd, vde, ved], factor = 1.0)
+    root = DiagTree.addNode(diag, MUL, [[], []], [ggn, vsum], factor = 1.0)
+
     # MUL, ADD = 1, 2
     # gg_n = DiagTree.addNode!(diag, MUL, 1.0, [g[1], g[2]], [])
     # vdd = DiagTree.addNode!(diag, MUL, spin, [vd[1], vd[2]], [])

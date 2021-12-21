@@ -26,6 +26,7 @@ mutable struct Cache{O,T}
         return new{O,T}(object, id, zero(T), zero(T), version, excited)
     end
     function Cache{O,T}(object, curr, id, version = 1, excited = false) where {O,T}
+        # println("object: ", object)
         return new{O,T}(object, id, curr, curr, version, excited)
     end
 end
@@ -137,6 +138,8 @@ function append(pool, object, curr)
     # if isnothing(curr)
     #     curr = zero(W)
     # end
+    # println("O: ", O)
+    # println("W: ", W)
 
     push!(pool.pool, Cache{O,W}(object, curr, id))
     return id #new momentum
