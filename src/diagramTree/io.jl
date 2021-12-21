@@ -9,8 +9,9 @@ function printBasisPool(diag::Diagrams)
         print("$i   ")
         for b in diag.basisPool
             if length(b) >= i
-                cachedobj = b[i]
-                print("$(cachedobj.object)  ")
+                # cachedobj = b[i]
+                # print("$(cachedobj.object)  ")
+                print(sprint(show, b[i]) * "   ")
             end
         end
         print("\n")
