@@ -4,13 +4,14 @@
         Cache an object that is so heavy that one wants to cache their status without evaluating them on the fly.
         The user should defines a compare 
 
-    object::O : parameters that are needed to evaluate the object
-    id::Int : index of the object
-    factor::T : reweight factor of the current object, defaut to be 1
-    curr::T : current status
-    new::T : the new status wants to assign later
-    version::Int128 : the current version
-    excited::Bool : if set to excited, then the current status needs to be replaced with the new status
+# Members
+- object::O    : parameters that are needed to evaluate the object
+- id::Int      : index of the object
+- factor::T    : reweight factor of the current object, defaut to be 1
+- curr::T      : current status
+- new::T       : the new status wants to assign later
+- version::Int128 : the current version
+- excited::Bool   : if set to excited, then the current status needs to be replaced with the new status
 """
 mutable struct Cache{O,T}
     object::O
@@ -33,6 +34,14 @@ end
 
 Base.show(io::IO, obj::Cache) = print(io, "id $(obj.id): obj: $(obj.object) curr: $(obj.curr)")
 
+"""
+    struct Pool{O,T}
+
+        Pool of cached objects.
+
+# Members
+- pool::Vector{Cache{O,T}} : Vector that hosts the cached object
+"""
 struct Pool{O,T}
     pool::Vector{Cache{O,T}}
 
@@ -74,6 +83,15 @@ function Base.iterate(pool::Pool, state)
 end
 
 
+"""
+    struct PoolwithParameter{PARA,O,T}
+
+        Pool of cached objects, support additional parameter.
+
+# Members
+- para::PARA  : additional user-defined parameter
+- pool::Vector{Cache{O,T}} : Vector that hosts the cached object
+"""
 struct PoolwithParameter{PARA,O,T}
     para::PARA
     pool::Vector{Cache{O,T}}
