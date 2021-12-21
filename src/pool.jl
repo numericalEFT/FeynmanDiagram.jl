@@ -22,6 +22,9 @@ mutable struct Cache{O,T}
     function Cache(object::O, curr::T, id, version = 1, excited = false) where {O,T}
         return new{O,T}(object, id, curr, curr, version, excited)
     end
+    function Cache{T}(object::O, id, version = 1, excited = false) where {O,T}
+        return new{O,T}(object, id, zero(T), zero(T), version, excited)
+    end
 end
 
 Base.show(io::IO, obj::Cache) = print(io, "id $(obj.id): obj: $(obj.object) curr: $(obj.curr)")
@@ -41,7 +44,7 @@ end
 Base.length(pool::Pool) = length(pool.pool)
 Base.size(pool::Pool) = size(pool.pool)
 Base.show(io::IO, pool::Pool) = print(io, pool.pool)
-Base.view(pool::Pool, inds...) = Base.view(pool.pool, inds...)
+# Base.view(pool::Pool, inds...) = Base.view(pool.pool, inds...)
 
 #index interface for Pool
 Base.getindex(pool::Pool, i) = pool.pool[i]
@@ -59,6 +62,48 @@ function Base.iterate(pool::Pool)
 end
 
 function Base.iterate(pool::Pool, state)
+    if state >= length(pool) || length(pool) == 0
+        return nothing
+    else
+        return (pool[state+1], state + 1)
+    end
+end
+
+
+struct PoolwithParameter{PARA,O,T}
+    para::PARA
+    pool::Vector{Cache{O,T}}
+
+    function PoolwithParameter{O,T}(para::PARA) where {PARA,O,T}
+        pool = Vector{Cache{O,T}}(undef, 0)
+        return new{PARA,O,T}(para, pool)
+    end
+    function PoolwithParameter(_para::PARA, obj::Vector{Cache{O,T}}) where {PARA,O,T}
+        return new{PARA,O,T}(_para, obj)
+    end
+end
+
+Base.length(pool::PoolwithParameter) = length(pool.pool)
+Base.size(pool::PoolwithParameter) = size(pool.pool)
+Base.show(io::IO, pool::PoolwithParameter) = print(io, "para: $(pool.para), pool: $(pool.pool)")
+# Base.view(pool::PoolwithParameter, inds...) = Base.view(pool.pool, inds...)
+
+#index interface for Pool
+Base.getindex(pool::PoolwithParameter, i) = pool.pool[i]
+Base.setindex!(pool::PoolwithParameter, v, i) = setindex!(pool.pool, v, i)
+Base.firstindex(pool::PoolwithParameter) = 1
+Base.lastindex(pool::PoolwithParameter) = length(pool)
+
+# iterator interface
+function Base.iterate(pool::PoolwithParameter)
+    if length(pool) == 0
+        return nothing
+    else
+        return (pool.pool[1], 1)
+    end
+end
+
+function Base.iterate(pool::PoolwithParameter, state)
     if state >= length(pool) || length(pool) == 0
         return nothing
     else
@@ -86,8 +131,12 @@ function append(pool, object, curr = zero(fieldtype(typeof(pool), 2)))
     return id, true #new momentum
 end
 
-function append(pool, object, evaluate::Function)
+function append(pool::Pool, object, evaluate::Function)
     append(pool, object, evaluate(object))
+end
+
+function append(pool::PoolwithParameter, object, evaluate::Function)
+    append(pool, object, evaluate(pool.para, object))
 end
 
 
@@ -114,10 +163,10 @@ end
 #     return id, true #new momentum
 # end
 
-struct SubPool{O,T}
-    pool::Pool{O,T}
-    idx::Vector{Int}
-    function SubPool(pool::Pool{O,T}, idx = []) where {O,T}
-        return new{O,T}(pool, idx)
-    end
-end
+# struct SubPool{O,T}
+#     pool::Pool{O,T}
+#     idx::Vector{Int}
+#     function SubPool(pool::Pool{O,T}, idx = []) where {O,T}
+#         return new{O,T}(pool, idx)
+#     end
+# end

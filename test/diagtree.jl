@@ -4,14 +4,14 @@
     DiagTree.append(pool, 2, 3.0)
     DiagTree.append(pool, 3, 4.0)
 
-    v = DiagTree.SubPool(pool, [1, 3])
-    # v = view(pool, [1, 3])
-    new = 1.5
-    v.pool[v.idx[1]].curr = new
-    # println(typeof(v))
+    # v = DiagTree.SubPool(pool, [1, 3])
+    # # v = view(pool, [1, 3])
+    # new = 1.5
+    # v.pool[v.idx[1]].curr = new
+    # # println(typeof(v))
 
 
-    @test pool[1].curr ≈ new #test view only returns the reference
+    # @test pool[1].curr ≈ new #test view only returns the reference
 
 
     # test symmetry operator
@@ -57,39 +57,48 @@ end
     # reflection = Var.refection(Float64, D)
 
     # println(typeof(varK))
-    Mom = Var.VectorVariable{Vector{Vector{Float64}},Float64}
-    Tpair = Var.ScalarVariable{Vector{Float64},Tuple{Int,Int}}
+    # Mom = Var.VectorVariable{Vector{Vector{Float64}},Float64}
+    # Tpair = Var.ScalarVariable{Vector{Float64},Tuple{Int,Int}}
     # Base.isequal(a::Mom, b::Mom) = (Mom.basis ≈ Mom.basis) || (Mom.basis ≈ -Mom.basis)
 
-    calcK(k::Mom) = sum([k.para[i] .* k.basis[i] for i = 1:length(k.para)])
-    calcT(t::Tpair) = t.para[t.basis[2]] - t.para[t.basis[1]]
+    MomBasis = Vector{Float64}
+    TpairBasis = Tuple{Int,Int}
 
+    K0 = [0.0, 0.0, 0.0]
+    T0 = 0.0
 
-    G = DiagTree.Propagator{Tuple{Int,Int}}
-    V = DiagTree.Propagator{Int}
+    calcK(para, basis) = sum([para[i] .* basis[i] for i = 1:length(para)])
+    calcT(para, basis) = para[basis[2]] - para[basis[1]]
 
-    MomPool = DiagTree.Pool{Mom,Vector{Float64}}()
-    TpairPool = DiagTree.Pool{Tpair,Float64}()
+    G = DiagTree.Propagator{Int,Float64}
+    V = DiagTree.Propagator{Int,Float64}
+
+    MomPool = DiagTree.PoolwithParameter{MomBasis,Vector{Float64}}(varK)
+    TpairPool = DiagTree.PoolwithParameter{TpairBasis,Float64}(varT)
 
     GPool = DiagTree.Pool{G,Float64}()
     VPool = DiagTree.Pool{V,Float64}()
 
+    # function addPropagator(diag::Diagrams, index, order, basis, evalVar = nothing, evalPropagator = nothing, factor::F = 1.0, para::P = 0) where {F,P}
     diag = DiagTree.Diagrams{Float64}((MomPool, TpairPool), (GPool, VPool))
 
-    #construct the propagator table
+    # #construct the propagator table
     gK = [[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0]]
     gT = [(1, 2), (2, 1)]
 
-    DiagTree.append(MomPool, Mom(gK[1], varK), calcK)
-    DiagTree.append(MomPool, Mom(gK[2], varK), calcK)
+    DiagTree.addPropagator(diag, 1, 0, (gK[1], gT[1]), (K0, T0))
+    DiagTree.addPropagator(diag, 1, 0, (gK[2], gT[2]), (K0, T0))
 
-    DiagTree.append(TpairPool, Tpair(gT[1], varT), calcT)
-    DiagTree.append(TpairPool, Tpair(gT[2], varT), calcT)
+    # DiagTree.append(MomPool, Mom(gK[1], varK), calcK)
+    # DiagTree.append(MomPool, Mom(gK[2], varK), calcK)
+
+    # DiagTree.append(TpairPool, Tpair(gT[1], varT), calcT)
+    # DiagTree.append(TpairPool, Tpair(gT[2], varT), calcT)
 
     # DiagTree.append(TpairPool, Tpair(gTbasis[1]), calcK(gT))
 
 
-    # g = [DiagTree.addPropagator!(diag, Gtype, 0, gK[i], gT[i], Gsym)[1] for i = 1:2]
+    # g = [DiagTree.addPropagator(diag, Gtype, 0, gK[i], gT[i], Gsym)[1] for i = 1:2]
     # # G order is 0
 
     # vdK = [[0, 0, 1, 0], [0, 0, 1, 0]]
