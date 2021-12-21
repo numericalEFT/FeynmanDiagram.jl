@@ -85,14 +85,14 @@ Base.:(==)(a::Node{P}, b::Node{P}) where {P} = Base.isequal(a, b)
 mutable struct Diagrams{V,P,PARA,F,W}
     basisPool::V
     propagatorPool::P
-    nodePool::Pool{Node{PARA,F},W}
+    nodePool::Pool{Cache{Node{PARA,F},W}}
     root::Vector{Int}
     function Diagrams{PARA,F,W}(basisPool::V, propagatorPool::P) where {V,P,PARA,F,W}
-        return new{V,P,PARA,F,W}(basisPool, propagatorPool, Pool{Node{PARA,F},W}(), [])
+        return new{V,P,PARA,F,W}(basisPool, propagatorPool, Pool{Cache{Node{PARA,F},W}}(), [])
     end
     function Diagrams{F,W}(basisPool::V, propagatorPool::P) where {V,P,F,W}
         PARA = Int
-        return new{V,P,PARA,F,W}(basisPool, propagatorPool, Pool{Node{PARA,F},W}(), [])
+        return new{V,P,PARA,F,W}(basisPool, propagatorPool, Pool{Cache{Node{PARA,F},W}}(), [])
     end
 end
 
@@ -124,10 +124,15 @@ function addPropagator(diag::Diagrams, index::Int, order::Int, basis::AbstractVe
     vidx = zeros(length(basis))
     for (bi, b) in enumerate(basis)
         # b[1]: basis, b[2]: initialize variable (curr)
-        vidx[bi] = append(basisPool[bi], b[1], b[2])
+        ObjectInPoolType = eltype(basisPool[bi].pool)
+        if ObjectInPoolType <: Cache
+            vidx[bi] = append(basisPool[bi], b[1], b[2], true)
+        else
+            vidx[bi] = append(basisPool[bi], b[1], b[2], false)
+        end
     end
     prop = Propagator{PARA,F}(order, vidx, factor, para)
-    return append(diag.propagatorPool[index], prop, currWeight)
+    return append(diag.propagatorPool[index], prop, currWeight, true)
 end
 
 """
@@ -156,6 +161,6 @@ function addNode(diag::Diagrams, operator, components, childNodes; factor = 1.0,
 
     node = Node{PARA,F}(operator, components, childNodes, factor, parent, para)
 
-    nidx = append(nodePool, node, currWeight)
+    nidx = append(nodePool, node, currWeight, true)
     return nidx
 end
