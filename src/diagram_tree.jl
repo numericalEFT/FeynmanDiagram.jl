@@ -67,7 +67,7 @@ mutable struct Diagrams{V,P,PARA,W}
     end
 end
 
-function addPropagator(diag::Diagrams, index, order, basis, currVar, factor = 1, para = 0, curr = 0)
+function addPropagator(diag::Diagrams, index, order, basis, factor = 1, para = 0, curr = 0)
     variablePool = diag.variable
     propagator = diag.propagator
     # @assert length(basis) == length(variablePool) == length(currVar) "$(length(basis)) == $(length(variablePool)) == $(length(currVar)) breaks"
@@ -88,8 +88,13 @@ function addPropagator(diag::Diagrams, index, order, basis, currVar, factor = 1,
     # else
     vidx = zeros(length(basis))
     for (bi, b) in enumerate(basis)
-        # TYPE = fieldtype(eltype(fieldtype(typeof(variablePool[bi]), :pool)), :curr)
-        vidx[bi], _ = append(variablePool[bi], b, currVar[bi])
+        variable, currVar = b[1], b[2]
+        # println("var: ", variable)
+        # println("curr: ", curr)
+        # O = fieldtype(eltype(fieldtype(typeof(variablePool[bi]), :pool)), :object)
+        # T = fieldtype(eltype(fieldtype(typeof(variablePool[bi]), :pool)), :curr)
+        # vidx[bi], _ = append(variablePool[bi], O(b), T(currVar[bi]))
+        vidx[bi] = append(variablePool[bi], variable, currVar)
     end
     # end
     return append(diag.propagator[index], Propagator(order, vidx, factor, para), curr)

@@ -25,6 +25,9 @@ mutable struct Cache{O,T}
     function Cache{T}(object::O, id, version = 1, excited = false) where {O,T}
         return new{O,T}(object, id, zero(T), zero(T), version, excited)
     end
+    function Cache{O,T}(object, curr, id, version = 1, excited = false) where {O,T}
+        return new{O,T}(object, id, curr, curr, version, excited)
+    end
 end
 
 Base.show(io::IO, obj::Cache) = print(io, "id $(obj.id): obj: $(obj.object) curr: $(obj.curr)")
@@ -121,7 +124,7 @@ function append(pool, object, curr = zero(fieldtype(typeof(pool), 2)))
     # @assert para isa eltype(pool.pool)
     for (oi, o) in enumerate(pool.pool)
         if o.object == object
-            return oi, false #existing obj
+            return oi #existing obj
         end
     end
 
@@ -130,8 +133,16 @@ function append(pool, object, curr = zero(fieldtype(typeof(pool), 2)))
     # println("obj:", object)
     # println("curr: ", curr)
     # println("id: ", id)
-    push!(pool.pool, Cache(object, curr, id))
-    return id, true #new momentum
+
+    O = fieldtype(eltype(pool.pool), :object)
+    T = fieldtype(eltype(pool.pool), :curr)
+    # println(O)
+    # println(T)
+    # println("obj: ", object)
+
+    # push!(pool.pool, Cache(O(object), T(curr), id))
+    push!(pool.pool, Cache{O,T}(object, curr, id))
+    return id #new momentum
 end
 
 function append(pool::Pool, object, evaluate::Function)
