@@ -90,20 +90,20 @@ end
     gK = [[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0]]
     gT = [(1, 2), (2, 1)]
 
-    g = [DiagTree.addPropagator(diag, 1, gorder, (gK[i], gT[i]), (K0, T0))[1] for i = 1:2]
+    g = [DiagTree.addPropagator(diag, 1, gorder, [(gK[i], K0), (gT[i], T0)]) for i = 1:2]
 
     # # G order is 0
 
     vdK = [[0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 1.0, 0.0]]
     vdT = [[1, 1], [2, 2]]
 
-    vd = [DiagTree.addPropagator(diag, 2, vorder, (vdK[i],), (K0,))[1] for i = 1:2]
+    vd = [DiagTree.addPropagator(diag, 2, vorder, [(vdK[i], K0),]) for i = 1:2]
     # vd = [DiagTree.addPropagator!(diag, Wtype, 1, vdK[i], vdT[i], Wsym)[1] for i = 1:2]
     # # W order is 1
 
-    veK = [[1.0, 0.0, -1.0, -1.0], [0.0, 1.0, 0.0, -1.0]]
+    veK = [[1, 0, -1, -1], [0, 1, 0, -1]]
     veT = [[1, 1], [2, 2]]
-    ve = [DiagTree.addPropagator(diag, 2, vorder, (veK[i],), (K0,))[1] for i = 1:2]
+    ve = [DiagTree.addPropagator(diag, 2, vorder, [(veK[i], K0),]) for i = 1:2]
     # ve = [DiagTree.addPropagator!(diag, Wtype, 1, veK[i], veT[i], Wsym)[1] for i = 1:2]
     # # W order is 1
 
