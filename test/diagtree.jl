@@ -1,8 +1,8 @@
 @testset "Pool" begin
-    pool = DiagTree.Pool{Int64,Float64}()
-    DiagTree.append(pool, 1, 2.0)
-    DiagTree.append(pool, 2, 3.0)
-    DiagTree.append(pool, 3, 4.0)
+    # pool = DiagTree.Pool{Int64,Float64}()
+    # DiagTree.append(pool, 1, 2.0)
+    # DiagTree.append(pool, 2, 3.0)
+    # DiagTree.append(pool, 3, 4.0)
 
     # v = DiagTree.SubPool(pool, [1, 3])
     # # v = view(pool, [1, 3])
@@ -74,11 +74,13 @@ end
     V = DiagTree.Propagator{Int,Float64}
     gorder, vorder = 0, 1
 
-    MomPool = DiagTree.Pool{MomBasis,Vector{Float64}}()
-    TpairPool = DiagTree.Pool{TpairBasis,Float64}()
+    Cache = DiagTree.Cache
 
-    GPool = DiagTree.Pool{G,Float64}()
-    VPool = DiagTree.Pool{V,Float64}()
+    MomPool = DiagTree.Pool{Cache{MomBasis,Vector{Float64}}}()
+    TpairPool = DiagTree.Pool{Cache{TpairBasis,Float64}}()
+
+    GPool = DiagTree.Pool{Cache{G,Float64}}()
+    VPool = DiagTree.Pool{Cache{V,Float64}}()
 
     diag = DiagTree.Diagrams{Float64,Float64}((MomPool, TpairPool), (GPool, VPool))
 

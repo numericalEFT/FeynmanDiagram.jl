@@ -35,22 +35,22 @@ end
 Base.show(io::IO, obj::Cache) = print(io, "id $(obj.id): obj: $(obj.object) curr: $(obj.curr)")
 
 """
-    struct Pool{O,T}
+    struct Pool{O}
 
-        Pool of cached objects.
+        Pool of (cached) objects.
 
 # Members
-- pool::Vector{Cache{O,T}} : Vector that hosts the cached object
+- pool::Vector{O} : Vector that hosts the (cached) object
 """
-struct Pool{O,T}
-    pool::Vector{Cache{O,T}}
+struct Pool{O}
+    pool::Vector{O}
 
-    function Pool{O,T}() where {O,T}
-        pool = Vector{Cache{O,T}}(undef, 0)
-        return new{O,T}(pool)
+    function Pool{O}() where {O}
+        pool = Vector{O}(undef, 0)
+        return new{O}(pool)
     end
-    function Pool(obj::Vector{Cache{O,T}}) where {O,T}
-        return new{O,T}(obj)
+    function Pool(obj::Vector{O}) where {O}
+        return new{O}(obj)
     end
 end
 
@@ -84,24 +84,24 @@ end
 
 
 """
-    struct PoolwithParameter{PARA,O,T}
+    struct PoolwithParameter{PARA,O}
 
-        Pool of cached objects, support additional parameter.
+        Pool of (cached) objects, support additional parameter.
 
 # Members
 - para::PARA  : additional user-defined parameter
-- pool::Vector{Cache{O,T}} : Vector that hosts the cached object
+- pool::Vector{O} : Vector that hosts the (cached) object
 """
-struct PoolwithParameter{PARA,O,T}
+struct PoolwithParameter{PARA,O}
     para::PARA
-    pool::Vector{Cache{O,T}}
+    pool::Vector{O}
 
-    function PoolwithParameter{O,T}(para::PARA) where {PARA,O,T}
-        pool = Vector{Cache{O,T}}(undef, 0)
-        return new{PARA,O,T}(para, pool)
+    function PoolwithParameter{O}(para::PARA) where {PARA,O}
+        pool = Vector{O}(undef, 0)
+        return new{PARA,O}(para, pool)
     end
-    function PoolwithParameter(_para::PARA, obj::Vector{Cache{O,T}}) where {PARA,O,T}
-        return new{PARA,O,T}(_para, obj)
+    function PoolwithParameter(_para::PARA, obj::Vector{O}) where {PARA,O}
+        return new{PARA,O}(_para, obj)
     end
 end
 
@@ -139,7 +139,7 @@ end
 #     append
 # end
 
-function append(pool, object, curr)
+function append(pool, object, curr, isCached)
     # @assert para isa eltype(pool.pool)
     for (oi, o) in enumerate(pool.pool)
         if o.object == object
@@ -147,29 +147,25 @@ function append(pool, object, curr)
         end
     end
 
-
-    CACHEDOBJECT = eltype(pool.pool)
-    O = fieldtype(CACHEDOBJECT, :object)
-    W = fieldtype(CACHEDOBJECT, :curr)
-
-    # if isnothing(curr)
-    #     curr = zero(W)
-    # end
-    # println("O: ", O)
-    # println("W: ", W)
-
     id = length(pool) + 1
-    push!(pool.pool, Cache{O,W}(object, curr, id))
-
+    if isCached
+        CACHEDOBJECT = eltype(pool.pool)
+        O = fieldtype(CACHEDOBJECT, :object)
+        W = fieldtype(CACHEDOBJECT, :curr)
+        obj = Cache{O,W}(object, curr, id)
+    else
+        obj = object
+    end
+    push!(pool.pool, obj)
     return id #new momentum
 end
 
-function append(pool::Pool, object, evaluate::Function)
-    append(pool, object, evaluate(object))
+function append(pool::Pool, object, evaluate::Function, isCached)
+    append(pool, object, evaluate(object), isCached)
 end
 
-function append(pool::PoolwithParameter, object, evaluate::Function)
-    append(pool, object, evaluate(pool.para, object))
+function append(pool::PoolwithParameter, object, evaluate::Function, isCached)
+    append(pool, object, evaluate(pool.para, object), isCached)
 end
 
 
