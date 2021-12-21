@@ -8,17 +8,17 @@ struct Propagator{PARA,F}
     para::PARA
     order::Int
     factor::F
-    variable::Vector{Int}
-    function Propagator(order, variable = [], factor::F = 1.0, para::P = 0) where {F,P}
-        return new{P,F}(para, order, factor, variable)
+    basis::Vector{Int}
+    function Propagator(order, basis = [], factor::F = 1.0, para::P = 0) where {F,P}
+        return new{P,F}(para, order, factor, basis)
     end
-    function Propagator{P,F}(order, variable = [], factor = 1.0, para = 0) where {P,F}
-        return new{P,F}(para, order, factor, variable)
+    function Propagator{P,F}(order, basis = [], factor = 1.0, para = 0) where {P,F}
+        return new{P,F}(para, order, factor, basis)
     end
 end
 
 function Base.isequal(a::Propagator{P,F}, b::Propagator{P,F}) where {P,F}
-    if (isequal(a.para, b.para) == false) || (a.order != b.order) || (a.variable != b.variable)
+    if (isequal(a.para, b.para) == false) || (a.order != b.order) || (a.basis != b.basis)
         return false
     else
         return true
@@ -58,19 +58,12 @@ mutable struct Diagrams{V,P,PARA,F,W}
     propagatorPool::P
     nodePool::Pool{Node{PARA,F},W}
     root::Vector{Int}
-    # root::SubArray{CachedObject{NODE,W},1,Vector{CachedObject{NODE,W}},Tuple{Vector{Int64}},false}
-    #SubArray has 5 type parameters. The first two are the standard element type and dimensionality. 
-    #The next is the type of the parent AbstractArray. The most heavily-used is the fourth parameter, 
-    #a Tuple of the types of the indices for each dimension. The final one, L, is only provided as a convenience for dispatch;
-    #it's a boolean that represents whether the index types support fast linear indexing.
-    # loopNum::Int
-    # tauNum::Int
-    function Diagrams{PARA,F,W}(basis::V, propagator::P) where {V,P,PARA,F,W}
-        return new{V,P,PARA,F,W}(basis, propagator, Pool{Node{PARA,F},W}(), [])
+    function Diagrams{PARA,F,W}(basisPool::V, propagatorPool::P) where {V,P,PARA,F,W}
+        return new{V,P,PARA,F,W}(basisPool, propagatorPool, Pool{Node{PARA,F},W}(), [])
     end
-    function Diagrams{F,W}(basis::V, propagator::P) where {V,P,F,W}
+    function Diagrams{F,W}(basisPool::V, propagatorPool::P) where {V,P,F,W}
         PARA = Int
-        return new{V,P,PARA,F,W}(basis, propagator, Pool{Node{PARA,F},W}(), [])
+        return new{V,P,PARA,F,W}(basisPool, propagatorPool, Pool{Node{PARA,F},W}(), [])
     end
 end
 
@@ -94,10 +87,7 @@ function addPropagator(diag::Diagrams, index::Int, order::Int, basis::AbstractVe
     return append(diag.propagatorPool[index], prop, currWeight)
 end
 
-# function Node{F, P}(operation::Int, components = [[]], child = [], parent = 0, factor = 1.0, para = 0) where {F,P}
-# function addNode(diag::Diagrams, operator, components::Vector{AbstractVector}, childNodes::AbstractVector; factor = 1.0, parent = 0, para = 0, currWeight = 0)
 function addNode(diag::Diagrams, operator, components, childNodes; factor = 1.0, parent = 0, para = 0, currWeight = 0.0)
-    # println("components: ", components)
     nodePool = diag.nodePool
     @assert length(components) == length(diag.propagatorPool) "each element of the components is an index vector of the corresponding propagator"
 
@@ -109,11 +99,22 @@ function addNode(diag::Diagrams, operator, components, childNodes; factor = 1.0,
 
     node = Node{PARA,F}(operator, components, childNodes, factor, parent, para)
 
-    # println("para: ", PARA)
-    # println("F: ", F)
-    # println("node: ", node)
     nidx = append(nodePool, node, currWeight)
     return nidx
+end
+
+function printBasisPool(diag::Diagrams)
+    Nmax = maximum([length(b) for b in diag.basisPool])
+    for i = 1:Nmax
+        print("$i  ")
+        for b in diag.basisPool
+            if length(b) <= i
+                cachedobj = b[i]
+                print("$(cachedobj.object)  ")
+            end
+        end
+        print("\n")
+    end
 end
 
 """
@@ -122,17 +123,17 @@ end
     Visualize the diagram tree using ete3 python package
 
 #Arguments
-- `ver4`: the 4-vertex diagram tree to visualize
-- `para`: parameters
+- `diag`: the Diagrams struct to visualize
+- `_root`: the index of the root node to visualize
 - `verbose=0`: the amount of information to show
 - `depth=999`: deepest level of the diagram tree to show
 """
 function showTree(diag::Diagrams, _root = diag.root[end]; verbose = 0, depth = 999)
-    # println(diag)
-    # println(diag.nodePool)
     tree = diag.nodePool
     basisPool = diag.basisPool
     root = tree[_root]
+
+    printBasisPool(diag)
 
     # pushfirst!(PyVector(pyimport("sys")."path"), @__DIR__) #comment this line if no need to load local python module
     ete = PyCall.pyimport("ete3")
@@ -140,10 +141,8 @@ function showTree(diag::Diagrams, _root = diag.root[end]; verbose = 0, depth = 9
     function info(cachedNode)
         s = "N$(cachedNode.id):"
         node = cachedNode.object
-        s *= sprint(show, node)
-        # if isempty(node.extT) == false
-        #     s *= "T$(Tuple(node.extT)), "
-        # end
+        s *= sprint(show, node.para)
+        s *= ", "
 
         if node.operation == 1
             if (node.factor ≈ 1.0) == false
@@ -177,8 +176,6 @@ function showTree(diag::Diagrams, _root = diag.root[end]; verbose = 0, depth = 9
             end
         end
 
-        # println("node: ", cachedNode.object.components)
-
         for (ci, component) in enumerate(cachedNode.object.components)
             # println(component, ", ", ci)
             propagatorPool = diag.propagatorPool[ci]
@@ -186,22 +183,9 @@ function showTree(diag::Diagrams, _root = diag.root[end]; verbose = 0, depth = 9
                 p = propagatorPool[pidx].object #Propagator
                 factor = @sprintf("%3.1f", p.factor)
                 # nnt = nt.add_child(name = "P$pidx: typ $ci, K$(K[p.Kidx].basis), T$(p.Tidx), $factor")
-                nnt = nt.add_child(name = "P$pidx: typ $ci, var $(p.variable) $factor")
+                nnt = nt.add_child(name = "P$pidx: typ $ci, basis $(p.basis), factor: $factor")
             end
         end
-
-        # for pidx in cacheNode.propagators
-        #     if pidx != -1
-        #         p = diag.propagators[pidx]
-        #         factor = @sprintf("%3.1f", p.factor)
-        #         nnt = nt.add_child(name = "P$pidx: typ $(p.type), K$(K[p.Kidx].basis), T$(p.Tidx), $factor")
-        #     else
-        #         nnt = nt.add_child(name = "0")
-        #     end
-
-        #     # name_face = ete.TextFace(nnt.name, fgcolor = "black", fsize = 10)
-        #     # nnt.add_face(name_face, column = 0, position = "branch-top")
-        # end
 
         return t
     end
