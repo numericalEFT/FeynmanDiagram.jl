@@ -37,10 +37,10 @@ deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
 
 [[Conda]]
-deps = ["JSON", "VersionParsing"]
-git-tree-sha1 = "299304989a5e6473d985212c28928899c74e9421"
+deps = ["Downloads", "JSON", "VersionParsing"]
+git-tree-sha1 = "6cdc8832ba11c7695f494c9d9a1c31e90959ce0f"
 uuid = "8f4d0f93-b110-5947-807f-2305c1781a2d"
-version = "1.5.2"
+version = "1.6.0"
 
 [[Dates]]
 deps = ["Printf"]
@@ -99,9 +99,9 @@ version = "0.21.2"
 
 [[Lehmann]]
 deps = ["DelimitedFiles", "FastGaussQuadrature", "LinearAlgebra", "Printf", "Quadmath", "StaticArrays"]
-git-tree-sha1 = "0b7ac56cda33edab745bd3f4d90b2c3a4eb807d6"
+git-tree-sha1 = "011264d58bceeb682fdf285c3c12c1b56bba07fc"
 uuid = "95bf888a-8996-4655-9f35-1c0506bdfefe"
-version = "0.1.2"
+version = "0.2.0"
 
 [[LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
@@ -170,9 +170,9 @@ version = "0.5.5+0"
 
 [[Parsers]]
 deps = ["Dates"]
-git-tree-sha1 = "ae4bbcadb2906ccc085cf52ac286dc1377dceccc"
+git-tree-sha1 = "d7fa6237da8004be601e19bd6666083056649918"
 uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
-version = "2.1.2"
+version = "2.1.3"
 
 [[Pkg]]
 deps = ["Artifacts", "Dates", "Downloads", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
