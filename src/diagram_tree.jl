@@ -70,11 +70,10 @@ end
 function addPropagator(diag::Diagrams, index, order, basis, currVar, factor = 1, para = 0, curr = 0)
     variablePool = diag.variable
     propagator = diag.propagator
-    @assert length(basis) == length(variablePool) == length(currVar)
+    # @assert length(basis) == length(variablePool) == length(currVar) "$(length(basis)) == $(length(variablePool)) == $(length(currVar)) breaks"
 
     PARA = fieldtype(fieldtype(eltype(fieldtype(typeof(propagator[index]), :pool)), :object), :para)
     FACTOR = fieldtype(eltype(fieldtype(typeof(propagator[index]), :pool)), :curr)
-    println(PARA, "\n ", FACTOR)
 
     # PARA = fieldtype(typeof(propagator[index]), 1)
     # FACTOR = fieldtype(typeof(propagator[index]), 2)
@@ -84,14 +83,15 @@ function addPropagator(diag::Diagrams, index, order, basis, currVar, factor = 1,
 
     vidx = zeros(length(basis))
 
-    if length(basis) == 1
-        vidx[1], _ = append(variablePool, basis, currVar)
-    else
-        vidx = zeros(length(basis))
-        for (bi, b) in enumerate(basis)
-            vidx[bi], _ = append(variablePool[bi], b, currVar[bi])
-        end
+    # if length(basis) == 1
+    #     vidx[1], _ = append(variablePool, basis, currVar)
+    # else
+    vidx = zeros(length(basis))
+    for (bi, b) in enumerate(basis)
+        # TYPE = fieldtype(eltype(fieldtype(typeof(variablePool[bi]), :pool)), :curr)
+        vidx[bi], _ = append(variablePool[bi], b, currVar[bi])
     end
+    # end
     return append(diag.propagator[index], Propagator(order, vidx, factor, para), curr)
 end
 

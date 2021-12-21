@@ -127,6 +127,9 @@ function append(pool, object, curr = zero(fieldtype(typeof(pool), 2)))
 
     id = length(pool)
 
+    # println("obj:", object)
+    # println("curr: ", curr)
+    # println("id: ", id)
     push!(pool.pool, Cache(object, curr, id))
     return id, true #new momentum
 end
