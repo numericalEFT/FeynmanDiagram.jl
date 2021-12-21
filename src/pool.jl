@@ -120,7 +120,7 @@ end
 #     append
 # end
 
-function append(pool, object, curr = zero(fieldtype(typeof(pool), 2)))
+function append(pool, object, curr)
     # @assert para isa eltype(pool.pool)
     for (oi, o) in enumerate(pool.pool)
         if o.object == object
@@ -130,18 +130,15 @@ function append(pool, object, curr = zero(fieldtype(typeof(pool), 2)))
 
     id = length(pool)
 
-    # println("obj:", object)
-    # println("curr: ", curr)
-    # println("id: ", id)
+    CACHEDOBJECT = eltype(pool.pool)
+    O = fieldtype(CACHEDOBJECT, :object)
+    W = fieldtype(CACHEDOBJECT, :curr)
 
-    O = fieldtype(eltype(pool.pool), :object)
-    T = fieldtype(eltype(pool.pool), :curr)
-    # println(O)
-    # println(T)
-    # println("obj: ", object)
+    # if isnothing(curr)
+    #     curr = zero(W)
+    # end
 
-    # push!(pool.pool, Cache(O(object), T(curr), id))
-    push!(pool.pool, Cache{O,T}(object, curr, id))
+    push!(pool.pool, Cache{O,W}(object, curr, id))
     return id #new momentum
 end
 

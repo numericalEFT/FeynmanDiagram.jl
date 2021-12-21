@@ -84,7 +84,7 @@ end
     VPool = DiagTree.Pool{V,Float64}()
 
     # function addPropagator(diag::Diagrams, index, order, basis, evalVar = nothing, evalPropagator = nothing, factor::F = 1.0, para::P = 0) where {F,P}
-    diag = DiagTree.Diagrams{Float64}((MomPool, TpairPool), (GPool, VPool))
+    diag = DiagTree.Diagrams{Float64,Float64}((MomPool, TpairPool), (GPool, VPool))
 
     # #construct the propagator table
     gK = [[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0]]

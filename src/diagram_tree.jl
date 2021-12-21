@@ -11,6 +11,9 @@ struct Propagator{PARA,F}
     function Propagator(order, variable = [], factor::F = 1.0, para::P = 0) where {F,P}
         return new{P,F}(para, order, factor, variable)
     end
+    function Propagator{P,F}(order, variable = [], factor = 1.0, para = 0) where {P,F}
+        return new{P,F}(para, order, factor, variable)
+    end
 end
 
 function Base.isequal(a::Propagator{P,F}, b::Propagator{P,F}) where {P,F}
@@ -22,17 +25,17 @@ function Base.isequal(a::Propagator{P,F}, b::Propagator{P,F}) where {P,F}
 end
 Base.:(==)(a::Propagator{P,F}, b::Propagator{P,F}) where {P,F} = Base.isequal(a, b)
 
-struct Node{PARA,W}
+struct Node{PARA,F}
     para::PARA
     operation::Int #1: multiply, 2: add, ...
-    factor::W
+    factor::F
     components::Vector{Vector{Int}}
     child::Vector{Int}
     parent::Int # parent id
     # child::SubArray{CachedObject{Node{PARA, P},W},1,Vector{CachedObject{NODE,W}},Tuple{Vector{Int64}},false}
 
-    function Node(operation::Int; components = [[]], child = [], parent = 0, factor::W = 1.0, para::P = 0) where {W,P}
-        return new{W,P}(para, operation, factor, components, child, parent)
+    function Node(operation::Int; components = [[]], child = [], parent = 0, factor::F = 1.0, para::P = 0) where {F,P}
+        return new{P,F}(para, operation, factor, components, child, parent)
     end
 end
 
@@ -46,10 +49,10 @@ function Base.isequal(a::Node{P}, b::Node{P}) where {P}
 end
 Base.:(==)(a::Node{P}, b::Node{P}) where {P} = Base.isequal(a, b)
 
-mutable struct Diagrams{V,P,PARA,W}
-    variable::V
-    propagator::P
-    tree::Pool{Node{PARA,W},W}
+mutable struct Diagrams{V,P,PARA,F,W}
+    basisPool::V
+    propagatorPool::P
+    tree::Pool{Node{PARA,F},W}
     root::Vector{Int}
     # root::SubArray{CachedObject{NODE,W},1,Vector{CachedObject{NODE,W}},Tuple{Vector{Int64}},false}
     #SubArray has 5 type parameters. The first two are the standard element type and dimensionality. 
@@ -58,46 +61,33 @@ mutable struct Diagrams{V,P,PARA,W}
     #it's a boolean that represents whether the index types support fast linear indexing.
     # loopNum::Int
     # tauNum::Int
-    function Diagrams{PARA,W}(var::V, propagator::P) where {V,P,PARA,W}
-        return new{V,P,NODE,W}(var, propagator, Pool{Node{PARA,W},W}(), [])
+    function Diagrams{PARA,F,W}(basis::V, propagator::P) where {V,P,PARA,F,W}
+        return new{V,P,PARA,F,W}(basis, propagator, Pool{Node{PARA,F},W}(), [])
     end
-    function Diagrams{W}(var::V, propagator::P) where {V,P,W}
+    function Diagrams{F,W}(basis::V, propagator::P) where {V,P,F,W}
         PARA = Int
-        return new{V,P,PARA,W}(var, propagator, Pool{Node{PARA,W},W}(), [])
+        return new{V,P,PARA,F,W}(basis, propagator, Pool{Node{PARA,F},W}(), [])
     end
 end
 
-function addPropagator(diag::Diagrams, index, order, basis, factor = 1, para = 0, curr = 0)
-    variablePool = diag.variable
-    propagator = diag.propagator
+function addPropagator(diag::Diagrams, index::Int, order::Int, basis::AbstractVector, factor = 1, para = 0, currWeight = 0)
+    basisPool = diag.basisPool
+    propagatorPool = diag.propagatorPool
     # @assert length(basis) == length(variablePool) == length(currVar) "$(length(basis)) == $(length(variablePool)) == $(length(currVar)) breaks"
 
-    PARA = fieldtype(fieldtype(eltype(fieldtype(typeof(propagator[index]), :pool)), :object), :para)
-    FACTOR = fieldtype(eltype(fieldtype(typeof(propagator[index]), :pool)), :curr)
+    PROPAGATOR_POOL = typeof(propagatorPool[index])
+    CACHEDPROPAGATOR = eltype(fieldtype(PROPAGATOR_POOL, :pool))
+    PROPAGATOR = fieldtype(CACHEDPROPAGATOR, :object)
+    PARA = fieldtype(PROPAGATOR, :para)
+    F = fieldtype(PROPAGATOR, :factor)
 
-    # PARA = fieldtype(typeof(propagator[index]), 1)
-    # FACTOR = fieldtype(typeof(propagator[index]), 2)
-    factor = FACTOR(factor)
-    para = PARA(para)
-    curr = FACTOR(curr)
-
-    vidx = zeros(length(basis))
-
-    # if length(basis) == 1
-    #     vidx[1], _ = append(variablePool, basis, currVar)
-    # else
-    vidx = zeros(length(basis))
+    vidx = zeros(length(basisPool))
     for (bi, b) in enumerate(basis)
-        variable, currVar = b[1], b[2]
-        # println("var: ", variable)
-        # println("curr: ", curr)
-        # O = fieldtype(eltype(fieldtype(typeof(variablePool[bi]), :pool)), :object)
-        # T = fieldtype(eltype(fieldtype(typeof(variablePool[bi]), :pool)), :curr)
-        # vidx[bi], _ = append(variablePool[bi], O(b), T(currVar[bi]))
-        vidx[bi] = append(variablePool[bi], variable, currVar)
+        # b[1]: basis, b[2]: initialize variable (curr)
+        vidx[bi] = append(basisPool[bi], b[1], b[2])
     end
-    # end
-    return append(diag.propagator[index], Propagator(order, vidx, factor, para), curr)
+    prop = Propagator{PARA,F}(order, vidx, factor, para)
+    return append(diag.propagatorPool[index], prop, currWeight)
 end
 
 end
