@@ -49,7 +49,7 @@ function split(g0, gc, Lw, Rw, isLdirect, isRdirect)
     return propagators, nodes
 end
 
-function diagramTree(para::Para, loopNum::Int, legK, Kidx::Int, Tidx::Int, WeightType, Gsym, Wsym, spin, factor = 1.0, diag = nothing, ver4 = nothing)
+function buildTree(para::Para, loopNum::Int, legK, Kidx::Int, Tidx::Int, WeightType, spin, factor = 1.0, diag = nothing, ver4 = nothing)
     if isnothing(diag)
         diag = DiagTree.Diagrams{WeightType}()
     end

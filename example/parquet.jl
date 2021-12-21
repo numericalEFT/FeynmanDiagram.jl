@@ -4,7 +4,7 @@ using AbstractTrees
 using StaticArrays
 # const Weight = SVector{2,Float64}
 
-Parquet = GWKT.Parquet
+Parquet = Builder.Parquet
 
 chan = [Parquet.T, Parquet.U, Parquet.S]
 
@@ -29,21 +29,21 @@ println("Iterate the tree use the AbstractTrees interface: ")
 ########## use ete3 package to visualize tree
 # Parquet.showTree(ver4, para, verbose = 1, depth = 3)  # visualize tree using python3 package ete3
 
-para = Parquet.Para([Parquet.T,], [1, 2])
-KinL = KoutL = [1, 0, 0]
-KinR = KoutR = [0, 1, 0]
-legK = [KinL, KoutL, KinR, KoutR]
-Gsym = [:mirror]
-Wsym = [:mirror, :timereversal]
-spin = 2
-diag, ver4 = Parquet.diagramTree(para, 1, legK, 3, 1, Float64, Gsym, Wsym, spin)
+# para = Parquet.Para([Parquet.T,], [1, 2])
+# KinL = KoutL = [1, 0, 0]
+# KinR = KoutR = [0, 1, 0]
+# legK = [KinL, KoutL, KinR, KoutR]
+# Gsym = [:mirror]
+# Wsym = [:mirror, :timereversal]
+# spin = 2
+# diag, ver4 = Parquet.diagramTree(para, 1, legK, 3, 1, Float64, Gsym, Wsym, spin)
 
-print_tree(ver4)
-# nodeDi = length(diag.tree) - 2 #the last second node is for ve*vec
-# nodeEx = length(diag.tree)
-# GWKT.DiagTree.showTree(diag, nodeDi)
-# GWKT.DiagTree.showTree(diag, nodeEx)
-println(diag.root)
-for root in diag.root
-    GWKT.DiagTree.showTree(diag, root)
-end
+# print_tree(ver4)
+# # nodeDi = length(diag.tree) - 2 #the last second node is for ve*vec
+# # nodeEx = length(diag.tree)
+# # GWKT.DiagTree.showTree(diag, nodeDi)
+# # GWKT.DiagTree.showTree(diag, nodeEx)
+# println(diag.root)
+# for root in diag.root
+#     GWKT.DiagTree.showTree(diag, root)
+# end
