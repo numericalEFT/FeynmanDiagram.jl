@@ -1,4 +1,5 @@
 module DiagTree
+using Printf, PyCall
 include("pool.jl")
 using ..Var
 
@@ -30,7 +31,7 @@ struct Node{PARA,F}
     operation::Int #1: multiply, 2: add, ...
     factor::F
     components::Vector{Vector{Int}}
-    child::Vector{Int}
+    childNodes::Vector{Int}
     parent::Int # parent id
     # child::SubArray{CachedObject{Node{PARA, P},W},1,Vector{CachedObject{NODE,W}},Tuple{Vector{Int64}},false}
 
@@ -84,7 +85,7 @@ function addPropagator(diag::Diagrams, index::Int, order::Int, basis::AbstractVe
     PARA = fieldtype(PROPAGATOR, :para)
     F = fieldtype(PROPAGATOR, :factor)
 
-    vidx = zeros(length(basisPool))
+    vidx = zeros(length(basis))
     for (bi, b) in enumerate(basis)
         # b[1]: basis, b[2]: initialize variable (curr)
         vidx[bi] = append(basisPool[bi], b[1], b[2])
@@ -96,6 +97,7 @@ end
 # function Node{F, P}(operation::Int, components = [[]], child = [], parent = 0, factor = 1.0, para = 0) where {F,P}
 # function addNode(diag::Diagrams, operator, components::Vector{AbstractVector}, childNodes::AbstractVector; factor = 1.0, parent = 0, para = 0, currWeight = 0)
 function addNode(diag::Diagrams, operator, components, childNodes; factor = 1.0, parent = 0, para = 0, currWeight = 0.0)
+    # println("components: ", components)
     nodePool = diag.nodePool
     @assert length(components) == length(diag.propagatorPool) "each element of the components is an index vector of the corresponding propagator"
 
@@ -112,6 +114,117 @@ function addNode(diag::Diagrams, operator, components, childNodes; factor = 1.0,
     # println("node: ", node)
     nidx = append(nodePool, node, currWeight)
     return nidx
+end
+
+"""
+    showTree(diag::Diagrams, _root = diag.root[end]; verbose = 0, depth = 999)
+
+    Visualize the diagram tree using ete3 python package
+
+#Arguments
+- `ver4`: the 4-vertex diagram tree to visualize
+- `para`: parameters
+- `verbose=0`: the amount of information to show
+- `depth=999`: deepest level of the diagram tree to show
+"""
+function showTree(diag::Diagrams, _root = diag.root[end]; verbose = 0, depth = 999)
+    # println(diag)
+    # println(diag.nodePool)
+    tree = diag.nodePool
+    basisPool = diag.basisPool
+    root = tree[_root]
+
+    # pushfirst!(PyVector(pyimport("sys")."path"), @__DIR__) #comment this line if no need to load local python module
+    ete = PyCall.pyimport("ete3")
+
+    function info(cachedNode)
+        s = "N$(cachedNode.id):"
+        node = cachedNode.object
+        s *= sprint(show, node)
+        # if isempty(node.extT) == false
+        #     s *= "T$(Tuple(node.extT)), "
+        # end
+
+        if node.operation == 1
+            if (node.factor ≈ 1.0) == false
+                s *= @sprintf("%3.1f", node.factor)
+            end
+            s *= "x "
+        elseif node.operation == 2
+            @assert node.factor ≈ 1.0
+            s *= "+ "
+        else
+            error("not implemented!")
+        end
+        return s
+    end
+
+
+    function treeview(cachedNode, level, t = nothing)
+        if isnothing(t)
+            t = ete.Tree(name = " ")
+        end
+
+        nt = t.add_child(name = info(cachedNode))
+        name_face = ete.TextFace(nt.name, fgcolor = "black", fsize = 10)
+        nt.add_face(name_face, column = 0, position = "branch-top")
+
+        for child in cachedNode.object.childNodes
+            if child != -1
+                treeview(tree[child], level + 1, nt)
+            else
+                nnt = nt.add_child(name = "0")
+            end
+        end
+
+        # println("node: ", cachedNode.object.components)
+
+        for (ci, component) in enumerate(cachedNode.object.components)
+            # println(component, ", ", ci)
+            propagatorPool = diag.propagatorPool[ci]
+            for pidx in component
+                p = propagatorPool[pidx].object #Propagator
+                factor = @sprintf("%3.1f", p.factor)
+                # nnt = nt.add_child(name = "P$pidx: typ $ci, K$(K[p.Kidx].basis), T$(p.Tidx), $factor")
+                nnt = nt.add_child(name = "P$pidx: typ $ci, var $(p.variable) $factor")
+            end
+        end
+
+        # for pidx in cacheNode.propagators
+        #     if pidx != -1
+        #         p = diag.propagators[pidx]
+        #         factor = @sprintf("%3.1f", p.factor)
+        #         nnt = nt.add_child(name = "P$pidx: typ $(p.type), K$(K[p.Kidx].basis), T$(p.Tidx), $factor")
+        #     else
+        #         nnt = nt.add_child(name = "0")
+        #     end
+
+        #     # name_face = ete.TextFace(nnt.name, fgcolor = "black", fsize = 10)
+        #     # nnt.add_face(name_face, column = 0, position = "branch-top")
+        # end
+
+        return t
+    end
+
+    t = treeview(root, 1)
+    # style = ete.NodeStyle()
+    # style["bgcolor"] = "Khaki"
+    # t.set_style(style)
+
+
+    ts = ete.TreeStyle()
+    ts.show_leaf_name = true
+    # ts.show_leaf_name = True
+    # ts.layout_fn = my_layout
+    ####### show tree vertically ############
+    # ts.rotation = 90 #show tree vertically
+
+    ####### show tree in an arc  #############
+    # ts.mode = "c"
+    # ts.arc_start = -180
+    # ts.arc_span = 180
+    # t.write(outfile="/home/kun/test.txt", format=8)
+    t.show(tree_style = ts)
 end
 
 end
