@@ -99,7 +99,7 @@ mutable struct Diagrams{V,P,PARA,F,W}
     #     PARA = Int
     #     return new{V,P,PARA,F,W}(basisPool, propagatorPool, Pool{Cache{Node{PARA,F},W}}(), [])
     # end
-    function Diagrams(basisPool::V, propagatorPool::P, nodeFactorType::DataType, nodeWeightType::DataType = nodeFactorType, nodeParaType::DataType = Int) where {V,P}
+    function Diagrams(basisPool::V, propagatorPool::P, nodeWeightType::DataType, nodeFactorType::DataType, nodeParaType::DataType = Int) where {V,P}
         @assert V <: Tuple "Tuple is required for efficiency!"
         @assert P <: Tuple "Tuple is required for efficiency!"
         # println(basisPool)

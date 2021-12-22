@@ -83,7 +83,7 @@ end
     GPool = DiagTree.propagatorPool(Float64, Float64)
     VPool = DiagTree.propagatorPool(Float64, Float64)
 
-    diag = DiagTree.Diagrams((MomPool, TpairPool), (GPool, VPool), Float64)
+    diag = DiagTree.Diagrams((MomPool, TpairPool), (GPool, VPool), Float64, Float64)
 
     # #construct the propagator table
     gK = [[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0]]
