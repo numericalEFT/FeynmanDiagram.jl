@@ -202,8 +202,7 @@ struct Ver4{W}
                 addTidx(ver4, (tidx, tidx, tidx, tidx)) #exchange instant interaction
             end
             if para.interactionTauNum == 2  # interaction with incoming and outing τ varibales
-                addTidx(ver4, (tidx, tidx, tidx, tidx))  # direct instant interaction
-                addTidx(ver4, (tidx, tidx, tidx, tidx))  # exchange instant interaction
+                addTidx(ver4, (tidx, tidx, tidx, tidx))  # direct and exchange instant interaction
                 addTidx(ver4, (tidx, tidx, tidx + 1, tidx + 1))  # direct dynamic interaction
                 addTidx(ver4, (tidx, tidx + 1, tidx + 1, tidx))  # exchange dynamic interaction
             end

@@ -36,7 +36,7 @@ KinR = KoutR = [0, 1, 0]
 legK = [KinL, KoutL, KinR, KoutR]
 
 varK = [rand(3), rand(3), rand(3)]
-varT = [rand(), rand()]
+varT = [rand(), rand(), rand(), rand()]
 evalK(basis) = sum([basis[i] * varK[i] for i in 1:3])
 evalT(Tidx) = varT[Tidx]
 # diag, ver4 = Parquet.diagramTree(para, 1, legK, 3, 1, Float64, Gsym, Wsym, spin)
