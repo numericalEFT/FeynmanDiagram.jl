@@ -31,6 +31,11 @@ function Base.isequal(a::Propagator{P,F}, b::Propagator{P,F}) where {P,F}
 end
 Base.:(==)(a::Propagator{P,F}, b::Propagator{P,F}) where {P,F} = Base.isequal(a, b)
 
+function propagatorPool(weightType::DataType, factorType::DataType, paraType::DataType = Int)
+    propagatorType = Propagator{paraType,factorType}
+    return Pool{Cache{propagatorType,weightType}}()
+end
+
 """
     mutable struct Node{PARA,F}
 
@@ -87,12 +92,20 @@ mutable struct Diagrams{V,P,PARA,F,W}
     propagatorPool::P
     nodePool::Pool{Cache{Node{PARA,F},W}}
     root::Vector{Int}
-    function Diagrams{PARA,F,W}(basisPool::V, propagatorPool::P) where {V,P,PARA,F,W}
-        return new{V,P,PARA,F,W}(basisPool, propagatorPool, Pool{Cache{Node{PARA,F},W}}(), [])
-    end
-    function Diagrams{F,W}(basisPool::V, propagatorPool::P) where {V,P,F,W}
-        PARA = Int
-        return new{V,P,PARA,F,W}(basisPool, propagatorPool, Pool{Cache{Node{PARA,F},W}}(), [])
+    # function Diagrams{PARA,F,W}(basisPool::V, propagatorPool::P) where {V,P,PARA,F,W}
+    #     return new{V,P,PARA,F,W}(basisPool, propagatorPool, Pool{Cache{Node{PARA,F},W}}(), [])
+    # end
+    # function Diagrams{F,W}(basisPool::V, propagatorPool::P) where {V,P,F,W}
+    #     PARA = Int
+    #     return new{V,P,PARA,F,W}(basisPool, propagatorPool, Pool{Cache{Node{PARA,F},W}}(), [])
+    # end
+    function Diagrams(basisPool::V, propagatorPool::P, nodeFactorType::DataType, nodeWeightType::DataType = nodeFactorType, nodeParaType::DataType = Int) where {V,P}
+        @assert V <: Tuple "Tuple is required for efficiency!"
+        @assert P <: Tuple "Tuple is required for efficiency!"
+        # println(basisPool)
+        # println(propagatorPool)
+        nodePool = Pool{Cache{Node{nodeParaType,nodeFactorType},nodeWeightType}}()
+        return new{V,P,nodeParaType,nodeFactorType,nodeWeightType}(basisPool, propagatorPool, nodePool, [])
     end
 end
 

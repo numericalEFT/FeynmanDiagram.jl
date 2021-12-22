@@ -70,8 +70,6 @@ end
     calcK(para, basis) = sum([para[i] .* basis[i] for i = 1:length(para)])
     calcT(para, basis) = para[basis[2]] - para[basis[1]]
 
-    G = DiagTree.Propagator{Int,Float64}
-    V = DiagTree.Propagator{Int,Float64}
     gorder, vorder = 0, 1
 
     Cache = DiagTree.Cache
@@ -79,10 +77,10 @@ end
     MomPool = DiagTree.Pool{Cache{MomBasis,Vector{Float64}}}()
     TpairPool = DiagTree.Pool{TpairBasis}()
 
-    GPool = DiagTree.Pool{Cache{G,Float64}}()
-    VPool = DiagTree.Pool{Cache{V,Float64}}()
+    GPool = DiagTree.propagatorPool(Float64, Float64)
+    VPool = DiagTree.propagatorPool(Float64, Float64)
 
-    diag = DiagTree.Diagrams{Float64,Float64}((MomPool, TpairPool), (GPool, VPool))
+    diag = DiagTree.Diagrams((MomPool, TpairPool), (GPool, VPool), Float64)
 
     # #construct the propagator table
     gK = [[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0]]
