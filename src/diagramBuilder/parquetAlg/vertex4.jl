@@ -1,3 +1,10 @@
+# struct Propagator
+#     weightType::DataType
+#     factorType::DataType
+#     eval::Function
+# end
+
+
 """
 Para(chan, interactionTauNum)
 
@@ -191,7 +198,8 @@ struct Ver4{W}
         if loopNum == 0
             # bare interaction may have one, two or four independent tau variables
             if para.interactionTauNum == 1  # instantaneous interaction
-                addTidx(ver4, (tidx, tidx, tidx, tidx))
+                addTidx(ver4, (tidx, tidx, tidx, tidx)) #direct instant intearction
+                addTidx(ver4, (tidx, tidx, tidx, tidx)) #exchange instant interaction
             end
             if para.interactionTauNum == 2  # interaction with incoming and outing τ varibales
                 addTidx(ver4, (tidx, tidx, tidx, tidx))  # direct instant interaction

@@ -43,7 +43,7 @@ evalT(Tidx) = varT[Tidx]
 # ver4 = Parquet.Ver4{Int}(para, 1, 1)
 # println("ver4444...")
 # println(ver4)
-diag, ver4 = Parquet.buildTree(para, 1, legK, 3, 1, evalK, evalT, 1.0)
+diag, ver4 = Parquet.ver4toDiagTree(para, 1, legK, 3, 1, evalK, evalT, 1.0)
 
 # print_tree(ver4)
 # # nodeDi = length(diag.tree) - 2 #the last second node is for ve*vec
