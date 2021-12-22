@@ -118,7 +118,7 @@ end
 - diag::Diagrams : Diagram tree.
 - index::Int     : Index of the propagator in the diagram tree.
 - order::Int     : Order of the propagator
-- basis::AbstractVector : Vector of the pair [variable basis, initial variable]. For example, if a propagator involves both a momentum and a time variable, then the basis should be [[Kbasis, K0], [Tbasis, T0]], where K0, T0 are the initial values of the momentum and the time.
+- basis::AbstractVector : Vector of the pair (basisPool index, variable basis, initial variable). For example, if a propagator involves both a momentum and a time variable, then the basis should be [[Kbasis, K0], [Tbasis, T0]], where K0, T0 are the initial values of the momentum and the time.
 - factor = 1     : Factor of the propagator
 - para = 0       : Additional paramenter required to evaluate the propagator. If not needed, simply leave it as an integer.
 - currWeight = 0 : Initial weight of the propagator
@@ -135,12 +135,12 @@ function addPropagator(diag::Diagrams, index::Int, order::Int, basis::AbstractVe
     F = fieldtype(PROPAGATOR, :factor)
 
     vidx = zeros(length(basis))
-    for (bi, b) in enumerate(basis)
+    for (bi, b, curr) in basis
         # b[1]: basis, b[2]: initialize variable (curr)
         if isCached(basisPool[bi])
-            vidx[bi] = append(basisPool[bi], b[1], b[2], true)
+            vidx[bi] = append(basisPool[bi], b, curr, true)
         else
-            vidx[bi] = append(basisPool[bi], b[1], b[2], false)
+            vidx[bi] = append(basisPool[bi], b, curr, false)
         end
     end
     prop = Propagator{PARA,F}(order, vidx, factor, para)
