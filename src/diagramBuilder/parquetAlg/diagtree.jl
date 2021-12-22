@@ -71,7 +71,7 @@ function _newDiag(para::Para, legK, evalK::Function)
     return DiagTree.Diagrams((Kpool, GTpool, WTpool), (Gpool, Wpool), para.verWeightType, para.verFactorType)
 end
 
-function buildTree(para::Para, loopNum::Int, legK, evalK::Function; Kidx::Int, Tidx::Int, factor = 1.0,
+function buildTree(para::Para, loopNum::Int, legK, Kidx::Int, Tidx::Int, evalK::Function, evalT::Function, factor = 1.0,
     diag = _newDiag(para, legK, evalK), ver4 = Ver4{para.verWeightType}(para, loopNum, Tidx))
     KinL, KoutL, KinR, KoutR = legK[1], legK[2], legK[3], legK[4]
     @assert KinL .+ KinR .≈ KoutL .+ KoutR
@@ -85,7 +85,9 @@ function buildTree(para::Para, loopNum::Int, legK, evalK::Function; Kidx::Int, T
     Tidx = ver4.Tidx
     if ver4.loopNum == 0
         if maximum(ver4.interactionTauNum) == 2
-            w = DiagTree.addPropagator(diag, 2, Vorder, (qd, qe), (Tidx, Tidx + 1))
+            tbasis = [2, (Tidx, Tidx + 1), (evalT(Tidx), evalT(Tidx + 1))]
+            qdbasis, qebasis = [1, qd, evalK(qd)], [1, qe, evalK(qe)]
+            w = DiagTree.addPropagator(diag, 2, Vorder, [qdbasis, qebasis, tbasis])
             # time-dependent interaction has different time configurations for the direct and exchange components
             # if 1 in ver4.interactionTauNum
             #     vd = DiagTree.addPropagator!(diag, VType, Vorder, qd, [Tidx, Tidx], Wsym, -1.0)[1]

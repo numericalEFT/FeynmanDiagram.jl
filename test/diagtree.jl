@@ -88,15 +88,15 @@ end
     # #construct the propagator table
     gK = [[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0]]
     gT = [(1, 2), (2, 1)]
-    g = [DiagTree.addPropagator(diag, 1, gorder, [(gK[i], K0), (gT[i], T0)]) for i = 1:2]
+    g = [DiagTree.addPropagator(diag, 1, gorder, [[1, gK[i], K0], [2, gT[i], T0]]) for i = 1:2]
 
     vdK = [[0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 1.0, 0.0]]
     vdT = [[1, 1], [2, 2]]
-    vd = [DiagTree.addPropagator(diag, 2, vorder, [(vdK[i], K0),]) for i = 1:2]
+    vd = [DiagTree.addPropagator(diag, 2, vorder, [(1, vdK[i], K0),]) for i = 1:2]
 
     veK = [[1, 0, -1, -1], [0, 1, 0, -1]]
     veT = [[1, 1], [2, 2]]
-    ve = [DiagTree.addPropagator(diag, 2, vorder, [(veK[i], K0),]) for i = 1:2]
+    ve = [DiagTree.addPropagator(diag, 2, vorder, [(1, veK[i], K0),]) for i = 1:2]
     # ve = [DiagTree.addPropagator!(diag, Wtype, 1, veK[i], veT[i], Wsym)[1] for i = 1:2]
     # # W order is 1
 
