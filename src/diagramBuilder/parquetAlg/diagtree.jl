@@ -54,8 +54,8 @@ function _newDiagrams(para::Para, legK, evalK::Function)
     GTbasis = Tuple{Int,Int}
     if maximum(para.interactionTauNum) == 2
         WTbasis = Tuple{Int,Int}
-        Kpool = DiagTree.Pool{Kbasis,Vector{Float64}}()
-        Tpool = DiagTree.Pool{Tbasis,Float64}()
+        Kpool = DiagTree.Pool{Cache{Kbasis,Vector{Float64}}}()
+        Tpool = DiagTree.Pool{Tbasis}()
     elseif maximum(para.interactionTauNum) == 1
         WTbasis = Int
     else

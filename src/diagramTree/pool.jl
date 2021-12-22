@@ -52,11 +52,15 @@ struct Pool{O}
     function Pool(obj::Vector{O}) where {O}
         return new{O}(obj)
     end
-    # function Pool{O,T}() where {O,T}
-    #     COBJ = Cache{O,T}
-    #     # pool = Vector{COBJ}(undef, 0)
-    #     return new{COBJ}([])
-    # end
+end
+
+function cachedPool(objType::DataType, currType::DataType)
+    COBJ = Cache{objType,currType}
+    return Pool{COBJ}()
+end
+
+function uncachedPool(objType::DataType)
+    return Pool{objType}()
 end
 
 Base.length(pool::Pool) = length(pool.pool)

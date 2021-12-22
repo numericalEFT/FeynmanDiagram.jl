@@ -61,8 +61,6 @@ end
     # Tpair = Var.ScalarVariable{Vector{Float64},Tuple{Int,Int}}
     # Base.isequal(a::Mom, b::Mom) = (Mom.basis ≈ Mom.basis) || (Mom.basis ≈ -Mom.basis)
 
-    MomBasis = Vector{Float64}
-    TpairBasis = Tuple{Int,Int}
 
     K0 = [0.0, 0.0, 0.0]
     T0 = 0.0
@@ -74,8 +72,13 @@ end
 
     Cache = DiagTree.Cache
 
-    MomPool = DiagTree.Pool{Cache{MomBasis,Vector{Float64}}}()
-    TpairPool = DiagTree.Pool{TpairBasis}()
+    # MomPool = DiagTree.Pool{Cache{MomBasis,Vector{Float64}}}()
+    # TpairPool = DiagTree.Pool{TpairBasis}()
+    MomBasis = Vector{Float64}
+    TpairBasis = Tuple{Int,Int}
+
+    MomPool = DiagTree.cachedPool(MomBasis, Vector{Float64})
+    TpairPool = DiagTree.uncachedPool(TpairBasis)
 
     GPool = DiagTree.propagatorPool(Float64, Float64)
     VPool = DiagTree.propagatorPool(Float64, Float64)
