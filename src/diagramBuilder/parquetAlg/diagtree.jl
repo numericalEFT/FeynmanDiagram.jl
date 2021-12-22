@@ -51,43 +51,57 @@
 
 function _newDiag(para::Para, legK, evalK::Function)
     Kbasis = Vector{Float64}
+    Kpool = DiagTree.cachedPool(Kbasis, Vector{Float64})
     GTbasis = Tuple{Int,Int}
     GTpool = DiagTree.uncachedPool(GTbasis)
-    if maximum(para.interactionTauNum) == 2
-        Kpool = DiagTree.cachedPool(Kbasis, Vector{Float64})
+    if para.interactionTauNum == 2
         WTbasis = Tuple{Int,Int}
         WTpool = DiagTree.uncachedPool(WTbasis)
-        # elseif maximum(para.interactionTauNum) == 1
-        #     WTbasis = Int
+        Gpool = DiagTree.propagatorPool(para.greenType[1], para.greenType[2])
+        Wpool = DiagTree.propagatorPool(para.wType[1], para.wType[2])
+        return DiagTree.Diagrams((Kpool, GTpool, WTpool), (Gpool, Wpool), para.nodeType[1], para.nodeType[2])
+    elseif para.interactionTauNum == 1
+        Gpool = DiagTree.propagatorPool(para.greenType[1], para.greenType[2])
+        Wpool = DiagTree.propagatorPool(para.wType[1], para.wType[2])
+        return DiagTree.Diagrams((Kpool, GTpool), (Gpool, Wpool), para.nodeType[1], para.nodeType[2])
     else
         error("not implemented!")
     end
-
-    # weightType = promote_type(para.greenWeightType, para.interactionWeightType)
-
-    Gpool = DiagTree.propagatorPool(para.greenWeightType, para.greenFactorType)
-    Wpool = DiagTree.propagatorPool(para.verWeightType, para.verFactorType)
-
-    return DiagTree.Diagrams((Kpool, GTpool, WTpool), (Gpool, Wpool), para.verWeightType, para.verFactorType)
 end
 
 function buildTree(para::Para, loopNum::Int, legK, Kidx::Int, Tidx::Int, evalK::Function, evalT::Function, factor = 1.0,
     diag = _newDiag(para, legK, evalK), ver4 = Ver4{Int}(para, loopNum, Tidx))
+
+
     KinL, KoutL, KinR, KoutR = legK[1], legK[2], legK[3], legK[4]
-    @assert KinL .+ KinR .≈ KoutL .+ KoutR
+
+    @assert KinL + KinR ≈ KoutL + KoutR
     # KoutR = KinL + KinR - KoutL
     GType, VType, WType = 1, 2, 3
     Gorder, Vorder, Worder = 0, 1, 1
     MUL, ADD = 1, 2
 
+    evaT4(Tpair) = Tuple([evalT[t] for t in Tpair])
+
     qd = KinL - KoutL
     qe = KinR - KoutL
     Tidx = ver4.Tidx
+
+    # print_tree(ver4)
+    # println("testing ...")
+    # println(ver4.Tpair)
+
     if ver4.loopNum == 0
-        if maximum(ver4.interactionTauNum) == 2
-            tbasis = [2, (Tidx, Tidx + 1), (evalT(Tidx), evalT(Tidx + 1))]
-            qdbasis, qebasis = [1, qd, evalK(qd)], [1, qe, evalK(qe)]
-            w = DiagTree.addPropagator(diag, 2, Vorder, [qdbasis, qebasis, tbasis])
+        # exit(0)
+        if ver4.interactionTauNum == 2
+            td = [2, ver4.Tpair[2], evaT4(ver4.Tpair[2])]
+            te = [2, ver4.Tpair[3], evaT4(ver4.Tpair[3])]
+            println("extT: ", ver4.Tpair[1])
+            qd, qe = [1, qd, evalK(qd)], [1, qe, evalK(qe)]
+            vd = DiagTree.addPropagator(diag, 2, Vorder, [qd, td])
+            ve = DiagTree.addPropagator(diag, 2, Vorder, [qe, te])
+            wd = DiagTree.addPropagator(diag, 2, Vorder, [qd, td])
+            we = DiagTree.addPropagator(diag, 2, Vorder, [qe, te])
             # time-dependent interaction has different time configurations for the direct and exchange components
             # if 1 in ver4.interactionTauNum
             #     vd = DiagTree.addPropagator!(diag, VType, Vorder, qd, [Tidx, Tidx], Wsym, -1.0)[1]
@@ -101,7 +115,7 @@ function buildTree(para::Para, loopNum::Int, legK, Kidx::Int, Tidx::Int, evalK::
         else
             error("not implemented!")
         end
-        return diag, ver4
+        # return diag, ver4
     end
 
     # # LoopNum>=1
@@ -213,7 +227,7 @@ function buildTree(para::Para, loopNum::Int, legK, Kidx::Int, Tidx::Int, evalK::
     #         w.ex > 0 && push!(diag.root, w.ex)
     #     end
     # end
-    # return diag, ver4
+    return diag, ver4
 end
 
 # function eval(ver4::Ver4, KinL, KoutL, KinR, KoutR, Kidx::Int, fast = false)

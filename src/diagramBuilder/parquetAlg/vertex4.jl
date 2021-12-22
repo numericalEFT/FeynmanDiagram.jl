@@ -13,14 +13,12 @@ struct Para
     spin::Int
     F::Vector{Int}
     V::Vector{Int}
-    interactionTauNum::Vector{Int} # list of possible τ degrees of freedom of the bare interaction 0, 2, or 4
-    greenWeightType::DataType
-    # interactionWeightType::DataType
-    verWeightType::DataType
+    interactionTauNum::Int # τ degrees of freedom of the bare interaction 1, 2, or 4
+    greenType::Tuple{DataType,DataType}
+    wType::Tuple{DataType,DataType}
+    nodeType::Tuple{DataType,DataType}
 
-    greenFactorType::DataType
-    verFactorType::DataType
-    function Para(chan, interactionTauNum, greenWeightType, verWeightType; greenFactorType = Float64, verFactorType = Float64, spin = 1)
+    function Para(chan, interactionTauNum, greenType, wType, nodeType, spin = 1)
 
         for tnum in interactionTauNum
             @assert tnum == 1 || tnum == 2 || tnum == 4
@@ -32,7 +30,7 @@ struct Para
         F = intersect(chan, Fchan)
         V = intersect(chan, Vchan)
 
-        return new(chan, spin, F, V, interactionTauNum, greenWeightType, verWeightType, greenFactorType, verWeightType)
+        return new(chan, spin, F, V, interactionTauNum, greenType, wType, nodeType)
     end
 end
 
@@ -98,8 +96,8 @@ struct Bubble{_Ver4,W} # template Bubble to avoid mutually recursive struct
             error("chan $chan isn't implemented!")
         end
 
-        Lver = _Ver4{W}(oL, LTidx, para; chan = LsubVer, level = level + 1, id = _id)
-        Rver = _Ver4{W}(oR, RTidx, para; chan = RsubVer, level = level + 1, id = _id)
+        Lver = _Ver4{W}(para, oL, LTidx; chan = LsubVer, level = level + 1, id = _id)
+        Rver = _Ver4{W}(para, oR, RTidx; chan = RsubVer, level = level + 1, id = _id)
 
         @assert Lver.Tidx == ver4.Tidx "Lver Tidx must be equal to vertex4 Tidx! LoopNum: $(ver4.loopNum), LverLoopNum: $(Lver.loopNum), chan: $chan"
 
@@ -174,7 +172,7 @@ struct Ver4{W}
     #######  vertex properties   ###########################
     loopNum::Int
     chan::Vector{Int} # list of channels
-    interactionTauNum::Vector{Int}
+    interactionTauNum::Int
     Tidx::Int # inital Tidx
 
     ######  components of vertex  ##########################
@@ -192,16 +190,19 @@ struct Ver4{W}
         @assert loopNum >= 0
         if loopNum == 0
             # bare interaction may have one, two or four independent tau variables
-            if 1 in para.interactionTauNum  # instantaneous interaction
+            if para.interactionTauNum == 1  # instantaneous interaction
                 addTidx(ver4, (tidx, tidx, tidx, tidx))
             end
-            if 2 in para.interactionTauNum  # interaction with incoming and outing τ varibales
+            if para.interactionTauNum == 2  # interaction with incoming and outing τ varibales
+                addTidx(ver4, (tidx, tidx, tidx, tidx))  # direct instant interaction
+                addTidx(ver4, (tidx, tidx, tidx, tidx))  # exchange instant interaction
                 addTidx(ver4, (tidx, tidx, tidx + 1, tidx + 1))  # direct dynamic interaction
                 addTidx(ver4, (tidx, tidx + 1, tidx + 1, tidx))  # exchange dynamic interaction
             end
-            if 4 in para.interactionTauNum  # interaction with incoming and outing τ varibales
-                addTidx(ver4, (tidx, tidx + 1, tidx + 2, tidx + 3))  # direct dynamic interaction
-                addTidx(ver4, (tidx, tidx + 3, tidx + 2, tidx + 1))  # exchange dynamic interaction
+            if para.interactionTauNum == 4  # interaction with incoming and outing τ varibales
+                error("Not implemented!")
+                # addTidx(ver4, (tidx, tidx + 1, tidx + 2, tidx + 3))  # direct dynamic interaction
+                # addTidx(ver4, (tidx, tidx + 3, tidx + 2, tidx + 1))  # exchange dynamic interaction
             end
         else # loopNum>0
             for c in para.chan
