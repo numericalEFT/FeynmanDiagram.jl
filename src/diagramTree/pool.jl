@@ -32,8 +32,7 @@ mutable struct Cache{O,T}
     end
 end
 
-# Base.show(io::IO, obj::Cache) = print(io, "id $(obj.id): obj: $(obj.object) curr: $(obj.curr)")
-Base.show(io::IO, obj::Cache) = print(io, "obj: $(obj.object) curr: $(obj.curr)")
+Base.show(io::IO, obj::Cache) = print(io, "id=$(obj.id): obj=$(obj.object) curr=$(obj.curr)")
 
 """
     struct Pool{O}
@@ -53,6 +52,11 @@ struct Pool{O}
     function Pool(obj::Vector{O}) where {O}
         return new{O}(obj)
     end
+    # function Pool{O,T}() where {O,T}
+    #     COBJ = Cache{O,T}
+    #     # pool = Vector{COBJ}(undef, 0)
+    #     return new{COBJ}([])
+    # end
 end
 
 Base.length(pool::Pool) = length(pool.pool)
