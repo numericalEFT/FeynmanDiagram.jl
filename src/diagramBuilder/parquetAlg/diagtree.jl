@@ -52,10 +52,11 @@
 function _newDiagrams(para::Para, legK, evalK::Function)
     Kbasis = Vector{Float64}
     GTbasis = Tuple{Int,Int}
+    GTpool = DiagTree.uncachedPool(GTbasis)
     if maximum(para.interactionTauNum) == 2
+        Kpool = DiagTree.cachedPool(Kbasis, Vector{Float64})
         WTbasis = Tuple{Int,Int}
-        Kpool = DiagTree.Pool{Cache{Kbasis,Vector{Float64}}}()
-        Tpool = DiagTree.Pool{Tbasis}()
+        WTpool = DiagTree.uncachedPool(WTbasis)
     elseif maximum(para.interactionTauNum) == 1
         WTbasis = Int
     else
