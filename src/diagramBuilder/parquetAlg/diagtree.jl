@@ -49,7 +49,7 @@
 #     return propagators, nodes
 # end
 
-function _newDiagrams(para::Para, legK, evalK::Function)
+function _newDiag(para::Para, legK, evalK::Function)
     Kbasis = Vector{Float64}
     GTbasis = Tuple{Int,Int}
     GTpool = DiagTree.uncachedPool(GTbasis)
@@ -57,58 +57,50 @@ function _newDiagrams(para::Para, legK, evalK::Function)
         Kpool = DiagTree.cachedPool(Kbasis, Vector{Float64})
         WTbasis = Tuple{Int,Int}
         WTpool = DiagTree.uncachedPool(WTbasis)
-    elseif maximum(para.interactionTauNum) == 1
-        WTbasis = Int
+        # elseif maximum(para.interactionTauNum) == 1
+        #     WTbasis = Int
     else
         error("not implemented!")
     end
 
     # weightType = promote_type(para.greenWeightType, para.interactionWeightType)
 
-    G = DiagTree.Propagator{Int,para.greenFactorType}
-    W = DiagTree.Propagator{Int,para.verFactorType}
+    Gpool = DiagTree.propagatorPool(para.greenWeightType, para.greenFactorType)
+    Wpool = DiagTree.propagatorPool(para.verWeightType, para.verFactorType)
 
-    GPool = DiagTree.Pool{G,para.greenWeightType}()
-    WPool = DiagTree.Pool{W,para.verWeightType}()
-
-    # gorder, vorder = 0, 1
-
-
-    diag = DiagTree.Diagrams{Float64,Float64}((MomPool, TpairPool), (GPool, VPool))
+    return DiagTree.Diagrams((Kpool, GTpool, WTpool), (Gpool, Wpool), para.verWeightType, para.verFactorType)
 end
 
-function buildTree(para::Para, loopNum::Int, legK, evalK::Function; Kidx::Int, Tidx::Int, factor = 1.0, diag = nothing, ver4 = nothing)
-    if isnothing(diag)
-        diag = DiagTree.Diagrams{WeightType}()
-    end
-    if isnothing(ver4) #at the top level, the ver4 has not yet been created
-        ver4 = Ver4{NodeInfo}(para, loopNum, Tidx)
-    end
-    KinL, KoutL, KinR = legK[1], legK[2], legK[3]
-    KoutR = KinL + KinR - KoutL
+function buildTree(para::Para, loopNum::Int, legK, evalK::Function; Kidx::Int, Tidx::Int, factor = 1.0,
+    diag = _newDiag(para, legK, evalK), ver4 = Ver4{para.verWeightType}(para, loopNum, Tidx))
+    KinL, KoutL, KinR, KoutR = legK[1], legK[2], legK[3], legK[4]
+    @assert KinL .+ KinR .≈ KoutL .+ KoutR
+    # KoutR = KinL + KinR - KoutL
     GType, VType, WType = 1, 2, 3
     Gorder, Vorder, Worder = 0, 1, 1
     MUL, ADD = 1, 2
 
-    # qd = KinL - KoutL
-    # qe = KinR - KoutL
-    # Tidx = ver4.Tidx
-    # if ver4.loopNum == 0
-    #     if 1 in ver4.interactionTauNum
-    #         vd = DiagTree.addPropagator!(diag, VType, Vorder, qd, [Tidx, Tidx], Wsym, -1.0)[1]
-    #         ve = DiagTree.addPropagator!(diag, VType, Vorder, qe, [Tidx, Tidx], Wsym, 1.0)[1]
-    #         ver4.weight[1] = NodeInfo(true, vd, ve)
-    #     elseif 2 in ver4.interactionTauNum
-    #         wd = DiagTree.addPropagator!(diag, WType, Worder, qd, [Tidx, Tidx + 1], Wsym, -1.0)[1]
-    #         we = DiagTree.addPropagator!(diag, WType, Worder, qe, [Tidx, Tidx + 1], Wsym, 1.0)[1]
-    #         #time-dependent interaction has different time configurations for the direct and exchange components
-    #         ver4.weight[2] = NodeInfo(true, wd, -1)
-    #         ver4.weight[3] = NodeInfo(true, -1, we)
-    #     else
-    #         error("not implemented!")
-    #     end
-    #     return diag, ver4
-    # end
+    qd = KinL - KoutL
+    qe = KinR - KoutL
+    Tidx = ver4.Tidx
+    if ver4.loopNum == 0
+        if maximum(ver4.interactionTauNum) == 2
+            w = DiagTree.addPropagator(diag, 2, Vorder, (qd, qe), (Tidx, Tidx + 1))
+            # time-dependent interaction has different time configurations for the direct and exchange components
+            # if 1 in ver4.interactionTauNum
+            #     vd = DiagTree.addPropagator!(diag, VType, Vorder, qd, [Tidx, Tidx], Wsym, -1.0)[1]
+            #     ve = DiagTree.addPropagator!(diag, VType, Vorder, qe, [Tidx, Tidx], Wsym, 1.0)[1]
+            #     ver4.weight[1] = NodeInfo(true, vd, ve)
+            # elseif 2 in ver4.interactionTauNum
+            #     wd = DiagTree.addPropagator!(diag, WType, Worder, qd, [Tidx, Tidx + 1], Wsym, -1.0)[1]
+            #     we = DiagTree.addPropagator!(diag, WType, Worder, qe, [Tidx, Tidx + 1], Wsym, 1.0)[1]
+            #     ver4.weight[2] = NodeInfo(true, wd, -1)
+            #     ver4.weight[3] = NodeInfo(true, -1, we)
+        else
+            error("not implemented!")
+        end
+        return diag, ver4
+    end
 
     # # LoopNum>=1
     # for w in ver4.weight
