@@ -72,7 +72,7 @@ function _newDiag(para::Para, legK, evalK::Function)
 end
 
 function buildTree(para::Para, loopNum::Int, legK, Kidx::Int, Tidx::Int, evalK::Function, evalT::Function, factor = 1.0,
-    diag = _newDiag(para, legK, evalK), ver4 = Ver4{para.verWeightType}(para, loopNum, Tidx))
+    diag = _newDiag(para, legK, evalK), ver4 = Ver4{Int}(para, loopNum, Tidx))
     KinL, KoutL, KinR, KoutR = legK[1], legK[2], legK[3], legK[4]
     @assert KinL .+ KinR .≈ KoutL .+ KoutR
     # KoutR = KinL + KinR - KoutL
