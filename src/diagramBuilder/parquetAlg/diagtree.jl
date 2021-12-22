@@ -69,7 +69,7 @@ function _newDiag(para::Para, legK, evalK::Function)
     end
 end
 
-function buildTree(para::Para, loopNum::Int, legK, Kidx::Int, Tidx::Int, evalK::Function, evalT::Function, factor = 1.0,
+function ver4toDiagTree(para::Para, loopNum::Int, legK, Kidx::Int, Tidx::Int, evalK::Function, evalT::Function, factor = 1.0,
     diag = _newDiag(para, legK, evalK), ver4 = Ver4{Int}(para, loopNum, Tidx))
 
 
@@ -81,7 +81,7 @@ function buildTree(para::Para, loopNum::Int, legK, Kidx::Int, Tidx::Int, evalK::
     Gorder, Vorder, Worder = 0, 1, 1
     MUL, ADD = 1, 2
 
-    evaT4(Tpair) = Tuple([evalT[t] for t in Tpair])
+    evaTpair(Tpair) = Tuple([evalT[t] for t in Tpair])
 
     qd = KinL - KoutL
     qe = KinR - KoutL
@@ -93,133 +93,124 @@ function buildTree(para::Para, loopNum::Int, legK, Kidx::Int, Tidx::Int, evalK::
 
     if ver4.loopNum == 0
         # exit(0)
+        qd, qe = [1, qd, evalK(qd)], [1, qe, evalK(qe)]
         if ver4.interactionTauNum == 2
-            td = [2, ver4.Tpair[2], evaT4(ver4.Tpair[2])]
-            te = [2, ver4.Tpair[3], evaT4(ver4.Tpair[3])]
-            println("extT: ", ver4.Tpair[1])
-            qd, qe = [1, qd, evalK(qd)], [1, qe, evalK(qe)]
+            td = [2, ver4.Tpair[2], evaTpair(ver4.Tpair[2])]
+            te = [2, ver4.Tpair[3], evaTpair(ver4.Tpair[3])]
             vd = DiagTree.addPropagator(diag, 2, Vorder, [qd, td])
             ve = DiagTree.addPropagator(diag, 2, Vorder, [qe, te])
             wd = DiagTree.addPropagator(diag, 2, Vorder, [qd, td])
             we = DiagTree.addPropagator(diag, 2, Vorder, [qe, te])
-            # time-dependent interaction has different time configurations for the direct and exchange components
-            # if 1 in ver4.interactionTauNum
-            #     vd = DiagTree.addPropagator!(diag, VType, Vorder, qd, [Tidx, Tidx], Wsym, -1.0)[1]
-            #     ve = DiagTree.addPropagator!(diag, VType, Vorder, qe, [Tidx, Tidx], Wsym, 1.0)[1]
-            #     ver4.weight[1] = NodeInfo(true, vd, ve)
-            # elseif 2 in ver4.interactionTauNum
-            #     wd = DiagTree.addPropagator!(diag, WType, Worder, qd, [Tidx, Tidx + 1], Wsym, -1.0)[1]
-            #     we = DiagTree.addPropagator!(diag, WType, Worder, qe, [Tidx, Tidx + 1], Wsym, 1.0)[1]
-            #     ver4.weight[2] = NodeInfo(true, wd, -1)
-            #     ver4.weight[3] = NodeInfo(true, -1, we)
+            ver4.weight[:] = [vd, ve, wd, we]
+        elseif ver4.interactionTauNum == 1
+            vd = DiagTree.addPropagator(diag, 2, Vorder, [qd,])
+            ve = DiagTree.addPropagator(diag, 2, Vorder, [qe,])
+            ver4.weight[:] = [vd, ve]
         else
             error("not implemented!")
         end
         # return diag, ver4
     end
 
-    # # LoopNum>=1
-    # for w in ver4.weight
-    #     w = NodeInfo(false)
-    # end
+    # LoopNum>=1
+    ver4.weight .= 0
 
-    # K, Kt, Ku, Ks = similar(KinL), similar(KinL), similar(KinL), similar(KinL)
-    # G = ver4.G
+    G = ver4.G
 
-    # K = zero(KinL)
-    # K[Kidx] = 1
+    K = zero(KinL)
+    K[Kidx] = 1
+    Kt = KoutL + K - KinL
+    Ku = KoutR + K - KinL
+    Ks = KinL + KinR - K
 
-    # for c in ver4.chan
-    #     if c == T
-    #         Kt = KoutL + K - KinL
-    #     elseif c == U
-    #         Ku = KoutR + K - KinL
-    #     else
-    #         Ks = KinL + KinR - K
-    #     end
-    # end
+    for b in ver4.bubble
+        c = b.chan
+        # Factor = SymFactor[c] * PhaseFactor
+        Llopidx = Kidx + 1
+        Rlopidx = Kidx + 1 + b.Lver.loopNum
+        Lver, Rver = b.Lver, b.Rver
+        LLegK, RLegK = [], []
+        if c == T
+            LLegK = [KinL, KoutL, Kt, K]
+            RLegK = [K, Kt, KinR, KoutR]
+        elseif c == U
+            LLegK = [KinL, KoutR, Ku, K]
+            RLegK = [K, Ku, KinR, KoutL]
+        else
+            # S channel
+            LLegK = [KinL, Ks, KinR, K]
+            RLegK = [K, KoutL, Ks, KoutR]
+        end
+        ver4toDiagTree(para, Lver.loopNum, LLegK, Llopidx, Lver.Tidx, evalK, evalT, factor, diag, Lver4)
+        ver4toDiagTree(para, Rver.loopNum, RLegK, Rlopidx, Rver.Tidx, evalK, evalT, factor, diag, Rver4)
 
-    # for b in ver4.bubble
-    #     c = b.chan
-    #     # Factor = SymFactor[c] * PhaseFactor
-    #     Llopidx = Kidx + 1
-    #     Rlopidx = Kidx + 1 + b.Lver.loopNum
-    #     Lver, Rver = b.Lver, b.Rver
-    #     LLegK, RLegK = [], []
-    #     if c == T
-    #         LLegK = [KinL, KoutL, Kt, K]
-    #         RLegK = [K, Kt, KinR, KoutR]
-    #     elseif c == U
-    #         LLegK = [KinL, KoutR, Ku, K]
-    #         RLegK = [K, Ku, KinR, KoutL]
-    #     else
-    #         # S channel
-    #         LLegK = [KinL, Ks, KinR, K]
-    #         RLegK = [K, KoutL, Ks, KoutR]
-    #     end
-    #     diagramTree(para, Lver.loopNum, LLegK, Llopidx, Lver.Tidx, WeightType, Gsym, Wsym, spin, 1.0, diag, Lver)
-    #     diagramTree(para, Rver.loopNum, RLegK, Rlopidx, Rver.Tidx, WeightType, Gsym, Wsym, spin, 1.0, diag, Rver)
+        rN = length(b.Rver.weight)
+        for (l, Lw) in enumerate(b.Lver.weight)
+            for (r, Rw) in enumerate(b.Rver.weight)
 
-    #     rN = length(b.Rver.weight)
-    #     for (l, Lw) in enumerate(b.Lver.weight)
-    #         for (r, Rw) in enumerate(b.Rver.weight)
+                map = b.map[(l-1)*rN+r]
+                g0 = DiagTree.addPropagator(diag, 1, Gorder, [(1, K, eval(K)), (2, G[1].Tpair[map.G0], evalTpair(G[1].Tpair[map.G0]))])
+                if c == T
+                    Kc = Kt
+                elseif c == U
+                    Kc = Ku
+                elseif c == S
+                    Kc = Ks
+                end
+                gc = DiagTree.addPropagator(diag, 1, Gorder, [(1, Kc, eval(Kc)), (2, G[c].Tpair[map.Gx], evalTpair(G[c].Tpair[map.Gx]))])
 
-    #             map = b.map[(l-1)*rN+r]
-    #             g0 = DiagTree.addPropagator!(diag, GType, Gorder, K, collect(G[1].Tpair[map.G0]), Gsym)[1]
-    #             gc = DiagTree.addPropagator!(diag, GType, Gorder, K, collect(G[c].Tpair[map.Gx]), Gsym)[1]
+                # w = (ver4.level == 1 && isFast) ? ver4.weight[ChanMap[c]] : ver4.weight[map.ver]
+                w = ver4.weight[map.ver]
 
-    #             # w = (ver4.level == 1 && isFast) ? ver4.weight[ChanMap[c]] : ver4.weight[map.ver]
-    #             w = ver4.weight[map.ver]
+                if c == T || c == U
+                    #direct
+                    nsum = []
+                    ps, ns = split(g0, gc, Lw, Rw, true, true)
+                    (-1 in ps) || push!(nsum, DiagTree.addNode!(diag, MUL, spin * SymFactor[c], ps, ns))
+                    ps, ns = split(g0, gc, Lw, Rw, true, false)
+                    (-1 in ps) || push!(nsum, DiagTree.addNode!(diag, MUL, SymFactor[c], ps, ns))
+                    ps, ns = split(g0, gc, Lw, Rw, false, true)
+                    (-1 in ps) || push!(nsum, DiagTree.addNode!(diag, MUL, SymFactor[c], ps, ns))
 
-    #             if c == T || c == U
-    #                 #direct
-    #                 nsum = []
-    #                 ps, ns = split(g0, gc, Lw, Rw, true, true)
-    #                 (-1 in ps) || push!(nsum, DiagTree.addNode!(diag, MUL, spin * SymFactor[c], ps, ns))
-    #                 ps, ns = split(g0, gc, Lw, Rw, true, false)
-    #                 (-1 in ps) || push!(nsum, DiagTree.addNode!(diag, MUL, SymFactor[c], ps, ns))
-    #                 ps, ns = split(g0, gc, Lw, Rw, false, true)
-    #                 (-1 in ps) || push!(nsum, DiagTree.addNode!(diag, MUL, SymFactor[c], ps, ns))
+                    if isempty(nsum) == false
+                        nt = DiagTree.addNode!(diag, ADD, 1.0, [], nsum)
+                        # DiagTree.showTree(diag, nt)
+                        addNode(diag, w, nt, c == T ? true : false) #direct for T, exchange for T
+                    end
 
-    #                 if isempty(nsum) == false
-    #                     nt = DiagTree.addNode!(diag, ADD, 1.0, [], nsum)
-    #                     # DiagTree.showTree(diag, nt)
-    #                     addNode(diag, w, nt, c == T ? true : false) #direct for T, exchange for T
-    #                 end
+                    #exchange
+                    ps, ns = split(g0, gc, Lw, Rw, false, false)
+                    if (-1 in ps) == false
+                        nee = DiagTree.addNode!(diag, MUL, SymFactor[c], ps, ns)
+                        addNode(diag, w, nee, c == T ? false : true) #exchange for T, direct for U
+                    end
+                    # DiagTree.showTree(diag)
+                elseif c == S
+                    nsum = []
+                    ps, ns = split(g0, gc, Lw, Rw, true, false)
+                    (-1 in ps) || push!(nsum, DiagTree.addNode!(diag, MUL, SymFactor[c], ps, ns))
+                    ps, ns = split(g0, gc, Lw, Rw, false, true)
+                    (-1 in ps) || push!(nsum, DiagTree.addNode!(diag, MUL, SymFactor[c], ps, ns))
+                    if isempty(nsum) == false
+                        nd = DiagTree.addNode!(diag, ADD, 1.0, [], nsum)
+                        addNode(diag, w, nd, true)
+                    end
 
-    #                 #exchange
-    #                 ps, ns = split(g0, gc, Lw, Rw, false, false)
-    #                 if (-1 in ps) == false
-    #                     nee = DiagTree.addNode!(diag, MUL, SymFactor[c], ps, ns)
-    #                     addNode(diag, w, nee, c == T ? false : true) #exchange for T, direct for U
-    #                 end
-    #                 # DiagTree.showTree(diag)
-    #             elseif c == S
-    #                 nsum = []
-    #                 ps, ns = split(g0, gc, Lw, Rw, true, false)
-    #                 (-1 in ps) || push!(nsum, DiagTree.addNode!(diag, MUL, SymFactor[c], ps, ns))
-    #                 ps, ns = split(g0, gc, Lw, Rw, false, true)
-    #                 (-1 in ps) || push!(nsum, DiagTree.addNode!(diag, MUL, SymFactor[c], ps, ns))
-    #                 if isempty(nsum) == false
-    #                     nd = DiagTree.addNode!(diag, ADD, 1.0, [], nsum)
-    #                     addNode(diag, w, nd, true)
-    #                 end
-
-    #                 nsum = []
-    #                 ps, ns = split(g0, gc, Lw, Rw, true, true)
-    #                 (-1 in ps) || push!(nsum, DiagTree.addNode!(diag, MUL, SymFactor[c], ps, ns))
-    #                 ps, ns = split(g0, gc, Lw, Rw, false, false)
-    #                 (-1 in ps) || push!(nsum, DiagTree.addNode!(diag, MUL, SymFactor[c], ps, ns))
-    #                 if isempty(nsum) == false
-    #                     ne = DiagTree.addNode!(diag, ADD, 1.0, [], nsum)
-    #                     addNode(diag, w, ne, false)
-    #                 end
-    #             else
-    #                 error("not implemented!")
-    #             end
-    #         end
-    #     end
-    # end
+                    nsum = []
+                    ps, ns = split(g0, gc, Lw, Rw, true, true)
+                    (-1 in ps) || push!(nsum, DiagTree.addNode!(diag, MUL, SymFactor[c], ps, ns))
+                    ps, ns = split(g0, gc, Lw, Rw, false, false)
+                    (-1 in ps) || push!(nsum, DiagTree.addNode!(diag, MUL, SymFactor[c], ps, ns))
+                    if isempty(nsum) == false
+                        ne = DiagTree.addNode!(diag, ADD, 1.0, [], nsum)
+                        addNode(diag, w, ne, false)
+                    end
+                else
+                    error("not implemented!")
+                end
+            end
+        end
+    end
 
     # if ver4.level == 1
     #     for w in ver4.weight
