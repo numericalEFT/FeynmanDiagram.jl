@@ -6,11 +6,14 @@ const Weight = SVector{2,Float64}
 
 Parquet = Builder.Parquet
 
-chan = [Parquet.T, Parquet.U, Parquet.S]
+chan = [Parquet.T,]
+interactionTauNum = 2
+loopNum = 1
+spin = 2
 
-para = Parquet.Para(3, chan, 2, (Float64, Float64), (Float64, Float64), (Weight, Float64), 2)
+para = Parquet.Para(3, chan, interactionTauNum, (Float64, Float64), (Float64, Float64), (Weight, Float64), spin)
 
-ver4 = Parquet.Ver4{Float64}(para, 1, 1)
+ver4 = Parquet.Ver4{Float64}(para, loopNum, 1)
 
 ########## use AbstractTrees interface to print/manipulate the tree
 print_tree(ver4)
@@ -29,8 +32,7 @@ println("Iterate the tree use the AbstractTrees interface: ")
 ########## use ete3 package to visualize tree
 # Parquet.showTree(ver4, para, verbose = 1, depth = 3)  # visualize tree using python3 package ete3
 
-spin = 2
-para = Parquet.Para(3, [Parquet.T,], 1, (Float64, Float64), (Float64, Float64), (Float64, Float64), spin)
+para = Parquet.Para(3, chan, interactionTauNum, (Float64, Float64), (Float64, Float64), (Float64, Float64), spin)
 KinL = KoutL = [1, 0, 0]
 KinR = KoutR = [0, 1, 0]
 legK = [KinL, KoutL, KinR, KoutR]
@@ -43,7 +45,7 @@ evalT(Tidx) = varT[Tidx]
 # ver4 = Parquet.Ver4{Int}(para, 1, 1)
 # println("ver4444...")
 # println(ver4)
-diag, ver4, dir, ex = Parquet.ver4toDiagTree(para, 1, legK, 3, 1, evalK, evalT, 1.0)
+diag, ver4, dir, ex = Parquet.ver4toDiagTree(para, loopNum, legK, 3, 1, evalK, evalT, 1.0)
 rootDir = DiagTree.addNode(diag, DiagTree.ADD, [[], []], dir; para = "dir")
 rootEx = DiagTree.addNode(diag, DiagTree.ADD, [[], []], ex; para = "ex")
 diag.root = [rootDir, rootEx]
