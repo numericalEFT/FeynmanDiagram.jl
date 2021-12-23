@@ -70,9 +70,9 @@ function _newDiag(para::Para, legK, evalK::Function)
 end
 
 # addNode!(Td, para, diag, lver, rver, DI, EX)
-function addNode!(nodes, para, diag, Lver, Rver, l, r, lc, rc, g0, gc, factor = para.nodeFactorType(1))
+function addNode!(nodes, para, diag, Lver, Rver, l, r, lc, rc, g0, gc, factor = para.nodeType[2](1))
     lLopNum, rLopNum = Lver.loopNum, Rver.loopNum
-    Lw, Rw = Lver[l].weight[lc], Rver[r].weight[rc]
+    Lw, Rw = Lver.weight[l][lc], Rver.weight[r][rc]
     if lLopNum == 0 && rLopNum == 0
         components, child = [[g0, gc], [Lw, Rw]], []
     elseif lLopNum == 0 && rLopNum > 0
@@ -103,13 +103,13 @@ end
 function node4Tbubble(para, diag, lver, rver, l, r, g0, gc)
     Factor = SymFactor[T] / (2π)^para.dim
     Td, Te = [], []
-    addNode!(Td, para, diag, lver, rver, l, r, g0, gc, DI, DI, para.spin)
-    addNode!(Td, para, diag, lver, rver, l, r, g0, gc, DI, EX)
-    addNode!(Td, para, diag, lver, rver, l, r, g0, gc, EX, DI)
-    nodeTd = DiagTree.addNode(diag, DiagTree.ADD, [[], []], Td; factor = para.nodeFactorType(Factor))
+    addNode!(Td, para, diag, lver, rver, l, r, DI, DI, g0, gc, para.spin)
+    addNode!(Td, para, diag, lver, rver, l, r, DI, EX, g0, gc)
+    addNode!(Td, para, diag, lver, rver, l, r, EX, DI, g0, gc)
+    nodeTd = DiagTree.addNode(diag, DiagTree.ADD, [[], []], Td; factor = para.nodeType[2](Factor))
 
-    addNode!(Te, para, diag, lver, rver, l, r, g0, gc, EX, EX)
-    if isempty(Te) == fasle
+    addNode!(Te, para, diag, lver, rver, l, r, EX, EX, g0, gc)
+    if isempty(Te) == false
         nodeTe = Te[1]
     else
         nodeTe = 0
@@ -288,9 +288,9 @@ function ver4toDiagTree(para::Para, loopNum::Int, legK, Kidx::Int, Tidx::Int, ev
     end
 
     # nodeTd = DiagTree.addNode(diag, DiagTree.ADD, [[], []], Td; factor = para.nodeFactorType(Factor))
-    ver4dNodes = []
-    ver4eNodes = []
     for i in 1:length(ver4.weight)
+        ver4dNodes = []
+        ver4eNodes = []
         for n in ver4Nodes[i]
             if n[DI] != 0
                 push!(ver4dNodes, n[DI])
@@ -299,10 +299,10 @@ function ver4toDiagTree(para::Para, loopNum::Int, legK, Kidx::Int, Tidx::Int, ev
                 push!(ver4eNodes, n[EX])
             end
         end
+        nodeD = DiagTree.addNode(diag, DiagTree.ADD, [[], []], ver4dNodes; factor = para.nodeType[2](factor))
+        nodeE = DiagTree.addNode(diag, DiagTree.ADD, [[], []], ver4eNodes; factor = para.nodeType[2](factor))
+        ver4.weight[i] = @SVector [nodeD, nodeE]
     end
 
-    nodeD = DiagTree.addNode(diag, DiagTree.ADD, [[], []], ver4dNodes; factor = para.nodeFactorType(Factor))
-    nodeE = DiagTree.addNode(diag, DiagTree.ADD, [[], []], ver4eNodes; factor = para.nodeFactorType(Factor))
-    ver4.weight[i] = @SVector [nodeD, nodeE]
     return diag, ver4
 end

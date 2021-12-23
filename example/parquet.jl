@@ -2,13 +2,13 @@ using ExpressionTree
 using AbstractTrees
 # using NewickTree
 using StaticArrays
-const Weight = MVector{2,Float64}
+const Weight = SVector{2,Float64}
 
 Parquet = Builder.Parquet
 
 chan = [Parquet.T, Parquet.U, Parquet.S]
 
-para = Parquet.Para(chan, 2, (Float64, Float64), (Float64, Float64), (Weight, Float64), 2)
+para = Parquet.Para(3, chan, 2, (Float64, Float64), (Float64, Float64), (Weight, Float64), 2)
 
 ver4 = Parquet.Ver4{Float64}(para, 1, 1)
 
@@ -30,7 +30,7 @@ println("Iterate the tree use the AbstractTrees interface: ")
 # Parquet.showTree(ver4, para, verbose = 1, depth = 3)  # visualize tree using python3 package ete3
 
 spin = 2
-para = Parquet.Para([Parquet.T, Parquet.U, Parquet.S], 2, (Float64, Float64), (Float64, Float64), (Weight, Float64), spin)
+para = Parquet.Para(3, [Parquet.T,], 2, (Float64, Float64), (Float64, Float64), (Float64, Float64), spin)
 KinL = KoutL = [1, 0, 0]
 KinR = KoutR = [0, 1, 0]
 legK = [KinL, KoutL, KinR, KoutR]
