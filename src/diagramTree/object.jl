@@ -168,6 +168,12 @@ function addNode(diag::Diagrams, operator, components, childNodes; factor = 1.0,
     nodePool = diag.nodePool
     @assert length(components) == length(diag.propagatorPool) "each element of the components is an index vector of the corresponding propagator"
 
+    filterZero(list) = [l for l in list if l != 0]
+
+    #filter the propagators and nodes with index 0, they are the empty object
+    components = [filterZero(c) for c in components]
+    childNodes = filterZero(childNodes)
+
     empty = true
     for c in components
         if isempty(c) == false
