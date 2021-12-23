@@ -1,69 +1,17 @@
 ################## Generate Expression Tree ########################
-# mutable struct verWeight
-#     isInteraction::Bool #is a propagator or a node
-#     di::Int #index to the direct term
-#     ex::Int #index to the exchange term
-#     function NodeInfo(isInteraction, di = -1, ex = -1)
-#         return new(isPropagator, di, ex)
-#     end
-# end
-
-# function Base.zero(::Type{NodeInfo})
-#     return NodeInfo(false, -1, -1)
-# end
-
-# function addNode(diag, node::NodeInfo, nidx, isDirect)
-#     MUL, ADD = 1, 2
-#     if isDirect
-#         if node.di < 0
-#             new = DiagTree.addNode!(diag, ADD, 1.0, [], [nidx,])
-#             node.di = new
-#         else
-#             diagnode = diag.tree[node.di]
-#             push!(diagnode.nodes, nidx)
-#         end
-#     else
-#         if node.ex < 0
-#             new = DiagTree.addNode!(diag, ADD, 1.0, [], [nidx,])
-#             node.ex = new
-#         else
-#             diagnode = diag.tree[node.ex]
-#             push!(diagnode.nodes, nidx)
-#         end
-#     end
-# end
-
-# function split(g0, gc, Lw, Rw, isLdirect, isRdirect)
-#     propagators = [g0, gc]
-#     nodes = []
-#     if Lw.isPropagator
-#         push!(propagators, isLdirect ? Lw.di : Lw.ex)
-#     else
-#         push!(nodes, isLdirect ? Lw.di : Lw.ex)
-#     end
-#     if Rw.isPropagator
-#         push!(propagators, isRdirect ? Rw.di : Rw.ex)
-#     else
-#         push!(nodes, isRdirect ? Rw.di : Rw.ex)
-#     end
-#     return propagators, nodes
-# end
-
 function _newDiag(para::Para, legK, evalK::Function)
     Kbasis = Vector{Float64}
     Kpool = DiagTree.cachedPool(Kbasis, Vector{Float64})
-    GTbasis = Tuple{Int,Int}
-    GTpool = DiagTree.uncachedPool(GTbasis)
+    Tbasis = Tuple{Int,Int}
+    Tpool = DiagTree.uncachedPool(Tbasis)
     if para.interactionTauNum == 2
-        WTbasis = Tuple{Int,Int}
-        WTpool = DiagTree.uncachedPool(WTbasis)
         Gpool = DiagTree.propagatorPool(para.greenType[1]; paraType = Symbol)
         Wpool = DiagTree.propagatorPool(para.wType[1], paraType = Symbol)
-        return DiagTree.Diagrams((Kpool, GTpool, WTpool), (Gpool, Wpool), para.nodeType[1], nodeParaType = Symbol)
+        return DiagTree.Diagrams((Kpool, Tpool), (Gpool, Wpool), para.nodeType[1], nodeParaType = Symbol)
     elseif para.interactionTauNum == 1
         Gpool = DiagTree.propagatorPool(para.greenType[1], paraType = Symbol)
         Wpool = DiagTree.propagatorPool(para.wType[1], paraType = Symbol)
-        return DiagTree.Diagrams((Kpool, GTpool), (Gpool, Wpool), para.nodeType[1], nodeParaType = Symbol)
+        return DiagTree.Diagrams((Kpool, Tpool), (Gpool, Wpool), para.nodeType[1], nodeParaType = Symbol)
     else
         error("not implemented!")
     end
@@ -103,9 +51,9 @@ end
 function node4Tbubble(para, diag, lver, rver, l, r, g0, gc)
     Factor = SymFactor[T] / (2π)^para.dim
     Td, Te = [], []
-    addNode!(:bub, Td, para, diag, lver, rver, l, r, DI, DI, g0, gc, para.spin)
-    addNode!(:bub, Td, para, diag, lver, rver, l, r, DI, EX, g0, gc)
-    addNode!(:bub, Td, para, diag, lver, rver, l, r, EX, DI, g0, gc)
+    addNode!(:dxd, Td, para, diag, lver, rver, l, r, DI, DI, g0, gc, para.spin)
+    addNode!(:dxe, Td, para, diag, lver, rver, l, r, DI, EX, g0, gc)
+    addNode!(:exd, Td, para, diag, lver, rver, l, r, EX, DI, g0, gc)
     nodeTd = DiagTree.addNode(diag, DiagTree.ADD, [[], []], Td; factor = Factor, para = :Td)
 
     addNode!(:Te, Te, para, diag, lver, rver, l, r, EX, EX, g0, gc)
@@ -301,13 +249,17 @@ function ver4toDiagTree(para::Para, loopNum::Int, legK, Kidx::Int, Tidx::Int, ev
         end
         if length(ver4dNodes) > 1
             nodeD = DiagTree.addNode(diag, DiagTree.ADD, [[], []], ver4dNodes; factor = factor, para = :dir)
-        else
+        elseif length(ver4dNodes) == 1
             nodeD = ver4dNodes[1]
+        else
+            nodeD = 0
         end
         if length(ver4eNodes) > 1
             nodeE = DiagTree.addNode(diag, DiagTree.ADD, [[], []], ver4eNodes; factor = factor, para = :ex)
-        else
+        elseif length(ver4eNodes) == 1
             nodeE = ver4eNodes[1]
+        else
+            nodeE = 0
         end
         ver4.weight[i] = @SVector [nodeD, nodeE]
         if nodeD != 0

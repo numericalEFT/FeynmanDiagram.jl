@@ -12,16 +12,11 @@ function printBasisPool(diag::Diagrams)
             if length(b) >= i
                 if isCached(b)
                     val = sprint(show, b[i].object)
-                    # @printf("%20s", sprint(show, b[i].object))
-                    # print(sprint(show, b[i].object) * "   ")
                 else
                     val = sprint(show, b[i])
-                    # @printf("%20s", sprint(show, b[i]))
-                    # print(sprint(show, b[i]) * "   ")
                 end
             else
                 val = " "
-                @printf("%20s", " ")
             end
             # l = maximum([20, length(val)])
             # format = "%$(l)s"
