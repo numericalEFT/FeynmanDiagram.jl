@@ -11,7 +11,7 @@ interactionTauNum = 1
 loopNum = 2
 spin = 2
 
-para = Parquet.Para(3, chan, interactionTauNum, (Float64, Float64), (Float64, Float64), (Weight, Float64), spin)
+para = Parquet.Para(3, chan, interactionTauNum, Float64, spin)
 
 ver4 = Parquet.Ver4{Float64}(para, loopNum, 1)
 
@@ -32,7 +32,7 @@ println("Iterate the tree use the AbstractTrees interface: ")
 ########## use ete3 package to visualize tree
 # Parquet.showTree(ver4, para, verbose = 1, depth = 3)  # visualize tree using python3 package ete3
 
-para = Parquet.Para(3, chan, interactionTauNum, (Float64, Float64), (Float64, Float64), (Float64, Float64), spin)
+para = Parquet.Para(3, chan, interactionTauNum, Float64, spin)
 K0 = zeros(2 + loopNum)
 KinL = KoutL = KinR = KoutR = deepcopy(K0)
 KinL[1] = KoutL[1] = 1

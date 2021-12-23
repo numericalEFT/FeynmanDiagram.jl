@@ -22,11 +22,12 @@ struct Para
     F::Vector{Int}
     V::Vector{Int}
     interactionTauNum::Int # τ degrees of freedom of the bare interaction 1, 2, or 4
-    greenType::Tuple{DataType,DataType}
-    wType::Tuple{DataType,DataType}
-    nodeType::Tuple{DataType,DataType}
+    # greenType::Tuple{DataType,DataType}
+    # wType::Tuple{DataType,DataType}
+    # nodeType::Tuple{DataType,DataType}
+    weightType::DataType
 
-    function Para(dim, chan, interactionTauNum, greenType, wType, nodeType, spin = 1)
+    function Para(dim, chan, interactionTauNum, weightType::DataType, spin = 1)
 
         for tnum in interactionTauNum
             @assert tnum == 1 || tnum == 2 || tnum == 4
@@ -38,7 +39,7 @@ struct Para
         F = intersect(chan, Fchan)
         V = intersect(chan, Vchan)
 
-        return new(dim, chan, spin, F, V, interactionTauNum, greenType, wType, nodeType)
+        return new(dim, chan, spin, F, V, interactionTauNum, weightType)
     end
 end
 
