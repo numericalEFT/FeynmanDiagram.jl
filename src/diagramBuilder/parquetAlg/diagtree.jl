@@ -69,15 +69,72 @@ function _newDiag(para::Para, legK, evalK::Function)
     end
 end
 
-# function Bubble{_Ver4,W}(ver4::_Ver4, chan::Int, oL::Int, para::Para, level::Int, _id::Vector{Int}) where {_Ver4,W}
-function bubbletoDiagTree(para::Para, diag, ver4, bubble, legK, Kidx::Int, Tidx::Int, evalK::Function, evalT::Function, factor = 1.0)
+# addNode!(Td, para, diag, lver, rver, DI, EX)
+function addNode!(nodes, para, diag, Lver, Rver, l, r, lc, rc, g0, gc, factor = para.nodeFactorType(1))
+    lLopNum, rLopNum = Lver.loopNum, Rver.loopNum
+    Lw, Rw = Lver[l].weight[lc], Rver[r].weight[rc]
+    if lLopNum == 0 && rLopNum == 0
+        components, child = [[g0, gc], [Lw, Rw]], []
+    elseif lLopNum == 0 && rLopNum > 0
+        components, child = [[g0, gc], [Lw,]], [Rw,]
+    elseif lLopNum > 0 && rLopNum == 0
+        components, child = [[g0, gc], [Rw,]], [Lw,]
+    else
+        components, child = [[g0, gc], []], [Lw, Rw]
+    end
+    if (Lw != 0 && Rw != 0)
+        push!(nodes, DiagTree.addNode(diag, DiagTree.MUL, components, child; factor = factor))
+    end
+    return nodes
+end
+# if (chan == T) {
+#     W[DIR] = Lw[DIR] * Rw[DIR] * SPIN + Lw[DIR] * Rw[EX] + Lw[EX] * Rw[DIR];
+#     W[EX] = Lw[EX] * Rw[EX];
+#   } else if (chan == U) {
+#     W[EX] = Lw[DIR] * Rw[DIR] * SPIN + Lw[DIR] * Rw[EX] + Lw[EX] * Rw[DIR];
+#     W[DIR] = Lw[EX] * Rw[EX];
+#   } else if (chan == S) {
+#     // see the note "code convention"
+#     W[DIR] = Lw[DIR] * Rw[EX] + Lw[EX] * Rw[DIR];
+#     W[EX] = Lw[DIR] * Rw[DIR] + Lw[EX] * Rw[EX];
+#   }
+
+# function addNode(diag::Diagrams, operator, components, childNodes; factor = 1.0, parent = 0, para = 0, currWeight = 0.0)
+function node4Tbubble(para, diag, lver, rver, l, r, g0, gc)
+    Factor = SymFactor[T] / (2π)^para.dim
+    Td, Te = [], []
+    addNode!(Td, para, diag, lver, rver, l, r, g0, gc, DI, DI, para.spin)
+    addNode!(Td, para, diag, lver, rver, l, r, g0, gc, DI, EX)
+    addNode!(Td, para, diag, lver, rver, l, r, g0, gc, EX, DI)
+    nodeTd = DiagTree.addNode(diag, DiagTree.ADD, [[], []], Td; factor = para.nodeFactorType(Factor))
+
+    addNode!(Te, para, diag, lver, rver, l, r, g0, gc, EX, EX)
+    if isempty(Te) == fasle
+        nodeTe = Te[1]
+    else
+        nodeTe = 0
+    end
+    return @SVector [nodeTd, nodeTe]
+end
+
+# bubbletoDiagTree!(ver4Nodes, para, diag, ver4, b, legK, Kidx, Tidx, evalK, evalT, factor)
+function bubbletoDiagTree!(ver4Nodes, para, diag, ver4, bubble, legK, Kidx::Int, Tidx::Int, evalK::Function, evalT::Function, factor = 1.0)
+    KinL, KoutL, KinR, KoutR = legK[1], legK[2], legK[3], legK[4]
+    @assert KinL + KinR ≈ KoutL + KoutR
+
+    b = bubble
     c = b.chan
     G = ver4.G
+
+    Gorder, Vorder, Worder = 0, 1, 1
+    MUL, ADD = 1, 2
+
     K = zero(KinL)
     K[Kidx] = 1
     Kt = KoutL + K - KinL
     Ku = KoutR + K - KinL
     Ks = KinL + KinR - K
+
 
     # Factor = SymFactor[c] * PhaseFactor
     Llopidx = Kidx + 1
@@ -122,8 +179,12 @@ function bubbletoDiagTree(para::Para, diag, ver4, bubble, legK, Kidx::Int, Tidx:
             # w = (ver4.level == 1 && isFast) ? ver4.weight[ChanMap[c]] : ver4.weight[map.ver]
             w = ver4.weight[map.ver]
 
-            if c == T || c == U
+            if c == T
+                Tde = node4Tbubble(para, diag, b.Lver, b.Rver, l, r, g0, gc)
+                push!(ver4Nodes[map.ver], Tde)
+                # if c == T || c == U
                 #direct
+
 
                 # nsum = []
                 # ps, ns = split(g0, gc, Lw, Rw, true, true)
@@ -215,20 +276,33 @@ function ver4toDiagTree(para::Para, loopNum::Int, legK, Kidx::Int, Tidx::Int, ev
     end
 
     # LoopNum>=1
+    ver4Nodes = []
     for i in 1:length(ver4.weight)
         ver4.weight[i] = @SVector [0, 0]
+        push!(ver4Nodes, [])
     end
 
 
     for b in ver4.bubble
-        diag = bubbletoDiagTree(para, diag, ver4, b, legK, Kidx, Tidx, evalK, evalT, factor)
+        bubbletoDiagTree!(ver4Nodes, para, diag, ver4, b, legK, Kidx, Tidx, evalK, evalT, factor)
     end
 
-    # if ver4.level == 1
-    #     for w in ver4.weight
-    #         w.di > 0 && push!(diag.root, w.di)
-    #         w.ex > 0 && push!(diag.root, w.ex)
-    #     end
-    # end
+    # nodeTd = DiagTree.addNode(diag, DiagTree.ADD, [[], []], Td; factor = para.nodeFactorType(Factor))
+    ver4dNodes = []
+    ver4eNodes = []
+    for i in 1:length(ver4.weight)
+        for n in ver4Nodes[i]
+            if n[DI] != 0
+                push!(ver4dNodes, n[DI])
+            end
+            if n[EX] != 0
+                push!(ver4eNodes, n[EX])
+            end
+        end
+    end
+
+    nodeD = DiagTree.addNode(diag, DiagTree.ADD, [[], []], ver4dNodes; factor = para.nodeFactorType(Factor))
+    nodeE = DiagTree.addNode(diag, DiagTree.ADD, [[], []], ver4eNodes; factor = para.nodeFactorType(Factor))
+    ver4.weight[i] = @SVector [nodeD, nodeE]
     return diag, ver4
 end

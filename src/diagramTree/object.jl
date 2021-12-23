@@ -162,8 +162,19 @@ end
 - currWeight = 0 : Initial weight of the node.
 """
 function addNode(diag::Diagrams, operator, components, childNodes; factor = 1.0, parent = 0, para = 0, currWeight = 0.0)
+
     nodePool = diag.nodePool
     @assert length(components) == length(diag.propagatorPool) "each element of the components is an index vector of the corresponding propagator"
+
+    empty = true
+    for c in components
+        if isempty(c) == false
+            empty = false
+        end
+    end
+    if (empty == true) && isempty(childNodes)
+        return 0
+    end
 
     _NodePool = typeof(nodePool)
     _CachedNode = eltype(fieldtype(_NodePool, :pool))
