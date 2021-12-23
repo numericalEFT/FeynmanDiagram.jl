@@ -99,15 +99,13 @@ function bubbletoDiagTree!(ver4Nodes, para, diag, ver4, bubble, legK, Kidx::Int,
     c = b.chan
     G = ver4.G
 
-    Gorder, Vorder, Worder = 0, 1, 1
-
     K = zero(KinL)
     K[Kidx] = 1
     Kt = KoutL + K - KinL
     Ku = KoutR + K - KinL
     Ks = KinL + KinR - K
 
-
+    Gorder = 0
     # Factor = SymFactor[c] * PhaseFactor
     Llopidx = Kidx + 1
     Rlopidx = Kidx + 1 + b.Lver.loopNum
@@ -174,11 +172,8 @@ function ver4toDiagTree(para::Para, loopNum::Int, legK, Kidx::Int, Tidx::Int, ev
 
     KinL, KoutL, KinR, KoutR = legK[1], legK[2], legK[3], legK[4]
 
-    @assert KinL + KinR ≈ KoutL + KoutR
     # KoutR = KinL + KinR - KoutL
-    GType, VType, WType = 1, 2, 3
-    Gorder, Vorder, Worder = 0, 1, 1
-    MUL, ADD = 1, 2
+    @assert KinL + KinR ≈ KoutL + KoutR
 
     evaTpair(Tpair) = Tuple([evalT(t) for t in Tpair])
 
@@ -186,6 +181,7 @@ function ver4toDiagTree(para::Para, loopNum::Int, legK, Kidx::Int, Tidx::Int, ev
     qe = KinR - KoutL
     Tidx = ver4.Tidx
 
+    Vorder = 1
     if ver4.loopNum == 0
         qd, qe = [1, qd, evalK(qd)], [1, qe, evalK(qe)]
         if ver4.interactionTauNum == 2
@@ -220,31 +216,22 @@ function ver4toDiagTree(para::Para, loopNum::Int, legK, Kidx::Int, Tidx::Int, ev
         bubbletoDiagTree!(ver4Nodes, para, diag, ver4, b, legK, Kidx, Tidx, evalK, evalT, factor)
     end
 
-    # nodeTd = DiagTree.addNode(diag, DiagTree.ADD, [[], []], Td; factor = para.nodeFactorType(Factor))
-    dir, ex = [], []
-    for i in 1:length(ver4.weight)
-        ver4dNodes = []
-        ver4eNodes = []
-        for n in ver4Nodes[i]
-            if n[DI] != 0
-                push!(ver4dNodes, n[DI])
-            end
-            if n[EX] != 0
-                push!(ver4eNodes, n[EX])
-            end
+    function split(weightList)
+        dir, ex = [], []
+        for w in weightList
+            (w[DI] != 0) && push!(dir, w[DI])
+            (w[EX] != 0) && push!(ex, w[EX])
         end
+        return dir, ex
+    end
 
+    for i in 1:length(ver4.weight)
+        ver4dNodes, ver4eNodes = split(ver4Nodes[i])
         nodeD = DiagTree.addNode(diag, DiagTree.ADD, [[], []], ver4dNodes; factor = factor, para = :dir)
         nodeE = DiagTree.addNode(diag, DiagTree.ADD, [[], []], ver4eNodes; factor = factor, para = :ex)
-
         ver4.weight[i] = @SVector [nodeD, nodeE]
-        if nodeD != 0
-            push!(dir, nodeD)
-        end
-        if nodeE != 0
-            push!(ex, nodeE)
-        end
     end
+    dir, ex = split(ver4.weight)
 
     return diag, ver4, dir, ex
 end
