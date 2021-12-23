@@ -4,14 +4,15 @@ function _newDiag(para::Para, legK, evalK::Function)
     Kpool = DiagTree.cachedPool(Kbasis, Vector{Float64})
     Tbasis = Tuple{Int,Int}
     Tpool = DiagTree.uncachedPool(Tbasis)
+    weightType = para.weightType
     if para.interactionTauNum == 2
-        Gpool = DiagTree.propagatorPool(para.greenType[1]; paraType = Symbol)
-        Wpool = DiagTree.propagatorPool(para.wType[1], paraType = Symbol)
-        return DiagTree.Diagrams((Kpool, Tpool), (Gpool, Wpool), para.nodeType[1], nodeParaType = Symbol)
+        Gpool = DiagTree.propagatorPool(weightType; paraType = Symbol)
+        Wpool = DiagTree.propagatorPool(weightType, paraType = Symbol)
+        return DiagTree.Diagrams((Kpool, Tpool), (Gpool, Wpool), weightType, nodeParaType = Symbol)
     elseif para.interactionTauNum == 1
-        Gpool = DiagTree.propagatorPool(para.greenType[1], paraType = Symbol)
-        Wpool = DiagTree.propagatorPool(para.wType[1], paraType = Symbol)
-        return DiagTree.Diagrams((Kpool, Tpool), (Gpool, Wpool), para.nodeType[1], nodeParaType = Symbol)
+        Gpool = DiagTree.propagatorPool(weightType, paraType = Symbol)
+        Wpool = DiagTree.propagatorPool(weightType, paraType = Symbol)
+        return DiagTree.Diagrams((Kpool, Tpool), (Gpool, Wpool), weightType, nodeParaType = Symbol)
     else
         error("not implemented!")
     end
