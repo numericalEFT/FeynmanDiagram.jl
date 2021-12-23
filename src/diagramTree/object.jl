@@ -68,7 +68,7 @@ end
 
 function Base.isequal(a::Node{P}, b::Node{P}) where {P}
     # only parent is allowed to be different
-    if (isequal(a.para, b.para) == false) || (a.operation != b.operation) || (a.components != b.components) || (a.child != b.child) || (a.factor != b.factor)
+    if (isequal(a.para, b.para) == false) || (a.operation != b.operation) || (a.components != b.components) || (a.childNodes != b.childNodes) || (a.factor != b.factor)
         return false
     else
         return true

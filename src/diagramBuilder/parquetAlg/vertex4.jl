@@ -16,6 +16,7 @@ Parameters to generate diagrams using Parquet algorithm
 - `interactionTauNum`: τ degrees of freedom of the bare interaction
 """
 struct Para
+    dim::Int
     chan::Vector{Int}
     spin::Int
     F::Vector{Int}
@@ -25,7 +26,7 @@ struct Para
     wType::Tuple{DataType,DataType}
     nodeType::Tuple{DataType,DataType}
 
-    function Para(chan, interactionTauNum, greenType, wType, nodeType, spin = 1)
+    function Para(dim, chan, interactionTauNum, greenType, wType, nodeType, spin = 1)
 
         for tnum in interactionTauNum
             @assert tnum == 1 || tnum == 2 || tnum == 4
@@ -37,7 +38,7 @@ struct Para
         F = intersect(chan, Fchan)
         V = intersect(chan, Vchan)
 
-        return new(chan, spin, F, V, interactionTauNum, greenType, wType, nodeType)
+        return new(dim, chan, spin, F, V, interactionTauNum, greenType, wType, nodeType)
     end
 end
 
