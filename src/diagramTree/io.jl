@@ -1,20 +1,32 @@
 function printBasisPool(diag::Diagrams)
     Nmax = maximum([length(b) for b in diag.basisPool])
-    print("index  ")
+    @printf("%5s", "index")
     for (bi, b) in enumerate(diag.basisPool)
-        print("basis#$bi  ")
+        @printf("%20s", "basis#$bi")
     end
     print("\n")
     for i = 1:Nmax
-        print("$i   ")
+        # print("$i   ")
+        @printf("%5i", i)
         for b in diag.basisPool
             if length(b) >= i
                 if isCached(b)
-                    print(sprint(show, b[i].object) * "   ")
+                    val = sprint(show, b[i].object)
+                    # @printf("%20s", sprint(show, b[i].object))
+                    # print(sprint(show, b[i].object) * "   ")
                 else
-                    print(sprint(show, b[i]) * "   ")
+                    val = sprint(show, b[i])
+                    # @printf("%20s", sprint(show, b[i]))
+                    # print(sprint(show, b[i]) * "   ")
                 end
+            else
+                val = " "
+                @printf("%20s", " ")
             end
+            # l = maximum([20, length(val)])
+            # format = "%$(l)s"
+            @printf("%20s", val)
+            # print(val)
         end
         print("\n")
     end
@@ -47,14 +59,15 @@ function showTree(diag::Diagrams, _root = diag.root[end]; verbose = 0, depth = 9
         s *= sprint(show, node.para)
         s *= ", "
 
-        if node.operation == 1
+        if node.operation == MUL
             if (node.factor ≈ 1.0) == false
                 s *= @sprintf("%3.1f", node.factor)
             end
             s *= "x "
-        elseif node.operation == 2
-            @assert node.factor ≈ 1.0
-            s *= "+ "
+        elseif node.operation == ADD
+            # @assert node.factor ≈ 1.0
+            s *= @sprintf("%3.1f", node.factor)
+            s *= ", + "
         else
             error("not implemented!")
         end
@@ -86,7 +99,7 @@ function showTree(diag::Diagrams, _root = diag.root[end]; verbose = 0, depth = 9
                 p = propagatorPool[pidx].object #Propagator
                 factor = @sprintf("%3.1f", p.factor)
                 # nnt = nt.add_child(name = "P$pidx: typ $ci, K$(K[p.Kidx].basis), T$(p.Tidx), $factor")
-                nnt = nt.add_child(name = "P$pidx: typ $ci, basis $(p.basis), factor: $factor")
+                nnt = nt.add_child(name = "P$pidx: typ $ci, basis $(p.basis) x $factor")
             end
         end
 
