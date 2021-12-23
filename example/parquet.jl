@@ -6,9 +6,9 @@ const Weight = SVector{2,Float64}
 
 Parquet = Builder.Parquet
 
-chan = [Parquet.T,]
-interactionTauNum = 2
-loopNum = 1
+chan = [Parquet.T, Parquet.U, Parquet.S]
+interactionTauNum = 1
+loopNum = 2
 spin = 2
 
 para = Parquet.Para(3, chan, interactionTauNum, (Float64, Float64), (Float64, Float64), (Weight, Float64), spin)
@@ -33,12 +33,14 @@ println("Iterate the tree use the AbstractTrees interface: ")
 # Parquet.showTree(ver4, para, verbose = 1, depth = 3)  # visualize tree using python3 package ete3
 
 para = Parquet.Para(3, chan, interactionTauNum, (Float64, Float64), (Float64, Float64), (Float64, Float64), spin)
-KinL = KoutL = [1, 0, 0]
-KinR = KoutR = [0, 1, 0]
+K0 = zeros(2 + loopNum)
+KinL = KoutL = KinR = KoutR = deepcopy(K0)
+KinL[1] = KoutL[1] = 1
+KinR[2] = KoutR[2] = 2
 legK = [KinL, KoutL, KinR, KoutR]
 
-varK = [rand(3), rand(3), rand(3)]
-varT = [rand(), rand(), rand(), rand()]
+varK = [rand(3) for i in 1:2+loopNum]
+varT = [rand() for i in 1:2*(loopNum+1)]
 evalK(basis) = sum([basis[i] * varK[i] for i in 1:3])
 evalT(Tidx) = varT[Tidx]
 # diag, ver4 = Parquet.diagramTree(para, 1, legK, 3, 1, Float64, Gsym, Wsym, spin)

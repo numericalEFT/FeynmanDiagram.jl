@@ -174,8 +174,13 @@ function addNode(diag::Diagrams, operator, components, childNodes; factor = 1.0,
             empty = false
         end
     end
+    # if all components are empty and the childnodes are empty, then no need to create new node, simply return 0
     if (empty == true) && isempty(childNodes)
         return 0
+    end
+    # if all components are empty && there is only one child node && factor=1, then no need to create new node, simply return the child node
+    if (empty == true) && length(childNodes) == 1 && (factor ≈ 1)
+        return childNodes[1]
     end
 
     _NodePool = typeof(nodePool)
