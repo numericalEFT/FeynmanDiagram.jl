@@ -53,6 +53,7 @@ struct Node{PARA,F}
     para::PARA
     operation::Int #1: multiply, 2: add, ...
     factor::F
+    # order::Int
     components::Vector{Vector{Int}}
     childNodes::Vector{Int}
     parent::Int # parent id
@@ -62,7 +63,7 @@ struct Node{PARA,F}
         return new{P,F}(para, operation, factor, components, child, parent)
     end
     function Node{P,F}(operation::Int, components = [[]], child = [], factor = 1.0, parent = 0, para = 0) where {F,P}
-        return new{P,F}(para, operation, factor, components, child, parent)
+        return new{P,F}(P(para), operation, F(factor), components, child, parent)
     end
 end
 
@@ -88,6 +89,7 @@ Base.:(==)(a::Node{P}, b::Node{P}) where {P} = Base.isequal(a, b)
 - root::Vector{Int} : indices of the cached nodes that are the root(s) of the diagram tree. Each element corresponds to one root.
 """
 mutable struct Diagrams{V,P,PARA,F,W}
+    # name::Symbol
     basisPool::V
     propagatorPool::P
     nodePool::Pool{Cache{Node{PARA,F},W}}
@@ -99,7 +101,7 @@ mutable struct Diagrams{V,P,PARA,F,W}
     #     PARA = Int
     #     return new{V,P,PARA,F,W}(basisPool, propagatorPool, Pool{Cache{Node{PARA,F},W}}(), [])
     # end
-    function Diagrams(basisPool::V, propagatorPool::P, nodeWeightType::DataType, nodeFactorType::DataType, nodeParaType::DataType = Int) where {V,P}
+    function Diagrams(basisPool::V, propagatorPool::P, nodeWeightType::DataType; nodeFactorType = nodeWeightType, nodeParaType::DataType = Int) where {V,P}
         @assert V <: Tuple "Tuple is required for efficiency!"
         @assert P <: Tuple "Tuple is required for efficiency!"
         # println(basisPool)
@@ -181,6 +183,8 @@ function addNode(diag::Diagrams, operator, components, childNodes; factor = 1.0,
     _Node = fieldtype(_CachedNode, :object)
     PARA = fieldtype(_Node, :para)
     F = fieldtype(_Node, :factor)
+    println("node PARA: ", PARA)
+    println("node F: ", F)
 
     node = Node{PARA,F}(operator, components, childNodes, factor, parent, para)
 

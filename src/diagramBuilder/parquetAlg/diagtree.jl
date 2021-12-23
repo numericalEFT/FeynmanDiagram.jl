@@ -59,18 +59,18 @@ function _newDiag(para::Para, legK, evalK::Function)
         WTpool = DiagTree.uncachedPool(WTbasis)
         Gpool = DiagTree.propagatorPool(para.greenType[1], para.greenType[2])
         Wpool = DiagTree.propagatorPool(para.wType[1], para.wType[2])
-        return DiagTree.Diagrams((Kpool, GTpool, WTpool), (Gpool, Wpool), para.nodeType[1], para.nodeType[2])
+        return DiagTree.Diagrams((Kpool, GTpool, WTpool), (Gpool, Wpool), para.nodeType[1], nodeParaType = Symbol)
     elseif para.interactionTauNum == 1
         Gpool = DiagTree.propagatorPool(para.greenType[1], para.greenType[2])
         Wpool = DiagTree.propagatorPool(para.wType[1], para.wType[2])
-        return DiagTree.Diagrams((Kpool, GTpool), (Gpool, Wpool), para.nodeType[1], para.nodeType[2])
+        return DiagTree.Diagrams((Kpool, GTpool), (Gpool, Wpool), para.nodeType[1], nodeParaType = Symbol)
     else
         error("not implemented!")
     end
 end
 
 # addNode!(Td, para, diag, lver, rver, DI, EX)
-function addNode!(nodes, para, diag, Lver, Rver, l, r, lc, rc, g0, gc, factor = para.nodeType[2](1))
+function addNode!(name::Symbol, nodes, para, diag, Lver, Rver, l, r, lc, rc, g0, gc, factor = para.nodeType[2](1))
     lLopNum, rLopNum = Lver.loopNum, Rver.loopNum
     Lw, Rw = Lver.weight[l][lc], Rver.weight[r][rc]
     if lLopNum == 0 && rLopNum == 0
@@ -83,7 +83,7 @@ function addNode!(nodes, para, diag, Lver, Rver, l, r, lc, rc, g0, gc, factor = 
         components, child = [[g0, gc], []], [Lw, Rw]
     end
     if (Lw != 0 && Rw != 0)
-        push!(nodes, DiagTree.addNode(diag, DiagTree.MUL, components, child; factor = factor))
+        push!(nodes, DiagTree.addNode(diag, DiagTree.MUL, components, child; factor = factor, para = name))
     end
     return nodes
 end
@@ -103,12 +103,12 @@ end
 function node4Tbubble(para, diag, lver, rver, l, r, g0, gc)
     Factor = SymFactor[T] / (2π)^para.dim
     Td, Te = [], []
-    addNode!(Td, para, diag, lver, rver, l, r, DI, DI, g0, gc, para.spin)
-    addNode!(Td, para, diag, lver, rver, l, r, DI, EX, g0, gc)
-    addNode!(Td, para, diag, lver, rver, l, r, EX, DI, g0, gc)
-    nodeTd = DiagTree.addNode(diag, DiagTree.ADD, [[], []], Td; factor = para.nodeType[2](Factor))
+    addNode!(:bub, Td, para, diag, lver, rver, l, r, DI, DI, g0, gc, para.spin)
+    addNode!(:bub, Td, para, diag, lver, rver, l, r, DI, EX, g0, gc)
+    addNode!(:bub, Td, para, diag, lver, rver, l, r, EX, DI, g0, gc)
+    nodeTd = DiagTree.addNode(diag, DiagTree.ADD, [[], []], Td; factor = para.nodeType[2](Factor), para = :Td)
 
-    addNode!(Te, para, diag, lver, rver, l, r, EX, EX, g0, gc)
+    addNode!(:Te, Te, para, diag, lver, rver, l, r, EX, EX, g0, gc)
     if isempty(Te) == false
         nodeTe = Te[1]
     else
@@ -127,7 +127,6 @@ function bubbletoDiagTree!(ver4Nodes, para, diag, ver4, bubble, legK, Kidx::Int,
     G = ver4.G
 
     Gorder, Vorder, Worder = 0, 1, 1
-    MUL, ADD = 1, 2
 
     K = zero(KinL)
     K[Kidx] = 1
@@ -300,8 +299,16 @@ function ver4toDiagTree(para::Para, loopNum::Int, legK, Kidx::Int, Tidx::Int, ev
                 push!(ver4eNodes, n[EX])
             end
         end
-        nodeD = DiagTree.addNode(diag, DiagTree.ADD, [[], []], ver4dNodes; factor = para.nodeType[2](factor))
-        nodeE = DiagTree.addNode(diag, DiagTree.ADD, [[], []], ver4eNodes; factor = para.nodeType[2](factor))
+        if length(ver4dNodes) > 1
+            nodeD = DiagTree.addNode(diag, DiagTree.ADD, [[], []], ver4dNodes; factor = para.nodeType[2](factor), para = :dir)
+        else
+            nodeD = ver4dNodes[1]
+        end
+        if length(ver4eNodes) > 1
+            nodeE = DiagTree.addNode(diag, DiagTree.ADD, [[], []], ver4eNodes; factor = para.nodeType[2](factor), para = :ex)
+        else
+            nodeE = ver4eNodes[1]
+        end
         ver4.weight[i] = @SVector [nodeD, nodeE]
         if nodeD != 0
             push!(dir, nodeD)
