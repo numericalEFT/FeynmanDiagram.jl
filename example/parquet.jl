@@ -44,8 +44,8 @@ evalT(Tidx) = varT[Tidx]
 # println("ver4444...")
 # println(ver4)
 diag, ver4, dir, ex = Parquet.ver4toDiagTree(para, 1, legK, 3, 1, evalK, evalT, 1.0)
-rootDir = DiagTree.addNode(diag, DiagTree.ADD, [[], []], dir)
-rootEx = DiagTree.addNode(diag, DiagTree.ADD, [[], []], ex)
+rootDir = DiagTree.addNode(diag, DiagTree.ADD, [[], []], dir; para = "dir")
+rootEx = DiagTree.addNode(diag, DiagTree.ADD, [[], []], ex; para = "ex")
 diag.root = [rootDir, rootEx]
 
 DiagTree.showTree(diag, rootDir)
