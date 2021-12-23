@@ -288,6 +288,7 @@ function ver4toDiagTree(para::Para, loopNum::Int, legK, Kidx::Int, Tidx::Int, ev
     end
 
     # nodeTd = DiagTree.addNode(diag, DiagTree.ADD, [[], []], Td; factor = para.nodeFactorType(Factor))
+    dir, ex = [], []
     for i in 1:length(ver4.weight)
         ver4dNodes = []
         ver4eNodes = []
@@ -302,7 +303,23 @@ function ver4toDiagTree(para::Para, loopNum::Int, legK, Kidx::Int, Tidx::Int, ev
         nodeD = DiagTree.addNode(diag, DiagTree.ADD, [[], []], ver4dNodes; factor = para.nodeType[2](factor))
         nodeE = DiagTree.addNode(diag, DiagTree.ADD, [[], []], ver4eNodes; factor = para.nodeType[2](factor))
         ver4.weight[i] = @SVector [nodeD, nodeE]
+        if nodeD != 0
+            push!(dir, nodeD)
+        end
+        if nodeE != 0
+            push!(ex, nodeE)
+        end
     end
 
-    return diag, ver4
+    return diag, ver4, dir, ex
 end
+
+# function splitWeight(ver4)
+#     dir = []
+#     ex = []
+#     for w in ver4.weight
+#         push!(dir, w[DI])
+#         push!(ex, w[DI])
+#     end
+#     return dir, ex
+# end

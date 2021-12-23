@@ -101,7 +101,7 @@ end
     # # W order is 1
 
     # # contruct the tree
-    MUL, ADD = 1, 2
+    MUL, ADD = DiagTree.MUL, DiagTree.ADD
     ggn = DiagTree.addNode(diag, MUL, [[g[1], g[2]], []], [], factor = 1.0)
     vdd = DiagTree.addNode(diag, MUL, [[], [vd[1], vd[2]]], [], factor = spin)
     vde = DiagTree.addNode(diag, MUL, [[], [vd[1], ve[2]]], [], factor = -1.0)
