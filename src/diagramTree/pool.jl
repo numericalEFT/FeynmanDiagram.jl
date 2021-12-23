@@ -142,6 +142,65 @@ function Base.iterate(pool::PoolwithParameter, state)
     end
 end
 
+"""
+    struct CachedPool{O}
+
+        Pool of (cached) objects.
+
+# Members
+- pool::Vector{O} : Vector that hosts the (cached) object
+"""
+struct CachedPool{O,T}
+    name::Symbol
+    object::Vector{O}
+    current::Vector{T}
+    new::Vector{T}
+    version::Vector{Int128}
+    excited::Vector{Bool}
+
+    function CachedPool(name::Symbol, objType::DataType, weightType::DataType)
+        object = Vector{objType}(undef, 0)
+        current = Vector{weightType}(undef, 0, 0)
+        _new = Vector{weightType}(undef, 0, 0)
+        version = Vector{Int128}(undef, 0)
+        excited = Vector{Bool}(undef, 0)
+        return new{O,T}(name, object, current, _new, version, excited)
+    end
+    # function CachedPool{T}(obj::Vector{O}) where {O,T}
+    #     weight = zeros(5, length(obj))
+    #     return new{O,T}(obj, weight)
+    # end
+end
+
+Base.length(pool::CachedPool) = length(pool.object)
+Base.size(pool::CachedPool) = size(pool.object)
+Base.show(io::IO, pool::CachedPool) = print(io, pool.object)
+# Base.view(pool::Pool, inds...) = Base.view(pool.pool, inds...)
+
+#index interface for Pool
+Base.getindex(pool::CachedPool, i) = pool.object[i]
+Base.setindex!(pool::CachedPool, v, i) = setindex!(pool.object, v, i)
+Base.firstindex(pool::CachedPool) = 1
+Base.lastindex(pool::CachedPool) = length(pool)
+
+# iterator interface
+function Base.iterate(pool::CachedPool)
+    if length(pool) == 0
+        return nothing
+    else
+        return (pool.object[1], 1)
+    end
+end
+
+function Base.iterate(pool::CachedPool, state)
+    if state >= length(pool) || length(pool) == 0
+        return nothing
+    else
+        return (pool.object[state+1], state + 1)
+    end
+end
+
+
 function isCached(pool)
     ObjectInPoolType = eltype(pool.pool)
     return ObjectInPoolType <: Cache
@@ -181,6 +240,33 @@ end
 function append(pool::PoolwithParameter, object, evaluate::Function, isCached)
     append(pool, object, evaluate(pool.para, object), isCached)
 end
+
+function append(pool::CachedPool, object)
+    # @assert para isa eltype(pool.pool)
+    for (oi, o) in enumerate(pool.object)
+        if o.object == object
+            return oi #existing obj
+        end
+    end
+
+    id = length(pool) + 1
+    push!(pool.object, obj)
+    return id #new momentum
+end
+
+function initialize(pool::CachedPool; eval::Function = nothing, value = 0)
+    N = length(pool.object)
+    pool.version = zeros(Int128, 0)
+    pool.excited = zeros(Bool, 0)
+    T = eltype(fieldtype(pool, :current))
+    if isnothing(eval)
+        pool.current = [T(value) for i in 1:N]
+    else
+        pool.current = [T(eval(obj)) for obj in pool.object]
+    end
+    pool.new = deepcopy(pool.current)
+end
+
 
 
 # function append(pool::Pool, obj::CachedObject)
