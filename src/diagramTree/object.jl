@@ -92,7 +92,7 @@ mutable struct Diagrams{V,P,PARA,F,W}
     # name::Symbol
     basisPool::V
     propagatorPool::P
-    nodePool::Pool{Cache{Node{PARA,F},W}}
+    nodePool::CachedPool{Node{PARA,F},W}
     root::Vector{Int}
     # function Diagrams{PARA,F,W}(basisPool::V, propagatorPool::P) where {V,P,PARA,F,W}
     #     return new{V,P,PARA,F,W}(basisPool, propagatorPool, Pool{Cache{Node{PARA,F},W}}(), [])
@@ -106,7 +106,7 @@ mutable struct Diagrams{V,P,PARA,F,W}
         @assert P <: Tuple "Tuple is required for efficiency!"
         # println(basisPool)
         # println(propagatorPool)
-        nodePool = Pool{Cache{Node{nodeParaType,nodeFactorType},nodeWeightType}}()
+        nodePool = CachedPool{Node{nodeParaType,nodeFactorType},nodeWeightType}(:node)
         return new{V,P,nodeParaType,nodeFactorType,nodeWeightType}(basisPool, propagatorPool, nodePool, [])
     end
 end
@@ -190,8 +190,7 @@ function addNode(diag::Diagrams, operator, components, childNodes; factor = 1.0,
     end
 
     _NodePool = typeof(nodePool)
-    _CachedNode = eltype(fieldtype(_NodePool, :pool))
-    _Node = fieldtype(_CachedNode, :object)
+    _Node = eltype(fieldtype(_NodePool, :object))
     PARA = fieldtype(_Node, :para)
     F = fieldtype(_Node, :factor)
     # println("node PARA: ", PARA)
