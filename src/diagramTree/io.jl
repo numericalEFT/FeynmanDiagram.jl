@@ -54,20 +54,24 @@ function showTree(diag::Diagrams, _root = diag.root[end]; verbose = 0, depth = 9
     ete = PyCall.pyimport("ete3")
 
     function info(cachedNode)
-        s = "N$(cachedNode.id):"
         node = cachedNode.object
-        s *= sprint(show, node.para)
-        s *= ", "
+        s = "N$(cachedNode.id) $(node.para):"
+        # s *= sprint(show, node.para)
+        # s *= ": "
 
         if node.operation == MUL
             if (node.factor ≈ 1.0) == false
-                s *= @sprintf("%3.1f", node.factor)
+                s *= @sprintf("%6.3e", node.factor)
+                # s *= "$(node.factor)"
             end
             s *= "x "
         elseif node.operation == ADD
             # @assert node.factor ≈ 1.0
-            s *= @sprintf("%3.1f", node.factor)
-            s *= ", + "
+            if (node.factor ≈ 1.0) == false
+                s *= @sprintf("%6.3e, ", node.factor)
+                # s *= "$(node.factor)"
+            end
+            s *= "+ "
         else
             error("not implemented!")
         end
@@ -97,9 +101,14 @@ function showTree(diag::Diagrams, _root = diag.root[end]; verbose = 0, depth = 9
             propagatorPool = diag.propagatorPool[ci]
             for pidx in component
                 p = propagatorPool[pidx].object #Propagator
-                factor = @sprintf("%3.1f", p.factor)
+                if (p.factor ≈ 1.0) == false
+                    factor = @sprintf(" x %6.3e", p.factor)
+                    # factor = " x $(p.factor)"
+                else
+                    factor = ""
+                end
                 # nnt = nt.add_child(name = "P$pidx: typ $ci, K$(K[p.Kidx].basis), T$(p.Tidx), $factor")
-                nnt = nt.add_child(name = "P$pidx: typ $ci, basis $(p.basis) x $factor")
+                nnt = nt.add_child(name = "P$pidx $(p.para): basis $(p.basis)$factor")
             end
         end
 
