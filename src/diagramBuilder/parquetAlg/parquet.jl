@@ -3,6 +3,7 @@ using StaticArrays, PyCall
 using AbstractTrees
 using ..DiagTree
 
+const DI, EX = 1, 2
 const INL, OUTL, INR, OUTR = 1, 2, 3, 4
 # orginal diagrams T, U, S; particle-hole counterterm Ts, Us; and their counterterm Tc, Uc, Sc, Tsc, Usc 
 const I, T, U, S, Ts, Us, Ic, Tc, Uc, Sc, Tsc, Usc = 1:12
