@@ -1,29 +1,8 @@
 function printBasisPool(diag::Diagrams)
-    Nmax = maximum([length(b) for b in diag.basisPool])
-    @printf("%5s", "index")
-    for (bi, b) in enumerate(diag.basisPool)
-        @printf("%20s", "basis#$bi")
-    end
-    print("\n")
-    for i = 1:Nmax
-        # print("$i   ")
-        @printf("%5i", i)
-        for b in diag.basisPool
-            if length(b) >= i
-                if isCached(b)
-                    val = sprint(show, b[i].object)
-                else
-                    val = sprint(show, b[i])
-                end
-            else
-                val = " "
-            end
-            # l = maximum([20, length(val)])
-            # format = "%$(l)s"
-            @printf("%20s", val)
-            # print(val)
-        end
-        print("\n")
+    @printf("%8s%20s\n", "index", "loopBasis")
+    for i = 1:length(diag.basisPool)
+        b = diag.basisPool[:, i]
+        println("$i     $b")
     end
 end
 

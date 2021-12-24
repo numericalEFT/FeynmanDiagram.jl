@@ -13,12 +13,13 @@ struct Propagator{PARA,F}
     para::PARA
     order::Int
     factor::F
-    basis::Vector{Int}
-    function Propagator(order, basis = [], factor::F = 1.0, para::P = 0) where {F,P}
-        return new{P,F}(para, order, factor, basis)
-    end
-    function Propagator{P,F}(order, basis = [], factor = 1.0, para = 0) where {P,F}
-        return new{P,F}(P(para), order, F(factor), basis)
+    Loopidx::Int
+    LocalBasis::Vector{Int}
+    # function Propagator(order, basis = [], factor::F = 1.0, para::P = 0) where {F,P}
+    #     return new{P,F}(para, order, factor, basis)
+    # end
+    function Propagator{P,F}(order, para, factor, loopidx::Int, localbasis) where {P,F}
+        return new{P,F}(P(para), order, F(factor), loopidx, localbasis)
     end
 end
 
@@ -102,7 +103,7 @@ mutable struct Diagrams{V,P,PARA,F,W}
     #     return new{V,P,PARA,F,W}(basisPool, propagatorPool, Pool{Cache{Node{PARA,F},W}}(), [])
     # end
     function Diagrams(basisPool::V, propagatorPool::P, nodeWeightType::DataType; nodeFactorType = nodeWeightType, nodeParaType::DataType = Int) where {V,P}
-        @assert V <: Tuple "Tuple is required for efficiency!"
+        # @assert V <: Tuple "Tuple is required for efficiency!"
         @assert P <: Tuple "Tuple is required for efficiency!"
         # println(basisPool)
         # println(propagatorPool)
@@ -125,8 +126,8 @@ end
 - para = 0       : Additional paramenter required to evaluate the propagator. If not needed, simply leave it as an integer.
 - currWeight = 0 : Initial weight of the propagator
 """
-function addPropagator(diag::Diagrams, index::Int, order::Int, basis::AbstractVector; factor = 1, para = 0)
-    basisPool = diag.basisPool
+function addPropagator(diag::Diagrams, index::Int, order::Int; site::AbstractVector = [], loop = nothing; factor = 1, para = 0)
+    kPool = diag.basisPool
     propagatorPool = diag.propagatorPool
     # @assert length(basis) == length(variablePool) == length(currVar) "$(length(basis)) == $(length(variablePool)) == $(length(currVar)) breaks"
 
@@ -135,16 +136,13 @@ function addPropagator(diag::Diagrams, index::Int, order::Int, basis::AbstractVe
     PARA = fieldtype(PROPAGATOR, :para)
     F = fieldtype(PROPAGATOR, :factor)
 
-    vidx = zeros(length(basis))
-    for (bi, b, curr) in basis
-        # b[1]: basis, b[2]: initialize variable (curr)
-        if isCached(basisPool[bi])
-            vidx[bi] = append(basisPool[bi], b, curr, true)
-        else
-            vidx[bi] = append(basisPool[bi], b, curr, false)
-        end
+    # function Propagator{P,F}(order, para, factor, loopbasis, localbasis) where {P,F}
+    kidx = 0
+    if isnothing(loop) == false
+        @assert typeof(loop) <: AbstractVector "LoopBasis should be a Vector!"
+        kidx = append(kPool, loop)
     end
-    prop = Propagator{PARA,F}(order, vidx, factor, para)
+    prop = Propagator{PARA,F}(order, para, factor, kidx, collect(site))
     return append(diag.propagatorPool[index], prop)
 end
 

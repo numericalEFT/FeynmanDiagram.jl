@@ -11,7 +11,7 @@ interactionTauNum = 1
 loopNum = 1
 spin = 2
 
-para = Parquet.Para(3, chan, interactionTauNum, Float64, spin)
+para = Parquet.Para(3, loopNum, chan, interactionTauNum, Float64, spin)
 
 ver4 = Parquet.Ver4{Float64}(para, loopNum, 1)
 
@@ -32,7 +32,7 @@ println("Iterate the tree use the AbstractTrees interface: ")
 ########## use ete3 package to visualize tree
 # Parquet.showTree(ver4, para, verbose = 1, depth = 3)  # visualize tree using python3 package ete3
 
-para = Parquet.Para(3, chan, interactionTauNum, Float64, spin)
+para = Parquet.Para(3, loopNum, chan, interactionTauNum, Float64, spin)
 K0 = zeros(2 + loopNum)
 KinL, KoutL, KinR, KoutR = deepcopy(K0), deepcopy(K0), deepcopy(K0), deepcopy(K0)
 KinL[1] = KoutL[1] = 1
@@ -47,7 +47,7 @@ evalT(Tidx) = varT[Tidx]
 # ver4 = Parquet.Ver4{Int}(para, 1, 1)
 # println("ver4444...")
 # println(ver4)
-diag, ver4, dir, ex = Parquet.ver4toDiagTree(para, loopNum, legK, 3, 1, evalK, evalT, 1.0)
+diag, ver4, dir, ex = Parquet.ver4toDiagTree(para, legK, 3, 1, evalK, evalT, 1.0)
 rootDir = DiagTree.addNode(diag, DiagTree.ADD, [[], []], dir; para = "dir")
 rootEx = DiagTree.addNode(diag, DiagTree.ADD, [[], []], ex; para = "ex")
 diag.root = [rootDir, rootEx]

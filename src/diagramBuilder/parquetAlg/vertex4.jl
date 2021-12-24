@@ -17,6 +17,7 @@ Parameters to generate diagrams using Parquet algorithm
 """
 struct Para
     dim::Int
+    loopNum::Int
     chan::Vector{Int}
     spin::Int
     F::Vector{Int}
@@ -27,7 +28,7 @@ struct Para
     # nodeType::Tuple{DataType,DataType}
     weightType::DataType
 
-    function Para(dim, chan, interactionTauNum, weightType::DataType, spin = 1)
+    function Para(dim, loopNum, chan, interactionTauNum, weightType::DataType, spin = 1)
 
         for tnum in interactionTauNum
             @assert tnum == 1 || tnum == 2 || tnum == 4
@@ -39,7 +40,7 @@ struct Para
         F = intersect(chan, Fchan)
         V = intersect(chan, Vchan)
 
-        return new(dim, chan, spin, F, V, interactionTauNum, weightType)
+        return new(dim, loopNum, chan, spin, F, V, interactionTauNum, weightType)
     end
 end
 
