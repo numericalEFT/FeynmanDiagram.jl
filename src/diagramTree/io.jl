@@ -95,7 +95,7 @@ function showTree(diag::Diagrams, _root::Int; verbose = 0, depth = 999)
             # println(component, ", ", ci)
             propagatorPool = diag.propagatorPool[ci]
             for pidx in component
-                p = propagatorPool[pidx].object #Propagator
+                p = propagatorPool.object[pidx] #Propagator
                 if (p.factor ≈ 1.0) == false
                     factor = @sprintf(" x %6.3e", p.factor)
                     # factor = " x $(p.factor)"

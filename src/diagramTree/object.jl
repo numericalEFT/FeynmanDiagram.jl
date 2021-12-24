@@ -31,9 +31,9 @@ function Base.isequal(a::Propagator{P,F}, b::Propagator{P,F}) where {P,F}
 end
 Base.:(==)(a::Propagator{P,F}, b::Propagator{P,F}) where {P,F} = Base.isequal(a, b)
 
-function propagatorPool(weightType::DataType; factorType::DataType = weightType, paraType::DataType = Int)
+function propagatorPool(name::Symbol, weightType::DataType; factorType::DataType = weightType, paraType::DataType = Int)
     propagatorType = Propagator{paraType,factorType}
-    return Pool{Cache{propagatorType,weightType}}()
+    return CachedPool(name, propagatorType, weightType)
 end
 
 """
@@ -125,14 +125,13 @@ end
 - para = 0       : Additional paramenter required to evaluate the propagator. If not needed, simply leave it as an integer.
 - currWeight = 0 : Initial weight of the propagator
 """
-function addPropagator(diag::Diagrams, index::Int, order::Int, basis::AbstractVector; factor = 1, para = 0, currWeight = 0)
+function addPropagator(diag::Diagrams, index::Int, order::Int, basis::AbstractVector; factor = 1, para = 0)
     basisPool = diag.basisPool
     propagatorPool = diag.propagatorPool
     # @assert length(basis) == length(variablePool) == length(currVar) "$(length(basis)) == $(length(variablePool)) == $(length(currVar)) breaks"
 
     PROPAGATOR_POOL = typeof(propagatorPool[index])
-    CACHEDPROPAGATOR = eltype(fieldtype(PROPAGATOR_POOL, :pool))
-    PROPAGATOR = fieldtype(CACHEDPROPAGATOR, :object)
+    PROPAGATOR = eltype(fieldtype(PROPAGATOR_POOL, :object))
     PARA = fieldtype(PROPAGATOR, :para)
     F = fieldtype(PROPAGATOR, :factor)
 
@@ -146,7 +145,7 @@ function addPropagator(diag::Diagrams, index::Int, order::Int, basis::AbstractVe
         end
     end
     prop = Propagator{PARA,F}(order, vidx, factor, para)
-    return append(diag.propagatorPool[index], prop, currWeight, true)
+    return append(diag.propagatorPool[index], prop)
 end
 
 """
@@ -163,7 +162,7 @@ end
 - para = 0       : Additional paramenter required to evaluate the node. If not needed, simply leave it as an integer.
 - currWeight = 0 : Initial weight of the node.
 """
-function addNode(diag::Diagrams, operator, components, childNodes; factor = 1.0, parent = 0, para = 0, currWeight = 0.0)
+function addNode(diag::Diagrams, operator, components, childNodes; factor = 1.0, parent = 0, para = 0)
 
     nodePool = diag.nodePool
     @assert length(components) == length(diag.propagatorPool) "each element of the components is an index vector of the corresponding propagator"
