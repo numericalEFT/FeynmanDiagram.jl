@@ -49,24 +49,29 @@ function showTree(diag::Diagrams, _root::Int; verbose = 0, depth = 999)
     # pushfirst!(PyVector(pyimport("sys")."path"), @__DIR__) #comment this line if no need to load local python module
     ete = PyCall.pyimport("ete3")
 
+    function factor(f)
+        if f ≈ 1
+            return ""
+        end
+        s = "$f"
+        if length(s) <= 4
+            return s
+        else
+            return @sprintf("%6.3e", f)
+        end
+    end
+
     function info(node, id)
         s = "N$(id) $(node.para):"
         # s *= sprint(show, node.para)
         # s *= ": "
 
+        s *= factor(node.factor)
+
         if node.operation == MUL
-            if (node.factor ≈ 1.0) == false
-                s *= @sprintf("%6.3e", node.factor)
-                # s *= "$(node.factor)"
-            end
-            s *= "x "
+            s *= ", x"
         elseif node.operation == ADD
-            # @assert node.factor ≈ 1.0
-            if (node.factor ≈ 1.0) == false
-                s *= @sprintf("%6.3e, ", node.factor)
-                # s *= "$(node.factor)"
-            end
-            s *= "+ "
+            s *= ", +"
         else
             error("not implemented!")
         end
@@ -96,14 +101,7 @@ function showTree(diag::Diagrams, _root::Int; verbose = 0, depth = 999)
             propagatorPool = diag.propagatorPool[ci]
             for pidx in component
                 p = propagatorPool.object[pidx] #Propagator
-                if (p.factor ≈ 1.0) == false
-                    factor = @sprintf(" x %6.3e", p.factor)
-                    # factor = " x $(p.factor)"
-                else
-                    factor = ""
-                end
-                # nnt = nt.add_child(name = "P$pidx: typ $ci, K$(K[p.Kidx].basis), T$(p.Tidx), $factor")
-                nnt = nt.add_child(name = "P$pidx $(p.para): basis $(p.basis)$factor")
+                nnt = nt.add_child(name = "P$pidx $(p.para): basis $(p.basis), $(factor(p.factor))")
             end
         end
 
