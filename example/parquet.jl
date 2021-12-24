@@ -8,7 +8,7 @@ Parquet = Builder.Parquet
 
 chan = [Parquet.T, Parquet.U, Parquet.S]
 interactionTauNum = 1
-loopNum = 2
+loopNum = 1
 spin = 2
 
 para = Parquet.Para(3, chan, interactionTauNum, Float64, spin)
@@ -34,9 +34,9 @@ println("Iterate the tree use the AbstractTrees interface: ")
 
 para = Parquet.Para(3, chan, interactionTauNum, Float64, spin)
 K0 = zeros(2 + loopNum)
-KinL = KoutL = KinR = KoutR = deepcopy(K0)
+KinL, KoutL, KinR, KoutR = deepcopy(K0), deepcopy(K0), deepcopy(K0), deepcopy(K0)
 KinL[1] = KoutL[1] = 1
-KinR[2] = KoutR[2] = 2
+KinR[2] = KoutR[2] = 1
 legK = [KinL, KoutL, KinR, KoutR]
 
 varK = [rand(3) for i in 1:2+loopNum]

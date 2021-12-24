@@ -104,6 +104,9 @@ function bubbletoDiagTree!(ver4Nodes, para, diag, ver4, bubble, legK, Kidx::Int,
     Kt = KoutL + K - KinL
     Ku = KoutR + K - KinL
     Ks = KinL + KinR - K
+    println("KinL: ", KinL)
+    println("KinR: ", KinR)
+    println("Ks: ", Ks)
 
     Gorder = 0
     # Factor = SymFactor[c] * PhaseFactor

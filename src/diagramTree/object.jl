@@ -106,7 +106,7 @@ mutable struct Diagrams{V,P,PARA,F,W}
         @assert P <: Tuple "Tuple is required for efficiency!"
         # println(basisPool)
         # println(propagatorPool)
-        nodePool = CachedPool{Node{nodeParaType,nodeFactorType},nodeWeightType}(:node)
+        nodePool = CachedPool(:node, Node{nodeParaType,nodeFactorType}, nodeWeightType)
         return new{V,P,nodeParaType,nodeFactorType,nodeWeightType}(basisPool, propagatorPool, nodePool, [])
     end
 end
@@ -198,6 +198,6 @@ function addNode(diag::Diagrams, operator, components, childNodes; factor = 1.0,
 
     node = Node{PARA,F}(operator, components, childNodes, factor, parent, para)
 
-    nidx = append(nodePool, node, currWeight, true)
+    nidx = append(nodePool, node)
     return nidx
 end

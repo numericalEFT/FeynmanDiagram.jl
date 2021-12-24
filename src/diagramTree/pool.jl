@@ -160,11 +160,11 @@ struct CachedPool{O,T}
 
     function CachedPool(name::Symbol, objType::DataType, weightType::DataType)
         object = Vector{objType}(undef, 0)
-        current = Vector{weightType}(undef, 0, 0)
-        _new = Vector{weightType}(undef, 0, 0)
+        current = Vector{weightType}(undef, 0)
+        _new = Vector{weightType}(undef, 0)
         version = Vector{Int128}(undef, 0)
         excited = Vector{Bool}(undef, 0)
-        return new{O,T}(name, object, current, _new, version, excited)
+        return new{objType,weightType}(name, object, current, _new, version, excited)
     end
     # function CachedPool{T}(obj::Vector{O}) where {O,T}
     #     weight = zeros(5, length(obj))
@@ -244,13 +244,13 @@ end
 function append(pool::CachedPool, object)
     # @assert para isa eltype(pool.pool)
     for (oi, o) in enumerate(pool.object)
-        if o.object == object
+        if o == object
             return oi #existing obj
         end
     end
 
-    id = length(pool) + 1
-    push!(pool.object, obj)
+    id = length(pool.object) + 1
+    push!(pool.object, object)
     return id #new momentum
 end
 
