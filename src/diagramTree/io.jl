@@ -38,19 +38,19 @@ end
 - `verbose=0`: the amount of information to show
 - `depth=999`: deepest level of the diagram tree to show
 """
-function showTree(diag::Diagrams, _root = diag.root[end]; verbose = 0, depth = 999)
+function showTree(diag::Diagrams, _root::Int; verbose = 0, depth = 999)
     tree = diag.nodePool
     basisPool = diag.basisPool
     root = tree[_root]
+    id = _root
 
     printBasisPool(diag)
 
     # pushfirst!(PyVector(pyimport("sys")."path"), @__DIR__) #comment this line if no need to load local python module
     ete = PyCall.pyimport("ete3")
 
-    function info(cachedNode)
-        node = cachedNode.object
-        s = "N$(cachedNode.id) $(node.para):"
+    function info(node, id)
+        s = "N$(id) $(node.para):"
         # s *= sprint(show, node.para)
         # s *= ": "
 
@@ -74,24 +74,24 @@ function showTree(diag::Diagrams, _root = diag.root[end]; verbose = 0, depth = 9
     end
 
 
-    function treeview(cachedNode, level, t = nothing)
+    function treeview(node, id, level, t = nothing)
         if isnothing(t)
             t = ete.Tree(name = " ")
         end
 
-        nt = t.add_child(name = info(cachedNode))
+        nt = t.add_child(name = info(node, id))
         name_face = ete.TextFace(nt.name, fgcolor = "black", fsize = 10)
         nt.add_face(name_face, column = 0, position = "branch-top")
 
-        for child in cachedNode.object.childNodes
+        for child in node.childNodes
             if child != -1
-                treeview(tree[child], level + 1, nt)
+                treeview(tree[child], child, level + 1, nt)
             else
                 nnt = nt.add_child(name = "0")
             end
         end
 
-        for (ci, component) in enumerate(cachedNode.object.components)
+        for (ci, component) in enumerate(node.components)
             # println(component, ", ", ci)
             propagatorPool = diag.propagatorPool[ci]
             for pidx in component
@@ -110,7 +110,7 @@ function showTree(diag::Diagrams, _root = diag.root[end]; verbose = 0, depth = 9
         return t
     end
 
-    t = treeview(root, 1)
+    t = treeview(root, id, 1)
     # style = ete.NodeStyle()
     # style["bgcolor"] = "Khaki"
     # t.set_style(style)
