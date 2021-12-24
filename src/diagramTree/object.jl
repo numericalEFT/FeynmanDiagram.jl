@@ -13,18 +13,18 @@ struct Propagator{PARA,F}
     para::PARA
     order::Int
     factor::F
-    Loopidx::Int
-    LocalBasis::Vector{Int}
+    loopIdx::Int
+    siteBasis::Vector{Int}
     # function Propagator(order, basis = [], factor::F = 1.0, para::P = 0) where {F,P}
     #     return new{P,F}(para, order, factor, basis)
     # end
-    function Propagator{P,F}(order, para, factor, loopidx::Int, localbasis) where {P,F}
-        return new{P,F}(P(para), order, F(factor), loopidx, localbasis)
+    function Propagator{P,F}(order, para, factor, loopidx::Int, sitebasis) where {P,F}
+        return new{P,F}(P(para), order, F(factor), loopidx, sitebasis)
     end
 end
 
 function Base.isequal(a::Propagator{P,F}, b::Propagator{P,F}) where {P,F}
-    if (isequal(a.para, b.para) == false) || (a.order != b.order) || (a.basis != b.basis)
+    if (isequal(a.para, b.para) == false) || (a.order != b.order) || (a.siteBasis != b.siteBasis) || (a.loopIdx != b.loopIdx)
         return false
     else
         return true
@@ -126,8 +126,8 @@ end
 - para = 0       : Additional paramenter required to evaluate the propagator. If not needed, simply leave it as an integer.
 - currWeight = 0 : Initial weight of the propagator
 """
-function addPropagator(diag::Diagrams, index::Int, order::Int; site::AbstractVector = [], loop = nothing; factor = 1, para = 0)
-    kPool = diag.basisPool
+function addPropagator(diag::Diagrams, index::Int, order::Int; site = [], loop = nothing, factor = 1, para = 0)
+    loopPool = diag.basisPool
     propagatorPool = diag.propagatorPool
     # @assert length(basis) == length(variablePool) == length(currVar) "$(length(basis)) == $(length(variablePool)) == $(length(currVar)) breaks"
 
@@ -137,12 +137,12 @@ function addPropagator(diag::Diagrams, index::Int, order::Int; site::AbstractVec
     F = fieldtype(PROPAGATOR, :factor)
 
     # function Propagator{P,F}(order, para, factor, loopbasis, localbasis) where {P,F}
-    kidx = 0
+    loopidx = 0
     if isnothing(loop) == false
         @assert typeof(loop) <: AbstractVector "LoopBasis should be a Vector!"
-        kidx = append(kPool, loop)
+        loopidx = append(loopPool, loop)
     end
-    prop = Propagator{PARA,F}(order, para, factor, kidx, collect(site))
+    prop = Propagator{PARA,F}(order, para, factor, loopidx, collect(site))
     return append(diag.propagatorPool[index], prop)
 end
 

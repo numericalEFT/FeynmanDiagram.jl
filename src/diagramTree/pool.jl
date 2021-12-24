@@ -275,7 +275,7 @@ end
 # Members
 - pool::Vector{O} : Vector that hosts the (cached) object
 """
-struct LoopPool{T}
+mutable struct LoopPool{T}
     name::Symbol
     dim::Int #dimension
     N::Int #number of basis
@@ -289,7 +289,7 @@ struct LoopPool{T}
     end
 end
 
-Base.length(pool::LoopPool) = length(size(pool.basis)[2])
+Base.length(pool::LoopPool) = size(pool.basis)[2]
 Base.size(pool::LoopPool) = length(pool)
 Base.show(io::IO, pool::LoopPool) = print(io, pool.basis)
 # Base.view(pool::Pool, inds...) = Base.view(pool.pool, inds...)
@@ -320,13 +320,19 @@ end
 function initialize(pool::LoopPool, variable::AbstractVector = rand(eltype(fieldtype(pool, :current)), pool.N))
     @assert length(variable) == pool.N
     T = eltype(fieldtype(pool, :current))
-    pool.current = variable * pool.basis
+    pool.current[:, 1:length(pool)] = T.(variable) * pool.basis[:, 1:length(pool)]
 end
 
 function append(pool::LoopPool, basis::AbstractVector)
-    if length(pool) == 0
-        pool.basis = basis
-    else
-        pool.basis = hcat(basis, pool.basis)
+    for bi in 1:length(pool)
+        if pool.basis[:, bi] ≈ basis
+            return bi
+        end
     end
+
+    pool.basis = hcat(basis, pool.basis)
+    # pool.size += 1
+    # @assert pool.size <= size(pool.basis)[2] "Too many loop basis!. Increase maxSize when creates the LoopPool!"
+    # pool.basis[:, pool.size] = basis
+    return length(pool)
 end
