@@ -143,12 +143,18 @@ function Base.iterate(pool::PoolwithParameter, state)
 end
 
 """
-    struct CachedPool{O}
+    struct CachedPool{O,T}
 
-        Pool of (cached) objects.
+        Use this pool to host the objects that are heavy to evaluate so that one wants to cache their status.
+        The user should defines a compare 
 
 # Members
-- pool::Vector{O} : Vector that hosts the (cached) object
+- name::Symbol : name of the pool
+- object::O    : object
+- current::T      : current status
+- new::T       : the new status wants to assign later
+- version::Int128 : the current version
+- excited::Bool   : if set to excited, then the current status needs to be replaced with the new status
 """
 struct CachedPool{O,T}
     name::Symbol
@@ -268,12 +274,20 @@ function initialize(pool::CachedPool; eval::Function = nothing, value = 0)
 end
 
 """
-    struct LoopPool{O}
+    struct LoopPool{T}
 
-        Pool of (cached) objects.
+    Pool of loop basis. Each loop basis corresponds to a loop variable.
+    A loop variable is a linear combination of N independent loops. The combination coefficients is what we call a loop basis.
+    For example, if a loop is a momentum K, then
+
+    varibale_i = K_1*basis[1, i] + K_2*basis[2, i] + K_3*basis[3, i] + ...
 
 # Members
-- pool::Vector{O} : Vector that hosts the (cached) object
+- name::Symbol : name of the pool
+- dim::Int     : dimension of a loop variable (for example, the dimension of a momentum-frequency loop variable is (d+1) where d is the spatial dimension)
+- N::Int       : number of independent loops (dimension of loop basis)
+- basis::Matrix{T}    : Matrix of (N x Nb) that stores the loop basis, where Nb is the number of loop basis (or number of loop variables).
+- current::Matrix{T}  : Matrix of (dim x Nb) that stores the loop variables, where Nb is the number of loop basis (or number of loop variables).
 """
 mutable struct LoopPool{T}
     name::Symbol
