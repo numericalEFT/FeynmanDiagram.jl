@@ -1,7 +1,7 @@
 ################## Generate Expression Tree ########################
 function _newDiag(para::Para, legK, evalK::Function)
-    Kbasis = Vector{Float64}
-    Kpool = DiagTree.cachedPool(Kbasis, Vector{Float64})
+    # function LoopPool(name::Symbol, dim::Int, N::Int, type::DataType)
+    Kpool = DiagTree.LoopPool(:K, para.dim, para.loopNum, Float64)
     Tbasis = Tuple{Int,Int}
     Tpool = DiagTree.uncachedPool(Tbasis)
     weightType = para.weightType
@@ -91,7 +91,7 @@ function node4Sbubble(para, diag, lver, rver, l, r, g0, gc)
 end
 
 # bubbletoDiagTree!(ver4Nodes, para, diag, ver4, b, legK, Kidx, Tidx, evalK, evalT, factor)
-function bubbletoDiagTree!(ver4Nodes, para, diag, ver4, bubble, legK, Kidx::Int, Tidx::Int, evalK::Function, evalT::Function, factor = 1.0)
+function bubbletoDiagTree!(ver4Nodes, para, diag, ver4, bubble, legK, Kidx::Int, factor = 1.0)
     KinL, KoutL, KinR, KoutR = legK[1], legK[2], legK[3], legK[4]
     @assert KinL + KinR ≈ KoutL + KoutR
 
@@ -125,19 +125,15 @@ function bubbletoDiagTree!(ver4Nodes, para, diag, ver4, bubble, legK, Kidx::Int,
         LLegK = [KinL, Ks, KinR, K]
         RLegK = [K, KoutL, Ks, KoutR]
     end
-    ver4toDiagTree(para, Lver.loopNum, LLegK, Llopidx, Lver.Tidx, evalK, evalT, factor, diag, Lver)
-    ver4toDiagTree(para, Rver.loopNum, RLegK, Rlopidx, Rver.Tidx, evalK, evalT, factor, diag, Rver)
+    ver4toDiagTree(para, LLegK, Llopidx, Lver.Tidx, Lver.loopNum, factor, diag, Lver)
+    ver4toDiagTree(para, RLegK, Rlopidx, Rver.Tidx, Rver.loopNum, factor, diag, Rver)
 
     rN = length(b.Rver.weight)
     for (l, Lw) in enumerate(b.Lver.weight)
         for (r, Rw) in enumerate(b.Rver.weight)
 
             map = b.map[(l-1)*rN+r]
-            # println("evalT: ", G[1].Tpair[map.G0])
-            # evaTpair(Tpair) = Tuple([evalT(t) for t in Tpair])
-            tpair = G[1].Tpair[map.G0]
-            tbasis = (2, tpair, (evalT(tpair[1]), evalT(tpair[2])))
-            g0 = DiagTree.addPropagator(diag, 1, Gorder, [(1, K, eval(K)), tbasis]; para = :G0)
+            g0 = DiagTree.addPropagator(diag, 1, Gorder; site = G[1].Tpair[map.G0], loop = K, para = :G0)
             if c == T
                 Kc = Kt
             elseif c == U
@@ -145,12 +141,7 @@ function bubbletoDiagTree!(ver4Nodes, para, diag, ver4, bubble, legK, Kidx::Int,
             elseif c == S
                 Kc = Ks
             end
-            tpair = G[c].Tpair[map.Gx]
-            tbasis = (2, tpair, (evalT(tpair[1]), evalT(tpair[2])))
-            gc = DiagTree.addPropagator(diag, 1, Gorder, [(1, Kc, eval(Kc)), tbasis]; para = :Gx)
-
-            # w = (ver4.level == 1 && isFast) ? ver4.weight[ChanMap[c]] : ver4.weight[map.ver]
-            w = ver4.weight[map.ver]
+            gc = DiagTree.addPropagator(diag, 1, Gorder; site = G[c].Tpair[map.Gx], loop = Kc; para = :Gx)
 
             if c == T
                 Tde = node4Tbubble(para, diag, b.Lver, b.Rver, l, r, g0, gc)
@@ -169,7 +160,7 @@ function bubbletoDiagTree!(ver4Nodes, para, diag, ver4, bubble, legK, Kidx::Int,
     return diag
 end
 
-function ver4toDiagTree(para::Para, loopNum::Int, legK, Kidx::Int, Tidx::Int, evalK::Function, evalT::Function, factor = 1.0,
+function ver4toDiagTree(para::Para, legK, Kidx::Int, Tidx::Int, loopNum = para.loopNum, factor = 1.0,
     diag = _newDiag(para, legK, evalK), ver4 = Ver4{SVector{2,Int}}(para, loopNum, Tidx))
 
 
@@ -188,18 +179,18 @@ function ver4toDiagTree(para::Para, loopNum::Int, legK, Kidx::Int, Tidx::Int, ev
     if ver4.loopNum == 0
         qd, qe = [1, qd, evalK(qd)], [1, qe, evalK(qe)]
         if ver4.interactionTauNum == 2
-            td = [2, (Tidx, Tidx + 1), evaTpair((Tidx, Tidx + 1))]
+            td = [Tidx, Tidx + 1]
             te = td
-            vd = DiagTree.addPropagator(diag, 2, Vorder, [qd, td]; para = :Vd)
-            ve = DiagTree.addPropagator(diag, 2, Vorder, [qe, te]; para = :Ve)
-            wd = DiagTree.addPropagator(diag, 2, Vorder, [qd, td]; para = :Wd)
-            we = DiagTree.addPropagator(diag, 2, Vorder, [qe, te]; para = :We)
+            vd = DiagTree.addPropagator(diag, 2, Vorder; site = td, loop = qd, para = :Vd)
+            ve = DiagTree.addPropagator(diag, 2, Vorder; site = te, loop = qe, para = :Ve)
+            wd = DiagTree.addPropagator(diag, 2, Vorder; site = td, loop = qd, para = :Wd)
+            we = DiagTree.addPropagator(diag, 2, Vorder; site = te, loop = qe, para = :We)
             ver4.weight[1] = @SVector [vd, ve]
             ver4.weight[2] = @SVector [wd, 0]
             ver4.weight[3] = @SVector [0, we]
         elseif ver4.interactionTauNum == 1
-            vd = DiagTree.addPropagator(diag, 2, Vorder, [qd,]; para = :Wd)
-            ve = DiagTree.addPropagator(diag, 2, Vorder, [qe,]; para = :We)
+            vd = DiagTree.addPropagator(diag, 2, Vorder; loop = qd, para = :Wd)
+            ve = DiagTree.addPropagator(diag, 2, Vorder; loop = qe, para = :We)
             ver4.weight[1] = @SVector [vd, ve]
         else
             error("not implemented!")
