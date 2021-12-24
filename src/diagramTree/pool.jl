@@ -267,35 +267,66 @@ function initialize(pool::CachedPool; eval::Function = nothing, value = 0)
     pool.new = deepcopy(pool.current)
 end
 
+"""
+    struct LoopPool{O}
 
+        Pool of (cached) objects.
 
-# function append(pool::Pool, obj::CachedObject)
-#     for (oi, o) in enumerate(pool)
-#         if o.para == obj.para
-#             return oi, false #existing obj
-#         end
-#     end
-#     push!(pool, obj)
-#     return length(pool), true #new momentum
-# end
+# Members
+- pool::Vector{O} : Vector that hosts the (cached) object
+"""
+struct LoopPool{T}
+    name::Symbol
+    dim::Int #dimension
+    N::Int #number of basis
+    basis::Matrix{T}
+    current::Matrix{T}
 
-# function append(pool::Pool, para, curr)
-#     @assert para isa eltype(pool.pool)
+    function LoopPool(name::Symbol, dim::Int, N::Int, type::DataType)
+        basis = Matrix{type}(undef, N, 0) # Nx0 matrix
+        current = Matrix{type}(undef, dim, 0) # dimx0 matrix
+        return new{type}(name, dim, N, basis, current)
+    end
+end
 
-#     for (oi, o) in enumerate(pool)
-#         if o.para == para
-#             return oi, false #existing obj
-#         end
-#     end
-#     id = length(pool)
-#     push!(pool, CachedObject(para, curr, id))
-#     return id, true #new momentum
-# end
+Base.length(pool::LoopPool) = length(size(pool.basis)[2])
+Base.size(pool::LoopPool) = length(pool)
+Base.show(io::IO, pool::LoopPool) = print(io, pool.basis)
+# Base.view(pool::Pool, inds...) = Base.view(pool.pool, inds...)
 
-# struct SubPool{O,T}
-#     pool::Pool{O,T}
-#     idx::Vector{Int}
-#     function SubPool(pool::Pool{O,T}, idx = []) where {O,T}
-#         return new{O,T}(pool, idx)
-#     end
-# end
+#index interface for Pool
+Base.getindex(pool::LoopPool, i) = pool.basis[:, i]
+Base.setindex!(pool::LoopPool, v, i) = setindex!(pool.basis, v, i)
+Base.firstindex(pool::LoopPool) = 1
+Base.lastindex(pool::LoopPool) = length(pool)
+
+# iterator interface
+function Base.iterate(pool::LoopPool)
+    if length(pool) == 0
+        return nothing
+    else
+        return (pool.basis[:, 1], 1)
+    end
+end
+
+function Base.iterate(pool::LoopPool, state)
+    if state >= length(pool) || length(pool) == 0
+        return nothing
+    else
+        return (pool.basis[:, state+1], state + 1)
+    end
+end
+
+function initialize(pool::LoopPool, variable::AbstractVector = rand(eltype(fieldtype(pool, :current)), pool.N))
+    @assert length(variable) == pool.N
+    T = eltype(fieldtype(pool, :current))
+    pool.current = variable * pool.basis
+end
+
+function append(pool::LoopPool, basis::AbstractVector)
+    if length(pool) == 0
+        pool.basis = basis
+    else
+        pool.basis = hcat(basis, pool.basis)
+    end
+end

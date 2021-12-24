@@ -6,12 +6,12 @@ function _newDiag(para::Para, legK, evalK::Function)
     Tpool = DiagTree.uncachedPool(Tbasis)
     weightType = para.weightType
     if para.interactionTauNum == 2
-        Gpool = DiagTree.propagatorPool(weightType; paraType = Symbol)
-        Wpool = DiagTree.propagatorPool(weightType, paraType = Symbol)
+        Gpool = DiagTree.propagatorPool(:G, weightType; paraType = Symbol)
+        Wpool = DiagTree.propagatorPool(:VW, weightType, paraType = Symbol)
         return DiagTree.Diagrams((Kpool, Tpool), (Gpool, Wpool), weightType, nodeParaType = Symbol)
     elseif para.interactionTauNum == 1
-        Gpool = DiagTree.propagatorPool(weightType, paraType = Symbol)
-        Wpool = DiagTree.propagatorPool(weightType, paraType = Symbol)
+        Gpool = DiagTree.propagatorPool(:G, weightType, paraType = Symbol)
+        Wpool = DiagTree.propagatorPool(:V, weightType, paraType = Symbol)
         return DiagTree.Diagrams((Kpool, Tpool), (Gpool, Wpool), weightType, nodeParaType = Symbol)
     else
         error("not implemented!")
@@ -104,9 +104,9 @@ function bubbletoDiagTree!(ver4Nodes, para, diag, ver4, bubble, legK, Kidx::Int,
     Kt = KoutL + K - KinL
     Ku = KoutR + K - KinL
     Ks = KinL + KinR - K
-    println("KinL: ", KinL)
-    println("KinR: ", KinR)
-    println("Ks: ", Ks)
+    # println("KinL: ", KinL)
+    # println("KinR: ", KinR)
+    # println("Ks: ", Ks)
 
     Gorder = 0
     # Factor = SymFactor[c] * PhaseFactor
