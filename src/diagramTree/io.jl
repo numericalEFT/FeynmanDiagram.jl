@@ -1,7 +1,7 @@
 function printBasisPool(diag::Diagrams)
-    @printf("%8s%20s\n", "index", "loopBasis")
+    @printf("%5s%20s\n", "index", "loopBasis")
     for i = 1:length(diag.basisPool)
-        b = diag.basisPool[:, i]
+        b = diag.basisPool.basis[:, i]
         println("$i     $b")
     end
 end
@@ -80,7 +80,7 @@ function showTree(diag::Diagrams, _root::Int; verbose = 0, depth = 999)
             propagatorPool = diag.propagatorPool[ci]
             for pidx in component
                 p = propagatorPool.object[pidx] #Propagator
-                nnt = nt.add_child(name = "P$pidx $(p.para): basis $(p.basis), $(factor(p.factor))")
+                nnt = nt.add_child(name = "P$pidx $(p.para): loop $(p.loopIdx), site $(p.siteBasis); $(factor(p.factor))")
             end
         end
 
