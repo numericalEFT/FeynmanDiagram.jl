@@ -70,47 +70,43 @@ end
 
     gorder, vorder = 0, 1
 
-    Cache = DiagTree.Cache
+    weightType = Float64
 
-    # MomPool = DiagTree.Pool{Cache{MomBasis,Vector{Float64}}}()
-    # TpairPool = DiagTree.Pool{TpairBasis}()
-    MomBasis = Vector{Float64}
-    TpairBasis = Tuple{Int,Int}
+    # function LoopPool(name::Symbol, dim::Int, N::Int, type::DataType)
+    MomPool = DiagTree.LoopPool(:K, D, 4)
 
-    MomPool = DiagTree.cachedPool(MomBasis, Vector{Float64})
-    TpairPool = DiagTree.uncachedPool(TpairBasis)
+    GPool = DiagTree.propagatorPool(:G, weightType)
+    VPool = DiagTree.propagatorPool(:V, weightType)
 
-    GPool = DiagTree.propagatorPool(Float64, Float64)
-    VPool = DiagTree.propagatorPool(Float64, Float64)
-
-    diag = DiagTree.Diagrams((MomPool, TpairPool), (GPool, VPool), Float64, Float64)
+    diag = DiagTree.Diagrams(MomPool, (GPool, VPool), weightType)
 
     # #construct the propagator table
     gK = [[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0]]
     gT = [(1, 2), (2, 1)]
-    g = [DiagTree.addPropagator(diag, 1, gorder, [[1, gK[i], K0], [2, gT[i], T0]]) for i = 1:2]
+    g = [DiagTree.addPropagator(diag, :G, gorder; site = gT[i], loop = gK[i], para = :G) for i = 1:2]
 
     vdK = [[0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 1.0, 0.0]]
     vdT = [[1, 1], [2, 2]]
-    vd = [DiagTree.addPropagator(diag, 2, vorder, [(1, vdK[i], K0),]) for i = 1:2]
+    vd = [DiagTree.addPropagator(diag, :V, vorder; loop = vdK[i], para = :Vd) for i = 1:2]
 
     veK = [[1, 0, -1, -1], [0, 1, 0, -1]]
     veT = [[1, 1], [2, 2]]
-    ve = [DiagTree.addPropagator(diag, 2, vorder, [(1, veK[i], K0),]) for i = 1:2]
+    ve = [DiagTree.addPropagator(diag, :V, vorder; loop = veK[i], para = :Ve) for i = 1:2]
     # ve = [DiagTree.addPropagator!(diag, Wtype, 1, veK[i], veT[i], Wsym)[1] for i = 1:2]
     # # W order is 1
 
     # # contruct the tree
     MUL, ADD = DiagTree.MUL, DiagTree.ADD
-    ggn = DiagTree.addNode(diag, MUL, [[g[1], g[2]], []], [], factor = 1.0)
-    vdd = DiagTree.addNode(diag, MUL, [[], [vd[1], vd[2]]], [], factor = spin)
-    vde = DiagTree.addNode(diag, MUL, [[], [vd[1], ve[2]]], [], factor = -1.0)
-    ved = DiagTree.addNode(diag, MUL, [[], [ve[1], vd[2]]], [], factor = -1.0)
-    vsum = DiagTree.addNode(diag, ADD, [[], []], [vdd, vde, ved], factor = 1.0)
-    root = DiagTree.addNode(diag, MUL, [[], []], [ggn, vsum], factor = 1.0)
+    ggn = DiagTree.addNode(diag, MUL, [[g[1], g[2]], []], [], factor = 1.0, para = :gxg)
+    vdd = DiagTree.addNode(diag, MUL, [[], [vd[1], vd[2]]], [], factor = spin, para = :dxd)
+    vde = DiagTree.addNode(diag, MUL, [[], [vd[1], ve[2]]], [], factor = -1.0, para = :dxe)
+    ved = DiagTree.addNode(diag, MUL, [[], [ve[1], vd[2]]], [], factor = -1.0, para = :exd)
+    vsum = DiagTree.addNode(diag, ADD, [[], []], [vdd, vde, ved], factor = 1.0, para = :sum)
+    root = DiagTree.addNode(diag, MUL, [[], []], [ggn, vsum], factor = 1.0, para = :root)
     push!(diag.root, root)
 
-    DiagTree.showTree(diag)
+    DiagTree.showTree(diag, diag.root[1])
+    # DiagTree.printBasisPool(diag, "test.txt")
 
     # #make sure the total number of diagrams are correct
     # evalPropagator1(type, K, Tidx, varT, factor = 1.0, para = nothing) = 1.0

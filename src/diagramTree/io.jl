@@ -1,9 +1,27 @@
-function printBasisPool(diag::Diagrams)
-    @printf("%5s%20s\n", "index", "loopBasis")
+function printBasisPool(diag::Diagrams, io = Base.stdout)
+    printstyled(io, "Loop Basis ($(length(diag.basisPool)) in total)\n", color = :blue)
+    title = @sprintf("%5s%40s\n", "index", "loopBasis")
+    printstyled(io, title, color = :green)
     for i = 1:length(diag.basisPool)
         b = diag.basisPool.basis[:, i]
-        println("$i     $b")
+        @printf(io, "%5i%40s\n", i, "$b")
     end
+    println(io)
+end
+
+function printPropagator(diag::Diagrams, io = Base.stdout)
+    for pool in diag.propagatorPool
+        printstyled(io, "Propagator $(pool.name) ($(length(pool)) in total)\n", color = :blue)
+        title = @sprintf("%5s%40s%40s%40s\n", "index", "para", "loop", "site")
+        printstyled(io, title, color = :green)
+        for (idx, p) in enumerate(pool.object)
+            site = isempty(p.siteBasis) ? "" : "$(p.siteBasis)"
+            loop = p.loopIdx <= 0 ? "" : "$(diag.basisPool[p.loopIdx])"
+            @printf(io, "%5i%40s%40s%40s\n", idx, "$(p.para)", loop, site)
+        end
+        println(io)
+    end
+    println(io)
 end
 
 """
@@ -24,6 +42,7 @@ function showTree(diag::Diagrams, _root::Int; verbose = 0, depth = 999)
     id = _root
 
     printBasisPool(diag)
+    printPropagator(diag)
 
     # pushfirst!(PyVector(pyimport("sys")."path"), @__DIR__) #comment this line if no need to load local python module
     ete = PyCall.pyimport("ete3")
@@ -80,7 +99,9 @@ function showTree(diag::Diagrams, _root::Int; verbose = 0, depth = 999)
             propagatorPool = diag.propagatorPool[ci]
             for pidx in component
                 p = propagatorPool.object[pidx] #Propagator
-                nnt = nt.add_child(name = "P$pidx $(p.para): loop $(p.loopIdx), site $(p.siteBasis); $(factor(p.factor))")
+                site = isempty(p.siteBasis) ? "" : " site $(p.siteBasis),"
+                loop = p.loopIdx <= 0 ? "" : "loop $(diag.basisPool[p.loopIdx])"
+                nnt = nt.add_child(name = "P$pidx $(p.para): $loop,$site $(factor(p.factor))")
             end
         end
 

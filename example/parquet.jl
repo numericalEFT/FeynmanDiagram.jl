@@ -7,7 +7,7 @@ const Weight = SVector{2,Float64}
 Parquet = Builder.Parquet
 
 chan = [Parquet.T, Parquet.U, Parquet.S]
-interactionTauNum = 1
+interactionTauNum = 2
 loopNum = 1
 spin = 2
 
