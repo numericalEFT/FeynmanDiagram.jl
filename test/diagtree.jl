@@ -44,7 +44,7 @@ end
     loopidx1, loopidx2 = 1, 2
     sitebasis1, sitebasis2 = [1, 2], [2, 3]
     function propagator(; order = order1, para = para1, factor = factor1, loopidx = loopidx1, sitebasis = sitebasis1)
-        return DiagTree.Propagator{typeof(para),Float64}(order, para, factor, loopidx, sitebasis)
+        return DiagTree.Propagator{Float64}(:none, order, para, factor, loopidx, sitebasis)
     end
     @test propagator() != propagator(order = order2)
     @test propagator() != propagator(para = para2)
@@ -98,26 +98,26 @@ end
     # #construct the propagator table
     gK = [[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0]]
     gT = [(1, 2), (2, 1)]
-    g = [DiagTree.addPropagator(diag, :G, gorder; site = gT[i], loop = gK[i], para = :G) for i = 1:2]
+    g = [DiagTree.addPropagator(diag, :G, gorder; site = gT[i], loop = gK[i], name = :G) for i = 1:2]
 
     vdK = [[0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 1.0, 0.0]]
     vdT = [[1, 1], [2, 2]]
-    vd = [DiagTree.addPropagator(diag, :V, vorder; loop = vdK[i], para = :Vd) for i = 1:2]
+    vd = [DiagTree.addPropagator(diag, :V, vorder; loop = vdK[i], name = :Vd) for i = 1:2]
 
     veK = [[1, 0, -1, -1], [0, 1, 0, -1]]
     veT = [[1, 1], [2, 2]]
-    ve = [DiagTree.addPropagator(diag, :V, vorder; loop = veK[i], para = :Ve) for i = 1:2]
+    ve = [DiagTree.addPropagator(diag, :V, vorder; loop = veK[i], name = :Ve) for i = 1:2]
     # ve = [DiagTree.addPropagator!(diag, Wtype, 1, veK[i], veT[i], Wsym)[1] for i = 1:2]
     # # W order is 1
 
     # # contruct the tree
     MUL, ADD = DiagTree.MUL, DiagTree.ADD
-    ggn = DiagTree.addNode(diag, MUL, [[g[1], g[2]], []], [], factor = 1.0, para = :gxg)
-    vdd = DiagTree.addNode(diag, MUL, [[], [vd[1], vd[2]]], [], factor = spin, para = :dxd)
-    vde = DiagTree.addNode(diag, MUL, [[], [vd[1], ve[2]]], [], factor = -1.0, para = :dxe)
-    ved = DiagTree.addNode(diag, MUL, [[], [ve[1], vd[2]]], [], factor = -1.0, para = :exd)
-    vsum = DiagTree.addNode(diag, ADD, [[], []], [vdd, vde, ved], factor = 1.0, para = :sum)
-    root = DiagTree.addNode(diag, MUL, [[], []], [ggn, vsum], factor = 1.0, para = :root)
+    ggn = DiagTree.addNode(diag, MUL, [[g[1], g[2]], []], [], factor = 1.0, name = :gxg)
+    vdd = DiagTree.addNode(diag, MUL, [[], [vd[1], vd[2]]], [], factor = spin, name = :dxd)
+    vde = DiagTree.addNode(diag, MUL, [[], [vd[1], ve[2]]], [], factor = -1.0, name = :dxe)
+    ved = DiagTree.addNode(diag, MUL, [[], [ve[1], vd[2]]], [], factor = -1.0, name = :exd)
+    vsum = DiagTree.addNode(diag, ADD, [[], []], [vdd, vde, ved], factor = 1.0, name = :sum)
+    root = DiagTree.addNode(diag, MUL, [[], []], [ggn, vsum], factor = 1.0, name = :root)
     push!(diag.root, root)
 
     DiagTree.showTree(diag, diag.root[1])
