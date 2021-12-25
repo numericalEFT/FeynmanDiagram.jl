@@ -24,7 +24,7 @@ struct Propagator{PARA,F}
 end
 
 function Base.isequal(a::Propagator{P,F}, b::Propagator{P,F}) where {P,F}
-    if (isequal(a.para, b.para) == false) || (a.order != b.order) || (a.siteBasis != b.siteBasis) || (a.loopIdx != b.loopIdx)
+    if (isequal(a.para, b.para) == false) || (a.order != b.order) || (a.siteBasis != b.siteBasis) || (a.loopIdx != b.loopIdx) || (a.factor ≈ b.factor) == false
         return false
     else
         return true
