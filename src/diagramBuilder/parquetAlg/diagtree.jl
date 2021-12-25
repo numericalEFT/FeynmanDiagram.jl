@@ -165,20 +165,15 @@ end
 function ver4toDiagTree(para::Para, legK, Kidx::Int, Tidx::Int, loopNum = para.loopNum, factor = 1.0,
     diag = _newDiag(para, legK[1]), ver4 = Ver4{SVector{2,Int}}(para, loopNum, Tidx))
 
-
     KinL, KoutL, KinR, KoutR = legK[1], legK[2], legK[3], legK[4]
-
-    # KoutR = KinL + KinR - KoutL
     @assert KinL + KinR ≈ KoutL + KoutR
-
-    evaTpair(Tpair) = Tuple([evalT(t) for t in Tpair])
 
     qd = KinL - KoutL
     qe = KinR - KoutL
     Tidx = ver4.Tidx
 
-    Vorder = 1
     if ver4.loopNum == 0
+        Vorder = 1
         if ver4.interactionTauNum == 2
             td = [Tidx, Tidx + 1]
             te = td
@@ -200,11 +195,10 @@ function ver4toDiagTree(para::Para, legK, Kidx::Int, Tidx::Int, loopNum = para.l
     end
 
     # LoopNum>=1
-    ver4Nodes = []
     for i in 1:length(ver4.weight)
         ver4.weight[i] = @SVector [0, 0]
-        push!(ver4Nodes, [])
     end
+    ver4Nodes = [[] for w in ver4.weight]
 
 
     # function bubbletoDiagTree!(ver4Nodes, para, diag, ver4, bubble, legK, Kidx::Int, factor = 1.0)
@@ -231,13 +225,3 @@ function ver4toDiagTree(para::Para, legK, Kidx::Int, Tidx::Int, loopNum = para.l
 
     return diag, ver4, dir, ex
 end
-
-# function splitWeight(ver4)
-#     dir = []
-#     ex = []
-#     for w in ver4.weight
-#         push!(dir, w[DI])
-#         push!(ex, w[DI])
-#     end
-#     return dir, ex
-# end

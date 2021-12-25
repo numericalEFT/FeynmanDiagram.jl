@@ -17,6 +17,7 @@ function printPropagator(diag::Diagrams, io = Base.stdout)
         for (idx, p) in enumerate(pool.object)
             site = isempty(p.siteBasis) ? "" : "$(p.siteBasis)"
             loop = p.loopIdx <= 0 ? "" : "$(diag.basisPool[p.loopIdx])"
+            # loop = p.loopIdx <= 0 ? "" : "$(p.loopIdx)"
             @printf(io, "%5i%40s%40s%40s\n", idx, "$(p.para)", loop, site)
         end
         println(io)
@@ -100,7 +101,8 @@ function showTree(diag::Diagrams, _root::Int; verbose = 0, depth = 999)
             for pidx in component
                 p = propagatorPool.object[pidx] #Propagator
                 site = isempty(p.siteBasis) ? "" : " site $(p.siteBasis),"
-                loop = p.loopIdx <= 0 ? "" : "loop $(diag.basisPool[p.loopIdx])"
+                # loop = p.loopIdx <= 0 ? "" : "loop $(diag.basisPool[p.loopIdx])"
+                loop = p.loopIdx <= 0 ? "" : "$(p.loopIdx)"
                 nnt = nt.add_child(name = "P$pidx $(p.para): $loop,$site $(factor(p.factor))")
             end
         end
