@@ -1,4 +1,4 @@
-@testset "Pool" begin
+@testset "LoopPool" begin
     dim, N = 3, 4
     loopPool = DiagTree.LoopPool(:K, dim, N, Float64)
     idx1 = DiagTree.append(loopPool, [1.0, 0.0, 0.0, 0.0])
@@ -8,20 +8,18 @@
     @test length(loopPool) == 2
     @test idx1 == idx4
     @test idx2 == idx3
-    # pool = DiagTree.Pool{Int64,Float64}()
-    # DiagTree.append(pool, 1, 2.0)
-    # DiagTree.append(pool, 2, 3.0)
-    # DiagTree.append(pool, 3, 4.0)
+end
 
-    # v = DiagTree.SubPool(pool, [1, 3])
-    # # v = view(pool, [1, 3])
-    # new = 1.5
-    # v.pool[v.idx[1]].curr = new
-    # # println(typeof(v))
-
-
-    # @test pool[1].curr ≈ new #test view only returns the reference
-
+@testset "CachedPool" begin
+    objType, weightType = Int, Float64
+    pool = DiagTree.CachedPool(:P, objType, weightType)
+    idx1 = DiagTree.append(pool, 1)
+    idx2 = DiagTree.append(pool, 2)
+    idx3 = DiagTree.append(pool, 2)
+    idx4 = DiagTree.append(pool, 1)
+    @test length(pool) == 2
+    @test idx1 == idx4
+    @test idx2 == idx3
 
     # test symmetry operator
     # symmetry = Var.refection(Float64, 3)
@@ -37,6 +35,22 @@
     # @test (node1 != node2) == false
 
     #test diagram
+end
+
+@testset "PropagatorPool" begin
+    order1, order2 = 1, 2
+    para1, para2 = 5, 6
+    factor1, factor2 = 1.1, 1.2
+    loopidx1, loopidx2 = 1, 2
+    sitebasis1, sitebasis2 = [1, 2], [2, 3]
+    function propagator(; order = order1, para = para1, factor = factor1, loopidx = loopidx1, sitebasis = sitebasis1)
+        return DiagTree.Propagator{typeof(para),Float64}(order, para, factor, loopidx, sitebasis)
+    end
+    @test propagator() != propagator(order = order2)
+    @test propagator() != propagator(para = para2)
+    @test propagator() != propagator(factor = factor2)
+    @test propagator() != propagator(loopidx = loopidx2)
+    @test propagator() != propagator(sitebasis = sitebasis2)
 end
 
 @testset "Generic Diagrams" begin
@@ -62,14 +76,6 @@ end
 
     varK = [rand(D) for i = 1:4] #k1, k2, k3, k4
     varT = [rand() * β, rand() * β]
-
-    # reflection = Var.refection(Float64, D)
-
-    # println(typeof(varK))
-    # Mom = Var.VectorVariable{Vector{Vector{Float64}},Float64}
-    # Tpair = Var.ScalarVariable{Vector{Float64},Tuple{Int,Int}}
-    # Base.isequal(a::Mom, b::Mom) = (Mom.basis ≈ Mom.basis) || (Mom.basis ≈ -Mom.basis)
-
 
     K0 = [0.0, 0.0, 0.0]
     T0 = 0.0
