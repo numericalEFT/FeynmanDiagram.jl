@@ -12,13 +12,13 @@ end
 function printPropagator(diag::Diagrams, io = Base.stdout)
     for pool in diag.propagatorPool
         printstyled(io, "Propagator $(pool.name) ($(length(pool)) in total)\n", color = :blue)
-        title = @sprintf("%5s%40s%40s%40s\n", "index", "para", "loop", "site")
+        title = @sprintf("%5s%5s%40s%40s%40s\n", "index", "name", "para", "loop", "site")
         printstyled(io, title, color = :green)
         for (idx, p) in enumerate(pool.object)
             site = isempty(p.siteBasis) ? "" : "$(p.siteBasis)"
             loop = p.loopIdx <= 0 ? "" : "$(diag.basisPool[p.loopIdx])"
             # loop = p.loopIdx <= 0 ? "" : "$(p.loopIdx)"
-            @printf(io, "%5i%40s%40s%40s\n", idx, "$(p.para)", loop, site)
+            @printf(io, "%5i%5s%40s%40s%40s\n", idx, "$(p.name)", "$(p.para)", loop, site)
         end
         println(io)
     end
@@ -48,6 +48,12 @@ function showTree(diag::Diagrams, _root::Int; verbose = 0, depth = 999)
     # pushfirst!(PyVector(pyimport("sys")."path"), @__DIR__) #comment this line if no need to load local python module
     ete = PyCall.pyimport("ete3")
 
+    function name_para(p)
+        name = (p.name == :none) ? "" : " $(p.name)"
+        para = isnothing(p.para) ? "" : " $(p.para)"
+        return name * para
+    end
+
     function factor(f)
         if f ≈ 1
             return ""
@@ -61,7 +67,7 @@ function showTree(diag::Diagrams, _root::Int; verbose = 0, depth = 999)
     end
 
     function info(node, id)
-        s = "N$(id) $(node.para):"
+        s = "N$(id)$(name_para(node)):"
         # s *= sprint(show, node.para)
         # s *= ": "
 
@@ -103,7 +109,7 @@ function showTree(diag::Diagrams, _root::Int; verbose = 0, depth = 999)
                 site = isempty(p.siteBasis) ? "" : " site $(p.siteBasis),"
                 loop = p.loopIdx <= 0 ? "" : "loop $(diag.basisPool[p.loopIdx])"
                 # loop = p.loopIdx <= 0 ? "" : "$(p.loopIdx)"
-                nnt = nt.add_child(name = "P$pidx $(p.para): $loop,$site $(factor(p.factor))")
+                nnt = nt.add_child(name = "P$(pidx)$(name_para(p)): $loop,$site $(factor(p.factor))")
             end
         end
 
