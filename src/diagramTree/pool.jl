@@ -160,7 +160,7 @@ function append(pool::LoopPool, basis::AbstractVector)
         end
     end
 
-    pool.basis = hcat(basis, pool.basis)
+    pool.basis = hcat(pool.basis, basis)
     # pool.size += 1
     # @assert pool.size <= size(pool.basis)[2] "Too many loop basis!. Increase maxSize when creates the LoopPool!"
     # pool.basis[:, pool.size] = basis
