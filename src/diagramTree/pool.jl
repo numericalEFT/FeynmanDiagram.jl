@@ -112,7 +112,7 @@ mutable struct LoopPool{T}
     basis::Matrix{T}
     current::Matrix{T}
 
-    function LoopPool(name::Symbol, dim::Int, N::Int, type::DataType)
+    function LoopPool(name::Symbol, dim::Int, N::Int, type::DataType = Float64)
         basis = Matrix{type}(undef, N, 0) # Nx0 matrix
         current = Matrix{type}(undef, dim, 0) # dimx0 matrix
         return new{type}(name, dim, N, basis, current)

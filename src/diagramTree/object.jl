@@ -32,7 +32,7 @@ function Base.isequal(a::Propagator{P,F}, b::Propagator{P,F}) where {P,F}
 end
 Base.:(==)(a::Propagator{P,F}, b::Propagator{P,F}) where {P,F} = Base.isequal(a, b)
 
-function propagatorPool(name::Symbol, weightType::DataType; factorType::DataType = weightType, paraType::DataType = Int)
+function propagatorPool(name::Symbol, weightType::DataType; factorType::DataType = weightType, paraType::DataType = Symbol)
     propagatorType = Propagator{paraType,factorType}
     return CachedPool(name, propagatorType, weightType)
 end
@@ -60,10 +60,10 @@ struct Node{PARA,F}
     parent::Int # parent id
     # child::SubArray{CachedObject{Node{PARA, P},W},1,Vector{CachedObject{NODE,W}},Tuple{Vector{Int64}},false}
 
-    function Node(operation::Int, components = [[]], child = [], factor::F = 1.0, parent = 0, para::P = 0) where {F,P}
+    function Node(operation::Int, components = [[]], child = [], factor::F = 1.0, parent = 0, para::P = :N) where {F,P}
         return new{P,F}(para, operation, factor, components, child, parent)
     end
-    function Node{P,F}(operation::Int, components = [[]], child = [], factor = 1.0, parent = 0, para = 0) where {F,P}
+    function Node{P,F}(operation::Int, components = [[]], child = [], factor = 1.0, parent = 0, para = :N) where {F,P}
         return new{P,F}(P(para), operation, F(factor), components, child, parent)
     end
 end
@@ -102,7 +102,7 @@ mutable struct Diagrams{V,P,PARA,F,W}
     #     PARA = Int
     #     return new{V,P,PARA,F,W}(basisPool, propagatorPool, Pool{Cache{Node{PARA,F},W}}(), [])
     # end
-    function Diagrams(basisPool::V, propagatorPool::P, nodeWeightType::DataType; nodeFactorType = nodeWeightType, nodeParaType::DataType = Int) where {V,P}
+    function Diagrams(basisPool::V, propagatorPool::P, nodeWeightType::DataType; nodeFactorType = nodeWeightType, nodeParaType::DataType = Symbol) where {V,P}
         # @assert V <: Tuple "Tuple is required for efficiency!"
         @assert P <: Tuple "Tuple is required for efficiency!"
         # println(basisPool)
@@ -126,7 +126,7 @@ end
 - para = 0       : Additional paramenter required to evaluate the propagator. If not needed, simply leave it as an integer.
 - currWeight = 0 : Initial weight of the propagator
 """
-function addPropagator(diag::Diagrams, index::Int, order::Int; site = [], loop = nothing, factor = 1, para = 0)
+function addPropagator(diag::Diagrams, index::Int, order::Int; site = [], loop = nothing, factor = 1, para = :P)
     loopPool = diag.basisPool
     propagatorPool = diag.propagatorPool
     # @assert length(basis) == length(variablePool) == length(currVar) "$(length(basis)) == $(length(variablePool)) == $(length(currVar)) breaks"
@@ -145,6 +145,13 @@ function addPropagator(diag::Diagrams, index::Int, order::Int; site = [], loop =
     prop = Propagator{PARA,F}(order, para, factor, loopidx, collect(site))
     return append(diag.propagatorPool[index], prop)
 end
+function addPropagator(diag::Diagrams, name::Symbol, order::Int; site = [], loop = nothing, factor = 1, para = :P)
+    for (idx, pool) in enumerate(diag.propagatorPool)
+        if pool.name == name
+            return addPropagator(diag, idx, order; site = site, loop = loop, factor = factor, para = para)
+        end
+    end
+end
 
 """
     function addNode(diag::Diagrams, operator, components, childNodes; factor = 1.0, parent = 0, para = 0, currWeight = 0.0)
@@ -160,7 +167,7 @@ end
 - para = 0       : Additional paramenter required to evaluate the node. If not needed, simply leave it as an integer.
 - currWeight = 0 : Initial weight of the node.
 """
-function addNode(diag::Diagrams, operator, components, childNodes; factor = 1.0, parent = 0, para = 0)
+function addNode(diag::Diagrams, operator, components, childNodes; factor = 1.0, parent = 0, para = :N)
 
     nodePool = diag.nodePool
     @assert length(components) == length(diag.propagatorPool) "each element of the components is an index vector of the corresponding propagator"
