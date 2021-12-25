@@ -137,8 +137,10 @@ function addPropagator(diag::Diagrams, index::Int, order::Int; site = [], loop =
 
     PROPAGATOR_POOL = typeof(propagatorPool[index])
     PROPAGATOR = eltype(fieldtype(PROPAGATOR_POOL, :object))
-    # PARA = fieldtype(PROPAGATOR, :para)
+    PARA = fieldtype(PROPAGATOR, :para)
     F = fieldtype(PROPAGATOR, :factor)
+
+    @assert PARA == typeof(para) "Type of $para is not $PARA"
 
     # function Propagator{P,F}(order, para, factor, loopbasis, localbasis) where {P,F}
     loopidx = 0
@@ -198,10 +200,11 @@ function addNode(diag::Diagrams, operator, components, childNodes; factor = 1.0,
 
     _NodePool = typeof(nodePool)
     _Node = eltype(fieldtype(_NodePool, :object))
-    # PARA = fieldtype(_Node, :para)
+    PARA = fieldtype(_Node, :para)
     F = fieldtype(_Node, :factor)
     # println("node PARA: ", PARA)
     # println("node F: ", F)
+    @assert PARA == typeof(para) "Type of $para is not $PARA"
 
     node = Node{F}(name, operator, para, components, childNodes, factor, parent)
 
