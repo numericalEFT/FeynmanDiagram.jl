@@ -18,13 +18,14 @@ function _newDiag(para::Para, KbasisSample)
     # Tpool = DiagTree.uncachedPool(Tbasis)
     weightType = para.weightType
     if para.interactionTauNum == 2
-        Gpool = DiagTree.propagatorPool(:G, weightType)
-        Wpool = DiagTree.propagatorPool(:VW, weightType)
-        return DiagTree.Diagrams(Kpool, (Gpool, Wpool), weightType, nodeParaType = Nothing)
+        Gpool = DiagTree.propagatorPool(:Gpool, weightType)
+        Vpool = DiagTree.propagatorPool(:Vpool, weightType)
+        Wpool = DiagTree.propagatorPool(:Wpool, weightType)
+        return DiagTree.Diagrams(Kpool, (Gpool, Vpool, Wpool), weightType, nodeParaType = Nothing)
     elseif para.interactionTauNum == 1
-        Gpool = DiagTree.propagatorPool(:G, weightType)
-        Wpool = DiagTree.propagatorPool(:V, weightType)
-        return DiagTree.Diagrams(Kpool, (Gpool, Wpool), weightType, nodeParaType = Nothing)
+        Gpool = DiagTree.propagatorPool(:Gpool, weightType)
+        Vpool = DiagTree.propagatorPool(:Vpool, weightType)
+        return DiagTree.Diagrams(Kpool, (Gpool, Vpool), weightType, nodeParaType = Nothing)
     else
         error("not implemented!")
     end
@@ -116,9 +117,6 @@ function bubbletoDiagTree!(ver4Nodes, para, diag, ver4, bubble, legK, Kidx::Int,
     Kt = KoutL + K - KinL
     Ku = KoutR + K - KinL
     Ks = KinL + KinR - K
-    # println("KinL: ", KinL)
-    # println("KinR: ", KinR)
-    # println("Ks: ", Ks)
 
     Gorder = 0
     # Factor = SymFactor[c] * PhaseFactor
@@ -182,16 +180,16 @@ function ver4toDiagTree(para::Para, legK, Kidx::Int, Tidx::Int, loopNum = para.l
         if ver4.interactionTauNum == 2
             td = [Tidx, Tidx + 1]
             te = td
-            vd = DiagTree.addPropagator(diag, 2, Vorder; site = td, loop = qd, name = :Vd)
-            ve = DiagTree.addPropagator(diag, 2, Vorder; site = te, loop = qe, name = :Ve)
-            wd = DiagTree.addPropagator(diag, 2, Vorder; site = td, loop = qd, name = :Wd)
-            we = DiagTree.addPropagator(diag, 2, Vorder; site = te, loop = qe, name = :We)
+            vd = DiagTree.addPropagator(diag, :Vpool, Vorder; site = td, loop = qd, name = :Vd)
+            ve = DiagTree.addPropagator(diag, :Vpool, Vorder; site = te, loop = qe, name = :Ve)
+            wd = DiagTree.addPropagator(diag, :Wpool, Vorder; site = td, loop = qd, name = :Wd)
+            we = DiagTree.addPropagator(diag, :Wpool, Vorder; site = te, loop = qe, name = :We)
             ver4.weight[1] = @SVector [vd, ve]
             ver4.weight[2] = @SVector [wd, 0]
             ver4.weight[3] = @SVector [0, we]
         elseif ver4.interactionTauNum == 1
-            vd = DiagTree.addPropagator(diag, 2, Vorder; loop = qd, name = :Wd)
-            ve = DiagTree.addPropagator(diag, 2, Vorder; loop = qe, name = :We)
+            vd = DiagTree.addPropagator(diag, :Vpool, Vorder; loop = qd, name = :Vd)
+            ve = DiagTree.addPropagator(diag, :Vpool, Vorder; loop = qe, name = :Ve)
             ver4.weight[1] = @SVector [vd, ve]
         else
             error("not implemented!")
@@ -205,8 +203,6 @@ function ver4toDiagTree(para::Para, legK, Kidx::Int, Tidx::Int, loopNum = para.l
     end
     ver4Nodes = [[] for w in ver4.weight]
 
-
-    # function bubbletoDiagTree!(ver4Nodes, para, diag, ver4, bubble, legK, Kidx::Int, factor = 1.0)
     for b in ver4.bubble
         bubbletoDiagTree!(ver4Nodes, para, diag, ver4, b, legK, Kidx, factor)
     end
@@ -222,8 +218,8 @@ function ver4toDiagTree(para::Para, legK, Kidx::Int, Tidx::Int, loopNum = para.l
 
     for i in 1:length(ver4.weight)
         ver4dNodes, ver4eNodes = split(ver4Nodes[i])
-        nodeD = DiagTree.addNode(diag, DiagTree.ADD, [[], []], ver4dNodes; factor = factor, para = :dir)
-        nodeE = DiagTree.addNode(diag, DiagTree.ADD, [[], []], ver4eNodes; factor = factor, para = :ex)
+        nodeD = DiagTree.addNode(diag, DiagTree.ADD, [[], []], ver4dNodes; factor = factor, name = :dir)
+        nodeE = DiagTree.addNode(diag, DiagTree.ADD, [[], []], ver4eNodes; factor = factor, name = :ex)
         ver4.weight[i] = @SVector [nodeD, nodeE]
     end
     dir, ex = split(ver4.weight)
