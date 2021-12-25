@@ -37,7 +37,7 @@ end
     #test diagram
 end
 
-@testset "PropagatorPool" begin
+@testset "Propagator" begin
     order1, order2 = 1, 2
     para1, para2 = 5, 6
     factor1, factor2 = 1.1, 1.2
@@ -51,6 +51,22 @@ end
     @test propagator() != propagator(factor = factor2)
     @test propagator() != propagator(loopidx = loopidx2)
     @test propagator() != propagator(sitebasis = sitebasis2)
+end
+
+@testset "Node" begin
+    operation1, operation2 = DiagTree.ADD, DiagTree.MUL
+    para1, para2 = 5, 6
+    factor1, factor2 = 1.1, 1.2
+    components1, components2 = [[1,], [2,]], [[1,],]
+    child1, child2 = [3, 4], [3, 5]
+    function node(; operation = operation1, para = para1, factor = factor1, components = components1, child = child1)
+        return DiagTree.Node{Float64}(:none, operation, para, components, child, factor)
+    end
+    @test node() != node(operation = operation2)
+    @test node() != node(para = para2)
+    @test node() != node(factor = factor2)
+    @test node() != node(components = components2)
+    @test node() != node(child = child2)
 end
 
 @testset "Generic Diagrams" begin
