@@ -136,22 +136,17 @@ function bubbletoDiagTree!(ver4Nodes, para, diag, ver4, bubble, legK, Kidx::Int,
 
             map = b.map[(l-1)*rN+r]
             g0 = DiagTree.addPropagator(diag, 1, Gorder; site = G[1].Tpair[map.G0], loop = K, para = :G0)
-            if c == T
-                Kc = Kt
-            elseif c == U
-                Kc = Ku
-            elseif c == S
-                Kc = Ks
-            end
-            gc = DiagTree.addPropagator(diag, 1, Gorder; site = G[c].Tpair[map.Gx], loop = Kc, para = :Gx)
 
             if c == T
+                gc = DiagTree.addPropagator(diag, 1, Gorder; site = G[c].Tpair[map.Gx], loop = Kt, para = :Gt)
                 Tde = node4Tbubble(para, diag, b.Lver, b.Rver, l, r, g0, gc)
                 push!(ver4Nodes[map.ver], Tde)
             elseif c == U
+                gc = DiagTree.addPropagator(diag, 1, Gorder; site = G[c].Tpair[map.Gx], loop = Ku, para = :Gu)
                 Ude = node4Ububble(para, diag, b.Lver, b.Rver, l, r, g0, gc)
                 push!(ver4Nodes[map.ver], Ude)
             elseif c == S
+                gc = DiagTree.addPropagator(diag, 1, Gorder; site = G[c].Tpair[map.Gx], loop = Ks, para = :Gs)
                 Sde = node4Sbubble(para, diag, b.Lver, b.Rver, l, r, g0, gc)
                 push!(ver4Nodes[map.ver], Sde)
             else

@@ -1,4 +1,13 @@
 @testset "Pool" begin
+    dim, N = 3, 4
+    loopPool = DiagTree.LoopPool(:K, dim, N, Float64)
+    idx1 = DiagTree.append(loopPool, [1.0, 0.0, 0.0, 0.0])
+    idx2 = DiagTree.append(loopPool, [1.0, 1.0, 0.0, 0.0])
+    idx3 = DiagTree.append(loopPool, [1.0, 1.0, 0.0, 0.0])
+    idx4 = DiagTree.append(loopPool, [1.0, 0.0, 0.0, 0.0])
+    @test length(loopPool) == 2
+    @test idx1 == idx4
+    @test idx2 == idx3
     # pool = DiagTree.Pool{Int64,Float64}()
     # DiagTree.append(pool, 1, 2.0)
     # DiagTree.append(pool, 2, 3.0)
