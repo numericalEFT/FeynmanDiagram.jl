@@ -106,36 +106,39 @@ end
     # function LoopPool(name::Symbol, dim::Int, N::Int, type::DataType)
     MomPool = DiagTree.LoopPool(:K, D, 4)
 
-    GPool = DiagTree.propagatorPool(:G, weightType)
-    VPool = DiagTree.propagatorPool(:V, weightType)
+    GPool = DiagTree.propagatorPool(:Gpool, weightType)
+    VPool = DiagTree.propagatorPool(:Vpool, weightType)
 
     diag = DiagTree.Diagrams(MomPool, (GPool, VPool), weightType)
 
     # #construct the propagator table
     gK = [[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0]]
     gT = [(1, 2), (2, 1)]
-    g = [DiagTree.addPropagator(diag, :G, gorder; site = gT[i], loop = gK[i], name = :G) for i = 1:2]
+    g = [DiagTree.addPropagator(diag, :Gpool, gorder, :G; site = gT[i], loop = gK[i]) for i = 1:2]
 
     vdK = [[0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 1.0, 0.0]]
     vdT = [[1, 1], [2, 2]]
-    vd = [DiagTree.addPropagator(diag, :V, vorder; loop = vdK[i], name = :Vd) for i = 1:2]
+    vd = [DiagTree.addPropagator(diag, :Vpool, vorder, :Vd; loop = vdK[i]) for i = 1:2]
 
     veK = [[1, 0, -1, -1], [0, 1, 0, -1]]
     veT = [[1, 1], [2, 2]]
-    ve = [DiagTree.addPropagator(diag, :V, vorder; loop = veK[i], name = :Ve) for i = 1:2]
+    ve = [DiagTree.addPropagator(diag, :Vpool, vorder, :Ve; loop = veK[i]) for i = 1:2]
     # ve = [DiagTree.addPropagator!(diag, Wtype, 1, veK[i], veT[i], Wsym)[1] for i = 1:2]
     # # W order is 1
 
     # # contruct the tree
     MUL, ADD = DiagTree.MUL, DiagTree.ADD
-    ggn = DiagTree.addNode(diag, MUL, [[g[1], g[2]], []], [], factor = 1.0, name = :gxg)
-    vdd = DiagTree.addNode(diag, MUL, [[], [vd[1], vd[2]]], [], factor = spin, name = :dxd)
-    vde = DiagTree.addNode(diag, MUL, [[], [vd[1], ve[2]]], [], factor = -1.0, name = :dxe)
-    ved = DiagTree.addNode(diag, MUL, [[], [ve[1], vd[2]]], [], factor = -1.0, name = :exd)
-    vsum = DiagTree.addNode(diag, ADD, [[], []], [vdd, vde, ved], factor = 1.0, name = :sum)
-    root = DiagTree.addNode(diag, MUL, [[], []], [ggn, vsum], factor = 1.0, name = :root)
+    ggn = DiagTree.addNodeByName(diag, MUL, :gxg; Gpool = [g[1], g[2]], factor = 1.0)
+    vdd = DiagTree.addNodeByName(diag, MUL, :dxd; Vpool = [vd[1], vd[2]], factor = spin)
+    vde = DiagTree.addNodeByName(diag, MUL, :dxe; Vpool = [vd[1], ve[2]], factor = -1.0)
+    ved = DiagTree.addNodeByName(diag, MUL, :exd; Vpool = [ve[1], vd[2]], factor = -1.0)
+    vsum = DiagTree.addNodeByName(diag, ADD, :sum; child = [vdd, vde, ved], factor = 1.0)
+    root = DiagTree.addNode(diag, MUL, :root; child = [ggn, vsum], factor = 1.0)
     push!(diag.root, root)
 
+    printBasisPool(diag)
+    printPropagator(diag)
+    printNodes(diag)
     DiagTree.showTree(diag, diag.root[1])
     # DiagTree.printBasisPool(diag, "test.txt")
 

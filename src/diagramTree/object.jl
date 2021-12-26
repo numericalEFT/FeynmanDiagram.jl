@@ -245,5 +245,5 @@ function addNodeByName(diag::Diagrams, operator, name = :none; child = [], facto
         end
     end
     # println(kwargs, " got ", components)
-    return addNode(diag, operator; components = components, child = child, factor = factor, parent = parent, para = para, name = name)
+    return addNode(diag, operator, name; components = components, child = child, factor = factor, parent = parent, para = para)
 end
