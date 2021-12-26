@@ -7,8 +7,8 @@ const Weight = SVector{2,Float64}
 Parquet = Builder.Parquet
 
 chan = [Parquet.T, Parquet.U, Parquet.S]
-interactionTauNum = 2
-loopNum = 1
+interactionTauNum = 1
+loopNum = 2
 spin = 2
 
 para = Parquet.Para(3, loopNum, loopNum + 2, chan, interactionTauNum, Float64, spin)
@@ -48,8 +48,8 @@ evalT(Tidx) = varT[Tidx]
 # println("ver4444...")
 # println(ver4)
 diag, ver4, dir, ex = Parquet.ver4toDiagTree(para, legK, 3, 1)
-rootDir = DiagTree.addNode(diag, DiagTree.ADD, [[], []], dir; name = :dir)
-rootEx = DiagTree.addNode(diag, DiagTree.ADD, [[], []], ex; name = :ex)
+rootDir = DiagTree.addNode(diag, DiagTree.ADD, [[], []], dir; name = :dir, para = (0, 0, 0, 0))
+rootEx = DiagTree.addNode(diag, DiagTree.ADD, [[], []], ex; name = :ex, para = (0, 0, 0, 0))
 diag.root = [rootDir, rootEx]
 
 DiagTree.showTree(diag, rootDir)
