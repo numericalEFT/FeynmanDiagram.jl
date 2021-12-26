@@ -25,6 +25,19 @@ function printPropagator(diag::Diagrams, io = Base.stdout)
     println(io)
 end
 
+function printNodes(diag::Diagrams, io = Base.stdout)
+    printstyled(io, "Node ($(length(diag.nodePool)) in total)\n", color = :blue)
+    title = @sprintf("%5s%5s%40s%40s%40s\n", "index", "name", "para", "child", "components")
+    printstyled(io, title, color = :green)
+    for (idx, n) in enumerate(diag.nodePool.object)
+        # site = isempty(p.siteBasis) ? "" : "$(p.siteBasis)"
+        # loop = p.loopIdx <= 0 ? "" : "$(diag.basisPool[p.loopIdx])"
+        # loop = p.loopIdx <= 0 ? "" : "$(p.loopIdx)"
+        @printf(io, "%5i%5s%40s%40s%40s\n", idx, "$(n.name)", "$(n.para)", "$(n.childNodes)", "$(n.components)")
+    end
+    println(io)
+end
+
 """
     showTree(diag::Diagrams, _root = diag.root[end]; verbose = 0, depth = 999)
 
@@ -41,9 +54,6 @@ function showTree(diag::Diagrams, _root::Int; verbose = 0, depth = 999)
     basisPool = diag.basisPool
     root = tree[_root]
     id = _root
-
-    printBasisPool(diag)
-    printPropagator(diag)
 
     # pushfirst!(PyVector(pyimport("sys")."path"), @__DIR__) #comment this line if no need to load local python module
     ete = PyCall.pyimport("ete3")
