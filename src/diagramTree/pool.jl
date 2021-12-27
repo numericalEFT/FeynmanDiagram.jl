@@ -147,7 +147,7 @@ function Base.iterate(pool::LoopPool, state)
     end
 end
 
-function initialize(pool::LoopPool, variable::AbstractVector = rand(eltype(fieldtype(pool, :current)), pool.N))
+function update(pool::LoopPool, variable::AbstractVector = rand(eltype(fieldtype(pool, :current)), pool.N))
     @assert length(variable) == pool.N
     T = eltype(fieldtype(pool, :current))
     pool.current[:, 1:length(pool)] = T.(variable) * pool.basis[:, 1:length(pool)]

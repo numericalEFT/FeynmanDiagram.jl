@@ -1,57 +1,51 @@
-function evalNaive(diag::Diagrams, loopVar, siteVar, evalPropagator, root = nothing, para = nothing, kwargs...)
-    momenta = diag.momenta
-    propagators = diag.propagators
-    tree = diag.tree
+function evalNaive(diag::Diagrams, loopVar::AbstractVector, siteVar, evalPropagator, evalNodeFactor = nothing, root = diag.root; kwargs...)
+    loopPool = diag.basisPool
+    propagatorPools = diag.propagatorPool
+    tree = diag.nodePool
 
-    # calculate new momentum
-    for mom in momenta
-        mom.curr = varK[1] * mom.basis[1]
-        for i = 2:length(mom.basis)
-            if mom.basis[i] != 0
-                mom.curr += varK[i] * mom.basis[i]
-            end
-        end
-    end
+    # calculate new loop
+    update(loopPool, loopVar)
 
     #calculate propagators
-    for p in propagators
-        K = momenta[p.Kidx].curr
-        p.curr = evalPropagator(p.type, K, p.Tidx, varT, p.factor, para)
+    for pool in propagatorPools
+        for (idx, p) in enumerate(pool.object)
+            loop = loopPool.current[p.loopIdx]
+            pool.curr[idx] = evalPropagator(p, loop, siteVar, diag; kwargs...)
+        end
     end
 
     #calculate diagram tree
-    for node in tree
-        if node.operation == 1 #multiply
-            node.curr = 1.0
-            for pidx in node.propagators
-                node.curr *= propagators[pidx].curr
-            end
-            for nidx in node.nodes
-                node.curr *= tree[nidx].curr
-            end
+    NodeWeightType = eltype(tree.curr)
+    for (ni, node) in enumerate(tree.object)
 
-        elseif node.operation == 2 #sum
-            node.curr = 0.0
-            for pidx in node.propagators
-                node.curr += propagators[pidx].curr
+        if node.operation == MUL
+            tree.curr[ni] = NodeWeightType(1)
+            for (idx, propagatorIdx) in enumerate(node.components)
+                for pidx in propagatorIdx
+                    tree.curr[ni] *= propagatorPools[idx].curr[pidx]
+                end
             end
-            for nidx in node.nodes
-                node.curr += tree[nidx].curr
+            for nidx in node.childNodes
+                tree.curr[ni] *= tree.curr[nidx]
+            end
+        elseif node.operation == ADD
+            tree.curr[ni] = NodeWeightType(0)
+            for (idx, propagatorIdx) in enumerate(node.components)
+                for pidx in propagatorIdx
+                    tree.curr[ni] += propagatorPools[idx].curr[pidx]
+                end
+            end
+            for nidx in node.childNodes
+                tree.curr[ni] += tree.curr[nidx]
             end
         else
-            error("not implemented")
+            error("not implemented!")
         end
-
-        node.curr *= node.factor
-        if isnothing(phase) == false && (isempty(node.extK) == false || isempty(node.extT) == false)
-            node.curr *= phase(varK, varT, node.extK, node.extT)
-            # println(node.id, ": ", node.curr)
+        tree.curr[ni] *= node.factor * phaseFactor
+        if isnothing(evalNodeFactor) == false
+            tree.curr[ni] *= NodeWeightType(evalNodeFactor(node, loop, siteVar, diag; kwargs...))
         end
     end
 
-    if isnothing(root) == false
-        return [r == -1 ? W(0) : tree[r].curr for r in root]
-    else
-        return tree[end].curr
-    end
+    return tree.curr[root]
 end
