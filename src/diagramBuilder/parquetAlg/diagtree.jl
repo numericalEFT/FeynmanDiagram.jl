@@ -252,20 +252,14 @@ function ver4toDiagTree(weightType::DataType, para::Para, legK, Kidx::Int = para
 end
 
 """
-    function build(weightType::DataType, channel, loopNum::Int, legK, Kdim::Int, Kidx::Int, interactionTauNum, spin, Tidx::Int = 1)
+    function build(weightType::DataType, para::Para, LegK)
     
     build DiagTree for the one-particle-irreducible 4-point vertex function using the parquet algorithm
 
 # Arguments:
 - weightType   : type of the weight of the propagators and the vertex functions
-- channel      : [Parquet.T, Parquet.U, Parquet.S, ...] vector of channels
-- loopNum      : number of internal loops
-- legK         : momentum basis of external legs, only three of them are expected: [left in, left out, right in], the dimension of each legK is called loopBasis dimension.
-- Kdim         : spatial dimension of the momentum variable
-- Kidx         : the first internal loop basis will be generated as [0, 0, ..., 1, 0, 0, ..., 0] where 1 is the `Kidx`-th element, and the length of the vector is given by the loopBasis dimension.
-- interactionTauNum : how many τ variables in the interaction function (1 for instantaneous interactoion)
-- spin         : 1 for spinless particle, 2 for spin-1/2 particle
-- Tidx         : the first τ variable index. It will be the τ variable of the left incoming electron for all 4-vertex diagrams
+- para         : parameters to generate the diagram tree
+- LegK         : momentum basis of external legs, only three of them are expected: [left in, left out, right in], the dimension of each legK is called loopBasis dimension.
 """
 function build(weightType::DataType, para::Para, LegK)
     return ver4toDiagTree(weightType, para, LegK)

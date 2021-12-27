@@ -11,15 +11,14 @@
     Parameters to generate diagrams using Parquet algorithm
 
 # Arguments:
-- weightType   : type of the weight of the propagators and the vertex functions
-- dim          : spatial dimension of the momentum variable
-- loopNum      : number of internal loops
-- loopBasisNum : number of independent loops
-- chan         : [Parquet.T, Parquet.U, Parquet.S, ...] vector of channels
-- spin         : 1 for spinless particle, 2 for spin-1/2 particle
+- loopDim          : spatial dimension of the momentum variable
+- internalLoopNum  : number of internal loops
+- externalLoopNum  : number of external loops
+- chan         : channels to be included, [Parquet.T, Parquet.U, Parquet.S, ...]
 - F            : channels of left sub-vertex for the particle-hole and particle-hole-exchange bubbles
 - V            : channels of left sub-vertex for the particle-particle bubble
 - interactionTauNum : how many τ variables in the interaction function (1 for instantaneous interactoion)
+- spin         : 1 for spinless particle, 2 for spin-1/2 particle
 """
 struct Para
     loopDim::Int
@@ -30,9 +29,6 @@ struct Para
     V::Vector{Int}
     interactionTauNum::Int # τ degrees of freedom of the bare interaction 1, 2, or 4
     spin::Int
-    # greenType::Tuple{DataType,DataType}
-    # wType::Tuple{DataType,DataType}
-    # nodeType::Tuple{DataType,DataType}
 
     function Para(chan, Fchan, Vchan, internalLoopNum, externalLoopNum, loopDim, interactionTauNum, spin)
 
@@ -97,7 +93,7 @@ struct Bubble{_Ver4,W} # template Bubble to avoid mutually recursive struct
     map::Vector{IdxMap}
 
     function Bubble{_Ver4,W}(ver4::_Ver4, chan::Int, oL::Int, para::Para, level::Int, _id::Vector{Int}) where {_Ver4,W}
-        @assert chan in para.chan "$chan isn't a bubble channels!"
+        # @assert chan in para.chan "$chan isn't a bubble channels!"
         @assert oL < ver4.loopNum "LVer loopNum must be smaller than the ver4 loopNum"
 
         idbub = _id[1] # id vector will be updated later, so store the current id as the bubble id
