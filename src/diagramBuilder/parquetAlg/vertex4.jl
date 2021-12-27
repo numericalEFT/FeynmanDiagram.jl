@@ -22,36 +22,39 @@
 - interactionTauNum : how many τ variables in the interaction function (1 for instantaneous interactoion)
 """
 struct Para
-    weightType::DataType
-    dim::Int
-    loopNum::Int
-    loopBasisDim::Int
+    loopDim::Int
+    internalLoopNum::Int
+    externalLoopNum::Int
     chan::Vector{Int}
-    spin::Int
     F::Vector{Int}
     V::Vector{Int}
     interactionTauNum::Int # τ degrees of freedom of the bare interaction 1, 2, or 4
+    spin::Int
     # greenType::Tuple{DataType,DataType}
     # wType::Tuple{DataType,DataType}
     # nodeType::Tuple{DataType,DataType}
 
-    function Para(weightType::DataType, dim, loopNum, loopBasisDim, chan, interactionTauNum, spin = 1)
+    function Para(chan, Fchan, Vchan, internalLoopNum, externalLoopNum, loopDim, interactionTauNum, spin)
 
-        for tnum in interactionTauNum
-            @assert tnum == 1 || tnum == 2 || tnum == 4
-        end
+        tnum = interactionTauNum
+        @assert tnum == 1 || tnum == 2 || tnum == 4
 
         for c in chan
             @assert c in Allchan "$chan $c isn't implemented!"
         end
-        F = intersect(chan, Fchan)
-        V = intersect(chan, Vchan)
-        println("F channel: ", F)
-        println("V channel: ", V)
+        @assert (T in Fchan) == false "F vertex is particle-hole irreducible, so that T channel is not allowed in F"
+        @assert (S in Vchan) == false "V vertex is particle-particle irreducible, so that S channel is not allowed in V"
+        # F = intersect(chan, Fchan)
+        # V = intersect(chan, Vchan)
+        println("Internal Loop number = $internalLoopNum, external Loop number = $externalLoopNum, loop variable dimension = $loopDim")
+        println("F channel: $Fchan, V channel: $Vchan")
 
-        return new(weightType, dim, loopNum, loopBasisDim, chan, spin, F, V, interactionTauNum)
+        return new(loopDim, internalLoopNum, externalLoopNum, chan, Fchan, Vchan, interactionTauNum, spin)
     end
 end
+
+totalLoopNum(para::Para) = para.internalLoopNum + para.externalLoopNum
+totalSiteNum(para::Para) = (para.internalLoopNum + 1) * para.interactionTauNum
 
 struct Green
     Tpair::Vector{Tuple{Int,Int}}
@@ -203,11 +206,13 @@ struct Ver4{W}
     Tpair::Vector{Tuple{Int,Int,Int,Int}}
     weight::Vector{W}
 
-    function Ver4{W}(para::Para, loopNum, tidx = 1; chan = para.chan, level = 1, id = [1,]) where {W}
+    function Ver4{W}(para::Para, loopNum = para.internalLoopNum, tidx = 1; chan = para.chan, level = 1, id = [1,]) where {W}
         g = @SVector [Green() for i = 1:16]
         ver4 = new{W}(id[1], level, loopNum, chan, para.interactionTauNum, tidx, g, [], [], [])
         id[1] += 1
         @assert loopNum >= 0
+
+
         if loopNum == 0
             # bare interaction may have one, two or four independent tau variables
             if para.interactionTauNum == 1  # instantaneous interaction
