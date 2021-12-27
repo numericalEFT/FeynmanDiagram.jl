@@ -19,6 +19,7 @@ makedocs(;
         ],
         "API reference" => Any[
             "lib/diagtree.md",
+            "lib/builder.md",
             "lib/parquet.md",
         ]
     ]
