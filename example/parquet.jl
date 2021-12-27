@@ -23,7 +23,7 @@ varT = [rand() for i in 1:2*(loopNum+1)]
 evalK(basis) = sum([basis[i] * varK[i] for i in 1:3])
 evalT(Tidx) = varT[Tidx]
 
-diag, ver4, dir, ex = Parquet.build(Float64, chan, loopNum, legK, Kdim, 1, interactionTauNum, spin)
+diag, ver4, dir, ex = Parquet.build(Float64, chan, loopNum, legK, Kdim, 3, interactionTauNum, spin)
 rootDir = DiagTree.addNode!(diag, DiagTree.ADD, :dir; child = dir, para = (0, 0, 0, 0))
 rootEx = DiagTree.addNode!(diag, DiagTree.ADD, :ex; child = ex, para = (0, 0, 0, 0))
 diag.root = [rootDir, rootEx]
@@ -32,8 +32,8 @@ DiagTree.showTree(diag, rootDir)
 # print_tree(ver4)
 
 ##################### lower level subroutines  #######################################
-para = Parquet.Para(Float64, 3, loopNum, loopNum + 2, chan, interactionTauNum, spin)
-ver4 = Parquet.Ver4{Float64}(para, loopNum, 1)
+para = Parquet.Para(Float64, Kdim, loopNum, loopNum + 2, chan, interactionTauNum, spin)
+ver4 = Parquet.Ver4{Float64}(para, loopNum)
 
 ########## use AbstractTrees interface to print/manipulate the tree
 print_tree(ver4)

@@ -7,9 +7,9 @@ function evalNaive(diag::Diagrams, loopVar, siteVar, evalPropagator, evalNodeFac
     update(loopPool, loopVar)
 
     #calculate propagators
-    for pool in propagatorPools
+    for (pidx, pool) in enumerate(propagatorPools)
         for (idx, p) in enumerate(pool.object)
-            pool.current[idx] = evalPropagator(p, current(loopPool, p.loopIdx), siteVar, diag; kwargs...)
+            pool.current[idx] = evalPropagator(pidx, p, current(loopPool, p.loopIdx), siteVar, diag; kwargs...)
         end
     end
 
