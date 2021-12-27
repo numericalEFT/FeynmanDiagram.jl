@@ -8,12 +8,16 @@
         KinR[2] = KoutR[2] = 1
         legK = [KinL, KoutL, KinR, KoutR]
 
-        loopBasisNum = loopNum + 2
-        varK = rand(Kdim, loopBasisNum)
-        varT = [rand() for i in 1:2*(loopNum+1)]
+        F = [Parquet.U, Parquet.S]
+        V = [Parquet.T, Parquet.U]
+
+        para = Parquet.Para(chan, F, V, loopNum, 2, Kdim, interactionTauNum, spin)
+
+        varK = rand(Kdim, Parquet.totalLoopNum(para))
+        varT = [rand() for i in 1:Parquet.totalSiteNum(para)]
 
         #################### DiagTree ####################################
-        diag, ver4, dir, ex = Parquet.build(Float64, chan, loopNum, legK, Kdim, 3, interactionTauNum, spin)
+        diag, ver4, dir, ex = Parquet.build(Float64, para, legK)
         # the weighttype of the returned ver4 is Float64
         rootDir = DiagTree.addNode!(diag, DiagTree.ADD, :dir; child = dir, para = (0, 0, 0, 0))
         rootEx = DiagTree.addNode!(diag, DiagTree.ADD, :ex; child = ex, para = (0, 0, 0, 0))
@@ -27,8 +31,7 @@
         @time DiagTree.evalNaive(diag, varK, varT, ParquetEval.evalPropagator)
 
         ##################### lower level subroutines  #######################################
-        para = Parquet.Para(Float64, Kdim, loopNum, loopBasisNum, chan, interactionTauNum, spin)
-        ver4 = Parquet.Ver4{ParquetEval.Weight}(para, loopNum, 1)
+        ver4 = Parquet.Ver4{ParquetEval.Weight}(para)
 
         KinL, KoutL, KinR, KoutR = varK[:, 1], varK[:, 1], varK[:, 2], varK[:, 2]
         ParquetEval.eval(ver4, varK, varT, KinL, KoutL, KinR, KoutR, 3, spin, true)
