@@ -156,7 +156,7 @@ end
 
     # #make sure the total number of diagrams are correct
 
-    evalPropagator1(object, K, varT, diag) = 1.0
+    evalPropagator1(idx, object, K, varT, diag) = 1.0
     @test DiagTree.evalNaive(diag, varK, varT, evalPropagator1)[1] ≈ -2 + 1 * spin
 
     # #more sophisticated test of the weight evaluation
@@ -169,10 +169,10 @@ end
 
     evalV(K) = 8π / (dot(K, K) + mass2)
 
-    function evalPropagator2(object, K, varT, diag)
-        if object.name == :G
+    function evalPropagator2(idx, object, K, varT, diag)
+        if idx == 1
             return evalG(K, object.siteBasis, varT)
-        elseif object.name == :Vd || object.name == :Ve
+        elseif idx == 2
             return evalV(K)
         else
             error("not implemented")
@@ -189,140 +189,7 @@ end
     Vweight = spin * vdw[1] * vdw[2] - vdw[1] * vew[2] - vew[1] * vdw[2]
     Weight = gw[1] * gw[2] * Vweight
 
-    # println("compare current:")
-    # println([getK(gK[i], varK) for i = 1:2])
-    # display(diag.basisPool.current)
-    # println()
-
-    # DiagTree.evalNaive(diag, varK, varT, evalPropagator2)
-    # println(gw, " vs ", diag.propagatorPool[1].current)
-    # println(vdw)
-    # println(vew)
-    # println(diag.propagatorPool[2].current)
-
-    # # println(DiagTree.evalNaive(diag, evalPropagator2, varK, varT))
-    # # println(Weight)
+    # println(DiagTree.printPropagator(diag))
     @test DiagTree.evalNaive(diag, varK, varT, evalPropagator2)[1] ≈ Weight
 
 end
-
-# @testset "DiagTree" begin
-#     DiagTree = GWKT.DiagTree
-#     # Write your tests here.
-#     Gsymmetry = [:mirror, :particlehole]
-#     Wsymmetry = [:mirror, :timereversal]
-#     kbasis = [1, 0, 1, 1]
-#     Tidx = [(1, 2), (1, 2), (2, 1), (2, 1)]
-#     Kidx = [kbasis, -kbasis, kbasis, -kbasis]
-#     N = length(Tidx)
-#     Gtype, Wtype = 1, 2
-
-#     ############# Test G with symmetry ############################
-#     diag = DiagTree.Diagrams{Float64}()
-#     idx = [DiagTree.addPropagator!(diag, Gtype, 0, Kidx[i], Tidx[i], Gsymmetry)[1] for i = 1:N]
-#     #G has an order 0
-#     @test idx == [1, 1, 1, 1]
-#     ############# Test G without symmetry ############################
-#     diag = DiagTree.Diagrams{Float64}()
-#     idx = [DiagTree.addPropagator!(diag, Gtype, 0, Kidx[i], Tidx[i], [])[1] for i = 1:N]
-#     #G has an order 0
-#     @test idx == [1, 2, 3, 4]
-#     ############# Test W with symmetry ############################
-#     diag = DiagTree.Diagrams{Float64}()
-#     idx = [DiagTree.addPropagator!(diag, Wtype, 1, Kidx[i], Tidx[i], Wsymmetry)[1] for i = 1:N]
-#     #W has an order 1
-#     @test idx == [1, 1, 1, 1]
-#     ############# Test W without symmetry ############################
-#     diag = DiagTree.Diagrams{Float64}()
-#     idx = [DiagTree.addPropagator!(diag, Wtype, 1, Kidx[i], Tidx[i], [])[1] for i = 1:N]
-#     #W has an order 1
-#     @test idx == [1, 2, 3, 4]
-# end
-
-# @testset "Diagrams" begin
-
-#     """
-#         k1-k3                     k2+k3 
-#         |                         | 
-#     t1.L ↑     t1.L       t2.L     ↑ t2.L
-#         |-------------->----------|
-#         |       |  k3+k4   |      |
-#         |   v   |          |  v   |
-#         |       |    k4    |      |
-#         |--------------<----------|
-#     t1.L ↑    t1.L        t2.L     ↑ t2.L
-#         |                         | 
-#         k1                        k2
-#     """
-#     # We only consider the direct part of the above diagram
-#     DiagTree = GWKT.DiagTree
-#     Gsym = [:mirror]
-#     Wsym = [:mirror, :timereversal]
-#     Gtype, Wtype = 1, 2
-#     spin = 2.0
-#     kF, β, mass2 = 1.919, 0.5, 1.0
-#     varK = [rand(3) for i = 1:4] #k1, k2, k3, k4
-#     varT = [rand() * β, rand() * β]
-
-#     diag = DiagTree.Diagrams{Float64}()
-
-#     #construct the propagator table
-#     gK = [[0, 0, 1, 1], [0, 0, 0, 1]]
-#     gT = [[1, 2], [2, 1]]
-#     g = [DiagTree.addPropagator!(diag, Gtype, 0, gK[i], gT[i], Gsym)[1] for i = 1:2]
-#     # G order is 0
-
-#     vdK = [[0, 0, 1, 0], [0, 0, 1, 0]]
-#     vdT = [[1, 1], [2, 2]]
-#     vd = [DiagTree.addPropagator!(diag, Wtype, 1, vdK[i], vdT[i], Wsym)[1] for i = 1:2]
-#     # W order is 1
-
-#     veK = [[1, 0, -1, -1], [0, 1, 0, -1]]
-#     veT = [[1, 1], [2, 2]]
-#     ve = [DiagTree.addPropagator!(diag, Wtype, 1, veK[i], veT[i], Wsym)[1] for i = 1:2]
-#     # W order is 1
-
-
-#     # contruct the tree
-#     MUL, ADD = 1, 2
-#     gg_n = DiagTree.addNode!(diag, MUL, 1.0, [g[1], g[2]], [])
-#     vdd = DiagTree.addNode!(diag, MUL, spin, [vd[1], vd[2]], [])
-#     vde = DiagTree.addNode!(diag, MUL, -1.0, [vd[1], ve[2]], [])
-#     ved = DiagTree.addNode!(diag, MUL, -1.0, [ve[1], vd[2]], [])
-#     vsum = DiagTree.addNode!(diag, ADD, 1.0, [], [vdd, vde, ved])
-#     root = DiagTree.addNode!(diag, MUL, 1.0, [], [gg_n, vsum])
-
-#     # DiagTree.showTree(diag)
-
-#     #make sure the total number of diagrams are correct
-#     evalPropagator1(type, K, Tidx, varT, factor = 1.0, para = nothing) = 1.0
-#     @test DiagTree.evalNaive(diag, evalPropagator1, varK, varT) ≈ -2 + 1 * spin
-
-#     #more sophisticated test of the weight evaluation
-#     function evalPropagator2(type, K, Tidx, varT, factor = 1.0, para = nothing)
-#         if type == Gtype
-#             ϵ = dot(K, K) / 2 - kF^2
-#             τ = varT[Tidx[2]] - varT[Tidx[1]]
-#             return Spectral.kernelFermiT(τ, ϵ, β)
-#         elseif type == Wtype
-#             return 8π / (dot(K, K) + mass2)
-#         else
-#             error("not implemented")
-#         end
-#     end
-
-#     getK(basis, varK) = sum([basis[i] * K for (i, K) in enumerate(varK)])
-
-#     gw = [evalPropagator2(Gtype, getK(gK[i], varK), gT[i], varT) for i = 1:2]
-#     vdw = [evalPropagator2(Wtype, getK(vdK[i], varK), vdT[i], varT) for i = 1:2]
-#     vew = [evalPropagator2(Wtype, getK(veK[i], varK), veT[i], varT) for i = 1:2]
-
-#     Vweight = spin * vdw[1] * vdw[2] - vdw[1] * vew[2] - vew[1] * vdw[2]
-#     Weight = gw[1] * gw[2] * Vweight
-
-#     # println(DiagTree.evalNaive(diag, evalPropagator2, varK, varT))
-#     # println(Weight)
-#     @test DiagTree.evalNaive(diag, evalPropagator2, varK, varT) ≈ Weight
-
-
-# end
