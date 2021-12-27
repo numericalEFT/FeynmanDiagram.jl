@@ -146,35 +146,52 @@ end
     # #make sure the total number of diagrams are correct
 
     evalPropagator1(object, K, varT, diag) = 1.0
-    println(DiagTree.evalNaive(diag, varK, varT, evalPropagator1)[1])
-    # @test DiagTree.evalNaive(diag, evalPropagator1, varK, varT) ≈ -2 + 1 * spin
+    @test DiagTree.evalNaive(diag, varK, varT, evalPropagator1)[1] ≈ -2 + 1 * spin
 
     # #more sophisticated test of the weight evaluation
-    # function evalPropagator2(type, K, Tidx, varT, factor = 1.0, para = nothing)
-    #     if type == Gtype
-    #         ϵ = dot(K, K) / 2 - kF^2
-    #         τ = varT[Tidx[2]] - varT[Tidx[1]]
-    #         return Spectral.kernelFermiT(τ, ϵ, β)
-    #     elseif type == Wtype
-    #         return 8π / (dot(K, K) + mass2)
-    #     else
-    #         error("not implemented")
-    #     end
-    # end
+
+    function evalG(K, τBasis, varT)
+        ϵ = dot(K, K) / 2 - kF^2
+        τ = varT[τBasis[2]] - varT[τBasis[1]]
+        return Spectral.kernelFermiT(τ, ϵ, β)
+    end
+
+    evalV(K) = 8π / (dot(K, K) + mass2)
+
+    function evalPropagator2(object, K, varT, diag)
+        if object.name == :G
+            return evalG(K, object.siteBasis, varT)
+        elseif object.name == :Vd || object.name == :Ve
+            return evalV(K)
+        else
+            error("not implemented")
+        end
+    end
 
     # getK(basis, varK) = sum([basis[i] * K for (i, K) in enumerate(varK)])
+    getK(basis, varK) = varK * basis
 
-    # gw = [evalPropagator2(Gtype, getK(gK[i], varK), gT[i], varT) for i = 1:2]
-    # vdw = [evalPropagator2(Wtype, getK(vdK[i], varK), vdT[i], varT) for i = 1:2]
-    # vew = [evalPropagator2(Wtype, getK(veK[i], varK), veT[i], varT) for i = 1:2]
+    gw = [evalG(getK(gK[i], varK), gT[i], varT) for i = 1:2]
+    vdw = [evalV(getK(vdK[i], varK)) for i = 1:2]
+    vew = [evalV(getK(veK[i], varK)) for i = 1:2]
 
-    # Vweight = spin * vdw[1] * vdw[2] - vdw[1] * vew[2] - vew[1] * vdw[2]
-    # Weight = gw[1] * gw[2] * Vweight
+    Vweight = spin * vdw[1] * vdw[2] - vdw[1] * vew[2] - vew[1] * vdw[2]
+    Weight = gw[1] * gw[2] * Vweight
+
+    # println("compare current:")
+    # println([getK(gK[i], varK) for i = 1:2])
+    # display(diag.basisPool.current)
+    # println()
+
+    # DiagTree.evalNaive(diag, varK, varT, evalPropagator2)
+    # println(gw, " vs ", diag.propagatorPool[1].current)
+    # println(vdw)
+    # println(vew)
+    # println(diag.propagatorPool[2].current)
 
     # # println(DiagTree.evalNaive(diag, evalPropagator2, varK, varT))
     # # println(Weight)
-    # @test DiagTree.evalNaive(diag, evalPropagator2, varK, varT) ≈ Weight
-
+    @test DiagTree.evalNaive(diag, varK, varT, evalPropagator2)[1] ≈ Weight
 
 end
 
