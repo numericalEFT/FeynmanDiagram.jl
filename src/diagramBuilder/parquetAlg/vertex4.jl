@@ -10,10 +10,6 @@
 
     Parameters to generate diagrams using Parquet algorithm
 
-#Arguments
-
-- `chan`: list of channels of sub-vertices
-- `interactionTauNum`: τ degrees of freedom of the bare interaction
 # Arguments:
 - weightType   : type of the weight of the propagators and the vertex functions
 - dim          : spatial dimension of the momentum variable
