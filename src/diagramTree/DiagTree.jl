@@ -12,4 +12,7 @@ include("object.jl")
 # IO operations
 include("io.jl")
 
+# diagram evaluation
+include("eval.jl")
+
 end

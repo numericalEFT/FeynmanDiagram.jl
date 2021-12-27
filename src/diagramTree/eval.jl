@@ -1,4 +1,4 @@
-function evalNaive(diag::Diagrams, loopVar::AbstractVector, siteVar, evalPropagator, evalNodeFactor = nothing, root = diag.root; kwargs...)
+function evalNaive(diag::Diagrams, loopVar, siteVar, evalPropagator, evalNodeFactor = nothing, root = diag.root; kwargs...)
     loopPool = diag.basisPool
     propagatorPools = diag.propagatorPool
     tree = diag.nodePool
@@ -10,42 +10,42 @@ function evalNaive(diag::Diagrams, loopVar::AbstractVector, siteVar, evalPropaga
     for pool in propagatorPools
         for (idx, p) in enumerate(pool.object)
             loop = loopPool.current[p.loopIdx]
-            pool.curr[idx] = evalPropagator(p, loop, siteVar, diag; kwargs...)
+            pool.current[idx] = evalPropagator(p, loop, siteVar, diag; kwargs...)
         end
     end
 
     #calculate diagram tree
-    NodeWeightType = eltype(tree.curr)
+    NodeWeightType = eltype(tree.current)
     for (ni, node) in enumerate(tree.object)
 
         if node.operation == MUL
-            tree.curr[ni] = NodeWeightType(1)
+            tree.current[ni] = NodeWeightType(1)
             for (idx, propagatorIdx) in enumerate(node.components)
                 for pidx in propagatorIdx
-                    tree.curr[ni] *= propagatorPools[idx].curr[pidx]
+                    tree.current[ni] *= propagatorPools[idx].current[pidx]
                 end
             end
             for nidx in node.childNodes
-                tree.curr[ni] *= tree.curr[nidx]
+                tree.current[ni] *= tree.current[nidx]
             end
         elseif node.operation == ADD
-            tree.curr[ni] = NodeWeightType(0)
+            tree.current[ni] = NodeWeightType(0)
             for (idx, propagatorIdx) in enumerate(node.components)
                 for pidx in propagatorIdx
-                    tree.curr[ni] += propagatorPools[idx].curr[pidx]
+                    tree.current[ni] += propagatorPools[idx].current[pidx]
                 end
             end
             for nidx in node.childNodes
-                tree.curr[ni] += tree.curr[nidx]
+                tree.current[ni] += tree.current[nidx]
             end
         else
             error("not implemented!")
         end
-        tree.curr[ni] *= node.factor * phaseFactor
+        tree.current[ni] *= node.factor
         if isnothing(evalNodeFactor) == false
-            tree.curr[ni] *= NodeWeightType(evalNodeFactor(node, loop, siteVar, diag; kwargs...))
+            tree.current[ni] *= NodeWeightType(evalNodeFactor(node, loop, siteVar, diag; kwargs...))
         end
     end
 
-    return tree.curr[root]
+    return tree.current[root]
 end
