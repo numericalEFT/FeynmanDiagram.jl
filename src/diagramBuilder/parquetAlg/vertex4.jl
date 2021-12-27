@@ -46,6 +46,8 @@ struct Para
         end
         F = intersect(chan, Fchan)
         V = intersect(chan, Vchan)
+        println("F channel: ", F)
+        println("V channel: ", V)
 
         return new(weightType, dim, loopNum, loopBasisDim, chan, spin, F, V, interactionTauNum)
     end
@@ -113,6 +115,7 @@ struct Bubble{_Ver4,W} # template Bubble to avoid mutually recursive struct
             error("chan $chan isn't implemented!")
         end
 
+        # println("left ver chan: ", LsubVer, ", loop=", oL)
         Lver = _Ver4{W}(para, oL, LTidx; chan = LsubVer, level = level + 1, id = _id)
         Rver = _Ver4{W}(para, oR, RTidx; chan = RsubVer, level = level + 1, id = _id)
 
@@ -222,7 +225,7 @@ struct Ver4{W}
                 # addTidx(ver4, (tidx, tidx + 3, tidx + 2, tidx + 1))  # exchange dynamic interaction
             end
         else # loopNum>0
-            for c in para.chan
+            for c in chan
                 for ol = 0:loopNum-1
                     bubble = Bubble{Ver4,W}(ver4, c, ol, para, level, id)
                     if length(bubble.map) > 0  # if zero, bubble diagram doesn't exist

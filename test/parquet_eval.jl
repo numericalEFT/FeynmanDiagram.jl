@@ -138,12 +138,10 @@ function eval(ver4, varK, varT, KinL, KoutL, KinR, KoutR, Kidx::Int, spin, fast 
 
                 if c == T
                     w.d += gWeight * (Lw.d * Rw.d * spin + Lw.d * Rw.e + Lw.e * Rw.d)
-                    w.d += gWeight * (Lw.d * Rw.e + Lw.e * Rw.d)
                     w.e += gWeight * Lw.e * Rw.e
                 elseif c == U
                     w.d += gWeight * Lw.e * Rw.e
                     w.e += gWeight * (Lw.d * Rw.d * spin + Lw.d * Rw.e + Lw.e * Rw.d)
-                    w.e += gWeight * (+Lw.d * Rw.e + Lw.e * Rw.d)
                 elseif c == S
                     # S channel,  see the note "code convention"
                     w.d += gWeight * (Lw.d * Rw.e + Lw.e * Rw.d)

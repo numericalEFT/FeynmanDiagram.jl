@@ -19,23 +19,41 @@
         rootEx = DiagTree.addNode!(diag, DiagTree.ADD, :ex; child = ex, para = (0, 0, 0, 0))
         diag.root = [rootDir, rootEx]
 
+        Parquet.print_tree(ver4)
 
         w1 = DiagTree.evalNaive(diag, varK, varT, ParquetEval.evalPropagator)
+
+        printstyled("naive DiagTree evaluator cost:", color = :green)
+        @time DiagTree.evalNaive(diag, varK, varT, ParquetEval.evalPropagator)
 
         ##################### lower level subroutines  #######################################
         para = Parquet.Para(Float64, Kdim, loopNum, loopBasisNum, chan, interactionTauNum, spin)
         ver4 = Parquet.Ver4{ParquetEval.Weight}(para, loopNum, 1)
 
+        KinL, KoutL, KinR, KoutR = varK[:, 1], varK[:, 1], varK[:, 2], varK[:, 2]
         ParquetEval.eval(ver4, varK, varT, KinL, KoutL, KinR, KoutR, 3, spin, true)
+
+        printstyled("parquet evaluator cost:", color = :green)
+        @time ParquetEval.eval(ver4, varK, varT, KinL, KoutL, KinR, KoutR, 3, spin, true)
         w2 = ver4.weight[1]
 
-        println(w1)
-        println(w2)
+        Parquet.print_tree(ver4)
+        DiagTree.showTree(diag, diag.root[1])
+        # Parquet.showTree(ver4)
+        # DiagTree.printBasisPool(diag)
+        # DiagTree.printPropagator(diag)
+        # println(diag.propagatorPool[1].object[2])
 
+        @test w1[1] ≈ w2[1]
+        @test w1[2] ≈ w2[2]
     end
 
     Parquet = Builder.Parquet
-    chan = [Parquet.T, Parquet.U, Parquet.S]
-    testDiagWeigt(1, chan)
+    # testDiagWeigt(1, [Parquet.T,])
+    # testDiagWeigt(1, [Parquet.U,])
+    # testDiagWeigt(1, [Parquet.S,])
 
+    testDiagWeigt(2, [Parquet.T,])
+    # testDiagWeigt(2, [Parquet.U,])
+    # testDiagWeigt(2, [Parquet.S,])
 end
