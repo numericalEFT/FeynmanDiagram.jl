@@ -1,13 +1,24 @@
 @testset "LoopPool" begin
     dim, N = 3, 4
     loopPool = DiagTree.LoopPool(:K, dim, N, Float64)
-    idx1 = DiagTree.append(loopPool, [1.0, 0.0, 0.0, 0.0])
-    idx2 = DiagTree.append(loopPool, [1.0, 1.0, 0.0, 0.0])
-    idx3 = DiagTree.append(loopPool, [1.0, 1.0, 0.0, 0.0])
-    idx4 = DiagTree.append(loopPool, [1.0, 0.0, 0.0, 0.0])
-    @test length(loopPool) == 2
+    basis1 = [1.0, 0.0, 0.0, 1.0]
+    basis2 = [1.0, 1.0, 0.0, 0.0]
+    basis3 = [1.0, 0.0, -1.0, 1.0]
+    idx1 = DiagTree.append(loopPool, basis1)
+    idx2 = DiagTree.append(loopPool, basis2)
+    idx3 = DiagTree.append(loopPool, basis2)
+    idx4 = DiagTree.append(loopPool, basis1)
+    idx5 = DiagTree.append(loopPool, basis3)
+    @test length(loopPool) == 3
     @test idx1 == idx4
     @test idx2 == idx3
+
+    varK = rand(dim, N)
+    DiagTree.update(loopPool, varK)
+    @test DiagTree.current(loopPool, 1) ≈ varK * basis1
+    @test DiagTree.current(loopPool, 2) ≈ varK * basis2
+    @test DiagTree.current(loopPool, 3) ≈ varK * basis3
+
 end
 
 @testset "CachedPool" begin

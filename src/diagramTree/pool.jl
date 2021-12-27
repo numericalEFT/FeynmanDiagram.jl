@@ -162,6 +162,8 @@ function update(pool::LoopPool, variable = rand(eltype(pool.current), pool.dim, 
     pool.current[:, 1:length(pool)] = T.(variable) * pool.basis[:, 1:length(pool)]
 end
 
+current(pool::LoopPool, idx) = pool.current[:, idx]
+
 function append(pool::LoopPool, basis::AbstractVector)
     for bi in 1:length(pool)
         if pool.basis[:, bi] ≈ basis
