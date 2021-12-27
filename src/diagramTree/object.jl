@@ -117,20 +117,21 @@ mutable struct Diagrams{V,P,PARA,F,W}
 end
 
 """
-    function addPropagator(diag::Diagrams, index::Int, order::Int, name = :none; site = [], loop = nothing, factor = 1, para = nothing)
+    function addPropagator!(diag::Diagrams, index::Int, order::Int, name, factor = 1; site = [], loop = nothing, para = nothing)
 
     Add a propagator into the diagram tree.
 
 # Arguments
 - diag::Diagrams : Diagram tree.
 - index::Int     : Index of the propagator in the diagram tree.
-- order::Int     : Order of the propagator
-- basis::AbstractVector : Vector of the pair (basisPool index, variable basis, initial variable). For example, if a propagator involves both a momentum and a time variable, then the basis should be [[Kbasis, K0], [Tbasis, T0]], where K0, T0 are the initial values of the momentum and the time.
-- factor = 1     : Factor of the propagator
-- para = 0       : Additional paramenter required to evaluate the propagator. If not needed, simply leave it as an integer.
-- currWeight = 0 : Initial weight of the propagator
+- order::Int     : Order of the propagator.
+- name = :none   : name of the propagator.
+- factor = 1     : Factor of the propagator.
+- site = []      : site basis (e.g, time and space coordinate) of the propagator.
+- loop = nothing : loop basis (e.g, momentum and frequency) of the propagator.
+- para = nothing : Additional paramenter required to evaluate the propagator.
 """
-function addPropagator(diag::Diagrams, index::Int, order::Int, name = :none; site = [], loop = nothing, factor = 1, para = nothing)
+function addPropagator!(diag::Diagrams, index::Int, order::Int, name, factor = 1.0; site = [], loop = nothing, para = nothing)
     loopPool = diag.basisPool
     propagatorPool = diag.propagatorPool
     # @assert length(basis) == length(variablePool) == length(currVar) "$(length(basis)) == $(length(variablePool)) == $(length(currVar)) breaks"
@@ -151,49 +152,60 @@ function addPropagator(diag::Diagrams, index::Int, order::Int, name = :none; sit
     prop = Propagator{F}(name, order, para, factor, loopidx, collect(site))
     return append(diag.propagatorPool[index], prop)
 end
-function addPropagator(diag::Diagrams, poolName::Symbol, order::Int, name = :none; site = [], loop = nothing, factor = 1, para = nothing)
+"""
+    function addPropagator!(diag::Diagrams, poolName::Symbol, order::Int, name, factor = 1; site = [], loop = nothing, para = nothing)
+
+    Add a propagator into the diagram tree referenced by the pool name.
+
+# Arguments
+- diag::Diagrams : Diagram tree.
+- poolName::Symbol : name of the propagator pool
+- order::Int     : Order of the propagator.
+- name = :none   : name of the propagator.
+- factor = 1     : Factor of the propagator.
+- site = []      : site basis (e.g, time and space coordinate) of the propagator.
+- loop = nothing : loop basis (e.g, momentum and frequency) of the propagator.
+- para = nothing : Additional paramenter required to evaluate the propagator.
+"""
+function addPropagator!(diag::Diagrams, poolName::Symbol, order::Int, name, factor = 1.0; site = [], loop = nothing, para = nothing)
     for (idx, pool) in enumerate(diag.propagatorPool)
         if pool.name == poolName
-            return addPropagator(diag, idx, order, name; site = site, loop = loop, factor = factor, para = para)
+            return addPropagator!(diag, idx, order, name, factor; site = site, loop = loop, para = para)
         end
     end
 end
 
 """
-    function addNode(diag::Diagrams, operator, name = :none; components = nothing, child = [], parent = 0, factor = 1.0, para = nothing)
+    function addNode!(diag::Diagrams, operator, name, factor = 1.0; propagator = nothing, child = [], parent = 0, para = nothing)
 
     Add a node into the diagram tree.
 
 # Arguments
 - diag::Diagrams : Diagram tree.
 - operator::Int  : #1: multiply, 2: add, ...
-- components     : Index to the cached propagators stored in certain pools. It should be in the format of Vector{Vector{Int}}, where each Vector{Int} is for one kind of propagator.
-- child          : Indices to the cached nodes stored in certain pool. They are the child of the current node in the diagram tree. It should be in the format of Vector{Int}.
-- factor = 1     : Factor of the node
+- name           : name of the node
+- factor = 1.0   : Factor of the node
+- propagator = nothing  : Index to the cached propagators stored in certain pools. It should be in the format of Vector{Vector{Int}}, where each Vector{Int} is for one kind of propagator.
+- child = []        : Indices to the cached nodes stored in certain pool. They are the child of the current node in the diagram tree. It should be in the format of Vector{Int}.
 - para = nothing    : Additional paramenter required to evaluate the node. Set to nothing by default.
-- name = :none   : name of the node
-
-# Remark
-The second function provides an alternative way to add node. Instead of providing the components vector, one specify the propagators in kwargs. 
-- kwargs...      : Accept arbitrary pair of parameters as: PropagatorPoolName = [index of the propagator1, index of the propagator2, ...]
 """
-function addNode(diag::Diagrams, operator, name = :none; components = nothing, child = [], parent = 0, factor = 1.0, para = nothing)
+function addNode!(diag::Diagrams, operator, name, factor = 1.0; propagator = nothing, child = [], para = nothing)
     nodePool = diag.nodePool
 
-    if isnothing(components)
-        components = [[] for p in diag.propagatorPool]
+    if isnothing(propagator)
+        propagator = [[] for p in diag.propagatorPool]
     end
 
-    @assert length(components) == length(diag.propagatorPool) "each element of the components is an index vector of the corresponding propagator"
+    @assert length(propagator) == length(diag.propagatorPool) "each element of the propagator is an index vector of the corresponding propagator"
 
     filterZero(list) = [l for l in list if l != 0]
 
     #filter the propagators and nodes with index 0, they are the empty object
-    components = [filterZero(c) for c in components]
+    propagator = [filterZero(c) for c in propagator]
     childNodes = filterZero(child)
 
     empty = true
-    for c in components
+    for c in propagator
         if isempty(c) == false
             empty = false
         end
@@ -215,7 +227,7 @@ function addNode(diag::Diagrams, operator, name = :none; components = nothing, c
     # println("node F: ", F)
     @assert PARA == typeof(para) "Type of $para is not $PARA"
 
-    node = Node{F}(name, operator, para, components, childNodes, factor, parent)
+    node = Node{F}(name, operator, para, propagator, childNodes, factor, 0)
 
     nidx = append(nodePool, node)
     return nidx
@@ -228,14 +240,13 @@ end
 # Arguments
 - diag::Diagrams : Diagram tree.
 - operator::Int  : #1: multiply, 2: add, ...
-- components     : Index to the cached propagators stored in certain pools. It should be in the format of Vector{Vector{Int}}, where each Vector{Int} is for one kind of propagator.
-- child          : Indices to the cached nodes stored in certain pool. They are the child of the current node in the diagram tree. It should be in the format of Vector{Int}.
-- factor = 1     : Factor of the node
+- name           : name of the node
+- factor = 1.0   : Factor of the node
+- child = []        : Indices to the cached nodes stored in certain pool. They are the child of the current node in the diagram tree. It should be in the format of Vector{Int}.
 - para = nothing    : Additional paramenter required to evaluate the node. Set to nothing by default.
-- name = :none   : name of the node
 - kwargs...      : Accept arbitrary pair of parameters as: PropagatorPoolName = [index of the propagator1, index of the propagator2, ...]
 """
-function addNodeByName(diag::Diagrams, operator, name = :none; child = [], factor = 1.0, parent = 0, para = nothing, kwargs...)
+function addNodeByName!(diag::Diagrams, operator, name, factor = 1.0; child = [], para = nothing, kwargs...)
     components = [[] for p in diag.propagatorPool]
     for key in keys(kwargs)
         for (idx, p) in enumerate(diag.propagatorPool)
@@ -245,5 +256,5 @@ function addNodeByName(diag::Diagrams, operator, name = :none; child = [], facto
         end
     end
     # println(kwargs, " got ", components)
-    return addNode(diag, operator, name; components = components, child = child, factor = factor, parent = parent, para = para)
+    return addNode!(diag, operator, name, factor; propagator = components, child = child, para = para)
 end
