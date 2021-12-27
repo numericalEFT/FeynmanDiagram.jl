@@ -90,7 +90,9 @@ end
     D = 3
     kF, β, mass2 = 1.919, 0.5, 1.0
 
-    varK = [rand(D) for i = 1:4] #k1, k2, k3, k4
+    # varK = [rand(D) for i = 1:4] #k1, k2, k3, k4
+
+    varK = rand(D, 4)
     varT = [rand() * β, rand() * β]
 
     K0 = [0.0, 0.0, 0.0]
@@ -136,14 +138,15 @@ end
     root = DiagTree.addNode(diag, MUL, :root; child = [ggn, vsum], factor = 1.0)
     push!(diag.root, root)
 
-    printBasisPool(diag)
-    printPropagator(diag)
-    printNodes(diag)
-    DiagTree.showTree(diag, diag.root[1])
-    # DiagTree.printBasisPool(diag, "test.txt")
+    # printBasisPool(diag)
+    # printPropagator(diag)
+    # printNodes(diag)
+    # DiagTree.showTree(diag, diag.root[1])
 
     # #make sure the total number of diagrams are correct
-    # evalPropagator1(type, K, Tidx, varT, factor = 1.0, para = nothing) = 1.0
+
+    evalPropagator1(object, K, varT, diag) = 1.0
+    println(DiagTree.evalNaive(diag, varK, varT, evalPropagator1)[1])
     # @test DiagTree.evalNaive(diag, evalPropagator1, varK, varT) ≈ -2 + 1 * spin
 
     # #more sophisticated test of the weight evaluation

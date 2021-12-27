@@ -12,7 +12,7 @@
 - version::Int128 : the current version
 - excited::Bool   : if set to excited, then the current status needs to be replaced with the new status
 """
-struct CachedPool{O,T}
+mutable struct CachedPool{O,T}
     name::Symbol
     object::Vector{O}
     current::Vector{T}
@@ -73,6 +73,13 @@ function append(pool::CachedPool, object)
 
     id = length(pool.object) + 1
     push!(pool.object, object)
+
+    T = eltype(pool.current)
+    push!(pool.current, zero(T))
+    push!(pool.new, zero(T))
+    push!(pool.version, 1)
+    push!(pool.excited, false)
+
     return id #new momentum
 end
 
@@ -147,9 +154,11 @@ function Base.iterate(pool::LoopPool, state)
     end
 end
 
-function update(pool::LoopPool, variable::AbstractVector = rand(eltype(fieldtype(pool, :current)), pool.N))
-    @assert length(variable) == pool.N
-    T = eltype(fieldtype(pool, :current))
+function update(pool::LoopPool, variable = rand(eltype(pool.current), pool.dim, pool.N))
+    # @assert length(variable) == pool.N
+    T = eltype(pool.current)
+    # println(pool.basis)
+    # println(variable)
     pool.current[:, 1:length(pool)] = T.(variable) * pool.basis[:, 1:length(pool)]
 end
 
@@ -161,6 +170,7 @@ function append(pool::LoopPool, basis::AbstractVector)
     end
 
     pool.basis = hcat(pool.basis, basis)
+    pool.current = hcat(pool.current, rand(eltype(pool.current), pool.dim))
     # pool.size += 1
     # @assert pool.size <= size(pool.basis)[2] "Too many loop basis!. Increase maxSize when creates the LoopPool!"
     # pool.basis[:, pool.size] = basis
