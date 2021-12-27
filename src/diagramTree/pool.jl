@@ -83,17 +83,18 @@ function append(pool::CachedPool, object)
     return id #new momentum
 end
 
-function initialize(pool::CachedPool; eval::Function = nothing, value = 0)
+function updateAll(pool::CachedPool, ignoreCache::Bool, eval::Function; kwargs...)
     N = length(pool.object)
-    pool.version = zeros(Int128, 0)
-    pool.excited = zeros(Bool, 0)
-    T = eltype(fieldtype(pool, :current))
-    if isnothing(eval)
-        pool.current = [T(value) for i in 1:N]
+    if ignoreCache
+        T = eltype(pool.current)
+        for (idx, o) in enumerate(pool.object)
+            pool.current[idx] = T(eval(obj; kwargs...))
+        end
     else
-        pool.current = [T(eval(obj)) for obj in pool.object]
+        error("not implemented!")
+        # pool.version .= 1
+        # pool.excited .= false
     end
-    pool.new = deepcopy(pool.current)
 end
 
 """
