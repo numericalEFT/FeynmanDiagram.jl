@@ -19,7 +19,7 @@
         rootEx = DiagTree.addNode!(diag, DiagTree.ADD, :ex; child = ex, para = (0, 0, 0, 0))
         diag.root = [rootDir, rootEx]
 
-        Parquet.print_tree(ver4)
+        # Parquet.print_tree(ver4)
 
         w1 = DiagTree.evalNaive(diag, varK, varT, ParquetEval.evalPropagator)
 
@@ -37,8 +37,8 @@
         @time ParquetEval.eval(ver4, varK, varT, KinL, KoutL, KinR, KoutR, 3, spin, true)
         w2 = ver4.weight[1]
 
-        Parquet.print_tree(ver4)
-        DiagTree.showTree(diag, diag.root[1])
+        # Parquet.print_tree(ver4)
+        # DiagTree.showTree(diag, diag.root[1])
         # Parquet.showTree(ver4)
         # DiagTree.printBasisPool(diag)
         # DiagTree.printPropagator(diag)
@@ -49,11 +49,10 @@
     end
 
     Parquet = Builder.Parquet
-    # testDiagWeigt(1, [Parquet.T,])
-    # testDiagWeigt(1, [Parquet.U,])
-    # testDiagWeigt(1, [Parquet.S,])
-
-    testDiagWeigt(2, [Parquet.T,])
-    # testDiagWeigt(2, [Parquet.U,])
-    # testDiagWeigt(2, [Parquet.S,])
+    for l = 1:3
+        testDiagWeigt(l, [Parquet.T,])
+        testDiagWeigt(l, [Parquet.U,])
+        testDiagWeigt(l, [Parquet.S,])
+        testDiagWeigt(l, [Parquet.T, Parquet.U, Parquet.S])
+    end
 end

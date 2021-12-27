@@ -9,14 +9,13 @@
 # end
 
 ################## Generate Expression Tree ########################
-function _newDiag(para::Para, KbasisSample)
+function _newDiag(weightType::DataType, para::Para)
     # function LoopPool(name::Symbol, dim::Int, N::Int, type::DataType)
-    loopBasisDim = length(KbasisSample)
+    loopBasisDim = para.internalLoopNum + para.externalLoopNum
     println("LoopBasis Dim derived from LegK: $loopBasisDim")
-    Kpool = DiagTree.LoopPool(:K, para.dim, loopBasisDim, Float64)
+    Kpool = DiagTree.LoopPool(:K, para.loopDim, loopBasisDim, Float64)
     Tbasis = Tuple{Int,Int}
     # Tpool = DiagTree.uncachedPool(Tbasis)
-    weightType = para.weightType
     if para.interactionTauNum == 2
         Gpool = DiagTree.propagatorPool(:Gpool, weightType)
         Vpool = DiagTree.propagatorPool(:Vpool, weightType)
@@ -65,7 +64,7 @@ end
 function node4Tbubble(para, diag, ver4, lver, rver, g0, gc, map)
     #     W[DIR] = Lw[DIR] * Rw[DIR] * SPIN + Lw[DIR] * Rw[EX] + Lw[EX] * Rw[DIR];
     #     W[EX] = Lw[EX] * Rw[EX];
-    Factor = SymFactor[T] / (2π)^para.dim
+    Factor = SymFactor[T] / (2π)^para.loopDim
     Td, Te = [], []
     extT = ver4.Tpair[map.ver]
     addNode!(Td, para.interactionTauNum, :dxd, diag, lver, rver, map, DI, DI, g0, gc, extT, para.spin)
@@ -85,7 +84,7 @@ end
 function node4Ububble(para, diag, ver4, lver, rver, g0, gc, map)
     #     W[EX] = Lw[DIR] * Rw[DIR] * SPIN + Lw[DIR] * Rw[EX] + Lw[EX] * Rw[DIR];
     #     W[DIR] = Lw[EX] * Rw[EX];
-    Factor = SymFactor[U] / (2π)^para.dim
+    Factor = SymFactor[U] / (2π)^para.loopDim
     Ud, Ue = [], []
     extT = ver4.Tpair[map.ver]
     addNode!(Ue, para.interactionTauNum, :dxd, diag, lver, rver, map, DI, DI, g0, gc, extT, para.spin)
@@ -105,7 +104,7 @@ end
 function node4Sbubble(para, diag, ver4, lver, rver, g0, gc, map)
     #     W[DIR] = Lw[DIR] * Rw[EX] + Lw[EX] * Rw[DIR];
     #     W[EX] = Lw[DIR] * Rw[DIR] + Lw[EX] * Rw[EX];
-    Factor = SymFactor[S] / (2π)^para.dim
+    Factor = SymFactor[S] / (2π)^para.loopDim
     Sd, Se = [], []
     extT = ver4.Tpair[map.ver]
     addNode!(Sd, para.interactionTauNum, :dxe, diag, lver, rver, map, DI, EX, g0, gc, extT)
@@ -119,7 +118,7 @@ function node4Sbubble(para, diag, ver4, lver, rver, g0, gc, map)
 end
 
 # bubbletoDiagTree!(ver4Nodes, para, diag, ver4, b, legK, Kidx, Tidx, evalK, evalT, factor)
-function bubbletoDiagTree!(ver4Nodes, para, diag, ver4, bubble, legK, Kidx::Int, factor = 1.0)
+function bubbletoDiagTree!(weightType::DataType, ver4Nodes, para, diag, ver4, bubble, legK, Kidx::Int, factor = 1.0)
     # KinL, KoutL, KinR, KoutR = legK[1], legK[2], legK[3], legK[4]
     # @assert KinL + KinR ≈ KoutL + KoutR
     KinL, KoutL, KinR = legK[1], legK[2], legK[3]
@@ -152,8 +151,8 @@ function bubbletoDiagTree!(ver4Nodes, para, diag, ver4, bubble, legK, Kidx::Int,
         LLegK = [KinL, Ks, KinR, K]
         RLegK = [K, KoutL, Ks, KoutR]
     end
-    ver4toDiagTree(para, LLegK, Llopidx, Lver.Tidx, Lver.loopNum, factor, diag, Lver)
-    ver4toDiagTree(para, RLegK, Rlopidx, Rver.Tidx, Rver.loopNum, factor, diag, Rver)
+    ver4toDiagTree(weightType, para, LLegK, Llopidx, Lver.Tidx, Lver.loopNum, factor, diag, Lver)
+    ver4toDiagTree(weightType, para, RLegK, Rlopidx, Rver.Tidx, Rver.loopNum, factor, diag, Rver)
 
     rN = length(b.Rver.weight)
     for (l, Lw) in enumerate(b.Lver.weight)
@@ -182,13 +181,19 @@ function bubbletoDiagTree!(ver4Nodes, para, diag, ver4, bubble, legK, Kidx::Int,
     return diag
 end
 
-function ver4toDiagTree(para::Para, legK, Kidx::Int, Tidx::Int, loopNum = para.loopNum, factor = 1.0,
-    diag = _newDiag(para, legK[1]), ver4 = Ver4{SVector{2,Int}}(para, loopNum, Tidx))
+function ver4toDiagTree(weightType::DataType, para::Para, legK, Kidx::Int = para.externalLoopNum + 1, Tidx::Int = 1, loopNum = para.internalLoopNum, factor = 1.0,
+    diag = _newDiag(weightType, para), ver4 = Ver4{SVector{2,Int}}(para, loopNum, Tidx))
 
     # KinL, KoutL, KinR, KoutR = legK[1], legK[2], legK[3], legK[4]
     # @assert KinL + KinR ≈ KoutL + KoutR
     KinL, KoutL, KinR = legK[1], legK[2], legK[3]
     KoutR = KinL + KinR - KoutL
+    @assert length(KinL) == length(KoutL) == length(KinR) == totalLoopNum(para)
+
+    @assert 0 <= loopNum <= para.internalLoopNum "internal LoopNum $loopNum is not in [0, $(para.internalLoopNum)]"
+    if loopNum > 0
+        @assert Kidx <= totalLoopNum(para) "Kidx $Kidx can't be larger than total loop number $(totalLoopNum(para))"
+    end
 
     qd = KinL - KoutL
     qe = KinR - KoutL
@@ -223,7 +228,7 @@ function ver4toDiagTree(para::Para, legK, Kidx::Int, Tidx::Int, loopNum = para.l
     ver4Nodes = [[] for w in ver4.weight]
 
     for b in ver4.bubble
-        bubbletoDiagTree!(ver4Nodes, para, diag, ver4, b, legK, Kidx, factor)
+        bubbletoDiagTree!(weightType, ver4Nodes, para, diag, ver4, b, legK, Kidx, factor)
     end
 
     function split(weightList)
@@ -262,10 +267,6 @@ end
 - spin         : 1 for spinless particle, 2 for spin-1/2 particle
 - Tidx         : the first τ variable index. It will be the τ variable of the left incoming electron for all 4-vertex diagrams
 """
-function build(weightType::DataType, channel, loopNum::Int, legK, Kdim::Int, Kidx::Int, interactionTauNum, spin, Tidx::Int = 1)
-    KinL, KoutL, KinR = legK[1], legK[2], legK[3]
-    @assert length(KinL) == length(KoutL) == length(KinR)
-    loopBasisDim = length(KinL)
-    para = Para(weightType, Kdim, loopNum, loopBasisDim, channel, interactionTauNum, spin)
-    return ver4toDiagTree(para, legK, Kidx, Tidx, para.loopNum)
+function build(weightType::DataType, para::Para, LegK)
+    return ver4toDiagTree(weightType, para, LegK)
 end
