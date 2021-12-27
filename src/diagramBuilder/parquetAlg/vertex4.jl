@@ -6,16 +6,27 @@
 
 
 """
-Para(chan, interactionTauNum)
+    struct Para
 
-Parameters to generate diagrams using Parquet algorithm
+    Parameters to generate diagrams using Parquet algorithm
 
 #Arguments
 
 - `chan`: list of channels of sub-vertices
 - `interactionTauNum`: τ degrees of freedom of the bare interaction
+# Arguments:
+- weightType   : type of the weight of the propagators and the vertex functions
+- dim          : spatial dimension of the momentum variable
+- loopNum      : number of internal loops
+- loopBasisNum : number of independent loops
+- chan         : [Parquet.T, Parquet.U, Parquet.S, ...] vector of channels
+- spin         : 1 for spinless particle, 2 for spin-1/2 particle
+- F            : channels of left sub-vertex for the particle-hole and particle-hole-exchange bubbles
+- V            : channels of left sub-vertex for the particle-particle bubble
+- interactionTauNum : how many τ variables in the interaction function (1 for instantaneous interactoion)
 """
 struct Para
+    weightType::DataType
     dim::Int
     loopNum::Int
     loopBasisDim::Int
@@ -27,9 +38,8 @@ struct Para
     # greenType::Tuple{DataType,DataType}
     # wType::Tuple{DataType,DataType}
     # nodeType::Tuple{DataType,DataType}
-    weightType::DataType
 
-    function Para(dim, loopNum, loopBasisDim, chan, interactionTauNum, weightType::DataType, spin = 1)
+    function Para(weightType::DataType, dim, loopNum, loopBasisDim, chan, interactionTauNum, spin = 1)
 
         for tnum in interactionTauNum
             @assert tnum == 1 || tnum == 2 || tnum == 4
@@ -41,7 +51,7 @@ struct Para
         F = intersect(chan, Fchan)
         V = intersect(chan, Vchan)
 
-        return new(dim, loopNum, loopBasisDim, chan, spin, F, V, interactionTauNum, weightType)
+        return new(weightType, dim, loopNum, loopBasisDim, chan, spin, F, V, interactionTauNum)
     end
 end
 
@@ -161,7 +171,7 @@ end
 #Arguments
 - `para`: parameters
 - `loopNum`: momentum loop degrees of freedom of the 4-vertex diagrams
-- `tidx`: the first τ variable index. It is also the τ variable of the left incoming electron for all 4-vertex diagrams
+- `tidx`: the first τ variable index. It will be the τ variable of the left incoming electron for all 4-vertex diagrams
 - `chan`: list of channels of the current 4-vertex. If not specified, it is set to be `para.chan`
 - `interactionTauNum`: list of possible τ degrees of freedom of the bare interaction 0, 2, or 4
 - `level`: level in the diagram tree
