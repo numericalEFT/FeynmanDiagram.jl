@@ -17,7 +17,8 @@ Modules = [ExpressionTree]
 ```@contents
 Pages = [
     "lib/parquet.md",
+    "lib/builder.md",
     "lib/diagtree.md"
 ]
-Depth = 1
+Depth = 2
 ```

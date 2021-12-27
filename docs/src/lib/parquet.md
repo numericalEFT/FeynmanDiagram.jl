@@ -1,5 +1,5 @@
-# Parquet algorithm to generate diagram tree
+# Diagram Tree Builder based on the Parquet Algorithm
 
 ```@autodocs
-Modules = [ExpressionTree.Parquet]
+Modules = [ExpressionTree.Builder.Parquet]
 ```
