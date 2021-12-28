@@ -1,23 +1,30 @@
 using ExpressionTree
 using Documenter
 
-DocMeta.setdocmeta!(ExpressionTree, :DocTestSetup, :(using ExpressionTree); recursive=true)
+DocMeta.setdocmeta!(ExpressionTree, :DocTestSetup, :(using ExpressionTree); recursive = true)
 
 makedocs(;
-    modules=[ExpressionTree],
-    authors="Pengcheng Hou",
-    repo="https://github.com/houpc/ExpressionTree.jl/blob/{commit}{path}#{line}",
-    sitename="ExpressionTree.jl",
-    format=Documenter.HTML(;
-        prettyurls=get(ENV, "CI", "false") == "true",
-        canonical="https://houpc.github.io/ExpressionTree.jl",
-        assets=String[],
+    modules = [ExpressionTree],
+    authors = "Kun Chen, Pengcheng Hou",
+    repo = "https://github.com/numericalEFT/ExpressionTree.jl/blob/{commit}{path}#{line}",
+    sitename = "ExpressionTree.jl",
+    format = Documenter.HTML(;
+        prettyurls = get(ENV, "CI", "false") == "true",
+        canonical = "https://numericaleft.github.io/ExpressionTree.jl",
+        assets = String[]
     ),
-    pages=[
+    pages = [
         "Home" => "index.md",
-    ],
+        "Manual" => [
+        ],
+        "API reference" => Any[
+            "lib/diagtree.md",
+            "lib/builder.md",
+            "lib/parquet.md",
+        ]
+    ]
 )
 
 deploydocs(;
-    repo="github.com/numericalEFT/ExpressionTree.jl",
+    repo = "github.com/numericalEFT/ExpressionTree.jl"
 )
