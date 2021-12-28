@@ -34,7 +34,7 @@ function newickVer4(ver4::Ver4)
         # if ver4.loopNum <= 1
         for (ti, T) in enumerate(ver4.Tpair)
             if ti <= 5
-                s *= "⟨$(T[1])-$(T[2])-$(T[3])-$(T[4])⟩" 
+                s *= "⟨$(T[1])-$(T[2])-$(T[3])-$(T[4])⟩"
             else
                 s *= "…"
                 break
@@ -71,7 +71,7 @@ end
 - `verbose=0`: the amount of information to show
 - `depth=999`: deepest level of the diagram tree to show
 """
-function showTree(ver4, para::Para; verbose=0, depth=999)
+function showTree(ver4; verbose = 0, depth = 999)
 
     # pushfirst!(PyVector(pyimport("sys")."path"), @__DIR__) #comment this line if no need to load local python module
     ete = pyimport("ete3")
@@ -92,7 +92,7 @@ function showTree(ver4, para::Para; verbose=0, depth=999)
         # if ver4.loopNum <= 1
         for (ti, T) in enumerate(ver4.Tpair)
             if ti <= MaxT
-                s *= "($(T[1]),$(T[2]),$(T[3]),$(T[4]))" 
+                s *= "($(T[1]),$(T[2]),$(T[3]),$(T[4]))"
             else
                 s *= "..."
                 break
@@ -103,29 +103,29 @@ function showTree(ver4, para::Para; verbose=0, depth=999)
     end
 
 
-    function treeview(ver4, t=nothing)
+    function treeview(ver4, t = nothing)
         if isnothing(t)
-            t = ete.Tree(name=" ")
+            t = ete.Tree(name = " ")
         end
-        
+
         if ver4.loopNum == 0 || ver4.level > depth
-            nt = t.add_child(name=tpairETE(ver4, depth))
+            nt = t.add_child(name = tpairETE(ver4, depth))
             return t
         else
             # prefix = "$(ver4.id): $(ver4.loopNum) lp, $(length(ver4.Tpair)) elem"
             # nt = t.add_child(name=prefix * ", ⨁")
-            nt = t.add_child(name=tpairETE(ver4, depth))
-            name_face = ete.TextFace(nt.name, fgcolor="black", fsize=10)
-            nt.add_face(name_face, column=0, position="branch-top")
+            nt = t.add_child(name = tpairETE(ver4, depth))
+            name_face = ete.TextFace(nt.name, fgcolor = "black", fsize = 10)
+            nt.add_face(name_face, column = 0, position = "branch-top")
         end
 
         for bub in ver4.bubble
             chantype = ChanName[bub.chan]
-            nnt = nt.add_child(name="$(bub.id): $chantype $(bub.Lver.loopNum)Ⓧ$(bub.Rver.loopNum)")
-            
-            name_face = ete.TextFace(nnt.name, fgcolor="black", fsize=10)
-            nnt.add_face(name_face, column=0, position="branch-top")
-            
+            nnt = nt.add_child(name = "$(bub.id): $chantype $(bub.Lver.loopNum)Ⓧ$(bub.Rver.loopNum)")
+
+            name_face = ete.TextFace(nnt.name, fgcolor = "black", fsize = 10)
+            nnt.add_face(name_face, column = 0, position = "branch-top")
+
             treeview(bub.Lver, nnt)
             treeview(bub.Rver, nnt)
         end
@@ -134,7 +134,7 @@ function showTree(ver4, para::Para; verbose=0, depth=999)
     end
 
     t = treeview(ver4)
-        # style = ete.NodeStyle()
+    # style = ete.NodeStyle()
     # style["bgcolor"] = "Khaki"
     # t.set_style(style)
 
@@ -148,8 +148,8 @@ function showTree(ver4, para::Para; verbose=0, depth=999)
 
     ####### show tree in an arc  #############
     # ts.mode = "c"
-# ts.arc_start = -180
+    # ts.arc_start = -180
     # ts.arc_span = 180
     # t.write(outfile="/home/kun/test.txt", format=8)
-    t.show(tree_style=ts)
+    t.show(tree_style = ts)
 end
