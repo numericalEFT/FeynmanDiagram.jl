@@ -1,4 +1,7 @@
 module Builder
+using Parameters
+
+include("parameter.jl")
 
 using ..DiagTree
 
