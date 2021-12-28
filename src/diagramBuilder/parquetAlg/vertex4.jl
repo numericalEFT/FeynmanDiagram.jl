@@ -92,7 +92,7 @@ struct Bubble{_Ver4,W} # template Bubble to avoid mutually recursive struct
     Rver::_Ver4
     map::Vector{IdxMap}
 
-    function Bubble{_Ver4,W}(ver4::_Ver4, chan::Int, oL::Int, para::Para, level::Int, _id::Vector{Int}) where {_Ver4,W}
+    function Bubble{_Ver4,W}(ver4::_Ver4, chan::Int, F, V, oL::Int, para::Para, level::Int, _id::Vector{Int}) where {_Ver4,W}
         # @assert chan in para.chan "$chan isn't a bubble channels!"
         @assert oL < ver4.loopNum "LVer loopNum must be smaller than the ver4 loopNum"
 
@@ -105,18 +105,18 @@ struct Bubble{_Ver4,W} # template Bubble to avoid mutually recursive struct
         RTidx = LTidx + (oL + 1) * maxTauNum   # the first τ index of the right sub-vertex
 
         if chan == T || chan == U
-            LsubVer = para.F
+            LsubVer = F
             RsubVer = para.chan
         elseif chan == S
-            LsubVer = para.V
+            LsubVer = V
             RsubVer = para.chan
         else
             error("chan $chan isn't implemented!")
         end
 
         # println("left ver chan: ", LsubVer, ", loop=", oL)
-        Lver = _Ver4{W}(para, oL, LTidx; chan = LsubVer, level = level + 1, id = _id)
-        Rver = _Ver4{W}(para, oR, RTidx; chan = RsubVer, level = level + 1, id = _id)
+        Lver = _Ver4{W}(para, oL, LTidx; chan = LsubVer, F = para.F, V = para.V, level = level + 1, id = _id)
+        Rver = _Ver4{W}(para, oR, RTidx; chan = RsubVer, F = para.F, V = para.V, level = level + 1, id = _id)
 
         @assert Lver.Tidx == ver4.Tidx "Lver Tidx must be equal to vertex4 Tidx! LoopNum: $(ver4.loopNum), LverLoopNum: $(Lver.loopNum), chan: $chan"
 
@@ -162,7 +162,7 @@ struct Bubble{_Ver4,W} # template Bubble to avoid mutually recursive struct
 end
 
 """
-    function Ver4{W}(para::Para, loopNum, tidx = 1; chan = para.chan, level = 1, id = [1,]) where {W}
+    function Ver4{W}(para::Para, loopNum = para.internalLoopNum, tidx = 1; chan = para.chan, F = para.F, V = para.V, level = 1, id = [1,]) where {W}
 
     Generate 4-vertex diagrams using Parquet Algorithm
 
@@ -171,6 +171,8 @@ end
 - `loopNum`: momentum loop degrees of freedom of the 4-vertex diagrams
 - `tidx`: the first τ variable index. It will be the τ variable of the left incoming electron for all 4-vertex diagrams
 - `chan`: list of channels of the current 4-vertex. If not specified, it is set to be `para.chan`
+- `F`   : channels of left sub-vertex for the particle-hole and particle-hole-exchange bubbles, only take effect for the outermost bubble
+- `V`   : channels of left sub-vertex for the particle-particle bubble, only take effect for the outermost bubble
 - `interactionTauNum`: list of possible τ degrees of freedom of the bare interaction 0, 2, or 4
 - `level`: level in the diagram tree
 - `id`: the first element will be used as the id of the Ver4. All nodes in the tree will be labeled in preorder depth-first search
@@ -202,7 +204,7 @@ struct Ver4{W}
     Tpair::Vector{Tuple{Int,Int,Int,Int}}
     weight::Vector{W}
 
-    function Ver4{W}(para::Para, loopNum = para.internalLoopNum, tidx = 1; chan = para.chan, level = 1, id = [1,]) where {W}
+    function Ver4{W}(para::Para, loopNum = para.internalLoopNum, tidx = 1; chan = para.chan, F = para.F, V = para.V, level = 1, id = [1,]) where {W}
         g = @SVector [Green() for i = 1:16]
         ver4 = new{W}(id[1], level, loopNum, chan, para.interactionTauNum, tidx, g, [], [], [])
         id[1] += 1
@@ -228,7 +230,7 @@ struct Ver4{W}
         else # loopNum>0
             for c in chan
                 for ol = 0:loopNum-1
-                    bubble = Bubble{Ver4,W}(ver4, c, ol, para, level, id)
+                    bubble = Bubble{Ver4,W}(ver4, c, F, V, ol, para, level, id)
                     if length(bubble.map) > 0  # if zero, bubble diagram doesn't exist
                         push!(ver4.bubble, bubble)
                     end

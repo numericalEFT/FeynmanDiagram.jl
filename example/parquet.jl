@@ -11,7 +11,7 @@ chan = [Parquet.T, Parquet.U, Parquet.S]
 F = [Parquet.U, Parquet.S]
 V = [Parquet.T, Parquet.U]
 interactionTauNum = 1
-loopNum = 1
+loopNum = 3
 spin = 2
 Kdim = 3
 
