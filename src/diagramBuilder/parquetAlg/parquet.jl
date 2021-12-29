@@ -3,6 +3,14 @@ using StaticArrays, PyCall
 using AbstractTrees
 using ..DiagTree
 
+import ..Filter
+import ..Wirreducible  #remove all polarization subdiagrams
+import ..Girreducible  #remove all self-energy inseration
+import ..NoHatree
+import ..NoFock
+import ..NoBubble  # true to remove all bubble subdiagram
+import ..Proper  #ver4, ver3, and polarization diagrams may require to be irreducible along the transfer momentum/frequency
+
 const DI, EX = 1, 2
 const INL, OUTL, INR, OUTR = 1, 2, 3, 4
 # orginal diagrams T, U, S; particle-hole counterterm Ts, Us; and their counterterm Tc, Uc, Sc, Tsc, Usc 
@@ -19,5 +27,6 @@ const Allchan = [I, T, U, S, Ts, Us, Ic, Tc, Uc, Sc, Tsc, Usc]
 include("vertex4.jl")
 include("eval.jl")
 include("io.jl")
+include("filter.jl")
 include("ver4toDiagTree.jl")
 end

@@ -19,7 +19,8 @@ para = Builder.GenericPara(
     totalTauNum = 2,
     spin = 2,
     interactionTauNum = 1,
-    weightType = Float64
+    weightType = Float64,
+    filter = [Builder.NoBubble,]
 )
 
 K0 = zeros(para.totalLoopNum)

@@ -1,9 +1,9 @@
 @enum Filter begin
     Wirreducible  #remove all polarization subdiagrams
     Girreducible  #remove all self-energy inseration
-    noHatree
-    noFock
-    noBubble  # true to remove all bubble subdiagram
+    NoHatree
+    NoFock
+    NoBubble  # true to remove all bubble subdiagram
     Proper  #ver4, ver3, and polarization diagrams may require to be irreducible along the transfer momentum/frequency
 end
 
@@ -30,6 +30,7 @@ end
     firstTauIdx::Int = 1
 
     filter::Vector{Filter} = []
+    transferLoop = [] #Set it to be the transfer momentum/frequency if you want to check the diagrams are proper or not
 end
 
 function totalTauNum(para, diagType::Symbol = :none)

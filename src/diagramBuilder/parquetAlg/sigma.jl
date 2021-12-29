@@ -1,11 +1,7 @@
-function buildSigma(weightType::DataType, internalloopNum, loopDim, externalLoop, Kidx, interactionTauNum, spin; chan=[I, U, S, T], Fchan=[I, U, S], Vchan=[I, T, U])
-    totalLoopNum = length(externalLoop)
-    @assert totalLoopNum>=internalloopNum+1
+function buildSigma(para, externLoop; F=[I, U, S], V=[I, T, U], All=union(F, V), diag=newDiagTree(para))
+    @assert para.innerLoopNum>=1
 
-    @assert loopNum >= 2
-    # if isnothing(diag)
-    # end
-    if loopNum == 2
+    if para.innerLoopNum == 1
         # Hatree-Fock diagram
     else
         KinL, KoutR = deepcopy(externalLoop), deepcopy(externalLoop)
