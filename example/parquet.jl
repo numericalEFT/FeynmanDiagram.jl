@@ -21,25 +21,23 @@ para = Builder.GenericPara(
     weightType = Float64
 )
 
-K0 = zeros(2 + para.totalLoopNum)
+K0 = zeros(para.totalLoopNum)
 KinL, KoutL, KinR, KoutR = deepcopy(K0), deepcopy(K0), deepcopy(K0), deepcopy(K0)
 KinL[1] = KoutL[1] = 1
 KinR[2] = KoutR[2] = 1
 legK = [KinL, KoutL, KinR, KoutR]
 
-varK = [rand(para.loopDim) for i in 1:2+para.totalLoopNum]
-varT = [rand() for i in 1:2*(para.totalLoopNum+1)]
+varK = [rand(para.loopDim) for i in 1:para.totalLoopNum]
+varT = [rand() for i in 1:Builder.totalTauNum(para, :Ver4)]
 evalK(basis) = sum([basis[i] * varK[i] for i in 1:para.totalLoopNum])
 evalT(Tidx) = varT[Tidx]
 
+diag, ver4, dir, ex = Parquet.buildVer4(para, legK, chan, F, V)
+rootDir = DiagTree.addNode!(diag, DiagTree.ADD, :dir; child = dir, para = (0, 0, 0, 0))
+rootEx = DiagTree.addNode!(diag, DiagTree.ADD, :ex; child = ex, para = (0, 0, 0, 0))
+diag.root = [rootDir, rootEx]
 
-# diag, ver4, dir, ex = Parquet.build(Float64, para, legK)
-# rootDir = DiagTree.addNode!(diag, DiagTree.ADD, :dir; child = dir, para = (0, 0, 0, 0))
-# rootEx = DiagTree.addNode!(diag, DiagTree.ADD, :ex; child = ex, para = (0, 0, 0, 0))
-# diag.root = [rootDir, rootEx]
-
-# DiagTree.showTree(diag, rootDir)
-# print_tree(ver4)
+DiagTree.showTree(diag, rootDir)
 
 ##################### lower level subroutines  #######################################
 ver4 = Parquet.Ver4{Float64}(para, chan, F, V)
@@ -59,4 +57,4 @@ println("Iterate the tree use the AbstractTrees interface: ")
 # close(io)
 
 ########## use ete3 package to visualize tree
-Parquet.showTree(ver4, verbose = 1, depth = 3)  # visualize tree using python3 package ete3
+# Parquet.showTree(ver4, verbose = 1, depth = 3)  # visualize tree using python3 package ete3

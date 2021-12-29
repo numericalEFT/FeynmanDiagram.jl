@@ -45,7 +45,7 @@ end
 - G0::Green : shared Green's function index
 - Gx::Green : channel specific Green's function index
 """
-struct IdxMap{_Ver4}
+mutable struct IdxMap{_Ver4}
     l::_Ver4 #left vertex 
     r::_Ver4 #right vertex
     v::_Ver4 #composte vertex
@@ -54,8 +54,9 @@ struct IdxMap{_Ver4}
     vidx::Int # composite vertex index
     G0::Green # shared Green's function index
     Gx::Green # channel specific Green's function index
+    node::Any # useful for constructing DiagTree
     function IdxMap(l::V, r::V, v::V, lidx, ridx, vidx, G0::Green, Gx::Green) where {V}
-        return new{V}(l, r, v, lidx, ridx, vidx, G0, Gx)
+        return new{V}(l, r, v, lidx, ridx, vidx, G0, Gx, nothing)
     end
 end
 
