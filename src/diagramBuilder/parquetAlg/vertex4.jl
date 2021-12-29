@@ -1,8 +1,19 @@
-struct Green
-    Tpair::Vector{Tuple{Int,Int}}
-    weight::Vector{Float64}
-    function Green()
-        return new([], [])
+# struct Green
+#     Tpair::Vector{Tuple{Int,Int}}
+#     weight::Vector{Float64}
+#     function Green()
+#         return new([], [])
+#     end
+# end
+
+mutable struct Green
+    Tpair::Tuple{Int,Int}
+    weight::Float64
+    function Green(inT, outT)
+        return new((inT, outT), 0.0)
+    end
+    function Green(tpair::Tuple{Int,Int})
+        return new(tpair, 0.0)
     end
 end
 
@@ -19,26 +30,42 @@ function addTidx(obj, _Tidx)
 end
 
 """
-   struct IdxMap(lv, rv, G0, Gx, ver)
+    struct IdxMap{_Ver4}
 
-    Map left vertex Tpair[lv], right vertex Tpair[rv], the shared Green's function G0[G0] and the channel specific Green's function Gx[Gx] to the top level 4-vertex Tpair[ver]
+    Map left vertex Tpair[lidx], right vertex Tpair[ridx], the shared Green's function G0 and the channel specific Green's function Gx to the top level 4-vertex Tpair[vidx]
+
+# Arguments
+- l::_Ver4 : left vertex 
+- r::_Ver4 : right vertex
+- v::_Ver4 : composte vertex
+- lidx::Int : left sub-vertex index
+- ridx::Int : right sub-vertex index
+- vidx::Int : composite vertex index
+- G0::Green : shared Green's function index
+- Gx::Green : channel specific Green's function index
 """
-struct IdxMap
-    lv::Int # left sub-vertex index
-    rv::Int # right sub-vertex index
-    G0::Int # shared Green's function index
-    Gx::Int # channel specific Green's function index
-    ver::Int # composite vertex index
+struct IdxMap{_Ver4}
+    l::_Ver4 #left vertex 
+    r::_Ver4 #right vertex
+    v::_Ver4 #composte vertex
+    lidx::Int # left sub-vertex index
+    ridx::Int # right sub-vertex index
+    vidx::Int # composite vertex index
+    G0::Green # shared Green's function index
+    Gx::Green # channel specific Green's function index
+    function IdxMap(l::V, r::V, v::V, lidx, ridx, vidx, G0::Green, Gx::Green) where {V}
+        return new{V}(l, r, v, lidx, ridx, vidx, G0, Gx)
+    end
 end
 
-struct Bubble{_Ver4,W} # template Bubble to avoid mutually recursive struct
+struct Bubble{_Ver4} # template Bubble to avoid mutually recursive struct
     id::Int
     chan::Channel
     Lver::_Ver4
     Rver::_Ver4
-    map::Vector{IdxMap}
+    map::Vector{IdxMap{_Ver4}}
 
-    function Bubble{_Ver4,W}(ver4::_Ver4, chan::Channel, oL::Int, level::Int, _id::Vector{Int}) where {_Ver4,W}
+    function Bubble(ver4::_Ver4, chan::Channel, oL::Int, level::Int, _id::Vector{Int}) where {_Ver4}
         # @assert chan in para.chan "$chan isn't a bubble channels!"
         @assert oL < ver4.loopNum "LVer loopNum must be smaller than the ver4 loopNum"
 
@@ -63,11 +90,12 @@ struct Bubble{_Ver4,W} # template Bubble to avoid mutually recursive struct
         end
 
         # println("left ver chan: ", LsubVer, ", loop=", oL)
-        Lver = _Ver4{W}(ver4.para, LverChan, ver4.F, ver4.V, ver4.All;
+        # W = eltype(ver4.weight)
+        Lver = _Ver4(ver4.para, LverChan, ver4.F, ver4.V, ver4.All;
             loopNum = oL, loopidxOffset = lLpidxOffset, tidxOffset = LTidx,
             level = level + 1, id = _id)
 
-        Rver = _Ver4{W}(ver4.para, RverChan, ver4.F, ver4.V, ver4.All;
+        Rver = _Ver4(ver4.para, RverChan, ver4.F, ver4.V, ver4.All;
             loopNum = oR, loopidxOffset = rLpidxOffset, tidxOffset = RTidx,
             level = level + 1, id = _id)
 
@@ -75,12 +103,9 @@ struct Bubble{_Ver4,W} # template Bubble to avoid mutually recursive struct
 
         ############## construct IdxMap ########################################
         map = []
-        G = ver4.G
         for (lt, LvT) in enumerate(Lver.Tpair)
             for (rt, RvT) in enumerate(Rver.Tpair)
-                GT0 = (LvT[OUTR], RvT[INL])
-                GT0idx = addTidx(G[1], GT0)
-                GTxidx, VerTidx = 0, 0
+                VerTidx = 0
 
                 if chan == T
                     VerT = (LvT[INL], LvT[OUTL], RvT[INR], RvT[OUTR])
@@ -96,7 +121,11 @@ struct Bubble{_Ver4,W} # template Bubble to avoid mutually recursive struct
                 end
 
                 VerTidx = addTidx(ver4, VerT)
-                GTxidx = addTidx(G[Int(chan)], GTx)
+                Gx = Green(GTx)
+                push!(ver4.G, Gx)
+
+                GT0 = (LvT[OUTR], RvT[INL])
+                G0 = Green(GT0)
 
                 for tpair in ver4.Tpair
                     @assert tpair[1] == ver4.TidxOffset "InL Tidx must be the same for all Tpairs in the vertex4"
@@ -105,12 +134,14 @@ struct Bubble{_Ver4,W} # template Bubble to avoid mutually recursive struct
                 ###### test if the internal + exteranl variables is equal to the total 8 variables of the left and right sub-vertices ############
                 Total1 = vcat(collect(LvT), collect(RvT))
                 Total2 = vcat(collect(GT0), collect(GTx), collect(VerT))
+                # println(Total1)
+                # println(Total2)
                 @assert compare(Total1, Total2) "chan $(chan): G0=$GT0, Gx=$GTx, external=$VerT don't match with Lver4 $LvT and Rver4 $RvT"
 
-                push!(map, IdxMap(lt, rt, GT0idx, GTxidx, VerTidx))
+                push!(map, IdxMap(Lver, Rver, ver4, lt, rt, VerTidx, G0, Gx))
             end
         end
-        return new(idbub, chan, Lver, Rver, map)
+        return new{_Ver4}(idbub, chan, Lver, Rver, map)
     end
 end
 
@@ -160,8 +191,9 @@ struct Ver4{W}
     TidxOffset::Int # offset of the Tidx from the tau index of the left most incoming leg
 
     ######  components of vertex  ##########################
-    G::SVector{16,Green}  # large enough to host all Green's function
-    bubble::Vector{Bubble{Ver4}}
+    # G::SVector{16,Green}  # large enough to host all Green's function
+    G::Vector{Green}
+    bubble::Vector{Bubble{Ver4{W}}}
 
     ####### weight and tau table of the vertex  ###############
     Tpair::Vector{Tuple{Int,Int,Int,Int}}
@@ -185,8 +217,8 @@ struct Ver4{W}
         @assert (T in Fouter) == false "F vertex is particle-hole irreducible, so that T channel is not allowed in F"
         @assert (S in Vouter) == false "V vertex is particle-particle irreducible, so that S channel is not allowed in V"
 
-        g = @SVector [Green() for i = 1:16]
-        ver4 = new{W}(para, chan, F, V, All, Fouter, Vouter, Allouter, id[1], level, loopNum, loopidxOffset, tidxOffset, g, [], [], [])
+        # g = @SVector [Green() for i = 1:16]
+        ver4 = new{W}(para, chan, F, V, All, Fouter, Vouter, Allouter, id[1], level, loopNum, loopidxOffset, tidxOffset, [], [], [], [])
         id[1] += 1
         @assert loopNum >= 0
 
@@ -211,7 +243,7 @@ struct Ver4{W}
         else # loopNum>0
             for c in chan
                 for ol = 0:loopNum-1
-                    bubble = Bubble{Ver4,W}(ver4, c, ol, level, id)
+                    bubble = Bubble(ver4, c, ol, level, id)
                     if length(bubble.map) > 0  # if zero, bubble diagram doesn't exist
                         push!(ver4.bubble, bubble)
                     end
@@ -246,12 +278,12 @@ function test(ver4)
     G = ver4.G
     for bub in ver4.bubble
         Lver, Rver = bub.Lver, bub.Rver
-        @assert Rver.loopidxOffset + Rver.loopNum == ver4.loopNum
+        @assert Rver.loopidxOffset + Rver.loopNum == ver4.loopidxOffset + ver4.loopNum "Rver loopidx offset = $(Rver.loopidxOffset) + loopNum = $(Rver.loopNum) is not equal to ver4 loopidx offset = $(ver4.loopidxOffset) + loopNum = $(ver4.loopNum)"
         @assert Lver.loopNum + Rver.loopNum + 1 == ver4.loopNum
         for map in bub.map
-            LverT, RverT = collect(Lver.Tpair[map.lv]), collect(Rver.Tpair[map.rv]) # 8 τ variables relevant for this bubble
-            G1T, GxT = collect(G[1].Tpair[map.G0]), collect(G[Int(bub.chan)].Tpair[map.Gx]) # 4 internal variables
-            ExtT = collect(ver4.Tpair[map.ver]) # 4 external variables
+            LverT, RverT = collect(Lver.Tpair[map.lidx]), collect(Rver.Tpair[map.ridx]) # 8 τ variables relevant for this bubble
+            G1T, GxT = collect(map.G0.Tpair), collect(map.Gx.Tpair) # 4 internal variables
+            ExtT = collect(ver4.Tpair[map.vidx]) # 4 external variables
             @assert compare(vcat(G1T, GxT, ExtT), vcat(LverT, RverT)) "chan $(bub.chan): G1=$G1T, Gx=$GxT, external=$ExtT don't match with Lver4 $LverT and Rver4 $RverT"
         end
     end
@@ -299,7 +331,7 @@ function iterate(ver4::Ver4{W}) where {W}
     end
 end
 
-function iterate(bub::Bubble{Ver4{W},W}) where {W}
+function iterate(bub::Bubble)
     return (bub.Lver, false)
 end
 
@@ -311,7 +343,7 @@ function iterate(ver4::Ver4{W}, state) where {W}
     end
 end
 
-function iterate(bub::Bubble{Ver4{W},W}, state::Bool) where {W}
+function iterate(bub::Bubble, state::Bool)
     state && return nothing
     return (bub.Rver, true)
 end
@@ -319,8 +351,8 @@ end
 Base.IteratorSize(::Type{Ver4{W}}) where {W} = Base.SizeUnknown()
 Base.eltype(::Type{Ver4{W}}) where {W} = Ver4{W}
 
-Base.IteratorSize(::Type{Bubble{Ver4{W},W}}) where {W} = Base.SizeUnknown()
-Base.eltype(::Type{Bubble{Ver4{W},W}}) where {W} = Bubble{Ver4{W},W}
+Base.IteratorSize(::Type{Bubble{Ver4{W}}}) where {W} = Base.SizeUnknown()
+Base.eltype(::Type{Bubble{Ver4{W}}}) where {W} = Bubble{Ver4{W}}
 
 AbstractTrees.printnode(io::IO, ver4::Ver4) = print(io, tpair(ver4))
 AbstractTrees.printnode(io::IO, bub::Bubble) = print(io, "\u001b[32m$(bub.id): $(bub.chan) $(bub.Lver.loopNum)Ⓧ $(bub.Rver.loopNum)\u001b[0m")

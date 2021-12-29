@@ -11,15 +11,10 @@ chan = [Parquet.T, Parquet.U, Parquet.S]
 F = [Parquet.U, Parquet.S]
 V = [Parquet.T, Parquet.U]
 
-interactionTauNum = 1
-loopNum = 3
-spin = 2
-Kdim = 3
-
 # para = Parquet.Para(chan, F, V, loopNum, 2, Kdim, interactionTauNum, spin)
 para = Builder.GenericPara(
     loopDim = 3,
-    internalLoopNum = 1,
+    internalLoopNum = 3,
     totalLoopNum = 3,
     spin = 2,
     interactionTauNum = 1,
