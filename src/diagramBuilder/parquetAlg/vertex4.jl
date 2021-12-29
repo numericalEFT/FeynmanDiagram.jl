@@ -47,8 +47,8 @@ struct Bubble{_Ver4,W} # template Bubble to avoid mutually recursive struct
 
         oR = ver4.loopNum - 1 - oL # loopNum of the right vertex
         LTidx = ver4.Tidx  # the first τ index of the left vertex
-        maxTauNum = maximum(ver4.para.interactionTauNum) # maximum tau number for each bare interaction
-        RTidx = LTidx + (oL + 1) * maxTauNum   # the first τ index of the right sub-vertex
+        TauNum = ver4.para.interactionTauNum # maximum tau number for each bare interaction
+        RTidx = LTidx + (oL + 1) * TauNum   # the first τ index of the right sub-vertex
 
         if chan == T || chan == U
             LsubVer = F
