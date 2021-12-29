@@ -1,8 +1,42 @@
 @testset "Parquet" begin
+
+    function evalG(K, τin, τout)
+        # println(τBasis, ", ", varT)
+        kF, β = 1.0, 1.0
+        ϵ = dot(K, K) / 2 - kF^2
+        τ = τout - τin
+        return Spectral.kernelFermiT(τ, ϵ, β)
+    end
+
+    evalV(K) = 8π / (dot(K, K) + 1)
+
+    function evalPropagator(idx, object, K, varT, diag)
+        if idx == 1 #GPool
+            # println(object.siteBasis)
+            return evalG(K, varT[object.siteBasis[1]], varT[object.siteBasis[2]])
+        elseif idx == 2 #VPool
+            return evalV(K)
+        else
+            error("object with name = $(object.name) is not implemented")
+        end
+    end
+
     function testDiagWeigt(loopNum, chan, Kdim = 3, spin = 2, interactionTauNum = 1)
 
+        para = Builder.GenericPara(
+            loopDim = Kdim,
+            interactionTauNum = interactionTauNum,
+            innerLoopNum = loopNum,
+            totalLoopNum = loopNum + 2,
+            totalTauNum = 2,
+            spin = spin,
+            weightType = Float64,
+            firstLoopIdx = 3,
+            firstTauIdx = 1
+        )
+
         Parquet = Builder.Parquet
-        K0 = zeros(2 + loopNum)
+        K0 = zeros(para.totalLoopNum)
         KinL, KoutL, KinR, KoutR = deepcopy(K0), deepcopy(K0), deepcopy(K0), deepcopy(K0)
         KinL[1] = KoutL[1] = 1
         KinR[2] = KoutR[2] = 1
@@ -11,13 +45,11 @@
         F = [Parquet.U, Parquet.S]
         V = [Parquet.T, Parquet.U]
 
-        para = Parquet.Para(chan, F, V, loopNum, 2, Kdim, interactionTauNum, spin)
-
-        varK = rand(Kdim, Parquet.totalLoopNum(para))
-        varT = [rand() for i in 1:Parquet.totalSiteNum(para)]
+        varK = rand(Kdim, para.totalLoopNum)
+        varT = [rand() for i in 1:para.totalTauNum]
 
         #################### DiagTree ####################################
-        diag, ver4, dir, ex = Parquet.build(Float64, para, legK)
+        diag, ver4, dir, ex = Parquet.buildVer4(para, legK, chan, F, V)
         # the weighttype of the returned ver4 is Float64
         rootDir = DiagTree.addNode!(diag, DiagTree.ADD, :dir; child = dir, para = (0, 0, 0, 0))
         rootEx = DiagTree.addNode!(diag, DiagTree.ADD, :ex; child = ex, para = (0, 0, 0, 0))
@@ -25,19 +57,19 @@
 
         # Parquet.print_tree(ver4)
 
-        w1 = DiagTree.evalNaive(diag, varK, varT, ParquetEval.evalPropagator)
+        w1 = DiagTree.evalNaive(diag, varK, varT, evalPropagator)
 
         printstyled("naive DiagTree evaluator cost:", color = :green)
-        @time DiagTree.evalNaive(diag, varK, varT, ParquetEval.evalPropagator)
+        @time DiagTree.evalNaive(diag, varK, varT, evalPropagator)
 
         ##################### lower level subroutines  #######################################
-        ver4 = Parquet.Ver4{ParquetEval.Weight}(para)
+        ver4 = Parquet.Ver4{Parquet.Weight}(para, chan, F, V)
 
         KinL, KoutL, KinR, KoutR = varK[:, 1], varK[:, 1], varK[:, 2], varK[:, 2]
-        ParquetEval.eval(ver4, varK, varT, KinL, KoutL, KinR, KoutR, 3, spin, true)
+        Parquet.eval(para, ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV)
 
         printstyled("parquet evaluator cost:", color = :green)
-        @time ParquetEval.eval(ver4, varK, varT, KinL, KoutL, KinR, KoutR, 3, spin, true)
+        @time Parquet.eval(para, ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV)
         w2 = ver4.weight[1]
 
         # Parquet.print_tree(ver4)

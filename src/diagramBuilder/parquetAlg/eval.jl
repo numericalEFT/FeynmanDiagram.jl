@@ -8,9 +8,10 @@ end
 const Base.zero(::Type{Weight}) = Weight(0.0, 0.0)
 const Base.abs(w::Weight) = abs(w.d) + abs(w.e) # define abs(Weight)
 
-function evalAllG(G, K, varT, evalG)
+function evalAllG!(G, K, T0idx, varT, evalG; kwargs...)
     for g in G
-        g.weight = evalG(K, g.Tpair, varT)
+        tin, tout = g.Tpair
+        g.weight = evalG(K, varT[T0idx+tin], varT[T0idx+tout], kwargs...)
     end
 end
 
@@ -24,18 +25,21 @@ end
 #     end
 # end
 
-function eval(para, ver4::Ver4, varK, varT, legK, evalG::Function, Kidx = para.firstLoopIdx, fast = false)
+function eval(para, ver4::Ver4, varK, varT, legK, evalG::Function, evalV::Function, fast = false; kwargs...)
     KinL, KoutL, KinR, KoutR = legK
     spin = para.spin
+    T0idx = para.firstTauIdx
+    Kidx = para.firstLoopIdx + ver4.loopidxOffset
 
     if ver4.loopNum == 0
         qd = KinL - KoutL
         qe = KinL - KoutR
-        if ver4.interactionTauNum == 1
+        if para.interactionTauNum == 1
             ver4.weight[1].d = evalV(qd)
             ver4.weight[1].e = evalV(qe)
         else
-            τIn, τOut = varT[ver4.Tidx], varT[ver4.Tidx+1]
+            Tidx = para.firstTauIdx + ver4.TidxOffset
+            τIn, τOut = varT[Tidx], varT[Tidx+1]
             error("not implemented!")
             # elseif ver4.interactionTauNum == 2
             # vd, wd, ve, we = vertexDynamic(para, qd, qe, τIn, τOut)
@@ -57,7 +61,7 @@ function eval(para, ver4::Ver4, varK, varT, legK, evalG::Function, Kidx = para.f
     G = ver4.G
     K = varK[:, Kidx]
 
-    evalAllG(G[1], K, varT, evalG)
+    evalAllG!(G[1], K, T0idx, varT, evalG, kwargs...)
 
     Kdim = length(K)
     PhaseFactor = 1.0 / (2π)^Kdim
@@ -66,35 +70,33 @@ function eval(para, ver4::Ver4, varK, varT, legK, evalG::Function, Kidx = para.f
     for c in ver4.chan
         if c == T
             @. Kt = KoutL + K - KinL
-            evalAllG(G[Int(c)], Kt, varT, evalG)
+            evalAllG!(G[Int(c)], Kt, T0idx, varT, evalG, kwargs...)
         elseif c == U
             # can not be in box!
             @. Ku = KoutR + K - KinL
-            evalAllG(G[Int(c)], Ku, varT, evalG)
+            evalAllG!(G[Int(c)], Ku, T0idx, varT, evalG, kwargs...)
         elseif c == S
             # S channel, and cann't be in box!
             @. Ks = KinL + KinR - K
-            evalAllG(G[Int(c)], Ks, varT, evalG)
+            evalAllG!(G[Int(c)], Ks, T0idx, varT, evalG, kwargs...)
         else
             error("not impossible!")
         end
     end
     for b in ver4.bubble
         c = b.chan
-        Factor = SymFactor[c] * PhaseFactor
-        Llopidx = Kidx + 1
-        Rlopidx = Kidx + 1 + b.Lver.loopNum
+        Factor = SymFactor[Int(c)] * PhaseFactor
 
         if c == T
-            eval(para, b.Lver, varK, varT, [KinL, KoutL, Kt, K], evalG, Llopidx, spin)
-            eval(para, b.Rver, varK, varT, [K, Kt, KinR, KoutR], evalG, Rlopidx, spin)
+            eval(para, b.Lver, varK, varT, [KinL, KoutL, Kt, K], evalG, evalV; kwargs...)
+            eval(para, b.Rver, varK, varT, [K, Kt, KinR, KoutR], evalG, evalV; kwargs...)
         elseif c == U
-            eval(para, b.Lver, varK, varT, [KinL, KoutR, Ku, K], evalG, Llopidx, spin)
-            eval(para, b.Rver, varK, varT, [K, Ku, KinR, KoutL], evalG, Rlopidx, spin)
+            eval(para, b.Lver, varK, varT, [KinL, KoutR, Ku, K], evalG, evalV; kwargs...)
+            eval(para, b.Rver, varK, varT, [K, Ku, KinR, KoutL], evalG, evalV; kwargs...)
         elseif c == S
             # S channel
-            eval(para, b.Lver, varK, varT, [KinL, Ks, KinR, K], evalG, Llopidx, spin)
-            eval(para, b.Rver, varK, varT, [K, KoutL, Ks, KoutR], evalG, Rlopidx, spin)
+            eval(para, b.Lver, varK, varT, [KinL, Ks, KinR, K], evalG, evalV; kwargs...)
+            eval(para, b.Rver, varK, varT, [K, KoutL, Ks, KoutR], evalG, evalV; kwargs...)
         else
             error("not implemented")
         end
@@ -111,7 +113,7 @@ function eval(para, ver4::Ver4, varK, varT, legK, evalG::Function, Kidx = para.f
                     # gWeight *= phase(varT, ver4.Tpair[map.ver])
                     w = ver4.weight[1]
                 else
-                    w = ver4.weight[map.ver]
+                    w = ver4.weight[map.vidx]
                 end
 
                 if c == T
