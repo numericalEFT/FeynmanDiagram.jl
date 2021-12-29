@@ -246,6 +246,8 @@ function test(ver4)
     G = ver4.G
     for bub in ver4.bubble
         Lver, Rver = bub.Lver, bub.Rver
+        @assert Rver.loopidxOffset + Rver.loopNum == ver4.loopNum
+        @assert Lver.loopNum + Rver.loopNum + 1 == ver4.loopNum
         for map in bub.map
             LverT, RverT = collect(Lver.Tpair[map.lv]), collect(Rver.Tpair[map.rv]) # 8 τ variables relevant for this bubble
             G1T, GxT = collect(G[1].Tpair[map.G0]), collect(G[Int(bub.chan)].Tpair[map.Gx]) # 4 internal variables
