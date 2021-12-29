@@ -1,14 +1,18 @@
-abstract type Filter end
-abstract type Wirreducible <: Filter end #remove all polarization subdiagrams
-abstract type Girreducible <: Filter end #remove all self-energy inseration
-abstract type noHatree <: Filter end
-abstract type noFock <: Filter end
-abstract type noBubble <: Filter end # true to remove all bubble subdiagram
-abstract type Proper <: Filter end #ver4, ver3, and polarization diagrams may require to be irreducible along the transfer momentum/frequency
+@enum Filter begin
+    Wirreducible  #remove all polarization subdiagrams
+    Girreducible  #remove all self-energy inseration
+    noHatree
+    noFock
+    noBubble  # true to remove all bubble subdiagram
+    Proper  #ver4, ver3, and polarization diagrams may require to be irreducible along the transfer momentum/frequency
+end
 
-abstract type Interaction end
-abstract type ChargeCharge <: Interaction end
-abstract type SpinSpin <: Interaction end
+@enum Interaction begin
+    ChargeCharge
+    SpinSpin
+    ProperChargeCharge
+    ProperSpinSpin
+end
 
 
 @with_kw struct Para
@@ -18,10 +22,10 @@ abstract type SpinSpin <: Interaction end
     totalLoopNum::Int
     spin::Int
 
-    interactionType::Vector{Symbol} = [:ChargeCharge,] # :ChargeCharge, :SpinSpin, ...
+    interactionType::Vector{Interaction} = [ChargeCharge,] # :ChargeCharge, :SpinSpin, ...
     firstLoopIdx::Int = 1
     firstTauIdx::Int = 1
 
-    filter::Vector{Symbol} = []
+    filter::Vector{Filter} = []
 end
 
