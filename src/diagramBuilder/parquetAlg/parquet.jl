@@ -17,6 +17,7 @@ const Allchan = [I, T, U, S, Ts, Us, Ic, Tc, Uc, Sc, Tsc, Usc]
 
 
 include("vertex4.jl")
+include("eval.jl")
 include("io.jl")
 include("ver4toDiagTree.jl")
 end
