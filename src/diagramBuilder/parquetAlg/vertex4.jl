@@ -123,10 +123,11 @@ struct Bubble{_Ver4} # template Bubble to avoid mutually recursive struct
                 end
 
                 Gx = Green(GTx)
-                push!(ver4.G, Gx)
+                push!(ver4.G[Int(chan)], Gx)
 
                 GT0 = (LvT[OUTR], RvT[INL])
                 G0 = Green(GT0)
+                push!(ver4.G[1], Gx)
 
                 VerTidx = addTidx(ver4, VerT)
                 for tpair in ver4.Tpair
@@ -195,8 +196,7 @@ struct Ver4{W}
     TidxOffset::Int # offset of the Tidx from the tau index of the left most incoming leg
 
     ######  components of vertex  ##########################
-    # G::SVector{16,Green}  # large enough to host all Green's function
-    G::Vector{Green}
+    G::SVector{16,Vector{Green}}  # large enough to host all Green's function
     bubble::Vector{Bubble{Ver4{W}}}
 
     ####### weight and tau table of the vertex  ###############
@@ -221,8 +221,8 @@ struct Ver4{W}
         @assert (T in Fouter) == false "F vertex is particle-hole irreducible, so that T channel is not allowed in F"
         @assert (S in Vouter) == false "V vertex is particle-particle irreducible, so that S channel is not allowed in V"
 
-        # g = @SVector [Green() for i = 1:16]
-        ver4 = new{W}(para, chan, F, V, All, Fouter, Vouter, Allouter, id[1], level, loopNum, loopidxOffset, tidxOffset, [], [], [], [[],], [])
+        g = @SVector [Vector{Green}([]) for i = 1:16]
+        ver4 = new{W}(para, chan, F, V, All, Fouter, Vouter, Allouter, id[1], level, loopNum, loopidxOffset, tidxOffset, g, [], [], [[],], [])
         id[1] += 1
         @assert loopNum >= 0
 
