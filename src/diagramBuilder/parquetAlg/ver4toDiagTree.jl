@@ -3,11 +3,13 @@ function shift(Tpair, t0)
     return Tuple([t0 + t for t in Tpair])
 end
 
+isPropagator(ver) = (ver.loopNum == 0)
+
 function addNode!(nodes, diag, map, name::Symbol, lc, rc, g0, gc, factor = 1.0)
     ver4, Lver, Rver = map.v, map.l, map.r
-    extT = shift(ver4.Tpair[map.vidx], ver4.para.firstTauIdx)
+    para = ver4.para
+    extT = shift(ver4.Tpair[map.vidx], para.firstTauIdx)
     tauNum = ver4.para.interactionTauNum
-    isPropagator(ver) = (ver.loopNum == 0)
     isW(idx) = (idx > 1) #for tauNum=2 case, each interaction has three weight, 0, 1, and 2; the first 0 is for instant, the 1 and 2 for dynamic
 
     lidx, ridx = map.lidx, map.ridx
@@ -92,7 +94,9 @@ function bubbletoDiagTree!(diag, ver4, bubble, legK, factor = 1.0)
             gc = DiagTree.addPropagator!(diag, :Gpool, Gorder, :Gt; site = shift(map.Gx.Tpair, t0), loop = Kt)
 
             Td, Te = [], []
-            addNode!(Td, diag, map, :dxd, DI, DI, g0, gc, para.spin)
+            if removeBubble(map, c, DI, DI) == false
+                addNode!(Td, diag, map, :dxd, DI, DI, g0, gc, para.spin)
+            end
             addNode!(Td, diag, map, :dxe, DI, EX, g0, gc)
             addNode!(Td, diag, map, :exd, EX, DI, g0, gc)
             nodeTd = DiagTree.addNode!(diag, DiagTree.ADD, :Td, Factor; child = Td, para = extT)
@@ -105,7 +109,9 @@ function bubbletoDiagTree!(diag, ver4, bubble, legK, factor = 1.0)
             gc = DiagTree.addPropagator!(diag, :Gpool, Gorder, :Gu; site = shift(map.Gx.Tpair, t0), loop = Ku)
 
             Ud, Ue = [], []
-            addNode!(Ue, diag, map, :dxd, DI, DI, g0, gc, para.spin)
+            if removeBubble(map, c, DI, DI) == false
+                addNode!(Ue, diag, map, :dxd, DI, DI, g0, gc, para.spin)
+            end
             addNode!(Ue, diag, map, :dxe, DI, EX, g0, gc)
             addNode!(Ue, diag, map, :exd, EX, DI, g0, gc)
             nodeUe = DiagTree.addNode!(diag, DiagTree.ADD, :Ue, Factor; child = Ue, para = extT)
@@ -149,17 +155,17 @@ function ver4toDiagTree!(diag, ver4, legK, factor = 1.0)
         if ver4.para.interactionTauNum == 2
             td = [Tidx, Tidx + 1]
             te = td
-            vd = DiagTree.addPropagator!(diag, :Vpool, Vorder, :Vd; site = td, loop = qd)
-            ve = DiagTree.addPropagator!(diag, :Vpool, Vorder, :Ve; site = te, loop = qe)
-            wd = DiagTree.addPropagator!(diag, :Wpool, Vorder, :Wd; site = td, loop = qd)
-            we = DiagTree.addPropagator!(diag, :Wpool, Vorder, :We; site = te, loop = qe)
+            vd = notProper(para, qd) ? 0 : DiagTree.addPropagator!(diag, :Vpool, Vorder, :Vd; site = td, loop = qd)
+            ve = notProper(para, qe) ? 0 : DiagTree.addPropagator!(diag, :Vpool, Vorder, :Ve; site = te, loop = qe)
+            wd = notProper(para, qd) ? 0 : DiagTree.addPropagator!(diag, :Wpool, Vorder, :Wd; site = td, loop = qd)
+            we = notProper(para, qe) ? 0 : DiagTree.addPropagator!(diag, :Wpool, Vorder, :We; site = te, loop = qe)
             ver4.weight[1] = @SVector [vd, ve]
             ver4.weight[2] = @SVector [wd, 0]
             ver4.weight[3] = @SVector [0, we]
             return diag, ver4, [vd, wd], [ve, we]
         elseif ver4.para.interactionTauNum == 1
-            vd = DiagTree.addPropagator!(diag, :Vpool, Vorder, :Vd; loop = qd)
-            ve = DiagTree.addPropagator!(diag, :Vpool, Vorder, :Ve; loop = qe)
+            vd = notProper(para, qd) ? 0 : DiagTree.addPropagator!(diag, :Vpool, Vorder, :Vd; loop = qd)
+            ve = notProper(para, qe) ? 0 : DiagTree.addPropagator!(diag, :Vpool, Vorder, :Ve; loop = qe)
             ver4.weight[1] = @SVector [vd, ve]
             return diag, ver4, [vd,], [ve,]
         else
@@ -193,6 +199,24 @@ function ver4toDiagTree!(diag, ver4, legK, factor = 1.0)
     return diag, ver4, dir, ex
 end
 
+function newDiagTree(para)
+    weightType = para.weightType
+    Kpool = DiagTree.LoopPool(:K, para.loopDim, para.totalLoopNum, Float64)
+
+    if para.interactionTauNum == 2
+        Gpool = DiagTree.propagatorPool(:Gpool, weightType)
+        Vpool = DiagTree.propagatorPool(:Vpool, weightType)
+        Wpool = DiagTree.propagatorPool(:Wpool, weightType)
+        return DiagTree.Diagrams(Kpool, (Gpool, Vpool, Wpool), weightType, nodeParaType = Tuple{Int,Int,Int,Int})
+    elseif para.interactionTauNum == 1
+        Gpool = DiagTree.propagatorPool(:Gpool, weightType)
+        Vpool = DiagTree.propagatorPool(:Vpool, weightType)
+        return DiagTree.Diagrams(Kpool, (Gpool, Vpool), weightType, nodeParaType = Tuple{Int,Int,Int,Int})
+    else
+        error("not implemented!")
+    end
+end
+
 """
     function build(weightType::DataType, para::Para, LegK)
     
@@ -203,7 +227,8 @@ end
 - para         : parameters to generate the diagram tree
 - LegK         : momentum basis of external legs, only three of them are expected: [left in, left out, right in], the dimension of each legK is called loopBasis dimension.
 """
-function buildVer4(para, LegK, chan, F, V, All = union(F, V); Fouter = F, Vouter = V, Allouter = All, factor = 1.0)
+function buildVer4(para, LegK, chan, F, V, All = union(F, V);
+    Fouter = F, Vouter = V, Allouter = All, factor = 1.0, diag = newDiagTree(para))
 
     @assert length(LegK[1]) == length(LegK[2]) == length(LegK[3]) == para.totalLoopNum
 
@@ -212,20 +237,7 @@ function buildVer4(para, LegK, chan, F, V, All = union(F, V); Fouter = F, Vouter
     #     @assert Kidx <= totalLoopNum(para) "Kidx $Kidx can't be larger than total loop number $(totalLoopNum(para))"
     # end
 
-    weightType = para.weightType
-    Kpool = DiagTree.LoopPool(:K, para.loopDim, para.totalLoopNum, Float64)
-
-    if para.interactionTauNum == 2
-        Gpool = DiagTree.propagatorPool(:Gpool, weightType)
-        Vpool = DiagTree.propagatorPool(:Vpool, weightType)
-        Wpool = DiagTree.propagatorPool(:Wpool, weightType)
-        diag = DiagTree.Diagrams(Kpool, (Gpool, Vpool, Wpool), weightType, nodeParaType = Tuple{Int,Int,Int,Int})
-    elseif para.interactionTauNum == 1
-        Gpool = DiagTree.propagatorPool(:Gpool, weightType)
-        Vpool = DiagTree.propagatorPool(:Vpool, weightType)
-        diag = DiagTree.Diagrams(Kpool, (Gpool, Vpool), weightType, nodeParaType = Tuple{Int,Int,Int,Int})
-    else
-        error("not implemented!")
+    if isnothing(diag)
     end
 
     ver4 = Ver4{SVector{2,Int}}(para, chan, F, V, All; Fouter = Fouter, Vouter = Vouter, Allouter = Allouter)
