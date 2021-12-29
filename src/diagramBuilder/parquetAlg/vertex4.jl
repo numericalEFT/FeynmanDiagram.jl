@@ -26,6 +26,7 @@ function addTidx(obj, _Tidx)
     end
     push!(obj.Tpair, _Tidx)
     push!(obj.weight, zero(eltype(obj.weight))) # add zero to the weight table of the object
+    push!(obj.child, [])
     return length(obj.Tpair)
 end
 
@@ -120,13 +121,13 @@ struct Bubble{_Ver4} # template Bubble to avoid mutually recursive struct
                     throw("This channel is invalid!")
                 end
 
-                VerTidx = addTidx(ver4, VerT)
                 Gx = Green(GTx)
                 push!(ver4.G, Gx)
 
                 GT0 = (LvT[OUTR], RvT[INL])
                 G0 = Green(GT0)
 
+                VerTidx = addTidx(ver4, VerT)
                 for tpair in ver4.Tpair
                     @assert tpair[1] == ver4.TidxOffset "InL Tidx must be the same for all Tpairs in the vertex4"
                 end
@@ -138,7 +139,9 @@ struct Bubble{_Ver4} # template Bubble to avoid mutually recursive struct
                 # println(Total2)
                 @assert compare(Total1, Total2) "chan $(chan): G0=$GT0, Gx=$GTx, external=$VerT don't match with Lver4 $LvT and Rver4 $RvT"
 
-                push!(map, IdxMap(Lver, Rver, ver4, lt, rt, VerTidx, G0, Gx))
+                idxmap = IdxMap(Lver, Rver, ver4, lt, rt, VerTidx, G0, Gx)
+                push!(map, idxmap)
+                push!(ver4.child[VerTidx], idxmap)
             end
         end
         return new{_Ver4}(idbub, chan, Lver, Rver, map)
@@ -197,7 +200,7 @@ struct Ver4{W}
 
     ####### weight and tau table of the vertex  ###############
     Tpair::Vector{Tuple{Int,Int,Int,Int}}
-    # child::Vector{Vector{Bubble{Ver4}}}
+    child::Vector{Vector{IdxMap{Ver4{W}}}}
     weight::Vector{W}
 
     function Ver4{W}(para, chan, F, V, All = union(F, V);
@@ -218,7 +221,7 @@ struct Ver4{W}
         @assert (S in Vouter) == false "V vertex is particle-particle irreducible, so that S channel is not allowed in V"
 
         # g = @SVector [Green() for i = 1:16]
-        ver4 = new{W}(para, chan, F, V, All, Fouter, Vouter, Allouter, id[1], level, loopNum, loopidxOffset, tidxOffset, [], [], [], [])
+        ver4 = new{W}(para, chan, F, V, All, Fouter, Vouter, Allouter, id[1], level, loopNum, loopidxOffset, tidxOffset, [], [], [], [[],], [])
         id[1] += 1
         @assert loopNum >= 0
 
