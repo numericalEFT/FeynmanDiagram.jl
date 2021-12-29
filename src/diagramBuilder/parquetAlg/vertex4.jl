@@ -38,7 +38,7 @@ struct Bubble{_Ver4,W} # template Bubble to avoid mutually recursive struct
     Rver::_Ver4
     map::Vector{IdxMap}
 
-    function Bubble{_Ver4,W}(ver4::_Ver4, chan::Channel, F, V, All, oL::Int, level::Int, _id::Vector{Int}) where {_Ver4,W}
+    function Bubble{_Ver4,W}(ver4::_Ver4, chan::Channel, oL::Int, level::Int, _id::Vector{Int}) where {_Ver4,W}
         # @assert chan in para.chan "$chan isn't a bubble channels!"
         @assert oL < ver4.loopNum "LVer loopNum must be smaller than the ver4 loopNum"
 
@@ -46,28 +46,32 @@ struct Bubble{_Ver4,W} # template Bubble to avoid mutually recursive struct
         _id[1] += 1
 
         oR = ver4.loopNum - 1 - oL # loopNum of the right vertex
-        LTidx = ver4.Tidx  # the first τ index of the left vertex
+        lLpidxOffset = ver4.loopidxOffset
+        rLpidxOffset = lLpidxOffset + oL + 1
+        LTidx = ver4.TidxOffset  # the first τ index of the left vertex
         TauNum = ver4.para.interactionTauNum # maximum tau number for each bare interaction
         RTidx = LTidx + (oL + 1) * TauNum   # the first τ index of the right sub-vertex
 
         if chan == T || chan == U
-            LsubVer = F
-            RsubVer = All
+            LverChan = (level == 1) ? ver4.Fouter : ver4.F
+            RverChan = (level == 1) ? ver4.Allouter : ver4.All
         elseif chan == S
-            LsubVer = V
-            RsubVer = All
+            LverChan = (level == 1) ? ver4.Vouter : ver4.V
+            RverChan = (level == 1) ? ver4.Allouter : ver4.All
         else
             error("chan $chan isn't implemented!")
         end
 
         # println("left ver chan: ", LsubVer, ", loop=", oL)
-        Lver = _Ver4{W}(ver4.para, LsubVer, ver4.F, ver4.V, ver4.All;
-            loopNum = oL, tidx = LTidx, level = level + 1, id = _id)
+        Lver = _Ver4{W}(ver4.para, LverChan, ver4.F, ver4.V, ver4.All;
+            loopNum = oL, loopidxOffset = lLpidxOffset, tidxOffset = LTidx,
+            level = level + 1, id = _id)
 
-        Rver = _Ver4{W}(ver4.para, RsubVer, ver4.F, ver4.V, ver4.All;
-            loopNum = oR, tidx = RTidx, level = level + 1, id = _id)
+        Rver = _Ver4{W}(ver4.para, RverChan, ver4.F, ver4.V, ver4.All;
+            loopNum = oR, loopidxOffset = rLpidxOffset, tidxOffset = RTidx,
+            level = level + 1, id = _id)
 
-        @assert Lver.Tidx == ver4.Tidx "Lver Tidx must be equal to vertex4 Tidx! LoopNum: $(ver4.loopNum), LverLoopNum: $(Lver.loopNum), chan: $chan"
+        @assert Lver.TidxOffset == ver4.TidxOffset "Lver Tidx must be equal to vertex4 Tidx! LoopNum: $(ver4.loopNum), LverLoopNum: $(Lver.loopNum), chan: $chan"
 
         ############## construct IdxMap ########################################
         map = []
@@ -95,7 +99,7 @@ struct Bubble{_Ver4,W} # template Bubble to avoid mutually recursive struct
                 GTxidx = addTidx(G[Int(chan)], GTx)
 
                 for tpair in ver4.Tpair
-                    @assert tpair[1] == ver4.Tidx "InL Tidx must be the same for all Tpairs in the vertex4"
+                    @assert tpair[1] == ver4.TidxOffset "InL Tidx must be the same for all Tpairs in the vertex4"
                 end
 
                 ###### test if the internal + exteranl variables is equal to the total 8 variables of the left and right sub-vertices ############
@@ -142,6 +146,9 @@ struct Ver4{W}
     F::Vector{Channel}
     V::Vector{Channel}
     All::Vector{Channel}
+    Fouter::Vector{Channel}
+    Vouter::Vector{Channel}
+    Allouter::Vector{Channel}
 
     ###### vertex topology information #####################
     id::Int
@@ -149,7 +156,8 @@ struct Ver4{W}
 
     #######  vertex properties   ###########################
     loopNum::Int
-    Tidx::Int # inital Tidx
+    loopidxOffset::Int # offset of the loop index from the first internal loop
+    TidxOffset::Int # offset of the Tidx from the tau index of the left most incoming leg
 
     ######  components of vertex  ##########################
     G::SVector{16,Green}  # large enough to host all Green's function
@@ -157,13 +165,20 @@ struct Ver4{W}
 
     ####### weight and tau table of the vertex  ###############
     Tpair::Vector{Tuple{Int,Int,Int,Int}}
+    # child::Vector{Vector{Bubble{Ver4}}}
     weight::Vector{W}
 
     function Ver4{W}(para, chan, F, V, All = union(F, V);
-        loopNum = para.internalLoopNum, tidx = para.firstTauIdx,
+        loopNum = para.internalLoopNum, loopidxOffset = 0, tidxOffset = 0,
         Fouter = F, Vouter = V, Allouter = All,
         level = 1, id = [1,]
     ) where {W}
+
+        if level > 1
+            @assert Set(F) == Set(Fouter)
+            @assert Set(V) == Set(Vouter)
+            @assert Set(All) == Set(Allouter)
+        end
 
         @assert (T in F) == false "F vertex is particle-hole irreducible, so that T channel is not allowed in F"
         @assert (S in V) == false "V vertex is particle-particle irreducible, so that S channel is not allowed in V"
@@ -171,12 +186,13 @@ struct Ver4{W}
         @assert (S in Vouter) == false "V vertex is particle-particle irreducible, so that S channel is not allowed in V"
 
         g = @SVector [Green() for i = 1:16]
-        ver4 = new{W}(para, chan, F, V, All, id[1], level, loopNum, tidx, g, [], [], [])
+        ver4 = new{W}(para, chan, F, V, All, Fouter, Vouter, Allouter, id[1], level, loopNum, loopidxOffset, tidxOffset, g, [], [], [])
         id[1] += 1
         @assert loopNum >= 0
 
 
         if loopNum == 0
+            tidx = tidxOffset
             # bare interaction may have one, two or four independent tau variables
             if para.interactionTauNum == 1  # instantaneous interaction
                 addTidx(ver4, (tidx, tidx, tidx, tidx)) #direct instant intearction
@@ -195,11 +211,7 @@ struct Ver4{W}
         else # loopNum>0
             for c in chan
                 for ol = 0:loopNum-1
-                    if level == 1
-                        bubble = Bubble{Ver4,W}(ver4, c, Fouter, Vouter, Allouter, ol, level, id)
-                    else
-                        bubble = Bubble{Ver4,W}(ver4, c, F, V, All, ol, level, id)
-                    end
+                    bubble = Bubble{Ver4,W}(ver4, c, ol, level, id)
                     if length(bubble.map) > 0  # if zero, bubble diagram doesn't exist
                         push!(ver4.bubble, bubble)
                     end
