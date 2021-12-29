@@ -1,48 +1,3 @@
-# """
-#     struct Para
-
-#     Parameters to generate diagrams using Parquet algorithm
-
-# # Arguments:
-# - loopDim          : spatial dimension of the momentum variable
-# - internalLoopNum  : number of internal loops
-# - externalLoopNum  : number of external loops
-# - chan         : channels to be included, [Parquet.T, Parquet.U, Parquet.S, ...]
-# - F            : channels of left sub-vertex for the particle-hole and particle-hole-exchange bubbles
-# - V            : channels of left sub-vertex for the particle-particle bubble
-# - interactionTauNum : how many τ variables in the interaction function (1 for instantaneous interactoion)
-# - spin         : 1 for spinless particle, 2 for spin-1/2 particle
-# """
-# struct Para
-#     internalLoopNum::Int
-#     chan::Vector{Int}
-#     F::Vector{Int}
-#     V::Vector{Int}
-#     interactionTauNum::Int # τ degrees of freedom of the bare interaction 1, 2, or 4
-#     spin::Int
-
-#     function Para(chan, Fchan, Vchan, internalLoopNum, interactionTauNum, spin)
-
-#         tnum = interactionTauNum
-#         @assert tnum == 1 || tnum == 2 || tnum == 4
-
-#         for c in chan
-#             @assert c in Allchan "$chan $c isn't implemented!"
-#         end
-#         @assert (T in Fchan) == false "F vertex is particle-hole irreducible, so that T channel is not allowed in F"
-#         @assert (S in Vchan) == false "V vertex is particle-particle irreducible, so that S channel is not allowed in V"
-#         # F = intersect(chan, Fchan)
-#         # V = intersect(chan, Vchan)
-#         # println("Internal Loop number = $internalLoopNum, external Loop number = $externalLoopNum, loop variable dimension = $loopDim")
-#         println("F channel: $Fchan, V channel: $Vchan")
-
-#         return new(loopDim, internalLoopNum, externalLoopNum, chan, Fchan, Vchan, interactionTauNum, spin)
-#     end
-# end
-
-# totalLoopNum(para::Gener) = para.internalLoopNum + para.externalLoopNum
-# totalSiteNum(para::Para) = (para.internalLoopNum + 1) * para.interactionTauNum
-
 struct Green
     Tpair::Vector{Tuple{Int,Int}}
     weight::Vector{Float64}
@@ -146,7 +101,7 @@ struct Bubble{_Ver4,W} # template Bubble to avoid mutually recursive struct
                 ###### test if the internal + exteranl variables is equal to the total 8 variables of the left and right sub-vertices ############
                 Total1 = vcat(collect(LvT), collect(RvT))
                 Total2 = vcat(collect(GT0), collect(GTx), collect(VerT))
-                @assert compare(Total1, Total2) "chan $(ChanName[Int(chan)]): G0=$GT0, Gx=$GTx, external=$VerT don't match with Lver4 $LvT and Rver4 $RvT"
+                @assert compare(Total1, Total2) "chan $(chan): G0=$GT0, Gx=$GTx, external=$VerT don't match with Lver4 $LvT and Rver4 $RvT"
 
                 push!(map, IdxMap(lt, rt, GT0idx, GTxidx, VerTidx))
             end
@@ -161,18 +116,20 @@ end
     Generate 4-vertex diagrams using Parquet Algorithm
 
 #Arguments
-- `para`: parameters
+- `para`: parameters. It should provide internalLoopNum, interactionTauNum, firstTauIdx
+- `chan`: list of channels of the current 4-vertex. 
+- `F`   : channels of left sub-vertex for the particle-hole and particle-hole-exchange bubbles
+- `V`   : channels of left sub-vertex for the particle-particle bubble
+- `All`   : channels of right sub-vertex of all channels
+- `Fouter`   : channels of left sub-vertex for the particle-hole and particle-hole-exchange bubbles, only take effect for the outermost bubble
+- `Vouter`   : channels of left sub-vertex for the particle-particle bubble, only take effect for the outermost bubble
+- `Allouter`   : channels of right sub-vertex of all channels
 - `loopNum`: momentum loop degrees of freedom of the 4-vertex diagrams
 - `tidx`: the first τ variable index. It will be the τ variable of the left incoming electron for all 4-vertex diagrams
-- `chan`: list of channels of the current 4-vertex. If not specified, it is set to be `para.chan`
-- `F`   : channels of left sub-vertex for the particle-hole and particle-hole-exchange bubbles, only take effect for the outermost bubble
-- `V`   : channels of left sub-vertex for the particle-particle bubble, only take effect for the outermost bubble
-- `interactionTauNum`: list of possible τ degrees of freedom of the bare interaction 0, 2, or 4
 - `level`: level in the diagram tree
 - `id`: the first element will be used as the id of the Ver4. All nodes in the tree will be labeled in preorder depth-first search
 
 #Remark:
-- The argument `chan` and `para.chan` are different. The former is the channels of current 4-vertex, while the later is the channels of the sub-vertices
 - AbstractTrees interface is implemented for Ver4. So one can use the API in https://juliacollections.github.io/AbstractTrees.jl/stable/ to manipulate/print the tree structre of Ver4.
 - There are three different methods to print/visualize the tree structre: 
 1) `print_tree(ver4::Ver4)` or `print_tree(bub::Bubble)` to print the tree to terminal. This function is provided by AbstractTrees API. 
@@ -203,7 +160,7 @@ struct Ver4{W}
     weight::Vector{W}
 
     function Ver4{W}(para, chan, F, V, All = union(F, V);
-        loopNum = para.internalLoopNum, tidx = 1,
+        loopNum = para.internalLoopNum, tidx = para.firstTauIdx,
         Fouter = F, Vouter = V, Allouter = All,
         level = 1, id = [1,]
     ) where {W}
@@ -281,7 +238,7 @@ function test(ver4)
             LverT, RverT = collect(Lver.Tpair[map.lv]), collect(Rver.Tpair[map.rv]) # 8 τ variables relevant for this bubble
             G1T, GxT = collect(G[1].Tpair[map.G0]), collect(G[Int(bub.chan)].Tpair[map.Gx]) # 4 internal variables
             ExtT = collect(ver4.Tpair[map.ver]) # 4 external variables
-            @assert compare(vcat(G1T, GxT, ExtT), vcat(LverT, RverT)) "chan $(ChanName[bub.chan]): G1=$G1T, Gx=$GxT, external=$ExtT don't match with Lver4 $LverT and Rver4 $RverT"
+            @assert compare(vcat(G1T, GxT, ExtT), vcat(LverT, RverT)) "chan $(bub.chan): G1=$G1T, Gx=$GxT, external=$ExtT don't match with Lver4 $LverT and Rver4 $RverT"
         end
     end
 end
