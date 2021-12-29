@@ -41,7 +41,6 @@ function addNode!(nodes, tauNum, name::Symbol, diag, Lver, Rver, map, lc, rc, g0
     isW(idx) = (idx > 1) #for tauNum=2 case, each interaction has three weight, 0, 1, and 2; the first 0 is for instant, the 1 and 2 for dynamic
 
     l, r = map.lv, map.rv
-    lLopNum, rLopNum = Lver.loopNum, Rver.loopNum
     Lw, Rw = Lver.weight[l][lc], Rver.weight[r][rc]
 
     if tauNum == 1
@@ -181,11 +180,8 @@ function bubbletoDiagTree!(weightType::DataType, ver4Nodes, para, diag, ver4, bu
     return diag
 end
 
-function ver4toDiagTree(weightType::DataType, para, legK, Kidx::Int = para.externalLoopNum + 1, Tidx::Int = 1, loopNum = para.internalLoopNum, factor = 1.0,
-    diag = _newDiag(weightType, para), ver4 = Ver4{SVector{2,Int}}(para, loopNum, Tidx))
+function ver4toDiagTree(para, diag, ver4, legK, Kidx::Int = para.firstLoopIdx, loopNum = para.internalLoopNum, factor = 1.0)
 
-    # KinL, KoutL, KinR, KoutR = legK[1], legK[2], legK[3], legK[4]
-    # @assert KinL + KinR ≈ KoutL + KoutR
     KinL, KoutL, KinR = legK[1], legK[2], legK[3]
     KoutR = KinL + KinR - KoutL
     @assert length(KinL) == length(KoutL) == length(KinR) == totalLoopNum(para)
@@ -261,9 +257,9 @@ end
 - para         : parameters to generate the diagram tree
 - LegK         : momentum basis of external legs, only three of them are expected: [left in, left out, right in], the dimension of each legK is called loopBasis dimension.
 """
-function build(weightType::DataType, para, LegK)
-    return ver4toDiagTree(weightType, para, LegK)
-end
+# function build(weightType::DataType, para, LegK)
+#     return ver4toDiagTree(weightType, para, LegK)
+# end
 
 """
     function build(weightType::DataType, para::Para, LegK)
@@ -275,6 +271,8 @@ end
 - para         : parameters to generate the diagram tree
 - LegK         : momentum basis of external legs, only three of them are expected: [left in, left out, right in], the dimension of each legK is called loopBasis dimension.
 """
-# function buildVer4(para, LegK, chan, F, V, All = union(F, V); Fouter = F, Vouter = V, Allouter = All)
-#     return ver4toDiagTree(weightType, para, LegK)
-# end
+function buildVer4(para, LegK, chan, F, V, All = union(F, V); Fouter = F, Vouter = V, Allouter = All, factor = 1.0)
+    diag = _newDiag(para),
+    ver4 = Ver4{SVector{2,Int}}(para, chan, F, V, All, Fouter, Vouter, Allouter)
+    return ver4toDiagTree(weightType, para, LegK)
+end
