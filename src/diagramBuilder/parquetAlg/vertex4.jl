@@ -205,10 +205,12 @@ struct Ver4{W}
     weight::Vector{W}
 
     function Ver4{W}(para, chan, F, V, All = union(F, V);
-        loopNum = para.internalLoopNum, loopidxOffset = 0, tidxOffset = 0,
+        loopNum = para.innerLoopNum, loopidxOffset = 0, tidxOffset = 0,
         Fouter = F, Vouter = V, Allouter = All,
         level = 1, id = [1,]
     ) where {W}
+
+        @assert para.totalTauNum >= (loopNum + 1) * para.interactionTauNum
 
         if level > 1
             @assert Set(F) == Set(Fouter)

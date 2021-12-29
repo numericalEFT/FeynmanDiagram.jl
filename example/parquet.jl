@@ -14,8 +14,9 @@ V = [Parquet.T, Parquet.U]
 # para = Parquet.Para(chan, F, V, loopNum, 2, Kdim, interactionTauNum, spin)
 para = Builder.GenericPara(
     loopDim = 3,
-    internalLoopNum = 1,
+    innerLoopNum = 1,
     totalLoopNum = 3,
+    totalTauNum = 2,
     spin = 2,
     interactionTauNum = 1,
     weightType = Float64
@@ -28,7 +29,7 @@ KinR[2] = KoutR[2] = 1
 legK = [KinL, KoutL, KinR, KoutR]
 
 varK = [rand(para.loopDim) for i in 1:para.totalLoopNum]
-varT = [rand() for i in 1:Builder.totalTauNum(para, :Ver4)]
+varT = [rand() for i in 1:para.totalTauNum]
 evalK(basis) = sum([basis[i] * varK[i] for i in 1:para.totalLoopNum])
 evalT(Tidx) = varT[Tidx]
 

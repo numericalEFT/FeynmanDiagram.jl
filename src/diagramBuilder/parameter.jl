@@ -17,8 +17,9 @@ end
 
 @with_kw struct GenericPara
     loopDim::Int
-    internalLoopNum::Int
+    innerLoopNum::Int
     totalLoopNum::Int
+    totalTauNum::Int
     spin::Int
 
     weightType::DataType = Float64
@@ -31,11 +32,16 @@ end
     filter::Vector{Filter} = []
 end
 
-function totalTauNum(para, diagType::Symbol)
-    if diagType == :Ver4
-        return (para.internalLoopNum + 1) * para.interactionTauNum
-    else
-        error("not implemented!")
-    end
+function totalTauNum(para, diagType::Symbol = :none)
+    return para.totalTauNum
+    # if diagType == :Ver4
+    #     return (para.internalLoopNum + 1) * para.interactionTauNum
+    # else
+    #     error("not implemented!")
+    # end
+end
+
+function totalLoopNum(para, diagType::Symbol = :none)
+    return para.totalLoopNum
 end
 

@@ -1,7 +1,11 @@
 # addNode!(Td, para, diag, lver, rver, DI, EX)
+function shift(Tpair, t0)
+    return Tuple([t0 + t for t in Tpair])
+end
+
 function addNode!(nodes, diag, map, name::Symbol, lc, rc, g0, gc, factor = 1.0)
     ver4, Lver, Rver = map.v, map.l, map.r
-    extT = ver4.Tpair[map.vidx]
+    extT = shift(ver4.Tpair[map.vidx], ver4.para.firstTauIdx)
     tauNum = ver4.para.interactionTauNum
     isPropagator(ver) = (ver.loopNum == 0)
     isW(idx) = (idx > 1) #for tauNum=2 case, each interaction has three weight, 0, 1, and 2; the first 0 is for instant, the 1 and 2 for dynamic
@@ -77,13 +81,15 @@ function bubbletoDiagTree!(diag, ver4, bubble, legK, factor = 1.0)
     ver4toDiagTree!(diag, Lver, LLegK, factor)
     ver4toDiagTree!(diag, Rver, RLegK, factor)
 
+    t0 = para.firstTauIdx
+
     for map in b.map
-        g0 = DiagTree.addPropagator!(diag, :Gpool, Gorder, :G0; site = map.G0.Tpair, loop = K)
+        g0 = DiagTree.addPropagator!(diag, :Gpool, Gorder, :G0; site = shift(map.G0.Tpair, t0), loop = K)
         Factor = SymFactor[Int(c)] / (2π)^para.loopDim
-        extT = map.v.Tpair[map.vidx]
+        extT = shift(map.v.Tpair[map.vidx], t0)
 
         if c == T
-            gc = DiagTree.addPropagator!(diag, :Gpool, Gorder, :Gt; site = map.Gx.Tpair, loop = Kt)
+            gc = DiagTree.addPropagator!(diag, :Gpool, Gorder, :Gt; site = shift(map.Gx.Tpair, t0), loop = Kt)
 
             Td, Te = [], []
             addNode!(Td, diag, map, :dxd, DI, DI, g0, gc, para.spin)
@@ -96,7 +102,7 @@ function bubbletoDiagTree!(diag, ver4, bubble, legK, factor = 1.0)
             map.node = @SVector [nodeTd, nodeTe]
 
         elseif c == U
-            gc = DiagTree.addPropagator!(diag, :Gpool, Gorder, :Gu; site = map.Gx.Tpair, loop = Ku)
+            gc = DiagTree.addPropagator!(diag, :Gpool, Gorder, :Gu; site = shift(map.Gx.Tpair, t0), loop = Ku)
 
             Ud, Ue = [], []
             addNode!(Ue, diag, map, :dxd, DI, DI, g0, gc, para.spin)
@@ -109,7 +115,7 @@ function bubbletoDiagTree!(diag, ver4, bubble, legK, factor = 1.0)
             map.node = @SVector [nodeUd, nodeUe]
 
         elseif c == S
-            gc = DiagTree.addPropagator!(diag, :Gpool, Gorder, :Gs; site = map.Gx.Tpair, loop = Ks)
+            gc = DiagTree.addPropagator!(diag, :Gpool, Gorder, :Gs; site = shift(map.Gx.Tpair, t0), loop = Ks)
 
             Sd, Se = [], []
             addNode!(Sd, diag, map, :dxe, DI, EX, g0, gc)
