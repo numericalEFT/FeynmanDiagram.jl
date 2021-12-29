@@ -180,24 +180,20 @@ function bubbletoDiagTree!(weightType::DataType, ver4Nodes, para, diag, ver4, bu
     return diag
 end
 
-function ver4toDiagTree(para, diag, ver4, legK, Kidx::Int = para.firstLoopIdx, loopNum = para.internalLoopNum, factor = 1.0)
+function ver4toDiagTree(para, diag, ver4, legK, factor = 1.0)
+
+    totalLoopNum(para) = para.totalLoopNum
 
     KinL, KoutL, KinR = legK[1], legK[2], legK[3]
     KoutR = KinL + KinR - KoutL
-    @assert length(KinL) == length(KoutL) == length(KinR) == totalLoopNum(para)
-
-    @assert 0 <= loopNum <= para.internalLoopNum "internal LoopNum $loopNum is not in [0, $(para.internalLoopNum)]"
-    if loopNum > 0
-        @assert Kidx <= totalLoopNum(para) "Kidx $Kidx can't be larger than total loop number $(totalLoopNum(para))"
-    end
 
     qd = KinL - KoutL
     qe = KinR - KoutL
-    Tidx = ver4.Tidx
 
     if ver4.loopNum == 0
+        Tidx = para.firstTauIdx + ver4.TidxOffset
         Vorder = 1
-        if ver4.interactionTauNum == 2
+        if ver4.para.interactionTauNum == 2
             td = [Tidx, Tidx + 1]
             te = td
             vd = DiagTree.addPropagator!(diag, :Vpool, Vorder, :Vd; site = td, loop = qd)
@@ -207,7 +203,7 @@ function ver4toDiagTree(para, diag, ver4, legK, Kidx::Int = para.firstLoopIdx, l
             ver4.weight[1] = @SVector [vd, ve]
             ver4.weight[2] = @SVector [wd, 0]
             ver4.weight[3] = @SVector [0, we]
-        elseif ver4.interactionTauNum == 1
+        elseif ver4.para.interactionTauNum == 1
             vd = DiagTree.addPropagator!(diag, :Vpool, Vorder, :Vd; loop = qd)
             ve = DiagTree.addPropagator!(diag, :Vpool, Vorder, :Ve; loop = qe)
             ver4.weight[1] = @SVector [vd, ve]
@@ -272,7 +268,30 @@ end
 - LegK         : momentum basis of external legs, only three of them are expected: [left in, left out, right in], the dimension of each legK is called loopBasis dimension.
 """
 function buildVer4(para, LegK, chan, F, V, All = union(F, V); Fouter = F, Vouter = V, Allouter = All, factor = 1.0)
-    diag = _newDiag(para),
-    ver4 = Ver4{SVector{2,Int}}(para, chan, F, V, All, Fouter, Vouter, Allouter)
-    return ver4toDiagTree(weightType, para, LegK)
+
+    @assert length(LegK[1]) == length(LegK[2]) == length(LegK[3]) == para.totalLoopNum
+
+    # @assert 0 <= para.internalLoopNum "internal LoopNum $loopNum is not in [0, $(para.internalLoopNum)]"
+    # if loopNum > 0
+    #     @assert Kidx <= totalLoopNum(para) "Kidx $Kidx can't be larger than total loop number $(totalLoopNum(para))"
+    # end
+
+    weightType = para.weightType
+    Kpool = DiagTree.LoopPool(:K, para.loopDim, para.totalLoopNum, Float64)
+
+    if para.interactionTauNum == 2
+        Gpool = DiagTree.propagatorPool(:Gpool, weightType)
+        Vpool = DiagTree.propagatorPool(:Vpool, weightType)
+        Wpool = DiagTree.propagatorPool(:Wpool, weightType)
+        diag = DiagTree.Diagrams(Kpool, (Gpool, Vpool, Wpool), weightType, nodeParaType = Tuple{Int,Int,Int,Int})
+    elseif para.interactionTauNum == 1
+        Gpool = DiagTree.propagatorPool(:Gpool, weightType)
+        Vpool = DiagTree.propagatorPool(:Vpool, weightType)
+        diag = DiagTree.Diagrams(Kpool, (Gpool, Vpool), weightType, nodeParaType = Tuple{Int,Int,Int,Int})
+    else
+        error("not implemented!")
+    end
+
+    ver4 = Ver4{SVector{2,Int}}(para, chan, F, V, All; Fouter = Fouter, Vouter = Vouter, Allouter = Allouter)
+    return ver4toDiagTree(para, diag, ver4, LegK, factor)
 end
