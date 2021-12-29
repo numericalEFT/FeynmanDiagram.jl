@@ -120,8 +120,7 @@ function showTree(ver4; verbose = 0, depth = 999)
         end
 
         for bub in ver4.bubble
-            chantype = ChanName[bub.chan]
-            nnt = nt.add_child(name = "$(bub.id): $chantype $(bub.Lver.loopNum)Ⓧ$(bub.Rver.loopNum)")
+            nnt = nt.add_child(name = "$(bub.id): $(bub.chan) $(bub.Lver.loopNum)Ⓧ$(bub.Rver.loopNum)")
 
             name_face = ete.TextFace(nnt.name, fgcolor = "black", fsize = 10)
             nnt.add_face(name_face, column = 0, position = "branch-top")

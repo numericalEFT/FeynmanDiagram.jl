@@ -1,56 +1,47 @@
-# struct Propagator
-#     weightType::DataType
-#     factorType::DataType
-#     eval::Function
+# """
+#     struct Para
+
+#     Parameters to generate diagrams using Parquet algorithm
+
+# # Arguments:
+# - loopDim          : spatial dimension of the momentum variable
+# - internalLoopNum  : number of internal loops
+# - externalLoopNum  : number of external loops
+# - chan         : channels to be included, [Parquet.T, Parquet.U, Parquet.S, ...]
+# - F            : channels of left sub-vertex for the particle-hole and particle-hole-exchange bubbles
+# - V            : channels of left sub-vertex for the particle-particle bubble
+# - interactionTauNum : how many τ variables in the interaction function (1 for instantaneous interactoion)
+# - spin         : 1 for spinless particle, 2 for spin-1/2 particle
+# """
+# struct Para
+#     internalLoopNum::Int
+#     chan::Vector{Int}
+#     F::Vector{Int}
+#     V::Vector{Int}
+#     interactionTauNum::Int # τ degrees of freedom of the bare interaction 1, 2, or 4
+#     spin::Int
+
+#     function Para(chan, Fchan, Vchan, internalLoopNum, interactionTauNum, spin)
+
+#         tnum = interactionTauNum
+#         @assert tnum == 1 || tnum == 2 || tnum == 4
+
+#         for c in chan
+#             @assert c in Allchan "$chan $c isn't implemented!"
+#         end
+#         @assert (T in Fchan) == false "F vertex is particle-hole irreducible, so that T channel is not allowed in F"
+#         @assert (S in Vchan) == false "V vertex is particle-particle irreducible, so that S channel is not allowed in V"
+#         # F = intersect(chan, Fchan)
+#         # V = intersect(chan, Vchan)
+#         # println("Internal Loop number = $internalLoopNum, external Loop number = $externalLoopNum, loop variable dimension = $loopDim")
+#         println("F channel: $Fchan, V channel: $Vchan")
+
+#         return new(loopDim, internalLoopNum, externalLoopNum, chan, Fchan, Vchan, interactionTauNum, spin)
+#     end
 # end
 
-
-"""
-    struct Para
-
-    Parameters to generate diagrams using Parquet algorithm
-
-# Arguments:
-- loopDim          : spatial dimension of the momentum variable
-- internalLoopNum  : number of internal loops
-- externalLoopNum  : number of external loops
-- chan         : channels to be included, [Parquet.T, Parquet.U, Parquet.S, ...]
-- F            : channels of left sub-vertex for the particle-hole and particle-hole-exchange bubbles
-- V            : channels of left sub-vertex for the particle-particle bubble
-- interactionTauNum : how many τ variables in the interaction function (1 for instantaneous interactoion)
-- spin         : 1 for spinless particle, 2 for spin-1/2 particle
-"""
-struct Para
-    loopDim::Int
-    internalLoopNum::Int
-    externalLoopNum::Int
-    chan::Vector{Int}
-    F::Vector{Int}
-    V::Vector{Int}
-    interactionTauNum::Int # τ degrees of freedom of the bare interaction 1, 2, or 4
-    spin::Int
-
-    function Para(chan, Fchan, Vchan, internalLoopNum, externalLoopNum, loopDim, interactionTauNum, spin)
-
-        tnum = interactionTauNum
-        @assert tnum == 1 || tnum == 2 || tnum == 4
-
-        for c in chan
-            @assert c in Allchan "$chan $c isn't implemented!"
-        end
-        @assert (T in Fchan) == false "F vertex is particle-hole irreducible, so that T channel is not allowed in F"
-        @assert (S in Vchan) == false "V vertex is particle-particle irreducible, so that S channel is not allowed in V"
-        # F = intersect(chan, Fchan)
-        # V = intersect(chan, Vchan)
-        println("Internal Loop number = $internalLoopNum, external Loop number = $externalLoopNum, loop variable dimension = $loopDim")
-        println("F channel: $Fchan, V channel: $Vchan")
-
-        return new(loopDim, internalLoopNum, externalLoopNum, chan, Fchan, Vchan, interactionTauNum, spin)
-    end
-end
-
-totalLoopNum(para::Para) = para.internalLoopNum + para.externalLoopNum
-totalSiteNum(para::Para) = (para.internalLoopNum + 1) * para.interactionTauNum
+# totalLoopNum(para::Gener) = para.internalLoopNum + para.externalLoopNum
+# totalSiteNum(para::Para) = (para.internalLoopNum + 1) * para.interactionTauNum
 
 struct Green
     Tpair::Vector{Tuple{Int,Int}}
@@ -87,12 +78,12 @@ end
 
 struct Bubble{_Ver4,W} # template Bubble to avoid mutually recursive struct
     id::Int
-    chan::Int
+    chan::Channel
     Lver::_Ver4
     Rver::_Ver4
     map::Vector{IdxMap}
 
-    function Bubble{_Ver4,W}(ver4::_Ver4, chan::Int, F, V, oL::Int, para::Para, level::Int, _id::Vector{Int}) where {_Ver4,W}
+    function Bubble{_Ver4,W}(ver4::_Ver4, chan::Channel, F, V, All, oL::Int, level::Int, _id::Vector{Int}) where {_Ver4,W}
         # @assert chan in para.chan "$chan isn't a bubble channels!"
         @assert oL < ver4.loopNum "LVer loopNum must be smaller than the ver4 loopNum"
 
@@ -101,22 +92,25 @@ struct Bubble{_Ver4,W} # template Bubble to avoid mutually recursive struct
 
         oR = ver4.loopNum - 1 - oL # loopNum of the right vertex
         LTidx = ver4.Tidx  # the first τ index of the left vertex
-        maxTauNum = maximum(para.interactionTauNum) # maximum tau number for each bare interaction
+        maxTauNum = maximum(ver4.para.interactionTauNum) # maximum tau number for each bare interaction
         RTidx = LTidx + (oL + 1) * maxTauNum   # the first τ index of the right sub-vertex
 
         if chan == T || chan == U
             LsubVer = F
-            RsubVer = para.chan
+            RsubVer = All
         elseif chan == S
             LsubVer = V
-            RsubVer = para.chan
+            RsubVer = All
         else
             error("chan $chan isn't implemented!")
         end
 
         # println("left ver chan: ", LsubVer, ", loop=", oL)
-        Lver = _Ver4{W}(para, oL, LTidx; chan = LsubVer, F = para.F, V = para.V, level = level + 1, id = _id)
-        Rver = _Ver4{W}(para, oR, RTidx; chan = RsubVer, F = para.F, V = para.V, level = level + 1, id = _id)
+        Lver = _Ver4{W}(ver4.para, LsubVer, ver4.F, ver4.V, ver4.All;
+            loopNum = oL, tidx = LTidx, level = level + 1, id = _id)
+
+        Rver = _Ver4{W}(ver4.para, RsubVer, ver4.F, ver4.V, ver4.All;
+            loopNum = oR, tidx = RTidx, level = level + 1, id = _id)
 
         @assert Lver.Tidx == ver4.Tidx "Lver Tidx must be equal to vertex4 Tidx! LoopNum: $(ver4.loopNum), LverLoopNum: $(Lver.loopNum), chan: $chan"
 
@@ -143,7 +137,7 @@ struct Bubble{_Ver4,W} # template Bubble to avoid mutually recursive struct
                 end
 
                 VerTidx = addTidx(ver4, VerT)
-                GTxidx = addTidx(G[chan], GTx)
+                GTxidx = addTidx(G[Int(chan)], GTx)
 
                 for tpair in ver4.Tpair
                     @assert tpair[1] == ver4.Tidx "InL Tidx must be the same for all Tpairs in the vertex4"
@@ -152,7 +146,7 @@ struct Bubble{_Ver4,W} # template Bubble to avoid mutually recursive struct
                 ###### test if the internal + exteranl variables is equal to the total 8 variables of the left and right sub-vertices ############
                 Total1 = vcat(collect(LvT), collect(RvT))
                 Total2 = vcat(collect(GT0), collect(GTx), collect(VerT))
-                @assert compare(Total1, Total2) "chan $(ChanName[chan]): G0=$GT0, Gx=$GTx, external=$VerT don't match with Lver4 $LvT and Rver4 $RvT"
+                @assert compare(Total1, Total2) "chan $(ChanName[Int(chan)]): G0=$GT0, Gx=$GTx, external=$VerT don't match with Lver4 $LvT and Rver4 $RvT"
 
                 push!(map, IdxMap(lt, rt, GT0idx, GTxidx, VerTidx))
             end
@@ -186,14 +180,18 @@ end
 3) `showTree(ver4::Ver4)` to visualize the tree using the python package ete3. You have to install ete3 properly to use this function.
 """
 struct Ver4{W}
+    para::Any
+    chan::Vector{Channel} # list of channels
+    F::Vector{Channel}
+    V::Vector{Channel}
+    All::Vector{Channel}
+
     ###### vertex topology information #####################
     id::Int
     level::Int
 
     #######  vertex properties   ###########################
     loopNum::Int
-    chan::Vector{Int} # list of channels
-    interactionTauNum::Int
     Tidx::Int # inital Tidx
 
     ######  components of vertex  ##########################
@@ -204,9 +202,19 @@ struct Ver4{W}
     Tpair::Vector{Tuple{Int,Int,Int,Int}}
     weight::Vector{W}
 
-    function Ver4{W}(para::Para, loopNum = para.internalLoopNum, tidx = 1; chan = para.chan, F = para.F, V = para.V, level = 1, id = [1,]) where {W}
+    function Ver4{W}(para, chan, F, V, All = union(F, V);
+        loopNum = para.internalLoopNum, tidx = 1,
+        Fouter = F, Vouter = V, Allouter = All,
+        level = 1, id = [1,]
+    ) where {W}
+
+        @assert (T in F) == false "F vertex is particle-hole irreducible, so that T channel is not allowed in F"
+        @assert (S in V) == false "V vertex is particle-particle irreducible, so that S channel is not allowed in V"
+        @assert (T in Fouter) == false "F vertex is particle-hole irreducible, so that T channel is not allowed in F"
+        @assert (S in Vouter) == false "V vertex is particle-particle irreducible, so that S channel is not allowed in V"
+
         g = @SVector [Green() for i = 1:16]
-        ver4 = new{W}(id[1], level, loopNum, chan, para.interactionTauNum, tidx, g, [], [], [])
+        ver4 = new{W}(para, chan, F, V, All, id[1], level, loopNum, tidx, g, [], [], [])
         id[1] += 1
         @assert loopNum >= 0
 
@@ -230,7 +238,11 @@ struct Ver4{W}
         else # loopNum>0
             for c in chan
                 for ol = 0:loopNum-1
-                    bubble = Bubble{Ver4,W}(ver4, c, F, V, ol, para, level, id)
+                    if level == 1
+                        bubble = Bubble{Ver4,W}(ver4, c, Fouter, Vouter, Allouter, ol, level, id)
+                    else
+                        bubble = Bubble{Ver4,W}(ver4, c, F, V, All, ol, level, id)
+                    end
                     if length(bubble.map) > 0  # if zero, bubble diagram doesn't exist
                         push!(ver4.bubble, bubble)
                     end
@@ -267,7 +279,7 @@ function test(ver4)
         Lver, Rver = bub.Lver, bub.Rver
         for map in bub.map
             LverT, RverT = collect(Lver.Tpair[map.lv]), collect(Rver.Tpair[map.rv]) # 8 τ variables relevant for this bubble
-            G1T, GxT = collect(G[1].Tpair[map.G0]), collect(G[bub.chan].Tpair[map.Gx]) # 4 internal variables
+            G1T, GxT = collect(G[1].Tpair[map.G0]), collect(G[Int(bub.chan)].Tpair[map.Gx]) # 4 internal variables
             ExtT = collect(ver4.Tpair[map.ver]) # 4 external variables
             @assert compare(vcat(G1T, GxT, ExtT), vcat(LverT, RverT)) "chan $(ChanName[bub.chan]): G1=$G1T, Gx=$GxT, external=$ExtT don't match with Lver4 $LverT and Rver4 $RverT"
         end
@@ -340,4 +352,4 @@ Base.IteratorSize(::Type{Bubble{Ver4{W},W}}) where {W} = Base.SizeUnknown()
 Base.eltype(::Type{Bubble{Ver4{W},W}}) where {W} = Bubble{Ver4{W},W}
 
 AbstractTrees.printnode(io::IO, ver4::Ver4) = print(io, tpair(ver4))
-AbstractTrees.printnode(io::IO, bub::Bubble) = print(io, "\u001b[32m$(bub.id): $(ChanName[bub.chan]) $(bub.Lver.loopNum)Ⓧ $(bub.Rver.loopNum)\u001b[0m")
+AbstractTrees.printnode(io::IO, bub::Bubble) = print(io, "\u001b[32m$(bub.id): $(bub.chan) $(bub.Lver.loopNum)Ⓧ $(bub.Rver.loopNum)\u001b[0m")
