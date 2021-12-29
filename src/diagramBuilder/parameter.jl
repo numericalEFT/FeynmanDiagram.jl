@@ -31,3 +31,11 @@ end
     filter::Vector{Filter} = []
 end
 
+function totalTauNum(para, diagType::Symbol)
+    if diagType == :Ver4
+        return (para.internalLoopNum + 1) * para.interactionTauNum
+    else
+        error("not implemented!")
+    end
+end
+
