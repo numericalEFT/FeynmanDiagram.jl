@@ -15,13 +15,15 @@ end
 end
 
 
-@with_kw struct Para
-    interactionTauNum::Int
+@with_kw struct GenericPara
     loopDim::Int
     internalLoopNum::Int
     totalLoopNum::Int
     spin::Int
 
+    weightType::DataType = Float64
+
+    interactionTauNum::Int = 1
     interactionType::Vector{Interaction} = [ChargeCharge,] # :ChargeCharge, :SpinSpin, ...
     firstLoopIdx::Int = 1
     firstTauIdx::Int = 1

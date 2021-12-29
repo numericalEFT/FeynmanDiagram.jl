@@ -9,7 +9,7 @@
 # end
 
 ################## Generate Expression Tree ########################
-function _newDiag(weightType::DataType, para::Para)
+function _newDiag(weightType::DataType, para)
     # function LoopPool(name::Symbol, dim::Int, N::Int, type::DataType)
     loopBasisDim = para.internalLoopNum + para.externalLoopNum
     println("LoopBasis Dim derived from LegK: $loopBasisDim")
@@ -181,7 +181,7 @@ function bubbletoDiagTree!(weightType::DataType, ver4Nodes, para, diag, ver4, bu
     return diag
 end
 
-function ver4toDiagTree(weightType::DataType, para::Para, legK, Kidx::Int = para.externalLoopNum + 1, Tidx::Int = 1, loopNum = para.internalLoopNum, factor = 1.0,
+function ver4toDiagTree(weightType::DataType, para, legK, Kidx::Int = para.externalLoopNum + 1, Tidx::Int = 1, loopNum = para.internalLoopNum, factor = 1.0,
     diag = _newDiag(weightType, para), ver4 = Ver4{SVector{2,Int}}(para, loopNum, Tidx))
 
     # KinL, KoutL, KinR, KoutR = legK[1], legK[2], legK[3], legK[4]
@@ -261,6 +261,20 @@ end
 - para         : parameters to generate the diagram tree
 - LegK         : momentum basis of external legs, only three of them are expected: [left in, left out, right in], the dimension of each legK is called loopBasis dimension.
 """
-function build(weightType::DataType, para::Para, LegK)
+function build(weightType::DataType, para, LegK)
     return ver4toDiagTree(weightType, para, LegK)
 end
+
+"""
+    function build(weightType::DataType, para::Para, LegK)
+    
+    build DiagTree for the one-particle-irreducible 4-point vertex function using the parquet algorithm
+
+# Arguments:
+- weightType   : type of the weight of the propagators and the vertex functions
+- para         : parameters to generate the diagram tree
+- LegK         : momentum basis of external legs, only three of them are expected: [left in, left out, right in], the dimension of each legK is called loopBasis dimension.
+"""
+# function buildVer4(generic::GenericPara, LegK, chan, F, V, Fouter = F, Vouter = V)
+#     return ver4toDiagTree(weightType, para, LegK)
+# end
