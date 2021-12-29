@@ -275,6 +275,6 @@ end
 - para         : parameters to generate the diagram tree
 - LegK         : momentum basis of external legs, only three of them are expected: [left in, left out, right in], the dimension of each legK is called loopBasis dimension.
 """
-# function buildVer4(generic::GenericPara, LegK, chan, F, V, Fouter = F, Vouter = V)
+# function buildVer4(para, LegK, chan, F, V, All = union(F, V); Fouter = F, Vouter = V, Allouter = All)
 #     return ver4toDiagTree(weightType, para, LegK)
 # end
