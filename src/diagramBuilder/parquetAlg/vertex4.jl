@@ -127,7 +127,7 @@ struct Bubble{_Ver4} # template Bubble to avoid mutually recursive struct
 
                 GT0 = (LvT[OUTR], RvT[INL])
                 G0 = Green(GT0)
-                push!(ver4.G[1], Gx)
+                push!(ver4.G[1], G0)
 
                 VerTidx = addTidx(ver4, VerT)
                 for tpair in ver4.Tpair
@@ -210,7 +210,7 @@ struct Ver4{W}
         level = 1, id = [1,]
     ) where {W}
 
-        @assert para.totalTauNum >= (loopNum + 1) * para.interactionTauNum
+        @assert para.totalTauNum >= (loopNum + 1) * para.interactionTauNum "$para"
 
         if level > 1
             @assert Set(F) == Set(Fouter)

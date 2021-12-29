@@ -22,13 +22,14 @@
     end
 
     function testDiagWeigt(loopNum, chan, Kdim = 3, spin = 2, interactionTauNum = 1)
+        println("$(Int.(chan)) Channel Test")
 
         para = Builder.GenericPara(
             loopDim = Kdim,
             interactionTauNum = interactionTauNum,
             innerLoopNum = loopNum,
             totalLoopNum = loopNum + 2,
-            totalTauNum = 2,
+            totalTauNum = (loopNum + 1) * interactionTauNum,
             spin = spin,
             weightType = Float64,
             firstLoopIdx = 3,
@@ -66,10 +67,13 @@
         ver4 = Parquet.Ver4{Parquet.Weight}(para, chan, F, V)
 
         KinL, KoutL, KinR, KoutR = varK[:, 1], varK[:, 1], varK[:, 2], varK[:, 2]
-        Parquet.eval(para, ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV)
+        Parquet.eval(para, ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV, true)
+        # println(ver4.G[1])
+        # println(ver4.bubble[1].map[1].G0)
+        # println(ver4.bubble[1].map[1].Gx)
 
         printstyled("parquet evaluator cost:", color = :green)
-        @time Parquet.eval(para, ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV)
+        @time Parquet.eval(para, ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV, true)
         w2 = ver4.weight[1]
 
         # Parquet.print_tree(ver4)

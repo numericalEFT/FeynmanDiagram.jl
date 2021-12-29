@@ -63,14 +63,14 @@ function eval(para, ver4::Ver4, varK, varT, legK, evalG::Function, evalV::Functi
 
     evalAllG!(G[1], K, T0idx, varT, evalG, kwargs...)
 
-    Kdim = length(K)
-    PhaseFactor = 1.0 / (2π)^Kdim
+    PhaseFactor = 1.0 / (2π)^para.loopDim
     Kt, Ku, Ks = similar(K), similar(K), similar(K) #Kt, Ku and Ks will be re-created later, slow in performance
 
     for c in ver4.chan
         if c == T
             @. Kt = KoutL + K - KinL
             evalAllG!(G[Int(c)], Kt, T0idx, varT, evalG, kwargs...)
+            # println("initializating", G[Int(c)])
         elseif c == U
             # can not be in box!
             @. Ku = KoutR + K - KinL
