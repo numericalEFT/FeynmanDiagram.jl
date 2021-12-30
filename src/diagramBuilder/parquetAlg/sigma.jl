@@ -1,30 +1,68 @@
-function buildSigma(para, externLoop; F=[I, U, S], V=[I, T, U], All=union(F, V), diag=newDiagTree(para))
-    @assert para.innerLoopNum>=1
+function buildSigma(para, externLoop; F = [I, U, S], V = [I, T, U], All = union(F, V), diag = newDiagTree(para, Tuple{Int,Int}, :Sigma), subdiagram = false)
+    @assert para.innerLoopNum >= 1
+
+    @assert length(externLoop) == para.totalLoopNum
+    K = zero(externLoop)
+    K[para.firstLoopIdx] = 1.0
+    ver4Para = reconstruct(para, firstLoopIdx = para.firstLoopIdx + 1, innerLoopNum = para.innerLoopNum - 1)
+    t0 = para.firstTauIdx
+
+    if subdiagram && (Girreducible in para.filter)
+        return diag
+    end
 
     if para.innerLoopNum == 1
-        # Hatree-Fock diagram
-    else
-        KinL, KoutR = deepcopy(externalLoop), deepcopy(externalLoop)
-        KinR = zeros(totalLoopNum)  
-        KinR[Kidx] = 1.0
-        KoutL = deepcopy(KinR)
-        para = Para(chan, Fchan, Vchan, loopNum - 3, 3, loopDim, interactionTauNum, spin)
-        diag, ver4, dir, ex = build(weightType, para, )
+        # Fock diagram
+        @assert ver4Para.innerLoopNum == 0
 
-        loopBasisDim = para.internalLoopNum + para.externalLoopNum
-        println("LoopBasis Dim derived from LegK: $loopBasisDim")
-        Kpool = DiagTree.LoopPool(:K, para.loopDim, loopBasisDim, Float64)
-        Tbasis = Tuple{Int,Int}
-        # Tpool = DiagTree.uncachedPool(Tbasis)
-        if para.interactionTauNum == 2
-            Gpool = DiagTree.propagatorPool(:Gpool, weightType)
-            Vpool = DiagTree.propagatorPool(:Vpool, weightType)
-            Wpool = DiagTree.propagatorPool(:Wpool, weightType)
-            return DiagTree.Diagrams(Kpool, (Gpool, Vpool, Wpool), weightType, nodeParaType = Tuple{Int,Int,Int,Int})
-        elseif para.interactionTauNum == 1
-            Gpool = DiagTree.propagatorPool(:Gpool, weightType)
-            Vpool = DiagTree.propagatorPool(:Vpool, weightType)
-            return DiagTree.Diagrams(Kpool, (Gpool, Vpool), weightType, nodeParaType = Tuple{Int,Int,Int,Int})
+        #if it is a Fock subdiagram, then check NoFock filter
+        if subdiagram && (NoFock in para.filter)
+            return diag
+        end
+
+        factor = 1 / (2π)^para.loopDim
+
+        qe = K - externLoop
+        if para.interactionTauNum == 1
+            g = DiagTree.addPropagator!(diag, :Gpool, 0, :Gsigma; loop = K, site = (t0, t0))
+            v = DiagTree.addPropagator!(diag, :Vpool, 1, :Vsigma; loop = qe)
+            n = DiagTree.addNodeByName!(diag, DiagTree.MUL, :GV, factor; Gpool = g, Vpool = v, para = (t0, t0))
+            return diag, [n,]
+        elseif para.interactionTauNum == 2
+            gv = DiagTree.addPropagator!(diag, :Gpool, 0, :Gsigma; loop = K, site = (t0, t0))
+            v = DiagTree.addPropagator!(diag, :Vpool, 1, :Vsigma; loop = qe, site = (t0, t0 + 1))
+            nv = DiagTree.addNodeByName!(diag, DiagTree.MUL, :GV, factor; Gpool = gv, Vpool = v, para = (t0, t0))
+
+            gw = DiagTree.addPropagator!(diag, :Gpool, 0, :Gsigma; loop = K, site = (t0, t0 + 1))
+            w = DiagTree.addPropagator!(diag, :Wpool, 1, :Wsigma; loop = qe, site = (t0, t0 + 1))
+
+            nw = DiagTree.addNodeByName!(diag, DiagTree.MUL, :GW, factor; Gpool = gw, Wpool = w, para = (t0, t0 + 1))
+            return diag, [nv, nw]
+        else
+            error("not implemented!")
+        end
+    else
+        #     KinL, KoutR = deepcopy(externalLoop), deepcopy(externalLoop)
+        #     KinR = zeros(totalLoopNum)  
+        #     KinR[Kidx] = 1.0
+        #     KoutL = deepcopy(KinR)
+        #     para = Para(chan, Fchan, Vchan, loopNum - 3, 3, loopDim, interactionTauNum, spin)
+        #     diag, ver4, dir, ex = build(weightType, para, )
+
+        #     loopBasisDim = para.internalLoopNum + para.externalLoopNum
+        #     println("LoopBasis Dim derived from LegK: $loopBasisDim")
+        #     Kpool = DiagTree.LoopPool(:K, para.loopDim, loopBasisDim, Float64)
+        #     Tbasis = Tuple{Int,Int}
+        #     # Tpool = DiagTree.uncachedPool(Tbasis)
+        #     if para.interactionTauNum == 2
+        #         Gpool = DiagTree.propagatorPool(:Gpool, weightType)
+        #         Vpool = DiagTree.propagatorPool(:Vpool, weightType)
+        #         Wpool = DiagTree.propagatorPool(:Wpool, weightType)
+        #         return DiagTree.Diagrams(Kpool, (Gpool, Vpool, Wpool), weightType, nodeParaType = Tuple{Int,Int,Int,Int})
+        #     elseif para.interactionTauNum == 1
+        #         Gpool = DiagTree.propagatorPool(:Gpool, weightType)
+        #         Vpool = DiagTree.propagatorPool(:Vpool, weightType)
+        #         return DiagTree.Diagrams(Kpool, (Gpool, Vpool), weightType, nodeParaType = Tuple{Int,Int,Int,Int})
 
     end
 end
@@ -79,10 +117,10 @@ end
 #     }else{
 #       VerWeight += Prop.Interaction(Var.LoopMom[1], 0);
 #     }
-    
+
 #     return GWeight * VerWeight * Factor;
 #   }
-  
+
 
 #   // Sigma with LoopNum>=2
 #   G1.K = Var.LoopMom[1];

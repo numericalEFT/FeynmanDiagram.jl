@@ -1,6 +1,7 @@
 module Parquet
 using StaticArrays, PyCall
 using AbstractTrees
+using Parameters
 using ..DiagTree
 
 import ..Filter
@@ -29,4 +30,5 @@ include("eval.jl")
 include("io.jl")
 include("filter.jl")
 include("ver4toDiagTree.jl")
+include("sigma.jl")
 end

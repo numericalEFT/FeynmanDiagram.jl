@@ -104,7 +104,7 @@
         testDiagWeigt(l, [Parquet.T, Parquet.U, Parquet.S]; timing = true)
     end
 
-    para, diag, ver4 = testDiagWeigt(2, [Parquet.T, Parquet.U, Parquet.S]; filter = [Builder.Proper], eval = false)
+    para, diag, ver4 = testDiagWeigt(3, [Parquet.T, Parquet.U, Parquet.S]; filter = [Builder.Proper], eval = false)
     for i in 1:length(diag.basisPool)
         @test (diag.basisPool.basis[:, i] ≈ para.transferLoop) == false
     end

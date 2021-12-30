@@ -29,7 +29,7 @@ end
     firstLoopIdx::Int = 1
     firstTauIdx::Int = 1
 
-    filter::Vector{Filter} = []
+    filter::Vector{Filter} = [NoHatree,] #usually, the Hatree subdiagram should be removed
     transferLoop = [] #Set it to be the transfer momentum/frequency if you want to check the diagrams are proper or not
 end
 
