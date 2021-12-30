@@ -88,6 +88,9 @@ function bubbletoDiagTree!(diag, ver4, bubble, legK, factor = 1.0)
     for map in b.map
         g0 = DiagTree.addPropagator!(diag, :Gpool, Gorder, :G0; site = shift(map.G0.Tpair, t0), loop = K)
         Factor = SymFactor[Int(c)] / (2π)^para.loopDim
+        if para.isFermi == false
+            Factor = abs(Factor)
+        end
         extT = shift(map.v.Tpair[map.vidx], t0)
 
         if c == T
