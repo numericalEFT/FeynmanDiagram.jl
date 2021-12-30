@@ -182,6 +182,27 @@ end
 end
 
 @testset "Green" begin
+    Parquet = Builder.Parquet
 
-    # function buildG(para, externLoop, extT, subdiagram = false; F = [I, U, S], V = [I, T, U], All = union(F, V), diag = newDiagTree(para, :G))
+    function buildG(loopNum, extT, firstTauIdx; Kdim = 3, spin = 2, interactionTauNum = 1, filter = [], isFermi = true)
+        para = Builder.GenericPara(
+            loopDim = Kdim,
+            interactionTauNum = interactionTauNum,
+            innerLoopNum = loopNum,
+            totalLoopNum = loopNum + 1,
+            totalTauNum = loopNum * interactionTauNum + 2,
+            isFermi = isFermi,
+            spin = spin,
+            weightType = Float64,
+            firstLoopIdx = 2,
+            firstTauIdx = firstTauIdx,
+            filter = filter
+        )
+        extK = zeros(para.totalLoopNum)
+        extK[1] = 1.0
+        diag, Gidx = Parquet.buildG(para, extK, extT)
+        return diag, Gidx
+    end
+    diag, Gidx = buildG(2, [1, 2], 3; filter = [])
+    DiagTree.showTree(diag, Gidx)
 end
