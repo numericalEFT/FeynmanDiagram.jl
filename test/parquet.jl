@@ -55,8 +55,8 @@
         #################### DiagTree ####################################
         diag, ver4, dir, ex = Parquet.buildVer4(para, legK, chan, F, V)
         # the weighttype of the returned ver4 is Float64
-        rootDir = DiagTree.addNode!(diag, DiagTree.ADD, :dir; child = dir, para = (0, 0, 0, 0))
-        rootEx = DiagTree.addNode!(diag, DiagTree.ADD, :ex; child = ex, para = (0, 0, 0, 0))
+        rootDir = DiagTree.addNode!(diag, DiagTree.ADD, :dir; child = dir, para = [0, 0, 0, 0])
+        rootEx = DiagTree.addNode!(diag, DiagTree.ADD, :ex; child = ex, para = [0, 0, 0, 0])
         diag.root = [rootDir, rootEx]
 
         ver4 = Parquet.Ver4{Parquet.Weight}(para, chan, F, V)
