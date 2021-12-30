@@ -1,6 +1,6 @@
 # addNode!(Td, para, diag, lver, rver, DI, EX)
 function shift(Tpair, t0)
-    return Tuple([t0 + t for t in Tpair])
+    return [t0 + t for t in Tpair]
 end
 
 isPropagator(ver) = (ver.loopNum == 0)
@@ -199,9 +199,10 @@ function ver4toDiagTree!(diag, ver4, legK, factor = 1.0)
     return diag, ver4, dir, ex
 end
 
-function newDiagTree(para, nodeParaType::DataType, name::Symbol = :none)
+function newDiagTree(para, name::Symbol = :none)
     weightType = para.weightType
     Kpool = DiagTree.LoopPool(:K, para.loopDim, para.totalLoopNum, Float64)
+    nodeParaType = Vector{Int}
 
     if para.interactionTauNum == 2
         Gpool = DiagTree.propagatorPool(:Gpool, weightType)
@@ -229,7 +230,7 @@ end
 - LegK         : momentum basis of external legs, only three of them are expected: [left in, left out, right in], the dimension of each legK is called loopBasis dimension.
 """
 function buildVer4(para, LegK, chan, F, V, All = union(F, V);
-    Fouter = F, Vouter = V, Allouter = All, factor = 1.0, diag = newDiagTree(para, Tuple{Int,Int,Int,Int}, :Ver4))
+    Fouter = F, Vouter = V, Allouter = All, factor = 1.0, diag = newDiagTree(para, :Ver4))
 
     @assert length(LegK[1]) == length(LegK[2]) == length(LegK[3]) == para.totalLoopNum
 

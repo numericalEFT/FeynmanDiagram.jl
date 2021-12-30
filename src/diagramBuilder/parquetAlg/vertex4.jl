@@ -248,6 +248,9 @@ struct Ver4{W}
             end
         else # loopNum>0
             for c in chan
+                if c == I
+                    continue
+                end
                 for ol = 0:loopNum-1
                     bubble = Bubble(ver4, c, ol, level, id)
                     if length(bubble.map) > 0  # if zero, bubble diagram doesn't exist

@@ -1,5 +1,5 @@
 
-function buildSigma(para, externLoop; F = [I, U, S], V = [I, T, U], All = union(F, V), diag = newDiagTree(para, Tuple{Int,Int}, :Sigma), subdiagram = false)
+function buildSigma(para, externLoop; F = [I, U, S], V = [I, T, U], All = union(F, V), diag = newDiagTree(para, :Sigma), subdiagram = false)
     @assert para.innerLoopNum >= 1
 
     @assert length(externLoop) == para.totalLoopNum
@@ -12,11 +12,10 @@ function buildSigma(para, externLoop; F = [I, U, S], V = [I, T, U], All = union(
             node = diag.nodePool.object[nidx]
             extT = node.para
             sigmaT = (extT[INL], extT[OUTR])
-            if haskey(dict, sigmaT)
-                push!(dict[sigmaT], (nidx, extT))
-            else
+            if haskey(dict, sigmaT) == false
                 dict[sigmaT] = []
             end
+            push!(dict[sigmaT], (nidx, extT))
         end
     end
 
@@ -38,7 +37,7 @@ function buildSigma(para, externLoop; F = [I, U, S], V = [I, T, U], All = union(
         if para.interactionTauNum == 1
             g = DiagTree.addPropagator!(diag, :Gpool, 0, :Gsigma; loop = K, site = (t0, t0))
             v = DiagTree.addPropagator!(diag, :Vpool, 1, :Vsigma; loop = qe)
-            n = DiagTree.addNodeByName!(diag, DiagTree.MUL, :GV, factor; Gpool = g, Vpool = v, para = (t0, t0))
+            n = DiagTree.addNodeByName!(diag, DiagTree.MUL, :GV, factor; Gpool = g, Vpool = v, para = [t0, t0])
             return diag, [n,]
         elseif para.interactionTauNum == 2
             gv = DiagTree.addPropagator!(diag, :Gpool, 0, :Gsigma; loop = K, site = (t0, t0))
@@ -48,22 +47,29 @@ function buildSigma(para, externLoop; F = [I, U, S], V = [I, T, U], All = union(
             gw = DiagTree.addPropagator!(diag, :Gpool, 0, :Gsigma; loop = K, site = (t0, t0 + 1))
             w = DiagTree.addPropagator!(diag, :Wpool, 1, :Wsigma; loop = qe, site = (t0, t0 + 1))
 
-            nw = DiagTree.addNodeByName!(diag, DiagTree.MUL, :GW, factor; Gpool = gw, Wpool = w, para = (t0, t0 + 1))
+            nw = DiagTree.addNodeByName!(diag, DiagTree.MUL, :GW, factor; Gpool = gw, Wpool = w, para = [t0, t0 + 1])
             return diag, [nv, nw]
         else
             error("not implemented!")
         end
     elseif para.innerLoopNum >= 2
-        factor = 1 / (2π)^para.loopDim
+        #all self-energy diagram will be countered twice, thus a factor 1/2 is needed.
+        factor = 1 / (2π)^para.loopDim * (1 / 2)
         KinL, KoutR = externLoop, externLoop
         KinR, KoutL = K, K
         ver4Para = reconstruct(para, firstLoopIdx = para.firstLoopIdx + 1, innerLoopNum = para.innerLoopNum - 1)
         diag, ver4, dir, ex = buildVer4(ver4Para, [KinL, KoutL, KinR, KoutR],
             [T,], F, V, All; Fouter = [], Allouter = All, diag = diag)
 
+        # println(dir)
+        # println(ex)
+        # DiagTree.showTree(diag, dir[1])
+        # DiagTree.showTree(diag, ex[1])
+
         dict = Dict{Tuple{Int,Int},Vector{Any}}()
-        group!(dict, diag, dir)
-        group!(dict, diag, ex)
+        collapse!(dict, diag, dir)
+        collapse!(dict, diag, ex)
+        # println(dict)
 
         root = []
         for key in keys(dict)
@@ -71,10 +77,13 @@ function buildSigma(para, externLoop; F = [I, U, S], V = [I, T, U], All = union(
             for (nidx, extT) in dict[key]
                 g = DiagTree.addPropagator!(diag, :Gpool, 0, :Gsigma; site = (extT[OUTL], extT[INR]), loop = K)
                 push!(nodes, DiagTree.addNodeByName!(diag, DiagTree.MUL, :sigma, factor;
-                    child = nidx, Gpool = g, para = (extT[INL], extT[OUTR])))
+                    child = nidx, Gpool = g, para = [extT[INL], extT[OUTR]]))
             end
-            push!(root, DiagTree.addNode!(diag, DiagTree.ADD, :sigma;
-                child = nodes, para = para = (extT[INL], extT[OUTR])))
+
+            rootidx = DiagTree.addNode!(diag, DiagTree.ADD, :sigma;
+                child = nodes, para = collect(key)) #key = (extT[INL], extT[OUTR])
+            # println(rootidx)
+            push!(root, rootidx)
         end
         return diag, root
     end

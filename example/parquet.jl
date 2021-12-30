@@ -35,11 +35,11 @@ evalK(basis) = sum([basis[i] * varK[i] for i in 1:para.totalLoopNum])
 evalT(Tidx) = varT[Tidx]
 
 diag, ver4, dir, ex = Parquet.buildVer4(para, legK, chan, F, V)
-rootDir = DiagTree.addNode!(diag, DiagTree.ADD, :dir; child = dir, para = (0, 0, 0, 0))
-rootEx = DiagTree.addNode!(diag, DiagTree.ADD, :ex; child = ex, para = (0, 0, 0, 0))
+rootDir = DiagTree.addNode!(diag, DiagTree.ADD, :dir; child = dir, para = [0, 0, 0, 0])
+rootEx = DiagTree.addNode!(diag, DiagTree.ADD, :ex; child = ex, para = [0, 0, 0, 0])
 diag.root = [rootDir, rootEx]
 
-DiagTree.showTree(diag, rootDir)
+# DiagTree.showTree(diag, rootDir)
 
 ##################### lower level subroutines  #######################################
 ver4 = Parquet.Ver4{Float64}(para, chan, F, V)
@@ -66,11 +66,11 @@ println("Iterate the tree use the AbstractTrees interface: ")
 
 para = Builder.GenericPara(
     loopDim = 3,
-    innerLoopNum = 1,
-    totalLoopNum = 2,
-    totalTauNum = 1,
+    innerLoopNum = 3,
+    totalLoopNum = 4,
+    totalTauNum = 3,
     spin = 2,
-    interactionTauNum = 2,
+    interactionTauNum = 1,
     firstLoopIdx = 2,
     weightType = Float64,
     filter = [Builder.NoHatree,]
@@ -79,5 +79,6 @@ para = Builder.GenericPara(
 K0 = zeros(para.totalLoopNum)
 K0[1] = 1.0
 sigma, root = Parquet.buildSigma(para, K0)
-root = DiagTree.addNode!(sigma, DiagTree.ADD, :sum; child = root, para = (0, 0))
-DiagTree.showTree(sigma, root)
+# println(root)
+rootidx = DiagTree.addNode!(sigma, DiagTree.ADD, :sum; child = root, para = [0, 0])
+DiagTree.showTree(sigma, rootidx)
