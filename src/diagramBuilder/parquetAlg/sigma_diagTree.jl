@@ -9,7 +9,8 @@
 function buildSigma(para, externLoop, subdiagram = false; F = [I, U, S], V = [I, T, U], All = union(F, V), diag = newDiagTree(para, :Sigma))
     @assert para.innerLoopNum >= 1
     @assert length(externLoop) == para.totalLoopNum
-    @assert para.totalTauNum >= para.firstTauIdx -1 + (para.innerLoopNum + 1) * para.interactionTauNum
+    tright = para.firstTauIdx - 1 + para.innerLoopNum * para.interactionTauNum
+    @assert para.totalTauNum >= tright "totalTauNum = $(para.totalTauNum) is not enough, sigma requires $tright\npara=$para"
     @assert para.totalLoopNum >= para.firstLoopIdx -1 + para.innerLoopNum
 
     K = zero(externLoop)
@@ -135,7 +136,7 @@ function buildG(para, externLoop, extT, subdiagram = false; F = [I, U, S], V = [
         return diag, g
     end
 
-    gleft = DiagTree.addPropagator!(diag, :Gpool, 0, :gleft; site = [tin, tin + 1], loop = externLoop)
+    gleft = DiagTree.addPropagator!(diag, :Gpool, 0, :gleft; site = [tin, tstart], loop = externLoop)
 
     partition = []
     for n = 1:para.innerLoopNum
@@ -144,26 +145,30 @@ function buildG(para, externLoop, extT, subdiagram = false; F = [I, U, S], V = [
     end
     #e.g., loopNum =5 ==> partition = [[4, 1], [1, 4], [3, 2], [2, 3], [1, 1, 1, 1], ...]
 
-    firstTauIdx = para.firstTauIdx
-    firstLoopIdx = para.firstLoopIdx
     Gall = []
+    # println(partition)
     for p in partition
         #e.g., p = [4, 1]
         Gnode = []
+        firstTauIdx = para.firstTauIdx
+        firstLoopIdx = para.firstLoopIdx
         for (li, loop) in enumerate(p)
             #e.g., loop = 4 or 1
             sigmaPara = reconstruct(para, firstTauIdx = firstTauIdx, firstLoopIdx = firstLoopIdx, innerLoopNum = loop)
             diag, root = buildSigma(sigmaPara, externLoop, true; F = F, V = V, All = All, diag = diag)
             tleft = firstTauIdx
-            tright = (li == length(p)) ? tend : tleft + loop * para.interactionTauNum
+            tright = (li == length(p)) ? tout : tleft + loop * para.interactionTauNum
 
             nodes = []
             for r in root
                 #build node Σ(tleft, t)*g(t, tright)
                 n = DiagTree.getNode(diag, r)
                 t1, t2 = n.para
-                @assert t1 == firstTauIdx
-                @assert t2 < tright
+                # println(t1, ", ", t2, ", ", loop)
+                @assert t1 == firstTauIdx "sigma left Tidx = $t1 is not equal to the firstTauIdx = $firstTauIdx"
+                if li < length(p) #not the last g
+                    @assert t2 < tright "sigma right Tidx = $t2 should be smaller than $tright"
+                end
                 g = DiagTree.addPropagator!(diag, :Gpool, 0, :g; site = [t2, tright], loop = externLoop)
                 push!(nodes, DiagTree.addNodeByName!(diag, DiagTree.MUL, :Σg, child = r, Gpool = g, para = [tleft, tright]))
             end
