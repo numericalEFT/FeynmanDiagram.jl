@@ -29,6 +29,6 @@ include("vertex4.jl")
 include("eval.jl")
 include("io.jl")
 include("filter.jl")
-include("ver4toDiagTree.jl")
-include("sigma.jl")
+include("ver4_diagTree.jl")
+include("sigma_diagTree.jl")
 end
