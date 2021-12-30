@@ -258,3 +258,21 @@ function addNodeByName!(diag::Diagrams, operator, name, factor = 1.0; child = []
     # println(kwargs, " got ", components)
     return addNode!(diag, operator, name, factor; propagator = components, child = child, para = para)
 end
+
+"""
+    function getNode(diag::Diagrams, nidx::Int)
+    
+    get Node in the diag with the index nidx.
+"""
+function getNode(diag::Diagrams, nidx::Int)
+    return diag.nodePool.object[nidx]
+end
+
+"""
+    function getNodeWeight(diag::Diagrams, nidx::Int)
+    
+    get Node weight in the diag with the index nidx.
+"""
+function getNodeWeight(diag::Diagrams, nidx::Int)
+    return diag.nodePool.current[nidx]
+end
