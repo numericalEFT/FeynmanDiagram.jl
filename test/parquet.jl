@@ -174,3 +174,14 @@ end
     # DiagTree.showTree(diag, diag.root[1])
 
 end
+
+@testset "Partition" begin
+    p = Builder.Parquet.orderedPartition(5, 2)
+    expect = [[4, 1], [1, 4], [2, 3], [3, 2]]
+    @test Set(p) == Set(expect)
+end
+
+@testset "Green" begin
+
+    # function buildG(para, externLoop, extT, subdiagram = false; F = [I, U, S], V = [I, T, U], All = union(F, V), diag = newDiagTree(para, :G))
+end

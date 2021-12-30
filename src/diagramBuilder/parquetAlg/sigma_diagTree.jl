@@ -1,8 +1,17 @@
 
-function buildSigma(para, externLoop; F = [I, U, S], V = [I, T, U], All = union(F, V), diag = newDiagTree(para, :Sigma), subdiagram = false)
-    @assert para.innerLoopNum >= 1
+"""
+    function buildSigma(para, externLoop; F = [I, U, S], V = [I, T, U], All = union(F, V), diag = newDiagTree(para, :Sigma), subdiagram = false)
+    
+    build sigma diagram. 
+    When sigma is created as a subdiagram, then no Fock diagram is generated if para.filter contains NoFock, and no sigma diagram is generated if para.filter contains Girreducible
 
+"""
+function buildSigma(para, externLoop, subdiagram = false; F = [I, U, S], V = [I, T, U], All = union(F, V), diag = newDiagTree(para, :Sigma))
+    @assert para.innerLoopNum >= 1
     @assert length(externLoop) == para.totalLoopNum
+    @assert para.totalTauNum >= para.firstTauIdx -1 + (para.innerLoopNum + 1) * para.interactionTauNum
+    @assert para.totalLoopNum >= para.firstLoopIdx -1 + para.innerLoopNum
+
     K = zero(externLoop)
     K[para.firstLoopIdx] = 1.0
     t0 = para.firstTauIdx
@@ -20,15 +29,16 @@ function buildSigma(para, externLoop; F = [I, U, S], V = [I, T, U], All = union(
     end
 
     if subdiagram && (Girreducible in para.filter)
-        return diag
+        return diag, []
     end
+
 
     if para.innerLoopNum == 1
         # Fock diagram
 
         #if it is a Fock subdiagram, then check NoFock filter
         if subdiagram && (NoFock in para.filter)
-            return diag
+            return diag, []
         end
 
         factor = 1 / (2π)^para.loopDim
@@ -80,6 +90,101 @@ function buildSigma(para, externLoop; F = [I, U, S], V = [I, T, U], All = union(
             # println(rootidx)
             push!(root, rootidx)
         end
+
+        # make sure all incoming Tau idx is equal
+        for nidx in root
+            node = DiagTree.getNode(diag, nidx)
+            @assert node.para[1] == para.firstTauIdx
+        end
         return diag, root
+    end
+end
+
+function orderedPartition(total, n)
+    unorderedPartition = collect(partitions(total, n))
+    #e.g., loopNum =5, n =2 ==> unordered = [[4, 1], [3, 2]]
+    orderedPartition = Vector{Vector{Int}}([])
+    for p in unorderedPartition
+        append!(orderedPartition, Set(permutations(p)))
+    end
+    #e.g., loopNum =5, n =2 ==> ordered = [[4, 1], [1, 4], [3, 2], [2, 3]]
+    return orderedPartition
+end
+
+"""
+    function buildG(para, externLoop, extT, subdiagram = false; F = [I, U, S], V = [I, T, U], All = union(F, V), diag = newDiagTree(para, :G))
+    
+    Build composite Green's function.
+    By definition, para.firstTauIdx is the first Tau index of the left most self-energy subdiagram.
+
+- `extT`: [Tau index of the left leg, Tau index of the right leg]
+
+"""
+function buildG(para, externLoop, extT, subdiagram = false; F = [I, U, S], V = [I, T, U], All = union(F, V), diag = newDiagTree(para, :G))
+    tin, tout = extT[1], extT[2]
+    innerTauNum = para.innerLoopNum * para.interactionTauNum
+    tstart = para.firstTauIdx
+    tend = para.firstTauIdx + innerTauNum - 1
+
+    @assert tin < tstart || tin > tend "external T index cann't be with in [$tstart, $tend]"
+    @assert tout < tstart || tout > tend "external T index cann't be with in [$tstart, $tend]"
+
+    #generate all possible ordered partition of the loops
+    if (Girreducible in para.filter) || para.innerLoopNum == 0
+        g = DiagTree.addPropagator!(diag, :Gpool, 0, :G; site = [tin, tout], loop = externLoop)
+        return diag, g
+    end
+
+    gleft = DiagTree.addPropagator!(diag, :Gpool, 0, :gleft; site = [tin, tin + 1], loop = externLoop)
+
+    partition = []
+    for n = 1:para.innerLoopNum
+        append!(partition, orderedPartition(para.innerLoopNum, n))
+        #e.g., loopNum =5, n =2 ==> ordered = [[4, 1], [1, 4], [3, 2], [2, 3]]
+    end
+    #e.g., loopNum =5 ==> partition = [[4, 1], [1, 4], [3, 2], [2, 3], [1, 1, 1, 1], ...]
+
+    firstTauIdx = para.firstTauIdx
+    firstLoopIdx = para.firstLoopIdx
+    Gall = []
+    for p in partition
+        #e.g., p = [4, 1]
+        Gnode = []
+        for (li, loop) in enumerate(p)
+            #e.g., loop = 4 or 1
+            sigmaPara = reconstruct(para, firstTauIdx = firstTauIdx, firstLoopIdx = firstLoopIdx, innerLoopNum = loop)
+            diag, root = buildSigma(sigmaPara, externLoop, true; F = F, V = V, All = All, diag = diag)
+            tleft = firstTauIdx
+            tright = (li == length(p)) ? tend : tleft + loop * para.interactionTauNum
+
+            nodes = []
+            for r in root
+                #build node Σ(tleft, t)*g(t, tright)
+                n = DiagTree.getNode(diag, r)
+                t1, t2 = n.para
+                @assert t1 == firstTauIdx
+                @assert t2 < tright
+                g = DiagTree.addPropagator!(diag, :Gpool, 0, :g; site = [t2, tright], loop = externLoop)
+                push!(nodes, DiagTree.addNodeByName!(diag, DiagTree.MUL, :Σg, child = r, Gpool = g, para = [tleft, tright]))
+            end
+
+            if isempty(nodes) == false
+                #build node \sum_t Σ(tleft, t)*g(t, tright)
+                push!(Gnode, DiagTree.addNode!(diag, DiagTree.ADD, :Σgsum, child = nodes, para = [tleft, tright]))
+            end
+
+            firstLoopIdx += loop
+            firstTauIdx += loop * para.interactionTauNum
+        end
+        if isempty(Gnode) == false
+            push!(Gall, DiagTree.addNodeByName!(diag, DiagTree.MUL, :G; child = Gnode, Gpool = gleft, para = [tin, tout]))
+        end
+    end
+
+    if isempty(Gall) == false
+        Gidx = DiagTree.addNodeByName!(diag, DiagTree.ADD, :Gsum; child = Gall, para = [tin, tout])
+        return diag, Gidx
+    else
+        return diag, 0
     end
 end
