@@ -190,8 +190,9 @@ function ver4toDiagTree!(diag, ver4, legK, factor = 1.0)
             (w[DI] != 0) && push!(childdir, w[DI])
             (w[EX] != 0) && push!(childex, w[EX])
         end
-        nodeD = DiagTree.addNode!(diag, DiagTree.ADD, :dir, factor; child = childdir, para = ver4.Tpair[i])
-        nodeE = DiagTree.addNode!(diag, DiagTree.ADD, :ex, factor; child = childex, para = ver4.Tpair[i])
+        t0 = para.firstTauIdx
+        nodeD = DiagTree.addNode!(diag, DiagTree.ADD, :dir, factor; child = childdir, para = shift(ver4.Tpair[i], t0))
+        nodeE = DiagTree.addNode!(diag, DiagTree.ADD, :ex, factor; child = childex, para = shift(ver4.Tpair[i], t0))
         ver4.weight[i] = @SVector [nodeD, nodeE]
         (nodeD != 0) && push!(dir, nodeD)
         (nodeE != 0) && push!(ex, nodeE)
