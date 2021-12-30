@@ -1,7 +1,7 @@
 module Parquet
 using StaticArrays, PyCall
 using AbstractTrees
-using Parameters
+using Parameters, Combinatorics
 using ..DiagTree
 
 import ..Filter
