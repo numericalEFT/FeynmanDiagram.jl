@@ -218,7 +218,8 @@ function newDiagTree(para, nodeParaType::DataType, name::Symbol = :none)
 end
 
 """
-    function build(weightType::DataType, para::Para, LegK)
+    function buildVer4(para, LegK, chan, F, V, All = union(F, V);
+        Fouter = F, Vouter = V, Allouter = All, factor = 1.0, diag = newDiagTree(para, Tuple{Int,Int,Int,Int}, :Ver4))
     
     build DiagTree for the one-particle-irreducible 4-point vertex function using the parquet algorithm
 

@@ -1,11 +1,24 @@
+
 function buildSigma(para, externLoop; F = [I, U, S], V = [I, T, U], All = union(F, V), diag = newDiagTree(para, Tuple{Int,Int}, :Sigma), subdiagram = false)
     @assert para.innerLoopNum >= 1
 
     @assert length(externLoop) == para.totalLoopNum
     K = zero(externLoop)
     K[para.firstLoopIdx] = 1.0
-    ver4Para = reconstruct(para, firstLoopIdx = para.firstLoopIdx + 1, innerLoopNum = para.innerLoopNum - 1)
     t0 = para.firstTauIdx
+
+    function collapse!(dict, diag, nodes)
+        for nidx in nodes
+            node = diag.nodePool.object[nidx]
+            extT = node.para
+            sigmaT = (extT[INL], extT[OUTR])
+            if haskey(dict, sigmaT)
+                push!(dict[sigmaT], (nidx, extT))
+            else
+                dict[sigmaT] = []
+            end
+        end
+    end
 
     if subdiagram && (Girreducible in para.filter)
         return diag
@@ -13,7 +26,6 @@ function buildSigma(para, externLoop; F = [I, U, S], V = [I, T, U], All = union(
 
     if para.innerLoopNum == 1
         # Fock diagram
-        @assert ver4Para.innerLoopNum == 0
 
         #if it is a Fock subdiagram, then check NoFock filter
         if subdiagram && (NoFock in para.filter)
@@ -41,29 +53,30 @@ function buildSigma(para, externLoop; F = [I, U, S], V = [I, T, U], All = union(
         else
             error("not implemented!")
         end
-    else
-        #     KinL, KoutR = deepcopy(externalLoop), deepcopy(externalLoop)
-        #     KinR = zeros(totalLoopNum)  
-        #     KinR[Kidx] = 1.0
-        #     KoutL = deepcopy(KinR)
-        #     para = Para(chan, Fchan, Vchan, loopNum - 3, 3, loopDim, interactionTauNum, spin)
-        #     diag, ver4, dir, ex = build(weightType, para, )
+    elseif para.innerLoopNum >= 2
+        factor = 1 / (2π)^para.loopDim
+        KinL, KoutR = externLoop, externLoop
+        KinR, KoutL = K, K
+        ver4Para = reconstruct(para, firstLoopIdx = para.firstLoopIdx + 1, innerLoopNum = para.innerLoopNum - 1)
+        diag, ver4, dir, ex = buildVer4(ver4Para, [KinL, KoutL, KinR, KoutR],
+            [T,], F, V, All; Fouter = [], Allouter = All, diag = diag)
 
-        #     loopBasisDim = para.internalLoopNum + para.externalLoopNum
-        #     println("LoopBasis Dim derived from LegK: $loopBasisDim")
-        #     Kpool = DiagTree.LoopPool(:K, para.loopDim, loopBasisDim, Float64)
-        #     Tbasis = Tuple{Int,Int}
-        #     # Tpool = DiagTree.uncachedPool(Tbasis)
-        #     if para.interactionTauNum == 2
-        #         Gpool = DiagTree.propagatorPool(:Gpool, weightType)
-        #         Vpool = DiagTree.propagatorPool(:Vpool, weightType)
-        #         Wpool = DiagTree.propagatorPool(:Wpool, weightType)
-        #         return DiagTree.Diagrams(Kpool, (Gpool, Vpool, Wpool), weightType, nodeParaType = Tuple{Int,Int,Int,Int})
-        #     elseif para.interactionTauNum == 1
-        #         Gpool = DiagTree.propagatorPool(:Gpool, weightType)
-        #         Vpool = DiagTree.propagatorPool(:Vpool, weightType)
-        #         return DiagTree.Diagrams(Kpool, (Gpool, Vpool), weightType, nodeParaType = Tuple{Int,Int,Int,Int})
+        dict = Dict{Tuple{Int,Int},Vector{Any}}()
+        group!(dict, diag, dir)
+        group!(dict, diag, ex)
 
+        root = []
+        for key in keys(dict)
+            nodes = []
+            for (nidx, extT) in dict[key]
+                g = DiagTree.addPropagator!(diag, :Gpool, 0, :Gsigma; site = (extT[OUTL], extT[INR]), loop = K)
+                push!(nodes, DiagTree.addNodeByName!(diag, DiagTree.MUL, :sigma, factor;
+                    child = nidx, Gpool = g, para = (extT[INL], extT[OUTR])))
+            end
+            push!(root, DiagTree.addNode!(diag, DiagTree.ADD, :sigma;
+                child = nodes, para = para = (extT[INL], extT[OUTR])))
+        end
+        return diag, root
     end
 end
 
