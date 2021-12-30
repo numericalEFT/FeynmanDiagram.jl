@@ -22,6 +22,7 @@ end
     totalTauNum::Int
     spin::Int
 
+    isFermi::Bool = true
     weightType::DataType = Float64
 
     interactionTauNum::Int = 1
