@@ -11,7 +11,7 @@ chan = [Parquet.T, Parquet.U, Parquet.S]
 F = [Parquet.U, Parquet.S]
 V = [Parquet.T, Parquet.U]
 
-# para = Parquet.Para(chan, F, V, loopNum, 2, Kdim, interactionTauNum, spin)
+###################### ver4 to DiagTree ###########################################
 para = Builder.GenericPara(
     loopDim = 3,
     innerLoopNum = 1,
@@ -60,3 +60,24 @@ println("Iterate the tree use the AbstractTrees interface: ")
 
 ########## use ete3 package to visualize tree
 # Parquet.showTree(ver4, verbose = 1, depth = 3)  # visualize tree using python3 package ete3
+
+
+######################################## self-energy  ################################################
+
+para = Builder.GenericPara(
+    loopDim = 3,
+    innerLoopNum = 1,
+    totalLoopNum = 2,
+    totalTauNum = 1,
+    spin = 2,
+    interactionTauNum = 2,
+    firstLoopIdx = 2,
+    weightType = Float64,
+    filter = [Builder.NoHatree,]
+)
+
+K0 = zeros(para.totalLoopNum)
+K0[1] = 1.0
+sigma, root = Parquet.buildSigma(para, K0)
+root = DiagTree.addNode!(sigma, DiagTree.ADD, :sum; child = root, para = (0, 0))
+DiagTree.showTree(sigma, root)
