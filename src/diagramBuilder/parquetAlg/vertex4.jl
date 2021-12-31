@@ -389,15 +389,17 @@ function test(ver4)
         # G0 = G[1]
         # Gx = G[Int(bub.chan)]
         for map in bub.map
-            LverT, RverT = collect(Lver.Tpair[map.lidx]), collect(Rver.Tpair[map.ridx]) # 8 τ variables relevant for this bubble
-            G1T, GxT = collect(map.G0.Tpair), collect(map.Gx.Tpair) # 4 internal variables
-            ExtT = collect(ver4.Tpair[map.vidx]) # 4 external variables
-            @assert compare(vcat(G1T, GxT, ExtT), vcat(LverT, RverT)) "chan $(bub.chan): G1=$G1T, Gx=$GxT, external=$ExtT don't match with Lver4 $LverT and Rver4 $RverT"
+            if ver4.para.interactionTauNum > 0
+                LverT, RverT = collect(Lver.Tpair[map.lidx]), collect(Rver.Tpair[map.ridx]) # 8 τ variables relevant for this bubble
+                G1T, GxT = collect(map.G0.Tpair), collect(map.Gx.Tpair) # 4 internal variables
+                ExtT = collect(ver4.Tpair[map.vidx]) # 4 external variables
+                @assert compare(vcat(G1T, GxT, ExtT), vcat(LverT, RverT)) "chan $(bub.chan): G1=$G1T, Gx=$GxT, external=$ExtT don't match with Lver4 $LverT and Rver4 $RverT"
 
-            tauSet = Set(vcat(G1T, GxT, ExtT))
-            for t in tauSet
-                @assert t <= maxTauIdx(ver4) "Tauidx $t is too large! 
-                 firstTauIdx = $(para.firstTauIdx), maxTauIdx =$(maxTauIdx(ver4)), loopNum=$(para.innerLoopNum)\n$para"
+                tauSet = Set(vcat(G1T, GxT, ExtT))
+                for t in tauSet
+                    @assert t <= maxTauIdx(ver4) "Tauidx $t is too large! 
+                    firstTauIdx = $(para.firstTauIdx), maxTauIdx =$(maxTauIdx(ver4)), loopNum=$(para.innerLoopNum)\n$para"
+                end
             end
         end
     end
