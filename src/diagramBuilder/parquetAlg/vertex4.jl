@@ -269,7 +269,7 @@ end
 
 function maxTauIdx(ver4::Ver4)
     para = ver4.para
-    return (ver4.loopNum + 1) * para.interactionTauNum + para.firstTauIdx + ver4.TidxOffset
+    return (ver4.loopNum + 1) * para.interactionTauNum + para.firstTauIdx - 1 + ver4.TidxOffset
 end
 
 function compare(A, B)
@@ -290,6 +290,8 @@ function test(ver4)
         return
     end
 
+    @assert maxTauIdx(ver4) <= para.totalTauNum
+
     G = ver4.G
     for bub in ver4.bubble
         Lver, Rver = bub.Lver, bub.Rver
@@ -303,7 +305,7 @@ function test(ver4)
 
             tauSet = Set(vcat(G1T, GxT, ExtT))
             for t in tauSet
-                @assert t + para.firstTauIdx + ver4.TidxOffset <= maxTauIdx(ver4)
+                @assert t + para.firstTauIdx <= maxTauIdx(ver4) "Tauidx $t is too large! maxTauIdx =$(maxTauIdx(ver4)), TidxOffset = $(ver4.TidxOffset), loopNum=$(ver4.loopNum)\n$para"
             end
         end
     end
