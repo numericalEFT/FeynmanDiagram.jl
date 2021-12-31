@@ -19,13 +19,15 @@ end
 
 mutable struct Green
     loopNum::Int
+    loopidxOffset::Int
+    Tspan::Tuple{Int,Int}
     Tpair::Tuple{Int,Int}
     weight::Float64
-    function Green(inT, outT, loopNum = 0)
-        return new(loopNum, (inT, outT), 0.0)
-    end
-    function Green(tpair::Tuple{Int,Int}, loopNum = 0)
-        return new(loopNum, tpair, 0.0)
+    # function Green(inT, outT, loopNum = 0)
+    #     return new(loopNum, (inT, outT), 0.0)
+    # end
+    function Green(tpair::Tuple{Int,Int}, tspan::Tuple{Int,Int}, loopNum = 0, loopidxOffset = 0)
+        return new(loopNum, loopidxOffset, tspan, tpair, 0.0)
     end
 end
 
@@ -94,10 +96,24 @@ struct Bubble{_Ver4} # template Bubble to avoid mutually recursive struct
 
         # oR = ver4.loopNum - 1 - oL # loopNum of the right vertex
         lLpidxOffset = ver4.loopidxOffset
-        rLpidxOffset = lLpidxOffset + oL + 1
+        G0lpidxOffset = lLpidxOffset + oL
+        rLpidxOffset = G0lpidxOffset + oG0 + 1
+        GxlpidxOffset = rLpidxOffset + oR
+        @assert GxlpidxOffset + oGx == ver4.loopidxOffset + ver4.loopNum
+
         LTidx = ver4.TidxOffset  # the first τ index of the left vertex
         TauNum = ver4.para.interactionTauNum # maximum tau number for each bare interaction
-        RTidx = LTidx + (oL + 1) * TauNum   # the first τ index of the right sub-vertex
+
+        LverTspan = (LTidx, LTidx + (oL + 1) * TauNum)
+        G0Tspan = (LverTspan[2] + 1, LverTspan[2] + oG0 * TauNum) #for loop 0 G, span[1] may be larger than span[2]!
+        RverTspan = (G0Tspan[2] + 1, G0Tspan[2] + (oR + 1) * TauNum)
+        GxTspan = (RverTspan[2] + 1, RverTspan[2] + oGx * TauNum) #for loop 0 G, span[1] may be larger than span[2]!
+        @assert GxTspan[2] == ver4.TidxOffset + (ver4.loopNum + 1) * TauNum "$(GxTspan[2]) != $(ver4.TidxOffset + (ver4.loopNum + 1) * TauNum)\n
+         loopNum = $(ver4.loopNum), tidxoffset =$(ver4.TidxOffset), partition = $partition"
+        @assert GxTspan[2] + ver4.para.firstTauIdx <= maxTauIdx(ver4) "GxTspan=$GxTspan, firstTauIdx=$(ver4.para.firstTauIdx), maxTauIdx=$(maxTauIdx(ver4))\n$(ver4.para)"
+
+        # RTidx = LTidx + (oL + 1) * TauNum   # the first τ index of the right sub-vertex
+        RTidx = RverTspan[1]
 
         if chan == T || chan == U
             LverChan = (level == 1) ? ver4.Fouter : ver4.F
@@ -140,11 +156,11 @@ struct Bubble{_Ver4} # template Bubble to avoid mutually recursive struct
                     throw("This channel is invalid!")
                 end
 
-                Gx = Green(GTx, oGx)
+                Gx = Green(GTx, GxTspan, oGx, GxlpidxOffset)
                 push!(ver4.G[Int(chan)], Gx)
 
                 GT0 = (LvT[OUTR], RvT[INL])
-                G0 = Green(GT0, oG0)
+                G0 = Green(GT0, G0Tspan, oG0, G0lpidxOffset)
                 push!(ver4.G[1], G0)
 
                 VerTidx = addTidx(ver4, VerT)
@@ -331,7 +347,8 @@ function test(ver4)
 
             tauSet = Set(vcat(G1T, GxT, ExtT))
             for t in tauSet
-                @assert t + para.firstTauIdx <= maxTauIdx(ver4) "Tauidx $t is too large! maxTauIdx =$(maxTauIdx(ver4)), TidxOffset = $(ver4.TidxOffset), loopNum=$(ver4.loopNum)\n$para"
+                @assert t + para.firstTauIdx <= maxTauIdx(ver4) "Tauidx $t is too large! 
+                 firstTauIdx = $(para.firstTauIdx), maxTauIdx =$(maxTauIdx(ver4)), TidxOffset = $(ver4.TidxOffset), loopNum=$(ver4.loopNum)\n$para"
             end
         end
     end
