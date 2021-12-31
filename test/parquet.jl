@@ -170,7 +170,7 @@ end
     #     ret = getSigma(l, spin = 2, isFermi = false, filter = [Builder.Girreducible,])
     #     testDiagramNumber(ret...)
     # end
-    para, diag, _, _ = getSigma(2, spin = 2, isFermi = false, filter = [])
+    para, diag, _, _ = getSigma(3, spin = 2, isFermi = false, filter = [])
     for r in diag.root
         DiagTree.showTree(diag, r)
     end
