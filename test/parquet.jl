@@ -203,6 +203,18 @@ end
         diag, Gidx = Parquet.buildG(para, extK, extT)
         return diag, Gidx
     end
-    diag, Gidx = buildG(2, [1, 2], 3; filter = [])
-    DiagTree.showTree(diag, Gidx)
+    # diag, Gidx = buildG(2, [1, 2], 3; filter = [])
+    # DiagTree.showTree(diag, Gidx)
+
+    # If G is irreducible, then only loop-0 G exist
+    diag, Gidx = buildG(1, [1, 2], 3; filter = [Builder.Girreducible,])
+    @test Gidx == 0
+
+    # If Fock diagram is not allowed, then one-loop G diagram should not be exist
+    diag, Gidx = buildG(1, [1, 2], 3; filter = [Builder.NoFock,])
+    @test Gidx == 0
+    # Even if Fock diagram is not allowed, then loopNum>=1 G diagram can exist
+    diag, Gidx = buildG(2, [1, 2], 3; filter = [Builder.NoFock,])
+    @test Gidx > 0
+
 end

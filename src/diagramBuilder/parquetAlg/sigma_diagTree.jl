@@ -131,9 +131,15 @@ function buildG(para, externLoop, extT, subdiagram = false; F = [I, U, S], V = [
     @assert tout < tstart || tout > tend "external T index cann't be with in [$tstart, $tend]"
 
     #generate all possible ordered partition of the loops
-    if (Girreducible in para.filter) || para.innerLoopNum == 0
+    if (Girreducible in para.filter) && para.innerLoopNum == 0
         g = DiagTree.addPropagator!(diag, :Gpool, 0, :G; site = [tin, tout], loop = externLoop)
         return diag, g
+    elseif (Girreducible in para.filter) && para.innerLoopNum > 0
+        return diag, 0
+    end
+
+    if (NoFock in para.filter) && para.innerLoopNum == 1
+        return diag, 0
     end
 
     gleft = DiagTree.addPropagator!(diag, :Gpool, 0, :gleft; site = [tin, tstart], loop = externLoop)
@@ -186,10 +192,8 @@ function buildG(para, externLoop, extT, subdiagram = false; F = [I, U, S], V = [
         end
     end
 
-    if isempty(Gall) == false
-        Gidx = DiagTree.addNodeByName!(diag, DiagTree.ADD, :Gsum; child = Gall, para = [tin, tout])
-        return diag, Gidx
-    else
-        return diag, 0
-    end
+    @assert isempty(Gall) == false
+
+    Gidx = DiagTree.addNodeByName!(diag, DiagTree.ADD, :Gsum; child = Gall, para = [tin, tout])
+    return diag, Gidx
 end
