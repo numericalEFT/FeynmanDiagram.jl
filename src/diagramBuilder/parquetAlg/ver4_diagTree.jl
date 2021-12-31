@@ -5,6 +5,22 @@ end
 
 isPropagator(ver) = (ver.loopNum == 0)
 
+function orderedPartition(_total, n, lowerbound = 1)
+    @assert lowerbound >= 0
+    total = _total - n * (lowerbound - 1)
+    @assert total >= n
+    unorderedPartition = collect(partitions(total, n))
+    #e.g., loopNum =5, n =2 ==> unordered = [[4, 1], [3, 2]]
+    orderedPartition = Vector{Vector{Int}}([])
+    for p in unorderedPartition
+        p = p .+ (lowerbound - 1)
+        @assert sum(p) == _total
+        append!(orderedPartition, Set(permutations(p)))
+    end
+    #e.g., loopNum =5, n =2 ==> ordered = [[4, 1], [1, 4], [3, 2], [2, 3]]
+    return orderedPartition
+end
+
 function addNode!(nodes, diag, map, name::Symbol, lc, rc, g0, gc, factor = 1.0)
     ver4, Lver, Rver = map.v, map.l, map.r
     para = ver4.para

@@ -154,17 +154,6 @@ function buildSigma(para, externLoop, subdiagram = false; F = [I, U, S], V = [I,
     return diag, root
 end
 
-function orderedPartition(total, n)
-    unorderedPartition = collect(partitions(total, n))
-    #e.g., loopNum =5, n =2 ==> unordered = [[4, 1], [3, 2]]
-    orderedPartition = Vector{Vector{Int}}([])
-    for p in unorderedPartition
-        append!(orderedPartition, Set(permutations(p)))
-    end
-    #e.g., loopNum =5, n =2 ==> ordered = [[4, 1], [1, 4], [3, 2], [2, 3]]
-    return orderedPartition
-end
-
 """
     function buildG(para, externLoop, extT, subdiagram = false; F = [I, U, S], V = [I, T, U], All = union(F, V), diag = newDiagTree(para, :G))
     
