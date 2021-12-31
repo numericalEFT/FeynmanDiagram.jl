@@ -18,16 +18,20 @@ function orderedPartition(_total, n, lowerbound = 1)
 end
 
 mutable struct Green
-    loopNum::Int
-    loopidxOffset::Int
-    Tspan::Tuple{Int,Int}
+    para::GenericPara
+    # loopNum::Int
+    # loopidxOffset::Int
+    # Tspan::Tuple{Int,Int}
     Tpair::Tuple{Int,Int}
     weight::Float64
     # function Green(inT, outT, loopNum = 0)
     #     return new(loopNum, (inT, outT), 0.0)
     # end
-    function Green(tpair::Tuple{Int,Int}, tspan::Tuple{Int,Int}, loopNum = 0, loopidxOffset = 0)
-        return new(loopNum, loopidxOffset, tspan, tpair, 0.0)
+    # function Green(tpair::Tuple{Int,Int}, tspan::Tuple{Int,Int}, loopNum = 0, loopidxOffset = 0)
+    #     return new(loopNum, loopidxOffset, tspan, tpair, 0.0)
+    # end
+    function Green(para, tpair::Tuple{Int,Int})
+        return new(para, tpair, 0.0)
     end
 end
 
@@ -77,6 +81,7 @@ end
 struct Bubble{_Ver4} # template Bubble to avoid mutually recursive struct
     id::Int
     chan::Channel
+    loopIdx::Int # the index of the inner loop of the bubble
     Lver::_Ver4
     Rver::_Ver4
     map::Vector{IdxMap{_Ver4}}
@@ -84,36 +89,46 @@ struct Bubble{_Ver4} # template Bubble to avoid mutually recursive struct
     function Bubble(ver4::_Ver4, chan::Channel, partition::Vector{Int}, level::Int, _id::Vector{Int}) where {_Ver4}
         # @assert chan in para.chan "$chan isn't a bubble channels!"
         # @assert oL < ver4.loopNum "LVer loopNum must be smaller than the ver4 loopNum"
-        @assert sum(partition) == ver4.loopNum - 1 "partition = $partition should sum to ver4 loopNum -1 =$(ver4.loopNum-1)"
+        para = ver4.para
+        @assert sum(partition) == para.innerLoopNum - 1 "partition = $partition should sum to ver4 loopNum -1 =$(para.innerLoopNum-1)"
         for p in partition
             @assert p >= 0
         end
+
+        TauNum = para.interactionTauNum # maximum tau number for each bare interaction
 
         idbub = _id[1] # id vector will be updated later, so store the current id as the bubble id
         _id[1] += 1
 
         oL, oR, oG0, oGx = partition[1], partition[2], partition[3], partition[4]
+        # example 1: [1, 2, 1, 1] - total loop list [1, 2, 3, 4, 5, 6], tau list [1, 2, 3, 4, 5, 6]
+        # example 2: [1, 2, 0, 0] - total loop list [1, 2, 3, 4], tau list [1, 2, 3, 4, 5]
 
-        # oR = ver4.loopNum - 1 - oL # loopNum of the right vertex
-        lLpidxOffset = ver4.loopidxOffset
-        G0lpidxOffset = lLpidxOffset + oL
-        rLpidxOffset = G0lpidxOffset + oG0 + 1
-        GxlpidxOffset = rLpidxOffset + oR
-        @assert GxlpidxOffset + oGx == ver4.loopidxOffset + ver4.loopNum
+        LfirstLoopIdx = para.firstLoopIdx
+        # eg1: 1 - [1, ], eg2: 1 - [1, ]
+        G0firstLoopIdx = LfirstLoopIdx + oL #first inner loop index of G0 (may not exist if G0 loop number is zero) 
+        # eg1: 2 - [2, ], eg2: 2 - [,]
+        LoopIdx = LfirstLoopIdx + oL + oG0
+        # eg1: 3 - [3, ], eg2: 2 - [2, ]
+        RfirstLoopIdx = LoopIdx + 1
+        # eg1: 4 - [4, 5], eg2: 3 - [3, 4]
+        GxfirstLoopIdx = RfirstLoopIdx + oR #first inner loop index of Gx (may not exist if Gx loop number is zero)
+        # eg1: 6 - [6, ], eg2: 5 - [,]
+        loopRight = RfirstLoopIdx + oR + oGx - 1
+        # eg1: 4+2+1-1 == 6, eg2: 3+2+0-1 == 4
+        @assert loopRight == maxLoopIdx(ver4)
 
-        LTidx = ver4.TidxOffset  # the first τ index of the left vertex
-        TauNum = ver4.para.interactionTauNum # maximum tau number for each bare interaction
-
-        LverTspan = (LTidx, LTidx + (oL + 1) * TauNum)
-        G0Tspan = (LverTspan[2] + 1, LverTspan[2] + oG0 * TauNum) #for loop 0 G, span[1] may be larger than span[2]!
-        RverTspan = (G0Tspan[2] + 1, G0Tspan[2] + (oR + 1) * TauNum)
-        GxTspan = (RverTspan[2] + 1, RverTspan[2] + oGx * TauNum) #for loop 0 G, span[1] may be larger than span[2]!
-        @assert GxTspan[2] == ver4.TidxOffset + (ver4.loopNum + 1) * TauNum "$(GxTspan[2]) != $(ver4.TidxOffset + (ver4.loopNum + 1) * TauNum)\n
-         loopNum = $(ver4.loopNum), tidxoffset =$(ver4.TidxOffset), partition = $partition"
-        @assert GxTspan[2] + ver4.para.firstTauIdx <= maxTauIdx(ver4) "GxTspan=$GxTspan, firstTauIdx=$(ver4.para.firstTauIdx), maxTauIdx=$(maxTauIdx(ver4))\n$(ver4.para)"
-
-        # RTidx = LTidx + (oL + 1) * TauNum   # the first τ index of the right sub-vertex
-        RTidx = RverTspan[1]
+        LfirstTauIdx = para.firstTauIdx
+        # eg1: 1 - [1, 2], eg2: 1 - [1, 2]
+        G0firstTauIdx = LfirstTauIdx + (oL + 1) * TauNum
+        # eg1: 3 - [3, ], eg2: 3 - [, ]
+        RfirstTauIdx = LfirstTauIdx + (oL + 1) * TauNum + oG0 * TauNum
+        # eg1: 4 - [4, 5, 6], eg2: 3 - [3, 4, 5]
+        GxfirstTauIdx = RfirstTauIdx + (oR + 1) * TauNum
+        # eg1: 7 - [7, ], eg2: 6 - [, ]
+        tauRight = RfirstTauIdx + (oR + 1) * TauNum + oGx * TauNum - 1
+        # eg1: 4+3+1-1==7, eg2: 3+3+0-1==5
+        @assert tauRight == maxTauIdx(ver4)
 
         if chan == T || chan == U
             LverChan = (level == 1) ? ver4.Fouter : ver4.F
@@ -125,17 +140,15 @@ struct Bubble{_Ver4} # template Bubble to avoid mutually recursive struct
             error("chan $chan isn't implemented!")
         end
 
-        # println("left ver chan: ", LsubVer, ", loop=", oL)
-        # W = eltype(ver4.weight)
-        Lver = _Ver4(ver4.para, LverChan, ver4.F, ver4.V, ver4.All;
-            loopNum = oL, loopidxOffset = lLpidxOffset, tidxOffset = LTidx,
+        lPara = reconstruct(para, innerLoopNum = oL, firstLoopIdx = LfirstLoopIdx, firstTauIdx = LfirstTauIdx)
+        Lver = _Ver4(lPara, LverChan, ver4.F, ver4.V, ver4.All;
             level = level + 1, id = _id)
 
-        Rver = _Ver4(ver4.para, RverChan, ver4.F, ver4.V, ver4.All;
-            loopNum = oR, loopidxOffset = rLpidxOffset, tidxOffset = RTidx,
+        rPara = reconstruct(para, innerLoopNum = oR, firstLoopIdx = RfirstLoopIdx, firstTauIdx = RfirstTauIdx)
+        Rver = _Ver4(rPara, RverChan, ver4.F, ver4.V, ver4.All;
             level = level + 1, id = _id)
 
-        @assert Lver.TidxOffset == ver4.TidxOffset "Lver Tidx must be equal to vertex4 Tidx! LoopNum: $(ver4.loopNum), LverLoopNum: $(Lver.loopNum), chan: $chan"
+        @assert lPara.firstTauIdx == para.firstTauIdx "Lver Tidx must be equal to vertex4 Tidx! LoopNum: $(para.innerLoopNum), LverLoopNum: $(lPara.innerLoopNum), chan: $chan"
 
         ############## construct IdxMap ########################################
         map = []
@@ -156,16 +169,18 @@ struct Bubble{_Ver4} # template Bubble to avoid mutually recursive struct
                     throw("This channel is invalid!")
                 end
 
-                Gx = Green(GTx, GxTspan, oGx, GxlpidxOffset)
+                gxPara = reconstruct(para, innerLoopNum = oGx, firstLoopIdx = GxfirstLoopIdx, firstTauIdx = GxfirstTauIdx)
+                Gx = Green(gxPara, GTx)
                 push!(ver4.G[Int(chan)], Gx)
 
                 GT0 = (LvT[OUTR], RvT[INL])
-                G0 = Green(GT0, G0Tspan, oG0, G0lpidxOffset)
+                g0Para = reconstruct(para, innerLoopNum = oG0, firstLoopIdx = G0firstLoopIdx, firstTauIdx = G0firstTauIdx)
+                G0 = Green(g0Para, GT0)
                 push!(ver4.G[1], G0)
 
                 VerTidx = addTidx(ver4, VerT)
                 for tpair in ver4.Tpair
-                    @assert tpair[1] == ver4.TidxOffset "InL Tidx must be the same for all Tpairs in the vertex4"
+                    @assert tpair[1] == para.firstTauIdx "InL Tidx must be the same for all Tpairs in the vertex4"
                 end
 
                 ###### test if the internal + exteranl variables is equal to the total 8 variables of the left and right sub-vertices ############
@@ -180,7 +195,7 @@ struct Bubble{_Ver4} # template Bubble to avoid mutually recursive struct
                 push!(ver4.child[VerTidx], idxmap)
             end
         end
-        return new{_Ver4}(idbub, chan, Lver, Rver, map)
+        return new{_Ver4}(idbub, chan, LoopIdx, Lver, Rver, map)
     end
 end
 
@@ -211,7 +226,7 @@ end
 3) `showTree(ver4::Ver4)` to visualize the tree using the python package ete3. You have to install ete3 properly to use this function.
 """
 struct Ver4{W}
-    para::Any
+    para::GenericPara
     chan::Vector{Channel} # list of channels
     F::Vector{Channel}
     V::Vector{Channel}
@@ -225,9 +240,10 @@ struct Ver4{W}
     level::Int
 
     #######  vertex properties   ###########################
-    loopNum::Int
-    loopidxOffset::Int # offset of the loop index from the first internal loop
-    TidxOffset::Int # offset of the Tidx from the tau index of the left most incoming leg
+    # loopNum::Int
+    # loopIdx::Int
+    # loopidxOffset::Int # offset of the loop index from the first internal loop
+    # TidxOffset::Int # offset of the Tidx from the tau index of the left most incoming leg
 
     ######  components of vertex  ##########################
     G::SVector{16,Vector{Green}}  # large enough to host all Green's function
@@ -238,13 +254,18 @@ struct Ver4{W}
     child::Vector{Vector{IdxMap{Ver4{W}}}}
     weight::Vector{W}
 
+    # function Ver4{W}(para, chan, F, V, All = union(F, V);
+    #     loopNum = para.innerLoopNum, loopidxOffset = 0, tidxOffset = 0,
+    #     Fouter = F, Vouter = V, Allouter = All,
+    #     level = 1, id = [1,]
+    # ) where {W}
+
     function Ver4{W}(para, chan, F, V, All = union(F, V);
-        loopNum = para.innerLoopNum, loopidxOffset = 0, tidxOffset = 0,
         Fouter = F, Vouter = V, Allouter = All,
         level = 1, id = [1,]
     ) where {W}
 
-        @assert para.totalTauNum >= (loopNum + 1) * para.interactionTauNum "$para"
+        @assert para.totalTauNum >= (para.innerLoopNum + 1) * para.interactionTauNum "$para"
 
         if level > 1
             @assert Set(F) == Set(Fouter)
@@ -258,15 +279,18 @@ struct Ver4{W}
         @assert (S in Vouter) == false "V vertex is particle-particle irreducible, so that S channel is not allowed in V"
 
         g = @SVector [Vector{Green}([]) for i = 1:16]
-        ver4 = new{W}(para, chan, F, V, All, Fouter, Vouter, Allouter, id[1], level, loopNum, loopidxOffset, tidxOffset, g, [], [], [[],], [])
+        ver4 = new{W}(para, chan, F, V, All, Fouter, Vouter, Allouter, id[1], level, g, [], [], [[],], [])
         id[1] += 1
+
+        loopNum = para.innerLoopNum
+
         @assert loopNum >= 0
 
 
         if loopNum == 0
-            tidx = tidxOffset
+            tidx = para.firstTauIdx
             # bare interaction may have one, two or four independent tau variables
-            if para.interactionTauNum == 1  # instantaneous interaction
+            if para.interactionTauNum == 1 || para.interactionTauNum == 0  # instantaneous interaction (interaction without time variable)
                 addTidx(ver4, (tidx, tidx, tidx, tidx)) #direct instant intearction
                 addTidx(ver4, (tidx, tidx, tidx, tidx)) #exchange instant interaction
             end
@@ -311,7 +335,12 @@ end
 
 function maxTauIdx(ver4::Ver4)
     para = ver4.para
-    return (ver4.loopNum + 1) * para.interactionTauNum + para.firstTauIdx - 1 + ver4.TidxOffset
+    return (para.innerLoopNum + 1) * para.interactionTauNum + para.firstTauIdx - 1
+end
+
+function maxLoopIdx(ver4::Ver4)
+    para = ver4.para
+    return para.firstLoopIdx + para.innerLoopNum - 1
 end
 
 function compare(A, B)
@@ -333,12 +362,13 @@ function test(ver4)
     end
 
     @assert maxTauIdx(ver4) <= para.totalTauNum
+    @assert maxLoopIdx(ver4) <= para.totalLoopNum
 
     G = ver4.G
     for bub in ver4.bubble
         Lver, Rver = bub.Lver, bub.Rver
-        @assert Rver.loopidxOffset + Rver.loopNum == ver4.loopidxOffset + ver4.loopNum "Rver loopidx offset = $(Rver.loopidxOffset) + loopNum = $(Rver.loopNum) is not equal to ver4 loopidx offset = $(ver4.loopidxOffset) + loopNum = $(ver4.loopNum)"
-        @assert Lver.loopNum + Rver.loopNum + 1 == ver4.loopNum
+        # G0 = G[1]
+        # Gx = G[Int(bub.chan)]
         for map in bub.map
             LverT, RverT = collect(Lver.Tpair[map.lidx]), collect(Rver.Tpair[map.ridx]) # 8 τ variables relevant for this bubble
             G1T, GxT = collect(map.G0.Tpair), collect(map.Gx.Tpair) # 4 internal variables
@@ -347,8 +377,8 @@ function test(ver4)
 
             tauSet = Set(vcat(G1T, GxT, ExtT))
             for t in tauSet
-                @assert t + para.firstTauIdx <= maxTauIdx(ver4) "Tauidx $t is too large! 
-                 firstTauIdx = $(para.firstTauIdx), maxTauIdx =$(maxTauIdx(ver4)), TidxOffset = $(ver4.TidxOffset), loopNum=$(ver4.loopNum)\n$para"
+                @assert t <= maxTauIdx(ver4) "Tauidx $t is too large! 
+                 firstTauIdx = $(para.firstTauIdx), maxTauIdx =$(maxTauIdx(ver4)), loopNum=$(para.innerLoopNum)\n$para"
             end
         end
     end
@@ -356,8 +386,8 @@ end
 
 function tpair(ver4, MaxT = 18)
     s = "\u001b[31m$(ver4.id):\u001b[0m"
-    if ver4.loopNum > 0
-        s *= "$(ver4.loopNum)lp, T$(length(ver4.Tpair))⨁ "
+    if ver4.para.innerLoopNum > 0
+        s *= "$(ver4.para.innerLoopNum)lp, T$(length(ver4.Tpair))⨁ "
     else
         s *= "⨁ "
     end
@@ -420,4 +450,5 @@ Base.IteratorSize(::Type{Bubble{Ver4{W}}}) where {W} = Base.SizeUnknown()
 Base.eltype(::Type{Bubble{Ver4{W}}}) where {W} = Bubble{Ver4{W}}
 
 AbstractTrees.printnode(io::IO, ver4::Ver4) = print(io, tpair(ver4))
-AbstractTrees.printnode(io::IO, bub::Bubble) = print(io, "\u001b[32m$(bub.id): $(bub.chan) $(bub.Lver.loopNum)Ⓧ $(bub.Rver.loopNum)\u001b[0m")
+AbstractTrees.printnode(io::IO, bub::Bubble) = print(io,
+    "\u001b[32m$(bub.id): $(bub.chan) $(bub.Lver.para.innerLoopNum)Ⓧ $(bub.Rver.para.innerLoopNum)\u001b[0m")

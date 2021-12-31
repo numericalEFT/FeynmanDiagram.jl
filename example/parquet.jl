@@ -34,10 +34,10 @@ varT = [rand() for i in 1:para.totalTauNum]
 evalK(basis) = sum([basis[i] * varK[i] for i in 1:para.totalLoopNum])
 evalT(Tidx) = varT[Tidx]
 
-diag, ver4, dir, ex = Parquet.buildVer4(para, legK, chan, F, V)
-rootDir = DiagTree.addNode!(diag, DiagTree.ADD, :dir; child = dir, para = [0, 0, 0, 0])
-rootEx = DiagTree.addNode!(diag, DiagTree.ADD, :ex; child = ex, para = [0, 0, 0, 0])
-diag.root = [rootDir, rootEx]
+# diag, ver4, dir, ex = Parquet.buildVer4(para, legK, chan, F, V)
+# rootDir = DiagTree.addNode!(diag, DiagTree.ADD, :dir; child = dir, para = [0, 0, 0, 0])
+# rootEx = DiagTree.addNode!(diag, DiagTree.ADD, :ex; child = ex, para = [0, 0, 0, 0])
+# diag.root = [rootDir, rootEx]
 
 # DiagTree.showTree(diag, rootDir)
 
@@ -61,6 +61,7 @@ println("Iterate the tree use the AbstractTrees interface: ")
 ########## use ete3 package to visualize tree
 # Parquet.showTree(ver4, verbose = 1, depth = 3)  # visualize tree using python3 package ete3
 
+exit(0)
 
 ######################################## self-energy  ################################################
 
