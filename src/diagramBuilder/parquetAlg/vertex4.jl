@@ -80,6 +80,7 @@ struct Bubble{_Ver4} # template Bubble to avoid mutually recursive struct
     id::Int
     chan::Channel
     loopIdx::Int # the index of the inner loop of the bubble
+    factor::Float64
     Lver::_Ver4
     Rver::_Ver4
     map::Vector{IdxMap{_Ver4}}
@@ -219,7 +220,13 @@ struct Bubble{_Ver4} # template Bubble to avoid mutually recursive struct
                 push!(ver4.child[VerTidx], idxmap)
             end
         end
-        return new{_Ver4}(idbub, chan, LoopIdx, Lver, Rver, map)
+
+        Factor = SymFactor[Int(chan)] / (2π)^para.loopDim
+        if para.isFermi == false
+            Factor = abs(Factor)
+        end
+
+        return new{_Ver4}(idbub, chan, LoopIdx, Factor, Lver, Rver, map)
     end
 end
 
