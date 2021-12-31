@@ -8,6 +8,9 @@ function orderedPartition(_total, n, lowerbound = 1)
     for p in unorderedPartition
         p = p .+ (lowerbound - 1)
         @assert sum(p) == _total
+        for i in p
+            @assert i >= lowerbound
+        end
         append!(orderedPartition, Set(permutations(p)))
     end
     #e.g., loopNum =5, n =2 ==> ordered = [[4, 1], [1, 4], [3, 2], [2, 3]]
@@ -80,13 +83,16 @@ struct Bubble{_Ver4} # template Bubble to avoid mutually recursive struct
         # @assert chan in para.chan "$chan isn't a bubble channels!"
         # @assert oL < ver4.loopNum "LVer loopNum must be smaller than the ver4 loopNum"
         @assert sum(partition) == ver4.loopNum "partition = $partition should sum to ver4 loopNum=$(ver4.loopNum)"
+        for p in partition
+            @assert p >= 0
+        end
 
         idbub = _id[1] # id vector will be updated later, so store the current id as the bubble id
         _id[1] += 1
 
         oL, oR, oG0, oGx = partition[1], partition[2], partition[3], partition[4]
 
-        oR = ver4.loopNum - 1 - oL # loopNum of the right vertex
+        # oR = ver4.loopNum - 1 - oL # loopNum of the right vertex
         lLpidxOffset = ver4.loopidxOffset
         rLpidxOffset = lLpidxOffset + oL + 1
         LTidx = ver4.TidxOffset  # the first τ index of the left vertex
@@ -134,11 +140,11 @@ struct Bubble{_Ver4} # template Bubble to avoid mutually recursive struct
                     throw("This channel is invalid!")
                 end
 
-                Gx = Green(GTx)
+                Gx = Green(GTx, oGx)
                 push!(ver4.G[Int(chan)], Gx)
 
                 GT0 = (LvT[OUTR], RvT[INL])
-                G0 = Green(GT0)
+                G0 = Green(GT0, oG0)
                 push!(ver4.G[1], G0)
 
                 VerTidx = addTidx(ver4, VerT)
@@ -267,10 +273,11 @@ struct Ver4{W}
                 partition = orderedPartition(loopNum, 4, 0)
                 if Girreducible in para.filter
                     #if one-partitcle irreducible, then G0 at p[3] and Gx at p[4] must be loop 0
-                    partition = [p for p in partition if p[3]==0 && p[4]==0]
-                else
+                    partition = [p for p in partition if p[3] == 0 && p[4] == 0]
+                end
 
                 for p in partition
+                    # println(p)
                     bubble = Bubble(ver4, c, p, level, id)
                     if length(bubble.map) > 0  # if zero, bubble diagram doesn't exist
                         push!(ver4.bubble, bubble)
