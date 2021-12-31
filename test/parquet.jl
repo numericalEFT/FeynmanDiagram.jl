@@ -47,7 +47,7 @@ end
             weightType = Float64,
             firstLoopIdx = 3,
             firstTauIdx = 1,
-            filter = filter,
+            filter = union(filter, [Builder.Girreducible,]), #ver4 evaluation only support one-particle-irreducible diagram
             transferLoop = KinL - KoutL
         )
 
