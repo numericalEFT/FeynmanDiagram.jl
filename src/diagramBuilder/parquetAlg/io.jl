@@ -17,7 +17,7 @@ function newickBubble(bub::Bubble)
     # Practically a postorder tree traversal
     left = newickVer4(bub.Lver)
     right = newickVer4(bub.Rver)
-    return "($left,$right)$(bub.id)_$(ChanName[bub.chan])_$(bub.Lver.loopNum)Ⓧ$(bub.Rver.loopNum)"
+    return "($left,$right)$(bub.id)_$(ChanName[bub.chan])_$(bub.Lver.para.innerLoopNum)Ⓧ$(bub.Rver.para.innerLoopNum)"
 end
 
 
@@ -26,8 +26,8 @@ function newickVer4(ver4::Ver4)
     # Practically a postorder tree traversal
 
     function tpairNewick(ver4)
-        if ver4.loopNum > 0
-            s = "$(ver4.id):lp$(ver4.loopNum)_T$(length(ver4.Tpair))⨁"
+        if ver4.para.innerLoopNum > 0
+            s = "$(ver4.id):lp$(ver4.para.innerLoopNum)_T$(length(ver4.Tpair))⨁"
         else
             s = "$(Ver4.id):⨁"
         end
@@ -44,7 +44,7 @@ function newickVer4(ver4::Ver4)
         return s
     end
 
-    if ver4.loopNum == 0
+    if ver4.para.innerLoopNum == 0
         return tpairNewick(ver4)
     else
         s = "("
@@ -78,12 +78,12 @@ function showTree(ver4; verbose = 0, depth = 999)
 
     function tpairETE(ver4, depth)
         s = "$(ver4.id):"
-        if ver4.loopNum > 0
-            s *= "$(ver4.loopNum)lp, T$(length(ver4.Tpair))⨁ "
+        if ver4.para.innerLoopNum > 0
+            s *= "$(ver4.para.innerLoopNum)lp, T$(length(ver4.Tpair))⨁ "
         else
             s *= "⨁ "
         end
-        if ver4.loopNum == 0 || ver4.level > depth
+        if ver4.para.innerLoopNum == 0 || ver4.level > depth
             MaxT = Inf
         else
             MaxT = 1
@@ -108,7 +108,7 @@ function showTree(ver4; verbose = 0, depth = 999)
             t = ete.Tree(name = " ")
         end
 
-        if ver4.loopNum == 0 || ver4.level > depth
+        if ver4.para.innerLoopNum == 0 || ver4.level > depth
             nt = t.add_child(name = tpairETE(ver4, depth))
             return t
         else
@@ -120,7 +120,7 @@ function showTree(ver4; verbose = 0, depth = 999)
         end
 
         for bub in ver4.bubble
-            nnt = nt.add_child(name = "$(bub.id): $(bub.chan) $(bub.Lver.loopNum)Ⓧ$(bub.Rver.loopNum)")
+            nnt = nt.add_child(name = "$(bub.id): $(bub.chan) $(bub.Lver.para.innerLoopNum)Ⓧ$(bub.Rver.para.innerLoopNum)")
 
             name_face = ete.TextFace(nnt.name, fgcolor = "black", fsize = 10)
             nnt.add_face(name_face, column = 0, position = "branch-top")
