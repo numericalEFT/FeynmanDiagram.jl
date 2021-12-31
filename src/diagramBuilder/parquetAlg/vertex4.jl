@@ -82,7 +82,7 @@ struct Bubble{_Ver4} # template Bubble to avoid mutually recursive struct
     function Bubble(ver4::_Ver4, chan::Channel, partition::Vector{Int}, level::Int, _id::Vector{Int}) where {_Ver4}
         # @assert chan in para.chan "$chan isn't a bubble channels!"
         # @assert oL < ver4.loopNum "LVer loopNum must be smaller than the ver4 loopNum"
-        @assert sum(partition) == ver4.loopNum "partition = $partition should sum to ver4 loopNum=$(ver4.loopNum)"
+        @assert sum(partition) == ver4.loopNum - 1 "partition = $partition should sum to ver4 loopNum -1 =$(ver4.loopNum-1)"
         for p in partition
             @assert p >= 0
         end
@@ -270,7 +270,7 @@ struct Ver4{W}
                     continue
                 end
 
-                partition = orderedPartition(loopNum, 4, 0)
+                partition = orderedPartition(loopNum - 1, 4, 0)
                 if Girreducible in para.filter
                     #if one-partitcle irreducible, then G0 at p[3] and Gx at p[4] must be loop 0
                     partition = [p for p in partition if p[3] == 0 && p[4] == 0]
