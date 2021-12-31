@@ -164,14 +164,16 @@ end
     Parquet = Builder.Parquet
 
     ##################  G^2*v expansion #########################################
-    for l = 1:4
-        ret = getSigma(l, spin = 1, isFermi = false, filter = [Builder.Girreducible,])
-        testDiagramNumber(ret...)
-        ret = getSigma(l, spin = 2, isFermi = false, filter = [Builder.Girreducible,])
-        testDiagramNumber(ret...)
+    # for l = 1:4
+    #     ret = getSigma(l, spin = 1, isFermi = false, filter = [Builder.Girreducible,])
+    #     testDiagramNumber(ret...)
+    #     ret = getSigma(l, spin = 2, isFermi = false, filter = [Builder.Girreducible,])
+    #     testDiagramNumber(ret...)
+    # end
+    para, diag, _, _ = getSigma(2, spin = 2, isFermi = false, filter = [])
+    for r in diag.root
+        DiagTree.showTree(diag, r)
     end
-    # para, diag, _, _ = getSigma(2, spin = 2, isFermi = false, filter = [Builder.Girreducible,])
-    # DiagTree.showTree(diag, diag.root[1])
 
 end
 

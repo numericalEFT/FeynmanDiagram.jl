@@ -48,6 +48,8 @@ function buildSigma(para, externLoop, subdiagram = false; F = [I, U, S], V = [I,
         paraG = reconstruct(para, innerLoopNum = para.innerLoopNum - 1, firstLoopIdx = para.firstLoopIdx + 1, firstTauIdx = t0 + 1)
         diag, g = buildG(paraG, K, [t0, t0]; diag = diag)
         if g != 0
+            # println(para, "\n", paraG)
+            # DiagTree.showTree(diag, g)
             # @assert g != 0 "Get invalid G index in GW diagram with G para =\n $paraG"
             v = DiagTree.addPropagator!(diag, :Vpool, 1, :Vsigma; loop = qe)
             n = DiagTree.addNodeByName!(diag, DiagTree.MUL, :GV, factor; Gpool = g, Vpool = v, para = [t0, t0])
@@ -99,8 +101,10 @@ function buildSigma(para, externLoop, subdiagram = false; F = [I, U, S], V = [I,
                 for (nidx, extT, spinFactor) in dict[key]
 
                     tpair = [extT[INL], extT[OUTR]]
-                    paraG = reconstruct(para, innerLoopNum = para.innerLoopNum - 1 - ver4LoopNum,
-                        firstLoopIdx = para.firstLoopIdx + 1 + ver4LoopNum, firstTauIdx = maxTauIdx(ver4) + 1)
+                    paraG = reconstruct(para,
+                        innerLoopNum = para.innerLoopNum - 1 - ver4LoopNum,
+                        firstLoopIdx = para.firstLoopIdx + 1 + ver4LoopNum,
+                        firstTauIdx = maxTauIdx(ver4) + 1)
                     diag, g = buildG(paraG, K, tpair; diag = diag)
                     # println(g, ", from", paraG)
                     # @assert g != 0 "Get invalid G index in GW diagram"
@@ -194,6 +198,7 @@ function buildG(para, externLoop, extT, subdiagram = false; F = [I, U, S], V = [
         for (li, loop) in enumerate(p)
             #e.g., loop = 4 or 1
             sigmaPara = reconstruct(para, firstTauIdx = firstTauIdx, firstLoopIdx = firstLoopIdx, innerLoopNum = loop)
+            # println("sigma loop=", loop)
             diag, root = buildSigma(sigmaPara, externLoop, true; F = F, V = V, All = All, diag = diag)
             tleft = firstTauIdx
             tright = (li == length(p)) ? tout : tleft + loop * para.interactionTauNum
@@ -228,5 +233,6 @@ function buildG(para, externLoop, extT, subdiagram = false; F = [I, U, S], V = [
     @assert isempty(Gall) == false
 
     Gidx = DiagTree.addNodeByName!(diag, DiagTree.ADD, :Gsum; child = Gall, para = [tin, tout])
+    # DiagTree.showTree(diag, Gidx)
     return diag, Gidx
 end
