@@ -267,6 +267,11 @@ struct Ver4{W}
     end
 end
 
+function maxTauIdx(ver4::Ver4)
+    para = ver4.para
+    return (ver4.loopNum + 1) * para.interactionTauNum + para.firstTauIdx + ver4.TidxOffset
+end
+
 function compare(A, B)
     # check if the elements of XY are the same as Z
     XY, Z = copy(A), copy(B)
@@ -280,6 +285,7 @@ function compare(A, B)
 end
 
 function test(ver4)
+    para = ver4.para
     if length(ver4.bubble) == 0
         return
     end
@@ -294,6 +300,11 @@ function test(ver4)
             G1T, GxT = collect(map.G0.Tpair), collect(map.Gx.Tpair) # 4 internal variables
             ExtT = collect(ver4.Tpair[map.vidx]) # 4 external variables
             @assert compare(vcat(G1T, GxT, ExtT), vcat(LverT, RverT)) "chan $(bub.chan): G1=$G1T, Gx=$GxT, external=$ExtT don't match with Lver4 $LverT and Rver4 $RverT"
+
+            tauSet = Set(vcat(G1T, GxT, ExtT))
+            for t in tauSet
+                @assert t + para.firstTauIdx + ver4.TidxOffset <= maxTauIdx(ver4)
+            end
         end
     end
 end
