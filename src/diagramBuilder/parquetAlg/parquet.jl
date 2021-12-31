@@ -12,6 +12,8 @@ import ..NoFock
 import ..NoBubble  # true to remove all bubble subdiagram
 import ..Proper  #ver4, ver3, and polarization diagrams may require to be irreducible along the transfer momentum/frequency
 
+import ..GenericPara
+
 const DI, EX = 1, 2
 const INL, OUTL, INR, OUTR = 1, 2, 3, 4
 # orginal diagrams T, U, S; particle-hole counterterm Ts, Us; and their counterterm Tc, Uc, Sc, Tsc, Usc 
