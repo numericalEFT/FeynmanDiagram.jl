@@ -19,9 +19,7 @@ end
 
 mutable struct Green
     para::GenericPara
-    # loopNum::Int
-    # loopidxOffset::Int
-    # Tspan::Tuple{Int,Int}
+    loopBasis::Vector{Float64}
     Tpair::Tuple{Int,Int}
     weight::Float64
     # function Green(inT, outT, loopNum = 0)
@@ -30,8 +28,8 @@ mutable struct Green
     # function Green(tpair::Tuple{Int,Int}, tspan::Tuple{Int,Int}, loopNum = 0, loopidxOffset = 0)
     #     return new(loopNum, loopidxOffset, tspan, tpair, 0.0)
     # end
-    function Green(para, tpair::Tuple{Int,Int})
-        return new(para, tpair, 0.0)
+    function Green(para, loopBasis, tpair::Tuple{Int,Int})
+        return new(para, loopBasis, tpair, 0.0)
     end
 end
 
@@ -140,12 +138,35 @@ struct Bubble{_Ver4} # template Bubble to avoid mutually recursive struct
             error("chan $chan isn't implemented!")
         end
 
+        ############# prepare LegK for left, right subvertex ################
+        legK = ver4.legK
+        KinL, KoutL, KinR, KoutR = legK[1], legK[2], legK[3], legK[4]
+        K = zero(KinL)
+        K[LoopIdx] = 1
+        Kt = KoutL + K - KinL
+        Ku = KoutR + K - KinL
+        Ks = KinL + KinR - K
+
+        LLegK, RLegK = [], []
+        if chan == T
+            LLegK = [KinL, KoutL, Kt, K]
+            RLegK = [K, Kt, KinR, KoutR]
+        elseif chan == U
+            LLegK = [KinL, KoutR, Ku, K]
+            RLegK = [K, Ku, KinR, KoutL]
+        elseif chan == S
+            LLegK = [KinL, Ks, KinR, K]
+            RLegK = [K, KoutL, Ks, KoutR]
+        else
+            error("not implemented!")
+        end
+
         lPara = reconstruct(para, innerLoopNum = oL, firstLoopIdx = LfirstLoopIdx, firstTauIdx = LfirstTauIdx)
-        Lver = _Ver4(lPara, LverChan, ver4.F, ver4.V, ver4.All;
+        Lver = _Ver4(lPara, LverChan, LLegK, ver4.F, ver4.V, ver4.All;
             level = level + 1, id = _id)
 
         rPara = reconstruct(para, innerLoopNum = oR, firstLoopIdx = RfirstLoopIdx, firstTauIdx = RfirstTauIdx)
-        Rver = _Ver4(rPara, RverChan, ver4.F, ver4.V, ver4.All;
+        Rver = _Ver4(rPara, RverChan, RLegK, ver4.F, ver4.V, ver4.All;
             level = level + 1, id = _id)
 
         @assert lPara.firstTauIdx == para.firstTauIdx "Lver Tidx must be equal to vertex4 Tidx! LoopNum: $(para.innerLoopNum), LverLoopNum: $(lPara.innerLoopNum), chan: $chan"
@@ -159,23 +180,26 @@ struct Bubble{_Ver4} # template Bubble to avoid mutually recursive struct
                 if chan == T
                     VerT = (LvT[INL], LvT[OUTL], RvT[INR], RvT[OUTR])
                     GTx = (RvT[OUTL], LvT[INR])
+                    Kx = Kt
                 elseif chan == U
                     VerT = (LvT[INL], RvT[OUTR], RvT[INR], LvT[OUTL])
                     GTx = (RvT[OUTL], LvT[INR])
+                    Kx = Ku
                 elseif chan == S
                     VerT = (LvT[INL], RvT[OUTL], LvT[INR], RvT[OUTR])
                     GTx = (LvT[OUTL], RvT[INR])
+                    Kx = Ks
                 else
-                    throw("This channel is invalid!")
+                    error("This channel is invalid!")
                 end
 
                 gxPara = reconstruct(para, innerLoopNum = oGx, firstLoopIdx = GxfirstLoopIdx, firstTauIdx = GxfirstTauIdx)
-                Gx = Green(gxPara, GTx)
+                Gx = Green(gxPara, Kx, GTx)
                 push!(ver4.G[Int(chan)], Gx)
 
                 GT0 = (LvT[OUTR], RvT[INL])
                 g0Para = reconstruct(para, innerLoopNum = oG0, firstLoopIdx = G0firstLoopIdx, firstTauIdx = G0firstTauIdx)
-                G0 = Green(g0Para, GT0)
+                G0 = Green(g0Para, K, GT0)
                 push!(ver4.G[1], G0)
 
                 VerTidx = addTidx(ver4, VerT)
@@ -239,28 +263,17 @@ struct Ver4{W}
     id::Int
     level::Int
 
-    #######  vertex properties   ###########################
-    # loopNum::Int
-    # loopIdx::Int
-    # loopidxOffset::Int # offset of the loop index from the first internal loop
-    # TidxOffset::Int # offset of the Tidx from the tau index of the left most incoming leg
-
     ######  components of vertex  ##########################
     G::SVector{16,Vector{Green}}  # large enough to host all Green's function
     bubble::Vector{Bubble{Ver4{W}}}
 
     ####### weight and tau table of the vertex  ###############
+    legK::Vector{Vector{Float64}}
     Tpair::Vector{Tuple{Int,Int,Int,Int}}
     child::Vector{Vector{IdxMap{Ver4{W}}}}
     weight::Vector{W}
 
-    # function Ver4{W}(para, chan, F, V, All = union(F, V);
-    #     loopNum = para.innerLoopNum, loopidxOffset = 0, tidxOffset = 0,
-    #     Fouter = F, Vouter = V, Allouter = All,
-    #     level = 1, id = [1,]
-    # ) where {W}
-
-    function Ver4{W}(para, chan, F, V, All = union(F, V);
+    function Ver4{W}(para, chan, legK, F, V, All = union(F, V);
         Fouter = F, Vouter = V, Allouter = All,
         level = 1, id = [1,]
     ) where {W}
@@ -278,8 +291,14 @@ struct Ver4{W}
         @assert (T in Fouter) == false "F vertex is particle-hole irreducible, so that T channel is not allowed in F"
         @assert (S in Vouter) == false "V vertex is particle-particle irreducible, so that S channel is not allowed in V"
 
+        @assert length(legK[1]) == length(legK[2]) == length(legK[3]) == para.totalLoopNum
+
+        KinL, KoutL, KinR = legK[1], legK[2], legK[3]
+        KoutR = (length(legK) > 3) ? legK[4] : KinL + KinR - KoutL
+        @assert KoutR ≈ KinL + KinR - KoutL
+
         g = @SVector [Vector{Green}([]) for i = 1:16]
-        ver4 = new{W}(para, chan, F, V, All, Fouter, Vouter, Allouter, id[1], level, g, [], [], [[],], [])
+        ver4 = new{W}(para, chan, F, V, All, Fouter, Vouter, Allouter, id[1], level, g, [], [KinL, KoutL, KinR, KoutR], [], [[],], [])
         id[1] += 1
 
         loopNum = para.innerLoopNum

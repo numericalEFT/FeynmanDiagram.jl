@@ -42,7 +42,7 @@ evalT(Tidx) = varT[Tidx]
 # DiagTree.showTree(diag, rootDir)
 
 ##################### lower level subroutines  #######################################
-ver4 = Parquet.Ver4{Float64}(para, chan, F, V)
+ver4 = Parquet.Ver4{Float64}(para, chan, legK, F, V)
 
 ########## use AbstractTrees interface to print/manipulate the tree
 print_tree(ver4)
@@ -59,7 +59,7 @@ println("Iterate the tree use the AbstractTrees interface: ")
 # close(io)
 
 ########## use ete3 package to visualize tree
-# Parquet.showTree(ver4, verbose = 1, depth = 3)  # visualize tree using python3 package ete3
+Parquet.showTree(ver4, verbose = 1, depth = 3)  # visualize tree using python3 package ete3
 
 exit(0)
 
