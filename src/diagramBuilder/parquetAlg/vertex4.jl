@@ -1,19 +1,28 @@
-# struct Green
-#     Tpair::Vector{Tuple{Int,Int}}
-#     weight::Vector{Float64}
-#     function Green()
-#         return new([], [])
-#     end
-# end
+function orderedPartition(_total, n, lowerbound = 1)
+    @assert lowerbound >= 0
+    total = _total - n * (lowerbound - 1)
+    @assert total >= n
+    unorderedPartition = collect(partitions(total, n))
+    #e.g., loopNum =5, n =2 ==> unordered = [[4, 1], [3, 2]]
+    orderedPartition = Vector{Vector{Int}}([])
+    for p in unorderedPartition
+        p = p .+ (lowerbound - 1)
+        @assert sum(p) == _total
+        append!(orderedPartition, Set(permutations(p)))
+    end
+    #e.g., loopNum =5, n =2 ==> ordered = [[4, 1], [1, 4], [3, 2], [2, 3]]
+    return orderedPartition
+end
 
 mutable struct Green
+    loopNum::Int
     Tpair::Tuple{Int,Int}
     weight::Float64
-    function Green(inT, outT)
-        return new((inT, outT), 0.0)
+    function Green(inT, outT, loopNum = 0)
+        return new(loopNum, (inT, outT), 0.0)
     end
-    function Green(tpair::Tuple{Int,Int})
-        return new(tpair, 0.0)
+    function Green(tpair::Tuple{Int,Int}, loopNum = 0)
+        return new(loopNum, tpair, 0.0)
     end
 end
 
@@ -67,12 +76,15 @@ struct Bubble{_Ver4} # template Bubble to avoid mutually recursive struct
     Rver::_Ver4
     map::Vector{IdxMap{_Ver4}}
 
-    function Bubble(ver4::_Ver4, chan::Channel, oL::Int, level::Int, _id::Vector{Int}) where {_Ver4}
+    function Bubble(ver4::_Ver4, chan::Channel, partition::Vector{Int}, level::Int, _id::Vector{Int}) where {_Ver4}
         # @assert chan in para.chan "$chan isn't a bubble channels!"
-        @assert oL < ver4.loopNum "LVer loopNum must be smaller than the ver4 loopNum"
+        # @assert oL < ver4.loopNum "LVer loopNum must be smaller than the ver4 loopNum"
+        @assert sum(partition) == ver4.loopNum "partition = $partition should sum to ver4 loopNum=$(ver4.loopNum)"
 
         idbub = _id[1] # id vector will be updated later, so store the current id as the bubble id
         _id[1] += 1
+
+        oL, oR, oG0, oGx = partition[1], partition[2], partition[3], partition[4]
 
         oR = ver4.loopNum - 1 - oL # loopNum of the right vertex
         lLpidxOffset = ver4.loopidxOffset
@@ -251,8 +263,15 @@ struct Ver4{W}
                 if c == I
                     continue
                 end
-                for ol = 0:loopNum-1
-                    bubble = Bubble(ver4, c, ol, level, id)
+
+                partition = orderedPartition(loopNum, 4, 0)
+                if Girreducible in para.filter
+                    #if one-partitcle irreducible, then G0 at p[3] and Gx at p[4] must be loop 0
+                    partition = [p for p in partition if p[3]==0 && p[4]==0]
+                else
+
+                for p in partition
+                    bubble = Bubble(ver4, c, p, level, id)
                     if length(bubble.map) > 0  # if zero, bubble diagram doesn't exist
                         push!(ver4.bubble, bubble)
                     end
