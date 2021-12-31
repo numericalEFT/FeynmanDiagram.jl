@@ -47,27 +47,33 @@ function buildSigma(para, externLoop, subdiagram = false; F = [I, U, S], V = [I,
         # g = DiagTree.addPropagator!(diag, :Gpool, 0, :Gsigma; loop = K, site = (t0, t0))
         paraG = reconstruct(para, innerLoopNum = para.innerLoopNum - 1, firstLoopIdx = para.firstLoopIdx + 1, firstTauIdx = t0 + 1)
         diag, g = buildG(paraG, K, [t0, t0]; diag = diag)
-        @assert g != 0 "Get invalid G index in GW diagram"
-        v = DiagTree.addPropagator!(diag, :Vpool, 1, :Vsigma; loop = qe)
-        n = DiagTree.addNodeByName!(diag, DiagTree.MUL, :GV, factor; Gpool = g, Vpool = v, para = [t0, t0])
-        push!(root, n)
+        if g != 0
+            # @assert g != 0 "Get invalid G index in GW diagram with G para =\n $paraG"
+            v = DiagTree.addPropagator!(diag, :Vpool, 1, :Vsigma; loop = qe)
+            n = DiagTree.addNodeByName!(diag, DiagTree.MUL, :GV, factor; Gpool = g, Vpool = v, para = [t0, t0])
+            push!(root, n)
+        end
     elseif para.interactionTauNum == 2
         factor = 1 / (2π)^para.loopDim
         paraG = reconstruct(para, innerLoopNum = para.innerLoopNum - 1, firstLoopIdx = para.firstLoopIdx + 1, firstTauIdx = t0 + 2)
         diag, gv = buildG(paraG, K, [t0, t0]; diag = diag)
-        @assert gv != 0 "Get invalid G index in GW diagram"
-        # gv = DiagTree.addPropagator!(diag, :Gpool, 0, :Gsigma; loop = K, site = (t0, t0))
-        v = DiagTree.addPropagator!(diag, :Vpool, 1, :Vsigma; loop = qe, site = (t0, t0 + 1))
-        nv = DiagTree.addNodeByName!(diag, DiagTree.MUL, :GV, factor; Gpool = gv, Vpool = v, para = (t0, t0))
-        push!(root, nv)
+        if gv != 0
+            # @assert gv != 0 "Get invalid G index in GW diagram with G para =\n $paraG"
+            # gv = DiagTree.addPropagator!(diag, :Gpool, 0, :Gsigma; loop = K, site = (t0, t0))
+            v = DiagTree.addPropagator!(diag, :Vpool, 1, :Vsigma; loop = qe, site = (t0, t0 + 1))
+            nv = DiagTree.addNodeByName!(diag, DiagTree.MUL, :GV, factor; Gpool = gv, Vpool = v, para = (t0, t0))
+            push!(root, nv)
+        end
 
         diag, gw = buildG(paraG, K, [t0, t0 + 1]; diag = diag)
-        @assert gw != 0 "Get invalid G index in GW diagram"
-        gw = DiagTree.addPropagator!(diag, :Gpool, 0, :Gsigma; loop = K, site = (t0, t0 + 1))
-        w = DiagTree.addPropagator!(diag, :Wpool, 1, :Wsigma; loop = qe, site = (t0, t0 + 1))
+        if gw != 0
+            # @assert gw != 0 "Get invalid G index in GW diagram"
+            gw = DiagTree.addPropagator!(diag, :Gpool, 0, :Gsigma; loop = K, site = (t0, t0 + 1))
+            w = DiagTree.addPropagator!(diag, :Wpool, 1, :Wsigma; loop = qe, site = (t0, t0 + 1))
 
-        nw = DiagTree.addNodeByName!(diag, DiagTree.MUL, :GW, factor; Gpool = gw, Wpool = w, para = [t0, t0 + 1])
-        push!(root, nw)
+            nw = DiagTree.addNodeByName!(diag, DiagTree.MUL, :GW, factor; Gpool = gw, Wpool = w, para = [t0, t0 + 1])
+            push!(root, nw)
+        end
     else
         error("not implemented!")
     end
@@ -78,32 +84,40 @@ function buildSigma(para, externLoop, subdiagram = false; F = [I, U, S], V = [I,
         factor = 1 / (2π)^para.loopDim * (1 / 2)
         KinL, KoutR = externLoop, externLoop
         KinR, KoutL = K, K
-        ver4Para = reconstruct(para, firstLoopIdx = para.firstLoopIdx + 1, innerLoopNum = para.innerLoopNum - 1)
-        diag, ver4, dir, ex = buildVer4(ver4Para, [KinL, KoutL, KinR, KoutR],
-            [T,], F, V, All; Fouter = [], Allouter = All, diag = diag)
+        for ver4LoopNum in 1:para.innerLoopNum-1
+            ver4Para = reconstruct(para, firstLoopIdx = para.firstLoopIdx + 1, innerLoopNum = ver4LoopNum)
+            diag, ver4, dir, ex = buildVer4(ver4Para, [KinL, KoutL, KinR, KoutR],
+                [T,], F, V, All; Fouter = [], Allouter = All, diag = diag)
 
-        dict = Dict{Tuple{Int,Int},Vector{Any}}()
-        collapse!(dict, diag, dir, 1.0)
-        collapse!(dict, diag, ex, para.spin)
-        #exchange ver4 has an additional Fermi loop compared to the direct counterpart when plugged into sigma
+            dict = Dict{Tuple{Int,Int},Vector{Any}}()
+            collapse!(dict, diag, dir, 1.0)
+            collapse!(dict, diag, ex, para.spin)
+            #exchange ver4 has an additional Fermi loop compared to the direct counterpart when plugged into sigma
 
-        for key in keys(dict)
-            nodes = []
-            for (nidx, extT, spinFactor) in dict[key]
+            for key in keys(dict)
+                nodes = []
+                for (nidx, extT, spinFactor) in dict[key]
 
-                tpair = [extT[INL], extT[OUTR]]
-                paraG = reconstruct(para, innerLoopNum = para.innerLoopNum - 2, firstLoopIdx = para.firstLoopIdx + 2, firstTauIdx = maxTauIdx(ver4) + 1)
-                diag, g = buildG(paraG, K, tpair; diag = diag)
-                @assert g != 0 "Get invalid G index in GW diagram"
-                # g = DiagTree.addPropagator!(diag, :Gpool, 0, :Gsigma; site = (extT[OUTL], extT[INR]), loop = K)
-                push!(nodes, DiagTree.addNodeByName!(diag, DiagTree.MUL, :sigma, factor * spinFactor;
-                    child = nidx, Gpool = g, para = tpair))
+                    tpair = [extT[INL], extT[OUTR]]
+                    paraG = reconstruct(para, innerLoopNum = para.innerLoopNum - 1 - ver4LoopNum,
+                        firstLoopIdx = para.firstLoopIdx + 1 + ver4LoopNum, firstTauIdx = maxTauIdx(ver4) + 1)
+                    diag, g = buildG(paraG, K, tpair; diag = diag)
+                    # println(g, ", from", paraG)
+                    # @assert g != 0 "Get invalid G index in GW diagram"
+                    # g = DiagTree.addPropagator!(diag, :Gpool, 0, :Gsigma; site = (extT[OUTL], extT[INR]), loop = K)
+                    if g != 0
+                        push!(nodes, DiagTree.addNodeByName!(diag, DiagTree.MUL, :sigma, factor * spinFactor;
+                            child = nidx, Gpool = g, para = tpair))
+                    end
+                end
+
+                if isempty(nodes) == false
+                    rootidx = DiagTree.addNode!(diag, DiagTree.ADD, :sigma;
+                        child = nodes, para = collect(key)) #key = (extT[INL], extT[OUTR])
+                    # println(rootidx)
+                    push!(root, rootidx)
+                end
             end
-
-            rootidx = DiagTree.addNode!(diag, DiagTree.ADD, :sigma;
-                child = nodes, para = collect(key)) #key = (extT[INL], extT[OUTR])
-            # println(rootidx)
-            push!(root, rootidx)
         end
     end
 
@@ -113,6 +127,7 @@ function buildSigma(para, externLoop, subdiagram = false; F = [I, U, S], V = [I,
         @assert node.para[1] == para.firstTauIdx
         @assert node.para[2] <= tright
     end
+    @assert isempty(root) == false "Sigma diagram doesn't exist for \n$para"
     return diag, root
 end
 
@@ -146,12 +161,13 @@ function buildG(para, externLoop, extT, subdiagram = false; F = [I, U, S], V = [
         return diag, 0
     end
 
-    #generate all possible ordered partition of the loops
-    if (Girreducible in para.filter) || para.innerLoopNum == 0
+    if (Girreducible in para.filter) && para.innerLoopNum > 0
+        return diag, 0
+    end
+
+    if para.innerLoopNum == 0
         g = DiagTree.addPropagator!(diag, :Gpool, 0, :G; site = [tin, tout], loop = externLoop)
         return diag, g
-    elseif (Girreducible in para.filter) && para.innerLoopNum > 0
-        return diag, 0
     end
 
     ################# after this step, the Green's function must be nontrivial! ##################
@@ -162,6 +178,7 @@ function buildG(para, externLoop, extT, subdiagram = false; F = [I, U, S], V = [
 
     partition = []
     for n = 1:para.innerLoopNum
+        #generate all possible ordered partition of the loops
         append!(partition, orderedPartition(para.innerLoopNum, n))
         #e.g., loopNum =5, n =2 ==> ordered = [[4, 1], [1, 4], [3, 2], [2, 3]]
     end
