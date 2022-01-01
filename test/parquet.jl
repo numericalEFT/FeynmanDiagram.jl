@@ -66,7 +66,7 @@ end
         rootEx = DiagTree.addNode!(diag, DiagTree.ADD, :ex; child = ex, para = [0, 0, 0, 0])
         diag.root = [rootDir, rootEx]
 
-        ver4 = Parquet.Ver4{Parquet.Weight}(para, chan, F, V)
+        ver4 = Parquet.Ver4{Parquet.Weight}(para, legK, chan, F, V)
         # Parquet.print_tree(ver4)
 
         if eval
@@ -80,11 +80,11 @@ end
             ##################### lower level subroutines  #######################################
 
             KinL, KoutL, KinR, KoutR = varK[:, 1], varK[:, 1], varK[:, 2], varK[:, 2]
-            Parquet.eval(para, ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV, true)
+            Parquet.eval(ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV, true)
 
             if timing
                 printstyled("parquet evaluator cost:", color = :green)
-                @time Parquet.eval(para, ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV, true)
+                @time Parquet.eval(ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV, true)
             end
 
             w2 = ver4.weight[1]

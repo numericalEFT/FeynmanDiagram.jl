@@ -204,6 +204,6 @@ end
 function buildVer4(para, LegK, chan, F, V, All = union(F, V);
     Fouter = F, Vouter = V, Allouter = All, factor = 1.0, diag = newDiagTree(para, :Ver4))
 
-    ver4 = Ver4{SVector{2,Int}}(para, chan, LegK, F, V, All; Fouter = Fouter, Vouter = Vouter, Allouter = Allouter)
+    ver4 = Ver4{SVector{2,Int}}(para, LegK, chan, F, V, All; Fouter = Fouter, Vouter = Vouter, Allouter = Allouter)
     return ver4toDiagTree!(diag, ver4, factor)
 end

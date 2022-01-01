@@ -103,13 +103,13 @@ struct Bubble{_Ver4} # template Bubble to avoid mutually recursive struct
         # example 1: [1, 2, 1, 1] - total loop list [1, 2, 3, 4, 5, 6], tau list [1, 2, 3, 4, 5, 6]
         # example 2: [1, 2, 0, 0] - total loop list [1, 2, 3, 4], tau list [1, 2, 3, 4, 5]
 
-        LfirstLoopIdx = para.firstLoopIdx
+        LoopIdx = para.firstLoopIdx
         # eg1: 1 - [1, ], eg2: 1 - [1, ]
+        LfirstLoopIdx = para.firstLoopIdx + 1
+        # eg1: 2 - [2, ], eg2: 2 - [2, ]
         G0firstLoopIdx = LfirstLoopIdx + oL #first inner loop index of G0 (may not exist if G0 loop number is zero) 
-        # eg1: 2 - [2, ], eg2: 2 - [,]
-        LoopIdx = LfirstLoopIdx + oL + oG0
-        # eg1: 3 - [3, ], eg2: 2 - [2, ]
-        RfirstLoopIdx = LoopIdx + 1
+        # eg1: 3 - [3, ], eg2: 3 - [,]
+        RfirstLoopIdx = LfirstLoopIdx + oL + oG0
         # eg1: 4 - [4, 5], eg2: 3 - [3, 4]
         GxfirstLoopIdx = RfirstLoopIdx + oR #first inner loop index of Gx (may not exist if Gx loop number is zero)
         # eg1: 6 - [6, ], eg2: 5 - [,]
@@ -163,11 +163,11 @@ struct Bubble{_Ver4} # template Bubble to avoid mutually recursive struct
         end
 
         lPara = reconstruct(para, innerLoopNum = oL, firstLoopIdx = LfirstLoopIdx, firstTauIdx = LfirstTauIdx)
-        Lver = _Ver4(lPara, LverChan, LLegK, ver4.F, ver4.V, ver4.All;
+        Lver = _Ver4(lPara, LLegK, LverChan, ver4.F, ver4.V, ver4.All;
             level = level + 1, id = _id)
 
         rPara = reconstruct(para, innerLoopNum = oR, firstLoopIdx = RfirstLoopIdx, firstTauIdx = RfirstTauIdx)
-        Rver = _Ver4(rPara, RverChan, RLegK, ver4.F, ver4.V, ver4.All;
+        Rver = _Ver4(rPara, RLegK, RverChan, ver4.F, ver4.V, ver4.All;
             level = level + 1, id = _id)
 
         @assert lPara.firstTauIdx == para.firstTauIdx "Lver Tidx must be equal to vertex4 Tidx! LoopNum: $(para.innerLoopNum), LverLoopNum: $(lPara.innerLoopNum), chan: $chan"
@@ -280,7 +280,7 @@ struct Ver4{W}
     child::Vector{Vector{IdxMap{Ver4{W}}}}
     weight::Vector{W}
 
-    function Ver4{W}(para, chan, legK, F, V, All = union(F, V);
+    function Ver4{W}(para, legK, chan, F, V, All = union(F, V);
         Fouter = F, Vouter = V, Allouter = All,
         level = 1, id = [1,]
     ) where {W}
