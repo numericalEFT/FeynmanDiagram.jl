@@ -18,6 +18,10 @@ function orderedPartition(_total, n, lowerbound = 1)
 end
 
 function findFirstLoopIdx(partition, isG, firstidx::Int)
+    # !!!!!  only works for G an ver4 partitions  !!!!
+    ## example: isG =[false, true, false, true], firstidx = 1
+    # partition = [1, 1, 2, 1], then the loop partition = [1][2][34][5], thus firstTauIdx = [1, 2, 3, 5]
+    # partition = [1, 0, 2, 0], then the loop partition = [1][][23][], thus firstTauIdx = [1, 2, 2, 4]
     @assert length(partition) == length(isG)
     accumulated = accumulate(+, partition; init = firstidx) #  idx[i] = firstidx + p[1]+p[2]+...+p[i]
     firstLoopIdx = [firstidx,]
@@ -26,7 +30,20 @@ function findFirstLoopIdx(partition, isG, firstidx::Int)
     return firstLoopIdx, maxLoopIdx
 end
 
-function findFirstTauIdx(partition, isG, firstidx) end
+function findFirstTauIdx(partition, isG, firstidx::Int, tauNum::Int)
+    # !!!!!  only works for G an ver4 partitions  !!!!
+    ## example: isG =[false, true, false, true], firstidx = 1
+    # n-loop G has n*tauNum DOF, while n-loop ver4 has (n+1)*tauNum DOF
+    # partition = [1, 1, 2, 1], then the tau partition = [12][3][456][7], thus firstTauIdx = [1, 3, 4, 7]
+    # partition = [1, 0, 2, 0], then the tau partition = [12][][345][], thus firstTauIdx = [1, 3, 3, 6]
+    @assert length(partition) == length(isG)
+    taupartition = [isG[i] ? p * tauNum : (p + 1) * tauNum for (i, p) in enumerate(partition)]
+    accumulated = accumulate(+, taupartition; init = firstidx) #  idx[i] = firstidx + p[1]+p[2]+...+p[i]
+    firstTauidx = [firstidx,]
+    append!(firstTauidx, accumulated[1:end-1])
+    maxTauIdx = accumulated[end] - 1
+    return firstTauidx, maxTauIdx
+end
 
 mutable struct Green
     para::GenericPara
@@ -104,35 +121,16 @@ struct Bubble{_Ver4} # template Bubble to avoid mutually recursive struct
         idbub = _id[1] # id vector will be updated later, so store the current id as the bubble id
         _id[1] += 1
 
-        oL, oR, oG0, oGx = partition[1], partition[2], partition[3], partition[4]
-        # example 1: [1, 2, 1, 1] - total loop list [1, 2, 3, 4, 5, 6], tau list [1, 2, 3, 4, 5, 6]
-        # example 2: [1, 2, 0, 0] - total loop list [1, 2, 3, 4], tau list [1, 2, 3, 4, 5]
+        oL, oG0, oR, oGx = partition[1], partition[2], partition[3], partition[4]
 
         LoopIdx = para.firstLoopIdx
-        # eg1: 1 - [1, ], eg2: 1 - [1, ]
-        LfirstLoopIdx = para.firstLoopIdx + 1
-        # eg1: 2 - [2, ], eg2: 2 - [2, ]
-        G0firstLoopIdx = LfirstLoopIdx + oL #first inner loop index of G0 (may not exist if G0 loop number is zero) 
-        # eg1: 3 - [3, ], eg2: 3 - [,]
-        RfirstLoopIdx = LfirstLoopIdx + oL + oG0
-        # eg1: 4 - [4, 5], eg2: 3 - [3, 4]
-        GxfirstLoopIdx = RfirstLoopIdx + oR #first inner loop index of Gx (may not exist if Gx loop number is zero)
-        # eg1: 6 - [6, ], eg2: 5 - [,]
-        loopRight = RfirstLoopIdx + oR + oGx - 1
-        # eg1: 4+2+1-1 == 6, eg2: 3+2+0-1 == 4
-        @assert loopRight == maxLoopIdx(ver4)
+        idx, maxLoop = findFirstLoopIdx(partition, [false, true, false, true], LoopIdx + 1)
+        LfirstLoopIdx, G0firstLoopIdx, RfirstLoopIdx, GxfirstLoopIdx = idx
+        @assert maxLoop == maxLoopIdx(ver4)
 
-        LfirstTauIdx = para.firstTauIdx
-        # eg1: 1 - [1, 2], eg2: 1 - [1, 2]
-        G0firstTauIdx = LfirstTauIdx + (oL + 1) * TauNum
-        # eg1: 3 - [3, ], eg2: 3 - [, ]
-        RfirstTauIdx = LfirstTauIdx + (oL + 1) * TauNum + oG0 * TauNum
-        # eg1: 4 - [4, 5, 6], eg2: 3 - [3, 4, 5]
-        GxfirstTauIdx = RfirstTauIdx + (oR + 1) * TauNum
-        # eg1: 7 - [7, ], eg2: 6 - [, ]
-        tauRight = RfirstTauIdx + (oR + 1) * TauNum + oGx * TauNum - 1
-        # eg1: 4+3+1-1==7, eg2: 3+3+0-1==5
-        @assert tauRight == maxTauIdx(ver4)
+        idx, maxTau = findFirstTauIdx(partition, [false, true, false, true], para.firstTauIdx, TauNum)
+        LfirstTauIdx, G0firstTauIdx, RfirstTauIdx, GxfirstTauIdx = idx
+        @assert maxTau == maxTauIdx(ver4)
 
         if chan == T || chan == U
             LverChan = (level == 1) ? ver4.Fouter : ver4.F
@@ -344,10 +342,6 @@ struct Ver4{W}
                 end
 
                 partition = orderedPartition(loopNum - 1, 4, 0)
-                if Girreducible in para.filter
-                    #if one-partitcle irreducible, then G0 at p[3] and Gx at p[4] must be loop 0
-                    partition = [p for p in partition if p[3] == 0 && p[4] == 0]
-                end
 
                 for p in partition
                     # println(p)

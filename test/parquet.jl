@@ -205,6 +205,15 @@ end
     testLoopIdx([1, 0, 2, 0], isG, 1, [1, 2, 2, 4])
     testLoopIdx([1,], [false,], 1, [1,])
 
+    function testTauIdx(partition, isG, firstidx, tauNum, expected)
+        firstIdx, total = Builder.Parquet.findFirstTauIdx(partition, isG, firstidx, tauNum)
+        @test firstIdx == expected
+    end
+    tauNum = 1
+    testTauIdx([1, 1, 2, 1], isG, 1, tauNum, [1, 3, 4, 7])
+    testTauIdx([1, 1, 2, 1], isG, 0, tauNum, [0, 2, 3, 6])
+    testTauIdx([1, 0, 2, 0], isG, 1, tauNum, [1, 3, 3, 6])
+
 end
 
 @testset "Green" begin
