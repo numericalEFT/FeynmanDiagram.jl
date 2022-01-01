@@ -66,6 +66,8 @@ end
         rootEx = DiagTree.addNode!(diag, DiagTree.ADD, :ex; child = ex, para = [0, 0, 0, 0])
         diag.root = [rootDir, rootEx]
 
+        # println(diag.root)
+
         ver4 = Parquet.Ver4{Parquet.Weight}(para, legK, chan, F, V)
         # Parquet.print_tree(ver4)
 
@@ -104,7 +106,7 @@ end
     end
 
     Parquet = Builder.Parquet
-    for l = 1:3
+    for l = 1:1
         testDiagWeigt(l, [Parquet.T,])
         testDiagWeigt(l, [Parquet.U,])
         testDiagWeigt(l, [Parquet.S,])

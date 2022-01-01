@@ -14,9 +14,9 @@ V = [Parquet.T, Parquet.U]
 ###################### ver4 to DiagTree ###########################################
 para = Builder.GenericPara(
     loopDim = 3,
-    innerLoopNum = 1,
-    totalLoopNum = 3,
-    totalTauNum = 2,
+    innerLoopNum = 2,
+    totalLoopNum = 4,
+    totalTauNum = 3,
     spin = 2,
     interactionTauNum = 1,
     weightType = Float64,

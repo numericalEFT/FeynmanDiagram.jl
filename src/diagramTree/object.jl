@@ -227,6 +227,16 @@ function addNode!(diag::Diagrams, operator, name, factor = 1.0; propagator = not
     # println("node F: ", F)
     @assert PARA == typeof(para) "Type of $para is not $PARA"
 
+    for (i, p) in enumerate(propagator)
+        for pidx in p
+            @assert pidx <= length(diag.propagatorPool[i]) "Failed to add node with propagator = $propagator, and child =$childNodes. $pidx is not in pool $i (length = $(length(diag.propagatorPool[i])))."
+        end
+    end
+    for nidx in childNodes
+        @assert nidx <= length(diag.nodePool) "Failed to add node with propagator = $propagator, and child =$childNodes. $nidx is not in nodePool."
+    end
+
+
     node = Node{F}(name, operator, para, propagator, childNodes, factor, 0)
 
     nidx = append(nodePool, node)
