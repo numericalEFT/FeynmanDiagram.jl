@@ -285,8 +285,6 @@ struct Ver4{W}
         level = 1, id = [1,]
     ) where {W}
 
-        @assert para.totalTauNum >= (para.innerLoopNum + 1) * para.interactionTauNum "$para"
-
         if level > 1
             @assert Set(F) == Set(Fouter)
             @assert Set(V) == Set(Vouter)
@@ -306,6 +304,10 @@ struct Ver4{W}
 
         g = @SVector [Vector{Green}([]) for i = 1:16]
         ver4 = new{W}(para, chan, F, V, All, Fouter, Vouter, Allouter, id[1], level, g, [], [KinL, KoutL, KinR, KoutR], [], [[],], [])
+
+        @assert para.totalTauNum >= maxTauIdx(ver4) "Increase totalTauNum!\n$para"
+        @assert para.totalLoopNum >= maxLoopIdx(ver4) "Increase totalLoopNum\n$para"
+
         id[1] += 1
 
         loopNum = para.innerLoopNum

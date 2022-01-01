@@ -11,17 +11,24 @@ function addNode!(nodes, diag, map, name::Symbol, lc, rc, g0, gc, factor = 1.0)
     lidx, ridx = map.lidx, map.ridx
     Lw, Rw = Lver.weight[lidx][lc], Rver.weight[ridx][rc]
 
+    Gpool, child = [], []
+    g0[2] ? push!(child, g0[1]) : push!(Gpool, g0[1])
+    gc[2] ? push!(child, gc[1]) : push!(Gpool, gc[1])
+
+    # println(g0)
+    # println(gc)
+
     if tauNum == 1 || tauNum == 0
-        Vpool, child = [], []
+        Vpool = []
         # components : [GPool, VPool]
         isPropagator(Lver) ? push!(Vpool, Lw) : push!(child, Lw)
         isPropagator(Rver) ? push!(Vpool, Rw) : push!(child, Rw)
         if (Lw != 0 && Rw != 0)
             push!(nodes, DiagTree.addNodeByName!(diag, DiagTree.MUL, name, factor;
-                Gpool = [g0, gc], Vpool = Vpool, child = child, para = extT))
+                Gpool = Gpool, Vpool = Vpool, child = child, para = extT))
         end
     elseif tauNum == 2
-        Vpool, Wpool, child = [], [], []
+        Vpool, Wpool = [], []
         # components : [GPool, VPool, WPool]
         if isPropagator(Lver)
             isW(lidx) ? push!(Wpool, Lw) : push!(Vpool, Lw)
@@ -35,7 +42,7 @@ function addNode!(nodes, diag, map, name::Symbol, lc, rc, g0, gc, factor = 1.0)
         end
         if (Lw != 0 && Rw != 0)
             push!(nodes, DiagTree.addNodeByName!(diag, DiagTree.MUL, name, factor;
-                Gpool = [g0, gc], Vpool = Vpool, Wpool = Wpool, child = child, para = extT))
+                Gpool = Gpool, Vpool = Vpool, Wpool = Wpool, child = child, para = extT))
         end
     else
         error("tauNum = $tauNum has not yet been implemented!")
@@ -58,14 +65,26 @@ function bubbletoDiagTree!(diag, ver4, bubble, factor = 1.0)
     ver4toDiagTree!(diag, Rver, factor)
 
     for map in b.map
-        g0 = DiagTree.addPropagator!(diag, :Gpool, Gorder, :G0; site = map.G0.Tpair, loop = map.G0.loopBasis)
-        # G0 = map.G0
-        # g0Para = reconstruct(para, innerLoopNum = G0.loopNum, firstLoopIdx = G0.loopIdx, firstTauIdx = G0.Tspan[1])
         Factor = b.factor
         extT = collect(map.v.Tpair[map.vidx])
 
+        # g0 = DiagTree.addPropagator!(diag, :Gpool, Gorder, :G0; site = map.G0.Tpair, loop = map.G0.loopBasis)
+        # g0Para = reconstruct(para, innerLoopNum = G0.loopNum, firstLoopIdx = G0.loopIdx, firstTauIdx = G0.Tspan[1])
+        diag, g0idx, isnode0 = buildG(map.G0.para, map.G0.loopBasis, map.G0.Tpair; diag = diag)
+        if g0idx == 0
+            map.node = @SVector [0, 0]
+            continue
+        end
+        diag, gxidx, isnodex = buildG(map.Gx.para, map.Gx.loopBasis, map.Gx.Tpair; diag = diag)
+        if gxidx == 0
+            map.node = @SVector [0, 0]
+            continue
+        end
+        g0 = (g0idx, isnode0)
+        gc = (gxidx, isnodex)
+
         if c == T
-            gc = DiagTree.addPropagator!(diag, :Gpool, Gorder, :Gt; site = map.Gx.Tpair, loop = map.Gx.loopBasis)
+            # gc = DiagTree.addPropagator!(diag, :Gpool, Gorder, :Gt; site = map.Gx.Tpair, loop = map.Gx.loopBasis)
 
             Td, Te = [], []
             if removeBubble(map, c, DI, DI) == false
@@ -80,7 +99,7 @@ function bubbletoDiagTree!(diag, ver4, bubble, factor = 1.0)
             map.node = @SVector [nodeTd, nodeTe]
 
         elseif c == U
-            gc = DiagTree.addPropagator!(diag, :Gpool, Gorder, :Gu; site = map.Gx.Tpair, loop = map.Gx.loopBasis)
+            # gc = DiagTree.addPropagator!(diag, :Gpool, Gorder, :Gu; site = map.Gx.Tpair, loop = map.Gx.loopBasis)
 
             Ud, Ue = [], []
             if removeBubble(map, c, DI, DI) == false
@@ -95,7 +114,7 @@ function bubbletoDiagTree!(diag, ver4, bubble, factor = 1.0)
             map.node = @SVector [nodeUd, nodeUe]
 
         elseif c == S
-            gc = DiagTree.addPropagator!(diag, :Gpool, Gorder, :Gs; site = map.Gx.Tpair, loop = map.Gx.loopBasis)
+            # gc = DiagTree.addPropagator!(diag, :Gpool, Gorder, :Gs; site = map.Gx.Tpair, loop = map.Gx.loopBasis)
 
             Sd, Se = [], []
             addNode!(Sd, diag, map, :dxe, DI, EX, g0, gc)
@@ -109,6 +128,7 @@ function bubbletoDiagTree!(diag, ver4, bubble, factor = 1.0)
         else
             error("not implemented!")
         end
+
     end
 end
 
