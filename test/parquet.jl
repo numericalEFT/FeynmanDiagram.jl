@@ -189,6 +189,24 @@ end
     @test Set(p) == Set(expect)
 end
 
+@testset "FindFirstIdx" begin
+    # p = Builder.Parquet.orderedPartition(5, 4, 0)
+
+    function testLoopIdx(partition, isG, firstidx, expected)
+        firstLoopIdx, total = Builder.Parquet.findFirstLoopIdx(partition, isG, firstidx)
+        @test firstLoopIdx == expected
+        totalExp = sum(partition) + firstidx - 1
+        @test total == totalExp
+    end
+
+    isG = [false, true, false, true]
+    testLoopIdx([1, 1, 2, 1], isG, 1, [1, 2, 3, 5])
+    testLoopIdx([1, 1, 2, 1], isG, 0, [0, 1, 2, 4])
+    testLoopIdx([1, 0, 2, 0], isG, 1, [1, 2, 2, 4])
+    testLoopIdx([1,], [false,], 1, [1,])
+
+end
+
 @testset "Green" begin
     Parquet = Builder.Parquet
 
