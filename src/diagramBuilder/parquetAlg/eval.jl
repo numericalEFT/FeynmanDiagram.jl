@@ -8,10 +8,10 @@ end
 const Base.zero(::Type{Weight}) = Weight(0.0, 0.0)
 const Base.abs(w::Weight) = abs(w.d) + abs(w.e) # define abs(Weight)
 
-function evalAllG!(G, K, T0idx, varT, evalG; kwargs...)
+function evalAllG!(G, K, varT, evalG; kwargs...)
     for g in G
         tin, tout = g.Tpair
-        g.weight = evalG(K, varT[T0idx+tin], varT[T0idx+tout], kwargs...)
+        g.weight = evalG(K, varT[tin], varT[tout], kwargs...)
     end
 end
 
@@ -25,20 +25,21 @@ end
 #     end
 # end
 
-function eval(para, ver4::Ver4, varK, varT, legK, evalG::Function, evalV::Function, fast = false; kwargs...)
+function eval(ver4::Ver4, varK, varT, legK, evalG::Function, evalV::Function, fast = false; kwargs...)
     KinL, KoutL, KinR, KoutR = legK
+    para = ver4.para
     spin = para.spin
     T0idx = para.firstTauIdx
-    Kidx = para.firstLoopIdx + ver4.loopidxOffset
+    Kidx = para.firstLoopIdx
 
-    if ver4.loopNum == 0
+    if para.innerLoopNum == 0
         qd = KinL - KoutL
         qe = KinL - KoutR
         if para.interactionTauNum == 1
             ver4.weight[1].d = evalV(qd)
             ver4.weight[1].e = evalV(qe)
         else
-            Tidx = para.firstTauIdx + ver4.TidxOffset
+            Tidx = para.firstTauIdx
             τIn, τOut = varT[Tidx], varT[Tidx+1]
             error("not implemented!")
             # elseif ver4.interactionTauNum == 2
@@ -61,7 +62,7 @@ function eval(para, ver4::Ver4, varK, varT, legK, evalG::Function, evalV::Functi
     G = ver4.G
     K = varK[:, Kidx]
 
-    evalAllG!(G[1], K, T0idx, varT, evalG, kwargs...)
+    evalAllG!(G[1], K, varT, evalG, kwargs...)
 
     PhaseFactor = 1.0 / (2π)^para.loopDim
     Kt, Ku, Ks = similar(K), similar(K), similar(K) #Kt, Ku and Ks will be re-created later, slow in performance
@@ -69,16 +70,16 @@ function eval(para, ver4::Ver4, varK, varT, legK, evalG::Function, evalV::Functi
     for c in ver4.chan
         if c == T
             @. Kt = KoutL + K - KinL
-            evalAllG!(G[Int(c)], Kt, T0idx, varT, evalG, kwargs...)
+            evalAllG!(G[Int(c)], Kt, varT, evalG, kwargs...)
             # println("initializating", G[Int(c)])
         elseif c == U
             # can not be in box!
             @. Ku = KoutR + K - KinL
-            evalAllG!(G[Int(c)], Ku, T0idx, varT, evalG, kwargs...)
+            evalAllG!(G[Int(c)], Ku, varT, evalG, kwargs...)
         elseif c == S
             # S channel, and cann't be in box!
             @. Ks = KinL + KinR - K
-            evalAllG!(G[Int(c)], Ks, T0idx, varT, evalG, kwargs...)
+            evalAllG!(G[Int(c)], Ks, varT, evalG, kwargs...)
         else
             error("not impossible!")
         end
@@ -88,15 +89,15 @@ function eval(para, ver4::Ver4, varK, varT, legK, evalG::Function, evalV::Functi
         Factor = SymFactor[Int(c)] * PhaseFactor
 
         if c == T
-            eval(para, b.Lver, varK, varT, [KinL, KoutL, Kt, K], evalG, evalV; kwargs...)
-            eval(para, b.Rver, varK, varT, [K, Kt, KinR, KoutR], evalG, evalV; kwargs...)
+            eval(b.Lver, varK, varT, [KinL, KoutL, Kt, K], evalG, evalV; kwargs...)
+            eval(b.Rver, varK, varT, [K, Kt, KinR, KoutR], evalG, evalV; kwargs...)
         elseif c == U
-            eval(para, b.Lver, varK, varT, [KinL, KoutR, Ku, K], evalG, evalV; kwargs...)
-            eval(para, b.Rver, varK, varT, [K, Ku, KinR, KoutL], evalG, evalV; kwargs...)
+            eval(b.Lver, varK, varT, [KinL, KoutR, Ku, K], evalG, evalV; kwargs...)
+            eval(b.Rver, varK, varT, [K, Ku, KinR, KoutL], evalG, evalV; kwargs...)
         elseif c == S
             # S channel
-            eval(para, b.Lver, varK, varT, [KinL, Ks, KinR, K], evalG, evalV; kwargs...)
-            eval(para, b.Rver, varK, varT, [K, KoutL, Ks, KoutR], evalG, evalV; kwargs...)
+            eval(b.Lver, varK, varT, [KinL, Ks, KinR, K], evalG, evalV; kwargs...)
+            eval(b.Rver, varK, varT, [K, KoutL, Ks, KoutR], evalG, evalV; kwargs...)
         else
             error("not implemented")
         end
