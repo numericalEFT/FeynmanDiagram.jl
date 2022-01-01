@@ -33,4 +33,5 @@ include("io.jl")
 include("filter.jl")
 include("ver4_diagTree.jl")
 include("sigma_diagTree.jl")
+include("ver3_diagTree.jl")
 end

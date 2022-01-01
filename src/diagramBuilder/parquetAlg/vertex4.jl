@@ -17,17 +17,22 @@ function orderedPartition(_total, n, lowerbound = 1)
     return orderedPartition
 end
 
+function findFirstLoopIdx(partition, isG, firstidx::Int)
+    @assert length(partition) == length(isG)
+    accumulated = accumulate(+, partition; init = firstidx) #  idx[i] = firstidx + p[1]+p[2]+...+p[i]
+    firstLoopIdx = [firstidx,]
+    append!(firstLoopIdx, accumulated[1:end-1])
+    maxLoopIdx = accumulated[end] - 1
+    return firstLoopIdx, maxLoopIdx
+end
+
+function findFirstTauIdx(partition, isG, firstidx) end
+
 mutable struct Green
     para::GenericPara
     loopBasis::Vector{Float64}
     Tpair::Tuple{Int,Int}
     weight::Float64
-    # function Green(inT, outT, loopNum = 0)
-    #     return new(loopNum, (inT, outT), 0.0)
-    # end
-    # function Green(tpair::Tuple{Int,Int}, tspan::Tuple{Int,Int}, loopNum = 0, loopidxOffset = 0)
-    #     return new(loopNum, loopidxOffset, tspan, tpair, 0.0)
-    # end
     function Green(para, loopBasis, tpair::Tuple{Int,Int})
         return new(para, loopBasis, tpair, 0.0)
     end

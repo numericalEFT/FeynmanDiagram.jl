@@ -14,7 +14,7 @@ V = [Parquet.T, Parquet.U]
 ###################### ver4 to DiagTree ###########################################
 para = Builder.GenericPara(
     loopDim = 3,
-    innerLoopNum = 2,
+    innerLoopNum = 1,
     totalLoopNum = 4,
     totalTauNum = 3,
     spin = 2,
@@ -39,7 +39,7 @@ rootDir = DiagTree.addNode!(diag, DiagTree.ADD, :dir; child = dir, para = [0, 0,
 rootEx = DiagTree.addNode!(diag, DiagTree.ADD, :ex; child = ex, para = [0, 0, 0, 0])
 diag.root = [rootDir, rootEx]
 
-DiagTree.showTree(diag, rootDir)
+# DiagTree.showTree(diag, rootDir)
 
 ##################### lower level subroutines  #######################################
 ver4 = Parquet.Ver4{Float64}(para, legK, chan, F, V)
@@ -81,4 +81,26 @@ K0[1] = 1.0
 sigma, root = Parquet.buildSigma(para, K0)
 # println(root)
 rootidx = DiagTree.addNode!(sigma, DiagTree.ADD, :sum; child = root, para = [0, 0])
-DiagTree.showTree(sigma, rootidx)
+# DiagTree.showTree(sigma, rootidx)
+
+
+##################################### vertex 3   #################################################
+
+para = Builder.GenericPara(
+    loopDim = 3,
+    innerLoopNum = 1,
+    totalLoopNum = 4,
+    totalTauNum = 3,
+    spin = 2,
+    interactionTauNum = 1,
+    firstLoopIdx = 2,
+    weightType = Float64,
+    filter = [Builder.Proper,]
+)
+
+K0 = zeros(para.totalLoopNum)
+Kin, Kout = deepcopy(K0), deepcopy(K0)
+Kin[1] = 1
+Kout[2] = 1
+legK = [Kin, Kout]
+Parquet.buildVer3(para, legK)
