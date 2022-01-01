@@ -101,6 +101,12 @@ function buildSigma(para, externLoop, subdiagram = false; F = [I, U, S], V = [I,
         KinL, KoutR = externLoop, externLoop
         KinR, KoutL = K, K
         for ver4LoopNum in 1:para.innerLoopNum-1
+            gLoopNum = para.innerLoopNum - 1 - ver4LoopNum
+            # if G doesn't exist, continue without creating ver4 node in the diagram
+            if isValidG(para.filter, gLoopNum) == false
+                continue
+            end
+
             ver4Para = reconstruct(para, firstLoopIdx = para.firstLoopIdx + 1, innerLoopNum = ver4LoopNum)
             diag, ver4, dir, ex = buildVer4(ver4Para, [KinL, KoutL, KinR, KoutR],
                 [T,], F, V, All; Fouter = [], Allouter = All, diag = diag)
@@ -116,7 +122,7 @@ function buildSigma(para, externLoop, subdiagram = false; F = [I, U, S], V = [I,
 
                     tpair = [extT[INL], extT[OUTR]]
                     paraG = reconstruct(para,
-                        innerLoopNum = para.innerLoopNum - 1 - ver4LoopNum,
+                        innerLoopNum = gLoopNum,
                         firstLoopIdx = para.firstLoopIdx + 1 + ver4LoopNum,
                         firstTauIdx = maxTauIdx(ver4) + 1)
                     diag, g, isnode = buildG(paraG, K, tpair; diag = diag)
@@ -154,6 +160,23 @@ function buildSigma(para, externLoop, subdiagram = false; F = [I, U, S], V = [I,
     return diag, root
 end
 
+# check if G exist without creating objects in the pool
+function isValidG(filter, innerLoopNum::Int)
+    if (NoFock in filter) && innerLoopNum == 1
+        return false
+    end
+
+    if (Girreducible in filter) && innerLoopNum > 0
+        return false
+    end
+
+    return true
+end
+
+function isValidG(para::GenericPara)
+    return isValidG(para.filter, para.innerLoopNum)
+end
+
 """
     function buildG(para, externLoop, extT, subdiagram = false; F = [I, U, S], V = [I, T, U], All = union(F, V), diag = newDiagTree(para, :G))
     
@@ -169,13 +192,17 @@ function buildG(para, externLoop, extT, subdiagram = false; F = [I, U, S], V = [
     tstart = para.firstTauIdx
     tend = para.firstTauIdx + innerTauNum - 1
 
-    if (NoFock in para.filter) && para.innerLoopNum == 1
+    if isValidG(para) == false
         return diag, 0, false
     end
 
-    if (Girreducible in para.filter) && para.innerLoopNum > 0
-        return diag, 0, false
-    end
+    # if (NoFock in para.filter) && para.innerLoopNum == 1
+    #     return diag, 0, false
+    # end
+
+    # if (Girreducible in para.filter) && para.innerLoopNum > 0
+    #     return diag, 0, false
+    # end
 
     if para.innerLoopNum == 0
         g = DiagTree.addPropagator!(diag, :Gpool, 0, :G; site = [tin, tout], loop = externLoop)

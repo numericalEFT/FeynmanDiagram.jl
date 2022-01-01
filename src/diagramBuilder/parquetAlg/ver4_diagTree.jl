@@ -68,18 +68,16 @@ function bubbletoDiagTree!(diag, ver4, bubble, factor = 1.0)
         Factor = b.factor
         extT = collect(map.v.Tpair[map.vidx])
 
+        if isValidG(map.G0.para) == false || isValidG(map.Gx.para) == false
+            map.node = @SVector [0, 0]
+            continue
+        end
+
         # g0 = DiagTree.addPropagator!(diag, :Gpool, Gorder, :G0; site = map.G0.Tpair, loop = map.G0.loopBasis)
         # g0Para = reconstruct(para, innerLoopNum = G0.loopNum, firstLoopIdx = G0.loopIdx, firstTauIdx = G0.Tspan[1])
         diag, g0idx, isnode0 = buildG(map.G0.para, map.G0.loopBasis, map.G0.Tpair; diag = diag)
-        if g0idx == 0
-            map.node = @SVector [0, 0]
-            continue
-        end
         diag, gxidx, isnodex = buildG(map.Gx.para, map.Gx.loopBasis, map.Gx.Tpair; diag = diag)
-        if gxidx == 0
-            map.node = @SVector [0, 0]
-            continue
-        end
+
         g0 = (g0idx, isnode0)
         gc = (gxidx, isnodex)
 
