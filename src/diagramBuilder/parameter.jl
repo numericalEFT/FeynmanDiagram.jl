@@ -1,9 +1,9 @@
 @enum DiagramType begin
-    Sigma                 #self-energy
-    GreenDiagram          #green's function
-    Polarization          #polarization
-    Vertex3               #3-point vertex function
-    Vertex4               #4-point vertex function
+    SigmaDiag          #self-energy
+    GreenDiag          #green's function
+    PolarDiag          #polarization
+    Ver3Diag           #3-point vertex function
+    Ver4Diag           #4-point vertex function
 end
 
 @enum Filter begin
@@ -48,16 +48,37 @@ end
     imaginary-time degrees of freedom (external + internal) for a given diagram type and internal loop number.
 """
 function tauNum(diagType::DiagramType, innerLoopNum, interactionTauNum)
-    if diagType == Vertex4
+    if diagType == Ver4Diag
         return (innerLoopNum + 1) * interactionTauNum
-    elseif diagType == Sigma
+    elseif diagType == SigmaDiag
         return innerLoopNum * interactionTauNum
-    elseif diagType == GreenDiagram
+    elseif diagType == GreenDiag
         return 2 + innerLoopNum * interactionTauNum
-    elseif diagType == Polarization
+    elseif diagType == PolarDiag
         return 2 + (innerLoopNum - 1) * interactionTauNum
-    elseif diagType == Vertex3
+    elseif diagType == Ver3Diag
         return 1 + innerLoopNum * interactionTauNum
+    end
+end
+
+"""
+    function innerTauNum(diagType::DiagramType, innerLoopNum, interactionTauNum)
+    
+    internal imaginary-time degrees of freedom for a given diagram type and internal loop number.
+    For self-energy and vertex4, innerTauNum is equivalent to tauNum.
+    For the Green function and Polarization and vertex3, tauNum = innerTauNum + external tauNum 
+"""
+function innerTauNum(diagType::DiagramType, innerLoopNum, interactionTauNum)
+    if diagType == Ver4Diag
+        return (innerLoopNum + 1) * interactionTauNum
+    elseif diagType == SigmaDiag
+        return innerLoopNum * interactionTauNum
+    elseif diagType == GreenDiag
+        return innerLoopNum * interactionTauNum
+    elseif diagType == PolarDiag
+        return (innerLoopNum - 1) * interactionTauNum
+    elseif diagType == Ver3Diag
+        return innerLoopNum * interactionTauNum
     end
 end
 

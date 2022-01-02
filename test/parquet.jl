@@ -1,3 +1,41 @@
+@testset "Partition" begin
+    p = Builder.Parquet.orderedPartition(5, 2)
+    expect = [[4, 1], [1, 4], [2, 3], [3, 2]]
+    @test Set(p) == Set(expect)
+
+    p = Builder.Parquet.orderedPartition(3, 2, 0)
+    expect = [[3, 0], [0, 3], [1, 2], [2, 1]]
+    @test Set(p) == Set(expect)
+end
+
+@testset "FindFirstIdx" begin
+    # p = Builder.Parquet.orderedPartition(5, 4, 0)
+
+    function testLoopIdx(partition, firstidx, expected)
+        firstLoopIdx, total = Builder.Parquet.findFirstLoopIdx(partition, firstidx)
+        @test firstLoopIdx == expected
+        totalExp = sum(partition) + firstidx - 1
+        @test total == totalExp
+    end
+
+    testLoopIdx([1, 1, 2, 1], 1, [1, 2, 3, 5])
+    testLoopIdx([1, 1, 2, 1], 0, [0, 1, 2, 4])
+    testLoopIdx([1, 0, 2, 0], 1, [1, 2, 2, 4])
+    testLoopIdx([1,], 1, [1,])
+
+    function testTauIdx(partition, isG, firstidx, tauNum, expected)
+        firstIdx, total = Builder.Parquet.findFirstTauIdx(partition, isG, firstidx, tauNum)
+        @test firstIdx == expected
+    end
+    tauNum = 1
+    # isG = [false, true, false, true]
+    isG = [Builder.Ver4Diag, Builder.GreenDiag, Builder.Ver4Diag, Builder.GreenDiag]
+    testTauIdx([1, 1, 2, 1], isG, 1, tauNum, [1, 3, 4, 7])
+    testTauIdx([1, 1, 2, 1], isG, 0, tauNum, [0, 2, 3, 6])
+    testTauIdx([1, 0, 2, 0], isG, 1, tauNum, [1, 3, 3, 6])
+
+end
+
 function evalG(K, τin, τout)
     # println(τBasis, ", ", varT)
     kF, β = 1.0, 1.0
@@ -26,6 +64,7 @@ end
 function evalFakePropagator(idx, object, K, varT, diag)
     return 1.0
 end
+
 
 @testset "Parquet Ver4" begin
     function testDiagWeigt(loopNum, chan, Kdim = 3, spin = 2, interactionTauNum = 1; filter = [], timing = false, eval = true)
@@ -176,43 +215,6 @@ end
     # for r in diag.root
     #     DiagTree.showTree(diag, r)
     # end
-
-end
-
-@testset "Partition" begin
-    p = Builder.Parquet.orderedPartition(5, 2)
-    expect = [[4, 1], [1, 4], [2, 3], [3, 2]]
-    @test Set(p) == Set(expect)
-
-    p = Builder.Parquet.orderedPartition(3, 2, 0)
-    expect = [[3, 0], [0, 3], [1, 2], [2, 1]]
-    @test Set(p) == Set(expect)
-end
-
-@testset "FindFirstIdx" begin
-    # p = Builder.Parquet.orderedPartition(5, 4, 0)
-
-    function testLoopIdx(partition, isG, firstidx, expected)
-        firstLoopIdx, total = Builder.Parquet.findFirstLoopIdx(partition, isG, firstidx)
-        @test firstLoopIdx == expected
-        totalExp = sum(partition) + firstidx - 1
-        @test total == totalExp
-    end
-
-    isG = [false, true, false, true]
-    testLoopIdx([1, 1, 2, 1], isG, 1, [1, 2, 3, 5])
-    testLoopIdx([1, 1, 2, 1], isG, 0, [0, 1, 2, 4])
-    testLoopIdx([1, 0, 2, 0], isG, 1, [1, 2, 2, 4])
-    testLoopIdx([1,], [false,], 1, [1,])
-
-    function testTauIdx(partition, isG, firstidx, tauNum, expected)
-        firstIdx, total = Builder.Parquet.findFirstTauIdx(partition, isG, firstidx, tauNum)
-        @test firstIdx == expected
-    end
-    tauNum = 1
-    testTauIdx([1, 1, 2, 1], isG, 1, tauNum, [1, 3, 4, 7])
-    testTauIdx([1, 1, 2, 1], isG, 0, tauNum, [0, 2, 3, 6])
-    testTauIdx([1, 0, 2, 0], isG, 1, tauNum, [1, 3, 3, 6])
 
 end
 

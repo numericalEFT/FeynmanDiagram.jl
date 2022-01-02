@@ -4,23 +4,6 @@ using AbstractTrees
 using Parameters, Combinatorics
 using ..DiagTree
 
-import ..Filter
-import ..Wirreducible  #remove all polarization subdiagrams
-import ..Girreducible  #remove all self-energy inseration
-import ..NoHatree
-import ..NoFock
-import ..NoBubble  # true to remove all bubble subdiagram
-import ..Proper  #ver4, ver3, and polarization diagrams may require to be irreducible along the transfer momentum/frequency
-
-import ..GreenDiagram
-import ..Sigma
-import ..Polarization
-import ..Vertex3
-import ..Vertex4
-
-import ..GenericPara
-
-import ..tauNum
 
 const DI, EX = 1, 2
 const INL, OUTL, INR, OUTR = 1, 2, 3, 4
@@ -34,7 +17,7 @@ const SymFactor = [1.0, -1.0, 1.0, -0.5, +1.0, -1.0]
 # const Vchan = [I, T, U, Ts, Us, Ic, Tc, Uc, Sc, Tsc, Usc]
 const Allchan = [I, T, U, S, Ts, Us, Ic, Tc, Uc, Sc, Tsc, Usc]
 
-
+include("common.jl")
 include("vertex4.jl")
 include("eval.jl")
 include("io.jl")

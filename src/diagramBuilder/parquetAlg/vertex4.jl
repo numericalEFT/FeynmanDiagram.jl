@@ -1,49 +1,3 @@
-function orderedPartition(_total, n, lowerbound = 1)
-    @assert lowerbound >= 0
-    total = _total - n * (lowerbound - 1)
-    @assert total >= n
-    unorderedPartition = collect(partitions(total, n))
-    #e.g., loopNum =5, n =2 ==> unordered = [[4, 1], [3, 2]]
-    orderedPartition = Vector{Vector{Int}}([])
-    for p in unorderedPartition
-        p = p .+ (lowerbound - 1)
-        @assert sum(p) == _total
-        for i in p
-            @assert i >= lowerbound
-        end
-        append!(orderedPartition, Set(permutations(p)))
-    end
-    #e.g., loopNum =5, n =2 ==> ordered = [[4, 1], [1, 4], [3, 2], [2, 3]]
-    return orderedPartition
-end
-
-function findFirstLoopIdx(partition, isG, firstidx::Int)
-    # !!!!!  only works for G an ver4 partitions  !!!!
-    ## example: isG =[false, true, false, true], firstidx = 1
-    # partition = [1, 1, 2, 1], then the loop partition = [1][2][34][5], thus firstTauIdx = [1, 2, 3, 5]
-    # partition = [1, 0, 2, 0], then the loop partition = [1][][23][], thus firstTauIdx = [1, 2, 2, 4]
-    @assert length(partition) == length(isG)
-    accumulated = accumulate(+, partition; init = firstidx) #  idx[i] = firstidx + p[1]+p[2]+...+p[i]
-    firstLoopIdx = [firstidx,]
-    append!(firstLoopIdx, accumulated[1:end-1])
-    maxLoopIdx = accumulated[end] - 1
-    return firstLoopIdx, maxLoopIdx
-end
-
-function findFirstTauIdx(partition, isG, firstidx::Int, tauNum::Int)
-    # !!!!!  only works for G an ver4 partitions  !!!!
-    ## example: isG =[false, true, false, true], firstidx = 1
-    # n-loop G has n*tauNum DOF, while n-loop ver4 has (n+1)*tauNum DOF
-    # partition = [1, 1, 2, 1], then the tau partition = [12][3][456][7], thus firstTauIdx = [1, 3, 4, 7]
-    # partition = [1, 0, 2, 0], then the tau partition = [12][][345][], thus firstTauIdx = [1, 3, 3, 6]
-    @assert length(partition) == length(isG)
-    taupartition = [isG[i] ? p * tauNum : (p + 1) * tauNum for (i, p) in enumerate(partition)]
-    accumulated = accumulate(+, taupartition; init = firstidx) #  idx[i] = firstidx + p[1]+p[2]+...+p[i]
-    firstTauidx = [firstidx,]
-    append!(firstTauidx, accumulated[1:end-1])
-    maxTauIdx = accumulated[end] - 1
-    return firstTauidx, maxTauIdx
-end
 
 mutable struct Green
     para::GenericPara
@@ -124,13 +78,14 @@ struct Bubble{_Ver4} # template Bubble to avoid mutually recursive struct
         oL, oG0, oR, oGx = partition[1], partition[2], partition[3], partition[4]
 
         LoopIdx = para.firstLoopIdx
-        idx, maxLoop = findFirstLoopIdx(partition, [false, true, false, true], LoopIdx + 1)
+        idx, maxLoop = findFirstLoopIdx(partition, LoopIdx + 1)
         LfirstLoopIdx, G0firstLoopIdx, RfirstLoopIdx, GxfirstLoopIdx = idx
         @assert maxLoop == maxLoopIdx(ver4)
 
-        idx, maxTau = findFirstTauIdx(partition, [false, true, false, true], para.firstTauIdx, TauNum)
+        diagType = [Ver4Diag, GreenDiag, Ver4Diag, GreenDiag]
+        idx, maxTau = findFirstTauIdx(partition, diagType, para.firstTauIdx, TauNum)
         LfirstTauIdx, G0firstTauIdx, RfirstTauIdx, GxfirstTauIdx = idx
-        @assert maxTau == maxTauIdx(ver4)
+        @assert maxTau == maxTauIdx(ver4) "Partition $partition with tauNum configuration $idx. maxTau = $maxTau, yet $(maxTauIdx(ver4)) is expected!"
 
         if chan == T || chan == U
             LverChan = (level == 1) ? ver4.Fouter : ver4.F
