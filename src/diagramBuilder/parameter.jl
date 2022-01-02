@@ -1,3 +1,11 @@
+@enum DiagramType begin
+    Sigma                 #self-energy
+    GreenDiagram          #green's function
+    Polarization          #polarization
+    Vertex3               #3-point vertex function
+    Vertex4               #4-point vertex function
+end
+
 @enum Filter begin
     Wirreducible  #remove all polarization subdiagrams
     Girreducible  #remove all self-energy inseration
@@ -32,6 +40,25 @@ end
 
     filter::Vector{Filter} = [NoHatree,] #usually, the Hatree subdiagram should be removed
     transferLoop = [] #Set it to be the transfer momentum/frequency if you want to check the diagrams are proper or not
+end
+
+"""
+    function tauNum(diagType::DiagramType, innerLoopNum, interactionTauNum)
+    
+    imaginary-time degrees of freedom (external + internal) for a given diagram type and internal loop number.
+"""
+function tauNum(diagType::DiagramType, innerLoopNum, interactionTauNum)
+    if diagType == Vertex4
+        return (innerLoopNum + 1) * interactionTauNum
+    elseif diagType == Sigma
+        return innerLoopNum * interactionTauNum
+    elseif diagType == GreenDiagram
+        return 2 + innerLoopNum * interactionTauNum
+    elseif diagType == Polarization
+        return 2 + (innerLoopNum - 1) * interactionTauNum
+    elseif diagType == Vertex3
+        return 1 + innerLoopNum * interactionTauNum
+    end
 end
 
 function totalTauNum(para, diagType::Symbol = :none)

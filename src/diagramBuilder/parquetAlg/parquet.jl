@@ -12,7 +12,15 @@ import ..NoFock
 import ..NoBubble  # true to remove all bubble subdiagram
 import ..Proper  #ver4, ver3, and polarization diagrams may require to be irreducible along the transfer momentum/frequency
 
+import ..GreenDiagram
+import ..Sigma
+import ..Polarization
+import ..Vertex3
+import ..Vertex4
+
 import ..GenericPara
+
+import ..tauNum
 
 const DI, EX = 1, 2
 const INL, OUTL, INR, OUTR = 1, 2, 3, 4
