@@ -111,7 +111,7 @@ function showTree(diag::Diagrams, _root::Int; verbose = 0, depth = 999)
             end
         end
 
-        for (ci, component) in enumerate(node.components)
+        for (ci, component) in enumerate(node.propagators)
             # println(component, ", ", ci)
             propagatorPool = diag.propagatorPool[ci]
             for pidx in component

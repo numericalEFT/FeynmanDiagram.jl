@@ -29,14 +29,14 @@ end
     totalLoopNum::Int
     totalTauNum::Int
     spin::Int
+    firstLoopIdx::Int
+    firstTauIdx::Int
 
     isFermi::Bool = true
     weightType::DataType = Float64
 
     interactionTauNum::Int = 1
     interactionType::Vector{Interaction} = [ChargeCharge,] # :ChargeCharge, :SpinSpin, ...
-    firstLoopIdx::Int = 1
-    firstTauIdx::Int = 1
 
     filter::Vector{Filter} = [NoHatree,] #usually, the Hatree subdiagram should be removed
     transferLoop = [] #Set it to be the transfer momentum/frequency if you want to check the diagrams are proper or not
