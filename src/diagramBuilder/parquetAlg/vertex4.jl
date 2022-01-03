@@ -77,6 +77,10 @@ struct Bubble{_Ver4} # template Bubble to avoid mutually recursive struct
 
         oL, oG0, oR, oGx = partition[1], partition[2], partition[3], partition[4]
 
+        if isValidG(para.filter, oG0) == false || isValidG(para.filter, oGx) == false
+            return nothing
+        end
+
         LoopIdx = para.firstLoopIdx
         idx, maxLoop = findFirstLoopIdx(partition, LoopIdx + 1)
         LfirstLoopIdx, G0firstLoopIdx, RfirstLoopIdx, GxfirstLoopIdx = idx
@@ -301,7 +305,7 @@ struct Ver4{W}
                 for p in partition
                     # println(p)
                     bubble = Bubble(ver4, c, p, level, id)
-                    if length(bubble.map) > 0  # if zero, bubble diagram doesn't exist
+                    if isnothing(bubble) == false && length(bubble.map) > 0  # if zero, bubble diagram doesn't exist
                         push!(ver4.bubble, bubble)
                     end
                 end
