@@ -57,7 +57,7 @@ struct Node{PARA,F}
     operation::Int #1: multiply, 2: add, ...
     factor::F
     # order::Int
-    components::Vector{Vector{Int}}
+    propagators::Vector{Vector{Int}}
     childNodes::Vector{Int}
     parent::Int # parent id
     # child::SubArray{CachedObject{Node{PARA, P},W},1,Vector{CachedObject{NODE,W}},Tuple{Vector{Int64}},false}
@@ -65,15 +65,15 @@ struct Node{PARA,F}
     # function Node(operation::Int, components = [[]], child = [], factor::F = 1.0, parent = 0, para::P = :N) where {F,P}
     #     return new{P,F}(para, operation, factor, components, child, parent)
     # end
-    function Node{F}(name::Symbol, operation::Int, para::P, components = [[]], child = [], factor = 1.0, parent = 0) where {F,P}
+    function Node{F}(name::Symbol, operation::Int, para::P, propagators = [[]], child = [], factor = 1.0, parent = 0) where {F,P}
         @assert typeof(para) == P
-        return new{P,F}(name, para, operation, F(factor), components, child, parent)
+        return new{P,F}(name, para, operation, F(factor), propagators, child, parent)
     end
 end
 
 function Base.isequal(a::Node{P}, b::Node{P}) where {P}
     # only parent is allowed to be different
-    if (isequal(a.para, b.para) == false) || (a.operation != b.operation) || (a.components != b.components) || (a.childNodes != b.childNodes) || (a.factor != b.factor)
+    if (isequal(a.para, b.para) == false) || (a.operation != b.operation) || (a.propagators != b.propagators) || (a.childNodes != b.childNodes) || (a.factor != b.factor)
         return false
     else
         return true
@@ -115,6 +115,8 @@ mutable struct Diagrams{V,P,PARA,F,W}
         return new{V,P,nodeParaType,nodeFactorType,nodeWeightType}(name, basisPool, propagatorPool, nodePool, [])
     end
 end
+
+# struct component
 
 """
     function addPropagator!(diag::Diagrams, index::Int, order::Int, name, factor = 1; site = [], loop = nothing, para = nothing)
