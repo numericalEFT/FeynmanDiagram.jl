@@ -19,8 +19,8 @@ const Allchan = [I, T, U, S, Ts, Us, Ic, Tc, Uc, Sc, Tsc, Usc]
 
 include("common.jl")
 include("vertex4.jl")
-include("eval.jl")
-include("io.jl")
+include("vertex4_eval.jl")
+include("vertex4_io.jl")
 include("filter.jl")
 include("ver4_diagTree.jl")
 include("sigma_diagTree.jl")

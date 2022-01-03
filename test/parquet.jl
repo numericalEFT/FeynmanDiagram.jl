@@ -101,9 +101,9 @@ end
         #################### DiagTree ####################################
         diag, ver4, dir, ex = Parquet.buildVer4(para, legK, chan, F, V)
         # the weighttype of the returned ver4 is Float64
-        rootDir = DiagTree.addNode!(diag, DiagTree.ADD, :dir; child = dir, para = [0, 0, 0, 0])
-        rootEx = DiagTree.addNode!(diag, DiagTree.ADD, :ex; child = ex, para = [0, 0, 0, 0])
-        diag.root = [rootDir, rootEx]
+        rootDir = DiagTree.addnode!(diag, DiagTree.ADD, :dir, dir; para = [0, 0, 0, 0])
+        rootEx = DiagTree.addnode!(diag, DiagTree.ADD, :ex, ex; para = [0, 0, 0, 0])
+        diag.root = [rootDir.index, rootEx.index]
 
         # println(diag.root)
 
@@ -131,8 +131,8 @@ end
             w2 = ver4.weight[1]
 
             # Parquet.print_tree(ver4)
-            # DiagTree.showTree(diag, diag.root[1])
-            # Parquet.showTree(ver4)
+            DiagTree.showTree(diag, diag.root[1])
+            Parquet.showTree(ver4)
             # DiagTree.printBasisPool(diag)
             # DiagTree.printPropagator(diag)
             # println(diag.propagatorPool[1].object[2])
@@ -145,11 +145,11 @@ end
     end
 
     Parquet = Builder.Parquet
-    for l = 1:1
+    for l = 2:2
         testDiagWeigt(l, [Parquet.T,])
-        testDiagWeigt(l, [Parquet.U,])
-        testDiagWeigt(l, [Parquet.S,])
-        testDiagWeigt(l, [Parquet.T, Parquet.U, Parquet.S]; timing = true)
+        # testDiagWeigt(l, [Parquet.U,])
+        # testDiagWeigt(l, [Parquet.S,])
+        # testDiagWeigt(l, [Parquet.T, Parquet.U, Parquet.S]; timing = true)
     end
 
     para, diag, ver4 = testDiagWeigt(3, [Parquet.T, Parquet.U, Parquet.S]; filter = [Builder.Proper], eval = false)
