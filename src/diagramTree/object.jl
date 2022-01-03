@@ -73,7 +73,16 @@ end
 
 function Base.isequal(a::Node{P}, b::Node{P}) where {P}
     # only parent is allowed to be different
-    if (isequal(a.para, b.para) == false) || (a.operation != b.operation) || (a.propagators != b.propagators) || (a.childNodes != b.childNodes) || (a.factor != b.factor)
+    if length(a.propagators) != length(b.propagators)
+        return false
+    end
+    for i in 1:length(a.propagators)
+        if Set(a.propagators[i]) != Set(b.propagators[i])
+            return false
+        end
+    end
+
+    if (isequal(a.para, b.para) == false) || (a.operation != b.operation) || (Set(a.childNodes) != Set(b.childNodes)) || (a.factor != b.factor)
         return false
     else
         return true
@@ -127,7 +136,7 @@ struct Component
     poolName::Symbol
 end
 
-Base.zero(::Type{Component}) = Componet(0, false, :none)
+Base.zero(::Type{Component}) = Component(0, false, :none)
 
 """
     function addPropagator!(diag::Diagrams, index::Int, order::Int, name, factor = 1; site = [], loop = nothing, para = nothing)
@@ -309,24 +318,34 @@ function addpropagator!(diag::Diagrams, poolName::Symbol, order::Int, name, fact
     return Component(pidx, false, poolName)
 end
 
-function addnode!(diag::Diagrams, operator, name, factor = 1.0; components = Vector{Component}([]), parent = 0, para = nothing)
+function addnode!(diag::Diagrams, operator, name, components, factor = 1.0; para = nothing)
+    _components = [c for c in components if c.index > 0]
+    if operator == MUL
+        if length(_components) < length(components)
+            return zero(Component) #if some of the components doesn't exist, then product of the components doens't exist
+        end
+    elseif operator == ADD
+        if length(_components) == 0
+            return zero(Component) #if all of the components doesn't exist, then sum of the components doens't exist
+        end
+    end
+
     child = []
     propagator = [[] for p in diag.propagatorPool]
-    if isempty(components) == false
-        for c in components
-            if c.isNode
-                push!(child, c.index)
-            else
-                for (idx, p) in enumerate(diag.propagatorPool)
-                    if p.name == c.poolName
-                        append!(propagator[idx], c.index)
-                    end
+    for c in collect(_components)
+        @assert c isa Component "$c is not a DiagTree.Component"
+        if c.isNode
+            push!(child, c.index)
+        else
+            for (idx, p) in enumerate(diag.propagatorPool)
+                if p.name == c.poolName
+                    append!(propagator[idx], c.index)
                 end
             end
         end
     end
     nidx = addNode!(diag, operator, name, factor; propagator = propagator, child = child, para = para)
-    return Component(nidx, true, :none)
+    return Component(nidx, true, diag.nodePool.name)
 end
 
 # function sum_of_producted_components!(diag::Diagrams, name, components::Vector{Vector{component}}, factor = 1.0; para = nothing)

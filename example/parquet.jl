@@ -20,7 +20,9 @@ para = Builder.GenericPara(
     spin = 2,
     interactionTauNum = 1,
     weightType = Float64,
-    filter = [Builder.NoBubble,]
+    firstLoopIdx = 2,
+    firstTauIdx = 1,
+    filter = [Builder.Girreducible,]
 )
 
 K0 = zeros(para.totalLoopNum)
@@ -35,11 +37,11 @@ evalK(basis) = sum([basis[i] * varK[i] for i in 1:para.totalLoopNum])
 evalT(Tidx) = varT[Tidx]
 
 diag, ver4, dir, ex = Parquet.buildVer4(para, legK, chan, F, V)
-rootDir = DiagTree.addNode!(diag, DiagTree.ADD, :dir; child = dir, para = [0, 0, 0, 0])
-rootEx = DiagTree.addNode!(diag, DiagTree.ADD, :ex; child = ex, para = [0, 0, 0, 0])
-diag.root = [rootDir, rootEx]
+rootDir = DiagTree.addnode!(diag, DiagTree.ADD, :dir, dir, para = [0, 0, 0, 0])
+rootEx = DiagTree.addnode!(diag, DiagTree.ADD, :ex, ex, para = [0, 0, 0, 0])
+diag.root = [rootDir.index, rootEx.index]
 
-# DiagTree.showTree(diag, rootDir)
+DiagTree.showTree(diag, rootDir.index)
 
 ##################### lower level subroutines  #######################################
 ver4 = Parquet.Ver4{Float64}(para, legK, chan, F, V)
@@ -61,6 +63,7 @@ println("Iterate the tree use the AbstractTrees interface: ")
 ########## use ete3 package to visualize tree
 # Parquet.showTree(ver4, verbose = 1, depth = 3)  # visualize tree using python3 package ete3
 
+exit(0)
 
 ######################################## self-energy  ################################################
 
