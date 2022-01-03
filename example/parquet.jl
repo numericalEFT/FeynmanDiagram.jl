@@ -63,8 +63,6 @@ println("Iterate the tree use the AbstractTrees interface: ")
 ########## use ete3 package to visualize tree
 # Parquet.showTree(ver4, verbose = 1, depth = 3)  # visualize tree using python3 package ete3
 
-exit(0)
-
 ######################################## self-energy  ################################################
 
 para = Builder.GenericPara(
@@ -75,6 +73,7 @@ para = Builder.GenericPara(
     spin = 2,
     interactionTauNum = 1,
     firstLoopIdx = 2,
+    firstTauIdx = 1,
     weightType = Float64,
     filter = [Builder.NoHatree,]
 )
@@ -83,9 +82,11 @@ K0 = zeros(para.totalLoopNum)
 K0[1] = 1.0
 sigma, root = Parquet.buildSigma(para, K0)
 # println(root)
-rootidx = DiagTree.addNode!(sigma, DiagTree.ADD, :sum; child = root, para = [0, 0])
-# DiagTree.showTree(sigma, rootidx)
+rootidx = DiagTree.addnode!(sigma, DiagTree.ADD, :sum, root; para = [0, 0])
+DiagTree.showTree(sigma, rootidx)
 
+
+exit(0)
 
 ##################################### vertex 3   #################################################
 
