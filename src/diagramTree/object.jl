@@ -188,11 +188,6 @@ function addPropagator!(diag::Diagrams, poolName::Symbol, order::Int, name, fact
     end
 end
 
-function addpropagator!(diag::Diagrams, poolName::Symbol, order::Int, name, factor = 1.0; site = [], loop = nothing, para = nothing)
-    pidx = addPropagator!(diag, poolName, order, name, factor; site = site, loop = loop, para = para)
-    return component(pidx, false, poolName)
-end
-
 """
     function addNode!(diag::Diagrams, operator, name, factor = 1.0; propagator = nothing, child = [], parent = 0, para = nothing)
 
@@ -288,6 +283,30 @@ function addNodeByName!(diag::Diagrams, operator, name, factor = 1.0; child = []
     return addNode!(diag, operator, name, factor; propagator = components, child = child, para = para)
 end
 
+"""
+    function getNode(diag::Diagrams, nidx::Int)
+    
+    get Node in the diag with the index nidx.
+"""
+function getNode(diag::Diagrams, nidx::Int)
+    return diag.nodePool.object[nidx]
+end
+
+"""
+    function getNodeWeight(diag::Diagrams, nidx::Int)
+    
+    get Node weight in the diag with the index nidx.
+"""
+function getNodeWeight(diag::Diagrams, nidx::Int)
+    return diag.nodePool.current[nidx]
+end
+
+
+function addpropagator!(diag::Diagrams, poolName::Symbol, order::Int, name, factor = 1.0; site = [], loop = nothing, para = nothing)
+    pidx = addPropagator!(diag, poolName, order, name, factor; site = site, loop = loop, para = para)
+    return component(pidx, false, poolName)
+end
+
 function addnode!(diag::Diagrams, operator, name, factor = 1.0; components = Vector{component}([]), parent = 0, para = nothing)
     child = []
     propagator = [[] for p in diag.propagatorPool]
@@ -308,20 +327,11 @@ function addnode!(diag::Diagrams, operator, name, factor = 1.0; components = Vec
     return component(nidx, true, :none)
 end
 
-"""
-    function getNode(diag::Diagrams, nidx::Int)
-    
-    get Node in the diag with the index nidx.
-"""
-function getNode(diag::Diagrams, nidx::Int)
-    return diag.nodePool.object[nidx]
-end
+# function sum_of_producted_components!(diag::Diagrams, name, components::Vector{Vector{component}}, factor = 1.0; para = nothing)
+#     for c in components
+#         @assert isempty(c) == false "Some of the components are emtpy! $components"
+#     end
+#     for c in components
 
-"""
-    function getNodeWeight(diag::Diagrams, nidx::Int)
-    
-    get Node weight in the diag with the index nidx.
-"""
-function getNodeWeight(diag::Diagrams, nidx::Int)
-    return diag.nodePool.current[nidx]
-end
+#     end
+# end
