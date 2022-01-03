@@ -189,25 +189,6 @@ function ver4toDiagTree!(diag, ver4, factor = 1.0)
     return diag, ver4, dir, ex
 end
 
-function newDiagTree(para, name::Symbol = :none)
-    weightType = para.weightType
-    Kpool = DiagTree.LoopPool(:K, para.loopDim, para.totalLoopNum, Float64)
-    nodeParaType = Vector{Int}
-
-    if para.interactionTauNum == 2
-        Gpool = DiagTree.propagatorPool(:Gpool, weightType)
-        Vpool = DiagTree.propagatorPool(:Vpool, weightType)
-        Wpool = DiagTree.propagatorPool(:Wpool, weightType)
-        return DiagTree.Diagrams(Kpool, (Gpool, Vpool, Wpool), weightType, nodeParaType = nodeParaType, name = name)
-    elseif para.interactionTauNum == 1 || para.interactionTauNum == 0
-        Gpool = DiagTree.propagatorPool(:Gpool, weightType)
-        Vpool = DiagTree.propagatorPool(:Vpool, weightType)
-        return DiagTree.Diagrams(Kpool, (Gpool, Vpool), weightType, nodeParaType = nodeParaType, name = name)
-    else
-        error("not implemented!")
-    end
-end
-
 """
     function buildVer4(para, LegK, chan, F, V, All = union(F, V);
         Fouter = F, Vouter = V, Allouter = All, factor = 1.0, diag = newDiagTree(para, Tuple{Int,Int,Int,Int}, :Ver4))
