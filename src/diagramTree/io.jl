@@ -146,3 +146,6 @@ function showTree(diag::Diagrams, _root::Int; verbose = 0, depth = 999)
     # t.write(outfile="/home/kun/test.txt", format=8)
     t.show(tree_style = ts)
 end
+function showTree(diag::Diagrams, _root::Component; kwargs...)
+    return showTree(diag, _root.index; kwargs...)
+end

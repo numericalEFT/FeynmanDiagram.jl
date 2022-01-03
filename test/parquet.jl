@@ -187,9 +187,9 @@ end
         #################### DiagTree ####################################
         diag, root = Parquet.buildSigma(para, extK, subdiagram)
         # the weighttype of the returned ver4 is Float64
-        sumRoot = DiagTree.addNode!(diag, DiagTree.ADD, :sum, child = root, para = [0, 0])
-        if sumRoot != 0
-            push!(diag.root, sumRoot)
+        sumRoot = DiagTree.addnode!(diag, DiagTree.ADD, :sum, root; para = [0, 0])
+        if sumRoot.index != 0
+            push!(diag.root, sumRoot.index)
         end
 
         return para, diag, varK, varT

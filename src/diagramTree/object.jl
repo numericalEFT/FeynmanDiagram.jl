@@ -302,6 +302,10 @@ end
 function getNode(diag::Diagrams, nidx::Int)
     return diag.nodePool.object[nidx]
 end
+function getNode(diag::Diagrams, n::Component)
+    @assert n.isNode == true
+    return diag.nodePool.object[n.index]
+end
 
 """
     function getNodeWeight(diag::Diagrams, nidx::Int)
