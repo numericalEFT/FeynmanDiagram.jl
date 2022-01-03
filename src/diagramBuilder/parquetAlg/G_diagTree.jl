@@ -45,7 +45,7 @@ function buildG(para, externLoop, extT, subdiagram = false; F = [I, U, S], V = [
     @assert tin < tstart || tin > tend "external T index cann't be with in [$tstart, $tend]"
     @assert tout < tstart || tout > tend "external T index cann't be with in [$tstart, $tend]"
 
-    gleft = DiagTree.addPropagator!(diag, :Gpool, 0, :gleft; site = [tin, tstart], loop = externLoop)
+    # gleft = DiagTree.addPropagator!(diag, :Gpool, 0, :gleft; site = [tin, tstart], loop = externLoop)
 
     partition = []
     for n = 1:para.innerLoopNum
@@ -59,42 +59,26 @@ function buildG(para, externLoop, extT, subdiagram = false; F = [I, U, S], V = [
     # println(partition)
     for p in partition
         #e.g., p = [4, 1]
-        Gnode = []
-        firstTauIdx = para.firstTauIdx
-        firstLoopIdx = para.firstLoopIdx
+        firstTauIdx = findFirstTauIdx(p, [SigmaDiag for i in p], para.firstTauIdx, para.interactionTauNum)
+        firstLoopIdx = findFirstLoopIdx(p, para.firstLoopIdx)
+
+        if all([isValidSigma(para.filter, loop, true) for loop in p]) == false
+            continue
+        end
+
+        # Gnode = []
+        sigma = []
+        extT = []
         for (li, loop) in enumerate(p)
             #e.g., loop = 4 or 1
-            sigmaPara = reconstruct(para, firstTauIdx = firstTauIdx, firstLoopIdx = firstLoopIdx, innerLoopNum = loop)
+            sigmaPara = reconstruct(para, firstTauIdx = firstTauIdx[li], firstLoopIdx = firstLoopIdx[li], innerLoopNum = loop)
             # println("sigma loop=", loop)
             diag, root = buildSigma(sigmaPara, externLoop, true; F = F, V = V, All = All, diag = diag)
-            tleft = firstTauIdx
-            tright = (li == length(p)) ? tout : tleft + loop * para.interactionTauNum
-
-            nodes = []
-            for r in root
-                #build node Σ(tleft, t)*g(t, tright)
-                n = DiagTree.getNode(diag, r)
-                t1, t2 = n.para
-                # println(t1, ", ", t2, ", ", loop)
-                @assert t1 == firstTauIdx "sigma left Tidx = $t1 is not equal to the firstTauIdx = $firstTauIdx"
-                if li < length(p) #not the last g
-                    @assert t2 < tright "sigma right Tidx = $t2 should be smaller than $tright"
-                end
-                g = DiagTree.addPropagator!(diag, :Gpool, 0, :g; site = [t2, tright], loop = externLoop)
-                push!(nodes, DiagTree.addNodeByName!(diag, DiagTree.MUL, :Σg, child = r, Gpool = g, para = [tleft, tright]))
-            end
-
-            if isempty(nodes) == false
-                #build node \sum_t Σ(tleft, t)*g(t, tright)
-                push!(Gnode, DiagTree.addNode!(diag, DiagTree.ADD, :Σgsum, child = nodes, para = [tleft, tright]))
-            end
-
-            firstLoopIdx += loop
-            firstTauIdx += loop * para.interactionTauNum
+            @assert isempty(root) == false
+            push!(sigma, root)
+            push!(extT, [(s.object.para[1], s.object.para[2]) for s in root]) #external TauIdx of each component as a sigma
         end
-        if isempty(Gnode) == false
-            push!(Gall, DiagTree.addNodeByName!(diag, DiagTree.MUL, :gΣg; child = Gnode, Gpool = gleft, para = [tin, tout]))
-        end
+
     end
 
     @assert isempty(Gall) == false

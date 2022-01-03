@@ -362,11 +362,21 @@ function addnode!(diag::Diagrams, operator, name, components, factor = 1.0; para
     return Component(nidx, true, diag.nodePool.name, getNode(diag, nidx))
 end
 
-# function sum_of_producted_components!(diag::Diagrams, name, components::Vector{Vector{component}}, factor = 1.0; para = nothing)
-#     for c in components
-#         @assert isempty(c) == false "Some of the components are emtpy! $components"
-#     end
-#     for c in components
+function sum_of_producted_components!(diag::Diagrams, name, _componentsVector::Vector{Vector{Component}}, factor = 1.0; para = nothing)
+    componentsVector = []
+    for components in _componentsVector
+        _components = [c for c in components if c.index > 0]
+        if isempty(_components)
+            @warn("Some of the components are emtpy! $componentsVector")
+        end
+        push!(componentsVector, _components)
+    end
 
-#     end
-# end
+    nodes = []
+    for cs in Iterators.product(Tuple(componentsVector)...)
+        # println(typeof(cs))
+        nodename = reduce(*, [String(c.object.name) for c in cs])
+        push!(nodes, addnode!(diag, MUL, Symbol(nodename), cs; para = para))
+    end
+    return addnode!(diag, ADD, name, nodes; para = para)
+end
