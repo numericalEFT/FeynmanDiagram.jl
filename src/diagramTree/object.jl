@@ -134,9 +134,10 @@ struct Component
     index::Int
     isNode::Bool
     poolName::Symbol
+    object::Any
 end
 
-Base.zero(::Type{Component}) = Component(0, false, :none)
+Base.zero(::Type{Component}) = Component(0, false, :none, nothing)
 
 """
     function addPropagator!(diag::Diagrams, index::Int, order::Int, name, factor = 1; site = [], loop = nothing, para = nothing)
@@ -307,6 +308,15 @@ function getNode(diag::Diagrams, n::Component)
     return diag.nodePool.object[n.index]
 end
 
+function getPropagator(diag::Diagrams, pidx::Int, poolName::Symbol)
+    for p in diag.propagatorPool
+        if p.name == poolName
+            return p.object[pidx]
+        end
+    end
+    error("$poolName propagator pool doesn't exist!")
+end
+
 """
     function getNodeWeight(diag::Diagrams, nidx::Int)
     
@@ -319,7 +329,7 @@ end
 
 function addpropagator!(diag::Diagrams, poolName::Symbol, order::Int, name, factor = 1.0; site = [], loop = nothing, para = nothing)
     pidx = addPropagator!(diag, poolName, order, name, factor; site = site, loop = loop, para = para)
-    return Component(pidx, false, poolName)
+    return Component(pidx, false, poolName, getPropagator(diag, pidx, poolName))
 end
 
 function addnode!(diag::Diagrams, operator, name, components, factor = 1.0; para = nothing)
@@ -349,7 +359,7 @@ function addnode!(diag::Diagrams, operator, name, components, factor = 1.0; para
         end
     end
     nidx = addNode!(diag, operator, name, factor; propagator = propagator, child = child, para = para)
-    return Component(nidx, true, diag.nodePool.name)
+    return Component(nidx, true, diag.nodePool.name, getNode(diag, nidx))
 end
 
 # function sum_of_producted_components!(diag::Diagrams, name, components::Vector{Vector{component}}, factor = 1.0; para = nothing)
