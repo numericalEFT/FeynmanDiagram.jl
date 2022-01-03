@@ -1,4 +1,17 @@
 
+# check if G exist without creating objects in the pool
+function isValidSigma(filter, innerLoopNum::Int, subdiagram::Bool)
+    if subdiagram && (Girreducible in filter)
+        return false
+    end
+
+    if subdiagram && (NoFock in filter) && innerLoopNum == 1
+        return false
+    end
+
+    return true
+end
+
 """
     function buildSigma(para, externLoop; F = [I, U, S], V = [I, T, U], All = union(F, V), diag = newDiagTree(para, :Sigma), subdiagram = false)
     
@@ -12,6 +25,10 @@ function buildSigma(para, externLoop, subdiagram = false; F = [I, U, S], V = [I,
     tright = para.firstTauIdx - 1 + para.innerLoopNum * para.interactionTauNum
     @assert para.totalTauNum >= tright "totalTauNum = $(para.totalTauNum) is not enough, sigma requires $tright\npara=$para"
     @assert para.totalLoopNum >= para.firstLoopIdx -1 + para.innerLoopNum
+
+    if isValidSigma(para.filter, para.innerLoopNum, subdiagram) == false
+        return diag, []
+    end
 
     K = zero(externLoop)
     K[para.firstLoopIdx] = 1.0
@@ -27,10 +44,6 @@ function buildSigma(para, externLoop, subdiagram = false; F = [I, U, S], V = [I,
             end
             push!(dict[sigmaT], (nidx, extT, factor))
         end
-    end
-
-    if subdiagram && (Girreducible in para.filter)
-        return diag, []
     end
 
     root = []

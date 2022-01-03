@@ -15,7 +15,6 @@ import ..Ver4Diag
 
 import ..GenericPara
 
-import ..tauNum
 import ..innerTauNum
 
 function orderedPartition(_total, n, lowerbound = 1)

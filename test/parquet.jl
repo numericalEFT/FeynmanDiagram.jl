@@ -159,7 +159,7 @@ end
 end
 
 @testset "Parquet Sigma" begin
-    function getSigma(loopNum; Kdim = 3, spin = 2, interactionTauNum = 1, filter = [], isFermi = true)
+    function getSigma(loopNum; Kdim = 3, spin = 2, interactionTauNum = 1, filter = [], isFermi = true, subdiagram = false)
         println("LoopNum =$loopNum Sigma Test")
 
         para = Builder.GenericPara(
@@ -185,10 +185,12 @@ end
         varT = [rand() for i in 1:para.totalTauNum]
 
         #################### DiagTree ####################################
-        diag, root = Parquet.buildSigma(para, extK)
+        diag, root = Parquet.buildSigma(para, extK, subdiagram)
         # the weighttype of the returned ver4 is Float64
         sumRoot = DiagTree.addNode!(diag, DiagTree.ADD, :sum, child = root, para = [0, 0])
-        push!(diag.root, sumRoot)
+        if sumRoot != 0
+            push!(diag.root, sumRoot)
+        end
 
         return para, diag, varK, varT
     end
@@ -215,6 +217,9 @@ end
     # for r in diag.root
     #     DiagTree.showTree(diag, r)
     # end
+
+    para, diag, varK, varT = getSigma(1, spin = 2, isFermi = false, filter = [Builder.NoFock,], subdiagram = true)
+    @test isempty(diag.root)
 
 end
 
