@@ -42,31 +42,31 @@ end
     transferLoop = [] #Set it to be the transfer momentum/frequency if you want to check the diagrams are proper or not
 end
 
-"""
-    function tauNum(diagType::DiagramType, innerLoopNum, interactionTauNum)
-    
-    imaginary-time degrees of freedom (external + internal) for a given diagram type and internal loop number.
-"""
-function tauNum(diagType::DiagramType, innerLoopNum, interactionTauNum)
-    if diagType == Ver4Diag
-        return (innerLoopNum + 1) * interactionTauNum
-    elseif diagType == SigmaDiag
-        return innerLoopNum * interactionTauNum
-    elseif diagType == GreenDiag
-        return 2 + innerLoopNum * interactionTauNum
-    elseif diagType == PolarDiag
-        return 2 + (innerLoopNum - 1) * interactionTauNum
-    elseif diagType == Ver3Diag
-        return 1 + innerLoopNum * interactionTauNum
-    end
-end
+# """
+#     function tauNum(diagType::DiagramType, innerLoopNum, interactionTauNum)
+
+#     imaginary-time degrees of freedom (external + internal) for a given diagram type and internal loop number.
+# """
+# function tauNum(diagType::DiagramType, innerLoopNum, interactionTauNum)
+#     if diagType == Ver4Diag
+#         return (innerLoopNum + 1) * interactionTauNum
+#     elseif diagType == SigmaDiag
+#         return innerLoopNum * interactionTauNum
+#     elseif diagType == GreenDiag
+#         return 2 + innerLoopNum * interactionTauNum
+#     elseif diagType == PolarDiag
+#         return 2 + (innerLoopNum - 1) * interactionTauNum
+#     elseif diagType == Ver3Diag
+#         return 1 + innerLoopNum * interactionTauNum
+#     end
+# end
 
 """
     function innerTauNum(diagType::DiagramType, innerLoopNum, interactionTauNum)
     
     internal imaginary-time degrees of freedom for a given diagram type and internal loop number.
-    For self-energy and vertex4, innerTauNum is equivalent to tauNum.
-    For the Green function and Polarization and vertex3, tauNum = innerTauNum + external tauNum 
+    For the vertex functions (self-energy, polarization, vertex3, and vertex4), innerTauNum is equivalent to tauNum.
+    For the Green function, tauNum = innerTauNum + external tauNum 
 """
 function innerTauNum(diagType::DiagramType, innerLoopNum, interactionTauNum)
     if diagType == Ver4Diag
@@ -76,9 +76,9 @@ function innerTauNum(diagType::DiagramType, innerLoopNum, interactionTauNum)
     elseif diagType == GreenDiag
         return innerLoopNum * interactionTauNum
     elseif diagType == PolarDiag
-        return (innerLoopNum - 1) * interactionTauNum
+        return 2 + (innerLoopNum - 1) * interactionTauNum
     elseif diagType == Ver3Diag
-        return innerLoopNum * interactionTauNum
+        return 1 + innerLoopNum * interactionTauNum
     end
 end
 

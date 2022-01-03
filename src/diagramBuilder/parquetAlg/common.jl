@@ -37,34 +37,6 @@ function orderedPartition(_total, n, lowerbound = 1)
     return orderedPartition
 end
 
-# function findFirstLoopIdx(partition, isG, firstidx::Int)
-#     # !!!!!  only works for G an ver4 partitions  !!!!
-#     ## example: isG =[false, true, false, true], firstidx = 1
-#     # partition = [1, 1, 2, 1], then the loop partition = [1][2][34][5], thus firstTauIdx = [1, 2, 3, 5]
-#     # partition = [1, 0, 2, 0], then the loop partition = [1][][23][], thus firstTauIdx = [1, 2, 2, 4]
-#     @assert length(partition) == length(isG)
-#     accumulated = accumulate(+, partition; init = firstidx) #  idx[i] = firstidx + p[1]+p[2]+...+p[i]
-#     firstLoopIdx = [firstidx,]
-#     append!(firstLoopIdx, accumulated[1:end-1])
-#     maxLoopIdx = accumulated[end] - 1
-#     return firstLoopIdx, maxLoopIdx
-# end
-
-# function findFirstTauIdx(partition, isG, firstidx::Int, tauNum::Int)
-#     # !!!!!  only works for G an ver4 partitions  !!!!
-#     ## example: isG =[false, true, false, true], firstidx = 1
-#     # n-loop G has n*tauNum DOF, while n-loop ver4 has (n+1)*tauNum DOF
-#     # partition = [1, 1, 2, 1], then the tau partition = [12][3][456][7], thus firstTauIdx = [1, 3, 4, 7]
-#     # partition = [1, 0, 2, 0], then the tau partition = [12][][345][], thus firstTauIdx = [1, 3, 3, 6]
-#     @assert length(partition) == length(isG)
-#     taupartition = [isG[i] ? p * tauNum : (p + 1) * tauNum for (i, p) in enumerate(partition)]
-#     accumulated = accumulate(+, taupartition; init = firstidx) #  idx[i] = firstidx + p[1]+p[2]+...+p[i]
-#     firstTauidx = [firstidx,]
-#     append!(firstTauidx, accumulated[1:end-1])
-#     maxTauIdx = accumulated[end] - 1
-#     return firstTauidx, maxTauIdx
-# end
-
 function findFirstLoopIdx(partition, firstidx::Int)
     ## example: firstidx = 1
     # partition = [1, 1, 2, 1], then the loop partition = [1][2][34][5], thus firstTauIdx = [1, 2, 3, 5]
@@ -89,4 +61,23 @@ function findFirstTauIdx(partition::Vector{Int}, diagType::Vector{DiagramType}, 
     append!(firstTauidx, accumulated[1:end-1])
     maxTauIdx = accumulated[end] - 1
     return firstTauidx, maxTauIdx
+end
+
+function newDiagTree(para, name::Symbol = :none)
+    weightType = para.weightType
+    Kpool = DiagTree.LoopPool(:K, para.loopDim, para.totalLoopNum, Float64)
+    nodeParaType = Vector{Int}
+
+    if para.interactionTauNum == 2
+        Gpool = DiagTree.propagatorPool(:Gpool, weightType)
+        Vpool = DiagTree.propagatorPool(:Vpool, weightType)
+        Wpool = DiagTree.propagatorPool(:Wpool, weightType)
+        return DiagTree.Diagrams(Kpool, (Gpool, Vpool, Wpool), weightType, nodeParaType = nodeParaType, name = name)
+    elseif para.interactionTauNum == 1 || para.interactionTauNum == 0
+        Gpool = DiagTree.propagatorPool(:Gpool, weightType)
+        Vpool = DiagTree.propagatorPool(:Vpool, weightType)
+        return DiagTree.Diagrams(Kpool, (Gpool, Vpool), weightType, nodeParaType = nodeParaType, name = name)
+    else
+        error("not implemented!")
+    end
 end
