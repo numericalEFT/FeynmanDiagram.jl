@@ -111,12 +111,21 @@ mutable struct Diagrams{V,P,PARA,F,W}
         @assert P <: Tuple "Tuple is required for efficiency!"
         # println(basisPool)
         # println(propagatorPool)
+        poolname = []
+        for p in propagatorPool
+            push!(poolname, p.name)
+        end
+        @assert length(poolname) == length(Set(poolname)) "All propagatorPool should have different names, yet got $poolname!"
         nodePool = CachedPool(:node, Node{nodeParaType,nodeFactorType}, nodeWeightType)
         return new{V,P,nodeParaType,nodeFactorType,nodeWeightType}(name, basisPool, propagatorPool, nodePool, [])
     end
 end
 
-# struct component
+struct component
+    index::Int
+    isNode::Bool
+    propagatorPoolName::Symbol
+end
 
 """
     function addPropagator!(diag::Diagrams, index::Int, order::Int, name, factor = 1; site = [], loop = nothing, para = nothing)
@@ -152,7 +161,9 @@ function addPropagator!(diag::Diagrams, index::Int, order::Int, name, factor = 1
         loopidx = append(loopPool, loop)
     end
     prop = Propagator{F}(name, order, para, factor, loopidx, collect(site))
-    return append(diag.propagatorPool[index], prop)
+    pidx = append(diag.propagatorPool[index], prop)
+    # return component(pidx, false, propagatorPool[index].name)
+    return pidx
 end
 """
     function addPropagator!(diag::Diagrams, poolName::Symbol, order::Int, name, factor = 1; site = [], loop = nothing, para = nothing)
@@ -175,6 +186,11 @@ function addPropagator!(diag::Diagrams, poolName::Symbol, order::Int, name, fact
             return addPropagator!(diag, idx, order, name, factor; site = site, loop = loop, para = para)
         end
     end
+end
+
+function addpropagator!(diag::Diagrams, poolName::Symbol, order::Int, name, factor = 1.0; site = [], loop = nothing, para = nothing)
+    pidx = addPropagator!(diag, poolName, order, name, factor; site = site, loop = loop, para = para)
+    return component(pidx, false, poolName)
 end
 
 """
@@ -243,6 +259,7 @@ function addNode!(diag::Diagrams, operator, name, factor = 1.0; propagator = not
 
     nidx = append(nodePool, node)
     return nidx
+    # return component(nidx, true, :none)
 end
 """
     function addNodeByName(diag::Diagrams, operator, name = :none; child = [], factor = 1.0, parent = 0, para = nothing, kwargs...)
@@ -269,6 +286,26 @@ function addNodeByName!(diag::Diagrams, operator, name, factor = 1.0; child = []
     end
     # println(kwargs, " got ", components)
     return addNode!(diag, operator, name, factor; propagator = components, child = child, para = para)
+end
+
+function addnode!(diag::Diagrams, operator, name, factor = 1.0; components = Vector{component}([]), parent = 0, para = nothing)
+    child = []
+    propagator = [[] for p in diag.propagatorPool]
+    if isempty(components) == false
+        for c in components
+            if c.isNode
+                push!(child, c.index)
+            else
+                for (idx, p) in enumerate(diag.propagatorPool)
+                    if p.name == c.propagatorPoolName
+                        append!(propagator[idx], c.index)
+                    end
+                end
+            end
+        end
+    end
+    nidx = addNode!(diag, operator, name, factor; propagator = propagator, child = child, para = para)
+    return component(nidx, true, :none)
 end
 
 """
