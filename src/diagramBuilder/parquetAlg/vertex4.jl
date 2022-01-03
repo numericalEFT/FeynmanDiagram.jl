@@ -368,30 +368,6 @@ function test(ver4)
     end
 end
 
-function tpair(ver4, MaxT = 18)
-    s = "\u001b[31m$(ver4.id):\u001b[0m"
-    if ver4.para.innerLoopNum > 0
-        s *= "$(ver4.para.innerLoopNum)lp, T$(length(ver4.Tpair))⨁ "
-    else
-        s *= "⨁ "
-    end
-    # if ver4.loopNum <= 1
-    for (ti, T) in enumerate(ver4.Tpair)
-        if ti <= MaxT
-            s *= "($(T[1]),$(T[2]),$(T[3]),$(T[4]))"
-        else
-            s *= "..."
-            break
-        end
-    end
-    # end
-    return s
-end
-
-##### pretty print of Bubble and Ver4  ##########################
-Base.show(io::IO, bub::Bubble) = AbstractTrees.printnode(io::IO, bub)
-Base.show(io::IO, ver4::Ver4) = AbstractTrees.printnode(io::IO, ver4)
-
 ################## implement AbstractTrees interface #######################
 # refer to https://github.com/JuliaCollections/AbstractTrees.jl for more details
 function AbstractTrees.children(ver4::Ver4)

@@ -33,10 +33,16 @@ function bubbletoDiagTree!(diag, ver4, bubble)
         g0 = DiagTree.addpropagator!(diag, :Gpool, Gorder, :G0; site = map.G0.Tpair, loop = map.G0.loopBasis)
         gc = DiagTree.addpropagator!(diag, :Gpool, Gorder, :Gx; site = map.Gx.Tpair, loop = map.Gx.loopBasis)
 
-        if (c == T || c == U) && removeBubble(map, c, DI, DI)
-            dd = zero(Component)
-        else
+        if c == T || c == U
+            if removeBubble(map, c, DI, DI)
+                dd = zero(Component)
+            else
+                dd = DiagTree.addnode!(diag, DiagTree.MUL, Symbol("$(c)dd"), [g0, gc, Lw[DI], Rw[DI]], factor * para.spin; para = extT)
+            end
+        elseif c == S
             dd = DiagTree.addnode!(diag, DiagTree.MUL, Symbol("$(c)dd"), [g0, gc, Lw[DI], Rw[DI]], factor; para = extT)
+        else
+            error("not implemented!")
         end
         de = DiagTree.addnode!(diag, DiagTree.MUL, Symbol("$(c)de"), [g0, gc, Lw[DI], Rw[EX]], factor; para = extT)
         ed = DiagTree.addnode!(diag, DiagTree.MUL, Symbol("$(c)ed"), [g0, gc, Lw[EX], Rw[DI]], factor; para = extT)
