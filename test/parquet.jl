@@ -131,8 +131,8 @@ end
             w2 = ver4.weight[1]
 
             # Parquet.print_tree(ver4)
-            DiagTree.showTree(diag, diag.root[1])
-            Parquet.showTree(ver4)
+            # DiagTree.showTree(diag, diag.root[1])
+            # Parquet.showTree(ver4)
             # DiagTree.printBasisPool(diag)
             # DiagTree.printPropagator(diag)
             # println(diag.propagatorPool[1].object[2])
@@ -145,11 +145,11 @@ end
     end
 
     Parquet = Builder.Parquet
-    for l = 2:2
+    for l = 1:3
         testDiagWeigt(l, [Parquet.T,])
-        # testDiagWeigt(l, [Parquet.U,])
-        # testDiagWeigt(l, [Parquet.S,])
-        # testDiagWeigt(l, [Parquet.T, Parquet.U, Parquet.S]; timing = true)
+        testDiagWeigt(l, [Parquet.U,])
+        testDiagWeigt(l, [Parquet.S,])
+        testDiagWeigt(l, [Parquet.T, Parquet.U, Parquet.S]; timing = true)
     end
 
     para, diag, ver4 = testDiagWeigt(3, [Parquet.T, Parquet.U, Parquet.S]; filter = [Builder.Proper], eval = false)
