@@ -80,3 +80,24 @@ function newDiagTree(para, name::Symbol = :none)
         error("not implemented!")
     end
 end
+
+struct ParameterizedComponent
+    component::Component
+    para::Any
+end
+
+function connectComponentsbyGreen(diag, para, extT, loopNumofG::Vector{Int}, components::Vector{Vector{ParameterizedComponent}})
+    #each component.para must be (tin, tout) or [tin, tout]
+    @assert length(loopNumofG) == (length(components) + 1)
+    @assert length(loopNumofG) == length(commponentExtT)
+
+    for loop in loopNumofG
+        if isValidG(para.filter, loop) == false
+            @error("Some of the Green's function doesn't exist in the loopNum list $loopNumofG")
+        end
+    end
+
+    for configuration in Iterators.product(Tuple(components))
+
+    end
+end
