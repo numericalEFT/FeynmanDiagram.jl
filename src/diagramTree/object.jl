@@ -121,11 +121,13 @@ mutable struct Diagrams{V,P,PARA,F,W}
     end
 end
 
-struct component
+struct Component
     index::Int
     isNode::Bool
-    propagatorPoolName::Symbol
+    poolName::Symbol
 end
+
+Base.zero(::Type{Component}) = Componet(0, false, :none)
 
 """
     function addPropagator!(diag::Diagrams, index::Int, order::Int, name, factor = 1; site = [], loop = nothing, para = nothing)
@@ -304,10 +306,10 @@ end
 
 function addpropagator!(diag::Diagrams, poolName::Symbol, order::Int, name, factor = 1.0; site = [], loop = nothing, para = nothing)
     pidx = addPropagator!(diag, poolName, order, name, factor; site = site, loop = loop, para = para)
-    return component(pidx, false, poolName)
+    return Component(pidx, false, poolName)
 end
 
-function addnode!(diag::Diagrams, operator, name, factor = 1.0; components = Vector{component}([]), parent = 0, para = nothing)
+function addnode!(diag::Diagrams, operator, name, factor = 1.0; components = Vector{Component}([]), parent = 0, para = nothing)
     child = []
     propagator = [[] for p in diag.propagatorPool]
     if isempty(components) == false
@@ -316,7 +318,7 @@ function addnode!(diag::Diagrams, operator, name, factor = 1.0; components = Vec
                 push!(child, c.index)
             else
                 for (idx, p) in enumerate(diag.propagatorPool)
-                    if p.name == c.propagatorPoolName
+                    if p.name == c.poolName
                         append!(propagator[idx], c.index)
                     end
                 end
@@ -324,7 +326,7 @@ function addnode!(diag::Diagrams, operator, name, factor = 1.0; components = Vec
         end
     end
     nidx = addNode!(diag, operator, name, factor; propagator = propagator, child = child, para = para)
-    return component(nidx, true, :none)
+    return Component(nidx, true, :none)
 end
 
 # function sum_of_producted_components!(diag::Diagrams, name, components::Vector{Vector{component}}, factor = 1.0; para = nothing)
