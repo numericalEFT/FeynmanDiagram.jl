@@ -22,16 +22,11 @@ function bubbletoDiagTree!(diag, ver4, bubble)
             continue
         end
 
-        # g0 = DiagTree.addPropagator!(diag, :Gpool, Gorder, :G0; site = map.G0.Tpair, loop = map.G0.loopBasis)
-        # g0Para = reconstruct(para, innerLoopNum = G0.loopNum, firstLoopIdx = G0.loopIdx, firstTauIdx = G0.Tspan[1])
-        # diag, g0idx, isnode0 = buildG(map.G0.para, map.G0.loopBasis, map.G0.Tpair; diag = diag)
-        # diag, gxidx, isnodex = buildG(map.Gx.para, map.Gx.loopBasis, map.Gx.Tpair; diag = diag)
+        # g0 = DiagTree.addpropagator!(diag, :Gpool, Gorder, :G0; site = map.G0.Tpair, loop = map.G0.loopBasis)
+        # gc = DiagTree.addpropagator!(diag, :Gpool, Gorder, :Gx; site = map.Gx.Tpair, loop = map.Gx.loopBasis)
 
-        # g0 = (g0idx, isnode0)
-        # gc = (gxidx, isnodex)
-
-        g0 = DiagTree.addpropagator!(diag, :Gpool, Gorder, :G0; site = map.G0.Tpair, loop = map.G0.loopBasis)
-        gc = DiagTree.addpropagator!(diag, :Gpool, Gorder, :Gx; site = map.Gx.Tpair, loop = map.Gx.loopBasis)
+        diag, g0 = buildG(map.G0.para, map.G0.loopBasis, map.G0.Tpair; diag = diag)
+        diag, gc = buildG(map.Gx.para, map.Gx.loopBasis, map.Gx.Tpair; diag = diag)
 
         if c == T || c == U
             if removeBubble(map, c, DI, DI)
