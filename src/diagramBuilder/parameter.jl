@@ -15,11 +15,21 @@ end
     Proper  #ver4, ver3, and polarization diagrams may require to be irreducible along the transfer momentum/frequency
 end
 
-@enum Interaction begin
+@enum InteractionName begin
     ChargeCharge
     SpinSpin
     ProperChargeCharge
     ProperSpinSpin
+end
+
+@enum InteractionType begin
+    Instant
+    Dynamic
+end
+
+struct Interaction
+    name::InteractionName
+    type::InteractionType
 end
 
 
@@ -36,10 +46,18 @@ end
     weightType::DataType = Float64
 
     interactionTauNum::Int = 1
-    interactionType::Vector{Interaction} = [ChargeCharge,] # :ChargeCharge, :SpinSpin, ...
+    interaction::Vector{Interaction} = [Interaction(ChargeCharge, Instant),] # :ChargeCharge, :SpinSpin, ...
 
     filter::Vector{Filter} = [NoHatree,] #usually, the Hatree subdiagram should be removed
     transferLoop = [] #Set it to be the transfer momentum/frequency if you want to check the diagrams are proper or not
+end
+
+function Base.getproperty(obj::GenericPara, sym::Symbol)
+    if sym === :hasTau
+        return obj.totalTauNum > 0
+    else # fallback to getfield
+        return getfield(obj, sym)
+    end
 end
 
 # """
