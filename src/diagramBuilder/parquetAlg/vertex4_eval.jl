@@ -1,13 +1,3 @@
-mutable struct Weight <: FieldVector{2,Float64}
-    d::Float64
-    e::Float64
-    Weight() = new(0.0, 0.0)
-    Weight(d, e) = new(d, e)
-end
-
-const Base.zero(::Type{Weight}) = Weight(0.0, 0.0)
-const Base.abs(w::Weight) = abs(w.d) + abs(w.e) # define abs(Weight)
-
 function evalAllG!(G, K, varT, evalG; kwargs...)
     for g in G
         tin, tout = g.Tpair

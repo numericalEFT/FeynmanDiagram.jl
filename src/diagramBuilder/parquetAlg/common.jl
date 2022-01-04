@@ -13,9 +13,49 @@ import ..PolarDiag
 import ..Ver3Diag
 import ..Ver4Diag
 
+import ..ChargeCharge
+import ..SpinSpin
+import ..InteractionName
+
+import ..Instant
+import ..Dynamic
+import ..InteractionType
+
+import ..Interaction
+
 import ..GenericPara
 
 import ..innerTauNum
+
+# mutable struct Weight <: FieldVector{2,Float64}
+#     d::Float64
+#     e::Float64
+#     Weight() = new(0.0, 0.0)
+#     Weight(d, e) = new(d, e)
+# end
+
+# const Base.zero(::Type{Weight}) = Weight(0.0, 0.0)
+# const Base.abs(w::Weight) = abs(w.d) + abs(w.e) # define abs(Weight)
+
+mutable struct Weight{T} <: FieldVector{2,T}
+    d::T
+    e::T
+    Weight{T}() where {T} = new{T}(T(0), T(0))
+    Weight(d::T, e::T) where {T} = new{T}(d::T, e::T)
+    Weight{T}(d, e) where {T} = new{T}(T(d), T(e))
+end
+
+const Base.zero(::Type{Weight{T}}) where {T} = Weight{T}(0, 0)
+const Base.abs(w::Weight) = abs(w.d) + abs(w.e) # define abs(Weight)
+
+mutable struct CompositeWeight{T}
+    interaction::Interaction
+    instant::Weight{T}
+    dynamic::Weight{T}
+    d_instant::Weight{T}
+    d_dynamic::Weight{T}
+end
+
 
 function orderedPartition(_total, n, lowerbound = 1)
     @assert lowerbound >= 0
