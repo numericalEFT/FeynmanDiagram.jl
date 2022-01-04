@@ -107,7 +107,7 @@ end
 
         # println(diag.root)
 
-        ver4 = Parquet.Ver4{Parquet.Weight}(para, legK, chan, F, V)
+        ver4 = Parquet.Ver4{Parquet.Weight{Float64}}(para, legK, chan, F, V)
         # Parquet.print_tree(ver4)
 
         if eval
