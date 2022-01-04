@@ -1,3 +1,26 @@
+mutable struct Weight{T} <: FieldVector{2,T}
+    extT::Tuple{Int,Int,Int,Int}
+    d::T
+    e::T
+    Weight{T}() where {T} = new{T}(T(0), T(0))
+    Weight(d::T, e::T) where {T} = new{T}(d::T, e::T)
+    Weight{T}(d, e) where {T} = new{T}(T(d), T(e))
+end
+
+Base.zero(::Type{Weight{T}}) where {T} = Weight(T(0), T(0))
+Base.abs(w::Weight) = abs(w.d) + abs(w.e) # define abs(Weight)
+
+mutable struct CompositeWeight{T}
+    name::InteractionName
+    legK::Vector{Vector{Float64}}
+    instant::Weight{T}
+    dynamic::Weight{T}
+    d_instant::Weight{T} #derivative
+    d_dynamic::Weight{T} #derivative
+    function CompositeWeight{T}(name::InteractionName, legK) where {T}
+        return new{T}(name, legK, zero(Weight{T}), zero(Weight{T}), zero(Weight{T}), zero(Weight{T}))
+    end
+end
 
 mutable struct Green
     para::GenericPara
