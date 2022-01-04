@@ -50,7 +50,7 @@ function buildSigma(para, externLoop, subdiagram = false; F = [I, U, S], V = [I,
         end
     end
 
-    root = []
+    instant, dynamic = [], []
 
     ############### Fock-type diagram #######################################
     #  /=== W ===\
@@ -66,7 +66,7 @@ function buildSigma(para, externLoop, subdiagram = false; F = [I, U, S], V = [I,
             diag, g = buildG(paraG, K, [t0, t0]; diag = diag)
             @assert g.index != 0
             v = DiagTree.addpropagator!(diag, :Vpool, 1, :V; loop = qe)
-            push!(root, DiagTree.addnode!(diag, MUL, :fockΣ, [g, v], factor; para = [t0, t0]))
+            push!(instant, DiagTree.addnode!(diag, MUL, :fockΣ, [g, v], factor; para = [t0, t0]))
         end
     elseif para.interactionTauNum == 2
         paraG = reconstruct(para, innerLoopNum = para.innerLoopNum - 1, firstLoopIdx = para.firstLoopIdx + 1, firstTauIdx = t0 + 2)
@@ -74,12 +74,12 @@ function buildSigma(para, externLoop, subdiagram = false; F = [I, U, S], V = [I,
             diag, gv = buildG(paraG, K, [t0, t0]; diag = diag)
             @assert gv.index != 0
             v = DiagTree.addpropagator!(diag, :Vpool, 1, :V; loop = qe, site = (t0, t0 + 1))
-            push!(root, DiagTree.addnode!(diag, MUL, :fockΣ, [gv, v], factor; para = (t0, t0)))
+            push!(instant, DiagTree.addnode!(diag, MUL, :fockΣ, [gv, v], factor; para = (t0, t0)))
 
             diag, gw = buildG(paraG, K, [t0, t0 + 1]; diag = diag)
             @assert gw.index != 0
             w = DiagTree.addpropagator!(diag, :Wpool, 1, :W; loop = qe, site = (t0, t0 + 1))
-            push!(root, DiagTree.addnode!(diag, MUL, :fockΣ, [gw, w], factor; para = [t0, t0 + 1]))
+            push!(dynamic, DiagTree.addnode!(diag, MUL, :fockΣ, [gw, w], factor; para = [t0, t0 + 1]))
         end
     else
         error("not implemented!")
@@ -121,19 +121,19 @@ function buildSigma(para, externLoop, subdiagram = false; F = [I, U, S], V = [I,
                     push!(nodes, DiagTree.addnode!(diag, MUL, :Σ, [n, g], factor * spinFactor; para = tpair))
                 end
 
-                push!(root, DiagTree.addnode!(diag, DiagTree.ADD, :Σ, nodes; para = collect(key))) #key = (extT[INL], extT[OUTR])
-                @assert root[end].index != 0
+                push!(dynamic, DiagTree.addnode!(diag, DiagTree.ADD, :Σ, nodes; para = collect(key))) #key = (extT[INL], extT[OUTR])
+                @assert dynamic[end].index != 0
             end
         end
     end
 
     # make sure all incoming Tau idx is equal
-    for nidx in root
+    for nidx in dynamic
         node = DiagTree.getNode(diag, nidx)
         @assert node.para[1] == para.firstTauIdx
         @assert node.para[2] <= tright
     end
-    @assert isempty(root) == false "Sigma diagram doesn't exist for \n$para"
-    return diag, root
+    @assert isempty(dynamic) == false || isempty(instant) == false "Sigma diagram doesn't exist for \n$para"
+    return diag, instant, dynamic
 
 end

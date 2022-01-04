@@ -72,7 +72,8 @@ function buildG(para, externLoop, extT, subdiagram = false; F = [I, U, S], V = [
             #e.g., loop = 4 or 1
             sigmaPara = reconstruct(para, firstTauIdx = tleft, firstLoopIdx = firstLoopIdx[li], innerLoopNum = loop)
             # println("sigma loop=", loop)
-            diag, root = buildSigma(sigmaPara, externLoop, true; F = F, V = V, All = All, diag = diag)
+            diag, instant, dynamic = buildSigma(sigmaPara, externLoop, true; F = F, V = V, All = All, diag = diag)
+            root = vcat(instant, dynamic)
             @assert isempty(root) == false
             # push!(sigma, [(s, (s.object.para[1], s.object.para[2])) for s in root]) #external TauIdx of each component as a sigma
 

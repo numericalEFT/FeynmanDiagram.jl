@@ -80,9 +80,9 @@ para = Builder.GenericPara(
 
 K0 = zeros(para.totalLoopNum)
 K0[1] = 1.0
-sigma, root = Parquet.buildSigma(para, K0)
+sigma, instant, dynamic = Parquet.buildSigma(para, K0)
 # println(root)
-rootidx = DiagTree.addnode!(sigma, DiagTree.ADD, :sum, root; para = [0, 0])
+rootidx = DiagTree.addnode!(sigma, DiagTree.ADD, :sum, vcat(instant, dynamic); para = [0, 0])
 DiagTree.showTree(sigma, rootidx)
 
 
