@@ -185,9 +185,9 @@ end
         varT = [rand() for i in 1:para.totalTauNum]
 
         #################### DiagTree ####################################
-        diag, root = Parquet.buildSigma(para, extK, subdiagram)
+        diag, instant, dynamic = Parquet.buildSigma(para, extK, subdiagram)
         # the weighttype of the returned ver4 is Float64
-        sumRoot = DiagTree.addnode!(diag, DiagTree.ADD, :sum, root; para = [0, 0])
+        sumRoot = DiagTree.addnode!(diag, DiagTree.ADD, :sum, vcat(instant, dynamic); para = [0, 0])
         if sumRoot.index != 0
             push!(diag.root, sumRoot.index)
         end

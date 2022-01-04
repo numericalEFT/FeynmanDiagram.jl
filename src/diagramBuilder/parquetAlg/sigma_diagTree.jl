@@ -31,7 +31,7 @@ function buildSigma(para, externLoop, subdiagram = false; F = [I, U, S], V = [I,
     @assert para.totalLoopNum >= para.firstLoopIdx -1 + para.innerLoopNum
 
     if isValidSigma(para.filter, para.innerLoopNum, subdiagram) == false
-        return diag, []
+        return diag, Vector{Component}([]), Vector{Component}([])
     end
 
     K = zero(externLoop)
