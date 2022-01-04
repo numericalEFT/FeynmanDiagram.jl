@@ -81,23 +81,46 @@ function newDiagTree(para, name::Symbol = :none)
     end
 end
 
-struct ParameterizedComponent
-    component::Component
-    para::Any
-end
+# struct ParameterizedComponent
+#     component::Component
+#     para::Any
+# end
+# const ComponentExtT = Tuple{Component,Tuple{Int,Int}}
 
-function connectComponentsbyGreen(diag, para, extT, loopNumofG::Vector{Int}, components::Vector{Vector{ParameterizedComponent}})
-    #each component.para must be (tin, tout) or [tin, tout]
-    @assert length(loopNumofG) == (length(components) + 1)
-    @assert length(loopNumofG) == length(commponentExtT)
+# function connectComponentsbyGreen(diag, originalPara::GenericPara, name, loopBasis, extT::Tuple{Int,Int}, loopNumofG::Vector{Int},
+#     diagType::Vector{DiagramType}, componentsVector::Vector{Vector{ComponentExt}}, factor = 1.0; para = extT)
+#     #each component.para must be (tin, tout) or [tin, tout]
+#     @assert length(loopNumofG) == (length(componentsVector) + 1)
 
-    for loop in loopNumofG
-        if isValidG(para.filter, loop) == false
-            @error("Some of the Green's function doesn't exist in the loopNum list $loopNumofG")
-        end
-    end
+#     for loop in loopNumofG
+#         if isValidG(para.filter, loop) == false
+#             @error("Some of the Green's function doesn't exist in the loopNum list $loopNumofG")
+#         end
+#     end
+#     for c in componentsVector
+#         @assert isempty(c) "Some of the components are empty!$componentsVector"
+#     end
 
-    for configuration in Iterators.product(Tuple(components))
+#     nodes = []
+#     for configuration in Iterators.product(Tuple(componentsVector)...)
+#         components = [ct[1] for ct in configuration]
+#         _extT = [ct[2] for ct in configuration]
 
-    end
-end
+#         ########## prepare G extT ##################
+#         GextT = [(extT[1], _extT[1][1]),]
+#         for i in 1:length(_extT)-1
+#             push!(GextT, (_extT[i][2], _extT[i+1][1]))
+#         end
+#         push!(GextT, (_extT[end][2], extT[2]))
+
+#         for tpair in GextT
+#             push!(components, DiagTree.addpropagator!(diag, :Gpool, 0, :G; site = tpair, loop = loopBasis))
+#         end
+#         node = DiagTree.addnode!(diag, MUL, name, components, factor; para = para)
+#         @assert node.index > 0
+#         push!(nodes, node)
+#     end
+#     n = DiagTree.addnode!(diag, ADD, name, nodes, factor; para = para)
+#     @assert n.index > 0
+#     return n
+# end
