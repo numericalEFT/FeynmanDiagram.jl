@@ -29,7 +29,16 @@ end
 
 struct Interaction
     name::InteractionName
-    type::InteractionType
+    type::Vector{InteractionType}
+    derivative::Vector{Bool}
+    function Interaction(name, type::Vector{InteractionType}, derivative = nothing)
+        if isnothing(derivative)
+            derivative = [false for _ in type]
+        else
+            @assert length(derivative) == length(type)
+        end
+        return new(name, type, derivative)
+    end
 end
 
 
@@ -37,7 +46,7 @@ end
     loopDim::Int
     innerLoopNum::Int
     totalLoopNum::Int
-    totalTauNum::Int
+    totalTauNum::Int #if there is no imaginary-time at all, then set this number to zero!
     spin::Int
     firstLoopIdx::Int
     firstTauIdx::Int
@@ -46,7 +55,7 @@ end
     weightType::DataType = Float64
 
     interactionTauNum::Int = 1
-    interaction::Vector{Interaction} = [Interaction(ChargeCharge, Instant),] # :ChargeCharge, :SpinSpin, ...
+    interaction::Vector{Interaction} = [Interaction(ChargeCharge, [Instant,], [false,]),] # :ChargeCharge, :SpinSpin, ...
 
     filter::Vector{Filter} = [NoHatree,] #usually, the Hatree subdiagram should be removed
     transferLoop = [] #Set it to be the transfer momentum/frequency if you want to check the diagrams are proper or not
