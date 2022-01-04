@@ -32,15 +32,9 @@ end
 
 struct Interaction
     name::InteractionName
-    type::Vector{InteractionType}
-    derivative::Vector{Bool}
-    function Interaction(name, type::Vector{InteractionType}, derivative = nothing)
-        if isnothing(derivative)
-            derivative = [false for _ in type]
-        else
-            @assert length(derivative) == length(type)
-        end
-        return new(name, type, derivative)
+    type::Set{InteractionType}
+    function Interaction(name, type)
+        return new(name, Set(type))
     end
 end
 

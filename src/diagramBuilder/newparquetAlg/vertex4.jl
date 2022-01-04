@@ -276,7 +276,7 @@ struct Ver4{W}
         @assert KoutR ≈ KinL + KinR - KoutL
 
         g = @SVector [Vector{Green}([]) for i = 1:16]
-        ver4 = new{W}(para, chan, F, V, All, Fouter, Vouter, Allouter, id[1], level, g, [], [KinL, KoutL, KinR, KoutR], [], [[],], [])
+        ver4 = new{W}(para, chan, F, V, All, Fouter, Vouter, Allouter, id[1], level, g, [], [KinL, KoutL, KinR, KoutR], [], [[],], [], [])
 
         @assert para.totalTauNum >= maxTauIdx(ver4) "Increase totalTauNum!\n$para"
         @assert para.totalLoopNum >= maxLoopIdx(ver4) "Increase totalLoopNum\n$para"

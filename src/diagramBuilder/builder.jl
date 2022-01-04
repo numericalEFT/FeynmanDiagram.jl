@@ -20,4 +20,6 @@ using ..DiagTree
 include("parquetAlg/parquet.jl")
 export Parquet
 
+include("newparquetAlg/parquet.jl")
+
 end
