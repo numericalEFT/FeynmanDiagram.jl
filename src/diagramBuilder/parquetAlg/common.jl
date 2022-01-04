@@ -13,6 +13,7 @@ import ..PolarDiag
 import ..Ver3Diag
 import ..Ver4Diag
 
+import ..Composite
 import ..ChargeCharge
 import ..SpinSpin
 import ..InteractionName

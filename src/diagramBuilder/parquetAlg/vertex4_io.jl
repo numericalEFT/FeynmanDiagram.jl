@@ -1,3 +1,48 @@
+################## implement AbstractTrees interface #######################
+# refer to https://github.com/JuliaCollections/AbstractTrees.jl for more details
+function AbstractTrees.children(ver4::Ver4)
+    return ver4.bubble
+end
+
+function AbstractTrees.children(bubble::Bubble)
+    return (bubble.Lver, bubble.Rver)
+end
+
+function iterate(ver4::Ver4{W}) where {W}
+    if length(ver4.bubble) == 0
+        return nothing
+    else
+        return (ver4.bubble[1], 1)
+    end
+end
+
+function iterate(bub::Bubble)
+    return (bub.Lver, false)
+end
+
+function iterate(ver4::Ver4{W}, state) where {W}
+    if state >= length(ver4.bubble) || length(ver4.bubble) == 0
+        return nothing
+    else
+        return (ver4.bubble[state+1], state + 1)
+    end
+end
+
+function iterate(bub::Bubble, state::Bool)
+    state && return nothing
+    return (bub.Rver, true)
+end
+
+Base.IteratorSize(::Type{Ver4{W}}) where {W} = Base.SizeUnknown()
+Base.eltype(::Type{Ver4{W}}) where {W} = Ver4{W}
+
+Base.IteratorSize(::Type{Bubble{Ver4{W}}}) where {W} = Base.SizeUnknown()
+Base.eltype(::Type{Bubble{Ver4{W}}}) where {W} = Bubble{Ver4{W}}
+
+AbstractTrees.printnode(io::IO, ver4::Ver4) = print(io, tpair(ver4))
+AbstractTrees.printnode(io::IO, bub::Bubble) = print(io,
+    "\u001b[32m$(bub.id): $(bub.chan) $(bub.Lver.para.innerLoopNum)Ⓧ $(bub.Rver.para.innerLoopNum)\u001b[0m")
+
 function tpair(ver4, MaxT = 18)
     s = "\u001b[31m$(ver4.id):\u001b[0m"
     if ver4.para.innerLoopNum > 0

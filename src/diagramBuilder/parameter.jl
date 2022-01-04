@@ -16,6 +16,7 @@ end
 end
 
 @enum InteractionName begin
+    Composite
     ChargeCharge
     SpinSpin
     ProperChargeCharge
@@ -25,6 +26,8 @@ end
 @enum InteractionType begin
     Instant
     Dynamic
+    D_Instant #derivative of instant interaction
+    D_Dynamic #derivative of the dynamic interaction
 end
 
 struct Interaction
@@ -55,7 +58,7 @@ end
     weightType::DataType = Float64
 
     interactionTauNum::Int = 1
-    interaction::Vector{Interaction} = [Interaction(ChargeCharge, [Instant,], [false,]),] # :ChargeCharge, :SpinSpin, ...
+    interaction::Vector{Interaction} = [Interaction(ChargeCharge, [Instant,]),] # :ChargeCharge, :SpinSpin, ...
 
     filter::Vector{Filter} = [NoHatree,] #usually, the Hatree subdiagram should be removed
     transferLoop = [] #Set it to be the transfer momentum/frequency if you want to check the diagrams are proper or not

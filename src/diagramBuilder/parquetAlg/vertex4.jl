@@ -1,5 +1,4 @@
 mutable struct Weight{T} <: FieldVector{2,T}
-    extT::Tuple{Int,Int,Int,Int}
     d::T
     e::T
     Weight{T}() where {T} = new{T}(T(0), T(0))
@@ -9,18 +8,6 @@ end
 
 Base.zero(::Type{Weight{T}}) where {T} = Weight(T(0), T(0))
 Base.abs(w::Weight) = abs(w.d) + abs(w.e) # define abs(Weight)
-
-mutable struct CompositeWeight{T}
-    name::InteractionName
-    legK::Vector{Vector{Float64}}
-    instant::Weight{T}
-    dynamic::Weight{T}
-    d_instant::Weight{T} #derivative
-    d_dynamic::Weight{T} #derivative
-    function CompositeWeight{T}(name::InteractionName, legK) where {T}
-        return new{T}(name, legK, zero(Weight{T}), zero(Weight{T}), zero(Weight{T}), zero(Weight{T}))
-    end
-end
 
 mutable struct Green
     para::GenericPara
@@ -263,7 +250,7 @@ struct Ver4{W}
     legK::Vector{Vector{Float64}}
     Tpair::Vector{Tuple{Int,Int,Int,Int}}
     child::Vector{Vector{IdxMap{Ver4{W}}}}
-    weight::Vector{W}
+    weight::Vector{CompositeWeight{W}}
 
     function Ver4{W}(para, legK, chan, F, V, All = union(F, V);
         Fouter = F, Vouter = V, Allouter = All,
@@ -394,48 +381,3 @@ function test(ver4)
         end
     end
 end
-
-################## implement AbstractTrees interface #######################
-# refer to https://github.com/JuliaCollections/AbstractTrees.jl for more details
-function AbstractTrees.children(ver4::Ver4)
-    return ver4.bubble
-end
-
-function AbstractTrees.children(bubble::Bubble)
-    return (bubble.Lver, bubble.Rver)
-end
-
-function iterate(ver4::Ver4{W}) where {W}
-    if length(ver4.bubble) == 0
-        return nothing
-    else
-        return (ver4.bubble[1], 1)
-    end
-end
-
-function iterate(bub::Bubble)
-    return (bub.Lver, false)
-end
-
-function iterate(ver4::Ver4{W}, state) where {W}
-    if state >= length(ver4.bubble) || length(ver4.bubble) == 0
-        return nothing
-    else
-        return (ver4.bubble[state+1], state + 1)
-    end
-end
-
-function iterate(bub::Bubble, state::Bool)
-    state && return nothing
-    return (bub.Rver, true)
-end
-
-Base.IteratorSize(::Type{Ver4{W}}) where {W} = Base.SizeUnknown()
-Base.eltype(::Type{Ver4{W}}) where {W} = Ver4{W}
-
-Base.IteratorSize(::Type{Bubble{Ver4{W}}}) where {W} = Base.SizeUnknown()
-Base.eltype(::Type{Bubble{Ver4{W}}}) where {W} = Bubble{Ver4{W}}
-
-AbstractTrees.printnode(io::IO, ver4::Ver4) = print(io, tpair(ver4))
-AbstractTrees.printnode(io::IO, bub::Bubble) = print(io,
-    "\u001b[32m$(bub.id): $(bub.chan) $(bub.Lver.para.innerLoopNum)Ⓧ $(bub.Rver.para.innerLoopNum)\u001b[0m")
