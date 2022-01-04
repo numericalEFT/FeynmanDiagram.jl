@@ -66,7 +66,7 @@ function buildSigma(para, externLoop, subdiagram = false; F = [I, U, S], V = [I,
             diag, g = buildG(paraG, K, [t0, t0]; diag = diag)
             @assert g.index != 0
             v = DiagTree.addpropagator!(diag, :Vpool, 1, :V; loop = qe)
-            push!(root, DiagTree.addnode!(diag, MUL, :Σ_GV, [g, v], factor; para = [t0, t0]))
+            push!(root, DiagTree.addnode!(diag, MUL, :fockΣ, [g, v], factor; para = [t0, t0]))
         end
     elseif para.interactionTauNum == 2
         paraG = reconstruct(para, innerLoopNum = para.innerLoopNum - 1, firstLoopIdx = para.firstLoopIdx + 1, firstTauIdx = t0 + 2)
@@ -74,12 +74,12 @@ function buildSigma(para, externLoop, subdiagram = false; F = [I, U, S], V = [I,
             diag, gv = buildG(paraG, K, [t0, t0]; diag = diag)
             @assert gv.index != 0
             v = DiagTree.addpropagator!(diag, :Vpool, 1, :V; loop = qe, site = (t0, t0 + 1))
-            push!(root, DiagTree.addnode!(diag, MUL, :Σ_GV, [gv, v], factor; para = (t0, t0)))
+            push!(root, DiagTree.addnode!(diag, MUL, :fockΣ, [gv, v], factor; para = (t0, t0)))
 
             diag, gw = buildG(paraG, K, [t0, t0 + 1]; diag = diag)
             @assert gw.index != 0
             w = DiagTree.addpropagator!(diag, :Wpool, 1, :W; loop = qe, site = (t0, t0 + 1))
-            push!(root, DiagTree.addnode!(diag, MUL, :Σ_GW, [gw, w], factor; para = [t0, t0 + 1]))
+            push!(root, DiagTree.addnode!(diag, MUL, :fockΣ, [gw, w], factor; para = [t0, t0 + 1]))
         end
     else
         error("not implemented!")
