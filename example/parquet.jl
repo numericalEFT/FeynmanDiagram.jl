@@ -22,7 +22,7 @@ para = Builder.GenericPara(
     weightType = Float64,
     firstLoopIdx = 2,
     firstTauIdx = 1,
-    filter = [Builder.Girreducible,]
+    filter = [Builder.NoFock,]
 )
 
 K0 = zeros(para.totalLoopNum)
