@@ -1,6 +1,10 @@
 
 # check if G exist without creating objects in the pool
 function isValidSigma(filter, innerLoopNum::Int, subdiagram::Bool)
+    @assert innerLoopNum >= 0
+    if innerLoopNum == 0
+        return false
+    end
     if subdiagram && (Girreducible in filter)
         return false
     end
