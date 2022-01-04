@@ -89,7 +89,6 @@ DiagTree.showTree(sigma, rootidx)
 exit(0)
 
 ##################################### vertex 3   #################################################
-
 para = Builder.GenericPara(
     loopDim = 3,
     innerLoopNum = 1,
