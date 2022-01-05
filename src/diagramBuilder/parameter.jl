@@ -38,20 +38,51 @@ struct Interaction
     end
 end
 
+function symbol(name::InteractionName, type::InteractionType, addition = nothing)
+    if name == Composite
+        n = "C"
+    elseif name == ChargeCharge
+        n = "cc"
+    elseif name == SpinSpin
+        n = "ss"
+    else
+        @error("$name is not implemented!")
+    end
+    if type == Instant
+        t = "ins"
+    elseif type == Dynamic
+        t = "dyn"
+    elseif type == D_Instant
+        t = "dins"
+    elseif type == D_Dynamic
+        t = "ddyn"
+    else
+        @error("$type is not implemented!")
+    end
+    if isnothing(addition)
+        return Symbol("$(n)_$(t)")
+    else
+        return Symbol("$(n)_$(t)_$(addition)")
+    end
+
+end
 
 @with_kw struct GenericPara
     loopDim::Int
     innerLoopNum::Int
     totalLoopNum::Int
-    totalTauNum::Int #if there is no imaginary-time at all, then set this number to zero!
     spin::Int
     firstLoopIdx::Int
-    firstTauIdx::Int
+
+    #### turn the following parameters on if there is tau variables ########
+    hasTau::Bool = false
+    firstTauIdx::Int = 1
+    totalTauNum::Int = 0 #if there is no imaginary-time at all, then set this number to zero!
+    ########################################################################
 
     isFermi::Bool = true
     weightType::DataType = Float64
 
-    interactionTauNum::Int = 1
     interaction::Vector{Interaction} = [Interaction(ChargeCharge, [Instant,]),] # :ChargeCharge, :SpinSpin, ...
 
     filter::Vector{Filter} = [NoHatree,] #usually, the Hatree subdiagram should be removed
@@ -59,8 +90,10 @@ end
 end
 
 function Base.getproperty(obj::GenericPara, sym::Symbol)
-    if sym === :hasTau
-        return obj.totalTauNum > 0
+    # if sym === :hasTau
+    #     return obj.totalTauNum > 0
+    if sym == :interactionTauNum
+        return interactionTauNum(obj.hasTau, obj.interaction)
     else # fallback to getfield
         return getfield(obj, sym)
     end
@@ -104,6 +137,18 @@ function innerTauNum(diagType::DiagramType, innerLoopNum, interactionTauNum)
     elseif diagType == Ver3Diag
         return 1 + innerLoopNum * interactionTauNum
     end
+end
+
+function interactionTauNum(hasTau::Bool, interactionSet)
+    if hasTau == false
+        return 0
+    end
+    for interaction in interactionSet
+        if Dynamic in interaction.type || D_Dynamic in interaction.type
+            return 2
+        end
+    end
+    return 1
 end
 
 function totalTauNum(para, diagType::Symbol = :none)

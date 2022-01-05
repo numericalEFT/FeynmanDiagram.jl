@@ -47,22 +47,22 @@ function Base.isequal(a::Ver4Node{T}, b::Ver4Node{T}) where {T}
 end
 Base.:(==)(a::Ver4Node{T}, b::Ver4Node{T}) where {T} = Base.isequal(a, b)
 
-function updateIdentity(node::Ver4Node)
-    node.extT = Set([])
+# function updateIdentity(node::Ver4Node)
+#     node.extT = Set([])
 
-    function push(element)
-        if element[1].extT != (0, 0, 0, 0)
-            push!(node.extT, element[1].extT)
-        end
-        if element[2].extT != (0, 0, 0, 0)
-            push!(node.extT, element[2].extT)
-        end
-    end
-    push(node.instant)
-    push(node.dynamic)
-    push(node.d_instant)
-    push(node.d_dynamic)
-end
+#     function push(element)
+#         if element[1].extT != (0, 0, 0, 0)
+#             push!(node.extT, element[1].extT)
+#         end
+#         if element[2].extT != (0, 0, 0, 0)
+#             push!(node.extT, element[2].extT)
+#         end
+#     end
+#     push(node.instant)
+#     push(node.dynamic)
+#     push(node.d_instant)
+#     push(node.d_dynamic)
+# end
 
 function zeroLoopVer4Node!(diag, para, legK, firstTauidx = 0)
     KinL, KoutL, KinR = legK[1], legK[2], legK[3]

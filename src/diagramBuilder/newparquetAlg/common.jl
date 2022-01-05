@@ -20,7 +20,11 @@ import ..InteractionName
 
 import ..Instant
 import ..Dynamic
+import ..D_Instant
+import ..D_Dynamic
 import ..InteractionType
+
+import ..symbol
 
 import ..Interaction
 
@@ -87,19 +91,15 @@ function newDiagTree(para, name::Symbol = :none)
     weightType = para.weightType
     Kpool = DiagTree.LoopPool(:K, para.loopDim, para.totalLoopNum, Float64)
     nodeParaType = Vector{Int}
-
-    if para.interactionTauNum == 2
-        Gpool = DiagTree.propagatorPool(:Gpool, weightType)
-        Vpool = DiagTree.propagatorPool(:Vpool, weightType)
-        Wpool = DiagTree.propagatorPool(:Wpool, weightType)
-        return DiagTree.Diagrams(Kpool, (Gpool, Vpool, Wpool), weightType, nodeParaType = nodeParaType, name = name)
-    elseif para.interactionTauNum == 1 || para.interactionTauNum == 0
-        Gpool = DiagTree.propagatorPool(:Gpool, weightType)
-        Vpool = DiagTree.propagatorPool(:Vpool, weightType)
-        return DiagTree.Diagrams(Kpool, (Gpool, Vpool), weightType, nodeParaType = nodeParaType, name = name)
-    else
-        error("not implemented!")
+    propagatorPool = []
+    push!(propagatorPool, DiagTree.propagatorPool(:Gpool, weightType))
+    for interaction in para.interaction
+        iname = interaction.name
+        for type in interaction.type
+            push!(propagatorPool, DiagTree.propagatorPool(symbol(iname, type, "pool"), weightType))
+        end
     end
+    return DiagTree.Diagrams(Kpool, Tuple(propagatorPool), weightType, nodeParaType = nodeParaType, name = name)
 end
 
 # struct ParameterizedComponent
