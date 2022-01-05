@@ -253,7 +253,7 @@ struct Ver4{W}
     weight::Vector{W}
     # node::Set{Ver4Identity}
 
-    function Ver4{W}(para, legK, chan, F, V, All = union(F, V);
+    function Ver4{W}(para, legK, chan, F = [U, S], V = [T, U], All = union(F, V);
         Fouter = F, Vouter = V, Allouter = All,
         level = 1, id = [1,]
     ) where {W}
