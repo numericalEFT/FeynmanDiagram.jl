@@ -1,4 +1,4 @@
-name = "ExpressionTree"
+name = "FeynmanDiagram"
 uuid = "e424a512-dbd9-41ff-9883-094748823e72"
 authors = ["Pengcheng Hou", "Kun Chen"]
 version = "0.1.0"
