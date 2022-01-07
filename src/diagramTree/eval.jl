@@ -19,7 +19,7 @@ function evalNaive(diag::Diagrams, loopVar, siteVar, evalPropagator, evalNodeFac
 
         if node.operation == MUL
             tree.current[ni] = NodeWeightType(1)
-            for (idx, propagatorIdx) in enumerate(node.components)
+            for (idx, propagatorIdx) in enumerate(node.propagators)
                 for pidx in propagatorIdx
                     tree.current[ni] *= propagatorPools[idx].current[pidx]
                 end
@@ -29,7 +29,7 @@ function evalNaive(diag::Diagrams, loopVar, siteVar, evalPropagator, evalNodeFac
             end
         elseif node.operation == ADD
             tree.current[ni] = NodeWeightType(0)
-            for (idx, propagatorIdx) in enumerate(node.components)
+            for (idx, propagatorIdx) in enumerate(node.propagators)
                 for pidx in propagatorIdx
                     tree.current[ni] += propagatorPools[idx].current[pidx]
                 end

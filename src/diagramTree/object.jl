@@ -57,7 +57,7 @@ struct Node{PARA,F}
     operation::Int #1: multiply, 2: add, ...
     factor::F
     # order::Int
-    components::Vector{Vector{Int}}
+    propagators::Vector{Vector{Int}}
     childNodes::Vector{Int}
     parent::Int # parent id
     # child::SubArray{CachedObject{Node{PARA, P},W},1,Vector{CachedObject{NODE,W}},Tuple{Vector{Int64}},false}
@@ -65,15 +65,24 @@ struct Node{PARA,F}
     # function Node(operation::Int, components = [[]], child = [], factor::F = 1.0, parent = 0, para::P = :N) where {F,P}
     #     return new{P,F}(para, operation, factor, components, child, parent)
     # end
-    function Node{F}(name::Symbol, operation::Int, para::P, components = [[]], child = [], factor = 1.0, parent = 0) where {F,P}
+    function Node{F}(name::Symbol, operation::Int, para::P, propagators = [[]], child = [], factor = 1.0, parent = 0) where {F,P}
         @assert typeof(para) == P
-        return new{P,F}(name, para, operation, F(factor), components, child, parent)
+        return new{P,F}(name, para, operation, F(factor), propagators, child, parent)
     end
 end
 
 function Base.isequal(a::Node{P}, b::Node{P}) where {P}
     # only parent is allowed to be different
-    if (isequal(a.para, b.para) == false) || (a.operation != b.operation) || (a.components != b.components) || (a.childNodes != b.childNodes) || (a.factor != b.factor)
+    if length(a.propagators) != length(b.propagators)
+        return false
+    end
+    for i in 1:length(a.propagators)
+        if Set(a.propagators[i]) != Set(b.propagators[i])
+            return false
+        end
+    end
+
+    if (isequal(a.para, b.para) == false) || (a.operation != b.operation) || (Set(a.childNodes) != Set(b.childNodes)) || (a.factor != b.factor)
         return false
     else
         return true
@@ -111,10 +120,24 @@ mutable struct Diagrams{V,P,PARA,F,W}
         @assert P <: Tuple "Tuple is required for efficiency!"
         # println(basisPool)
         # println(propagatorPool)
+        poolname = []
+        for p in propagatorPool
+            push!(poolname, p.name)
+        end
+        @assert length(poolname) == length(Set(poolname)) "All propagatorPool should have different names, yet got $poolname!"
         nodePool = CachedPool(:node, Node{nodeParaType,nodeFactorType}, nodeWeightType)
         return new{V,P,nodeParaType,nodeFactorType,nodeWeightType}(name, basisPool, propagatorPool, nodePool, [])
     end
 end
+
+struct Component
+    index::Int
+    isNode::Bool
+    poolName::Symbol
+    object::Any
+end
+
+Base.zero(::Type{Component}) = Component(0, false, :none, nothing)
 
 """
     function addPropagator!(diag::Diagrams, index::Int, order::Int, name, factor = 1; site = [], loop = nothing, para = nothing)
@@ -150,7 +173,9 @@ function addPropagator!(diag::Diagrams, index::Int, order::Int, name, factor = 1
         loopidx = append(loopPool, loop)
     end
     prop = Propagator{F}(name, order, para, factor, loopidx, collect(site))
-    return append(diag.propagatorPool[index], prop)
+    pidx = append(diag.propagatorPool[index], prop)
+    # return component(pidx, false, propagatorPool[index].name)
+    return pidx
 end
 """
     function addPropagator!(diag::Diagrams, poolName::Symbol, order::Int, name, factor = 1; site = [], loop = nothing, para = nothing)
@@ -227,10 +252,21 @@ function addNode!(diag::Diagrams, operator, name, factor = 1.0; propagator = not
     # println("node F: ", F)
     @assert PARA == typeof(para) "Type of $para is not $PARA"
 
+    for (i, p) in enumerate(propagator)
+        for pidx in p
+            @assert pidx <= length(diag.propagatorPool[i]) "Failed to add node with propagator = $propagator, and child =$childNodes. $pidx is not in pool $i (length = $(length(diag.propagatorPool[i])))."
+        end
+    end
+    for nidx in childNodes
+        @assert nidx <= length(diag.nodePool) "Failed to add node with propagator = $propagator, and child =$childNodes. $nidx is not in nodePool."
+    end
+
+
     node = Node{F}(name, operator, para, propagator, childNodes, factor, 0)
 
     nidx = append(nodePool, node)
     return nidx
+    # return component(nidx, true, :none)
 end
 """
     function addNodeByName(diag::Diagrams, operator, name = :none; child = [], factor = 1.0, parent = 0, para = nothing, kwargs...)
@@ -257,4 +293,90 @@ function addNodeByName!(diag::Diagrams, operator, name, factor = 1.0; child = []
     end
     # println(kwargs, " got ", components)
     return addNode!(diag, operator, name, factor; propagator = components, child = child, para = para)
+end
+
+"""
+    function getNode(diag::Diagrams, nidx::Int)
+    
+    get Node in the diag with the index nidx.
+"""
+function getNode(diag::Diagrams, nidx::Int)
+    return diag.nodePool.object[nidx]
+end
+function getNode(diag::Diagrams, n::Component)
+    @assert n.isNode == true
+    return diag.nodePool.object[n.index]
+end
+
+function getPropagator(diag::Diagrams, pidx::Int, poolName::Symbol)
+    for p in diag.propagatorPool
+        if p.name == poolName
+            return p.object[pidx]
+        end
+    end
+    error("$poolName propagator pool doesn't exist!")
+end
+
+"""
+    function getNodeWeight(diag::Diagrams, nidx::Int)
+    
+    get Node weight in the diag with the index nidx.
+"""
+function getNodeWeight(diag::Diagrams, nidx::Int)
+    return diag.nodePool.current[nidx]
+end
+
+
+function addpropagator!(diag::Diagrams, poolName::Symbol, order::Int, name, factor = 1.0; site = [], loop = nothing, para = nothing)
+    pidx = addPropagator!(diag, poolName, order, name, factor; site = site, loop = loop, para = para)
+    return Component(pidx, false, poolName, getPropagator(diag, pidx, poolName))
+end
+
+function addnode!(diag::Diagrams, operator, name, components, factor = 1.0; para = nothing)
+    _components = [c for c in components if c.index > 0]
+    if operator == MUL
+        if length(_components) < length(components)
+            return zero(Component) #if some of the components doesn't exist, then product of the components doens't exist
+        end
+    elseif operator == ADD
+        if length(_components) == 0
+            return zero(Component) #if all of the components doesn't exist, then sum of the components doens't exist
+        end
+    end
+
+    child = []
+    propagator = [[] for p in diag.propagatorPool]
+    for c in collect(_components)
+        @assert c isa Component "$c is not a DiagTree.Component"
+        if c.isNode
+            push!(child, c.index)
+        else
+            for (idx, p) in enumerate(diag.propagatorPool)
+                if p.name == c.poolName
+                    append!(propagator[idx], c.index)
+                end
+            end
+        end
+    end
+    nidx = addNode!(diag, operator, name, factor; propagator = propagator, child = child, para = para)
+    return Component(nidx, true, diag.nodePool.name, getNode(diag, nidx))
+end
+
+function sum_of_producted_components!(diag::Diagrams, name, _componentsVector::Vector{Vector{Component}}, factor = 1.0; para = nothing)
+    componentsVector = []
+    for components in _componentsVector
+        _components = [c for c in components if c.index > 0]
+        if isempty(_components)
+            @warn("Some of the components are emtpy! $componentsVector")
+        end
+        push!(componentsVector, _components)
+    end
+
+    nodes = []
+    for cs in Iterators.product(Tuple(componentsVector)...)
+        # println(typeof(cs))
+        nodename = reduce(*, [String(c.object.name) for c in cs])
+        push!(nodes, addnode!(diag, MUL, Symbol(nodename), cs; para = para))
+    end
+    return addnode!(diag, ADD, name, nodes; para = para)
 end

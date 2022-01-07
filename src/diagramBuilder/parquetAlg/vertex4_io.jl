@@ -1,3 +1,73 @@
+################## implement AbstractTrees interface #######################
+# refer to https://github.com/JuliaCollections/AbstractTrees.jl for more details
+function AbstractTrees.children(ver4::Ver4)
+    return ver4.bubble
+end
+
+function AbstractTrees.children(bubble::Bubble)
+    return (bubble.Lver, bubble.Rver)
+end
+
+function iterate(ver4::Ver4{W}) where {W}
+    if length(ver4.bubble) == 0
+        return nothing
+    else
+        return (ver4.bubble[1], 1)
+    end
+end
+
+function iterate(bub::Bubble)
+    return (bub.Lver, false)
+end
+
+function iterate(ver4::Ver4{W}, state) where {W}
+    if state >= length(ver4.bubble) || length(ver4.bubble) == 0
+        return nothing
+    else
+        return (ver4.bubble[state+1], state + 1)
+    end
+end
+
+function iterate(bub::Bubble, state::Bool)
+    state && return nothing
+    return (bub.Rver, true)
+end
+
+Base.IteratorSize(::Type{Ver4{W}}) where {W} = Base.SizeUnknown()
+Base.eltype(::Type{Ver4{W}}) where {W} = Ver4{W}
+
+Base.IteratorSize(::Type{Bubble{Ver4{W}}}) where {W} = Base.SizeUnknown()
+Base.eltype(::Type{Bubble{Ver4{W}}}) where {W} = Bubble{Ver4{W}}
+
+AbstractTrees.printnode(io::IO, ver4::Ver4) = print(io, tpair(ver4))
+AbstractTrees.printnode(io::IO, bub::Bubble) = print(io,
+    "\u001b[32m$(bub.id): $(bub.chan) $(bub.Lver.para.innerLoopNum)Ⓧ $(bub.Rver.para.innerLoopNum)\u001b[0m")
+
+function tpair(ver4, MaxT = 18)
+    s = "\u001b[31m$(ver4.id):\u001b[0m"
+    if ver4.para.innerLoopNum > 0
+        s *= "$(ver4.para.innerLoopNum)lp, T$(length(ver4.Tpair))⨁ "
+    else
+        s *= "⨁ "
+    end
+    # if ver4.loopNum <= 1
+    for (ti, T) in enumerate(ver4.Tpair)
+        if ti <= MaxT
+            s *= "($(T[1]),$(T[2]),$(T[3]),$(T[4]))"
+        else
+            s *= "..."
+            break
+        end
+    end
+    # end
+    return s
+end
+
+##### pretty print of Bubble and Ver4  ##########################
+Base.show(io::IO, bub::Bubble) = AbstractTrees.printnode(io::IO, bub)
+Base.show(io::IO, ver4::Ver4) = AbstractTrees.printnode(io::IO, ver4)
+
+
 """
 convert Ver4 tree struct to a string in the newick format
 """
@@ -17,7 +87,7 @@ function newickBubble(bub::Bubble)
     # Practically a postorder tree traversal
     left = newickVer4(bub.Lver)
     right = newickVer4(bub.Rver)
-    return "($left,$right)$(bub.id)_$(ChanName[bub.chan])_$(bub.Lver.loopNum)Ⓧ$(bub.Rver.loopNum)"
+    return "($left,$right)$(bub.id)_$(ChanName[bub.chan])_$(bub.Lver.para.innerLoopNum)Ⓧ$(bub.Rver.para.innerLoopNum)"
 end
 
 
@@ -26,8 +96,8 @@ function newickVer4(ver4::Ver4)
     # Practically a postorder tree traversal
 
     function tpairNewick(ver4)
-        if ver4.loopNum > 0
-            s = "$(ver4.id):lp$(ver4.loopNum)_T$(length(ver4.Tpair))⨁"
+        if ver4.para.innerLoopNum > 0
+            s = "$(ver4.id):lp$(ver4.para.innerLoopNum)_T$(length(ver4.Tpair))⨁"
         else
             s = "$(Ver4.id):⨁"
         end
@@ -44,7 +114,7 @@ function newickVer4(ver4::Ver4)
         return s
     end
 
-    if ver4.loopNum == 0
+    if ver4.para.innerLoopNum == 0
         return tpairNewick(ver4)
     else
         s = "("
@@ -78,12 +148,12 @@ function showTree(ver4; verbose = 0, depth = 999)
 
     function tpairETE(ver4, depth)
         s = "$(ver4.id):"
-        if ver4.loopNum > 0
-            s *= "$(ver4.loopNum)lp, T$(length(ver4.Tpair))⨁ "
+        if ver4.para.innerLoopNum > 0
+            s *= "$(ver4.para.innerLoopNum)lp, T$(length(ver4.Tpair))⨁ "
         else
             s *= "⨁ "
         end
-        if ver4.loopNum == 0 || ver4.level > depth
+        if ver4.para.innerLoopNum == 0 || ver4.level > depth
             MaxT = Inf
         else
             MaxT = 1
@@ -108,7 +178,7 @@ function showTree(ver4; verbose = 0, depth = 999)
             t = ete.Tree(name = " ")
         end
 
-        if ver4.loopNum == 0 || ver4.level > depth
+        if ver4.para.innerLoopNum == 0 || ver4.level > depth
             nt = t.add_child(name = tpairETE(ver4, depth))
             return t
         else
@@ -120,8 +190,7 @@ function showTree(ver4; verbose = 0, depth = 999)
         end
 
         for bub in ver4.bubble
-            chantype = ChanName[bub.chan]
-            nnt = nt.add_child(name = "$(bub.id): $chantype $(bub.Lver.loopNum)Ⓧ$(bub.Rver.loopNum)")
+            nnt = nt.add_child(name = "$(bub.id): $(bub.chan) $(bub.Lver.para.innerLoopNum)Ⓧ$(bub.Rver.para.innerLoopNum)")
 
             name_face = ete.TextFace(nnt.name, fgcolor = "black", fsize = 10)
             nnt.add_face(name_face, column = 0, position = "branch-top")

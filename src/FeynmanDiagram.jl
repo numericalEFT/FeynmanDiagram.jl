@@ -1,4 +1,4 @@
-module ExpressionTree
+module FeynmanDiagram
 using Random, LinearAlgebra
 
 # include("variable.jl")

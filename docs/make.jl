@@ -1,16 +1,16 @@
-using ExpressionTree
+using FeynmanDiagram
 using Documenter
 
-DocMeta.setdocmeta!(ExpressionTree, :DocTestSetup, :(using ExpressionTree); recursive = true)
+DocMeta.setdocmeta!(FeynmanDiagram, :DocTestSetup, :(using FeynmanDiagram); recursive = true)
 
 makedocs(;
-    modules = [ExpressionTree],
+    modules = [FeynmanDiagram],
     authors = "Kun Chen, Pengcheng Hou",
-    repo = "https://github.com/numericalEFT/ExpressionTree.jl/blob/{commit}{path}#{line}",
-    sitename = "ExpressionTree.jl",
+    repo = "https://github.com/numericalEFT/FeynmanDiagram.jl/blob/{commit}{path}#{line}",
+    sitename = "FeynmanDiagram.jl",
     format = Documenter.HTML(;
         prettyurls = get(ENV, "CI", "false") == "true",
-        canonical = "https://numericaleft.github.io/ExpressionTree.jl",
+        canonical = "https://numericaleft.github.io/FeynmanDiagram.jl",
         assets = String[]
     ),
     pages = [
@@ -26,5 +26,5 @@ makedocs(;
 )
 
 deploydocs(;
-    repo = "github.com/numericalEFT/ExpressionTree.jl"
+    repo = "github.com/numericalEFT/FeynmanDiagram.jl"
 )

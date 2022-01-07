@@ -1,16 +1,16 @@
 ```@meta
-CurrentModule = ExpressionTree
+CurrentModule = FeynmanDiagram
 ```
 
-# ExpressionTree
+# FeynmanDiagram
 
-Documentation for [ExpressionTree](https://github.com/numericalEFT/ExpressionTree.jl).
+Documentation for [FeynmanDiagram](https://github.com/numericalEFT/FeynmanDiagram.jl).
 
 ```@index
 ```
 
 ```@autodocs
-Modules = [ExpressionTree]
+Modules = [FeynmanDiagram]
 ```
 
 ## Library Outline
