@@ -228,7 +228,8 @@ end
 2) `newick(ver4::Ver4)` or `newick(bub::Bubble)` to serilize the tree to a newick format string. You may save the string to a text file, then visualize it with a newick format visualizer application. 
 3) `showTree(ver4::Ver4)` to visualize the tree using the python package ete3. You have to install ete3 properly to use this function.
 """
-struct Ver4{W}
+struct Ver4
+    diag::Any
     para::GenericPara
     chan::Vector{Channel} # list of channels
     F::Vector{Channel}
@@ -239,24 +240,21 @@ struct Ver4{W}
     Allouter::Vector{Channel}
 
     ###### vertex topology information #####################
-    id::Int
     level::Int
 
     ######  components of vertex  ##########################
-    G::SVector{16,Vector{Green}}  # large enough to host all Green's function
-    bubble::Vector{Bubble{Ver4{W}}}
+    # bubble::Vector{Bubble{Ver4{W}}}
 
     ####### weight and tau table of the vertex  ###############
     legK::Vector{Vector{Float64}}
-    Tpair::Vector{Tuple{Int,Int,Int,Int}}
-    child::Vector{Vector{IdxMap{Ver4{W}}}}
-    weight::Vector{W}
-    # node::Set{Ver4Identity}
 
-    function Ver4{W}(para, legK, chan, F = [U, S], V = [T, U], All = union(F, V);
+    node::Set{Ver4identifier}
+    # child::Dict{Ver4identifier,IdxMap{Ver4}}
+
+    function Ver4(para, legK, chan, F, V, All = union(F, V);
         Fouter = F, Vouter = V, Allouter = All,
-        level = 1, id = [1,]
-    ) where {W}
+        level = 1, diag = newDiagTree(para, :Ver4)
+    )
 
         if level > 1
             @assert Set(F) == Set(Fouter)
@@ -274,59 +272,41 @@ struct Ver4{W}
         KinL, KoutL, KinR = legK[1], legK[2], legK[3]
         KoutR = (length(legK) > 3) ? legK[4] : KinL + KinR - KoutL
         @assert KoutR ≈ KinL + KinR - KoutL
+        legK = [KinL, KoutL, KinR, KoutR]
 
-        g = @SVector [Vector{Green}([]) for i = 1:16]
-        ver4 = new{W}(para, chan, F, V, All, Fouter, Vouter, Allouter, id[1], level, g, [], [KinL, KoutL, KinR, KoutR], [], [[],], [])
+        # g = @SVector [Vector{Green}([]) for i = 1:16]
+        ver4 = new(diag, para, chan, F, V, All, Fouter, Vouter, Allouter, level, legK, Set([]))
 
         @assert para.totalTauNum >= maxTauIdx(ver4) "Increase totalTauNum!\n$para"
         @assert para.totalLoopNum >= maxLoopIdx(ver4) "Increase totalLoopNum\n$para"
 
-        id[1] += 1
-
         loopNum = para.innerLoopNum
-
         @assert loopNum >= 0
 
-
         if loopNum == 0
-            tidx = para.firstTauIdx
-            # bare interaction may have one, two or four independent tau variables
-            if para.interactionTauNum == 1 || para.interactionTauNum == 0  # instantaneous interaction (interaction without time variable)
-                addTidx(ver4, (tidx, tidx, tidx, tidx)) #direct instant intearction
-                addTidx(ver4, (tidx, tidx, tidx, tidx)) #exchange instant interaction
-            end
-            if para.interactionTauNum == 2  # interaction with incoming and outing τ varibales
-                addTidx(ver4, (tidx, tidx, tidx, tidx))  # direct and exchange instant interaction
-                addTidx(ver4, (tidx, tidx, tidx + 1, tidx + 1))  # direct dynamic interaction
-                addTidx(ver4, (tidx, tidx + 1, tidx + 1, tidx))  # exchange dynamic interaction
-            end
-            if para.interactionTauNum == 4  # interaction with incoming and outing τ varibales
-                error("Not implemented!")
-                # addTidx(ver4, (tidx, tidx + 1, tidx + 2, tidx + 3))  # direct dynamic interaction
-                # addTidx(ver4, (tidx, tidx + 3, tidx + 2, tidx + 1))  # exchange dynamic interaction
-            end
+            zeroLoopVer4Node!(ver4.node, diag, para, legK)
         else # loopNum>0
-            for c in chan
-                if c == I
-                    continue
-                end
+            # for c in chan
+            #     if c == I
+            #         continue
+            #     end
 
-                partition = orderedPartition(loopNum - 1, 4, 0)
+            #     partition = orderedPartition(loopNum - 1, 4, 0)
 
-                for p in partition
-                    # println(p)
-                    bubble = Bubble(ver4, c, p, level, id)
-                    if isnothing(bubble) == false && length(bubble.map) > 0  # if zero, bubble diagram doesn't exist
-                        push!(ver4.bubble, bubble)
-                    end
-                end
-            end
-            # TODO: add envolpe diagrams
-            # for c in II
+            #     for p in partition
+            #         # println(p)
+            #         bubble = Bubble(ver4, c, p, level, id)
+            #         if isnothing(bubble) == false && length(bubble.map) > 0  # if zero, bubble diagram doesn't exist
+            #             push!(ver4.bubble, bubble)
+            #         end
+            #     end
             # end
-            test(ver4) # more test
+            # # TODO: add envolpe diagrams
+            # # for c in II
+            # # end
+            # test(ver4) # more test
         end
-        return ver4
+        return diag, ver4.node
     end
 end
 

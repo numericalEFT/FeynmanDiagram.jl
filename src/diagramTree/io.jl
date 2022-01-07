@@ -111,7 +111,7 @@ function showTree(diag::Diagrams, _root::Int; verbose = 0, depth = 999)
             end
         end
 
-        for (ci, component) in enumerate(node.components)
+        for (ci, component) in enumerate(node.propagators)
             # println(component, ", ", ci)
             propagatorPool = diag.propagatorPool[ci]
             for pidx in component
@@ -145,4 +145,7 @@ function showTree(diag::Diagrams, _root::Int; verbose = 0, depth = 999)
     # ts.arc_span = 180
     # t.write(outfile="/home/kun/test.txt", format=8)
     t.show(tree_style = ts)
+end
+function showTree(diag::Diagrams, _root::Component; kwargs...)
+    return showTree(diag, _root.index; kwargs...)
 end

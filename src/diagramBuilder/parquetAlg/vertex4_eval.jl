@@ -1,43 +1,7 @@
-module ParquetEval
-using Lehmann, StaticArrays, LinearAlgebra
-using ExpressionTree
-
-SymFactor = Builder.Parquet.SymFactor
-T, U, S = Builder.Parquet.T, Builder.Parquet.U, Builder.Parquet.S
-
-mutable struct Weight <: FieldVector{2,Float64}
-    d::Float64
-    e::Float64
-    Weight() = new(0.0, 0.0)
-    Weight(d, e) = new(d, e)
-end
-
-const Base.zero(::Type{Weight}) = Weight(0.0, 0.0)
-const Base.abs(w::Weight) = abs(w.d) + abs(w.e) # define abs(Weight)
-
-function evalG(K, τBasis, varT)
-    # println(τBasis, ", ", varT)
-    kF, β = 1.0, 1.0
-    ϵ = dot(K, K) / 2 - kF^2
-    τ = varT[τBasis[2]] - varT[τBasis[1]]
-    return Spectral.kernelFermiT(τ, ϵ, β)
-end
-
-evalV(K) = 8π / (dot(K, K) + 1)
-
-function evalPropagator(idx, object, K, varT, diag)
-    if idx == 1 #GPool
-        return evalG(K, object.siteBasis, varT)
-    elseif idx == 2 #VPool
-        return evalV(K)
-    else
-        error("object with name = $(object.name) is not implemented")
-    end
-end
-
-function evalAllG(G, K, varT)
-    for (i, tpair) in enumerate(G.Tpair)
-        G.weight[i] = evalG(K, tpair, varT)
+function evalAllG!(G, K, varT, evalG; kwargs...)
+    for g in G
+        tin, tout = g.Tpair
+        g.weight = evalG(K, varT[tin], varT[tout], kwargs...)
     end
 end
 
@@ -51,16 +15,23 @@ end
 #     end
 # end
 
-function eval(ver4, varK, varT, KinL, KoutL, KinR, KoutR, Kidx::Int, spin, fast = false)
-    if ver4.loopNum == 0
+function eval(ver4::Ver4, varK, varT, legK, evalG::Function, evalV::Function, fast = false; kwargs...)
+    KinL, KoutL, KinR, KoutR = legK
+    para = ver4.para
+    spin = para.spin
+    T0idx = para.firstTauIdx
+    Kidx = para.firstLoopIdx
+
+    if para.innerLoopNum == 0
         qd = KinL - KoutL
         qe = KinL - KoutR
-        if ver4.interactionTauNum == 1
+        if para.interactionTauNum == 1
             ver4.weight[1].d = evalV(qd)
             ver4.weight[1].e = evalV(qe)
         else
-            τIn, τOut = varT[ver4.Tidx], varT[ver4.Tidx+1]
-            error("not implemented!")
+            Tidx = para.firstTauIdx
+            τIn, τOut = varT[Tidx], varT[Tidx+1]
+            error("$(para.interactionTauNum) not implemented!")
             # elseif ver4.interactionTauNum == 2
             # vd, wd, ve, we = vertexDynamic(para, qd, qe, τIn, τOut)
 
@@ -80,43 +51,43 @@ function eval(ver4, varK, varT, KinL, KoutL, KinR, KoutR, Kidx::Int, spin, fast 
     end
     G = ver4.G
     K = varK[:, Kidx]
-    evalAllG(G[1], K, varT)
-    Kdim = length(K)
-    PhaseFactor = 1.0 / (2π)^Kdim
+
+    evalAllG!(G[1], K, varT, evalG, kwargs...)
+
+    PhaseFactor = 1.0 / (2π)^para.loopDim
     Kt, Ku, Ks = similar(K), similar(K), similar(K) #Kt, Ku and Ks will be re-created later, slow in performance
 
     for c in ver4.chan
         if c == T
             @. Kt = KoutL + K - KinL
-            evalAllG(G[c], Kt, varT)
+            evalAllG!(G[Int(c)], Kt, varT, evalG, kwargs...)
+            # println("initializating", G[Int(c)])
         elseif c == U
             # can not be in box!
             @. Ku = KoutR + K - KinL
-            evalAllG(G[c], Ku, varT)
+            evalAllG!(G[Int(c)], Ku, varT, evalG, kwargs...)
         elseif c == S
             # S channel, and cann't be in box!
             @. Ks = KinL + KinR - K
-            evalAllG(G[c], Ks, varT)
+            evalAllG!(G[Int(c)], Ks, varT, evalG, kwargs...)
         else
             error("not impossible!")
         end
     end
     for b in ver4.bubble
         c = b.chan
-        Factor = SymFactor[c] * PhaseFactor
-        Llopidx = Kidx + 1
-        Rlopidx = Kidx + 1 + b.Lver.loopNum
+        Factor = SymFactor[Int(c)] * PhaseFactor
 
         if c == T
-            eval(b.Lver, varK, varT, KinL, KoutL, Kt, K, Llopidx, spin)
-            eval(b.Rver, varK, varT, K, Kt, KinR, KoutR, Rlopidx, spin)
+            eval(b.Lver, varK, varT, [KinL, KoutL, Kt, K], evalG, evalV; kwargs...)
+            eval(b.Rver, varK, varT, [K, Kt, KinR, KoutR], evalG, evalV; kwargs...)
         elseif c == U
-            eval(b.Lver, varK, varT, KinL, KoutR, Ku, K, Llopidx, spin)
-            eval(b.Rver, varK, varT, K, Ku, KinR, KoutL, Rlopidx, spin)
+            eval(b.Lver, varK, varT, [KinL, KoutR, Ku, K], evalG, evalV; kwargs...)
+            eval(b.Rver, varK, varT, [K, Ku, KinR, KoutL], evalG, evalV; kwargs...)
         elseif c == S
             # S channel
-            eval(b.Lver, varK, varT, KinL, Ks, KinR, K, Llopidx, spin)
-            eval(b.Rver, varK, varT, K, KoutL, Ks, KoutR, Rlopidx, spin)
+            eval(b.Lver, varK, varT, [KinL, Ks, KinR, K], evalG, evalV; kwargs...)
+            eval(b.Rver, varK, varT, [K, KoutL, Ks, KoutR], evalG, evalV; kwargs...)
         else
             error("not implemented")
         end
@@ -127,13 +98,13 @@ function eval(ver4, varK, varT, KinL, KoutL, KinR, KoutR, Kidx::Int, spin, fast 
             for (r, Rw) in enumerate(b.Rver.weight)
                 map = b.map[(l-1)*rN+r]
 
-                gWeight = G[1].weight[map.G0] * G[c].weight[map.Gx] * Factor
+                gWeight = map.G0.weight * map.Gx.weight * Factor
 
                 if fast && ver4.level == 1
                     # gWeight *= phase(varT, ver4.Tpair[map.ver])
                     w = ver4.weight[1]
                 else
-                    w = ver4.weight[map.ver]
+                    w = ver4.weight[map.vidx]
                 end
 
                 if c == T
@@ -154,5 +125,4 @@ function eval(ver4, varK, varT, KinL, KoutL, KinR, KoutR, Kidx::Int, spin, fast 
         end
 
     end
-end
 end

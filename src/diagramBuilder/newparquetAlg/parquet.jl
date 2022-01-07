@@ -1,4 +1,4 @@
-module Parquet
+module ParquetNew
 using StaticArrays, PyCall
 using AbstractTrees
 using Parameters, Combinatorics
@@ -20,11 +20,5 @@ const Allchan = [I, T, U, S, Ts, Us, Ic, Tc, Uc, Sc, Tsc, Usc]
 include("common.jl")
 include("vertex4_rule.jl")
 include("vertex4.jl")
-include("vertex4_eval.jl")
-include("vertex4_io.jl")
 include("filter.jl")
-include("ver4_diagTree.jl")
-include("sigma_diagTree.jl")
-include("G_diagTree.jl")
-include("ver3_diagTree.jl")
 end

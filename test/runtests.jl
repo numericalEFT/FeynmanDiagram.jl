@@ -1,13 +1,12 @@
-using ExpressionTree
+using FeynmanDiagram
 using Lehmann
 using Test, LinearAlgebra, Random, StaticArrays, Printf
 
 include("diagtree.jl")
-
-include("parquet_eval.jl")
-using ..ParquetEval
+include("diagram_count.jl")
 include("parquet.jl")
+# include("newparquet.jl")
 
-@testset "ExpressionTree.jl" begin
+@testset "FeynmanDiagram.jl" begin
     # Write your tests here.
 end

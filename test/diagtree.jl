@@ -31,21 +31,6 @@ end
     @test length(pool) == 2
     @test idx1 == idx4
     @test idx2 == idx3
-
-    # test symmetry operator
-    # symmetry = Var.refection(Float64, 3)
-    # a = Var.VectorVariable([1.0, 2.0, 2.0])
-    # b = Var.VectorVariable([-1.0, -2.0, -2.0])
-    # c = Var.VectorVariable([1.0, 2.0, 2.0])
-    # @test isequal(a, c)
-    # @test isequal(a, b) == false #two vectors are different if the symmetries are different, regardless of the basis 
-
-    #test Node
-    # node1 = DiagTree.Node(1; components = [[1, 2], [3, 4]], child = [1, 2])
-    # node2 = DiagTree.Node(1; components = [[1, 2], [3, 4]], child = [1, 2])
-    # @test (node1 != node2) == false
-
-    #test diagram
 end
 
 @testset "Propagator" begin
@@ -78,6 +63,32 @@ end
     @test node() != node(factor = factor2)
     @test node() != node(components = components2)
     @test node() != node(child = child2)
+end
+
+function createDiag(D, loopNum, weightType)
+    Kpool = DiagTree.LoopPool(:K, D, loopNum)
+    Gpool = DiagTree.propagatorPool(:Gpool, weightType)
+    Vpool = DiagTree.propagatorPool(:Vpool, weightType)
+    diag = DiagTree.Diagrams(Kpool, (Gpool, Vpool), weightType)
+    return diag
+end
+
+@testset "Diagram" begin
+    diag = createDiag(3, 2, Float64)
+    p1 = DiagTree.addpropagator!(diag, :Gpool, 0, :g1; loop = [1.0, 0.0])
+    p2 = DiagTree.addpropagator!(diag, :Gpool, 0, :g2; loop = [1.0, 1.0])
+    p3 = DiagTree.addpropagator!(diag, :Gpool, 0, :g3; loop = [0.0, 1.0])
+    p4 = DiagTree.addpropagator!(diag, :Gpool, 0, :g4; loop = [0.0, 0.0])
+
+    @assert length(diag.propagatorPool[1].object) == 4
+    nc = DiagTree.sum_of_producted_components!(diag, :sum, [[p1, p2], [p3, p4]])
+    n = DiagTree.getNode(diag, nc)
+    println(n.childNodes)
+    # DiagTree.showTree(diag, n.index)
+    @test DiagTree.getNode(diag, n.childNodes[1]).propagators[1] == [1, 3]
+    @test DiagTree.getNode(diag, n.childNodes[2]).propagators[1] == [2, 3]
+    @test DiagTree.getNode(diag, n.childNodes[3]).propagators[1] == [1, 4]
+    @test DiagTree.getNode(diag, n.childNodes[4]).propagators[1] == [2, 4]
 end
 
 @testset "Generic Diagrams" begin
