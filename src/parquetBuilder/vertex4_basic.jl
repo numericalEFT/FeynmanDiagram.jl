@@ -17,17 +17,17 @@ function zeroLoopVer4Node!(nodes, diag, para, legK)
         innerT_dyn = innerT_ins
     end
 
-    function add!(name, type, _extT, _innerT)
+    function addnode!(name, type, _extT, _innerT)
         Vorder = 1
         poolName = symbol(name, type, "pool")
 
         vd = notProper(para, q[DI]) ? zero(Component) : DiagTree.addpropagator!(diag,
             poolName, Vorder, symbol(name, type, "di"); loop = q[DI], site = collect(_innerT[DI]))
-        push!(nodes, Ver4identifier(name, type, DI, legK, _extT[DI], vd))
+        add!(nodes, Vertex4(name, type, DI, legK, _extT[DI]), vd)
 
         ve = notProper(para, q[EX]) ? zero(Component) : DiagTree.addpropagator!(diag,
             poolName, Vorder, symbol(name, type, "ex"); loop = q[EX], site = collect(_innerT[EX]))
-        push!(nodes, Ver4identifier(name, type, EX, legK, _extT[EX], ve))
+        add!(nodes, Vertex4(name, type, EX, legK, _extT[EX]), ve)
     end
 
     for interaction in para.interaction
@@ -37,23 +37,23 @@ function zeroLoopVer4Node!(nodes, diag, para, legK)
         if name == ChargeCharge || name == SpinSpin
 
             if Instant ∈ type && Dynamic ∉ type
-                add!(name, Instant, extT_ins, innerT_ins)
+                addnode!(name, Instant, extT_ins, innerT_ins)
             elseif Instant ∉ type && Dynamic ∈ type
-                add!(name, Dynamic, extT_dyn, innerT_dyn)
+                addnode!(name, Dynamic, extT_dyn, innerT_dyn)
             elseif Instant ∈ type && Dynamic ∈ type
                 #if hasTau, instant interaction has an additional fake tau variable, making it similar to the dynamic interaction
-                add!(name, Instant, extT_ins, innerT_dyn)
-                add!(name, Dynamic, extT_dyn, innerT_dyn)
+                addnode!(name, Instant, extT_ins, innerT_dyn)
+                addnode!(name, Dynamic, extT_dyn, innerT_dyn)
             end
 
             if D_Instant ∈ type && D_Dynamic ∉ type
-                add!(name, D_Instant, extT_ins, innerT_ins)
+                addnode!(name, D_Instant, extT_ins, innerT_ins)
             elseif D_Instant ∉ type && D_Dynamic ∈ type
-                add!(name, D_Dynamic, extT_dyn, innerT_dyn)
+                addnode!(name, D_Dynamic, extT_dyn, innerT_dyn)
             elseif D_Instant ∈ type && D_Dynamic ∈ type
                 #if hasTau, instant interaction has an additional fake tau variable, making it similar to the dynamic interaction
-                add!(name, D_Instant, extT_ins, innerT_dyn)
-                add!(name, D_Dynamic, extT_dyn, innerT_dyn)
+                addnode!(name, D_Instant, extT_ins, innerT_dyn)
+                addnode!(name, D_Dynamic, extT_dyn, innerT_dyn)
             end
         else
             @error("Interaction $name is not implemented!")

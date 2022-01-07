@@ -111,10 +111,11 @@ struct Ver4
     level::Int
 
     ####### weight and tau table of the vertex  ###############
-    legK::Vector{Vector{Float64}}
+    extK::Vector{Vector{Float64}}
 
-    node::Set{Ver4identifier}
+    # node::Set{Ver4identifier}
     # child::Dict{Ver4identifier,IdxMap{Ver4}}
+    nodesVec::Vector{Nodes{Vertex4}}
 
     function Ver4(diag, para, legK, chan, subdiagram = false; F = [I, U, S], V = [I, T, U], All = union(F, V),
         Fouter = F, Vouter = V, Allouter = All, level = 1)
@@ -138,7 +139,7 @@ struct Ver4
         legK = [KinL, KoutL, KinR, KoutR]
 
         # g = @SVector [Vector{Green}([]) for i = 1:16]
-        ver4 = new(diag, para, chan, F, V, All, Fouter, Vouter, Allouter, level, legK, Set([]))
+        ver4 = new(diag, para, chan, F, V, All, Fouter, Vouter, Allouter, level, legK, [])
 
         @assert para.totalTauNum >= maxTauIdx(ver4) "Increase totalTauNum!\n$para"
         @assert para.totalLoopNum >= maxLoopIdx(ver4) "Increase totalLoopNum\n$para"
@@ -147,7 +148,7 @@ struct Ver4
         @assert loopNum >= 0
 
         if loopNum == 0
-            zeroLoopVer4Node!(ver4.node, diag, para, legK)
+            zeroLoopVer4Node!(ver4.nodesVec, diag, para, legK)
         else # loopNum>0
             for c in chan
                 if c == I
@@ -160,7 +161,7 @@ struct Ver4
 
                     if c == T
                         # println(p)
-                        addBubble!(ver4, c, p, level)
+                        # addBubble!(ver4, c, p, level)
                         # if isnothing(bubble) == false && length(bubble.map) > 0  # if zero, bubble diagram doesn't exist
                         # push!(ver4.bubble, bubble)
                     end
@@ -181,12 +182,14 @@ function buildVer4(para, LegK, chan, subdiagram = false; F = [U, S], V = [T, U],
     ver4 = Ver4(diag, para, LegK, chan, subdiagram; F = F, V = V, All = All, Fouter = Fouter, Vouter = Vouter, Allouter = Allouter)
     if subdiagram == false && para.innerLoopNum == 0 #return interaction directionly
         # nodes = []
-        for n in ver4.node
-            n.node = DiagTree.addnode!(diag, MUL, :interaction, [n.node,]; para = collect(n.extT))
+        for n in ver4.nodesVec
+            for (ci, c) in enumerate(n.nodes)
+                n.nodes[ci] = DiagTree.addnode!(diag, MUL, :interaction, [c,]; para = collect(n.id.extT))
+            end
         end
         # return diag, nodes
     end
-    return diag, ver4.node
+    return diag, ver4.nodesVec
 end
 
 function maxTauIdx(ver4::Ver4)
