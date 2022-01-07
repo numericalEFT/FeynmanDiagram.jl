@@ -5,6 +5,7 @@ using StaticArrays
 const Weight = SVector{2,Float64}
 
 Parquet = Builder.Parquet
+# Parquet = ParquetNew
 
 chan = [Parquet.T, Parquet.U, Parquet.S]
 
@@ -14,7 +15,7 @@ V = [Parquet.T, Parquet.U]
 ###################### ver4 to DiagTree ###########################################
 para = GenericPara(
     loopDim = 3,
-    innerLoopNum = 1,
+    innerLoopNum = 0,
     totalLoopNum = 4,
     totalTauNum = 3,
     spin = 2,
@@ -37,7 +38,8 @@ varT = [rand() for i in 1:para.totalTauNum]
 evalK(basis) = sum([basis[i] * varK[i] for i in 1:para.totalLoopNum])
 evalT(Tidx) = varT[Tidx]
 
-diag, ver4, dir, ex = Parquet.buildVer4(para, legK, chan, F, V)
+diag, ver4Node = Parquet.buildVer4(para, legK, chan, F = F, V = V)
+# dir = [node.nidx for ]
 rootDir = DiagTree.addnode!(diag, DiagTree.ADD, :dir, dir, para = [0, 0, 0, 0])
 rootEx = DiagTree.addnode!(diag, DiagTree.ADD, :ex, ex, para = [0, 0, 0, 0])
 diag.root = [rootDir.index, rootEx.index]
