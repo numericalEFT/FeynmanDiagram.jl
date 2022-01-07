@@ -39,10 +39,11 @@ function symbol(name::InteractionName, type::InteractionType, addition = nothing
 end
 
 @with_kw struct GenericPara
-    loopDim::Int
     innerLoopNum::Int
     totalLoopNum::Int
-    spin::Int
+
+    loopDim::Int = 3
+    spin::Int = 2
     firstLoopIdx::Int = 1
 
     #### turn the following parameters on if there is tau variables ########
