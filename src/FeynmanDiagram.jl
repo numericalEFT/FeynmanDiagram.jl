@@ -38,7 +38,7 @@ export Wirreducible, Girreducible, NoBubble, NoHatree, Proper
 export InteractionName, ChargeCharge, SpinSpin
 export InteractionType, Instant, Dynamic, D_Instant, D_Dynamic
 
-include("parameter.jl")
+include("common.jl")
 export GenericPara, Interaction
 
 include("diagramTree/DiagTree.jl")
