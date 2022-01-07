@@ -1,5 +1,5 @@
 # Diagram Tree Builder
 
 ```@autodocs
-Modules = [ExpressionTree.Builder]
+Modules = [FeynmanDiagram.Builder]
 ```
