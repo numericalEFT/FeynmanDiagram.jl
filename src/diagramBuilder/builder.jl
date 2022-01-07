@@ -13,13 +13,81 @@ using Parameters
 # # const Vchan = [I, T, U, Ts, Us, Ic, Tc, Uc, Sc, Tsc, Usc]
 # const Allchan = [I, T, U, S, Ts, Us, Ic, Tc, Uc, Sc, Tsc, Usc]
 
-include("parameter.jl")
+# @enum DiagramType begin
+#     SigmaDiag          #self-energy
+#     GreenDiag          #green's function
+#     PolarDiag          #polarization
+#     Ver3Diag           #3-point vertex function
+#     Ver4Diag           #4-point vertex function
+# end
+
+# @enum Filter begin
+#     Wirreducible  #remove all polarization subdiagrams
+#     Girreducible  #remove all self-energy inseration
+#     NoHatree
+#     NoFock
+#     NoBubble  # true to remove all bubble subdiagram
+#     Proper  #ver4, ver3, and polarization diagrams may require to be irreducible along the transfer momentum/frequency
+# end
+
+# @enum InteractionName begin
+#     Composite
+#     ChargeCharge
+#     SpinSpin
+#     ProperChargeCharge
+#     ProperSpinSpin
+# end
+
+# @enum InteractionType begin
+#     Instant
+#     Dynamic
+#     D_Instant #derivative of instant interaction
+#     D_Dynamic #derivative of the dynamic interaction
+# end
+
+# export SigmaDiag, PolarDiag, Ver3Diag, Ver4Diag
+# export Wirreducible, Girreducible, NoBubble, NoHatree, Proper
+# export InteractionName, ChargeCharge, SpinSpin
+# export InteractionType, Instant, Dynamic, D_Instant, D_Dynamic
+
+# include("parameter.jl")
+# export GenericPara, Interaction
+
+import ..Filter
+import ..Wirreducible  #remove all polarization subdiagrams
+import ..Girreducible  #remove all self-energy inseration
+import ..NoHatree
+import ..NoFock
+import ..NoBubble  # true to remove all bubble subdiagram
+import ..Proper  #ver4, ver3, and polarization diagrams may require to be irreducible along the transfer momentum/frequency
+
+import ..DiagramType
+import ..GreenDiag
+import ..SigmaDiag
+import ..PolarDiag
+import ..Ver3Diag
+import ..Ver4Diag
+
+import ..Composite
+import ..ChargeCharge
+import ..SpinSpin
+import ..InteractionName
+
+import ..Instant
+import ..Dynamic
+import ..InteractionType
+
+import ..Interaction
+
+import ..GenericPara
+
+import ..innerTauNum
 
 using ..DiagTree
 
 include("parquetAlg/parquet.jl")
 export Parquet
 
-include("newparquetAlg/parquet.jl")
+# include("newparquetAlg/parquet.jl")
 
 end

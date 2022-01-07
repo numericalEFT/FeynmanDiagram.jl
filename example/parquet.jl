@@ -1,4 +1,4 @@
-using ExpressionTree
+using FeynmanDiagram
 using AbstractTrees
 # using NewickTree
 using StaticArrays
@@ -12,17 +12,18 @@ F = [Parquet.U, Parquet.S]
 V = [Parquet.T, Parquet.U]
 
 ###################### ver4 to DiagTree ###########################################
-para = Builder.GenericPara(
+para = GenericPara(
     loopDim = 3,
     innerLoopNum = 1,
     totalLoopNum = 4,
     totalTauNum = 3,
     spin = 2,
-    interactionTauNum = 1,
+    hasTau = true,
     weightType = Float64,
     firstLoopIdx = 2,
     firstTauIdx = 1,
-    filter = [Builder.NoFock,]
+    filter = [Builder.NoFock,],
+    interaction = [Interaction(ChargeCharge, Instant),]
 )
 
 K0 = zeros(para.totalLoopNum)
@@ -44,15 +45,15 @@ diag.root = [rootDir.index, rootEx.index]
 DiagTree.showTree(diag, rootDir.index)
 
 ##################### lower level subroutines  #######################################
-ver4 = Parquet.Ver4{Float64}(para, legK, chan, F, V)
+# ver4 = Parquet.Ver4{Float64}(para, legK, chan, F, V)
 
 ########## use AbstractTrees interface to print/manipulate the tree
-print_tree(ver4)
+# print_tree(ver4)
 
 # [println(node) for node in Leaves(ver4)]  #print all loopNum=0 ver4
 
-println("Iterate the tree use the AbstractTrees interface: ")
-[println(node) for node in PostOrderDFS(ver4)]  # iterator ver4 in depth-first search (children before parents)
+# println("Iterate the tree use the AbstractTrees interface: ")
+# [println(node) for node in PostOrderDFS(ver4)]  # iterator ver4 in depth-first search (children before parents)
 # [println(node) for node in PreOrderDFS(ver4)]  # iterator ver4 (parents before children)
 
 ########## print tree to a newick format file  ##############
@@ -71,10 +72,11 @@ para = Builder.GenericPara(
     totalLoopNum = 4,
     totalTauNum = 3,
     spin = 2,
-    interactionTauNum = 1,
+    # interactionTauNum = 1,
     firstLoopIdx = 2,
     firstTauIdx = 1,
-    weightType = Float64,
+    # weightType = Float64,
+    hasTau = true,
     filter = [Builder.NoHatree,]
 )
 

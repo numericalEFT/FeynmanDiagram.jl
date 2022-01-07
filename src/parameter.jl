@@ -1,35 +1,3 @@
-@enum DiagramType begin
-    SigmaDiag          #self-energy
-    GreenDiag          #green's function
-    PolarDiag          #polarization
-    Ver3Diag           #3-point vertex function
-    Ver4Diag           #4-point vertex function
-end
-
-@enum Filter begin
-    Wirreducible  #remove all polarization subdiagrams
-    Girreducible  #remove all self-energy inseration
-    NoHatree
-    NoFock
-    NoBubble  # true to remove all bubble subdiagram
-    Proper  #ver4, ver3, and polarization diagrams may require to be irreducible along the transfer momentum/frequency
-end
-
-@enum InteractionName begin
-    Composite
-    ChargeCharge
-    SpinSpin
-    ProperChargeCharge
-    ProperSpinSpin
-end
-
-@enum InteractionType begin
-    Instant
-    Dynamic
-    D_Instant #derivative of instant interaction
-    D_Dynamic #derivative of the dynamic interaction
-end
-
 struct Interaction
     name::InteractionName
     type::Set{InteractionType}
@@ -56,9 +24,9 @@ function symbol(name::InteractionName, type::InteractionType, addition = nothing
     elseif type == Dynamic
         t = "dyn"
     elseif type == D_Instant
-        t = "dins"
+        t = "d_ins"
     elseif type == D_Dynamic
-        t = "ddyn"
+        t = "d_dyn"
     else
         @error("$type is not implemented!")
     end
@@ -75,7 +43,7 @@ end
     innerLoopNum::Int
     totalLoopNum::Int
     spin::Int
-    firstLoopIdx::Int
+    firstLoopIdx::Int = 1
 
     #### turn the following parameters on if there is tau variables ########
     hasTau::Bool = false
