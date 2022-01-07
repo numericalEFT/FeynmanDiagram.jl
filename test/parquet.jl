@@ -78,7 +78,8 @@ end
 
         para = Builder.GenericPara(
             loopDim = Kdim,
-            interactionTauNum = interactionTauNum,
+            # interactionTauNum = interactionTauNum,
+            hasTau = true,
             innerLoopNum = loopNum,
             totalLoopNum = length(KinL),
             totalTauNum = (loopNum + 1) * interactionTauNum,
@@ -87,7 +88,8 @@ end
             firstLoopIdx = 3,
             firstTauIdx = 1,
             filter = union(filter, [Builder.Girreducible,]), #ver4 evaluation only support one-particle-irreducible diagram
-            transferLoop = KinL - KoutL
+            transferLoop = KinL - KoutL,
+            interaction = [Builder.Interaction(Builder.ChargeCharge, Builder.Instant),]
         )
 
         Parquet = Builder.Parquet
@@ -164,7 +166,8 @@ end
 
         para = Builder.GenericPara(
             loopDim = Kdim,
-            interactionTauNum = interactionTauNum,
+            # interactionTauNum = interactionTauNum,
+            hasTau = true,
             innerLoopNum = loopNum,
             totalLoopNum = loopNum + 1,
             totalTauNum = loopNum * interactionTauNum,
@@ -173,7 +176,8 @@ end
             weightType = Float64,
             firstLoopIdx = 2,
             firstTauIdx = 1,
-            filter = filter
+            filter = filter,
+            interaction = [Builder.Interaction(Builder.ChargeCharge, Builder.Instant),]
         )
 
         extK = zeros(para.totalLoopNum)
@@ -229,7 +233,8 @@ end
     function buildG(loopNum, extT, firstTauIdx; Kdim = 3, spin = 2, interactionTauNum = 1, filter = [], isFermi = true)
         para = Builder.GenericPara(
             loopDim = Kdim,
-            interactionTauNum = interactionTauNum,
+            # interactionTauNum = interactionTauNum,
+            hasTau = true,
             innerLoopNum = loopNum,
             totalLoopNum = loopNum + 1,
             totalTauNum = loopNum * interactionTauNum + 2,
@@ -238,7 +243,8 @@ end
             weightType = Float64,
             firstLoopIdx = 2,
             firstTauIdx = firstTauIdx,
-            filter = filter
+            filter = filter,
+            interaction = [Builder.Interaction(Builder.ChargeCharge, Builder.Instant),]
         )
         extK = zeros(para.totalLoopNum)
         extK[1] = 1.0

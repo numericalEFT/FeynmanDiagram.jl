@@ -31,7 +31,7 @@ function eval(ver4::Ver4, varK, varT, legK, evalG::Function, evalV::Function, fa
         else
             Tidx = para.firstTauIdx
             τIn, τOut = varT[Tidx], varT[Tidx+1]
-            error("not implemented!")
+            error("$(para.interactionTauNum) not implemented!")
             # elseif ver4.interactionTauNum == 2
             # vd, wd, ve, we = vertexDynamic(para, qd, qe, τIn, τOut)
 

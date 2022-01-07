@@ -36,6 +36,9 @@ struct Interaction
     function Interaction(name, type)
         return new(name, Set(type))
     end
+    function Interaction(name, type::InteractionType)
+        return new(name, Set([type,]))
+    end
 end
 
 function symbol(name::InteractionName, type::InteractionType, addition = nothing)
