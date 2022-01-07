@@ -1,25 +1,3 @@
-function legBasis(chan::Channel, legK, loopIdx)
-    KinL, KoutL, KinR, KoutR = legK[1], legK[2], legK[3], legK[4]
-    K = zero(KinL)
-    K[loopIdx] = 1
-    if chan == T
-        Kx = KoutL + K - KinL
-        LLegK = [KinL, KoutL, Kx, K]
-        RLegK = [K, Kx, KinR, KoutR]
-    elseif chan == U
-        Kx = KoutR + K - KinL
-        LLegK = [KinL, KoutR, Kx, K]
-        RLegK = [K, Kx, KinR, KoutL]
-    elseif chan == S
-        Kx = KinL + KinR - K
-        LLegK = [KinL, Kx, KinR, K]
-        RLegK = [K, KoutL, Kx, KoutR]
-    else
-        @error("not implemented!")
-    end
-    return LLegK, K, RLegK, Kx
-end
-
 function addT!(diag, ver4, lnodes, rnodes, K, Kx, g0para, gxpara)
     LvT, RvT = lnodes.extT, rnodes.extT
     GT0 = (LvT[OUTR], RvT[INL])
@@ -147,10 +125,10 @@ struct Ver4
             @assert Set(All) == Set(Allouter)
         end
 
-        @assert (T in F) == false "F vertex is particle-hole irreducible, so that T channel is not allowed in F"
-        @assert (S in V) == false "V vertex is particle-particle irreducible, so that S channel is not allowed in V"
-        @assert (T in Fouter) == false "F vertex is particle-hole irreducible, so that T channel is not allowed in F"
-        @assert (S in Vouter) == false "V vertex is particle-particle irreducible, so that S channel is not allowed in V"
+        @assert (T in F) == false "F vertex is particle-hole irreducible, so that T channel is not allowed in F=$F"
+        @assert (S in V) == false "V vertex is particle-particle irreducible, so that S channel is not allowed in V=$V"
+        @assert (T in Fouter) == false "F vertex is particle-hole irreducible, so that T channel is not allowed in F=$Fouter"
+        @assert (S in Vouter) == false "V vertex is particle-particle irreducible, so that S channel is not allowed in V=$Vouter"
 
         @assert length(legK[1]) == length(legK[2]) == length(legK[3]) == para.totalLoopNum
 

@@ -44,6 +44,9 @@ export GenericPara, Interaction
 include("diagramTree/DiagTree.jl")
 export DiagTree
 
+include("parquetBuilder/parquet.jl")
+export ParquetNew
+
 include("diagramBuilder/builder.jl")
 export Builder
 # Write your package code here.
