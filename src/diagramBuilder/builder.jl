@@ -71,11 +71,11 @@ import ..Ver4Diag
 import ..Composite
 import ..ChargeCharge
 import ..SpinSpin
-import ..InteractionName
+import ..ResponseName
 
 import ..Instant
 import ..Dynamic
-import ..InteractionType
+import ..AnalyticProperty
 
 import ..Interaction
 

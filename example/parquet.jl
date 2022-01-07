@@ -4,8 +4,8 @@ using AbstractTrees
 using StaticArrays
 const Weight = SVector{2,Float64}
 
-Parquet = Builder.Parquet
-# Parquet = ParquetNew
+# Parquet = Builder.Parquet
+Parquet = ParquetNew
 
 chan = [Parquet.T, Parquet.U, Parquet.S]
 
@@ -38,10 +38,11 @@ varT = [rand() for i in 1:para.totalTauNum]
 evalK(basis) = sum([basis[i] * varK[i] for i in 1:para.totalLoopNum])
 evalT(Tidx) = varT[Tidx]
 
-diag, ver4Node = Parquet.buildVer4(para, legK, chan, F = F, V = V)
+diag, nodes = Parquet.buildVer4(para, legK, chan, F = F, V = V)
+dir, ex = Parquet.merge(nodes, :DiEx)
 # dir = [node.nidx for ]
-rootDir = DiagTree.addnode!(diag, DiagTree.ADD, :dir, dir, para = [0, 0, 0, 0])
-rootEx = DiagTree.addnode!(diag, DiagTree.ADD, :ex, ex, para = [0, 0, 0, 0])
+rootDir = DiagTree.addnode!(diag, DiagTree.ADD, :dir, dir.nodes, para = [0, 0, 0, 0])
+rootEx = DiagTree.addnode!(diag, DiagTree.ADD, :ex, ex.nodes, para = [0, 0, 0, 0])
 diag.root = [rootDir.index, rootEx.index]
 
 DiagTree.showTree(diag, rootDir.index)
