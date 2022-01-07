@@ -18,15 +18,16 @@ end
     Proper  #ver4, ver3, and polarization diagrams may require to be irreducible along the transfer momentum/frequency
 end
 
-@enum InteractionName begin
+@enum ResponseName begin
     Composite
     ChargeCharge
     SpinSpin
     ProperChargeCharge
     ProperSpinSpin
+    Hubbard
 end
 
-@enum InteractionType begin
+@enum AnalyticProperty begin
     Instant
     Dynamic
     D_Instant #derivative of instant interaction
