@@ -1,26 +1,3 @@
-mutable struct Ver4identifier
-    ######### properties that defines a unique ver4 ###################
-    name::InteractionName #composite, chargecharge, spinspin, ...
-    type::InteractionType
-    DiEx::Int # 1 for direct, 2 for exchange
-    legK::Vector{Vector{Float64}}
-    extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
-    node::Component
-end
-
-
-function Base.isequal(a::Ver4identifier, b::Ver4identifier)
-    # only parent is allowed to be different
-    if (a.name != b.name) || (a.type != b.type) || (a.extT != b.extT) || (a.DiEx != b.DiEx) || (a.legK != b.legK)
-        return false
-    else
-        if a.node != b.node
-            @warn("Two identical ver4 has different Component: \n$a and $b")
-        end
-        return true
-    end
-end
-Base.:(==)(a::Ver4identifier, b::Ver4identifier) = Base.isequal(a, b)
 
 function zeroLoopVer4Node!(nodes, diag, para, legK)
     KinL, KoutL, KinR = legK[1], legK[2], legK[3]

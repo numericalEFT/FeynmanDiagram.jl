@@ -1,18 +1,16 @@
 struct Interaction
-    name::InteractionName
-    type::Set{InteractionType}
+    name::ResponseName
+    type::Set{AnalyticProperty}
     function Interaction(name, type)
         return new(name, Set(type))
     end
-    function Interaction(name, type::InteractionType)
+    function Interaction(name, type::AnalyticProperty)
         return new(name, Set([type,]))
     end
 end
 
-function symbol(name::InteractionName, type::InteractionType, addition = nothing)
-    if name == Composite
-        n = "C"
-    elseif name == ChargeCharge
+function symbol(name::ResponseName, type::AnalyticProperty, addition = nothing)
+    if name == ChargeCharge
         n = "cc"
     elseif name == SpinSpin
         n = "ss"
