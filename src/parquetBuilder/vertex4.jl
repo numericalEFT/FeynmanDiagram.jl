@@ -1,37 +1,70 @@
-function buildVer4(para, LegK, chan, subdiagram = false; F = [U, S], V = [T, U], All = union(F, V),
+function buildVer4(para, LegK, chan, subdiagram = false; F = [I, U, S], V = [I, T, U], All = union(F, V),
     Fouter = F, Vouter = V, Allouter = All, diag = newDiagTree(para, :Ver4))
 
     ver4 = Ver4(diag, para, LegK, chan, subdiagram; F = F, V = V, All = All, Fouter = Fouter, Vouter = Vouter, Allouter = Allouter)
-    # if subdiagram == false && para.innerLoopNum == 0 #return interaction directionly
-    #     # nodes = []
-    #     for n in ver4.nodesVec
-    #         for (ci, c) in enumerate(n.nodes)
-    #             n.nodes[ci] = DiagTree.addnode!(diag, MUL, :interaction, [c,]; para = collect(n.id.extT))
-    #         end
-    #     end
-    #     # return diag, nodes
-    # end
+
     return diag, ver4.nodes
 end
 
-function addT!(diag, bubble, lnodes, rnodes, K, Kx)
+# function mapT(para, lnode, rnode)
+#     lname, rname = lnode.name, rnode.name
+#     lc, rc = lnode.DiEx, rnode.DiEx
+#     if lname == ChargeCharge && rname == ChargeCharge
+#         if lc == DI && rc == DI
+#             return [(ChargeCharge, DI, para.spin),]
+#         elseif (lc == DI && rc == EX) || (lc == EX && rc == DI)
+#             return [(ChargeCharge, DI, 1.0),]
+#         else
+#             lc == EX && rc == EX
+#             return [(ChargeCharge, EX, 1.0),]
+#         end
+#     else
+#         error("not implemented!")
+#     end
+# end
+
+function addT!(diag, bubble, lnode, rnode, K, Kx)
     ver4, lver, rver = bubble.parent, bubble.lver, bubble.rver
-    lid, rid = lnodes.id, rnodes.id
+    lid, rid = lnode.id, rnode.id
+    ln, rn = lid.name, rid.name
+    lc, rc = lid.DiEx, rid.DiEx
+    vtype = typeMap(lid.type, rid.type)
+
     LvT, RvT = lid.extT, rid.extT
     extT = (LvT[INL], LvT[OUTL], RvT[INR], RvT[OUTR])
     extK = ver4.extK
 
-    diag, g0 = buildG(bubble.g0, K, (LvT[OUTR], RvT[INL]); diag = diag)
-    diag, gc = buildG(bubble.gx, Kx, (RvT[OUTL], LvT[INR]); diag = diag)
-    if lid.DiEx == DI && rid.DiEx == DI && lid.name == ChargeCharge && rid.name == ChargeCharge
-        if removeBubble(bubble, DI, DI) == false
-            dd = DiagTree.addnode!(diag, MUL, :Tdd, [g0, gc, Lw[DI], Rw[DI]], factor * para.spin; para = extT)
-            add!(ver4.nodesVec, Vertex4(ChargeCharge, Dynamic, DI, extK, extT), dd)
+    # diag, g0 = buildG(bubble.g0, K, (LvT[OUTR], RvT[INL]); diag = diag)
+    # diag, gc = buildG(bubble.gx, Kx, (RvT[OUTL], LvT[INR]); diag = diag)
+    g0 = DiagTree.addpropagator!(diag, :Gpool, 0, :G0; site = (LvT[OUTR], RvT[INL]), loop = K)
+    gc = DiagTree.addpropagator!(diag, :Gpool, 0, :Gx; site = (RvT[OUTL], LvT[INR]), loop = Kx)
+
+    function add(nodeName, responseName, type, diex, factor = 1.0)
+        n = DiagTree.addnode!(diag, MUL, nodeName, [g0, gc, lnode.node, rnode.node], factor; para = extT)
+        add!(ver4.nodes, Vertex4(responseName, type, diex, extK, extT), [n,])
+    end
+
+    function map(vname)
+        if lc == DI && rc == DI
+            if removeBubble(bubble, DI, DI) == false
+                add(:Tdd, vname, vtype, DI, ver4.para.spin)
+            end
+        elseif lc == DI && rc == EX
+            add(:Tde, vname, vtype, DI)
+        elseif lc == EX && rc == DI
+            add(:Ted, vname, vtype, DI)
+        elseif lc == EX && rc == EX
+            add(:Tee, vname, vtype, EX)
+        else
+            error("not exist!")
         end
     end
-    de = DiagTree.addnode!(diag, DiagTree.MUL, :Tde, [g0, gc, Lw[DI], Rw[EX]], factor; para = extT)
-    ed = DiagTree.addnode!(diag, DiagTree.MUL, :Ted, [g0, gc, Lw[EX], Rw[DI]], factor; para = extT)
-    ee = DiagTree.addnode!(diag, DiagTree.MUL, :Tee, [g0, gc, Lw[EX], Rw[EX]], factor; para = extT)
+
+    if ln == ChargeCharge && rn == ChargeCharge
+        map(ChargeCharge)
+    elseif ln == SpinSpin && rn == SpinSpin
+        map(SpinSpin)
+    end
 
 end
 
@@ -117,7 +150,7 @@ struct Ver4
 
                     if c == T
                         # println(p)
-                        # addBubble!(ver4, c, p, level)
+                        addBubble!(ver4, c, p, level)
                         # if isnothing(bubble) == false && length(bubble.map) > 0  # if zero, bubble diagram doesn't exist
                         # push!(ver4.bubble, bubble)
                     end
@@ -146,7 +179,7 @@ struct Bubble
     parent::Ver4
 end
 
-function addBubble!(ver4, chan::Channel, partition, level)
+function addBubble!(ver4::Ver4, chan::Channel, partition::Vector{Int}, level::Int)
     diag = ver4.diag
     para = ver4.para
     TauNum = para.interactionTauNum # maximum tau number for each bare interaction
@@ -175,7 +208,7 @@ function addBubble!(ver4, chan::Channel, partition, level)
         error("chan $chan isn't implemented!")
     end
 
-    LLegK, K, RLegK, Kx = legBasis(chan, ver4.legK, LoopIdx)
+    LLegK, K, RLegK, Kx = legBasis(chan, ver4.extK, LoopIdx)
 
     lPara = reconstruct(para, innerLoopNum = oL, firstLoopIdx = LfirstLoopIdx, firstTauIdx = LfirstTauIdx)
     Lver = Ver4(diag, lPara, LLegK, LverChan, true; F = ver4.F, V = ver4.V, All = ver4.All, level = level + 1)
@@ -186,15 +219,15 @@ function addBubble!(ver4, chan::Channel, partition, level)
     gxPara = reconstruct(para, innerLoopNum = oGx, firstLoopIdx = GxfirstLoopIdx, firstTauIdx = GxfirstTauIdx)
     g0Para = reconstruct(para, innerLoopNum = oG0, firstLoopIdx = G0firstLoopIdx, firstTauIdx = G0firstTauIdx)
 
-    bubble = Bubble(chan, g0Para, gxPara, Lver, Rver, Ver4)
+    bubble = Bubble(chan, g0Para, gxPara, Lver, Rver, ver4)
 
-    for lnodes in Lver.nodesVec
-        for rnodes in Rver.nodesVec
+    for lnode in Lver.nodes
+        for rnode in Rver.nodes
 
-            if c == T
-                addT!(diag, bubble, lnodes, rnodes, K, Kx)
-            elseif c == U
-            elseif c == S
+            if chan == T
+                addT!(diag, bubble, lnode, rnode, K, Kx)
+            elseif chan == U
+            elseif chan == S
             else
                 @error("Not implemented!")
             end

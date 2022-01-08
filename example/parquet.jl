@@ -15,7 +15,7 @@ V = [Parquet.T, Parquet.U]
 ###################### ver4 to DiagTree ###########################################
 para = GenericPara(
     loopDim = 3,
-    innerLoopNum = 0,
+    innerLoopNum = 1,
     totalLoopNum = 4,
     totalTauNum = 3,
     spin = 2,
