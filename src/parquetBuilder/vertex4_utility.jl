@@ -85,4 +85,14 @@ function legBasis(chan::Channel, legK, loopIdx)
     return LLegK, K, RLegK, Kx
 end
 
-
+function typeMap(ltype, rtype)
+    if (ltype == Instant || ltype == Dynamic) && (rtype == Instant || rtype == Dynamic)
+        return Dynamic
+    elseif (ltype == D_Instant || ltype == D_Dynamic) && (rtype == Instant || rtype == Dynamic)
+        return D_Dynamic
+    elseif (ltype == Instant || ltype == Dynamic) && (rtype == D_Instant || rtype == D_Dynamic)
+        return D_Dynamic
+    else
+        return nothing
+    end
+end
