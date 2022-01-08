@@ -20,6 +20,6 @@ const Allchan = [I, T, U, S, Ts, Us, Ic, Tc, Uc, Sc, Tsc, Usc]
 include("common.jl")
 include("identifier.jl")
 include("filter.jl")
-include("vertex4_basic.jl")
+include("vertex4_utility.jl")
 include("vertex4.jl")
 end

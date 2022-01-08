@@ -41,8 +41,8 @@ evalT(Tidx) = varT[Tidx]
 diag, nodes = Parquet.buildVer4(para, legK, chan, F = F, V = V)
 dir, ex = Parquet.merge(nodes, :DiEx)
 # dir = [node.nidx for ]
-rootDir = DiagTree.addnode!(diag, DiagTree.ADD, :dir, dir.nodes, para = [0, 0, 0, 0])
-rootEx = DiagTree.addnode!(diag, DiagTree.ADD, :ex, ex.nodes, para = [0, 0, 0, 0])
+rootDir = DiagTree.addnode!(diag, DiagTree.ADD, :dir, dir.children, para = [0, 0, 0, 0])
+rootEx = DiagTree.addnode!(diag, DiagTree.ADD, :ex, ex.children, para = [0, 0, 0, 0])
 diag.root = [rootDir.index, rootEx.index]
 
 DiagTree.showTree(diag, rootDir.index)
