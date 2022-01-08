@@ -39,13 +39,17 @@ evalK(basis) = sum([basis[i] * varK[i] for i in 1:para.totalLoopNum])
 evalT(Tidx) = varT[Tidx]
 
 diag, nodes = Parquet.buildVer4(para, legK, chan, F = F, V = V)
-dir, ex = Parquet.merge(nodes, :DiEx)
+dir, ex = Parquet.classify!(diag, nodes, :DiEx)
+# println(dir)
+# dir, ex = Parquet.merge(diag, nodes, :DiEx)
 # dir = [node.nidx for ]
-rootDir = DiagTree.addnode!(diag, DiagTree.ADD, :dir, dir.children, para = [0, 0, 0, 0])
-rootEx = DiagTree.addnode!(diag, DiagTree.ADD, :ex, ex.children, para = [0, 0, 0, 0])
-diag.root = [rootDir.index, rootEx.index]
+# rootDir = DiagTree.addnode!(diag, DiagTree.ADD, :dir, dir.children, para = [0, 0, 0, 0])
+# rootEx = DiagTree.addnode!(diag, DiagTree.ADD, :ex, ex.children, para = [0, 0, 0, 0])
+# diag.root = [rootDir.index, rootEx.index]
+# DiagTree.showTree(diag, rootDir.index)
+# diag.root = [dir[2].index, ex[2].index]
 
-DiagTree.showTree(diag, rootDir.index)
+DiagTree.showTree(diag, dir[2].index)
 
 ##################### lower level subroutines  #######################################
 # ver4 = Parquet.Ver4{Float64}(para, legK, chan, F, V)
