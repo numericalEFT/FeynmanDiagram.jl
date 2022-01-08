@@ -40,8 +40,9 @@ function addT!(diag, bubble, lnode, rnode, K, Kx)
     gc = DiagTree.addpropagator!(diag, :Gpool, 0, :Gx; site = (RvT[OUTL], LvT[INR]), loop = Kx)
 
     function add(nodeName, responseName, type, diex, factor = 1.0)
-        n = DiagTree.addnode!(diag, MUL, nodeName, [g0, gc, lnode.node, rnode.node], factor; para = extT)
-        add!(ver4.nodes, Vertex4(responseName, type, diex, extK, extT), [n,])
+        id = Vertex4(responseName, type, diex, extK, extT)
+        n = DiagTree.addnode!(diag, MUL, nodeName, [g0, gc, lnode.node, rnode.node], factor; para = id)
+        add!(ver4.nodes, id, [n,])
     end
 
     function map(vname)
@@ -163,7 +164,13 @@ struct Ver4
         end
 
         for n in ver4.nodes
-            n.node = DiagTree.addnode!(diag, ADD, symbol(n.id.name, n.id.type, "sum"), n.children; para = n.id)
+            if loopNum == 0 && subdiagram == true
+                @assert length(n.children) == 1 "$(n.children)"
+                n.node = n.children[1]
+            else
+                n.node = DiagTree.addnode!(diag, ADD, :sum, n.children; para = n.id)
+            end
+            @assert n.node != zero(Component)
         end
 
         return ver4

@@ -11,27 +11,27 @@ end
 
 function symbol(name::ResponseName, type::AnalyticProperty, addition = nothing)
     if name == ChargeCharge
-        n = "cc"
+        n = "Sym"
     elseif name == SpinSpin
-        n = "ss"
+        n = "Asym"
     else
         @error("$name is not implemented!")
     end
     if type == Instant
-        t = "ins"
+        t = "Ins"
     elseif type == Dynamic
-        t = "dyn"
+        t = "Dyn"
     elseif type == D_Instant
-        t = "d_ins"
+        t = "dIns"
     elseif type == D_Dynamic
-        t = "d_dyn"
+        t = "dDyn"
     else
         @error("$type is not implemented!")
     end
     if isnothing(addition)
-        return Symbol("$(n)_$(t)")
+        return Symbol("$(t)$(n)")
     else
-        return Symbol("$(n)_$(t)_$(addition)")
+        return Symbol("$(t)$(n)_$(addition)")
     end
 
 end

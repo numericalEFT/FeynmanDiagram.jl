@@ -11,6 +11,7 @@ end
 function Base.isequal(a::Vertex4, b::Vertex4)
     return (a.name == b.name) && (a.type == b.type) && (a.extT == b.extT) && (a.DiEx == b.DiEx) && (a.extK ≈ b.extK)
 end
+Base.show(io::IO, v::Vertex4) = print(io, "$(symbol(v.name, v.type))_$(v.DiEx ==1 ? :di : :ex), T$(v.extT)")
 
 struct Sigma <: Identifier
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
@@ -58,16 +59,15 @@ function add!(nodesVec::Vector{Node{I}}, newId::I, children, compare::Function =
     return length(nodesVec)
 end
 
-function merge(nodesVec::Vector{Node{I}}, compare::Function = Base.isequal) where {I<:Identifier}
-    merged = Vector{Node{I}}([])
-    for n in nodesVec
-        add!(merged, n.id, n.children, compare)
-    end
-    return merged
-end
+# function merge(nodesVec::Vector{Node{I}}, compare::Function = Base.isequal) where {I<:Identifier}
+#     merged = Vector{Node{I}}([])
+#     for n in nodesVec
+#         add!(merged, n.id, n.children, compare)
+#     end
+#     return merged
+# end
 
-function merge(nodesVec::Vector{Node{I}}, comparedSyms::Symbol...) where {I<:Identifier}
-    # if one of the comparedSyms is different, two objects are different 
+function classify(nodesVec::Vector{Node{I}}, comparedSyms::Symbol...) where {I<:Identifier}
     function compare(id1, id2)
         for s in comparedSyms
             if s != :extK
@@ -82,5 +82,45 @@ function merge(nodesVec::Vector{Node{I}}, comparedSyms::Symbol...) where {I<:Ide
         end
         return true
     end
-    return merge(nodesVec, compare)
+
+    mergedNodes = Vector{Node{I}}([])
+    for n in nodesVec
+        add!(mergedNodes, n.id, n.children, compare)
+    end
+
+
+    group = []
+    for mn in mergedNodes
+        key = Tuple(Base.getproperty(mn.id, sym) for sym in comparedSyms)
+        push!(group, (key, mn.children))
+    end
+
+    # group[]
+    # group = [mn.children for mn in mergedNodes]
+    return group
 end
+
+function classify!(diag::DiagTree.Diagrams, nodesVec::Vector{Node{I}}, comparedSyms::Symbol...) where {I<:Identifier}
+    group = classify(nodesVec, comparedSyms...)
+    # println(group)
+    componentgroup = []
+    name = reduce(*, sym for sym in comparedSyms)
+    for g in group
+        component = DiagTree.addnode!(diag, ADD, name, g[2], para = g[1])
+        push!(componentgroup, (g[1], component))
+    end
+    # println("merge", componentgroup)
+    return componentgroup
+end
+
+# function merge(diag, nodesVec::Vector{Node{I}}, comparedSyms::Symbol...) where {I<:Identifier}
+#     # if one of the comparedSyms is different, two objects are different 
+
+#     group = classify(nodesVec, comparedSyms...)
+
+#     merged = []
+#     for g in group
+#     end
+#     return merged
+#     # return merge(nodesVec, compare)
+# end
