@@ -90,7 +90,8 @@ end
 function newDiagTree(para, name::Symbol = :none)
     weightType = para.weightType
     Kpool = DiagTree.LoopPool(:K, para.loopDim, para.totalLoopNum, Float64)
-    nodeParaType = Vector{Int}
+    # nodeParaType = Vector{Int}
+    nodeParaType = Any
     propagatorPool = []
     push!(propagatorPool, DiagTree.propagatorPool(:Gpool, weightType))
     for interaction in para.interaction

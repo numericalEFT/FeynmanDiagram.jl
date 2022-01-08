@@ -130,7 +130,7 @@ struct Ver4
         end
 
         for n in ver4.nodes
-            n.node = DiagTree.addnode!(diag, ADD, symbol(n.id.name, n.id.type, "sum"), n.children; para = collect(n.id.extT))
+            n.node = DiagTree.addnode!(diag, ADD, symbol(n.id.name, n.id.type, "sum"), n.children; para = n.id)
         end
 
         return ver4

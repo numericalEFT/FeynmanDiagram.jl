@@ -66,7 +66,11 @@ struct Node{PARA,F}
     #     return new{P,F}(para, operation, factor, components, child, parent)
     # end
     function Node{F}(name::Symbol, operation::Int, para::P, propagators = [[]], child = [], factor = 1.0, parent = 0) where {F,P}
-        @assert typeof(para) == P
+        # @assert typeof(para) == P
+        return new{P,F}(name, para, operation, F(factor), propagators, child, parent)
+    end
+    function Node{P,F}(name::Symbol, operation::Int, para, propagators = [[]], child = [], factor = 1.0, parent = 0) where {F,P}
+        # @assert typeof(para) == P
         return new{P,F}(name, para, operation, F(factor), propagators, child, parent)
     end
 end
@@ -250,7 +254,7 @@ function addNode!(diag::Diagrams, operator, name, factor = 1.0; propagator = not
     F = fieldtype(_Node, :factor)
     # println("node PARA: ", PARA)
     # println("node F: ", F)
-    @assert PARA == typeof(para) "Type of $para is not $PARA"
+    # @assert PARA == typeof(para) "Type of $para is not $PARA"
 
     for (i, p) in enumerate(propagator)
         for pidx in p
@@ -262,7 +266,7 @@ function addNode!(diag::Diagrams, operator, name, factor = 1.0; propagator = not
     end
 
 
-    node = Node{F}(name, operator, para, propagator, childNodes, factor, 0)
+    node = Node{PARA,F}(name, operator, para, propagator, childNodes, factor, 0)
 
     nidx = append(nodePool, node)
     return nidx
