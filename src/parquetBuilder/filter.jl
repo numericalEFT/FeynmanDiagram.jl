@@ -1,9 +1,10 @@
-function removeBubble(map, chan, lc, rc)
-    Lver, Rver = map.l, map.r
-    para = map.v.para
+function removeBubble(bubble, lc, rc)
+    Lver, Rver = bubble.lver, bubble.rver
+    para = bubble.parent.para
+    chan = bubble.channel
 
     if NoBubble in para.filter
-        if isPropagator(Lver) && isPropagator(Rver)
+        if Lver.para.innerLoopNum == 0 && Rver.para.innerLoopNum == 0
             if chan == T || chan == U
                 if lc == DI && rc == DI
                     return true

@@ -30,41 +30,46 @@ struct Polarization <: Identifier
     extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
 end
 
-struct Nodes{I<:Identifier}
-    id::Identifier
-    nodes::Vector{Component}
-    function Nodes(id::I, nodes = []) where {I}
-        return new{I}(id, collect(nodes))
+mutable struct Node{I<:Identifier}
+    id::I
+    node::Component
+    children::Vector{Component}
+    # function Node(id::I, node, children) where {I}
+    #     return new{I}(id, node, collect(children))
+    # end
+    function Node(id::I; node = zero(Component), children = []) where {I}
+        return new{I}(id, node, collect(children))
     end
-    function Nodes(id::I, nodes::Component) where {I}
-        return new{I}(id, [nodes,])
-    end
+    # function Node(id::I; node = zero(Component), children::Component) where {I}
+    #     return new{I}(id, node, [children,])
+    # end
 end
 
 Base.:(==)(a::Identifier, b::Identifier) = Base.isequal(a, b)
 
-function add!(nodesVec::Vector{Nodes{I}}, newId::I, nodes, compare::Function = Base.isequal) where {I<:Identifier}
+function add!(nodesVec::Vector{Node{I}}, newId::I, children, compare::Function = Base.isequal) where {I<:Identifier}
     for (ni, n) in enumerate(nodesVec)
         if compare(n.id, newId)
-            append!(n.nodes, nodes)
+            append!(n.children, children)
             return ni
         end
     end
-    push!(nodesVec, Nodes(newId, nodes))
+    push!(nodesVec, Node(newId, children = children))
     return length(nodesVec)
 end
 
-function merge(nodesVec::Vector{Nodes{I}}, compare::Function = Base.isequal) where {I<:Identifier}
-    merged = Vector{Nodes{I}}([])
+function merge(nodesVec::Vector{Node{I}}, compare::Function = Base.isequal) where {I<:Identifier}
+    merged = Vector{Node{I}}([])
     for n in nodesVec
-        add!(merged, n.id, n.nodes, compare)
+        add!(merged, n.id, n.children, compare)
     end
     return merged
 end
 
-function merge(nodesVec::Vector{Nodes{I}}, syms::Symbol...) where {I<:Identifier}
+function merge(nodesVec::Vector{Node{I}}, comparedSyms::Symbol...) where {I<:Identifier}
+    # if one of the comparedSyms is different, two objects are different 
     function compare(id1, id2)
-        for s in syms
+        for s in comparedSyms
             if s != :extK
                 if getproperty(id1, s) != getproperty(id2, s)
                     return false

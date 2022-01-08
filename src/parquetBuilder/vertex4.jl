@@ -1,20 +1,149 @@
-function addT!(diag, ver4, lnodes, rnodes, K, Kx, g0para, gxpara)
-    LvT, RvT = lnodes.extT, rnodes.extT
-    GT0 = (LvT[OUTR], RvT[INL])
-    VerT = (LvT[INL], LvT[OUTL], RvT[INR], RvT[OUTR])
-    GTx = (RvT[OUTL], LvT[INR])
+function buildVer4(para, LegK, chan, subdiagram = false; F = [U, S], V = [T, U], All = union(F, V),
+    Fouter = F, Vouter = V, Allouter = All, diag = newDiagTree(para, :Ver4))
 
-    diag, g0 = buildG(g0para, K, GT0; diag = diag)
-    diag, gc = buildG(gxpara, Kx, GTx; diag = diag)
-    if removeBubble(map, c, DI, DI)
-        dd = zero(Component)
-    else
-        dd = DiagTree.addnode!(diag, DiagTree.MUL, :Tdd, [g0, gc, Lw[DI], Rw[DI]], factor * para.spin; para = extT)
+    ver4 = Ver4(diag, para, LegK, chan, subdiagram; F = F, V = V, All = All, Fouter = Fouter, Vouter = Vouter, Allouter = Allouter)
+    # if subdiagram == false && para.innerLoopNum == 0 #return interaction directionly
+    #     # nodes = []
+    #     for n in ver4.nodesVec
+    #         for (ci, c) in enumerate(n.nodes)
+    #             n.nodes[ci] = DiagTree.addnode!(diag, MUL, :interaction, [c,]; para = collect(n.id.extT))
+    #         end
+    #     end
+    #     # return diag, nodes
+    # end
+    return diag, ver4.nodes
+end
+
+function addT!(diag, bubble, lnodes, rnodes, K, Kx)
+    ver4, lver, rver = bubble.parent, bubble.lver, bubble.rver
+    lid, rid = lnodes.id, rnodes.id
+    LvT, RvT = lid.extT, rid.extT
+    extT = (LvT[INL], LvT[OUTL], RvT[INR], RvT[OUTR])
+    extK = ver4.extK
+
+    diag, g0 = buildG(bubble.g0, K, (LvT[OUTR], RvT[INL]); diag = diag)
+    diag, gc = buildG(bubble.gx, Kx, (RvT[OUTL], LvT[INR]); diag = diag)
+    if lid.DiEx == DI && rid.DiEx == DI && lid.name == ChargeCharge && rid.name == ChargeCharge
+        if removeBubble(bubble, DI, DI) == false
+            dd = DiagTree.addnode!(diag, MUL, :Tdd, [g0, gc, Lw[DI], Rw[DI]], factor * para.spin; para = extT)
+            add!(ver4.nodesVec, Vertex4(ChargeCharge, Dynamic, DI, extK, extT), dd)
+        end
     end
     de = DiagTree.addnode!(diag, DiagTree.MUL, :Tde, [g0, gc, Lw[DI], Rw[EX]], factor; para = extT)
     ed = DiagTree.addnode!(diag, DiagTree.MUL, :Ted, [g0, gc, Lw[EX], Rw[DI]], factor; para = extT)
     ee = DiagTree.addnode!(diag, DiagTree.MUL, :Tee, [g0, gc, Lw[EX], Rw[EX]], factor; para = extT)
 
+end
+
+"""
+    function Ver4{W}(para::Para, loopNum = para.internalLoopNum, tidx = 1; chan = para.chan, F = para.F, V = para.V, level = 1, id = [1,]) where {W}
+
+    Generate 4-vertex diagrams using Parquet Algorithm
+
+#Arguments
+- `para`: parameters. It should provide internalLoopNum, interactionTauNum, firstTauIdx
+- `chan`: list of channels of the current 4-vertex. 
+- `F`   : channels of left sub-vertex for the particle-hole and particle-hole-exchange bubbles
+- `V`   : channels of left sub-vertex for the particle-particle bubble
+- `All`   : channels of right sub-vertex of all channels
+- `Fouter`   : channels of left sub-vertex for the particle-hole and particle-hole-exchange bubbles, only take effect for the outermost bubble
+- `Vouter`   : channels of left sub-vertex for the particle-particle bubble, only take effect for the outermost bubble
+- `Allouter`   : channels of right sub-vertex of all channels
+- `loopNum`: momentum loop degrees of freedom of the 4-vertex diagrams
+- `tidx`: the first τ variable index. It will be the τ variable of the left incoming electron for all 4-vertex diagrams
+- `level`: level in the diagram tree
+- `id`: the first element will be used as the id of the Ver4. All nodes in the tree will be labeled in preorder depth-first search
+"""
+struct Ver4
+    diag::Any
+    para::GenericPara
+    chan::Vector{Channel} # list of channels
+    F::Vector{Channel}
+    V::Vector{Channel}
+    All::Vector{Channel}
+    Fouter::Vector{Channel}
+    Vouter::Vector{Channel}
+    Allouter::Vector{Channel}
+
+    ###### vertex topology information #####################
+    level::Int
+
+    ####### weight and tau table of the vertex  ###############
+    extK::Vector{Vector{Float64}}
+
+    nodes::Vector{Node{Vertex4}}
+
+    function Ver4(diag, para, legK, chan, subdiagram = false; F = [I, U, S], V = [I, T, U], All = union(F, V),
+        Fouter = F, Vouter = V, Allouter = All, level = 1)
+
+        if level > 1
+            @assert Set(F) == Set(Fouter)
+            @assert Set(V) == Set(Vouter)
+            @assert Set(All) == Set(Allouter)
+        end
+
+        @assert (T in F) == false "F vertex is particle-hole irreducible, so that T channel is not allowed in F=$F"
+        @assert (S in V) == false "V vertex is particle-particle irreducible, so that S channel is not allowed in V=$V"
+        @assert (T in Fouter) == false "F vertex is particle-hole irreducible, so that T channel is not allowed in F=$Fouter"
+        @assert (S in Vouter) == false "V vertex is particle-particle irreducible, so that S channel is not allowed in V=$Vouter"
+
+        @assert length(legK[1]) == length(legK[2]) == length(legK[3]) == para.totalLoopNum
+
+        KinL, KoutL, KinR = legK[1], legK[2], legK[3]
+        KoutR = (length(legK) > 3) ? legK[4] : KinL + KinR - KoutL
+        @assert KoutR ≈ KinL + KinR - KoutL
+        legK = [KinL, KoutL, KinR, KoutR]
+
+        # g = @SVector [Vector{Green}([]) for i = 1:16]
+        ver4 = new(diag, para, chan, F, V, All, Fouter, Vouter, Allouter, level, legK, [])
+
+        @assert para.totalTauNum >= maxTauIdx(ver4) "Increase totalTauNum!\n$para"
+        @assert para.totalLoopNum >= maxLoopIdx(ver4) "Increase totalLoopNum\n$para"
+
+        loopNum = para.innerLoopNum
+        @assert loopNum >= 0
+
+        if loopNum == 0
+            zeroLoopVer4Node!(ver4.nodes, diag, para, legK)
+        else # loopNum>0
+            for c in chan
+                if c == I
+                    continue
+                end
+
+                partition = orderedPartition(loopNum - 1, 4, 0)
+
+                for p in partition
+
+                    if c == T
+                        # println(p)
+                        # addBubble!(ver4, c, p, level)
+                        # if isnothing(bubble) == false && length(bubble.map) > 0  # if zero, bubble diagram doesn't exist
+                        # push!(ver4.bubble, bubble)
+                    end
+                end
+            end
+            # # TODO: add envolpe diagrams
+            # # for c in II
+            # # end
+            # test(ver4) # more test
+        end
+
+        for n in ver4.nodes
+            n.node = DiagTree.addnode!(diag, ADD, symbol(n.id.name, n.id.type, "sum"), n.children; para = collect(n.id.extT))
+        end
+
+        return ver4
+    end
+end
+
+struct Bubble
+    channel::Channel
+    g0::GenericPara
+    gx::GenericPara
+    lver::Ver4
+    rver::Ver4
+    parent::Ver4
 end
 
 function addBubble!(ver4, chan::Channel, partition, level)
@@ -57,11 +186,13 @@ function addBubble!(ver4, chan::Channel, partition, level)
     gxPara = reconstruct(para, innerLoopNum = oGx, firstLoopIdx = GxfirstLoopIdx, firstTauIdx = GxfirstTauIdx)
     g0Para = reconstruct(para, innerLoopNum = oG0, firstLoopIdx = G0firstLoopIdx, firstTauIdx = G0firstTauIdx)
 
-    for lnodes in Lver.node
-        for rnodes in Rver.node
+    bubble = Bubble(chan, g0Para, gxPara, Lver, Rver, Ver4)
+
+    for lnodes in Lver.nodesVec
+        for rnodes in Rver.nodesVec
 
             if c == T
-                addT!(diag, ver4, lnodes, rnodes, K, Kx, g0Para, gxPara)
+                addT!(diag, bubble, lnodes, rnodes, K, Kx)
             elseif c == U
             elseif c == S
             else
@@ -74,122 +205,8 @@ function addBubble!(ver4, chan::Channel, partition, level)
     if para.isFermi == false
         Factor = abs(Factor)
     end
+
     return
-end
-
-"""
-    function Ver4{W}(para::Para, loopNum = para.internalLoopNum, tidx = 1; chan = para.chan, F = para.F, V = para.V, level = 1, id = [1,]) where {W}
-
-    Generate 4-vertex diagrams using Parquet Algorithm
-
-#Arguments
-- `para`: parameters. It should provide internalLoopNum, interactionTauNum, firstTauIdx
-- `chan`: list of channels of the current 4-vertex. 
-- `F`   : channels of left sub-vertex for the particle-hole and particle-hole-exchange bubbles
-- `V`   : channels of left sub-vertex for the particle-particle bubble
-- `All`   : channels of right sub-vertex of all channels
-- `Fouter`   : channels of left sub-vertex for the particle-hole and particle-hole-exchange bubbles, only take effect for the outermost bubble
-- `Vouter`   : channels of left sub-vertex for the particle-particle bubble, only take effect for the outermost bubble
-- `Allouter`   : channels of right sub-vertex of all channels
-- `loopNum`: momentum loop degrees of freedom of the 4-vertex diagrams
-- `tidx`: the first τ variable index. It will be the τ variable of the left incoming electron for all 4-vertex diagrams
-- `level`: level in the diagram tree
-- `id`: the first element will be used as the id of the Ver4. All nodes in the tree will be labeled in preorder depth-first search
-"""
-struct Ver4
-    diag::Any
-    para::GenericPara
-    chan::Vector{Channel} # list of channels
-    F::Vector{Channel}
-    V::Vector{Channel}
-    All::Vector{Channel}
-    Fouter::Vector{Channel}
-    Vouter::Vector{Channel}
-    Allouter::Vector{Channel}
-
-    ###### vertex topology information #####################
-    level::Int
-
-    ####### weight and tau table of the vertex  ###############
-    extK::Vector{Vector{Float64}}
-
-    # node::Set{Ver4identifier}
-    # child::Dict{Ver4identifier,IdxMap{Ver4}}
-    nodesVec::Vector{Nodes{Vertex4}}
-
-    function Ver4(diag, para, legK, chan, subdiagram = false; F = [I, U, S], V = [I, T, U], All = union(F, V),
-        Fouter = F, Vouter = V, Allouter = All, level = 1)
-
-        if level > 1
-            @assert Set(F) == Set(Fouter)
-            @assert Set(V) == Set(Vouter)
-            @assert Set(All) == Set(Allouter)
-        end
-
-        @assert (T in F) == false "F vertex is particle-hole irreducible, so that T channel is not allowed in F=$F"
-        @assert (S in V) == false "V vertex is particle-particle irreducible, so that S channel is not allowed in V=$V"
-        @assert (T in Fouter) == false "F vertex is particle-hole irreducible, so that T channel is not allowed in F=$Fouter"
-        @assert (S in Vouter) == false "V vertex is particle-particle irreducible, so that S channel is not allowed in V=$Vouter"
-
-        @assert length(legK[1]) == length(legK[2]) == length(legK[3]) == para.totalLoopNum
-
-        KinL, KoutL, KinR = legK[1], legK[2], legK[3]
-        KoutR = (length(legK) > 3) ? legK[4] : KinL + KinR - KoutL
-        @assert KoutR ≈ KinL + KinR - KoutL
-        legK = [KinL, KoutL, KinR, KoutR]
-
-        # g = @SVector [Vector{Green}([]) for i = 1:16]
-        ver4 = new(diag, para, chan, F, V, All, Fouter, Vouter, Allouter, level, legK, [])
-
-        @assert para.totalTauNum >= maxTauIdx(ver4) "Increase totalTauNum!\n$para"
-        @assert para.totalLoopNum >= maxLoopIdx(ver4) "Increase totalLoopNum\n$para"
-
-        loopNum = para.innerLoopNum
-        @assert loopNum >= 0
-
-        if loopNum == 0
-            zeroLoopVer4Node!(ver4.nodesVec, diag, para, legK)
-        else # loopNum>0
-            for c in chan
-                if c == I
-                    continue
-                end
-
-                partition = orderedPartition(loopNum - 1, 4, 0)
-
-                for p in partition
-
-                    if c == T
-                        # println(p)
-                        # addBubble!(ver4, c, p, level)
-                        # if isnothing(bubble) == false && length(bubble.map) > 0  # if zero, bubble diagram doesn't exist
-                        # push!(ver4.bubble, bubble)
-                    end
-                end
-            end
-            # # TODO: add envolpe diagrams
-            # # for c in II
-            # # end
-            # test(ver4) # more test
-        end
-        return ver4
-    end
-end
-
-function buildVer4(para, LegK, chan, subdiagram = false; F = [U, S], V = [T, U], All = union(F, V),
-    Fouter = F, Vouter = V, Allouter = All, diag = newDiagTree(para, :Ver4))
-
-    ver4 = Ver4(diag, para, LegK, chan, subdiagram; F = F, V = V, All = All, Fouter = Fouter, Vouter = Vouter, Allouter = Allouter)
-    if subdiagram == false && para.innerLoopNum == 0 #return interaction directionly
-        # nodes = []
-        for n in ver4.nodesVec
-            for (ci, c) in enumerate(n.nodes)
-                n.nodes[ci] = DiagTree.addnode!(diag, MUL, :interaction, [c,]; para = collect(n.id.extT))
-            end
-        end
-        # return diag, nodes
-    end
-    return diag, ver4.nodesVec
 end
 
 function maxTauIdx(ver4::Ver4)

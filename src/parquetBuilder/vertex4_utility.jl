@@ -23,11 +23,11 @@ function zeroLoopVer4Node!(nodes, diag, para, legK)
 
         vd = notProper(para, q[DI]) ? zero(Component) : DiagTree.addpropagator!(diag,
             poolName, Vorder, symbol(name, type, "di"); loop = q[DI], site = collect(_innerT[DI]))
-        add!(nodes, Vertex4(name, type, DI, legK, _extT[DI]), vd)
+        add!(nodes, Vertex4(name, type, DI, legK, _extT[DI]), [vd,])
 
         ve = notProper(para, q[EX]) ? zero(Component) : DiagTree.addpropagator!(diag,
             poolName, Vorder, symbol(name, type, "ex"); loop = q[EX], site = collect(_innerT[EX]))
-        add!(nodes, Vertex4(name, type, EX, legK, _extT[EX]), ve)
+        add!(nodes, Vertex4(name, type, EX, legK, _extT[EX]), [ve,])
     end
 
     for interaction in para.interaction
@@ -85,6 +85,4 @@ function legBasis(chan::Channel, legK, loopIdx)
     return LLegK, K, RLegK, Kx
 end
 
-
-function mapBubbleT() end
 
