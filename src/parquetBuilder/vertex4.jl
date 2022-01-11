@@ -138,7 +138,7 @@ struct Ver4
         @assert loopNum >= 0
 
         if loopNum == 0
-            zeroLoopVer4Node!(ver4.nodes, diag, para, legK)
+            bareVer4!(ver4.nodes, diag, para, legK)
         else # loopNum>0
             for c in chan
                 if c == I

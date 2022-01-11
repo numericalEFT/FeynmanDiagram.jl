@@ -16,6 +16,8 @@ import ..Ver4Diag
 import ..Composite
 import ..ChargeCharge
 import ..SpinSpin
+import ..UpUp
+import ..UpDown
 import ..ResponseName
 
 import ..Instant

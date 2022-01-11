@@ -24,7 +24,8 @@ end
     SpinSpin
     ProperChargeCharge
     ProperSpinSpin
-    Hubbard
+    UpUp
+    UpDown
 end
 
 @enum AnalyticProperty begin
@@ -36,7 +37,7 @@ end
 
 export SigmaDiag, PolarDiag, Ver3Diag, Ver4Diag
 export Wirreducible, Girreducible, NoBubble, NoHatree, Proper
-export InteractionName, ChargeCharge, SpinSpin
+export InteractionName, ChargeCharge, SpinSpin, UpUp, UpDown
 export InteractionType, Instant, Dynamic, D_Instant, D_Dynamic
 
 include("common.jl")
