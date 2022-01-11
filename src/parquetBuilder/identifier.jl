@@ -31,6 +31,8 @@ struct Polarization <: Identifier
     extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
 end
 
+Base.:(==)(a::Identifier, b::Identifier) = Base.isequal(a, b)
+
 mutable struct Node{I<:Identifier}
     id::I
     node::Component
@@ -46,16 +48,30 @@ mutable struct Node{I<:Identifier}
     # end
 end
 
-Base.:(==)(a::Identifier, b::Identifier) = Base.isequal(a, b)
+function generate_node_from_children!(diag, node::Node, operation, factor = 1.0; kwargs...)
+    @assert node.node == zero(Component)
+    @assert isempty(node.children) == false
+    if length(node.children) == 1 && node.children[1].isNode == true
+        n = node.children[1]
+    else
+        name = symbol(node.id.name, node.id.type, operation == ADD ? "sum" : "PRODUCT")
+        n = DiagTree.addnode!(diag, operation, name, node.children, factor; kwargs...)
+    end
+    node.node = n
+    return n
+end
 
-function add!(nodesVec::Vector{Node{I}}, newId::I, children, compare::Function = Base.isequal) where {I<:Identifier}
+
+function add!(nodesVec::Vector{Node{I}}, newId::I; node = zero(Component), children = [], compare::Function = Base.isequal) where {I<:Identifier}
+    @assert node != zero(Component) || isempty(children) == false "nothing to add!"
     for (ni, n) in enumerate(nodesVec)
         if compare(n.id, newId)
+            @assert (n.node == zero(Component)) && (node == zero(Component)) #node should not be initialized before all children are appended!
             append!(n.children, children)
             return ni
         end
     end
-    push!(nodesVec, Node(newId, children = children))
+    push!(nodesVec, Node(newId, node = node, children = children))
     return length(nodesVec)
 end
 
@@ -85,7 +101,7 @@ function classify(nodesVec::Vector{Node{I}}, comparedSyms::Symbol...) where {I<:
 
     mergedNodes = Vector{Node{I}}([])
     for n in nodesVec
-        add!(mergedNodes, n.id, n.children, compare)
+        add!(mergedNodes, n.id; children = n.children, compare)
     end
 
 

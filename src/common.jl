@@ -14,6 +14,10 @@ function symbol(name::ResponseName, type::AnalyticProperty, addition = nothing)
         n = "Sym"
     elseif name == SpinSpin
         n = "Asym"
+    elseif name == UpUp
+        n = "↑↑"
+    elseif name == UpDown
+        n = "↑↓"
     else
         @error("$name is not implemented!")
     end
