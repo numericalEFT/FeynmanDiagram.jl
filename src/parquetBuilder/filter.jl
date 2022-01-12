@@ -26,3 +26,19 @@ function notProper(para, K)
     end
     return false
 end
+
+function isValidG(filter, innerLoopNum::Int)
+    if (NoFock in filter) && innerLoopNum == 1
+        return false
+    end
+
+    if (Girreducible in filter) && innerLoopNum > 0
+        return false
+    end
+
+    return true
+end
+
+function isValidG(para::GenericPara)
+    return isValidG(para.filter, para.innerLoopNum)
+end
