@@ -39,6 +39,7 @@ function bareVer4!(nodes, diag, para, legK)
         # if DI and EX have the same external T, then it is possible to merge them into a same node
         if _extT[DI] == _extT[EX]
             id_diex = Vertex4(name, type, BOTH, legK, _extT[DI])
+            # println("add both")
             add!(nodes, id_diex, children = vcat(vd, ve))
         else
             id_di = Vertex4(name, type, DI, legK, _extT[DI])
