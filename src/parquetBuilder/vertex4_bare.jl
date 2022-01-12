@@ -25,12 +25,12 @@ function bareVer4!(nodes, diag, para, legK)
 
         vd, ve = [], []
         if notProper(para, q[DI]) == false
-            vd = DiagTree.addpropagator!(diag, poolName, Vorder, symbol(name, type, "di"), -1.0; loop = q[DI], site = _innerT[DI])
-            push!(v, vd)
+            v = DiagTree.addpropagator!(diag, poolName, Vorder, symbol(name, type, "di"), -1.0; loop = q[DI], site = _innerT[DI])
+            push!(vd, v)
         end
         if notProper(para, q[EX]) == false
-            ve = DiagTree.addpropagator!(diag, poolName, Vorder, symbol(name, type, "ex"), 1.0; loop = q[EX], site = _innerT[EX])
-            push!(v, ve)
+            v = DiagTree.addpropagator!(diag, poolName, Vorder, symbol(name, type, "ex"), 1.0; loop = q[EX], site = _innerT[EX])
+            push!(ve, v)
         end
 
         @assert isempty(vd) == false || isempty(ve) == false
@@ -51,7 +51,7 @@ function bareVer4!(nodes, diag, para, legK)
     for interaction in para.interaction
         name = interaction.name
         type = interaction.type
-        @asset name == UpUp || name == UpDown
+        @assert name == UpUp || name == UpDown
 
         if Instant ∈ type && Dynamic ∉ type
             addnode!(name, Instant, extT_ins, innerT_ins, true)

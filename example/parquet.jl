@@ -24,7 +24,8 @@ para = GenericPara(
     firstLoopIdx = 2,
     firstTauIdx = 1,
     filter = [Builder.NoFock,],
-    interaction = [Interaction(ChargeCharge, Instant),]
+    # interaction = [Interaction(ChargeCharge, Instant),]
+    interaction = [Interaction(UpUp, Instant), Interaction(UpDown, Instant),]
 )
 
 K0 = zeros(para.totalLoopNum)
@@ -39,7 +40,9 @@ evalK(basis) = sum([basis[i] * varK[i] for i in 1:para.totalLoopNum])
 evalT(Tidx) = varT[Tidx]
 
 diag, nodes = Parquet.buildVer4(para, legK, chan, F = F, V = V)
-dir, ex = Parquet.classify!(diag, nodes, :DiEx)
+output = Parquet.classify!(diag, nodes, :name)
+println(output)
+uu, ud = output
 # println(dir)
 # dir, ex = Parquet.merge(diag, nodes, :DiEx)
 # dir = [node.nidx for ]
@@ -49,7 +52,8 @@ dir, ex = Parquet.classify!(diag, nodes, :DiEx)
 # DiagTree.showTree(diag, rootDir.index)
 # diag.root = [dir[2].index, ex[2].index]
 
-DiagTree.showTree(diag, dir[2].index)
+DiagTree.showTree(diag, uu[2].index)
+DiagTree.showTree(diag, ud[2].index)
 
 ##################### lower level subroutines  #######################################
 # ver4 = Parquet.Ver4{Float64}(para, legK, chan, F, V)

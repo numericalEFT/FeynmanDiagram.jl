@@ -6,23 +6,6 @@ function buildVer4(para, LegK, chan, subdiagram = false; F = [I, U, S], V = [I, 
     return diag, ver4.nodes
 end
 
-# function mapT(para, lnode, rnode)
-#     lname, rname = lnode.name, rnode.name
-#     lc, rc = lnode.DiEx, rnode.DiEx
-#     if lname == ChargeCharge && rname == ChargeCharge
-#         if lc == DI && rc == DI
-#             return [(ChargeCharge, DI, para.spin),]
-#         elseif (lc == DI && rc == EX) || (lc == EX && rc == DI)
-#             return [(ChargeCharge, DI, 1.0),]
-#         else
-#             lc == EX && rc == EX
-#             return [(ChargeCharge, EX, 1.0),]
-#         end
-#     else
-#         error("not implemented!")
-#     end
-# end
-
 function addT!(diag, bubble, lnode, rnode, K, Kx)
     ver4, lver, rver = bubble.parent, bubble.lver, bubble.rver
     lid, rid = lnode.id, rnode.id
@@ -42,30 +25,42 @@ function addT!(diag, bubble, lnode, rnode, K, Kx)
     function add(nodeName, responseName, type, diex, factor = 1.0)
         id = Vertex4(responseName, type, diex, extK, extT)
         n = DiagTree.addnode!(diag, MUL, nodeName, [g0, gc, lnode.node, rnode.node], factor; para = id)
-        add!(ver4.nodes, id, [n,])
+        add!(ver4.nodes, id, children = [n,])
     end
 
-    function map(vname)
-        if lc == DI && rc == DI
-            if removeBubble(bubble, DI, DI) == false
-                add(:Tdd, vname, vtype, DI, ver4.para.spin)
-            end
-        elseif lc == DI && rc == EX
-            add(:Tde, vname, vtype, DI)
-        elseif lc == EX && rc == DI
-            add(:Ted, vname, vtype, DI)
-        elseif lc == EX && rc == EX
-            add(:Tee, vname, vtype, EX)
-        else
-            error("not exist!")
-        end
+    if ln == UpUp && rn == UpUp
+        add(:Tuuuu, UpUp, vtype, BOTH, 1.0)
+    elseif ln == UpDown && rn == UpDown
+        add(:Tudud, UpUp, vtype, BOTH, 1.0)
+    elseif ln == UpUp && rn == UpDown
+        add(:Tuuud, UpDown, vtype, BOTH, 1.0)
+    elseif ln == UpDown && rn == UpUp
+        add(:Tuduu, UpDown, vtype, BOTH, 1.0)
+    else
+        error("not implemented!")
     end
 
-    if ln == ChargeCharge && rn == ChargeCharge
-        map(ChargeCharge)
-    elseif ln == SpinSpin && rn == SpinSpin
-        map(SpinSpin)
-    end
+    # function map(vname)
+    #     if lc == DI && rc == DI
+    #         if removeBubble(bubble, DI, DI) == false
+    #             add(:Tdd, vname, vtype, DI, ver4.para.spin)
+    #         end
+    #     elseif lc == DI && rc == EX
+    #         add(:Tde, vname, vtype, DI)
+    #     elseif lc == EX && rc == DI
+    #         add(:Ted, vname, vtype, DI)
+    #     elseif lc == EX && rc == EX
+    #         add(:Tee, vname, vtype, EX)
+    #     else
+    #         error("not exist!")
+    #     end
+    # end
+
+    # if ln == ChargeCharge && rn == ChargeCharge
+    #     map(ChargeCharge)
+    # elseif ln == SpinSpin && rn == SpinSpin
+    #     map(SpinSpin)
+    # end
 
 end
 
@@ -165,7 +160,7 @@ struct Ver4
 
         for n in ver4.nodes
             if loopNum == 0 && subdiagram == true
-                @assert length(n.children) == 1 "$(n.children)"
+                # @assert length(n.children) == 1 "$(n.children)"
                 n.node = n.children[1]
             else
                 n.node = DiagTree.addnode!(diag, ADD, :sum, n.children; para = n.id)
