@@ -28,9 +28,6 @@ function addT!(diag, bubble, lnode, rnode, K, Kx)
         add!(ver4.nodes, id, children = [n,])
     end
 
-    println("lnode: ", lnode)
-    println("rnode: ", rnode)
-
     if ln == UpUp && rn == UpUp
         add(Symbol("↑↑x↑↑ -> T,"), UpUp, vtype, BOTH, 1.0)
     elseif ln == UpDown && rn == UpDown
@@ -42,29 +39,78 @@ function addT!(diag, bubble, lnode, rnode, K, Kx)
     else
         error("not implemented!")
     end
+end
 
-    # function map(vname)
-    #     if lc == DI && rc == DI
-    #         if removeBubble(bubble, DI, DI) == false
-    #             add(:Tdd, vname, vtype, DI, ver4.para.spin)
-    #         end
-    #     elseif lc == DI && rc == EX
-    #         add(:Tde, vname, vtype, DI)
-    #     elseif lc == EX && rc == DI
-    #         add(:Ted, vname, vtype, DI)
-    #     elseif lc == EX && rc == EX
-    #         add(:Tee, vname, vtype, EX)
-    #     else
-    #         error("not exist!")
-    #     end
-    # end
+function addU!(diag, bubble, lnode, rnode, K, Kx)
+    ver4, lver, rver = bubble.parent, bubble.lver, bubble.rver
+    lid, rid = lnode.id, rnode.id
+    ln, rn = lid.name, rid.name
+    lc, rc = lid.DiEx, rid.DiEx
+    vtype = typeMap(lid.type, rid.type)
 
-    # if ln == ChargeCharge && rn == ChargeCharge
-    #     map(ChargeCharge)
-    # elseif ln == SpinSpin && rn == SpinSpin
-    #     map(SpinSpin)
-    # end
+    LvT, RvT = lid.extT, rid.extT
+    extT = (LvT[INL], RvT[OUTR], RvT[INR], LvT[OUTL])
+    extK = ver4.extK
 
+    # diag, g0 = buildG(bubble.g0, K, (LvT[OUTR], RvT[INL]); diag = diag)
+    # diag, gc = buildG(bubble.gx, Kx, (RvT[OUTL], LvT[INR]); diag = diag)
+    g0 = DiagTree.addpropagator!(diag, :Gpool, 0, :G0; site = (LvT[OUTR], RvT[INL]), loop = K)
+    gc = DiagTree.addpropagator!(diag, :Gpool, 0, :Gx; site = (RvT[OUTL], LvT[INR]), loop = Kx)
+
+    function add(nodeName, responseName, type, diex, factor = 1.0)
+        id = Vertex4(responseName, type, diex, extK, extT)
+        n = DiagTree.addnode!(diag, MUL, nodeName, [g0, gc, lnode.node, rnode.node], factor; para = id)
+        add!(ver4.nodes, id, children = [n,])
+    end
+
+    if ln == UpUp && rn == UpUp
+        add(Symbol("↑↑x↑↑ -> U,"), UpUp, vtype, BOTH, 1.0)
+        add(Symbol("↑↑x↑↑ -> U,"), UpDOWN, vtype, BOTH, 1.0)
+    elseif ln == UpDown && rn == UpDown
+        add(Symbol("↑↓x↑↓ -> U,"), UpUp, vtype, BOTH, 1.0)
+        add(Symbol("↑↓x↑↓ -> U,"), UpDOWN, vtype, BOTH, 1.0)
+    elseif ln == UpUp && rn == UpDown
+        add(Symbol("↑↑x↑↓ -> U,"), UpDown, vtype, BOTH, -1.0)
+    elseif ln == UpDown && rn == UpUp
+        add(Symbol("↑↓x↑↑ -> U,"), UpDown, vtype, BOTH, -1.0)
+    else
+        error("not implemented!")
+    end
+end
+
+function addS!(diag, bubble, lnode, rnode, K, Kx)
+    ver4, lver, rver = bubble.parent, bubble.lver, bubble.rver
+    lid, rid = lnode.id, rnode.id
+    ln, rn = lid.name, rid.name
+    lc, rc = lid.DiEx, rid.DiEx
+    vtype = typeMap(lid.type, rid.type)
+
+    LvT, RvT = lid.extT, rid.extT
+    extT = (LvT[INL], RvT[OUTL], LvT[INR], RvT[OUTR])
+    extK = ver4.extK
+
+    # diag, g0 = buildG(bubble.g0, K, (LvT[OUTR], RvT[INL]); diag = diag)
+    # diag, gc = buildG(bubble.gx, Kx, (RvT[OUTL], LvT[INR]); diag = diag)
+    g0 = DiagTree.addpropagator!(diag, :Gpool, 0, :G0; site = (LvT[OUTR], RvT[INL]), loop = K)
+    gc = DiagTree.addpropagator!(diag, :Gpool, 0, :Gx; site = (LvT[OUTL], RvT[INR]), loop = Kx)
+
+    function add(nodeName, responseName, type, diex, factor = 1.0)
+        id = Vertex4(responseName, type, diex, extK, extT)
+        n = DiagTree.addnode!(diag, MUL, nodeName, [g0, gc, lnode.node, rnode.node], factor; para = id)
+        add!(ver4.nodes, id, children = [n,])
+    end
+
+    if ln == UpUp && rn == UpUp
+        add(Symbol("↑↑x↑↑ -> S,"), UpUp, vtype, BOTH, 1.0)
+    elseif ln == UpDown && rn == UpDown
+        add(Symbol("↑↓x↑↓ -> S,"), UpDown, vtype, BOTH, -2.0)
+    elseif ln == UpUp && rn == UpDown
+        add(Symbol("↑↑x↑↓ -> S,"), UpDown, vtype, BOTH, 1.0)
+    elseif ln == UpDown && rn == UpUp
+        add(Symbol("↑↓x↑↑ -> S,"), UpDown, vtype, BOTH, 1.0)
+    else
+        error("not implemented!")
+    end
 end
 
 """
@@ -234,7 +280,9 @@ function addBubble!(ver4::Ver4, chan::Channel, partition::Vector{Int}, level::In
             if chan == T
                 addT!(diag, bubble, lnode, rnode, K, Kx)
             elseif chan == U
+                addU!(diag, bubble, lnode, rnode, K, Kx)
             elseif chan == S
+                addS!(diag, bubble, lnode, rnode, K, Kx)
             else
                 @error("Not implemented!")
             end
