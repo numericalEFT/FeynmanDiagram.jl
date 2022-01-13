@@ -7,9 +7,10 @@ struct Vertex4 <: Identifier
     DiEx::Int # 1 for direct, 2 for exchange
     extK::Vector{Vector{Float64}}
     extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
+    para::GenericPara
 end
 function Base.isequal(a::Vertex4, b::Vertex4)
-    return (a.name == b.name) && (a.type == b.type) && (a.extT == b.extT) && (a.DiEx == b.DiEx) && (a.extK ≈ b.extK)
+    return (a.name == b.name) && (a.type == b.type) && (a.extT == b.extT) && (a.DiEx == b.DiEx) && (a.extK ≈ b.extK) && (a.para == b.para)
 end
 Base.show(io::IO, v::Vertex4) = print(io, "$(symbol(v.name, v.type)),$(v.DiEx == DI ? :Di : (v.DiEx == EX ? :Ex : :DiEx)),site$(v.extT)")
 
