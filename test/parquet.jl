@@ -77,6 +77,7 @@ end
         legK = [KinL, KoutL, KinR, KoutR]
 
         para = Builder.GenericPara(
+            diagType = Ver4Diag,
             loopDim = Kdim,
             # interactionTauNum = interactionTauNum,
             hasTau = true,
@@ -160,109 +161,109 @@ end
     end
 end
 
-@testset "Parquet Sigma" begin
-    function getSigma(loopNum; Kdim = 3, spin = 2, interactionTauNum = 1, filter = [], isFermi = true, subdiagram = false)
-        println("LoopNum =$loopNum Sigma Test")
+# @testset "Parquet Sigma" begin
+#     function getSigma(loopNum; Kdim = 3, spin = 2, interactionTauNum = 1, filter = [], isFermi = true, subdiagram = false)
+#         println("LoopNum =$loopNum Sigma Test")
 
-        para = Builder.GenericPara(
-            loopDim = Kdim,
-            # interactionTauNum = interactionTauNum,
-            hasTau = true,
-            innerLoopNum = loopNum,
-            totalLoopNum = loopNum + 1,
-            totalTauNum = loopNum * interactionTauNum,
-            isFermi = isFermi,
-            spin = spin,
-            weightType = Float64,
-            firstLoopIdx = 2,
-            firstTauIdx = 1,
-            filter = filter,
-            interaction = [Builder.Interaction(Builder.ChargeCharge, Builder.Instant),]
-        )
+#         para = Builder.GenericPara(
+#             loopDim = Kdim,
+#             # interactionTauNum = interactionTauNum,
+#             hasTau = true,
+#             innerLoopNum = loopNum,
+#             totalLoopNum = loopNum + 1,
+#             totalTauNum = loopNum * interactionTauNum,
+#             isFermi = isFermi,
+#             spin = spin,
+#             weightType = Float64,
+#             firstLoopIdx = 2,
+#             firstTauIdx = 1,
+#             filter = filter,
+#             interaction = [Builder.Interaction(Builder.ChargeCharge, Builder.Instant),]
+#         )
 
-        extK = zeros(para.totalLoopNum)
-        extK[1] = 1.0
+#         extK = zeros(para.totalLoopNum)
+#         extK[1] = 1.0
 
-        Parquet = Builder.Parquet
+#         Parquet = Builder.Parquet
 
-        varK = rand(Kdim, para.totalLoopNum)
-        varT = [rand() for i in 1:para.totalTauNum]
+#         varK = rand(Kdim, para.totalLoopNum)
+#         varT = [rand() for i in 1:para.totalTauNum]
 
-        #################### DiagTree ####################################
-        diag, instant, dynamic = Parquet.buildSigma(para, extK, subdiagram)
-        # the weighttype of the returned ver4 is Float64
-        sumRoot = DiagTree.addnode!(diag, DiagTree.ADD, :sum, vcat(instant, dynamic); para = [0, 0])
-        if sumRoot.index != 0
-            push!(diag.root, sumRoot.index)
-        end
+#         #################### DiagTree ####################################
+#         diag, instant, dynamic = Parquet.buildSigma(para, extK, subdiagram)
+#         # the weighttype of the returned ver4 is Float64
+#         sumRoot = DiagTree.addnode!(diag, DiagTree.ADD, :sum, vcat(instant, dynamic); para = [0, 0])
+#         if sumRoot.index != 0
+#             push!(diag.root, sumRoot.index)
+#         end
 
-        return para, diag, varK, varT
-    end
-
-
-    function testDiagramNumber(para, diag, varK, varT)
-        w = DiagTree.evalNaive(diag, varK, varT, evalFakePropagator)
-        factor = (1 / (2π)^para.loopDim)^para.innerLoopNum
-        num = w / factor
-        @test num[1] ≈ sigma_G2v(para.innerLoopNum, para.spin)
-    end
+#         return para, diag, varK, varT
+#     end
 
 
-    Parquet = Builder.Parquet
+#     function testDiagramNumber(para, diag, varK, varT)
+#         w = DiagTree.evalNaive(diag, varK, varT, evalFakePropagator)
+#         factor = (1 / (2π)^para.loopDim)^para.innerLoopNum
+#         num = w / factor
+#         @test num[1] ≈ sigma_G2v(para.innerLoopNum, para.spin)
+#     end
 
-    ##################  G^2*v expansion #########################################
-    for l = 1:4
-        ret = getSigma(l, spin = 1, isFermi = false, filter = [Builder.Girreducible,])
-        testDiagramNumber(ret...)
-        ret = getSigma(l, spin = 2, isFermi = false, filter = [Builder.Girreducible,])
-        testDiagramNumber(ret...)
-    end
-    # para, diag, _, _ = getSigma(3, spin = 2, isFermi = false, filter = [])
-    # for r in diag.root
-    #     DiagTree.showTree(diag, r)
-    # end
 
-    para, diag, varK, varT = getSigma(1, spin = 2, isFermi = false, filter = [Builder.NoFock,], subdiagram = true)
-    @test isempty(diag.root)
+#     Parquet = Builder.Parquet
 
-end
+#     ##################  G^2*v expansion #########################################
+#     for l = 1:4
+#         ret = getSigma(l, spin = 1, isFermi = false, filter = [Builder.Girreducible,])
+#         testDiagramNumber(ret...)
+#         ret = getSigma(l, spin = 2, isFermi = false, filter = [Builder.Girreducible,])
+#         testDiagramNumber(ret...)
+#     end
+#     # para, diag, _, _ = getSigma(3, spin = 2, isFermi = false, filter = [])
+#     # for r in diag.root
+#     #     DiagTree.showTree(diag, r)
+#     # end
 
-@testset "Green" begin
-    Parquet = Builder.Parquet
+#     para, diag, varK, varT = getSigma(1, spin = 2, isFermi = false, filter = [Builder.NoFock,], subdiagram = true)
+#     @test isempty(diag.root)
 
-    function buildG(loopNum, extT, firstTauIdx; Kdim = 3, spin = 2, interactionTauNum = 1, filter = [], isFermi = true)
-        para = Builder.GenericPara(
-            loopDim = Kdim,
-            # interactionTauNum = interactionTauNum,
-            hasTau = true,
-            innerLoopNum = loopNum,
-            totalLoopNum = loopNum + 1,
-            totalTauNum = loopNum * interactionTauNum + 2,
-            isFermi = isFermi,
-            spin = spin,
-            weightType = Float64,
-            firstLoopIdx = 2,
-            firstTauIdx = firstTauIdx,
-            filter = filter,
-            interaction = [Builder.Interaction(Builder.ChargeCharge, Builder.Instant),]
-        )
-        extK = zeros(para.totalLoopNum)
-        extK[1] = 1.0
-        diag, Gidx = Parquet.buildG(para, extK, extT)
-        return diag, Gidx
-    end
-    # diag, Gidx = buildG(2, [1, 2], 3; filter = [])
-    # DiagTree.showTree(diag, Gidx)
+# end
 
-    # If G is irreducible, then only loop-0 G exist
-    diag, G = buildG(1, [1, 2], 3; filter = [Builder.Girreducible,])
-    @test G.index == 0
+# @testset "Green" begin
+#     Parquet = Builder.Parquet
 
-    # If Fock diagram is not allowed, then one-loop G diagram should not be exist
-    diag, G = buildG(1, [1, 2], 3; filter = [Builder.NoFock,])
-    @test G.index == 0
-    # Even if Fock diagram is not allowed, then loopNum>=1 G diagram can exist
-    diag, G = buildG(2, [1, 2], 3; filter = [Builder.NoFock,])
-    @test G.index > 0
+#     function buildG(loopNum, extT, firstTauIdx; Kdim = 3, spin = 2, interactionTauNum = 1, filter = [], isFermi = true)
+#         para = Builder.GenericPara(
+#             loopDim = Kdim,
+#             # interactionTauNum = interactionTauNum,
+#             hasTau = true,
+#             innerLoopNum = loopNum,
+#             totalLoopNum = loopNum + 1,
+#             totalTauNum = loopNum * interactionTauNum + 2,
+#             isFermi = isFermi,
+#             spin = spin,
+#             weightType = Float64,
+#             firstLoopIdx = 2,
+#             firstTauIdx = firstTauIdx,
+#             filter = filter,
+#             interaction = [Builder.Interaction(Builder.ChargeCharge, Builder.Instant),]
+#         )
+#         extK = zeros(para.totalLoopNum)
+#         extK[1] = 1.0
+#         diag, Gidx = Parquet.buildG(para, extK, extT)
+#         return diag, Gidx
+#     end
+#     # diag, Gidx = buildG(2, [1, 2], 3; filter = [])
+#     # DiagTree.showTree(diag, Gidx)
 
-end
+#     # If G is irreducible, then only loop-0 G exist
+#     diag, G = buildG(1, [1, 2], 3; filter = [Builder.Girreducible,])
+#     @test G.index == 0
+
+#     # If Fock diagram is not allowed, then one-loop G diagram should not be exist
+#     diag, G = buildG(1, [1, 2], 3; filter = [Builder.NoFock,])
+#     @test G.index == 0
+#     # Even if Fock diagram is not allowed, then loopNum>=1 G diagram can exist
+#     diag, G = buildG(2, [1, 2], 3; filter = [Builder.NoFock,])
+#     @test G.index > 0
+
+# end
