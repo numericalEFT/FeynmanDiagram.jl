@@ -18,18 +18,21 @@ struct Sigma <: Identifier
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
     extK::Vector{Float64}
     extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
+    para::GenericPara
 end
 
 struct Vertex3 <: Identifier
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
     extK::Vector{Vector{Float64}}
     extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
+    para::GenericPara
 end
 
 struct Polarization <: Identifier
     name::ResponseName #ChargeCharge, SpinSpin, ...
     extK::Vector{Float64}
     extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
+    para::GenericPara
 end
 
 Base.:(==)(a::Identifier, b::Identifier) = Base.isequal(a, b)
@@ -57,7 +60,7 @@ function generate_node_from_children!(diag, node::Node, operation, factor = 1.0;
     if length(node.children) == 1 && node.children[1].isNode == true
         n = node.children[1]
     else
-        name = symbol(node.id.name, node.id.type, operation == ADD ? "sum" : "PRODUCT")
+        # name = symbol(node.id.name, node.id.type, operation == ADD ? "sum" : "PRODUCT")
         n = DiagTree.addnode!(diag, operation, :none, node.children, factor; kwargs...)
     end
     # name = symbol(node.id.name, node.id.type, operation == ADD ? "sum" : "PRODUCT")

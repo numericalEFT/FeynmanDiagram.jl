@@ -23,7 +23,7 @@ function addT!(diag, bubble, lnode, rnode, K, Kx)
     gc = DiagTree.addpropagator!(diag, :Gpool, 0, :Gx; site = (RvT[OUTL], LvT[INR]), loop = Kx)
 
     function add(nodeName, responseName, type, diex, factor = 1.0)
-        id = Vertex4(responseName, type, diex, extK, extT)
+        id = Vertex4(responseName, type, diex, extK, extT, ver4.para)
         n = DiagTree.addnode!(diag, MUL, nodeName, [g0, gc, lnode.node, rnode.node], factor; para = id)
         add!(ver4.nodes, id, children = [n,])
     end
@@ -58,7 +58,7 @@ function addU!(diag, bubble, lnode, rnode, K, Kx)
     gc = DiagTree.addpropagator!(diag, :Gpool, 0, :Gx; site = (RvT[OUTL], LvT[INR]), loop = Kx)
 
     function add(nodeName, responseName, type, diex, factor = 1.0)
-        id = Vertex4(responseName, type, diex, extK, extT)
+        id = Vertex4(responseName, type, diex, extK, extT, ver4.para)
         n = DiagTree.addnode!(diag, MUL, nodeName, [g0, gc, lnode.node, rnode.node], factor; para = id)
         add!(ver4.nodes, id, children = [n,])
     end
@@ -95,7 +95,7 @@ function addS!(diag, bubble, lnode, rnode, K, Kx)
     gc = DiagTree.addpropagator!(diag, :Gpool, 0, :Gx; site = (LvT[OUTL], RvT[INR]), loop = Kx)
 
     function add(nodeName, responseName, type, diex, factor = 1.0)
-        id = Vertex4(responseName, type, diex, extK, extT)
+        id = Vertex4(responseName, type, diex, extK, extT, ver4.para)
         n = DiagTree.addnode!(diag, MUL, nodeName, [g0, gc, lnode.node, rnode.node], factor; para = id)
         add!(ver4.nodes, id, children = [n,])
     end

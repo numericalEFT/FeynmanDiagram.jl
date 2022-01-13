@@ -15,15 +15,9 @@ V = [Parquet.T, Parquet.U]
 
 ###################### ver4 to DiagTree ###########################################
 para = GenericPara(
-    loopDim = 3,
+    diagType = Ver4Diag,
     innerLoopNum = 1,
-    totalLoopNum = 4,
-    totalTauNum = 3,
-    spin = 2,
     hasTau = true,
-    weightType = Float64,
-    firstLoopIdx = 3,
-    firstTauIdx = 1,
     filter = [Builder.NoFock,],
     # interaction = [Interaction(ChargeCharge, Instant),]
     interaction = [Interaction(UpUp, Instant), Interaction(UpDown, Instant),]
