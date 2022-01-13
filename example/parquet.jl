@@ -19,8 +19,8 @@ para = GenericPara(
     innerLoopNum = 1,
     hasTau = true,
     filter = [Builder.NoFock,],
-    # interaction = [Interaction(ChargeCharge, Instant),]
-    interaction = [Interaction(UpUp, Instant), Interaction(UpDown, Instant),]
+    interaction = [Interaction(ChargeCharge, Instant),]
+    # interaction = [Interaction(UpUp, Instant), Interaction(UpDown, Instant),]
 )
 
 K0 = zeros(para.totalLoopNum)

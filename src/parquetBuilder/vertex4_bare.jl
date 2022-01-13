@@ -16,21 +16,20 @@ function bareVer4!(nodes, diag, para, legK)
         innerT_dyn = innerT_ins
     end
 
-    function addnode!(name, type, _extT, _innerT, merge::Bool)
+    function addnode!(interactionname, ver4name, type, _extT, _innerT, merge::Bool)
         Vorder = 1
-        poolName = symbol(name, type, "pool")
-
-
-        # add!(nodes, ; children = [])
+        poolName = symbol(interactionname, type, "pool")
 
         vd, ve = [], []
         if notProper(para, q[DI]) == false
             sign = para.isFermi ? -1.0 : 1.0
-            v = DiagTree.addpropagator!(diag, poolName, Vorder, symbol(name, type, "di"), sign; loop = q[DI], site = _innerT[DI])
+            name = symbol(interactionname, type, "di")
+            v = DiagTree.addpropagator!(diag, poolName, Vorder, name, sign; loop = q[DI], site = _innerT[DI])
             push!(vd, v)
         end
         if notProper(para, q[EX]) == false
-            v = DiagTree.addpropagator!(diag, poolName, Vorder, symbol(name, type, "ex"), 1.0; loop = q[EX], site = _innerT[EX])
+            name = symbol(interactionname, type, "ex")
+            v = DiagTree.addpropagator!(diag, poolName, Vorder, name, 1.0; loop = q[EX], site = _innerT[EX])
             push!(ve, v)
         end
 
@@ -39,40 +38,51 @@ function bareVer4!(nodes, diag, para, legK)
         # "$_extT: external T of direct and exchange diagrams are different, impossible to merge!"
         # if DI and EX have the same external T, then it is possible to merge them into a same node
         if _extT[DI] == _extT[EX]
-            id_diex = Vertex4(name, type, BOTH, legK, _extT[DI], para)
+            id_diex = Vertex4(ver4name, type, BOTH, legK, _extT[DI], para)
             # println("add both")
             add!(nodes, id_diex, children = vcat(vd, ve))
         else
-            id_di = Vertex4(name, type, DI, legK, _extT[DI], para)
-            id_ex = Vertex4(name, type, EX, legK, _extT[EX], para)
+            id_di = Vertex4(ver4name, type, DI, legK, _extT[DI], para)
+            id_ex = Vertex4(ver4name, type, EX, legK, _extT[EX], para)
             add!(nodes, id_di, children = [vd,])
             add!(nodes, id_ex, children = [ve,])
+        end
+    end
+
+    function addUpDown!(interactionname, ver4name, type)
+        @assert ver4name == UpUp || ver4name == UpDown
+
+        if Instant ∈ type && Dynamic ∉ type
+            addnode!(interactionname, ver4name, Instant, extT_ins, innerT_ins, true)
+        elseif Instant ∉ type && Dynamic ∈ type
+            addnode!(interactionname, ver4name, Dynamic, extT_dyn, innerT_dyn, false)
+        elseif Instant ∈ type && Dynamic ∈ type
+            #if hasTau, instant interaction has an additional fake tau variable, making it similar to the dynamic interaction
+            addnode!(interactionname, ver4name, Instant, extT_ins, innerT_dyn, true)
+            addnode!(interactionname, ver4name, Dynamic, extT_dyn, innerT_dyn, false)
+        end
+
+        if D_Instant ∈ type && D_Dynamic ∉ type
+            addnode!(interactionname, ver4name, D_Instant, extT_ins, innerT_ins, true)
+        elseif D_Instant ∉ type && D_Dynamic ∈ type
+            addnode!(interactionname, ver4name, D_Dynamic, extT_dyn, innerT_dyn, false)
+        elseif D_Instant ∈ type && D_Dynamic ∈ type
+            #if hasTau, instant interaction has an additional fake tau variable, making it similar to the dynamic interaction
+            addnode!(interactionname, ver4name, D_Instant, extT_ins, innerT_dyn, true)
+            addnode!(interactionname, ver4name, D_Dynamic, extT_dyn, innerT_dyn, false)
         end
     end
 
     for interaction in para.interaction
         name = interaction.name
         type = interaction.type
-        @assert name == UpUp || name == UpDown
-
-        if Instant ∈ type && Dynamic ∉ type
-            addnode!(name, Instant, extT_ins, innerT_ins, true)
-        elseif Instant ∉ type && Dynamic ∈ type
-            addnode!(name, Dynamic, extT_dyn, innerT_dyn, false)
-        elseif Instant ∈ type && Dynamic ∈ type
-            #if hasTau, instant interaction has an additional fake tau variable, making it similar to the dynamic interaction
-            addnode!(name, Instant, extT_ins, innerT_dyn, true)
-            addnode!(name, Dynamic, extT_dyn, innerT_dyn, false)
-        end
-
-        if D_Instant ∈ type && D_Dynamic ∉ type
-            addnode!(name, D_Instant, extT_ins, innerT_ins, true)
-        elseif D_Instant ∉ type && D_Dynamic ∈ type
-            addnode!(name, D_Dynamic, extT_dyn, innerT_dyn, false)
-        elseif D_Instant ∈ type && D_Dynamic ∈ type
-            #if hasTau, instant interaction has an additional fake tau variable, making it similar to the dynamic interaction
-            addnode!(name, D_Instant, extT_ins, innerT_dyn, true)
-            addnode!(name, D_Dynamic, extT_dyn, innerT_dyn, false)
+        if name == UpUp || name == UpDown
+            addUpDown!(name, name, type)
+        elseif name == ChargeCharge
+            addUpDown!(name, UpUp, type)
+            addUpDown!(name, UpDown, type)
+        else
+            error("not implemented!")
         end
     end
 
