@@ -11,7 +11,7 @@ end
 function Base.isequal(a::Vertex4, b::Vertex4)
     return (a.name == b.name) && (a.type == b.type) && (a.extT == b.extT) && (a.DiEx == b.DiEx) && (a.extK ≈ b.extK)
 end
-Base.show(io::IO, v::Vertex4) = print(io, "$(symbol(v.name, v.type)),$(v.DiEx == DI ? :Di : (v.DiEx == EX ? :Ex : :DiEx)),T$(v.extT)")
+Base.show(io::IO, v::Vertex4) = print(io, "$(symbol(v.name, v.type)),$(v.DiEx == DI ? :Di : (v.DiEx == EX ? :Ex : :DiEx)),site$(v.extT)")
 
 struct Sigma <: Identifier
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic

@@ -8,6 +8,7 @@ const Weight = SVector{2,Float64}
 Parquet = ParquetNew
 
 chan = [Parquet.T, Parquet.U, Parquet.S]
+# chan = [Parquet.U,]
 
 F = [Parquet.U, Parquet.S]
 V = [Parquet.T, Parquet.U]
