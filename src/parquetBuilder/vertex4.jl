@@ -28,14 +28,17 @@ function addT!(diag, bubble, lnode, rnode, K, Kx)
         add!(ver4.nodes, id, children = [n,])
     end
 
+    println("lnode: ", lnode)
+    println("rnode: ", rnode)
+
     if ln == UpUp && rn == UpUp
-        add(:Tuuuu, UpUp, vtype, BOTH, 1.0)
+        add(Symbol("↑↑x↑↑ -> T,"), UpUp, vtype, BOTH, 1.0)
     elseif ln == UpDown && rn == UpDown
-        add(:Tudud, UpUp, vtype, BOTH, 1.0)
+        add(Symbol("↑↓x↑↓ -> T,"), UpUp, vtype, BOTH, 1.0)
     elseif ln == UpUp && rn == UpDown
-        add(:Tuuud, UpDown, vtype, BOTH, 1.0)
+        add(Symbol("↑↑x↑↓ -> T,"), UpDown, vtype, BOTH, 1.0)
     elseif ln == UpDown && rn == UpUp
-        add(:Tuduu, UpDown, vtype, BOTH, 1.0)
+        add(Symbol("↑↓x↑↑ -> T,"), UpDown, vtype, BOTH, 1.0)
     else
         error("not implemented!")
     end
@@ -159,13 +162,15 @@ struct Ver4
         end
 
         for n in ver4.nodes
-            if loopNum == 0 && subdiagram == true
-                # @assert length(n.children) == 1 "$(n.children)"
-                n.node = n.children[1]
-            else
-                n.node = DiagTree.addnode!(diag, ADD, :sum, n.children; para = n.id)
-            end
-            @assert n.node != zero(Component)
+            # if loopNum == 0 && subdiagram == true
+            #     # @assert length(n.children) == 1 "$(n.children)"
+            #     n.node = n.children[1]
+            # else
+            #     n.node = DiagTree.addnode!(diag, ADD, :sum, n.children; para = n.id)
+            # end
+            # @assert n.node != zero(Component)
+
+            generate_node_from_children!(diag, n, ADD, 1.0; para = n.id)
         end
 
         return ver4

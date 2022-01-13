@@ -33,9 +33,9 @@ function symbol(name::ResponseName, type::AnalyticProperty, addition = nothing)
         @error("$type is not implemented!")
     end
     if isnothing(addition)
-        return Symbol("$(t)$(n)")
+        return Symbol("$(n),$(t)")
     else
-        return Symbol("$(t)$(n)_$(addition)")
+        return Symbol("$(n),$(t),$(addition)")
     end
 
 end
