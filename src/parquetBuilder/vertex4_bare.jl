@@ -25,7 +25,8 @@ function bareVer4!(nodes, diag, para, legK)
 
         vd, ve = [], []
         if notProper(para, q[DI]) == false
-            v = DiagTree.addpropagator!(diag, poolName, Vorder, symbol(name, type, "di"), -1.0; loop = q[DI], site = _innerT[DI])
+            sign = para.isFermi ? -1.0 : 1.0
+            v = DiagTree.addpropagator!(diag, poolName, Vorder, symbol(name, type, "di"), sign; loop = q[DI], site = _innerT[DI])
             push!(vd, v)
         end
         if notProper(para, q[EX]) == false
