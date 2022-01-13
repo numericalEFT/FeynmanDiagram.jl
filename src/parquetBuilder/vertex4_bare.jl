@@ -38,12 +38,12 @@ function bareVer4!(nodes, diag, para, legK)
         # "$_extT: external T of direct and exchange diagrams are different, impossible to merge!"
         # if DI and EX have the same external T, then it is possible to merge them into a same node
         if _extT[DI] == _extT[EX]
-            id_diex = Vertex4(name, type, BOTH, legK, _extT[DI])
+            id_diex = Vertex4(name, type, BOTH, legK, _extT[DI], para)
             # println("add both")
             add!(nodes, id_diex, children = vcat(vd, ve))
         else
-            id_di = Vertex4(name, type, DI, legK, _extT[DI])
-            id_ex = Vertex4(name, type, EX, legK, _extT[EX])
+            id_di = Vertex4(name, type, DI, legK, _extT[DI], para)
+            id_ex = Vertex4(name, type, EX, legK, _extT[EX], para)
             add!(nodes, id_di, children = [vd,])
             add!(nodes, id_ex, children = [ve,])
         end
