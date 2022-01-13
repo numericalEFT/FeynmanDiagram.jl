@@ -11,7 +11,7 @@ end
 function Base.isequal(a::Vertex4, b::Vertex4)
     return (a.name == b.name) && (a.type == b.type) && (a.extT == b.extT) && (a.DiEx == b.DiEx) && (a.extK ≈ b.extK)
 end
-Base.show(io::IO, v::Vertex4) = print(io, "$(symbol(v.name, v.type))_$(v.DiEx == DI ? :di : (v.DiEx == EX ? :ex : :both)), T$(v.extT)")
+Base.show(io::IO, v::Vertex4) = print(io, "$(symbol(v.name, v.type)),$(v.DiEx == DI ? :Di : (v.DiEx == EX ? :Ex : :DiEx)),T$(v.extT)")
 
 struct Sigma <: Identifier
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
@@ -48,6 +48,8 @@ mutable struct Node{I<:Identifier}
     # end
 end
 
+Base.show(io::IO, n::Node) = print(io, "$(n.id)\n node: $(n.node), children: $(n.children)\n")
+
 function generate_node_from_children!(diag, node::Node, operation, factor = 1.0; kwargs...)
     @assert node.node == zero(Component)
     @assert isempty(node.children) == false
@@ -55,8 +57,10 @@ function generate_node_from_children!(diag, node::Node, operation, factor = 1.0;
         n = node.children[1]
     else
         name = symbol(node.id.name, node.id.type, operation == ADD ? "sum" : "PRODUCT")
-        n = DiagTree.addnode!(diag, operation, name, node.children, factor; kwargs...)
+        n = DiagTree.addnode!(diag, operation, :none, node.children, factor; kwargs...)
     end
+    # name = symbol(node.id.name, node.id.type, operation == ADD ? "sum" : "PRODUCT")
+    # n = DiagTree.addnode!(diag, operation, name, node.children, factor; kwargs...)
     node.node = n
     return n
 end

@@ -141,6 +141,8 @@ struct Component
     object::Any
 end
 
+Base.show(io::IO, c::Component) = print(io, "#$(c.index) $(c.isNode ? "node" : "propagator") in $(c.poolName)")
+
 Base.zero(::Type{Component}) = Component(0, false, :none, nothing)
 
 """

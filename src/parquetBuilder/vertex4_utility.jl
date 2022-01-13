@@ -5,8 +5,11 @@ function legBasis(chan::Channel, legK, loopIdx)
     K[loopIdx] = 1
     if chan == T
         Kx = KoutL + K - KinL
+        println(Kx)
         LLegK = [KinL, KoutL, Kx, K]
         RLegK = [K, Kx, KinR, KoutR]
+        println(LLegK)
+        println(RLegK)
     elseif chan == U
         Kx = KoutR + K - KinL
         LLegK = [KinL, KoutR, Kx, K]
@@ -16,7 +19,7 @@ function legBasis(chan::Channel, legK, loopIdx)
         LLegK = [KinL, Kx, KinR, K]
         RLegK = [K, KoutL, Kx, KoutR]
     else
-        @error("not implemented!")
+        error("not implemented!")
     end
     return LLegK, K, RLegK, Kx
 end

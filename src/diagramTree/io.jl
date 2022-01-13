@@ -77,16 +77,16 @@ function showTree(diag::Diagrams, _root::Int; verbose = 0, depth = 999)
     end
 
     function info(node, id)
-        s = "N$(id)$(name_para(node)):"
+        s = "N$(id)$(name_para(node))"
         # s *= sprint(show, node.para)
         # s *= ": "
 
         s *= factor(node.factor)
 
         if node.operation == MUL
-            s *= ", x"
+            s *= " = x"
         elseif node.operation == ADD
-            s *= ", +"
+            s *= " = +"
         else
             error("not implemented!")
         end
