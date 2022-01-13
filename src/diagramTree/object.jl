@@ -86,7 +86,7 @@ function Base.isequal(a::Node{P}, b::Node{P}) where {P}
         end
     end
 
-    if (isequal(a.para, b.para) == false) || (a.operation != b.operation) || (Set(a.childNodes) != Set(b.childNodes)) || (a.factor != b.factor)
+    if (isequal(a.para, b.para) == false) || (a.operation != b.operation) || (Set(a.childNodes) != Set(b.childNodes)) || (a.factor ≈ b.factor) == false
         return false
     else
         return true

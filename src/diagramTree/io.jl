@@ -81,12 +81,10 @@ function showTree(diag::Diagrams, _root::Int; verbose = 0, depth = 999)
         # s *= sprint(show, node.para)
         # s *= ": "
 
-        s *= factor(node.factor)
-
         if node.operation == MUL
-            s *= " = x"
+            s *= " = $(factor(node.factor))x"
         elseif node.operation == ADD
-            s *= " = +"
+            s *= " = $(factor(node.factor))+"
         else
             error("not implemented!")
         end

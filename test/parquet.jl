@@ -67,6 +67,9 @@ end
 
 
 @testset "Parquet Ver4" begin
+    # Parquet = Builder.Parquet
+    Parquet = ParquetNew
+
     function testDiagWeigt(loopNum, chan, Kdim = 3, spin = 2, interactionTauNum = 1; filter = [], timing = false, eval = true)
         println("$(Int.(chan)) Channel Test")
 
@@ -76,7 +79,7 @@ end
         KinR[2] = KoutR[2] = 1
         legK = [KinL, KoutL, KinR, KoutR]
 
-        para = Builder.GenericPara(
+        para = GenericPara(
             diagType = Ver4Diag,
             loopDim = Kdim,
             # interactionTauNum = interactionTauNum,
@@ -88,12 +91,10 @@ end
             weightType = Float64,
             firstLoopIdx = 3,
             firstTauIdx = 1,
-            filter = union(filter, [Builder.Girreducible,]), #ver4 evaluation only support one-particle-irreducible diagram
+            filter = union(filter, [Girreducible,]), #ver4 evaluation only support one-particle-irreducible diagram
             transferLoop = KinL - KoutL,
-            interaction = [Builder.Interaction(Builder.ChargeCharge, Builder.Instant),]
+            interaction = [Interaction(ChargeCharge, Instant),]
         )
-
-        Parquet = Builder.Parquet
 
         F = [Parquet.U, Parquet.S]
         V = [Parquet.T, Parquet.U]
@@ -101,16 +102,22 @@ end
         varK = rand(Kdim, para.totalLoopNum)
         varT = [rand() for i in 1:para.totalTauNum]
 
+        #################### Old DiagTree ####################################
+        # diag, ver4, dir, ex = Parquet.buildVer4(para, legK, chan, F, V)
+        # # the weighttype of the returned ver4 is Float64
+        # rootDir = DiagTree.addnode!(diag, DiagTree.ADD, :dir, dir; para = [0, 0, 0, 0])
+        # rootEx = DiagTree.addnode!(diag, DiagTree.ADD, :ex, ex; para = [0, 0, 0, 0])
+        # diag.root = [rootDir.index, rootEx.index]
+
         #################### DiagTree ####################################
-        diag, ver4, dir, ex = Parquet.buildVer4(para, legK, chan, F, V)
-        # the weighttype of the returned ver4 is Float64
-        rootDir = DiagTree.addnode!(diag, DiagTree.ADD, :dir, dir; para = [0, 0, 0, 0])
-        rootEx = DiagTree.addnode!(diag, DiagTree.ADD, :ex, ex; para = [0, 0, 0, 0])
-        diag.root = [rootDir.index, rootEx.index]
+        diag, nodes = Parquet.buildVer4(para, legK, chan, F = F, V = V)
+        uu, ud = Parquet.classify!(diag, nodes, :name)
+        # DiagTree.showTree(diag, uu[2].index)
+        diag.root = [uu[2].index, ud[2].index]
 
         # println(diag.root)
 
-        ver4 = Parquet.Ver4{Parquet.Weight{Float64}}(para, legK, chan, F, V)
+        ver4 = Builder.Parquet.Ver4{Builder.Parquet.Weight{Float64}}(para, legK, chan, F, V)
         # Parquet.print_tree(ver4)
 
         if eval
@@ -124,11 +131,11 @@ end
             ##################### lower level subroutines  #######################################
 
             KinL, KoutL, KinR, KoutR = varK[:, 1], varK[:, 1], varK[:, 2], varK[:, 2]
-            Parquet.eval(ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV, true)
+            Builder.Parquet.eval(ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV, true)
 
             if timing
                 printstyled("parquet evaluator cost:", color = :green)
-                @time Parquet.eval(ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV, true)
+                @time Builder.Parquet.eval(ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV, true)
             end
 
             w2 = ver4.weight[1]
@@ -139,6 +146,7 @@ end
             # DiagTree.printBasisPool(diag)
             # DiagTree.printPropagator(diag)
             # println(diag.propagatorPool[1].object[2])
+            println(w1, " vs ", w2)
 
             @test w1[1] ≈ w2[1]
             @test w1[2] ≈ w2[2]
@@ -147,12 +155,11 @@ end
         return para, diag, ver4
     end
 
-    Parquet = Builder.Parquet
-    for l = 1:3
+    for l = 1:1
         testDiagWeigt(l, [Parquet.T,])
-        testDiagWeigt(l, [Parquet.U,])
-        testDiagWeigt(l, [Parquet.S,])
-        testDiagWeigt(l, [Parquet.T, Parquet.U, Parquet.S]; timing = true)
+        # testDiagWeigt(l, [Parquet.U,])
+        # testDiagWeigt(l, [Parquet.S,])
+        # testDiagWeigt(l, [Parquet.T, Parquet.U, Parquet.S]; timing = true)
     end
 
     para, diag, ver4 = testDiagWeigt(3, [Parquet.T, Parquet.U, Parquet.S]; filter = [Builder.Proper], eval = false)
