@@ -65,10 +65,10 @@ function addU!(diag, bubble, lnode, rnode, K, Kx)
 
     if ln == UpUp && rn == UpUp
         add(Symbol("↑↑x↑↑ -> U,"), UpUp, vtype, BOTH, 1.0)
-        add(Symbol("↑↑x↑↑ -> U,"), UpDOWN, vtype, BOTH, 1.0)
+        add(Symbol("↑↑x↑↑ -> U,"), UpDown, vtype, BOTH, 1.0)
     elseif ln == UpDown && rn == UpDown
         add(Symbol("↑↓x↑↓ -> U,"), UpUp, vtype, BOTH, 1.0)
-        add(Symbol("↑↓x↑↓ -> U,"), UpDOWN, vtype, BOTH, 1.0)
+        add(Symbol("↑↓x↑↓ -> U,"), UpDown, vtype, BOTH, 1.0)
     elseif ln == UpUp && rn == UpDown
         add(Symbol("↑↑x↑↓ -> U,"), UpDown, vtype, BOTH, -1.0)
     elseif ln == UpDown && rn == UpUp
@@ -193,7 +193,7 @@ struct Ver4
 
                 for p in partition
 
-                    if c == T
+                    if c == T || c == U || c == S
                         # println(p)
                         addBubble!(ver4, c, p, level)
                         # if isnothing(bubble) == false && length(bubble.map) > 0  # if zero, bubble diagram doesn't exist
