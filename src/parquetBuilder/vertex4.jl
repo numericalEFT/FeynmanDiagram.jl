@@ -17,6 +17,11 @@ function addT!(diag, bubble, lnode, rnode, K, Kx)
     extT = (LvT[INL], LvT[OUTL], RvT[INR], RvT[OUTR])
     extK = ver4.extK
 
+    Factor = SymFactor[Int(T)] / (2π)^ver4.para.loopDim
+    if ver4.para.isFermi == false
+        Factor = abs(Factor)
+    end
+
     # diag, g0 = buildG(bubble.g0, K, (LvT[OUTR], RvT[INL]); diag = diag)
     # diag, gc = buildG(bubble.gx, Kx, (RvT[OUTL], LvT[INR]); diag = diag)
     g0 = DiagTree.addpropagator!(diag, :Gpool, 0, :G0; site = (LvT[OUTR], RvT[INL]), loop = K)
@@ -24,7 +29,7 @@ function addT!(diag, bubble, lnode, rnode, K, Kx)
 
     function add(nodeName, responseName, type, diex, factor = 1.0)
         id = Vertex4(responseName, type, diex, extK, extT, ver4.para)
-        n = DiagTree.addnode!(diag, MUL, nodeName, [g0, gc, lnode.node, rnode.node], factor; para = id)
+        n = DiagTree.addnode!(diag, MUL, nodeName, [g0, gc, lnode.node, rnode.node], factor * Factor; para = id)
         add!(ver4.nodes, id, children = [n,])
     end
 
@@ -52,6 +57,11 @@ function addU!(diag, bubble, lnode, rnode, K, Kx)
     extT = (LvT[INL], RvT[OUTR], RvT[INR], LvT[OUTL])
     extK = ver4.extK
 
+    Factor = SymFactor[Int(U)] / (2π)^ver4.para.loopDim
+    if ver4.para.isFermi == false
+        Factor = abs(Factor)
+    end
+
     # diag, g0 = buildG(bubble.g0, K, (LvT[OUTR], RvT[INL]); diag = diag)
     # diag, gc = buildG(bubble.gx, Kx, (RvT[OUTL], LvT[INR]); diag = diag)
     g0 = DiagTree.addpropagator!(diag, :Gpool, 0, :G0; site = (LvT[OUTR], RvT[INL]), loop = K)
@@ -59,9 +69,10 @@ function addU!(diag, bubble, lnode, rnode, K, Kx)
 
     function add(nodeName, responseName, type, diex, factor = 1.0)
         id = Vertex4(responseName, type, diex, extK, extT, ver4.para)
-        n = DiagTree.addnode!(diag, MUL, nodeName, [g0, gc, lnode.node, rnode.node], factor; para = id)
+        n = DiagTree.addnode!(diag, MUL, nodeName, [g0, gc, lnode.node, rnode.node], factor * Factor; para = id)
         add!(ver4.nodes, id, children = [n,])
     end
+
 
     if ln == UpUp && rn == UpUp
         add(Symbol("↑↑x↑↑ -> U,"), UpUp, vtype, BOTH, 1.0)
@@ -89,6 +100,11 @@ function addS!(diag, bubble, lnode, rnode, K, Kx)
     extT = (LvT[INL], RvT[OUTL], LvT[INR], RvT[OUTR])
     extK = ver4.extK
 
+    Factor = SymFactor[Int(S)] / (2π)^ver4.para.loopDim
+    if ver4.para.isFermi == false
+        Factor = abs(Factor)
+    end
+
     # diag, g0 = buildG(bubble.g0, K, (LvT[OUTR], RvT[INL]); diag = diag)
     # diag, gc = buildG(bubble.gx, Kx, (RvT[OUTL], LvT[INR]); diag = diag)
     g0 = DiagTree.addpropagator!(diag, :Gpool, 0, :G0; site = (LvT[OUTR], RvT[INL]), loop = K)
@@ -96,7 +112,7 @@ function addS!(diag, bubble, lnode, rnode, K, Kx)
 
     function add(nodeName, responseName, type, diex, factor = 1.0)
         id = Vertex4(responseName, type, diex, extK, extT, ver4.para)
-        n = DiagTree.addnode!(diag, MUL, nodeName, [g0, gc, lnode.node, rnode.node], factor; para = id)
+        n = DiagTree.addnode!(diag, MUL, nodeName, [g0, gc, lnode.node, rnode.node], factor * Factor; para = id)
         add!(ver4.nodes, id, children = [n,])
     end
 
@@ -287,11 +303,6 @@ function addBubble!(ver4::Ver4, chan::Channel, partition::Vector{Int}, level::In
                 @error("Not implemented!")
             end
         end
-    end
-
-    Factor = SymFactor[Int(chan)] / (2π)^para.loopDim
-    if para.isFermi == false
-        Factor = abs(Factor)
     end
 
     return
