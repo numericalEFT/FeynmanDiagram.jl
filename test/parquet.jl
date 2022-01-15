@@ -141,7 +141,7 @@ end
             # DiagTree.printBasisPool(diag)
             # DiagTree.printPropagator(diag)
             # println(diag.propagatorPool[1].object[2])
-            # println(w1, " vs ", w2)
+            println(w1, " vs ", w2)
 
             # The upup channel of charge-charge vertex4 == Direct + exchange 
             @test w1[1] ≈ w2[1] + w2[2]
@@ -154,9 +154,9 @@ end
 
     for l = 1:1
         testDiagWeigt(l, [Parquet.T,])
-        # testDiagWeigt(l, [Parquet.U,])
-        # testDiagWeigt(l, [Parquet.S,])
-        # testDiagWeigt(l, [Parquet.T, Parquet.U, Parquet.S]; timing = true)
+        testDiagWeigt(l, [Parquet.U,])
+        testDiagWeigt(l, [Parquet.S,])
+        testDiagWeigt(l, [Parquet.T, Parquet.U, Parquet.S]; timing = true)
     end
 
     para, diag, ver4 = testDiagWeigt(3, [Parquet.T, Parquet.U, Parquet.S]; filter = [Builder.Proper], eval = false)
