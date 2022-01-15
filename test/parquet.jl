@@ -52,7 +52,7 @@ evalV(K) = 8π / (dot(K, K) + 1)
 
 function evalPropagator(idx, object, K, varT, diag)
     if idx == 1 #GPool
-        return evalG(K, varT[object.siteBasis[1]], varT[object.siteBasis[2]])
+        return evalFakeG(K, varT[object.siteBasis[1]], varT[object.siteBasis[2]])
         # return evalFakeG(K, varT[object.siteBasis[1]], varT[object.siteBasis[2]])
     elseif idx == 2 #VPool
         return evalFakeV(K)
@@ -66,7 +66,8 @@ function evalFakePropagator(idx, object, K, varT, diag)
 end
 
 function evalFakeG(K, τin, τout)
-    return 1.0
+    return evalG(zero(K), τin, τout)
+    # return 1.0
 end
 
 function evalFakeV(K)
@@ -139,7 +140,7 @@ end
 
             KinL, KoutL, KinR, KoutR = varK[:, 1], varK[:, 1], varK[:, 2], varK[:, 2]
             # Benchmark.eval(para, ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV, true)
-            Benchmark.eval(para, ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalFakeV, true)
+            Benchmark.eval(para, ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalFakeG, evalFakeV, true)
 
             if timing
                 printstyled("parquet evaluator cost:", color = :green)
