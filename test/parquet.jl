@@ -82,7 +82,7 @@ end
         para = GenericPara(
             diagType = Ver4Diag,
             loopDim = Kdim,
-            # interactionTauNum = interactionTauNum,
+            isFermi = true,
             hasTau = true,
             innerLoopNum = loopNum,
             totalLoopNum = length(KinL),
@@ -96,14 +96,17 @@ end
             interaction = [Interaction(ChargeCharge, Instant),]
         )
 
-        F = [Parquet.U, Parquet.S]
-        V = [Parquet.T, Parquet.U]
+        # F = [Parquet.U, Parquet.S]
+        # V = [Parquet.T, Parquet.U]
+        F = []
+        V = []
+        All = [Parquet.S,]
 
         varK = rand(Kdim, para.totalLoopNum)
         varT = [rand() for i in 1:para.totalTauNum]
 
         #################### DiagTree ####################################
-        diag, nodes = Parquet.buildVer4(para, legK, chan, F = F, V = V)
+        diag, nodes = Parquet.buildVer4(para, legK, chan, F = F, V = V, All = All)
         uu, ud = Parquet.classify!(diag, nodes, :name)
         # DiagTree.showTree(diag, uu[2].index)
         # DiagTree.showTree(diag, ud[2].index)
@@ -111,7 +114,7 @@ end
 
         # println(diag.root)
 
-        ver4 = Benchmark.Ver4{Benchmark.Weight}(para, chan, F, V)
+        ver4 = Benchmark.Ver4{Benchmark.Weight}(para, chan, F, V, All)
         # Parquet.print_tree(ver4)
 
         if eval
@@ -152,11 +155,11 @@ end
         return para, diag, ver4
     end
 
-    for l = 1:1
-        testDiagWeigt(l, [Parquet.T,])
-        testDiagWeigt(l, [Parquet.U,])
+    for l = 2:2
+        # testDiagWeigt(l, [Parquet.T,])
+        # testDiagWeigt(l, [Parquet.U,])
         testDiagWeigt(l, [Parquet.S,])
-        testDiagWeigt(l, [Parquet.T, Parquet.U, Parquet.S]; timing = true)
+        # testDiagWeigt(l, [Parquet.T, Parquet.U, Parquet.S]; timing = true)
     end
 
     para, diag, ver4 = testDiagWeigt(3, [Parquet.T, Parquet.U, Parquet.S]; filter = [Builder.Proper], eval = false)
