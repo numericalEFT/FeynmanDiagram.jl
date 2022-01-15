@@ -123,6 +123,7 @@ end
         println("$(Int.(chan)) Channel Test")
         Kdim, spin = 3, 2
         interactionTauNum = 1
+        isFermi = true
 
         K0 = zeros(loopNum + 2)
         KinL, KoutL, KinR, KoutR = deepcopy(K0), deepcopy(K0), deepcopy(K0), deepcopy(K0)
@@ -133,7 +134,7 @@ end
         para = GenericPara(
             diagType = Ver4Diag,
             loopDim = Kdim,
-            isFermi = false,
+            isFermi = isFermi,
             hasTau = true,
             innerLoopNum = loopNum,
             totalLoopNum = length(KinL),
