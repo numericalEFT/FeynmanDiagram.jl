@@ -27,6 +27,7 @@ function notProper(para, K)
     return false
 end
 
+# check if G exist without creating objects in the pool
 function isValidG(filter, innerLoopNum::Int)
     if (NoFock in filter) && innerLoopNum == 1
         return false
@@ -40,5 +41,22 @@ function isValidG(filter, innerLoopNum::Int)
 end
 
 function isValidG(para::GenericPara)
+    @assert para.diagType == GreenDiag
     return isValidG(para.filter, para.innerLoopNum)
+end
+
+function isValidSigma(filter, innerLoopNum::Int, subdiagram::Bool)
+    @assert innerLoopNum >= 0
+    if innerLoopNum == 0
+        return false
+    end
+    if subdiagram && (Girreducible in filter)
+        return false
+    end
+
+    if subdiagram && (NoFock in filter) && innerLoopNum == 1
+        return false
+    end
+
+    return true
 end
