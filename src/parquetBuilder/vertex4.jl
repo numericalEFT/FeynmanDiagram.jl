@@ -6,129 +6,6 @@ function buildVer4(para, LegK, chan, subdiagram = false; F = [I, U, S], V = [I, 
     return diag, ver4.nodes
 end
 
-function addT!(diag, bubble, lnode, rnode, K, Kx)
-    ver4, lver, rver = bubble.parent, bubble.lver, bubble.rver
-    lid, rid = lnode.id, rnode.id
-    ln, rn = lid.name, rid.name
-    lc, rc = lid.DiEx, rid.DiEx
-    vtype = typeMap(lid.type, rid.type)
-
-    LvT, RvT = lid.extT, rid.extT
-    extT = (LvT[INL], LvT[OUTL], RvT[INR], RvT[OUTR])
-    extK = ver4.extK
-
-    Factor = SymFactor[Int(T)] / (2π)^ver4.para.loopDim
-    if ver4.para.isFermi == false
-        Factor = abs(Factor)
-    end
-
-    # diag, g0 = buildG(bubble.g0, K, (LvT[OUTR], RvT[INL]); diag = diag)
-    # diag, gc = buildG(bubble.gx, Kx, (RvT[OUTL], LvT[INR]); diag = diag)
-    g0 = DiagTree.addpropagator!(diag, :Gpool, 0, :G0; site = (LvT[OUTR], RvT[INL]), loop = K)
-    gc = DiagTree.addpropagator!(diag, :Gpool, 0, :Gx; site = (RvT[OUTL], LvT[INR]), loop = Kx)
-
-    function add(nodeName, responseName, type, diex, factor = 1.0)
-        id = Vertex4(responseName, type, diex, extK, extT, ver4.para)
-        n = DiagTree.addnode!(diag, MUL, nodeName, [g0, gc, lnode.node, rnode.node], factor * Factor; para = id)
-        add!(ver4.nodes, id, children = [n,])
-    end
-
-    if ln == UpUp && rn == UpUp
-        add(Symbol("↑↑x↑↑ -> T,"), UpUp, vtype, BOTH, 1.0)
-    elseif ln == UpDown && rn == UpDown
-        add(Symbol("↑↓x↑↓ -> T,"), UpUp, vtype, BOTH, 1.0)
-    elseif ln == UpUp && rn == UpDown
-        add(Symbol("↑↑x↑↓ -> T,"), UpDown, vtype, BOTH, 1.0)
-    elseif ln == UpDown && rn == UpUp
-        add(Symbol("↑↓x↑↑ -> T,"), UpDown, vtype, BOTH, 1.0)
-    else
-        error("not implemented!")
-    end
-end
-
-function addU!(diag, bubble, lnode, rnode, K, Kx)
-    ver4, lver, rver = bubble.parent, bubble.lver, bubble.rver
-    lid, rid = lnode.id, rnode.id
-    ln, rn = lid.name, rid.name
-    lc, rc = lid.DiEx, rid.DiEx
-    vtype = typeMap(lid.type, rid.type)
-
-    LvT, RvT = lid.extT, rid.extT
-    extT = (LvT[INL], RvT[OUTR], RvT[INR], LvT[OUTL])
-    extK = ver4.extK
-
-    Factor = SymFactor[Int(U)] / (2π)^ver4.para.loopDim
-    if ver4.para.isFermi == false
-        Factor = abs(Factor)
-    end
-
-    # diag, g0 = buildG(bubble.g0, K, (LvT[OUTR], RvT[INL]); diag = diag)
-    # diag, gc = buildG(bubble.gx, Kx, (RvT[OUTL], LvT[INR]); diag = diag)
-    g0 = DiagTree.addpropagator!(diag, :Gpool, 0, :G0; site = (LvT[OUTR], RvT[INL]), loop = K)
-    gc = DiagTree.addpropagator!(diag, :Gpool, 0, :Gx; site = (RvT[OUTL], LvT[INR]), loop = Kx)
-
-    function add(nodeName, responseName, type, diex, factor = 1.0)
-        id = Vertex4(responseName, type, diex, extK, extT, ver4.para)
-        n = DiagTree.addnode!(diag, MUL, nodeName, [g0, gc, lnode.node, rnode.node], factor * Factor; para = id)
-        add!(ver4.nodes, id, children = [n,])
-    end
-
-
-    if ln == UpUp && rn == UpUp
-        add(Symbol("↑↑x↑↑ -> U,"), UpUp, vtype, BOTH, 1.0)
-        add(Symbol("↑↑x↑↑ -> U,"), UpDown, vtype, BOTH, 1.0)
-    elseif ln == UpDown && rn == UpDown
-        add(Symbol("↑↓x↑↓ -> U,"), UpUp, vtype, BOTH, 1.0)
-        add(Symbol("↑↓x↑↓ -> U,"), UpDown, vtype, BOTH, 1.0)
-    elseif ln == UpUp && rn == UpDown
-        add(Symbol("↑↑x↑↓ -> U,"), UpDown, vtype, BOTH, -1.0)
-    elseif ln == UpDown && rn == UpUp
-        add(Symbol("↑↓x↑↑ -> U,"), UpDown, vtype, BOTH, -1.0)
-    else
-        error("not implemented!")
-    end
-end
-
-function addS!(diag, bubble, lnode, rnode, K, Kx)
-    ver4, lver, rver = bubble.parent, bubble.lver, bubble.rver
-    lid, rid = lnode.id, rnode.id
-    ln, rn = lid.name, rid.name
-    lc, rc = lid.DiEx, rid.DiEx
-    vtype = typeMap(lid.type, rid.type)
-
-    LvT, RvT = lid.extT, rid.extT
-    extT = (LvT[INL], RvT[OUTL], LvT[INR], RvT[OUTR])
-    extK = ver4.extK
-
-    Factor = SymFactor[Int(S)] / (2π)^ver4.para.loopDim
-    if ver4.para.isFermi == false
-        Factor = abs(Factor)
-    end
-
-    # diag, g0 = buildG(bubble.g0, K, (LvT[OUTR], RvT[INL]); diag = diag)
-    # diag, gc = buildG(bubble.gx, Kx, (RvT[OUTL], LvT[INR]); diag = diag)
-    g0 = DiagTree.addpropagator!(diag, :Gpool, 0, :G0; site = (LvT[OUTR], RvT[INL]), loop = K)
-    gc = DiagTree.addpropagator!(diag, :Gpool, 0, :Gx; site = (LvT[OUTL], RvT[INR]), loop = Kx)
-
-    function add(nodeName, responseName, type, diex, factor = 1.0)
-        id = Vertex4(responseName, type, diex, extK, extT, ver4.para)
-        n = DiagTree.addnode!(diag, MUL, nodeName, [g0, gc, lnode.node, rnode.node], factor * Factor; para = id)
-        add!(ver4.nodes, id, children = [n,])
-    end
-
-    if ln == UpUp && rn == UpUp
-        add(Symbol("↑↑x↑↑ -> S,"), UpUp, vtype, BOTH, 1.0)
-    elseif ln == UpDown && rn == UpDown
-        add(Symbol("↑↓x↑↓ -> S,"), UpDown, vtype, BOTH, -2.0)
-    elseif ln == UpUp && rn == UpDown
-        add(Symbol("↑↑x↑↓ -> S,"), UpDown, vtype, BOTH, 1.0)
-    elseif ln == UpDown && rn == UpUp
-        add(Symbol("↑↓x↑↑ -> S,"), UpDown, vtype, BOTH, 1.0)
-    else
-        error("not implemented!")
-    end
-end
-
 """
     function Ver4{W}(para::Para, loopNum = para.internalLoopNum, tidx = 1; chan = para.chan, F = para.F, V = para.V, level = 1, id = [1,]) where {W}
 
@@ -286,20 +163,71 @@ function addBubble!(ver4::Ver4, chan::Channel, partition::Vector{Int}, level::In
 
     for lnode in Lver.nodes
         for rnode in Rver.nodes
-
-            if chan == T
-                addT!(diag, bubble, lnode, rnode, K, Kx)
-            elseif chan == U
-                addU!(diag, bubble, lnode, rnode, K, Kx)
-            elseif chan == S
-                addS!(diag, bubble, lnode, rnode, K, Kx)
-            else
-                @error("Not implemented!")
-            end
+            addBubble2Diag!(diag, bubble, lnode, rnode, K, Kx)
+            # if chan == T
+            #     addT!(diag, bubble, lnode, rnode, K, Kx)
+            # elseif chan == U
+            #     addU!(diag, bubble, lnode, rnode, K, Kx)
+            # elseif chan == S
+            #     addS!(diag, bubble, lnode, rnode, K, Kx)
+            # else
+            #     @error("Not implemented!")
+            # end
         end
     end
 
-    return
+    return bubble
+end
+
+function addBubble2Diag!(diag, bubble, lnode, rnode, K, Kx)
+    chan = bubble.channel
+    ver4, lver, rver = bubble.parent, bubble.lver, bubble.rver
+    lid, rid = lnode.id, rnode.id
+    ln, rn = lid.name, rid.name
+    lc, rc = lid.DiEx, rid.DiEx
+    vtype = typeMap(lid.type, rid.type)
+
+    extT, G0T, GxT = tauBasis(chan, lid.extT, rid.extT)
+    extK = ver4.extK
+
+    Factor = factor(ver4.para, chan)
+
+    # diag, g0 = buildG(bubble.g0, K, (LvT[OUTR], RvT[INL]); diag = diag)
+    # diag, gc = buildG(bubble.gx, Kx, (RvT[OUTL], LvT[INR]); diag = diag)
+    g0 = DiagTree.addpropagator!(diag, :Gpool, 0, :G0; site = G0T, loop = K)
+    gc = DiagTree.addpropagator!(diag, :Gpool, 0, :Gx; site = GxT, loop = Kx)
+
+    spin(response) = (response == UpUp ? "↑↑" : "↑↓")
+
+    function add(Lresponse, Rresponse, responseName, factor = 1.0)
+        if ln == Lresponse && rn == Rresponse
+            nodeName = Symbol("$(spin(Lresponse))x$(spin(Rresponse)) → $chan,")
+            id = Vertex4(responseName, vtype, BOTH, extK, extT, ver4.para)
+            n = DiagTree.addnode!(diag, MUL, nodeName, [g0, gc, lnode.node, rnode.node], factor * Factor; para = id)
+            add!(ver4.nodes, id, children = [n,])
+        end
+    end
+
+    if chan == T
+        add(UpUp, UpUp, UpUp, 1.0)
+        add(UpDown, UpDown, UpUp, 1.0)
+        add(UpUp, UpDown, UpDown, 1.0)
+        add(UpDown, UpUp, UpDown, 1.0)
+    elseif chan == U
+        add(UpUp, UpUp, UpUp, 1.0)
+        add(UpUp, UpUp, UpDown, 1.0)
+        add(UpDown, UpDown, UpUp, 1.0)
+        add(UpDown, UpDown, UpDown, 1.0)
+        add(UpUp, UpDown, UpDown, -1.0)
+        add(UpDown, UpUp, UpDown, -1.0)
+    elseif chan == S
+        add(UpUp, UpUp, UpUp, 1.0)
+        add(UpDown, UpDown, UpDown, -2.0)
+        add(UpUp, UpDown, UpDown, 1.0)
+        add(UpDown, UpUp, UpDown, 1.0)
+    else
+        error("not implemented!")
+    end
 end
 
 function maxTauIdx(ver4::Ver4)
