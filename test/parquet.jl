@@ -68,6 +68,7 @@ end
 
 @testset "Parquet Ver4" begin
     # Parquet = Builder.Parquet
+    Benchmark = ParquetNew.Benchmark
     Parquet = ParquetNew
 
     function testDiagWeigt(loopNum, chan, Kdim = 3, spin = 2, interactionTauNum = 1; filter = [], timing = false, eval = true)
@@ -118,7 +119,7 @@ end
 
         # println(diag.root)
 
-        # ver4 = Builder.Parquet.Ver4{Builder.Parquet.Weight{Float64}}(para, legK, chan, F, V)
+        ver4 = Benchmark.Ver4{Benchmark.Weight{Float64}}(para, legK, chan, F, V)
         # Parquet.print_tree(ver4)
 
         if eval
@@ -133,11 +134,11 @@ end
             ##################### lower level subroutines  #######################################
 
             KinL, KoutL, KinR, KoutR = varK[:, 1], varK[:, 1], varK[:, 2], varK[:, 2]
-            Builder.Parquet.eval(ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV, true)
+            Benchmark.eval(ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV, true)
 
             if timing
                 printstyled("parquet evaluator cost:", color = :green)
-                @time Builder.Parquet.eval(ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV, true)
+                @time Benchmark.eval(ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV, true)
             end
 
             w2 = ver4.weight[1]
