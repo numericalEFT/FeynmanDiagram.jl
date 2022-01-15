@@ -36,16 +36,15 @@ struct Ver4
     Vouter::Vector{Channel}
     Allouter::Vector{Channel}
 
-    ###### vertex topology information #####################
     level::Int
-
-    ####### weight and tau table of the vertex  ###############
     extK::Vector{Vector{Float64}}
-
     nodes::Vector{Node{Vertex4}}
 
     function Ver4(diag, para, legK, chan, subdiagram = false; F = [I, U, S], V = [I, T, U], All = union(F, V),
         Fouter = F, Vouter = V, Allouter = All, level = 1, name = :none)
+
+        @assert para.totalTauNum >= maxTauIdx(para) "Increase totalTauNum!\n$para"
+        @assert para.totalLoopNum >= maxLoopIdx(para) "Increase totalLoopNum\n$para"
 
         if level > 1
             @assert Set(F) == Set(Fouter)
@@ -68,9 +67,6 @@ struct Ver4
         # g = @SVector [Vector{Green}([]) for i = 1:16]
         ver4 = new(diag, para, chan, F, V, All, Fouter, Vouter, Allouter, level, legK, [])
 
-        @assert para.totalTauNum >= maxTauIdx(ver4) "Increase totalTauNum!\n$para"
-        @assert para.totalLoopNum >= maxLoopIdx(ver4) "Increase totalLoopNum\n$para"
-
         loopNum = para.innerLoopNum
         @assert loopNum >= 0
 
@@ -87,10 +83,7 @@ struct Ver4
                 for p in partition
 
                     if c == T || c == U || c == S
-                        # println(p)
                         addBubble!(ver4, c, p, level)
-                        # if isnothing(bubble) == false && length(bubble.map) > 0  # if zero, bubble diagram doesn't exist
-                        # push!(ver4.bubble, bubble)
                     end
                 end
             end
@@ -130,12 +123,12 @@ function addBubble!(ver4::Ver4, chan::Channel, partition::Vector{Int}, level::In
     LoopIdx = para.firstLoopIdx
     idx, maxLoop = findFirstLoopIdx(partition, LoopIdx + 1)
     LfirstLoopIdx, G0firstLoopIdx, RfirstLoopIdx, GxfirstLoopIdx = idx
-    @assert maxLoop == maxLoopIdx(ver4)
+    @assert maxLoop == maxLoopIdx(para)
 
     diagType = [Ver4Diag, GreenDiag, Ver4Diag, GreenDiag]
     idx, maxTau = findFirstTauIdx(partition, diagType, para.firstTauIdx, TauNum)
     LfirstTauIdx, G0firstTauIdx, RfirstTauIdx, GxfirstTauIdx = idx
-    @assert maxTau == maxTauIdx(ver4) "Partition $partition with tauNum configuration $idx. maxTau = $maxTau, yet $(maxTauIdx(ver4)) is expected!"
+    @assert maxTau == maxTauIdx(para) "Partition $partition with tauNum configuration $idx. maxTau = $maxTau, yet $(maxTauIdx(para)) is expected!"
 
     if chan == T || chan == U
         LverChan = (level == 1) ? ver4.Fouter : ver4.F
@@ -164,15 +157,6 @@ function addBubble!(ver4::Ver4, chan::Channel, partition::Vector{Int}, level::In
     for lnode in Lver.nodes
         for rnode in Rver.nodes
             addBubble2Diag!(diag, bubble, lnode, rnode, K, Kx)
-            # if chan == T
-            #     addT!(diag, bubble, lnode, rnode, K, Kx)
-            # elseif chan == U
-            #     addU!(diag, bubble, lnode, rnode, K, Kx)
-            # elseif chan == S
-            #     addS!(diag, bubble, lnode, rnode, K, Kx)
-            # else
-            #     @error("Not implemented!")
-            # end
         end
     end
 
@@ -226,30 +210,16 @@ function addBubble2Diag!(diag, bubble, lnode, rnode, K, Kx)
         add(UpUp, UpDown, UpDown, 1.0)
         add(UpDown, UpUp, UpDown, 1.0)
     else
-        error("not implemented!")
+        error("chan $chan isn't implemented!")
     end
 end
 
-function maxTauIdx(ver4::Ver4)
-    para = ver4.para
+function maxTauIdx(para)
     return (para.innerLoopNum + 1) * para.interactionTauNum + para.firstTauIdx - 1
 end
 
-function maxLoopIdx(ver4::Ver4)
-    para = ver4.para
+function maxLoopIdx(para)
     return para.firstLoopIdx + para.innerLoopNum - 1
-end
-
-function compare(A, B)
-    # check if the elements of XY are the same as Z
-    XY, Z = copy(A), copy(B)
-    for e in XY
-        if (e in Z) == false
-            return false
-        end
-        Z = (idx = findfirst(x -> x == e, Z)) > 0 ? deleteat!(Z, idx) : Z
-    end
-    return length(Z) == 0
 end
 
 function test(ver4)
@@ -258,8 +228,8 @@ function test(ver4)
         return
     end
 
-    @assert maxTauIdx(ver4) <= para.totalTauNum
-    @assert maxLoopIdx(ver4) <= para.totalLoopNum
+    # @assert maxTauIdx(ver4) <= para.totalTauNum
+    # @assert maxLoopIdx(ver4) <= para.totalLoopNum
 
     G = ver4.G
     for bub in ver4.bubble
