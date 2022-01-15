@@ -14,9 +14,9 @@ Base.:(==)(a::Interaction, b::Interaction) = Base.isequal(a, b)
 
 function symbol(name::ResponseName, type::AnalyticProperty, addition = nothing)
     if name == ChargeCharge
-        n = "Sym"
+        n = "cc"
     elseif name == SpinSpin
-        n = "Asym"
+        n = "σσ"
     elseif name == UpUp
         n = "↑↑"
     elseif name == UpDown
@@ -36,9 +36,9 @@ function symbol(name::ResponseName, type::AnalyticProperty, addition = nothing)
         @error("$type is not implemented!")
     end
     if isnothing(addition)
-        return Symbol("$(n),$(t)")
+        return Symbol("$(n)$(t)")
     else
-        return Symbol("$(n),$(t),$(addition)")
+        return Symbol("$(n)$(t)$(addition)")
     end
 
 end

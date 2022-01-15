@@ -21,8 +21,8 @@ function bareVer4!(nodes, diag, para, legK)
         Vorder = 1
         poolName = symbol(responsename, type, "pool")
         name = (diex == DI) ?
-               symbol(responsename, type, "Di") :
-               symbol(responsename, type, "Ex")
+               symbol(responsename, type, "D") :
+               symbol(responsename, type, "E")
 
         sign = (diex == DI) ? -1.0 : 1.0
         if para.isFermi == false
