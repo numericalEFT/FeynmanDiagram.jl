@@ -1,11 +1,3 @@
-# struct Green
-#     Tpair::Vector{Tuple{Int,Int}}
-#     weight::Vector{Float64}
-#     function Green()
-#         return new([], [])
-#     end
-# end
-
 mutable struct Green
     Tpair::Tuple{Int,Int}
     weight::Float64
@@ -204,7 +196,7 @@ struct Ver4{W}
     child::Vector{Vector{IdxMap{Ver4{W}}}}
     weight::Vector{W}
 
-    function Ver4{W}(para, chan, F = [U, S], V = [T, U], All = union(F, V);
+    function Ver4{W}(para, chan, F, V, All = union(F, V);
         loopNum = para.innerLoopNum, loopidxOffset = 0, tidxOffset = 0,
         Fouter = F, Vouter = V, Allouter = All,
         level = 1, id = [1,]
@@ -248,9 +240,6 @@ struct Ver4{W}
             end
         else # loopNum>0
             for c in chan
-                if c == I
-                    continue
-                end
                 for ol = 0:loopNum-1
                     bubble = Bubble(ver4, c, ol, level, id)
                     if length(bubble.map) > 0  # if zero, bubble diagram doesn't exist
@@ -297,71 +286,3 @@ function test(ver4)
         end
     end
 end
-
-function tpair(ver4, MaxT = 18)
-    s = "\u001b[31m$(ver4.id):\u001b[0m"
-    if ver4.loopNum > 0
-        s *= "$(ver4.loopNum)lp, T$(length(ver4.Tpair))⨁ "
-    else
-        s *= "⨁ "
-    end
-    # if ver4.loopNum <= 1
-    for (ti, T) in enumerate(ver4.Tpair)
-        if ti <= MaxT
-            s *= "($(T[1]),$(T[2]),$(T[3]),$(T[4]))"
-        else
-            s *= "..."
-            break
-        end
-    end
-    # end
-    return s
-end
-
-##### pretty print of Bubble and Ver4  ##########################
-Base.show(io::IO, bub::Bubble) = AbstractTrees.printnode(io::IO, bub)
-Base.show(io::IO, ver4::Ver4) = AbstractTrees.printnode(io::IO, ver4)
-
-################## implement AbstractTrees interface #######################
-# refer to https://github.com/JuliaCollections/AbstractTrees.jl for more details
-function AbstractTrees.children(ver4::Ver4)
-    return ver4.bubble
-end
-
-function AbstractTrees.children(bubble::Bubble)
-    return (bubble.Lver, bubble.Rver)
-end
-
-function iterate(ver4::Ver4{W}) where {W}
-    if length(ver4.bubble) == 0
-        return nothing
-    else
-        return (ver4.bubble[1], 1)
-    end
-end
-
-function iterate(bub::Bubble)
-    return (bub.Lver, false)
-end
-
-function iterate(ver4::Ver4{W}, state) where {W}
-    if state >= length(ver4.bubble) || length(ver4.bubble) == 0
-        return nothing
-    else
-        return (ver4.bubble[state+1], state + 1)
-    end
-end
-
-function iterate(bub::Bubble, state::Bool)
-    state && return nothing
-    return (bub.Rver, true)
-end
-
-Base.IteratorSize(::Type{Ver4{W}}) where {W} = Base.SizeUnknown()
-Base.eltype(::Type{Ver4{W}}) where {W} = Ver4{W}
-
-Base.IteratorSize(::Type{Bubble{Ver4{W}}}) where {W} = Base.SizeUnknown()
-Base.eltype(::Type{Bubble{Ver4{W}}}) where {W} = Bubble{Ver4{W}}
-
-AbstractTrees.printnode(io::IO, ver4::Ver4) = print(io, tpair(ver4))
-AbstractTrees.printnode(io::IO, bub::Bubble) = print(io, "\u001b[32m$(bub.id): $(bub.chan) $(bub.Lver.loopNum)Ⓧ $(bub.Rver.loopNum)\u001b[0m")

@@ -67,7 +67,6 @@ end
 
 
 @testset "Parquet Ver4" begin
-    # Parquet = Builder.Parquet
     Benchmark = ParquetNew.Benchmark
     Parquet = ParquetNew
 
@@ -103,28 +102,21 @@ end
         varK = rand(Kdim, para.totalLoopNum)
         varT = [rand() for i in 1:para.totalTauNum]
 
-        #################### Old DiagTree ####################################
-        # diag, ver4, dir, ex = Parquet.buildVer4(para, legK, chan, F, V)
-        # # the weighttype of the returned ver4 is Float64
-        # rootDir = DiagTree.addnode!(diag, DiagTree.ADD, :dir, dir; para = [0, 0, 0, 0])
-        # rootEx = DiagTree.addnode!(diag, DiagTree.ADD, :ex, ex; para = [0, 0, 0, 0])
-        # diag.root = [rootDir.index, rootEx.index]
-
         #################### DiagTree ####################################
         diag, nodes = Parquet.buildVer4(para, legK, chan, F = F, V = V)
         uu, ud = Parquet.classify!(diag, nodes, :name)
-        DiagTree.showTree(diag, uu[2].index)
-        DiagTree.showTree(diag, ud[2].index)
+        # DiagTree.showTree(diag, uu[2].index)
+        # DiagTree.showTree(diag, ud[2].index)
         diag.root = [uu[2].index, ud[2].index]
 
         # println(diag.root)
 
-        ver4 = Benchmark.Ver4{Benchmark.Weight{Float64}}(para, legK, chan, F, V)
+        ver4 = Benchmark.Ver4{Benchmark.Weight}(para, chan, F, V)
         # Parquet.print_tree(ver4)
 
         if eval
             w1 = DiagTree.evalNaive(diag, varK, varT, evalPropagator)
-            println(w1)
+            # println(w1)
 
             if timing
                 printstyled("naive DiagTree evaluator cost:", color = :green)
@@ -134,11 +126,11 @@ end
             ##################### lower level subroutines  #######################################
 
             KinL, KoutL, KinR, KoutR = varK[:, 1], varK[:, 1], varK[:, 2], varK[:, 2]
-            Benchmark.eval(ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV, true)
+            Benchmark.eval(para, ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV, true)
 
             if timing
                 printstyled("parquet evaluator cost:", color = :green)
-                @time Benchmark.eval(ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV, true)
+                @time Benchmark.eval(para, ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV, true)
             end
 
             w2 = ver4.weight[1]
@@ -149,10 +141,12 @@ end
             # DiagTree.printBasisPool(diag)
             # DiagTree.printPropagator(diag)
             # println(diag.propagatorPool[1].object[2])
-            println(w1, " vs ", w2)
+            # println(w1, " vs ", w2)
 
-            @test w1[1] ≈ w2[1]
-            @test w1[2] ≈ w2[2]
+            # The upup channel of charge-charge vertex4 == Direct + exchange 
+            @test w1[1] ≈ w2[1] + w2[2]
+            # The updown channel of charge-charge vertex4 == Direct
+            @test w1[2] ≈ w2[1]
         end
 
         return para, diag, ver4

@@ -25,7 +25,7 @@ function bareVer4!(nodes, diag, para, legK)
                symbol(responsename, type, "Ex")
 
         sign = (diex == DI) ? -1.0 : 1.0
-        if para.isFermi
+        if para.isFermi == false
             sign = abs(sign)
         end
 
@@ -42,10 +42,9 @@ function bareVer4!(nodes, diag, para, legK)
         if isnothing(vd) && isnothing(ve)
             return
         end
-        if _extT[DI] == _extT[EX]
+        if _extT[DI] == _extT[EX] && isnothing(vd) == false && isnothing(ve) == false
             id_diex = Vertex4(responsename, type, BOTH, legK, _extT[DI], para)
-            (isnothing(vd) == false) && add!(nodes, id_diex, children = [vd,])
-            (isnothing(ve) == false) && add!(nodes, id_diex, children = [ve,])
+            add!(nodes, id_diex, children = [vd, ve])
         else
             id_di = Vertex4(responsename, type, DI, legK, _extT[DI], para)
             id_ex = Vertex4(responsename, type, EX, legK, _extT[EX], para)
@@ -66,8 +65,8 @@ function bareVer4!(nodes, diag, para, legK)
             addver4!(UpUp, type, _extT, vuud, vuue)
 
             # UpDown channel
-            vupd = addbare!(ChargeCharge, type, EX, _innerT[DI], q[DI])
-            vupe = zero(Component)
+            vupd = addbare!(ChargeCharge, type, DI, _innerT[DI], q[DI])
+            vupe = nothing
             # UpDown, exchange channel doesn't exist for the charge-charge interaction
             addver4!(UpDown, type, _extT, vupd, vupe)
         else
