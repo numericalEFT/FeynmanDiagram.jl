@@ -6,6 +6,9 @@ function buildVer4(para, LegK, chan, subdiagram = false; F = [I, U, S], V = [I, 
     return diag, ver4.nodes
 end
 
+maxVer4TauIdx(para) = (para.innerLoopNum + 1) * para.interactionTauNum + para.firstTauIdx - 1
+maxVer4LoopIdx(para) = para.firstLoopIdx + para.innerLoopNum - 1
+
 """
     function Ver4{W}(para::Para, loopNum = para.internalLoopNum, tidx = 1; chan = para.chan, F = para.F, V = para.V, level = 1, id = [1,]) where {W}
 
@@ -43,8 +46,8 @@ struct Ver4
     function Ver4(diag, para, legK, chan, subdiagram = false; F = [I, U, S], V = [I, T, U], All = union(F, V),
         Fouter = F, Vouter = V, Allouter = All, level = 1, name = :none)
 
-        @assert para.totalTauNum >= maxTauIdx(para) "Increase totalTauNum!\n$para"
-        @assert para.totalLoopNum >= maxLoopIdx(para) "Increase totalLoopNum\n$para"
+        @assert para.totalTauNum >= maxVer4TauIdx(para) "Increase totalTauNum!\n$para"
+        @assert para.totalLoopNum >= maxVer4LoopIdx(para) "Increase totalLoopNum\n$para"
 
         if level > 1
             @assert Set(F) == Set(Fouter)
@@ -123,12 +126,12 @@ function addBubble!(ver4::Ver4, chan::Channel, partition::Vector{Int}, level::In
     LoopIdx = para.firstLoopIdx
     idx, maxLoop = findFirstLoopIdx(partition, LoopIdx + 1)
     LfirstLoopIdx, G0firstLoopIdx, RfirstLoopIdx, GxfirstLoopIdx = idx
-    @assert maxLoop == maxLoopIdx(para)
+    @assert maxLoop == maxVer4LoopIdx(para)
 
     diagType = [Ver4Diag, GreenDiag, Ver4Diag, GreenDiag]
     idx, maxTau = findFirstTauIdx(partition, diagType, para.firstTauIdx, TauNum)
     LfirstTauIdx, G0firstTauIdx, RfirstTauIdx, GxfirstTauIdx = idx
-    @assert maxTau == maxTauIdx(para) "Partition $partition with tauNum configuration $idx. maxTau = $maxTau, yet $(maxTauIdx(para)) is expected!"
+    @assert maxTau == maxVer4TauIdx(para) "Partition $partition with tauNum configuration $idx. maxTau = $maxTau, yet $(maxTauIdx(para)) is expected!"
 
     if chan == T || chan == U
         LverChan = (level == 1) ? ver4.Fouter : ver4.F
@@ -211,44 +214,5 @@ function addBubble2Diag!(diag, bubble, lnode, rnode, K, Kx)
         add(UpDown, UpUp, UpDown, 1.0)
     else
         error("chan $chan isn't implemented!")
-    end
-end
-
-function maxTauIdx(para)
-    return (para.innerLoopNum + 1) * para.interactionTauNum + para.firstTauIdx - 1
-end
-
-function maxLoopIdx(para)
-    return para.firstLoopIdx + para.innerLoopNum - 1
-end
-
-function test(ver4)
-    para = ver4.para
-    if length(ver4.bubble) == 0
-        return
-    end
-
-    # @assert maxTauIdx(ver4) <= para.totalTauNum
-    # @assert maxLoopIdx(ver4) <= para.totalLoopNum
-
-    G = ver4.G
-    for bub in ver4.bubble
-        Lver, Rver = bub.Lver, bub.Rver
-        # G0 = G[1]
-        # Gx = G[Int(bub.chan)]
-        for map in bub.map
-            if ver4.para.interactionTauNum > 0
-                LverT, RverT = collect(Lver.Tpair[map.lidx]), collect(Rver.Tpair[map.ridx]) # 8 τ variables relevant for this bubble
-                G1T, GxT = collect(map.G0.Tpair), collect(map.Gx.Tpair) # 4 internal variables
-                ExtT = collect(ver4.Tpair[map.vidx]) # 4 external variables
-                @assert compare(vcat(G1T, GxT, ExtT), vcat(LverT, RverT)) "chan $(bub.chan): G1=$G1T, Gx=$GxT, external=$ExtT don't match with Lver4 $LverT and Rver4 $RverT"
-
-                tauSet = Set(vcat(G1T, GxT, ExtT))
-                for t in tauSet
-                    @assert t <= maxTauIdx(ver4) "Tauidx $t is too large! 
-                    firstTauIdx = $(para.firstTauIdx), maxTauIdx =$(maxTauIdx(ver4)), loopNum=$(para.innerLoopNum)\n$para"
-                end
-            end
-        end
     end
 end
