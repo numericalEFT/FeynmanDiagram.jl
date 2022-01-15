@@ -52,16 +52,24 @@ evalV(K) = 8π / (dot(K, K) + 1)
 
 function evalPropagator(idx, object, K, varT, diag)
     if idx == 1 #GPool
-        # println(object.siteBasis)
         return evalG(K, varT[object.siteBasis[1]], varT[object.siteBasis[2]])
+        # return evalFakeG(K, varT[object.siteBasis[1]], varT[object.siteBasis[2]])
     elseif idx == 2 #VPool
-        return evalV(K)
+        return evalFakeV(K)
     else
         error("object with name = $(object.name) is not implemented")
     end
 end
 
 function evalFakePropagator(idx, object, K, varT, diag)
+    return 1.0
+end
+
+function evalFakeG(K, τin, τout)
+    return 1.0
+end
+
+function evalFakeV(K)
     return 1.0
 end
 
@@ -82,7 +90,7 @@ end
         para = GenericPara(
             diagType = Ver4Diag,
             loopDim = Kdim,
-            isFermi = true,
+            isFermi = false,
             hasTau = true,
             innerLoopNum = loopNum,
             totalLoopNum = length(KinL),
@@ -98,9 +106,9 @@ end
 
         # F = [Parquet.U, Parquet.S]
         # V = [Parquet.T, Parquet.U]
-        F = []
+        F = [Parquet.U]
         V = []
-        All = [Parquet.S,]
+        All = [Parquet.T, Parquet.U]
 
         varK = rand(Kdim, para.totalLoopNum)
         varT = [rand() for i in 1:para.totalTauNum]
@@ -118,6 +126,7 @@ end
         # Parquet.print_tree(ver4)
 
         if eval
+            # w1 = DiagTree.evalNaive(diag, varK, varT, evalPropagator)
             w1 = DiagTree.evalNaive(diag, varK, varT, evalPropagator)
             # println(w1)
 
@@ -129,7 +138,8 @@ end
             ##################### lower level subroutines  #######################################
 
             KinL, KoutL, KinR, KoutR = varK[:, 1], varK[:, 1], varK[:, 2], varK[:, 2]
-            Benchmark.eval(para, ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV, true)
+            # Benchmark.eval(para, ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV, true)
+            Benchmark.eval(para, ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalFakeV, true)
 
             if timing
                 printstyled("parquet evaluator cost:", color = :green)
@@ -156,9 +166,9 @@ end
     end
 
     for l = 2:2
-        # testDiagWeigt(l, [Parquet.T,])
+        testDiagWeigt(l, [Parquet.T,])
         # testDiagWeigt(l, [Parquet.U,])
-        testDiagWeigt(l, [Parquet.S,])
+        # testDiagWeigt(l, [Parquet.S,])
         # testDiagWeigt(l, [Parquet.T, Parquet.U, Parquet.S]; timing = true)
     end
 

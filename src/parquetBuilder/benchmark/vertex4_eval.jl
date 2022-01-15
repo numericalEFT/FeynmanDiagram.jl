@@ -87,6 +87,9 @@ function eval(para, ver4::Ver4, varK, varT, legK, evalG::Function, evalV::Functi
     for b in ver4.bubble
         c = b.chan
         Factor = SymFactor[Int(c)] * PhaseFactor
+        if para.isFermi == false
+            Factor = abs(Factor)
+        end
 
         if c == T
             eval(para, b.Lver, varK, varT, [KinL, KoutL, Kt, K], evalG, evalV; kwargs...)
