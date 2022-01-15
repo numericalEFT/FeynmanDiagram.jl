@@ -165,6 +165,8 @@ function addPropagator!(diag::Diagrams, index::Int, order::Int, name, factor = 1
     propagatorPool = diag.propagatorPool
     # @assert length(basis) == length(variablePool) == length(currVar) "$(length(basis)) == $(length(variablePool)) == $(length(currVar)) breaks"
 
+    @assert 0 < index <= length(propagatorPool) "proapgator Pool index $index is illegal!"
+
     PROPAGATOR_POOL = typeof(propagatorPool[index])
     PROPAGATOR = eltype(fieldtype(PROPAGATOR_POOL, :object))
     PARA = fieldtype(PROPAGATOR, :para)
@@ -204,6 +206,7 @@ function addPropagator!(diag::Diagrams, poolName::Symbol, order::Int, name, fact
             return addPropagator!(diag, idx, order, name, factor; site = site, loop = loop, para = para)
         end
     end
+    error("Propagator poolName $poolName doesn't exist in $([pool.name for pool in diag.propagatorPool])!")
 end
 
 """
@@ -335,6 +338,7 @@ end
 
 function addpropagator!(diag::Diagrams, poolName::Symbol, order::Int, name, factor = 1.0; site = [], loop = nothing, para = nothing)
     pidx = addPropagator!(diag, poolName, order, name, factor; site = site, loop = loop, para = para)
+    @assert pidx > 0
     return Component(pidx, false, poolName, getPropagator(diag, pidx, poolName))
 end
 

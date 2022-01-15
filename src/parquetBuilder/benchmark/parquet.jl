@@ -1,15 +1,28 @@
-module ParquetNew
+module Benchmark
 using StaticArrays, PyCall
 using AbstractTrees
 using Parameters, Combinatorics
-using ..DiagTree
 
+import ..Channel
+import ..I
+import ..T
+import ..U
+import ..S
+import ..Ts
+import ..Us
+import ..Ic
+import ..Tc
+import ..Uc
+import ..Sc
+import ..Tsc
+import ..Usc
 
-const DI, EX, BOTH = 1, 2, 3
+import ..GenericPara
+
+const DI, EX = 1, 2
 const INL, OUTL, INR, OUTR = 1, 2, 3, 4
 # orginal diagrams T, U, S; particle-hole counterterm Ts, Us; and their counterterm Tc, Uc, Sc, Tsc, Usc 
 # const I, T, U, S, Ts, Us, Ic, Tc, Uc, Sc, Tsc, Usc = 1:12
-@enum Channel I = 1 T U S Ts Us Ic Tc Uc Sc Tsc Usc
 # const ChanName = ["I", "T", "U", "S", "Ts", "Us", "Ic", "Tc", "Uc", "Sc", "Tsc", "Usc"]
 const SymFactor = [1.0, -1.0, 1.0, -0.5, +1.0, -1.0]
 
@@ -17,12 +30,7 @@ const SymFactor = [1.0, -1.0, 1.0, -0.5, +1.0, -1.0]
 # const Vchan = [I, T, U, Ts, Us, Ic, Tc, Uc, Sc, Tsc, Usc]
 const Allchan = [I, T, U, S, Ts, Us, Ic, Tc, Uc, Sc, Tsc, Usc]
 
-include("common.jl")
-include("identifier.jl")
-include("filter.jl")
-include("vertex4_utility.jl")
-include("vertex4_bare.jl")
 include("vertex4.jl")
-
-include("benchmark/parquet.jl")
+include("vertex4_eval.jl")
+include("vertex4_io.jl")
 end
