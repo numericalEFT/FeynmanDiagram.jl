@@ -61,14 +61,40 @@ function evalPropagator(idx, object, K, varT, diag)
     end
 end
 
+function evalGfixK(K, τin, τout)
+    # println(τBasis, ", ", varT)
+    K = zero(K)
+    kF, β = 1.0, 1.0
+    ϵ = dot(K, K) / 2 - kF^2
+    τ = τout - τin
+    if τ ≈ 0.0
+        return Spectral.kernelFermiT(-1e-8, ϵ, β)
+    else
+        return Spectral.kernelFermiT(τ, ϵ, β)
+    end
+end
+
+evalVfixK(K) = 1.0
+
+function evalPropagatorfixK(idx, object, K, varT, diag)
+    if idx == 1 #GPool
+        return evalGfixK(K, varT[object.siteBasis[1]], varT[object.siteBasis[2]])
+        # return evalFakeG(K, varT[object.siteBasis[1]], varT[object.siteBasis[2]])
+    elseif idx == 2 #VPool
+        return evalVfixK(K)
+    else
+        error("object with name = $(object.name) is not implemented")
+    end
+end
+
 function evalFakePropagator(idx, object, K, varT, diag)
     return 1.0
 end
 
 function evalFakeG(K, τin, τout)
     # return evalG(zero(K), τin, τout)
-    return evalG(K, τin, τout)
-    # return 1.0
+    # return evalG(K, τin, τout)
+    return 1.0
 end
 
 function evalFakeV(K)
@@ -81,8 +107,22 @@ end
     Benchmark = ParquetNew.Benchmark
     Parquet = ParquetNew
 
-    function testDiagWeigt(loopNum, chan, Kdim = 3, spin = 2, interactionTauNum = 1; filter = [], timing = false, eval = true)
+    function getfunction(type)
+        if type == :physical
+            return evalPropagator, evalG, evalV
+        elseif type == :fixK
+            return evalPropagatorfixK, evalGfixK, evalVfixK
+        elseif type == :fake
+            return evalFakePropagator, evalFakeG, evalFakeV
+        else
+            error("not implemented")
+        end
+    end
+
+    function testVertex4(loopNum, chan, type::Symbol; filter = [], timing = false, eval = true)
         println("$(Int.(chan)) Channel Test")
+        Kdim, spin = 3, 2
+        interactionTauNum = 1
 
         K0 = zeros(loopNum + 2)
         KinL, KoutL, KinR, KoutR = deepcopy(K0), deepcopy(K0), deepcopy(K0), deepcopy(K0)
@@ -169,17 +209,24 @@ end
         return para, diag, ver4
     end
 
-    for l = 1:3
-        testDiagWeigt(l, [Parquet.T,])
-        testDiagWeigt(l, [Parquet.U,])
-        testDiagWeigt(l, [Parquet.S,])
-        testDiagWeigt(l, [Parquet.T, Parquet.U, Parquet.S]; timing = true)
+    function testEval(type)
+        for l = 1:3
+            testVertex4(l, [Parquet.T,], type)
+            testVertex4(l, [Parquet.U,], type)
+            testVertex4(l, [Parquet.S,], type)
+            testVertex4(l, [Parquet.T, Parquet.U, Parquet.S], type; timing = true)
+        end
     end
 
-    # para, diag, ver4 = testDiagWeigt(3, [Parquet.T, Parquet.U, Parquet.S]; filter = [Builder.Proper], eval = false)
-    # for i in 1:length(diag.basisPool)
-    #     @test (diag.basisPool.basis[:, i] ≈ para.transferLoop) == false
-    # end
+    testEval(:fake)
+    testEval(:fixK)
+    testEval(:physical)
+
+    #test only proper diagrams are generated if the switch is turned on
+    para, diag, ver4 = testVertex4(3, [Parquet.T, Parquet.U, Parquet.S], :physical; filter = [Builder.Proper], eval = false)
+    for i in 1:length(diag.basisPool)
+        @test (diag.basisPool.basis[:, i] ≈ para.transferLoop) == false
+    end
 end
 
 # @testset "Parquet Sigma" begin
