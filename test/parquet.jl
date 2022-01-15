@@ -52,10 +52,10 @@ evalV(K) = 8π / (dot(K, K) + 1)
 
 function evalPropagator(idx, object, K, varT, diag)
     if idx == 1 #GPool
-        return evalFakeG(K, varT[object.siteBasis[1]], varT[object.siteBasis[2]])
+        return evalG(K, varT[object.siteBasis[1]], varT[object.siteBasis[2]])
         # return evalFakeG(K, varT[object.siteBasis[1]], varT[object.siteBasis[2]])
     elseif idx == 2 #VPool
-        return evalFakeV(K)
+        return evalV(K)
     else
         error("object with name = $(object.name) is not implemented")
     end
@@ -66,12 +66,14 @@ function evalFakePropagator(idx, object, K, varT, diag)
 end
 
 function evalFakeG(K, τin, τout)
-    return evalG(zero(K), τin, τout)
+    # return evalG(zero(K), τin, τout)
+    return evalG(K, τin, τout)
     # return 1.0
 end
 
 function evalFakeV(K)
     return 1.0
+    # return evalV(K)
 end
 
 
@@ -105,11 +107,12 @@ end
             interaction = [Interaction(ChargeCharge, Instant),]
         )
 
-        # F = [Parquet.U, Parquet.S]
-        # V = [Parquet.T, Parquet.U]
-        F = [Parquet.U]
-        V = []
-        All = [Parquet.T, Parquet.U]
+        F = [Parquet.U, Parquet.S]
+        V = [Parquet.T, Parquet.U]
+        All = [Parquet.T, Parquet.U, Parquet.S]
+        # F = [Parquet.U]
+        # V = []
+        # All = [Parquet.T, Parquet.U]
 
         varK = rand(Kdim, para.totalLoopNum)
         varT = [rand() for i in 1:para.totalTauNum]
@@ -140,7 +143,7 @@ end
 
             KinL, KoutL, KinR, KoutR = varK[:, 1], varK[:, 1], varK[:, 2], varK[:, 2]
             # Benchmark.eval(para, ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV, true)
-            Benchmark.eval(para, ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalFakeG, evalFakeV, true)
+            Benchmark.eval(para, ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV, true)
 
             if timing
                 printstyled("parquet evaluator cost:", color = :green)
@@ -155,7 +158,7 @@ end
             # DiagTree.printBasisPool(diag)
             # DiagTree.printPropagator(diag)
             # println(diag.propagatorPool[1].object[2])
-            println(w1, " vs ", w2)
+            # println(w1, " vs ", w2)
 
             # The upup channel of charge-charge vertex4 == Direct + exchange 
             @test w1[1] ≈ w2[1] + w2[2]
@@ -166,17 +169,17 @@ end
         return para, diag, ver4
     end
 
-    for l = 2:2
+    for l = 1:3
         testDiagWeigt(l, [Parquet.T,])
-        # testDiagWeigt(l, [Parquet.U,])
-        # testDiagWeigt(l, [Parquet.S,])
-        # testDiagWeigt(l, [Parquet.T, Parquet.U, Parquet.S]; timing = true)
+        testDiagWeigt(l, [Parquet.U,])
+        testDiagWeigt(l, [Parquet.S,])
+        testDiagWeigt(l, [Parquet.T, Parquet.U, Parquet.S]; timing = true)
     end
 
-    para, diag, ver4 = testDiagWeigt(3, [Parquet.T, Parquet.U, Parquet.S]; filter = [Builder.Proper], eval = false)
-    for i in 1:length(diag.basisPool)
-        @test (diag.basisPool.basis[:, i] ≈ para.transferLoop) == false
-    end
+    # para, diag, ver4 = testDiagWeigt(3, [Parquet.T, Parquet.U, Parquet.S]; filter = [Builder.Proper], eval = false)
+    # for i in 1:length(diag.basisPool)
+    #     @test (diag.basisPool.basis[:, i] ≈ para.transferLoop) == false
+    # end
 end
 
 # @testset "Parquet Sigma" begin

@@ -168,7 +168,7 @@ struct Ver4
     nodes::Vector{Node{Vertex4}}
 
     function Ver4(diag, para, legK, chan, subdiagram = false; F = [I, U, S], V = [I, T, U], All = union(F, V),
-        Fouter = F, Vouter = V, Allouter = All, level = 1)
+        Fouter = F, Vouter = V, Allouter = All, level = 1, name = :none)
 
         if level > 1
             @assert Set(F) == Set(Fouter)
@@ -224,15 +224,7 @@ struct Ver4
         end
 
         for n in ver4.nodes
-            # if loopNum == 0 && subdiagram == true
-            #     # @assert length(n.children) == 1 "$(n.children)"
-            #     n.node = n.children[1]
-            # else
-            #     n.node = DiagTree.addnode!(diag, ADD, :sum, n.children; para = n.id)
-            # end
-            # @assert n.node != zero(Component)
-
-            generate_node_from_children!(diag, n, ADD, 1.0; para = n.id)
+            generate_node_from_children!(diag, n, ADD, 1.0, name; para = n.id)
         end
 
         return ver4
@@ -257,6 +249,7 @@ function addBubble!(ver4::Ver4, chan::Channel, partition::Vector{Int}, level::In
         return
     end
 
+    #the first loop idx is the inner loop of the bubble!
     LoopIdx = para.firstLoopIdx
     idx, maxLoop = findFirstLoopIdx(partition, LoopIdx + 1)
     LfirstLoopIdx, G0firstLoopIdx, RfirstLoopIdx, GxfirstLoopIdx = idx
@@ -278,12 +271,13 @@ function addBubble!(ver4::Ver4, chan::Channel, partition::Vector{Int}, level::In
     end
 
     LLegK, K, RLegK, Kx = legBasis(chan, ver4.extK, LoopIdx)
+    # println(K, ", ", Kx)
 
     lPara = reconstruct(para, innerLoopNum = oL, firstLoopIdx = LfirstLoopIdx, firstTauIdx = LfirstTauIdx)
-    Lver = Ver4(diag, lPara, LLegK, LverChan, true; F = ver4.F, V = ver4.V, All = ver4.All, level = level + 1)
+    Lver = Ver4(diag, lPara, LLegK, LverChan, true; F = ver4.F, V = ver4.V, All = ver4.All, level = level + 1, name = :F)
 
     rPara = reconstruct(para, innerLoopNum = oR, firstLoopIdx = RfirstLoopIdx, firstTauIdx = RfirstTauIdx)
-    Rver = Ver4(diag, rPara, RLegK, RverChan, true; F = ver4.F, V = ver4.V, All = ver4.All, level = level + 1)
+    Rver = Ver4(diag, rPara, RLegK, RverChan, true; F = ver4.F, V = ver4.V, All = ver4.All, level = level + 1, name = :All)
 
     gxPara = reconstruct(para, innerLoopNum = oGx, firstLoopIdx = GxfirstLoopIdx, firstTauIdx = GxfirstTauIdx)
     g0Para = reconstruct(para, innerLoopNum = oG0, firstLoopIdx = G0firstLoopIdx, firstTauIdx = G0firstTauIdx)

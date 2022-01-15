@@ -67,8 +67,8 @@ struct Bubble{_Ver4} # template Bubble to avoid mutually recursive struct
         _id[1] += 1
 
         oR = ver4.loopNum - 1 - oL # loopNum of the right vertex
-        lLpidxOffset = ver4.loopidxOffset
-        rLpidxOffset = lLpidxOffset + oL + 1
+        lLpidxOffset = ver4.loopidxOffset + 1
+        rLpidxOffset = lLpidxOffset + oL
         LTidx = ver4.TidxOffset  # the first τ index of the left vertex
         TauNum = ver4.para.interactionTauNum # maximum tau number for each bare interaction
         RTidx = LTidx + (oL + 1) * TauNum   # the first τ index of the right sub-vertex

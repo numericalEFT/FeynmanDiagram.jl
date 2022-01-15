@@ -114,8 +114,8 @@ function showTree(diag::Diagrams, _root::Int; verbose = 0, depth = 999)
             propagatorPool = diag.propagatorPool[ci]
             for pidx in component
                 p = propagatorPool.object[pidx] #Propagator
-                site = isempty(p.siteBasis) ? "" : " site $(p.siteBasis),"
-                loop = p.loopIdx <= 0 ? "" : "loop $(diag.basisPool[p.loopIdx])"
+                site = isempty(p.siteBasis) ? "" : " t$(p.siteBasis),"
+                loop = p.loopIdx <= 0 ? "" : "k$(diag.basisPool[p.loopIdx])"
                 # loop = p.loopIdx <= 0 ? "" : "$(p.loopIdx)"
                 nnt = nt.add_child(name = "P$(pidx)$(name_para(p)): $loop,$site $(factor(p.factor))")
             end
