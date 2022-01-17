@@ -3,7 +3,8 @@ function buildVer4(para, LegK, chan, subdiagram = false; F = [I, U, S], V = [I, 
 
     ver4 = Ver4(diag, para, LegK, chan, subdiagram; F = F, V = V, All = All, Fouter = Fouter, Vouter = Vouter, Allouter = Allouter)
 
-    return diag, ver4.nodes
+    # return diag, ver4.nodes
+    return diag, toDataFrame(ver4.nodes)
 end
 
 maxVer4TauIdx(para) = (para.innerLoopNum + 1) * para.interactionTauNum + para.firstTauIdx - 1

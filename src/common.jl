@@ -66,6 +66,10 @@ end
     transferLoop = [] #Set it to be the transfer momentum/frequency if you want to check the diagrams are proper or not
 end
 
+# function Base.show(io::IO, para::GenericPara)
+
+# end
+
 function Base.getproperty(obj::GenericPara, sym::Symbol)
     # if sym === :hasTau
     #     return obj.totalTauNum > 0

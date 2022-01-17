@@ -45,6 +45,10 @@ export GenericPara, Interaction
 
 include("diagramTree/DiagTree.jl")
 export DiagTree
+export Component, Diagrams
+export addpropagator!, addnode!
+export setroot!, addroot!
+export evalNaive, showTree
 
 include("parquetBuilder/parquet.jl")
 export ParquetNew

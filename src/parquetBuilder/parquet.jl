@@ -2,6 +2,7 @@ module ParquetNew
 using StaticArrays, PyCall
 using AbstractTrees
 using Parameters, Combinatorics
+using DataFrames
 using ..DiagTree
 
 
