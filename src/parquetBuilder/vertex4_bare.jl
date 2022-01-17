@@ -1,6 +1,10 @@
-function bareVer4!(nodes, diag, para, legK)
+function bareVer4!(diag, para, legK, diex = [DI, EX])
+    @assert para.diagType == Ver4Diag
+
     KinL, KoutL, KinR = legK[1], legK[2], legK[3]
     t0 = para.firstTauIdx
+
+    nodes = Node{Vertex4}[]
 
     q = [KinL - KoutL, KinR - KoutL]
 
@@ -16,20 +20,21 @@ function bareVer4!(nodes, diag, para, legK)
         innerT_dyn = innerT_ins
     end
 
-    function addbare!(response::Response, type, diex, _innerT, _q)
-        @assert diex == DI || diex == EX
+    function addbare!(response::Response, type::AnalyticProperty, _diex::Int, _innerT, _q)
+        @assert _diex == DI || _diex == EX
         Vorder = 1
         poolName = symbol(response, type, "pool")
-        name = (diex == DI) ?
+        name = (_diex == DI) ?
                symbol(response, type, "D") :
                symbol(response, type, "E")
 
-        sign = (diex == DI) ? -1.0 : 1.0
+        sign = (_diex == DI) ? -1.0 : 1.0
         if para.isFermi == false
             sign = abs(sign)
         end
 
-        if notProper(para, _q) == false
+        if notProper(para, _q) == false && _diex in diex
+            #create new bare ver4 only if _diex is required in the diex table 
             return DiagTree.addpropagator!(diag, poolName, Vorder, name, sign; loop = _q, site = _innerT)
         else
             return nothing
