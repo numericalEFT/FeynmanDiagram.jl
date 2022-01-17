@@ -92,7 +92,7 @@ function showTree(diag::Diagrams, _root::Int; verbose = 0, depth = 999)
     end
 
 
-    function treeview(node, id, level, t = nothing)
+    function treeview(node, id::Int, level, t = nothing)
         if isnothing(t)
             t = ete.Tree(name = " ")
         end
@@ -145,5 +145,6 @@ function showTree(diag::Diagrams, _root::Int; verbose = 0, depth = 999)
     t.show(tree_style = ts)
 end
 function showTree(diag::Diagrams, _root::Component; kwargs...)
+    @assert _root.isNode "Can not visualize $_root, because it is not a Node!"
     return showTree(diag, _root.index; kwargs...)
 end

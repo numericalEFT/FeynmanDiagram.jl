@@ -141,9 +141,21 @@ struct Component
     object::Any
 end
 
-Base.show(io::IO, c::Component) = print(io, "#$(c.index) $(c.isNode ? "node" : "propagator") in $(c.poolName)")
+Base.show(io::IO, c::Component) = print(io, "#$(c.index) in $(c.poolName) Pool")
 
 Base.zero(::Type{Component}) = Component(0, false, :none, nothing)
+
+function setroot!(diag, rootVec::Vector{Component})
+    for r in rootVec
+        @assert r.isNode "root of Diagrams must be a node!"
+    end
+    diag.root = [r.index for r in rootVec]
+end
+
+function addroot!(diag, root::Component)
+    @assert root.isNode "root of Diagrams must be a node!"
+    push!(diag.root, r.index)
+end
 
 """
     function addPropagator!(diag::Diagrams, index::Int, order::Int, name, factor = 1; site = [], loop = nothing, para = nothing)

@@ -160,10 +160,10 @@ end
 
         #################### DiagTree ####################################
         diag, nodes = Parquet.buildVer4(para, legK, chan, F = F, V = V, All = All)
-        uu, ud = Parquet.classify!(diag, nodes, :response)
+        d = Parquet.groupby!(diag, nodes, :response)
+        DiagTree.setroot!(diag, [d[UpUp], d[UpDown]])
         # DiagTree.showTree(diag, uu[2].index)
         # DiagTree.showTree(diag, ud[2].index)
-        diag.root = [uu[2].index, ud[2].index]
 
         # println(diag.root)
 

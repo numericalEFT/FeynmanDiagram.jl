@@ -2,6 +2,7 @@ using FeynmanDiagram
 using AbstractTrees
 # using NewickTree
 using StaticArrays
+using DataFrames
 const Weight = SVector{2,Float64}
 
 # Parquet = Builder.Parquet
@@ -35,20 +36,20 @@ evalK(basis) = sum([basis[i] * varK[i] for i in 1:para.totalLoopNum])
 evalT(Tidx) = varT[Tidx]
 
 diag, nodes = Parquet.buildVer4(para, legK, chan, F = F, V = V)
-output = Parquet.classify!(diag, nodes, :name)
-println(output)
-uu, ud = output
-# println(dir)
-# dir, ex = Parquet.merge(diag, nodes, :DiEx)
-# dir = [node.nidx for ]
+d = Parquet.groupby!(diag, nodes, :response)
+# println(d)
+# println(d[UpUp])
+# g = groupby(nodes, :response)
+# uu = filter(r -> r.response == UpUp, nodes)
+# ud = filter(r -> r.response == UpDown, nodes)
 # rootDir = DiagTree.addnode!(diag, DiagTree.ADD, :dir, dir.children, para = [0, 0, 0, 0])
 # rootEx = DiagTree.addnode!(diag, DiagTree.ADD, :ex, ex.children, para = [0, 0, 0, 0])
 # diag.root = [rootDir.index, rootEx.index]
 # DiagTree.showTree(diag, rootDir.index)
 # diag.root = [dir[2].index, ex[2].index]
 
-DiagTree.showTree(diag, uu[2].index)
-DiagTree.showTree(diag, ud[2].index)
+DiagTree.showTree(diag, d[UpUp])
+DiagTree.showTree(diag, d[UpDown])
 
 ##################### lower level subroutines  #######################################
 # ver4 = Parquet.Ver4{Float64}(para, legK, chan, F, V)

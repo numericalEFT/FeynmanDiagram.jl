@@ -54,6 +54,18 @@ end
 
 Base.show(io::IO, n::Node) = print(io, "$(n.id)\n node: $(n.node), children: $(n.children)\n")
 
+function toDataFrame(nodeVec::Vector{Node{I}}) where {I<:Identifier}
+    function node2dict(node)
+        d = Dict{Symbol,Any}()
+        for field in fieldnames(I)
+            d[field] = getproperty(node.id, field)
+        end
+        d[:node] = node.node
+        return d
+    end
+    return DataFrame([node2dict(node) for node in nodeVec])
+end
+
 function generate_node_from_children!(diag, node::Node, operation, factor = 1.0, name = :none; kwargs...)
     @assert node.node == zero(Component)
     @assert isempty(node.children) == false
@@ -138,14 +150,19 @@ function classify!(diag::DiagTree.Diagrams, nodesVec::Vector{Node{I}}, comparedS
     return componentgroup
 end
 
-# function merge(diag, nodesVec::Vector{Node{I}}, comparedSyms::Symbol...) where {I<:Identifier}
-#     # if one of the comparedSyms is different, two objects are different 
+function groupby!(diag::DiagTree.Diagrams, nodes::DataFrame, fields...)
+    group = groupby(nodes, fields...)
 
-#     group = classify(nodesVec, comparedSyms...)
-
-#     merged = []
-#     for g in group
-#     end
-#     return merged
-#     # return merge(nodesVec, compare)
-# end
+    d = Dict{Any,Component}()
+    for g in group
+        # name = Symbol(Tuple(g[1, f] for f in fields))
+        if length(fields) == 1
+            entry = g[1, fields[1]]
+        else
+            entry = Tuple(g[1, f] for f in fields)
+        end
+        name = Symbol(entry)
+        d[entry] = DiagTree.addnode!(diag, ADD, name, g.node)
+    end
+    return d
+end
