@@ -170,7 +170,7 @@ function addBubble2Diag!(diag, bubble, lnode, rnode, K, Kx)
     chan = bubble.channel
     ver4, lver, rver = bubble.parent, bubble.lver, bubble.rver
     lid, rid = lnode.id, rnode.id
-    ln, rn = lid.name, rid.name
+    ln, rn = lid.response, rid.response
     lc, rc = lid.DiEx, rid.DiEx
     vtype = typeMap(lid.type, rid.type)
 
@@ -186,10 +186,10 @@ function addBubble2Diag!(diag, bubble, lnode, rnode, K, Kx)
 
     spin(response) = (response == UpUp ? "↑↑" : "↑↓")
 
-    function add(Lresponse, Rresponse, responseName, factor = 1.0)
+    function add(Lresponse::Response, Rresponse::Response, Vresponse::Response, factor = 1.0)
         if ln == Lresponse && rn == Rresponse
             nodeName = Symbol("$(spin(Lresponse))x$(spin(Rresponse)) → $chan,")
-            id = Vertex4(responseName, vtype, BOTH, extK, extT, ver4.para)
+            id = Vertex4(Vresponse, vtype, BOTH, extK, extT, ver4.para)
             n = DiagTree.addnode!(diag, MUL, nodeName, [g0, gc, lnode.node, rnode.node], factor * Factor; para = id)
             add!(ver4.nodes, id, children = [n,])
         end

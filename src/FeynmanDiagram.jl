@@ -18,7 +18,7 @@ end
     Proper  #ver4, ver3, and polarization diagrams may require to be irreducible along the transfer momentum/frequency
 end
 
-@enum ResponseName begin
+@enum Response begin
     Composite
     ChargeCharge
     SpinSpin
