@@ -76,9 +76,10 @@ function buildSigma(para, externLoop, subdiagram = false;
     #TODO: add validation for paraW
     if isValidG(paraG)
         legK = [externLoop, K, K, externLoop]
-        ver4 = toDataFrame(bareVer4!(diag, paraW, legK, [DI, EX]))
+        ver4 = toDataFrame(bareVer4!(diag, paraW, legK, [EX, DI]))
+        g = groupby!(diag, ver4, [:response, :TinL, :ToutR])
         println(ver4)
-        println(groupby(ver4, :response))
+        println(g)
     end
 
     # if para.innerLoopNum >= 2
