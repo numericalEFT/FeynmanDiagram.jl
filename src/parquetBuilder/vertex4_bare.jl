@@ -1,4 +1,4 @@
-function bareVer4!(diag, para, legK, diex = [DI, EX])
+function bareVer4!(diag, para::GenericPara, legK, diex = [DI, EX], nodeName = nothing)
     @assert para.diagType == Ver4Diag
 
     KinL, KoutL, KinR = legK[1], legK[2], legK[3]
@@ -102,6 +102,13 @@ function bareVer4!(diag, para, legK, diex = [DI, EX])
             addresponse!(response, D_Instant, extT_ins, innerT_dyn)
             addresponse!(response, D_Dynamic, extT_dyn, innerT_dyn)
         end
+    end
+
+    for n in nodes
+        if isnothing(nodeName)
+            nodeName = symbol(n.id.response, n.id.type, "Int")
+        end
+        generate_node_from_children!(diag, n, ADD, 1.0, nodeName; para = n.id)
     end
 
     return nodes

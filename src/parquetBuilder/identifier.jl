@@ -58,9 +58,46 @@ function toDataFrame(nodeVec::Vector{Node{I}}) where {I<:Identifier}
     function node2dict(node)
         d = Dict{Symbol,Any}()
         for field in fieldnames(I)
-            d[field] = getproperty(node.id, field)
+            if field == :extT
+                tidx = getproperty(node.id, :extT)
+                if length(tidx) == 2 # for sigma, polar
+                    d[:Tin] = tidx[1]
+                    d[:Tout] = tidx[2]
+                elseif length(tidx) == 3 # vertex3
+                    d[:TinL] = tidx[INL]
+                    d[:ToutL] = tidx[OUTL]
+                    d[:TinR] = tidx[INR]
+                elseif length(tidx) == 4 # vertex4
+                    d[:TinL] = tidx[INL]
+                    d[:ToutL] = tidx[OUTL]
+                    d[:TinR] = tidx[INR]
+                    d[:ToutR] = tidx[OUTR]
+                else
+                    error("not implemented!")
+                end
+            elseif field == :extK
+                k = getproperty(node.id, :extK)
+                if length(k) == 2 # for sigma, polar
+                    d[:Kin] = k[1]
+                    d[:Kout] = k[2]
+                elseif length(k) == 3 # vertex3
+                    d[:KinL] = k[INL]
+                    d[:KoutL] = k[OUTL]
+                    d[:KinR] = k[INR]
+                elseif length(k) == 4 # vertex4
+                    d[:KinL] = k[INL]
+                    d[:KoutL] = k[OUTL]
+                    d[:KinR] = k[INR]
+                    d[:KoutR] = k[OUTR]
+                else
+                    error("not implemented!")
+                end
+            else
+                d[field] = getproperty(node.id, field)
+            end
         end
-        d[:node] = node.node
+        d[:component] = node.node
+        # d[:node] = node.node
         return d
     end
     return DataFrame([node2dict(node) for node in nodeVec])
@@ -162,7 +199,7 @@ function groupby!(diag::DiagTree.Diagrams, nodes::DataFrame, fields...)
             entry = Tuple(g[1, f] for f in fields)
         end
         name = Symbol(entry)
-        d[entry] = DiagTree.addnode!(diag, ADD, name, g.node)
+        d[entry] = DiagTree.addnode!(diag, ADD, name, g.component)
     end
     return d
 end
