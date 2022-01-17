@@ -75,7 +75,7 @@ struct Ver4
         @assert loopNum >= 0
 
         if loopNum == 0
-            append!(ver4.nodes, bareVer4!(diag, para, legK, [DI, EX]))
+            append!(ver4.nodes, bareVer4!(diag, para, legK, [DI, EX], name))
         else # loopNum>0
             for c in chan
                 if c == I
@@ -95,11 +95,11 @@ struct Ver4
             # # for c in II
             # # end
             # test(ver4) # more test
+            for n in ver4.nodes
+                generate_node_from_children!(diag, n, ADD, 1.0, name; para = n.id)
+            end
         end
 
-        for n in ver4.nodes
-            generate_node_from_children!(diag, n, ADD, 1.0, name; para = n.id)
-        end
 
         return ver4
     end

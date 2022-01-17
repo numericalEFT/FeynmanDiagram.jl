@@ -44,80 +44,92 @@ function buildSigma(para, externLoop, subdiagram = false;
     qe = K - externLoop
     factor = 1 / (2π)^para.loopDim
 
-    if para.interactionTauNum == 1 || para.interactionTauNum == 0
-        paraG = reconstruct(para, innerLoopNum = para.innerLoopNum - 1, firstLoopIdx = para.firstLoopIdx + 1, firstTauIdx = t0 + 1)
-        if isValidG(paraG)
-            diag, g = buildG(paraG, K, [t0, t0]; diag = diag)
-            @assert g.index != 0
-            # v = DiagTree.addpropagator!(diag, :Vpool, 1, :V; loop = qe)
-            push!(instant, DiagTree.addnode!(diag, MUL, :fockΣ, [g, v], factor; para = [t0, t0]))
-        end
-    elseif para.interactionTauNum == 2
-        paraG = reconstruct(para, innerLoopNum = para.innerLoopNum - 1, firstLoopIdx = para.firstLoopIdx + 1, firstTauIdx = t0 + 2)
-        if isValidG(paraG)
-            diag, gv = buildG(paraG, K, [t0, t0]; diag = diag)
-            @assert gv.index != 0
-            v = DiagTree.addpropagator!(diag, :Vpool, 1, :V; loop = qe, site = (t0, t0 + 1))
-            push!(instant, DiagTree.addnode!(diag, MUL, :fockΣ, [gv, v], factor; para = (t0, t0)))
+    # if para.interactionTauNum == 1 || para.interactionTauNum == 0
+    #     paraG = reconstruct(para, innerLoopNum = para.innerLoopNum - 1, firstLoopIdx = para.firstLoopIdx + 1, firstTauIdx = t0 + 1)
+    #     if isValidG(paraG)
+    #         diag, g = buildG(paraG, K, [t0, t0]; diag = diag)
+    #         @assert g.index != 0
+    #         # v = DiagTree.addpropagator!(diag, :Vpool, 1, :V; loop = qe)
+    #         push!(instant, DiagTree.addnode!(diag, MUL, :fockΣ, [g, v], factor; para = [t0, t0]))
+    #     end
+    # elseif para.interactionTauNum == 2
+    #     paraG = reconstruct(para, innerLoopNum = para.innerLoopNum - 1, firstLoopIdx = para.firstLoopIdx + 1, firstTauIdx = t0 + 2)
+    #     if isValidG(paraG)
+    #         diag, gv = buildG(paraG, K, [t0, t0]; diag = diag)
+    #         @assert gv.index != 0
+    #         v = DiagTree.addpropagator!(diag, :Vpool, 1, :V; loop = qe, site = (t0, t0 + 1))
+    #         push!(instant, DiagTree.addnode!(diag, MUL, :fockΣ, [gv, v], factor; para = (t0, t0)))
 
-            diag, gw = buildG(paraG, K, [t0, t0 + 1]; diag = diag)
-            @assert gw.index != 0
-            w = DiagTree.addpropagator!(diag, :Wpool, 1, :W; loop = qe, site = (t0, t0 + 1))
-            push!(dynamic, DiagTree.addnode!(diag, MUL, :fockΣ, [gw, w], factor; para = [t0, t0 + 1]))
-        end
-    else
-        error("not implemented!")
+    #         diag, gw = buildG(paraG, K, [t0, t0 + 1]; diag = diag)
+    #         @assert gw.index != 0
+    #         w = DiagTree.addpropagator!(diag, :Wpool, 1, :W; loop = qe, site = (t0, t0 + 1))
+    #         push!(dynamic, DiagTree.addnode!(diag, MUL, :fockΣ, [gw, w], factor; para = [t0, t0 + 1]))
+    #     end
+    # else
+    #     error("not implemented!")
+    # end
+
+    #if interaction is dynamic, then first two tau variables are reversed for the in and out vertices
+    paraG = reconstruct(para, diagType = GreenDiag, innerLoopNum = para.innerLoopNum - 1,
+        firstLoopIdx = para.firstLoopIdx + 1, firstTauIdx = t0 + para.interactionTauNum)
+    paraW = reconstruct(para, diagType = Ver4Diag, innerLoopNum = 0, firstTauIdx = t0)
+    #TODO: add validation for paraW
+    if isValidG(paraG)
+        legK = [externLoop, K, K, externLoop]
+        ver4 = toDataFrame(bareVer4!(diag, paraW, legK, [DI, EX]))
+        println(ver4)
+        println(groupby(ver4, :response))
     end
 
-    if para.innerLoopNum >= 2
-        ################# Sigma beyond the Fock diagram #################################
-        #all self-energy diagram will be countered twice, thus a factor 1/2 is needed.
-        factor = 1 / (2π)^para.loopDim * (1 / 2)
-        KinL, KoutR = externLoop, externLoop
-        KinR, KoutL = K, K
-        for ver4LoopNum in 1:para.innerLoopNum-1
-            gLoopNum = para.innerLoopNum - 1 - ver4LoopNum
-            # if G doesn't exist, continue without creating ver4 node in the diagram
-            if isValidG(para.filter, gLoopNum) == false
-                continue
-            end
+    # if para.innerLoopNum >= 2
+    #     ################# Sigma beyond the Fock diagram #################################
+    #     #all self-energy diagram will be countered twice, thus a factor 1/2 is needed.
+    #     factor = 1 / (2π)^para.loopDim * (1 / 2)
+    #     KinL, KoutR = externLoop, externLoop
+    #     KinR, KoutL = K, K
+    #     for ver4LoopNum in 1:para.innerLoopNum-1
+    #         gLoopNum = para.innerLoopNum - 1 - ver4LoopNum
+    #         # if G doesn't exist, continue without creating ver4 node in the diagram
+    #         if isValidG(para.filter, gLoopNum) == false
+    #             continue
+    #         end
 
-            ver4Para = reconstruct(para, firstLoopIdx = para.firstLoopIdx + 1, innerLoopNum = ver4LoopNum)
-            diag, ver4, dir, ex = buildVer4(ver4Para, [KinL, KoutL, KinR, KoutR],
-                [T,], F, V, All; Fouter = [], Allouter = All, diag = diag)
+    #         ver4Para = reconstruct(para, firstLoopIdx = para.firstLoopIdx + 1, innerLoopNum = ver4LoopNum)
+    #         diag, ver4, dir, ex = buildVer4(ver4Para, [KinL, KoutL, KinR, KoutR],
+    #             [T,], F, V, All; Fouter = [], Allouter = All, diag = diag)
 
-            dict = Dict{Tuple{Int,Int},Vector{Any}}()
-            collapse!(dict, diag, dir, 1.0)
-            collapse!(dict, diag, ex, para.spin)
-            #exchange ver4 has an additional Fermi loop compared to the direct counterpart when plugged into sigma
+    #         dict = Dict{Tuple{Int,Int},Vector{Any}}()
+    #         collapse!(dict, diag, dir, 1.0)
+    #         collapse!(dict, diag, ex, para.spin)
+    #         #exchange ver4 has an additional Fermi loop compared to the direct counterpart when plugged into sigma
 
-            for key in keys(dict)
-                nodes = []
-                for (n, extT, spinFactor) in dict[key]
+    #         for key in keys(dict)
+    #             nodes = []
+    #             for (n, extT, spinFactor) in dict[key]
 
-                    tpair = [extT[INL], extT[OUTR]]
-                    paraG = reconstruct(para,
-                        innerLoopNum = gLoopNum,
-                        firstLoopIdx = para.firstLoopIdx + 1 + ver4LoopNum,
-                        firstTauIdx = maxTauIdx(ver4) + 1)
-                    diag, g = buildG(paraG, K, tpair; diag = diag)
-                    @assert g.index != 0
-                    push!(nodes, DiagTree.addnode!(diag, MUL, :Σ, [n, g], factor * spinFactor; para = tpair))
-                end
+    #                 tpair = [extT[INL], extT[OUTR]]
+    #                 paraG = reconstruct(para,
+    #                     innerLoopNum = gLoopNum,
+    #                     firstLoopIdx = para.firstLoopIdx + 1 + ver4LoopNum,
+    #                     firstTauIdx = maxTauIdx(ver4) + 1)
+    #                 diag, g = buildG(paraG, K, tpair; diag = diag)
+    #                 @assert g.index != 0
+    #                 push!(nodes, DiagTree.addnode!(diag, MUL, :Σ, [n, g], factor * spinFactor; para = tpair))
+    #             end
 
-                push!(dynamic, DiagTree.addnode!(diag, DiagTree.ADD, :Σ, nodes; para = collect(key))) #key = (extT[INL], extT[OUTR])
-                @assert dynamic[end].index != 0
-            end
-        end
-    end
+    #             push!(dynamic, DiagTree.addnode!(diag, DiagTree.ADD, :Σ, nodes; para = collect(key))) #key = (extT[INL], extT[OUTR])
+    #             @assert dynamic[end].index != 0
+    #         end
+    #     end
+    # end
 
     # make sure all incoming Tau idx is equal
-    for nidx in dynamic
-        node = DiagTree.getNode(diag, nidx)
-        @assert node.para[1] == para.firstTauIdx
-        @assert node.para[2] <= tright
-    end
-    @assert isempty(dynamic) == false || isempty(instant) == false "Sigma diagram doesn't exist for \n$para"
+    # for nidx in dynamic
+    #     node = DiagTree.getNode(diag, nidx)
+    #     @assert node.para[1] == para.firstTauIdx
+    #     @assert node.para[2] <= tright
+    # end
+    # @assert isempty(dynamic) == false || isempty(instant) == false "Sigma diagram doesn't exist for \n$para"
     return diag, instant, dynamic
 
 end
