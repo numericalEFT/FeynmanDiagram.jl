@@ -71,7 +71,7 @@ import ..Ver4Diag
 import ..Composite
 import ..ChargeCharge
 import ..SpinSpin
-import ..ResponseName
+import ..Response
 
 import ..Instant
 import ..Dynamic

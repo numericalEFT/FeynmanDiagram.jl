@@ -2,7 +2,7 @@ abstract type Identifier end
 
 struct Vertex4 <: Identifier
     ######### properties that defines a unique ver4 ###################
-    name::ResponseName #ChargeCharge, SpinSpin, ...
+    response::Response #ChargeCharge, SpinSpin, ...
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
     DiEx::Int # 1 for direct, 2 for exchange
     extK::Vector{Vector{Float64}}
@@ -10,9 +10,9 @@ struct Vertex4 <: Identifier
     para::GenericPara
 end
 function Base.isequal(a::Vertex4, b::Vertex4)
-    return (a.name == b.name) && (a.type == b.type) && (a.extT == b.extT) && (a.DiEx == b.DiEx) && (a.extK ≈ b.extK) && (a.para == b.para)
+    return (a.response == b.response) && (a.type == b.type) && (a.extT == b.extT) && (a.DiEx == b.DiEx) && (a.extK ≈ b.extK) && (a.para == b.para)
 end
-Base.show(io::IO, v::Vertex4) = print(io, "$(symbol(v.name, v.type))$(v.DiEx == DI ? :D : (v.DiEx == EX ? :E : :DE)),t$(v.extT)")
+Base.show(io::IO, v::Vertex4) = print(io, "$(symbol(v.response, v.type))$(v.DiEx == DI ? :D : (v.DiEx == EX ? :E : :DE)),t$(v.extT)")
 
 struct Sigma <: Identifier
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
@@ -29,7 +29,7 @@ struct Vertex3 <: Identifier
 end
 
 struct Polarization <: Identifier
-    name::ResponseName #ChargeCharge, SpinSpin, ...
+    response::Response #ChargeCharge, SpinSpin, ...
     extK::Vector{Float64}
     extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
     para::GenericPara
@@ -94,6 +94,7 @@ end
 function classify(nodesVec::Vector{Node{I}}, comparedSyms::Symbol...) where {I<:Identifier}
     function compare(id1, id2)
         for s in comparedSyms
+            @assert s in fieldnames(I) && s in fieldnames(I) "$s is not a valid field name of $I!"
             if s != :extK
                 if getproperty(id1, s) != getproperty(id2, s)
                     return false

@@ -1,18 +1,18 @@
 struct Interaction
-    name::ResponseName
+    response::Response
     type::Set{AnalyticProperty}
-    function Interaction(name, type)
-        return new(name, Set(type))
+    function Interaction(response, type)
+        return new(response, Set(type))
     end
-    function Interaction(name, type::AnalyticProperty)
-        return new(name, Set([type,]))
+    function Interaction(response, type::AnalyticProperty)
+        return new(response, Set([type,]))
     end
 end
 
-Base.isequal(a::Interaction, b::Interaction) = (a.name == b.name) && issetequal(a.type, b.type)
+Base.isequal(a::Interaction, b::Interaction) = (a.response == b.response) && issetequal(a.type, b.type)
 Base.:(==)(a::Interaction, b::Interaction) = Base.isequal(a, b)
 
-function symbol(name::ResponseName, type::AnalyticProperty, addition = nothing)
+function symbol(name::Response, type::AnalyticProperty, addition = nothing)
     if name == ChargeCharge
         n = "cc"
     elseif name == SpinSpin

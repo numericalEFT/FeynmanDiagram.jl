@@ -18,7 +18,7 @@ import ..ChargeCharge
 import ..SpinSpin
 import ..UpUp
 import ..UpDown
-import ..ResponseName
+import ..Response
 
 import ..Instant
 import ..Dynamic
@@ -97,9 +97,9 @@ function newDiagTree(para, name::Symbol = :none)
     propagatorPool = []
     push!(propagatorPool, DiagTree.propagatorPool(:Gpool, weightType))
     for interaction in para.interaction
-        iname = interaction.name
+        response = interaction.response
         for type in interaction.type
-            push!(propagatorPool, DiagTree.propagatorPool(symbol(iname, type, "pool"), weightType))
+            push!(propagatorPool, DiagTree.propagatorPool(symbol(response, type, "pool"), weightType))
         end
     end
     return DiagTree.Diagrams(Kpool, Tuple(propagatorPool), weightType, nodeParaType = nodeParaType, name = name)
