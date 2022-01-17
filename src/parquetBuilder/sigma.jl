@@ -6,7 +6,8 @@
 
 """
 function buildSigma(para, externLoop, subdiagram = false;
-    F = [I, U, S], V = [I, T, U], All = union(F, V), diag = newDiagTree(para, :Sigma))
+    F = [I, U, S], V = [I, T, U], All = union(F, V),
+    diag = newDiagTree(para, :Sigma))
     @assert para.innerLoopNum >= 1
     @assert length(externLoop) == para.totalLoopNum
     tright = para.firstTauIdx - 1 + para.innerLoopNum * para.interactionTauNum
@@ -48,7 +49,7 @@ function buildSigma(para, externLoop, subdiagram = false;
         if isValidG(paraG)
             diag, g = buildG(paraG, K, [t0, t0]; diag = diag)
             @assert g.index != 0
-            v = DiagTree.addpropagator!(diag, :Vpool, 1, :V; loop = qe)
+            # v = DiagTree.addpropagator!(diag, :Vpool, 1, :V; loop = qe)
             push!(instant, DiagTree.addnode!(diag, MUL, :fockΣ, [g, v], factor; para = [t0, t0]))
         end
     elseif para.interactionTauNum == 2
