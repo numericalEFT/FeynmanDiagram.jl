@@ -13,6 +13,7 @@ chan = [Parquet.T, Parquet.U, Parquet.S]
 
 F = [Parquet.U, Parquet.S]
 V = [Parquet.T, Parquet.U]
+All = union(F, V)
 
 ###################### ver4 to DiagTree ###########################################
 para = GenericPara(
@@ -35,7 +36,7 @@ varT = [rand() for i in 1:para.totalTauNum]
 evalK(basis) = sum([basis[i] * varK[i] for i in 1:para.totalLoopNum])
 evalT(Tidx) = varT[Tidx]
 
-diag, nodes = Parquet.buildVer4(para, legK, chan, F = F, V = V)
+diag, nodes = Parquet.buildVer4(para, legK, chan, F = F, V = V, All = All)
 d = Parquet.groupby!(diag, nodes, :response)
 # g = groupby(nodes, :response)
 # uu = filter(r -> r.response == UpUp, nodes)

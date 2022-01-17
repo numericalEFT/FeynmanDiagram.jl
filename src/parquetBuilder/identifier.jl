@@ -187,16 +187,20 @@ function classify!(diag::DiagTree.Diagrams, nodesVec::Vector{Node{I}}, comparedS
     return componentgroup
 end
 
-function groupby!(diag::DiagTree.Diagrams, nodes::DataFrame, fields...)
-    group = groupby(nodes, fields...)
+function groupby!(diag::DiagTree.Diagrams, nodes::DataFrame, fields)
+    group = groupby(nodes, fields)
 
     d = Dict{Any,Component}()
     for g in group
         # name = Symbol(Tuple(g[1, f] for f in fields))
-        if length(fields) == 1
-            entry = g[1, fields[1]]
-        else
-            entry = Tuple(g[1, f] for f in fields)
+        # for row in eachrow(g[:, fields])
+        #     println(row)
+        #     println(convert(Array, row))
+        # end
+        entry = g[1, fields]
+        if length(entry) > 1
+            # println(entry)
+            entry = Tuple(entry)
         end
         name = Symbol(entry)
         d[entry] = DiagTree.addnode!(diag, ADD, name, g.component)
