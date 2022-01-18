@@ -1,17 +1,17 @@
 # Base.hash(d::DiagramId) = hash(d) % 1000000
 
-struct Diagram{T<:DiagramId,W}
+struct Diagram{W}
     hash::Int # Two diagram MAY have the same hash number, only provide a inttuiative way to distinish two diagrams. 
-    id::T
+    id::DiagramId
     operator::Operator
     factor::W
-    subdiagram::Vector{Any}
+    subdiagram::Vector{Diagram{W}}
 
     weight::W
     # parent::Diagram
 
-    function Diagram(id::T, operator::Operator = Add(), factor::W = 1.0) where {T<:DiagramId,W}
-        return new{T,W}(hash(id) % 1000000, id, operator, factor, [], zero(W))
+    function Diagram(id::DiagramId, operator::Operator = Add(), factor::W = 1.0) where {W}
+        return new{W}(hash(id) % 1000000, id, operator, factor, [], zero(W))
     end
 end
 
@@ -24,7 +24,14 @@ function add_subdiagram!(parent::Diagram, child::Diagram)
     push!(parent.subdiagram, child)
 end
 
-function eval!(diag::Diagram) end
+@inline apply(o::Add, diags::Vector{Diagram{W}}) where {W<:Number} = sum(d.weight for d in diags)
+@inline apply(o::Mutiply, diags::Vector{Diagram{W}}) where {W<:Number} = prod(d.weight for d in diags)
+@inline apply(o::Add, diag::Diagram{W}) where {W<:Number} = diag.weight
+@inline apply(o::Mutiply, diag::Diagram{W}) where {W<:Number} = diag.weight
+
+function eval!(diag::Diagram)
+    diag.weight = apply(diag.operator, diag.subdiagram)
+end
 
 function toDataFrame(diag::Diagram, maxdepth::Int = 1)
     @assert maxdepth == 1 "deep convert has not yet been implemented!"
@@ -39,7 +46,7 @@ function toDataFrame(diag::Diagram, maxdepth::Int = 1)
     return DataFrame(d)
 end
 
-function toDataFrame(diagVec::AbstractVector, maxdepth::Int = 1)
+function toDataFrame(diagVec::Vector{Diagram{W}}, maxdepth::Int = 1) where {W}
     diags = []
     for diag in diagVec
         push!(diags, toDataFrame(diag, maxdepth))

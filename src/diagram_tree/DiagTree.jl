@@ -19,7 +19,7 @@ export add_subdiagram!
 export toDataFrame
 
 # struct Cache and struct Pool
-include("pool.jl")
+# include("pool.jl")
 
 # struct Propagator, Node and Diagram
 # include("object.jl")
