@@ -1,7 +1,7 @@
 @testset "Diagram" begin
-    Diagram = DiagTreeNew.Diagram
-    DiagramId = DiagTreeNew.DiagramId
-    add_subdiagram! = DiagTreeNew.add_subdiagram!
+    # Diagram = DiagTreeNew.Diagram
+    # DiagramId = DiagTreeNew.DiagramId
+    # add_subdiagram! = DiagTreeNew.add_subdiagram!
 
     struct ID <: DiagramId
         index::Int
@@ -22,5 +22,5 @@
     @test [node.id.index for node in PreOrderDFS(root)] == [0, 1, 3, 2]
     @test [node.id.index for node in Leaves(root)] == [3, 2]
 
-    println(DiagTreeNew.toDataFrame([root,]))
+    println(toDataFrame([root,]))
 end

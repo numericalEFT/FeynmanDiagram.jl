@@ -59,8 +59,10 @@ include("common.jl")
 export GenericPara, Interaction
 
 include("diagram_tree/DiagTree.jl")
+using .DiagTreeNew
 export DiagTreeNew
 export DiagramId, Diagram, add_subdiagram!, toDataFrame
+
 
 include("diagramTree/DiagTree.jl")
 export DiagTree
