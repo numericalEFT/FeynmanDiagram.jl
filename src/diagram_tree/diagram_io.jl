@@ -49,7 +49,7 @@ end
 - `verbose=0`: the amount of information to show
 - `depth=999`: deepest level of the diagram tree to show
 """
-function visualize(diag::Diagram; verbose = 0, maxdepth = 999)
+function plot_tree(diag::Diagram; verbose = 0, maxdepth = 999)
 
     # pushfirst!(PyVector(pyimport("sys")."path"), @__DIR__) #comment this line if no need to load local python module
     ete = PyCall.pyimport("ete3")

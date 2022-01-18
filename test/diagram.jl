@@ -24,7 +24,7 @@
     @test evalDiagTree!(root) == sum(node.id.index for node in Leaves(root))
 
     print_tree(root)
-    DiagTreeNew.visualize(root)
+    DiagTreeNew.plot_tree(root)
 
     println(toDataFrame([root,]))
 end
