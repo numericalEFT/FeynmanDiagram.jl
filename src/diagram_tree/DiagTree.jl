@@ -2,10 +2,16 @@ module DiagTreeNew
 using AbstractTrees
 using Printf, PyCall, DataFrames
 
-const ADD, MUL = 1, 2
-export ADD, MUL
+# @enum Operator begin
+#     Add
+#     Mul
+# end
 
-# include("interface.jl")
+# Base.length(r::Operator) = 1
+# Base.iterate(r::Operator) = (r, nothing)
+# function Base.iterate(r::Operator, ::Nothing) end
+
+include("traits.jl")
 include("diagram.jl")
 export DiagramId
 export Diagram
