@@ -24,6 +24,8 @@ function add_subdiagram!(parent::Diagram, child::Diagram)
     push!(parent.subdiagram, child)
 end
 
+function eval!(diag::Diagram) end
+
 function toDataFrame(diag::Diagram, maxdepth::Int = 1)
     @assert maxdepth == 1 "deep convert has not yet been implemented!"
     d = Dict{Symbol,Any}(Dict(diag.id))
