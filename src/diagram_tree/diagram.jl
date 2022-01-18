@@ -10,9 +10,23 @@ struct Diagram{W}
     weight::W
     # parent::Diagram
 
-    function Diagram(id::DiagramId, operator::Operator = Add(), factor::W = 1.0) where {W}
+    function Diagram(id::DiagramId, operator::Operator = Sum(), factor::W = 1.0) where {W}
         return new{W}(hash(id) % 1000000, id, operator, factor, [], zero(W))
     end
+end
+
+function Base.show(io::IO, diag::Diagram)
+
+    if length(diag.subdiagram) == 0
+        typestr = "bare"
+    elseif length(diag.subdiagram) == 1
+        typestr = "#$(diag.hash)"
+    else
+        subdiag = prod(["#$(d.hash), " for d in diag.subdiagram[1:end-1]])
+        subdiag *= "#$(diag.subdiagram[end].hash)"
+        typestr = "$(diag.operator)($subdiag)"
+    end
+    print(io, "\u001b[32m#$(diag.hash)\u001b[0m : $(diag.id) = $(diag.factor)x$typestr = $(diag.weight)")
 end
 
 isbare(diag::Diagram) = isempty(diag.subdiagram)
@@ -27,10 +41,10 @@ function add_subdiagram!(parent::Diagram, child::Diagram)
 end
 
 
-@inline apply(o::Add, diags::Vector{Diagram{W}}) where {W<:Number} = sum(d.weight for d in diags)
-@inline apply(o::Mutiply, diags::Vector{Diagram{W}}) where {W<:Number} = prod(d.weight for d in diags)
-@inline apply(o::Add, diag::Diagram{W}) where {W<:Number} = diag.weight
-@inline apply(o::Mutiply, diag::Diagram{W}) where {W<:Number} = diag.weight
+@inline apply(o::Sum, diags::Vector{Diagram{W}}) where {W<:Number} = sum(d.weight for d in diags)
+@inline apply(o::Prod, diags::Vector{Diagram{W}}) where {W<:Number} = prod(d.weight for d in diags)
+@inline apply(o::Sum, diag::Diagram{W}) where {W<:Number} = diag.weight
+@inline apply(o::Prod, diag::Diagram{W}) where {W<:Number} = diag.weight
 
 function eval!(diag::Diagram)
     if isbare(diag)
@@ -69,7 +83,8 @@ function AbstractTrees.children(diag::Diagram)
 end
 
 ## Things that make printing prettier
-AbstractTrees.printnode(io::IO, diag::Diagram) = print(io, "\u001b[32m$(diag.hash)\u001b[0m : $(diag.id)")
+# AbstractTrees.printnode(io::IO, diag::Diagram) = print(io, "\u001b[32m$(diag.hash)\u001b[0m : $(diag.id)")
+AbstractTrees.printnode(io::IO, diag::Diagram) = print(io, "$(diag)")
 
 ## Optional enhancements
 # These next two definitions allow inference of the item type in iteration.
