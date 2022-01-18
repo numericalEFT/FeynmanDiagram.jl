@@ -58,6 +58,10 @@ export InteractionType, Instant, Dynamic, D_Instant, D_Dynamic
 include("common.jl")
 export GenericPara, Interaction
 
+include("diagram_tree/DiagTree.jl")
+export DiagTreeNew
+export DiagramId, Diagram, add_subdiagram!, toDataFrame
+
 include("diagramTree/DiagTree.jl")
 export DiagTree
 export Component, Diagrams
