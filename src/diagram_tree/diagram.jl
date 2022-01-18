@@ -8,11 +8,12 @@ Base.:(==)(a::DiagramId, b::DiagramId) = Base.isequal(a, b)
 # Base.hash(d::DiagramId) = hash(d) % 1000000
 
 struct Diagram{T<:DiagramId}
+    hash::Int
     id::T
     subdiagram::Vector{Diagram}
     # parent::Diagram
 
-    Diagram(id::T) where {T<:DiagramId} = new{T}(id, [])
+    Diagram(id::T) where {T<:DiagramId} = new{T}(hash(id) % 1000000, id, [])
 end
 
 function add_subdiagram!(parent::Diagram, child::Diagram)
@@ -29,6 +30,7 @@ function toDataFrame(diagVec::AbstractVector,
     diags = []
     for diag in diagVec
         d = id2Dict(diag.id)
+        d[:hash] = diag.hash
         d[:DiagramId] = diag.id
         d[:subdiagram] = [d.id for d in diag.subdiagram]
         push!(diags, d)
@@ -42,7 +44,7 @@ function AbstractTrees.children(diag::Diagram)
 end
 
 ## Things that make printing prettier
-AbstractTrees.printnode(io::IO, diag::Diagram) = print(io, "\u001b[32m$(diag.id)\u001b[0m : $(diag.id)")
+AbstractTrees.printnode(io::IO, diag::Diagram) = print(io, "\u001b[32m$(diag.hash)\u001b[0m : $(diag.id)")
 
 ## Optional enhancements
 # These next two definitions allow inference of the item type in iteration.
