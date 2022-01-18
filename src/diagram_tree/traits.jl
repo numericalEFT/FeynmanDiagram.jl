@@ -7,12 +7,15 @@ Base.:(==)(a::DiagramId, b::DiagramId) = Base.isequal(a, b)
 eval(d::DiagramId) = error("eval for $d has not yet implemented!")
 
 abstract type Operator end
-struct Add <: Operator end
-struct Mutiply <: Operator end
-Base.show(io::IO, o::Operator) = print(io, typeof(o))
+struct Sum <: Operator end
+struct Prod <: Operator end
 Base.isequal(a::Operator, b::Operator) = (typeof(a) == typeof(b))
 Base.:(==)(a::Operator, b::Operator) = Base.isequal(a, b)
-
 apply(o::Operator, diags) = error("not implemented!")
+
+Base.show(io::IO, o::Operator) = print(io, typeof(o))
+Base.show(io::IO, o::Sum) = print(io, "sum")
+Base.show(io::IO, o::Prod) = print(io, "prod")
+
 
 
