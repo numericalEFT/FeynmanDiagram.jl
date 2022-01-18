@@ -46,12 +46,20 @@ end
 @inline apply(o::Sum, diag::Diagram{W}) where {W<:Number} = diag.weight
 @inline apply(o::Prod, diag::Diagram{W}) where {W<:Number} = diag.weight
 
-function eval!(diag::Diagram)
+function evalDiag!(diag::Diagram)
     if isbare(diag)
         diag.weight = apply(diag.operator, diag.subdiagram) * factor
     else
         diag.weight = eval(diag.id) * factor
     end
+    return diag.weight
+end
+
+function evalTree!(diag::Diagram)
+    for d in PostOrderDFS(diag)
+        evalDiag!(d)
+    end
+    return diag.weight
 end
 
 function toDataFrame(diag::Diagram, maxdepth::Int = 1)
