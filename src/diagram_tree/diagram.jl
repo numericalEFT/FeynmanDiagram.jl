@@ -15,6 +15,8 @@ struct Diagram{W}
     end
 end
 
+isbare(diag::Diagram) = isempty(diag.subdiagram)
+
 function add_subdiagram!(parent::Diagram, child::Diagram)
     for c in parent.subdiagram
         if c.id == child.id
@@ -24,13 +26,18 @@ function add_subdiagram!(parent::Diagram, child::Diagram)
     push!(parent.subdiagram, child)
 end
 
+
 @inline apply(o::Add, diags::Vector{Diagram{W}}) where {W<:Number} = sum(d.weight for d in diags)
 @inline apply(o::Mutiply, diags::Vector{Diagram{W}}) where {W<:Number} = prod(d.weight for d in diags)
 @inline apply(o::Add, diag::Diagram{W}) where {W<:Number} = diag.weight
 @inline apply(o::Mutiply, diag::Diagram{W}) where {W<:Number} = diag.weight
 
 function eval!(diag::Diagram)
-    diag.weight = apply(diag.operator, diag.subdiagram)
+    if isbare(diag)
+        diag.weight = apply(diag.operator, diag.subdiagram) * factor
+    else
+        diag.weight = eval(diag.id) * factor
+    end
 end
 
 function toDataFrame(diag::Diagram, maxdepth::Int = 1)
