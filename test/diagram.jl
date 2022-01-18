@@ -7,8 +7,8 @@
         index::Int
     end
     Base.show(io::IO, d::ID) = print(io, d.index)
-    Base.isequal(a::ID, b::ID) = (a.index == b.index)
-    Base.Dict(d::ID) = Dict(:id => d.index)
+    # Base.isequal(a::ID, b::ID) = (a.index == b.index)
+    # Base.Dict(d::ID) = Dict(:id => d.index)
     DiagTreeNew.eval(d::ID) = d.index
 
     root = Diagram(ID(0), Sum())
@@ -45,7 +45,6 @@ end
         k1                        k2
     """
     # We only consider the direct part of the above diagram
-    Gtype, Wtype = 1, 2
     spin = 2.0
     D = 3
     kF, β, mass2 = 1.919, 0.5, 1.0
