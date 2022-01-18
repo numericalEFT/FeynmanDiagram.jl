@@ -1,6 +1,6 @@
 # Base.hash(d::DiagramId) = hash(d) % 1000000
 
-struct Diagram{W}
+mutable struct Diagram{W}
     hash::Int # Two diagram MAY have the same hash number, only provide a inttuiative way to distinish two diagrams. 
     id::DiagramId
     operator::Operator
@@ -31,7 +31,7 @@ end
 
 isbare(diag::Diagram) = isempty(diag.subdiagram)
 
-function add_subdiagram!(parent::Diagram, child::Diagram)
+function addSubDiagram!(parent::Diagram, child::Diagram)
     for c in parent.subdiagram
         if c.id == child.id
             return false
@@ -40,24 +40,31 @@ function add_subdiagram!(parent::Diagram, child::Diagram)
     push!(parent.subdiagram, child)
 end
 
+function addSubDiagram!(parent::Diagram, child::Vector{Diagram{W}}) where {W}
+    for d in child
+        addSubDiagram!(parent, d)
+    end
+end
+
 
 @inline apply(o::Sum, diags::Vector{Diagram{W}}) where {W<:Number} = sum(d.weight for d in diags)
 @inline apply(o::Prod, diags::Vector{Diagram{W}}) where {W<:Number} = prod(d.weight for d in diags)
 @inline apply(o::Sum, diag::Diagram{W}) where {W<:Number} = diag.weight
 @inline apply(o::Prod, diag::Diagram{W}) where {W<:Number} = diag.weight
 
-function evalDiag!(diag::Diagram)
+function evalDiagNode!(diag::Diagram)
     if isbare(diag)
-        diag.weight = apply(diag.operator, diag.subdiagram) * factor
+        diag.weight = eval(diag.id) * diag.factor
     else
-        diag.weight = eval(diag.id) * factor
+        diag.weight = apply(diag.operator, diag.subdiagram) * diag.factor
     end
     return diag.weight
 end
 
-function evalTree!(diag::Diagram)
+function evalDiagTree!(diag::Diagram)
     for d in PostOrderDFS(diag)
-        evalDiag!(d)
+        evalDiagNode!(d)
+        println(d)
     end
     return diag.weight
 end

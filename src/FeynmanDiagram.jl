@@ -61,7 +61,9 @@ export GenericPara, Interaction
 include("diagram_tree/DiagTree.jl")
 using .DiagTreeNew
 export DiagTreeNew
-export DiagramId, Diagram, add_subdiagram!, toDataFrame
+export DiagramId, Diagram, addSubDiagram!, toDataFrame
+export evalDiagNode!, evalDiagTree!
+export Operator, Sum, Prod
 
 
 include("diagramTree/DiagTree.jl")

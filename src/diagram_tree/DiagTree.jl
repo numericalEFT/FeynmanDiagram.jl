@@ -15,8 +15,11 @@ include("traits.jl")
 include("diagram.jl")
 export DiagramId
 export Diagram
-export add_subdiagram!
+export addSubDiagram!
 export toDataFrame
+export evalDiagNode!
+export evalDiagTree!
+export Operator, Sum, Prod
 
 # struct Cache and struct Pool
 # include("pool.jl")
