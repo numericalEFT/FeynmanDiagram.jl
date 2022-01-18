@@ -44,7 +44,7 @@ struct BareInteraction <: DiagramId
     extT::Tuple{Int,Int} #all possible extT from different interactionType
     para::GenericPara
 end
-Base.show(io::IO, v::Green) = print(io, "W $(v.response)$(v.type), k$(v.extK), t$(v.extT)")
+Base.show(io::IO, v::BareInteraction) = print(io, "W $(v.response)$(v.type), k$(v.extK), t$(v.extT)")
 
 struct Sigma <: DiagramId
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
@@ -52,7 +52,7 @@ struct Sigma <: DiagramId
     extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
     para::GenericPara
 end
-Base.show(io::IO, v::Green) = print(io, "Σ $(v.type), k$(v.extK), t$(v.extT)")
+Base.show(io::IO, v::Sigma) = print(io, "Σ $(v.type), k$(v.extK), t$(v.extT)")
 
 struct Vertex3 <: DiagramId
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
@@ -60,7 +60,7 @@ struct Vertex3 <: DiagramId
     extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
     para::GenericPara
 end
-Base.show(io::IO, v::Green) = print(io, "Γ3 $(v.type), t$(v.extT)")
+Base.show(io::IO, v::Vertex3) = print(io, "Γ3 $(v.type), t$(v.extT)")
 
 struct Polar <: DiagramId
     response::Response #ChargeCharge, SpinSpin, ...
@@ -68,7 +68,7 @@ struct Polar <: DiagramId
     extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
     para::GenericPara
 end
-Base.show(io::IO, v::Green) = print(io, "Π $(v.response)$(v.type), k$(v.extK), t$(v.extT)")
+Base.show(io::IO, v::Polar) = print(io, "Π $(v.response)$(v.type), k$(v.extK), t$(v.extT)")
 
 function Base.isequal(a::DiagramId, b::DiagramId)
     if typeof(a) != typeof(b)
