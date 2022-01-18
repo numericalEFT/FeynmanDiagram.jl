@@ -5,7 +5,7 @@ struct Diagram{T<:DiagramId,W}
     id::T
     operator::Operator
     factor::W
-    subdiagram::Vector{Diagram}
+    subdiagram::Vector{Any}
 
     weight::W
     # parent::Diagram
