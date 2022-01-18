@@ -14,8 +14,8 @@ Base.:(==)(a::Operator, b::Operator) = Base.isequal(a, b)
 apply(o::Operator, diags) = error("not implemented!")
 
 Base.show(io::IO, o::Operator) = print(io, typeof(o))
-Base.show(io::IO, o::Sum) = print(io, "sum")
-Base.show(io::IO, o::Prod) = print(io, "prod")
+Base.show(io::IO, o::Sum) = print(io, "⨁")
+Base.show(io::IO, o::Prod) = print(io, "Ⓧ")
 
 
 

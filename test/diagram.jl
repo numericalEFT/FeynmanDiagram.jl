@@ -17,12 +17,14 @@
     addSubDiagram!(root, [l, r])
     addSubDiagram!(l, Diagram(ID(3), Sum()))
 
-    print_tree(root)
     collect(PostOrderDFS(root))
     @test [node.id.index for node in PostOrderDFS(root)] == [3, 1, 2, 0]
     @test [node.id.index for node in PreOrderDFS(root)] == [0, 1, 3, 2]
     @test [node.id.index for node in Leaves(root)] == [3, 2]
     @test evalDiagTree!(root) == sum(node.id.index for node in Leaves(root))
+
+    print_tree(root)
+    DiagTreeNew.visualize(root)
 
     println(toDataFrame([root,]))
 end
