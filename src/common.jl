@@ -12,7 +12,7 @@ end
 Base.isequal(a::Interaction, b::Interaction) = (a.response == b.response) && issetequal(a.type, b.type)
 Base.:(==)(a::Interaction, b::Interaction) = Base.isequal(a, b)
 
-function symbol(name::Response, type::AnalyticProperty, addition = nothing)
+function Base.show(io::IO, name::Response)
     if name == ChargeCharge
         n = "cc"
     elseif name == SpinSpin
@@ -24,6 +24,10 @@ function symbol(name::Response, type::AnalyticProperty, addition = nothing)
     else
         @error("$name is not implemented!")
     end
+    print(io, n)
+end
+
+function Base.show(io::IO, type::AnalyticProperty)
     if type == Instant
         t = "Ins"
     elseif type == Dynamic
@@ -35,10 +39,14 @@ function symbol(name::Response, type::AnalyticProperty, addition = nothing)
     else
         @error("$type is not implemented!")
     end
+    print(io, n)
+end
+
+function symbol(name::Response, type::AnalyticProperty, addition = nothing)
     if isnothing(addition)
-        return Symbol("$(n)$(t)")
+        return Symbol("$(name)$(type)")
     else
-        return Symbol("$(n)$(t)$(addition)")
+        return Symbol("$(name)$(type)$(addition)")
     end
 
 end

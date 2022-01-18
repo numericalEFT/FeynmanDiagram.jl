@@ -83,7 +83,7 @@ end
     @assert length(diag.propagatorPool[1].object) == 4
     nc = DiagTree.sum_of_producted_components!(diag, :sum, [[p1, p2], [p3, p4]])
     n = DiagTree.getNode(diag, nc)
-    println(n.childNodes)
+    # println(n.childNodes)
     # DiagTree.showTree(diag, n.index)
     @test DiagTree.getNode(diag, n.childNodes[1]).propagators[1] == [1, 3]
     @test DiagTree.getNode(diag, n.childNodes[2]).propagators[1] == [2, 3]
