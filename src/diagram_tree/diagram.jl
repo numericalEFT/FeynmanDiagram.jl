@@ -1,21 +1,18 @@
-abstract type DiagramId end
-
-# toDict(d::DiagramId) = error("toDict not implemented!")
-Base.Dict(x::DiagramId) = Dict{Symbol,Any}([fn => getfield(x, fn) for fn ∈ fieldnames(typeof(x))])
-Base.show(io::IO, d::DiagramId) = error("Base.show not implemented!")
-Base.isequal(a::DiagramId, b::DiagramId) = error("Base.isequal not implemented!")
-Base.:(==)(a::DiagramId, b::DiagramId) = Base.isequal(a, b)
-eval(d::DiagramId) = error("eval for $d has not yet implemented!")
-
 # Base.hash(d::DiagramId) = hash(d) % 1000000
 
-struct Diagram{T<:DiagramId}
+struct Diagram{T<:DiagramId,W}
     hash::Int # Two diagram MAY have the same hash number, only provide a inttuiative way to distinish two diagrams. 
     id::T
+    operator::Operator
+    factor::W
     subdiagram::Vector{Diagram}
+
+    weight::W
     # parent::Diagram
 
-    Diagram(id::T) where {T<:DiagramId} = new{T}(hash(id) % 1000000, id, [])
+    function Diagram(id::T, operator::Operator = Add(), factor::W = 1.0) where {T<:DiagramId,W}
+        return new{T,W}(hash(id) % 1000000, id, operator, factor, [], zero(W))
+    end
 end
 
 function add_subdiagram!(parent::Diagram, child::Diagram)
@@ -27,17 +24,25 @@ function add_subdiagram!(parent::Diagram, child::Diagram)
     push!(parent.subdiagram, child)
 end
 
-function toDataFrame(diagVec::AbstractVector)
+function toDataFrame(diag::Diagram, maxdepth::Int = 1)
+    @assert maxdepth == 1 "deep convert has not yet been implemented!"
+    d = Dict{Symbol,Any}(Dict(diag.id))
+    # d = id2Dict(diag.id)
+    d[:hash] = diag.hash
+    d[:operator] = diag.operator
+    d[:factor] = diag.factor
+    d[:weight] = diag.weight
+    d[:DiagramId] = diag.id
+    d[:subdiagram] = Tuple(d.id for d in diag.subdiagram)
+    return DataFrame(d)
+end
+
+function toDataFrame(diagVec::AbstractVector, maxdepth::Int = 1)
     diags = []
     for diag in diagVec
-        d = Dict{Symbol,Any}(Dict(diag.id))
-        # d = id2Dict(diag.id)
-        d[:hash] = diag.hash
-        d[:DiagramId] = diag.id
-        d[:subdiagram] = [d.id for d in diag.subdiagram]
-        push!(diags, d)
+        push!(diags, toDataFrame(diag, maxdepth))
     end
-    return DataFrame(diags)
+    return vcat(diags)
 end
 
 
