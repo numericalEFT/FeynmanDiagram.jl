@@ -7,6 +7,7 @@ export ADD, MUL
 
 # include("interface.jl")
 include("diagram.jl")
+export DiagramId, Diagram, add_subdiagram!, toDataFrame
 
 # struct Cache and struct Pool
 include("pool.jl")
