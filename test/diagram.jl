@@ -8,7 +8,7 @@
     end
     Base.show(io::IO, d::ID) = print(io, d.index)
     Base.isequal(a::ID, b::ID) = (a.index == b.index)
-
+    Base.Dict(d::ID) = Dict(:id => d.index)
     root = Diagram(ID(0))
     l = Diagram(ID(1))
     r = Diagram(ID(2))

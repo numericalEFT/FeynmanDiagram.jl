@@ -1,14 +1,16 @@
 abstract type DiagramId end
 
 # toDict(d::DiagramId) = error("toDict not implemented!")
+Base.Dict(x::DiagramId) = Dict{Symbol,Any}([fn => getfield(x, fn) for fn ∈ fieldnames(typeof(x))])
 Base.show(io::IO, d::DiagramId) = error("Base.show not implemented!")
 Base.isequal(a::DiagramId, b::DiagramId) = error("Base.isequal not implemented!")
 Base.:(==)(a::DiagramId, b::DiagramId) = Base.isequal(a, b)
+eval(d::DiagramId) = error("eval for $d has not yet implemented!")
 
 # Base.hash(d::DiagramId) = hash(d) % 1000000
 
 struct Diagram{T<:DiagramId}
-    hash::Int
+    hash::Int # Two diagram MAY have the same hash number, only provide a inttuiative way to distinish two diagrams. 
     id::T
     subdiagram::Vector{Diagram}
     # parent::Diagram
@@ -25,11 +27,11 @@ function add_subdiagram!(parent::Diagram, child::Diagram)
     push!(parent.subdiagram, child)
 end
 
-function toDataFrame(diagVec::AbstractVector,
-    id2Dict::Function = x -> Dict{Symbol,Any}([fn => getfield(x, fn) for fn ∈ fieldnames(typeof(x))]))
+function toDataFrame(diagVec::AbstractVector)
     diags = []
     for diag in diagVec
-        d = id2Dict(diag.id)
+        d = Dict{Symbol,Any}(Dict(diag.id))
+        # d = id2Dict(diag.id)
         d[:hash] = diag.hash
         d[:DiagramId] = diag.id
         d[:subdiagram] = [d.id for d in diag.subdiagram]
@@ -37,6 +39,8 @@ function toDataFrame(diagVec::AbstractVector,
     end
     return DataFrame(diags)
 end
+
+
 
 ## Things we need to define
 function AbstractTrees.children(diag::Diagram)
