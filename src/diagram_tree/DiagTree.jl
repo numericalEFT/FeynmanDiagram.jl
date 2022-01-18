@@ -13,6 +13,7 @@ using Printf, PyCall, DataFrames
 
 include("traits.jl")
 include("diagram.jl")
+include("diagram_io.jl")
 export DiagramId
 export Diagram
 export addSubDiagram!

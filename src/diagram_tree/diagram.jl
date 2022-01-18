@@ -15,20 +15,6 @@ mutable struct Diagram{W}
     end
 end
 
-function Base.show(io::IO, diag::Diagram)
-
-    if length(diag.subdiagram) == 0
-        typestr = "bare"
-    elseif length(diag.subdiagram) == 1
-        typestr = "#$(diag.hash)"
-    else
-        subdiag = prod(["#$(d.hash), " for d in diag.subdiagram[1:end-1]])
-        subdiag *= "#$(diag.subdiagram[end].hash)"
-        typestr = "$(diag.operator)($subdiag)"
-    end
-    print(io, "\u001b[32m#$(diag.hash)\u001b[0m : $(diag.id) = $(diag.factor)x$typestr = $(diag.weight)")
-end
-
 isbare(diag::Diagram) = isempty(diag.subdiagram)
 
 function addSubDiagram!(parent::Diagram, child::Diagram)
@@ -89,8 +75,6 @@ function toDataFrame(diagVec::Vector{Diagram{W}}, maxdepth::Int = 1) where {W}
     end
     return vcat(diags)
 end
-
-
 
 ## Things we need to define
 function AbstractTrees.children(diag::Diagram)
