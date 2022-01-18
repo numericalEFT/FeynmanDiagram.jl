@@ -2,15 +2,7 @@ module DiagTreeNew
 using AbstractTrees
 using Printf, PyCall, DataFrames
 
-# @enum Operator begin
-#     Add
-#     Mul
-# end
-
-# Base.length(r::Operator) = 1
-# Base.iterate(r::Operator) = (r, nothing)
-# function Base.iterate(r::Operator, ::Nothing) end
-
+include("common.jl")
 include("traits.jl")
 include("diagram.jl")
 include("diagram_io.jl")
