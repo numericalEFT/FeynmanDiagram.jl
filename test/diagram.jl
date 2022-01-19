@@ -61,15 +61,15 @@ end
     # #construct the propagator table
     gK = [[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0]]
     gT = [(1, 2), (2, 1)]
-    g = [Diagram(id = GreenId(paraG, k = gK[i], t = gT[i])) for i in 1:2]
+    g = [Diagram(id = GreenId(paraG, k = gK[i], t = gT[i]), name = :G) for i in 1:2]
 
     vdK = [[0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 1.0, 0.0]]
     vdT = [[1, 1], [2, 2]]
-    vd = [Diagram(id = InteractionId(paraV, ChargeCharge, k = vdK[i])) for i in 1:2]
+    vd = [Diagram(id = InteractionId(paraV, ChargeCharge, k = vdK[i]), name = :Vd) for i in 1:2]
 
     veK = [[1, 0, -1, -1], [0, 1, 0, -1]]
     veT = [[1, 1], [2, 2]]
-    ve = [Diagram(id = InteractionId(paraV, ChargeCharge, k = veK[i])) for i in 1:2]
+    ve = [Diagram(id = InteractionId(paraV, ChargeCharge, k = veK[i]), name = :Ve) for i in 1:2]
 
     # contruct the tree
     ggn = Diagram(Prod(), [g[1], g[2]])
