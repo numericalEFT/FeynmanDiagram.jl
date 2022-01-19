@@ -12,7 +12,7 @@ function _summary(diag::Diagram, color = true)
         end
     end
     function hash()
-        return color ? "\u001b[32m#$(diag.hash)\u001b[0m" : "#$(diag.hash)"
+        return color ? "\u001b[32m#$(diag.id.uid)\u001b[0m" : "#$(diag.id.uid)"
     end
     if length(diag.subdiagram) == 0
         s = "$(hash()): $(diag.id)"
@@ -29,9 +29,9 @@ function Base.show(io::IO, diag::Diagram)
     if length(diag.subdiagram) == 0
         typestr = "bare"
     elseif length(diag.subdiagram) == 1
-        typestr = "#$(diag.hash)"
+        typestr = "#$(diag.id.uid)"
     else
-        subdiag = prod(["#$(d.hash), " for d in diag.subdiagram[1:end-1]])
+        subdiag = prod(["#$(d.id.uid), " for d in diag.subdiagram[1:end-1]])
         subdiag *= "#$(diag.subdiagram[end].hash)"
         typestr = "($subdiag)"
     end

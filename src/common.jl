@@ -160,14 +160,16 @@ function firstTauIdx(diagType::DiagramType, offset::Int = 0)
 end
 
 function firstLoopIdx(diagType::DiagramType, offset::Int = 0)
-    if diagType == Ver4Diag
+    if diagType == Ver4Diag #three extK
         return 4 + offset
-    elseif diagType == SigmaDiag
+    elseif diagType == SigmaDiag #one extK
         return 2 + offset
-    elseif diagType == PolarDiag
+    elseif diagType == GreenDiag #one extK
         return 2 + offset
-    elseif diagType == Ver4Diag
+    elseif diagType == PolarDiag #one extK
         return 2 + offset
+    elseif diagType == Ver3Diag #two extK
+        return 3 + offset
     else
         error("not implemented!")
     end

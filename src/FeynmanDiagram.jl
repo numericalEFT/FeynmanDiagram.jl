@@ -50,10 +50,10 @@ Base.length(r::AnalyticProperty) = 1
 Base.iterate(r::AnalyticProperty) = (r, nothing)
 function Base.iterate(r::AnalyticProperty, ::Nothing) end
 
-export SigmaDiag, PolarDiag, Ver3Diag, Ver4Diag
+export SigmaDiag, PolarDiag, Ver3Diag, Ver4Diag, GreenDiag
 export Wirreducible, Girreducible, NoBubble, NoHatree, Proper
-export InteractionName, ChargeCharge, SpinSpin, UpUp, UpDown
-export InteractionType, Instant, Dynamic, D_Instant, D_Dynamic
+export Response, ChargeCharge, SpinSpin, UpUp, UpDown
+export AnalyticProperty, Instant, Dynamic, D_Instant, D_Dynamic
 
 include("common.jl")
 export GenericPara, Interaction
@@ -61,9 +61,10 @@ export GenericPara, Interaction
 include("diagram_tree/DiagTree.jl")
 using .DiagTreeNew
 export DiagTreeNew
-export DiagramId, Diagram, addSubDiagram!, toDataFrame
+export Diagram, addSubDiagram!, toDataFrame
 export evalDiagNode!, evalDiagTree!
 export Operator, Sum, Prod
+export DiagramId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId, InteractionId
 
 
 include("diagramTree/DiagTree.jl")

@@ -4,27 +4,28 @@
     # add_subdiagram! = DiagTreeNew.add_subdiagram!
 
     struct ID <: DiagramId
-        index::Int
+        uid::Int
     end
-    Base.show(io::IO, d::ID) = print(io, d.index)
+    Base.show(io::IO, d::ID) = print(io, d.uid)
     # Base.isequal(a::ID, b::ID) = (a.index == b.index)
     # Base.Dict(d::ID) = Dict(:id => d.index)
-    DiagTreeNew.eval(d::ID) = d.index
 
-    root = Diagram(ID(0), Sum())
-    l = Diagram(ID(1), Sum())
-    r = Diagram(ID(2), Sum())
+    root = Diagram(Sum(), id = ID(0))
+    l = Diagram(Sum(), id = ID(1))
+    r = Diagram(id = ID(2))
     addSubDiagram!(root, [l, r])
-    addSubDiagram!(l, Diagram(ID(3), Sum()))
+    addSubDiagram!(l, Diagram(id = ID(3)))
 
     collect(PostOrderDFS(root))
-    @test [node.id.index for node in PostOrderDFS(root)] == [3, 1, 2, 0]
-    @test [node.id.index for node in PreOrderDFS(root)] == [0, 1, 3, 2]
-    @test [node.id.index for node in Leaves(root)] == [3, 2]
-    @test evalDiagTree!(root) == sum(node.id.index for node in Leaves(root))
+    @test [node.id.uid for node in PostOrderDFS(root)] == [3, 1, 2, 0]
+    @test [node.id.uid for node in PreOrderDFS(root)] == [0, 1, 3, 2]
+    @test [node.id.uid for node in Leaves(root)] == [3, 2]
+
+    eval(d::ID) = d.uid
+    @test evalDiagTree!(root, eval) == sum(node.id.uid for node in Leaves(root))
 
     print_tree(root)
-    DiagTreeNew.plot_tree(root)
+    # DiagTreeNew.plot_tree(root)
 
     println(toDataFrame([root,]))
 end
@@ -44,70 +45,46 @@ end
         |                         | 
         k1                        k2
     """
+
+    DiagTree = DiagTreeNew
     # We only consider the direct part of the above diagram
     spin = 2.0
     D = 3
     kF, β, mass2 = 1.919, 0.5, 1.0
+    Nk, Nt = 4, 2
 
-    # varK = [rand(D) for i = 1:4] #k1, k2, k3, k4
-
-    varK = rand(D, 4)
-    varT = [rand() * β, rand() * β]
-
-    K0 = [0.0, 0.0, 0.0]
-    T0 = 0.0
-
-    calcK(para, basis) = sum([para[i] .* basis[i] for i = 1:length(para)])
-    calcT(para, basis) = para[basis[2]] - para[basis[1]]
-
-    gorder, vorder = 0, 1
-
-    weightType = Float64
-
-    # function LoopPool(name::Symbol, dim::Int, N::Int, type::DataType)
-    MomPool = DiagTree.LoopPool(:K, D, 4)
-
-    GPool = DiagTree.propagatorPool(:Gpool, weightType)
-    VPool = DiagTree.propagatorPool(:Vpool, weightType)
-
-    diag = DiagTree.Diagrams(MomPool, (GPool, VPool), weightType)
+    paraG = GenericPara(diagType = GreenDiag,
+        innerLoopNum = 0, totalLoopNum = Nk, loopDim = D,
+        hasTau = true, totalTauNum = Nt)
+    paraV = paraG
 
     # #construct the propagator table
     gK = [[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0]]
     gT = [(1, 2), (2, 1)]
-    g = [DiagTree.addPropagator!(diag, :Gpool, gorder, :G; site = gT[i], loop = gK[i]) for i = 1:2]
+    g = [Diagram(id = GreenId(paraG, k = gK[i], t = gT[i])) for i in 1:2]
 
     vdK = [[0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 1.0, 0.0]]
     vdT = [[1, 1], [2, 2]]
-    vd = [DiagTree.addPropagator!(diag, :Vpool, vorder, :Vd; loop = vdK[i]) for i = 1:2]
+    vd = [Diagram(id = InteractionId(paraV, ChargeCharge, k = vdK[i])) for i in 1:2]
 
     veK = [[1, 0, -1, -1], [0, 1, 0, -1]]
     veT = [[1, 1], [2, 2]]
-    ve = [DiagTree.addPropagator!(diag, :Vpool, vorder, :Ve; loop = veK[i]) for i = 1:2]
-    # ve = [DiagTree.addPropagator!(diag, Wtype, 1, veK[i], veT[i], Wsym)[1] for i = 1:2]
-    # # W order is 1
+    ve = [Diagram(id = InteractionId(paraV, ChargeCharge, k = veK[i])) for i in 1:2]
 
-    # # contruct the tree
-    MUL, ADD = DiagTree.MUL, DiagTree.ADD
-    ggn = DiagTree.addNodeByName!(diag, MUL, :gxg, 1.0; Gpool = [g[1], g[2]])
-    vdd = DiagTree.addNodeByName!(diag, MUL, :dxd, spin; Vpool = [vd[1], vd[2]])
-    vde = DiagTree.addNodeByName!(diag, MUL, :dxe, -1.0; Vpool = [vd[1], ve[2]])
-    ved = DiagTree.addNodeByName!(diag, MUL, :exd, -1.0; Vpool = [ve[1], vd[2]])
-    vsum = DiagTree.addNodeByName!(diag, ADD, :sum, 1.0; child = [vdd, vde, ved])
-    root = DiagTree.addNode!(diag, MUL, :root, 1.0; child = [ggn, vsum])
-    push!(diag.root, root)
+    # contruct the tree
+    ggn = Diagram(Prod(), [g[1], g[2]])
+    vdd = Diagram(Prod(), [vd[1], vd[2]], factor = spin)
+    vde = Diagram(Prod(), [vd[1], ve[2]], factor = -1.0)
+    ved = Diagram(Prod(), [ve[1], vd[2]], factor = -1.0)
+    vsum = Diagram(Sum(), [vdd, vde, ved])
+    root = Diagram(Prod(), [vsum, ggn], factor = 1 / (2π)^D)
 
-    # printBasisPool(diag)
-    # printPropagator(diag)
-    # printNodes(diag)
-    # DiagTree.showTree(diag, diag.root[1])
-
-    # #make sure the total number of diagrams are correct
-
-    evalPropagator1(idx, object, K, varT, diag) = 1.0
-    @test DiagTree.evalNaive(diag, varK, varT, evalPropagator1)[1] ≈ -2 + 1 * spin
+    evalDiagTree!(root, x -> 1.0)
+    @test root.weight ≈ -2 + spin
 
     # #more sophisticated test of the weight evaluation
+    varK = rand(D, Nk)
+    varT = [rand() * β for t in 1:Nt]
 
     function evalG(K, τBasis, varT)
         ϵ = dot(K, K) / 2 - kF^2
@@ -117,27 +94,22 @@ end
 
     evalV(K) = 8π / (dot(K, K) + mass2)
 
-    function evalPropagator2(idx, object, K, varT, diag)
-        if idx == 1
-            return evalG(K, object.siteBasis, varT)
-        elseif idx == 2
-            return evalV(K)
-        else
-            error("not implemented")
-        end
-    end
-
-    # getK(basis, varK) = sum([basis[i] * K for (i, K) in enumerate(varK)])
+    # # getK(basis, varK) = sum([basis[i] * K for (i, K) in enumerate(varK)])
     getK(basis, varK) = varK * basis
+
+    eval(id::GreenId, varK, varT) = evalG(getK(id.extK, varK), id.extT, varT)
+    eval(id::InteractionId, varK, varT) = evalV(getK(id.extK, varK))
 
     gw = [evalG(getK(gK[i], varK), gT[i], varT) for i = 1:2]
     vdw = [evalV(getK(vdK[i], varK)) for i = 1:2]
     vew = [evalV(getK(veK[i], varK)) for i = 1:2]
 
     Vweight = spin * vdw[1] * vdw[2] - vdw[1] * vew[2] - vew[1] * vdw[2]
-    Weight = gw[1] * gw[2] * Vweight
+    Weight = gw[1] * gw[2] * Vweight / (2π)^D
 
-    # println(DiagTree.printPropagator(diag))
-    @test DiagTree.evalNaive(diag, varK, varT, evalPropagator2)[1] ≈ Weight
+    evalDiagTree!(root, eval, varK, varT)
 
+    print_tree(root)
+
+    @test root.weight ≈ Weight
 end

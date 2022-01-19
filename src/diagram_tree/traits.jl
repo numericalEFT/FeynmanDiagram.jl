@@ -15,60 +15,78 @@ abstract type DiagramId end
 # Base.Dict(x::DiagramId) = Dict{Symbol,Any}([fn => getfield(x, fn) for fn ∈ fieldnames(typeof(x))])
 # Base.show(io::IO, d::DiagramId) = error("Base.show not implemented!")
 # Base.isequal(a::DiagramId, b::DiagramId) = error("Base.isequal not implemented!")
-eval(d::DiagramId) = error("eval for $d has not yet implemented!")
+# eval(d::DiagramId) = error("eval for $d has not yet implemented!")
 Base.:(==)(a::DiagramId, b::DiagramId) = Base.isequal(a, b)
 
-struct Vertex4 <: DiagramId
+struct GenericId <: DiagramId
+    uid::Int
+    GenericId() = new(uid())
+end
+Base.show(io::IO, v::GenericId) = print(io, "#$(v.uid)")
+
+struct Ver4Id <: DiagramId
     ######### properties that defines a unique ver4 ###################
+    uid::Int
+    para::GenericPara
     response::Response #UpUp, UpDown, ...
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
     DiEx::Int # 1 for direct, 2 for exchange
     extK::Vector{Vector{Float64}}
     extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
-    para::GenericPara
 end
-Base.show(io::IO, v::Vertex4) = print(io, "Γ4 $(v.response)$(v.type)$(v.DiEx == DI ? :D : (v.DiEx == EX ? :E : :DE)),t$(v.extT)")
+Base.show(io::IO, v::Ver4Id) = print(io, "#$(v.id) Γ4 $(v.response)$(v.type)$(v.DiEx == DI ? :D : (v.DiEx == EX ? :E : :DE)),t$(v.extT)")
 
-struct Green <: DiagramId
+struct GreenId <: DiagramId
+    uid::Int
+    para::GenericPara
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
-    para::GenericPara
+    function GreenId(para::GenericPara, type::AnalyticProperty = Dynamic; k, t)
+        return new(uid(), para, type, k, Tuple(t))
+    end
 end
-Base.show(io::IO, v::Green) = print(io, "G $(v.type), k$(v.extK), t$(v.extT)")
+Base.show(io::IO, v::GreenId) = print(io, "#$(v.uid) G $(v.type), k$(v.extK), t$(v.extT)")
 
-struct BareInteraction <: DiagramId
+struct InteractionId <: DiagramId
+    uid::Int
+    para::GenericPara
     response::Response #UpUp, UpDown, ...
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
-    para::GenericPara
+    function InteractionId(para::GenericPara, response::Response, type::AnalyticProperty = Instant; k, t = (0, 0))
+        return new(uid(), para, response, type, k, Tuple(t))
+    end
 end
-Base.show(io::IO, v::BareInteraction) = print(io, "W $(v.response)$(v.type), k$(v.extK), t$(v.extT)")
+Base.show(io::IO, v::InteractionId) = print(io, "#$(v.uid) W $(v.response)$(v.type), k$(v.extK), t$(v.extT)")
 
-struct Sigma <: DiagramId
+struct SigmaId <: DiagramId
+    uid::Int
+    para::GenericPara
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
     extK::Vector{Float64}
     extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
-    para::GenericPara
 end
-Base.show(io::IO, v::Sigma) = print(io, "Σ $(v.type), k$(v.extK), t$(v.extT)")
+Base.show(io::IO, v::SigmaId) = print(io, "#$(v.id) Σ $(v.type), k$(v.extK), t$(v.extT)")
 
-struct Vertex3 <: DiagramId
+struct Ver3Id <: DiagramId
+    uid::Int
+    para::GenericPara
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
     extK::Vector{Vector{Float64}}
     extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
-    para::GenericPara
 end
-Base.show(io::IO, v::Vertex3) = print(io, "Γ3 $(v.type), t$(v.extT)")
+Base.show(io::IO, v::Ver3Id) = print(io, "#$(v.id) Γ3 $(v.type), t$(v.extT)")
 
-struct Polar <: DiagramId
+struct PolarId <: DiagramId
+    uid::Int
     response::Response #ChargeCharge, SpinSpin, ...
     extK::Vector{Float64}
     extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
     para::GenericPara
 end
-Base.show(io::IO, v::Polar) = print(io, "Π $(v.response)$(v.type), k$(v.extK), t$(v.extT)")
+Base.show(io::IO, v::PolarId) = print(io, "#$(v.id) Π $(v.response)$(v.type), k$(v.extK), t$(v.extT)")
 
 function Base.isequal(a::DiagramId, b::DiagramId)
     if typeof(a) != typeof(b)
