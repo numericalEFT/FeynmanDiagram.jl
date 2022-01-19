@@ -33,6 +33,16 @@ import ..Interaction
 import ..GenericPara
 import ..innerTauNum
 
+import ..Diagram
+
+import ..DiagramId
+import ..Ver4Id
+import ..Ver3Id
+import ..GreenId
+import ..SigmaId
+import ..PolarId
+import ..InteractionId
+
 import ..TwoBodyChannel
 import ..Alli
 import ..PHr
@@ -51,23 +61,16 @@ import ..DiEx
     The channels of the left and right sub-vertex4 of a bubble diagram in the parquet equation
 
 #Members
-- `F`   : channels of left sub-vertex for the particle-hole and particle-hole-exchange bubbles
-- `V`   : channels of left sub-vertex for the particle-particle bubble
+- `phi`   : channels of left sub-vertex for the particle-hole and particle-hole-exchange bubbles
+- `ppi`   : channels of left sub-vertex for the particle-particle bubble
 - `Γ4`   : channels of right sub-vertex of all channels
-- `Ftop`   : channels of left sub-vertex for the particle-hole and particle-hole-exchange bubbles, only take effect for the outermost bubble
-- `Vtop`   : channels of left sub-vertex for the particle-particle bubble, only take effect for the outermost bubble
-- `Γ4top`   : channels of right sub-vertex of all channels
 """
 struct ParquetBlocks
     phi::Vector{TwoBodyChannel}
     ppi::Vector{TwoBodyChannel}
     Γ4::Vector{TwoBodyChannel}
-    phi_toplevel::Vector{TwoBodyChannel}
-    ppi_toplevel::Vector{TwoBodyChannel}
-    Γ4_toplevel::Vector{TwoBodyChannel}
-    function ParquetBlocks(; phi = (Alli, PHEr, PPr), ppi = (Alli, PHr, PHEr), Γ4 = union(phi, ppi),
-        phi_toplevel = phi, ppi_toplevel = ppi, Γ4_toplevel = Γ4)
-        return new(phi, ppi, Γ4, phi_toplevel, ppi_toplevel, Γ4_toplevel)
+    function ParquetBlocks(; phi = (Alli, PHEr, PPr), ppi = (Alli, PHr, PHEr), Γ4 = union(phi, ppi))
+        return new(phi, ppi, Γ4)
     end
 end
 

@@ -46,14 +46,14 @@ struct InteractionId <: DiagramId
     para::GenericPara
     response::Response #UpUp, UpDown, ...
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
-    diex::Permutation
+    permutation::Permutation
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
-    function InteractionId(para::GenericPara, diex::Permutation, response::Response, type::AnalyticProperty = Instant; k, t = (0, 0))
-        return new(uid(), para, response, type, diex, k, Tuple(t))
+    function InteractionId(para::GenericPara, response::Response, type::AnalyticProperty = Instant; k, t = (0, 0), permu::Permutation = DiEx)
+        return new(uid(), para, response, type, permu, k, Tuple(t))
     end
 end
-Base.show(io::IO, v::InteractionId) = print(io, "$(v.diex) $(short(v.response))$(short(v.type)), k$(v.extK), t$(v.extT)")
+Base.show(io::IO, v::InteractionId) = print(io, "$(v.permutation) $(short(v.response))$(short(v.type)), k$(v.extK), t$(v.extT)")
 
 struct SigmaId <: DiagramId
     uid::Int
@@ -90,7 +90,7 @@ struct Ver4Id <: DiagramId
     channel::Channel # particle-hole (T), particle-hole exchange (U), particle-particle (S), irreducible (I)
     extK::Vector{Vector{Float64}}
     extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
-    function Ver4Id(para::GenericPara, chan::Channel, response::Response, type::AnalyticProperty = Dynamic; k, t = (0, 0, 0, 0))
+    function Ver4Id(para::GenericPara, response::Response, type::AnalyticProperty = Dynamic; k, t = (0, 0, 0, 0), chan::TwoBodyChannel = AnyChan)
         return new(uid(), para, response, type, chan, k, Tuple(t))
     end
 end
