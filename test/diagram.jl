@@ -10,11 +10,13 @@
     # Base.isequal(a::ID, b::ID) = (a.index == b.index)
     # Base.Dict(d::ID) = Dict(:id => d.index)
 
-    root = Diagram(Sum(), id = ID(0))
-    l = Diagram(Sum(), id = ID(1))
-    r = Diagram(id = ID(2))
-    addSubDiagram!(root, [l, r])
-    addSubDiagram!(l, Diagram(id = ID(3)))
+    DiagTreeNew.uidreset()
+
+    W = Int
+    ll = Diagram{W}(ID(3))
+    l = Diagram{W}(ID(1), Sum(), [ll,])
+    r = Diagram{W}(ID(2))
+    root = Diagram{W}(ID(0), Sum(), [l, r])
 
     collect(PostOrderDFS(root))
     @test [node.id.uid for node in PostOrderDFS(root)] == [3, 1, 2, 0]
@@ -46,6 +48,7 @@ end
         k1                        k2
     """
 
+    DiagTreeNew.uidreset()
     DiagTree = DiagTreeNew
     # We only consider the direct part of the above diagram
     spin = 2.0
@@ -61,23 +64,24 @@ end
     # #construct the propagator table
     gK = [[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0]]
     gT = [(1, 2), (2, 1)]
-    g = [Diagram(id = GreenId(paraG, k = gK[i], t = gT[i]), name = :G) for i in 1:2]
+    g = [Diagram(GreenId(paraG, k = gK[i], t = gT[i]), name = :G) for i in 1:2]
 
     vdK = [[0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 1.0, 0.0]]
     vdT = [[1, 1], [2, 2]]
-    vd = [Diagram(id = InteractionId(paraV, ChargeCharge, k = vdK[i], permu = Di), name = :Vd) for i in 1:2]
+    vd = [Diagram(InteractionId(paraV, ChargeCharge, k = vdK[i], permu = Di), name = :Vd) for i in 1:2]
 
     veK = [[1, 0, -1, -1], [0, 1, 0, -1]]
     veT = [[1, 1], [2, 2]]
-    ve = [Diagram(id = InteractionId(paraV, ChargeCharge, k = veK[i], permu = Ex), name = :Ve) for i in 1:2]
+    ve = [Diagram(InteractionId(paraV, ChargeCharge, k = veK[i], permu = Ex), name = :Ve) for i in 1:2]
 
+    Id = GenericId(paraV)
     # contruct the tree
-    ggn = Diagram(Prod(), [g[1], g[2]])
-    vdd = Diagram(Prod(), [vd[1], vd[2]], factor = spin)
-    vde = Diagram(Prod(), [vd[1], ve[2]], factor = -1.0)
-    ved = Diagram(Prod(), [ve[1], vd[2]], factor = -1.0)
-    vsum = Diagram(Sum(), [vdd, vde, ved])
-    root = Diagram(Prod(), [vsum, ggn], factor = 1 / (2π)^D, name = :root)
+    ggn = Diagram(Id, Prod(), [g[1], g[2]])
+    vdd = Diagram(Id, Prod(), [vd[1], vd[2]], factor = spin)
+    vde = Diagram(Id, Prod(), [vd[1], ve[2]], factor = -1.0)
+    ved = Diagram(Id, Prod(), [ve[1], vd[2]], factor = -1.0)
+    vsum = Diagram(Id, Sum(), [vdd, vde, ved])
+    root = Diagram(Id, Prod(), [vsum, ggn], factor = 1 / (2π)^D, name = :root)
 
     evalDiagTree!(root, x -> 1.0)
     @test root.weight ≈ -2 + spin

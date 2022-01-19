@@ -1,6 +1,7 @@
 # Base.hash(d::DiagramId) = hash(d) % 1000000
 
 mutable struct Diagram{W}
+    hash::Int
     name::Symbol
     id::DiagramId
     operator::Operator
@@ -10,13 +11,15 @@ mutable struct Diagram{W}
     weight::W
     # parent::Diagram
 
-    function Diagram{W}(operator::Operator = Sum(), subdiagram = [];
-        name = :none, id::DiagramId = GenericId(), factor = W(1), weight = W(0)) where {W}
-        return new{W}(name, id, operator, factor, subdiagram, weight)
+    function Diagram(id::DiagramId, operator::Operator = Sum(), subdiagram = []; type::DataType = id.para.weightType,
+        name = :none, factor = one(type), weight = zero(type))
+        return new{type}(uid(), name, id, operator, factor, subdiagram, weight)
     end
-    function Diagram(operator::Operator = Sum(), subdiagram = [];
-        name = :none, id::DiagramId = GenericId(), factor = Float64(1), weight = Float64(0))
-        return new{Float64}(name, id, operator, factor, subdiagram, weight)
+
+    #constructor for DiagramId without a field of GenericPara
+    function Diagram{W}(id::DiagramId, operator::Operator = Sum(), subdiagram = [];
+        name = :none, factor = W(1), weight = W(0)) where {W}
+        return new{W}(uid(), name, id, operator, factor, subdiagram, weight)
     end
 end
 
@@ -63,12 +66,13 @@ function toDataFrame(diag::Diagram, maxdepth::Int = 1)
     @assert maxdepth == 1 "deep convert has not yet been implemented!"
     d = Dict{Symbol,Any}(Dict(diag.id))
     # d = id2Dict(diag.id)
+    d[:hash] = diag.hash
     d[:name] = diag.name
     d[:operator] = diag.operator
     d[:factor] = diag.factor
     d[:weight] = diag.weight
     d[:DiagramId] = diag.id
-    d[:subdiagram] = Tuple(d.id for d in diag.subdiagram)
+    d[:subdiagram] = Tuple(d.hash for d in diag.subdiagram)
     return DataFrame(d)
 end
 

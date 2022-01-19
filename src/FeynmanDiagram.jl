@@ -66,7 +66,8 @@ export Permutation, Di, Ex, DiEx
 export Diagram, addSubDiagram!, toDataFrame
 export evalDiagNode!, evalDiagTree!
 export Operator, Sum, Prod
-export DiagramId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId, InteractionId
+export DiagramId, GenericId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId, InteractionId
+export uidreset
 
 
 include("diagramTree/DiagTree.jl")

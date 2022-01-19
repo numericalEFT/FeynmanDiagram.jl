@@ -146,7 +146,7 @@ function bareVer4!(para::GenericPara, legK, diex::Vector{Permutation} = [Di, Ex]
 
         if notProper(para, _q) == false && _diex in diex
             #create new bare ver4 only if _diex is required in the diex table 
-            vid = InteractionId(para, _diex, response, type, k = _q, t = _innerT)
+            vid = InteractionId(para, response, type, k = _q, t = _innerT, permu = _diex)
             return Diagram(id = vid, factor = sign)
         else
             return nothing
@@ -160,11 +160,12 @@ function bareVer4!(para::GenericPara, legK, diex::Vector{Permutation} = [Di, Ex]
             return
         end
         if _extT[DI] == _extT[EX] && isnothing(vd) == false && isnothing(ve) == false
-            id_diex = Ver4Id(para, response, type, BOTH, legK, _extT[DI], para)
+            id_diex = Ver4Id(para, response, type, k = legK, t = _extT[DI])
+            push!(nodes, Diagram(Sum(), id = id_diex,))
+
             add!(nodes, id_diex, children = [vd, ve])
+            push!(nodes,)
         else
-            id_di = Vertex4(response, type, DI, legK, _extT[DI], para)
-            id_ex = Vertex4(response, type, EX, legK, _extT[EX], para)
             (isnothing(vd) == false) && add!(nodes, id_di, children = [vd,])
             (isnothing(ve) == false) && add!(nodes, id_ex, children = [ve,])
         end

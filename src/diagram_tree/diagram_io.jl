@@ -1,7 +1,7 @@
-function _summary(diag::Diagram, color = true)
+function _summary(diag::Diagram{W}, color = true) where {W}
     function factor()
         f = diag.factor
-        if f isa Number && f ≈ 1
+        if f isa Number && f ≈ one(W)
             return ""
         end
         s = "$(f)"
@@ -12,7 +12,7 @@ function _summary(diag::Diagram, color = true)
         end
     end
     function hash()
-        return color ? "\u001b[32m#$(diag.id.uid)\u001b[0m" : "#$(diag.id.uid)"
+        return color ? "\u001b[32m#$(diag.hash)\u001b[0m" : "#$(diag.hash)"
     end
     if length(diag.subdiagram) == 0
         s = "$(hash()): $(diag.id)"
@@ -29,10 +29,10 @@ function Base.show(io::IO, diag::Diagram)
     if length(diag.subdiagram) == 0
         typestr = "bare"
     elseif length(diag.subdiagram) == 1
-        typestr = "#$(diag.id.uid)"
+        typestr = "#$(diag.hash)"
     else
-        subdiag = prod(["#$(d.id.uid), " for d in diag.subdiagram[1:end-1]])
-        subdiag *= "#$(diag.subdiagram[end].id.uid)"
+        subdiag = prod(["#$(d.hash), " for d in diag.subdiagram[1:end-1]])
+        subdiag *= "#$(diag.subdiagram[end].hash)"
         typestr = "($subdiag)"
     end
     print(io, "$(_summary(diag, true))$typestr = $(diag.weight)")
