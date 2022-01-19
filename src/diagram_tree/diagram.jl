@@ -10,8 +10,11 @@ mutable struct Diagram{W}
     weight::W
     # parent::Diagram
 
-    function Diagram(id::DiagramId, operator::Operator = Sum(), factor::W = 1.0) where {W}
-        return new{W}(hash(id) % 1000000, id, operator, factor, [], zero(W))
+    function Diagram{W}(operator::Operator = Sum(), subdiagram = []; id::DiagramId = GenericId(), factor = W(1), weight = W(0)) where {W}
+        return new{W}(hash(id) % 1000000, id, operator, factor, subdiagram, weight)
+    end
+    function Diagram(operator::Operator = Sum(), subdiagram = []; id::DiagramId = GenericId(), factor = Float64(1), weight = Float64(0))
+        return new{Float64}(hash(id) % 1000000, id, operator, factor, subdiagram, weight)
     end
 end
 
@@ -38,19 +41,18 @@ end
 @inline apply(o::Sum, diag::Diagram{W}) where {W<:Number} = diag.weight
 @inline apply(o::Prod, diag::Diagram{W}) where {W<:Number} = diag.weight
 
-function evalDiagNode!(diag::Diagram)
+function evalDiagNode!(diag::Diagram, evalBare::Function, vargs...; kwargs...)
     if isbare(diag)
-        diag.weight = eval(diag.id) * diag.factor
+        diag.weight = evalBare(diag.id, vargs...; kwargs...) * diag.factor
     else
         diag.weight = apply(diag.operator, diag.subdiagram) * diag.factor
     end
     return diag.weight
 end
 
-function evalDiagTree!(diag::Diagram)
+function evalDiagTree!(diag::Diagram, evalBare::Function, vargs...; kwargs...)
     for d in PostOrderDFS(diag)
-        evalDiagNode!(d)
-        println(d)
+        evalDiagNode!(d, evalBare, vargs...; kwargs...)
     end
     return diag.weight
 end
