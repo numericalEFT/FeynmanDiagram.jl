@@ -17,7 +17,7 @@ Parquet = ParquetNew
 ###################### ver4 to DiagTree ###########################################
 para = GenericPara(
     diagType = Ver4Diag,
-    innerLoopNum = 0,
+    innerLoopNum = 1,
     hasTau = true,
     filter = [Builder.NoFock,],
     interaction = [Interaction(ChargeCharge, Instant), Interaction(UpUp, Instant),],

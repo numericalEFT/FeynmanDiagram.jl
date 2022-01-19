@@ -1,5 +1,5 @@
 function buildVer4(para::GenericPara, legK, chan::Vector{TwoBodyChannel}, subdiagram = false; level = 1,
-    phi_toplevel = para.extra.phi, ppi_toplevel = para.extra.ppi, Γ4_toplevel = para.extra.Γ4)
+    phi_toplevel = para.extra.phi, ppi_toplevel = para.extra.ppi, Γ4_toplevel = para.extra.Γ4, name = :Γ4)
 
     subdiagram == false && uidreset()
 
@@ -39,7 +39,7 @@ function buildVer4(para::GenericPara, legK, chan::Vector{TwoBodyChannel}, subdia
             for p in partition
 
                 if c == PHr || c == PHEr || c == PPr
-                    # push!(diag, bubble(para, legK, c, p, level))
+                    append!(diags, bubble(para, legK, c, p, level, name, phi_toplevel, ppi_toplevel, Γ4_toplevel))
                 end
             end
         end
@@ -52,9 +52,111 @@ function buildVer4(para::GenericPara, legK, chan::Vector{TwoBodyChannel}, subdia
     groups = []
     for g in groupby(df, [:response, :type, :extT])
         id = Ver4Id(para, g[1, :response], g[1, :type], k = legK, t = g[1, :extT])
-        push!(groups, Diagram(id, Sum(), g[:, :Diagram]))
+        push!(groups, Diagram(id, Sum(), g[:, :Diagram], name = name))
     end
     return groups
+end
+
+function bubble(para::GenericPara, legK, chan::TwoBodyChannel, partition::Vector{Int}, level::Int, name::Symbol,
+    phi_toplevel, ppi_toplevel, Γ4_toplevel)
+
+    TauNum = para.interactionTauNum # maximum tau number for each bare interaction
+    oL, oG0, oR, oGx = partition[1], partition[2], partition[3], partition[4]
+    if isValidG(para.filter, oG0) == false || isValidG(para.filter, oGx) == false
+        return
+    end
+
+    #the first loop idx is the inner loop of the bubble!
+    LoopIdx = para.firstLoopIdx
+    idx, maxLoop = findFirstLoopIdx(partition, LoopIdx + 1)
+    LfirstLoopIdx, G0firstLoopIdx, RfirstLoopIdx, GxfirstLoopIdx = idx
+    @assert maxLoop == maxVer4LoopIdx(para)
+
+    diagType = [Ver4Diag, GreenDiag, Ver4Diag, GreenDiag]
+    idx, maxTau = findFirstTauIdx(partition, diagType, para.firstTauIdx, TauNum)
+    LfirstTauIdx, G0firstTauIdx, RfirstTauIdx, GxfirstTauIdx = idx
+    @assert maxTau == maxVer4TauIdx(para) "Partition $partition with tauNum configuration $idx. maxTau = $maxTau, yet $(maxTauIdx(para)) is expected!"
+
+    lPara = reconstruct(para, innerLoopNum = oL, firstLoopIdx = LfirstLoopIdx, firstTauIdx = LfirstTauIdx)
+    rPara = reconstruct(para, innerLoopNum = oR, firstLoopIdx = RfirstLoopIdx, firstTauIdx = RfirstTauIdx)
+    gxPara = reconstruct(para, innerLoopNum = oGx, firstLoopIdx = GxfirstLoopIdx, firstTauIdx = GxfirstTauIdx)
+    g0Para = reconstruct(para, innerLoopNum = oG0, firstLoopIdx = G0firstLoopIdx, firstTauIdx = G0firstTauIdx)
+
+    phi, ppi, Γ4 = para.extra.phi, para.extra.ppi, para.extra.Γ4
+    if chan == PHr || chan == PHEr
+        Γi = (level == 1) ? phi_toplevel : phi
+        Γf = (level == 1) ? Γ4_toplevel : Γ4
+    elseif chan == PPr
+        Γi = (level == 1) ? ppi_toplevel : ppi
+        Γf = (level == 1) ? Γ4_toplevel : Γ4
+    else
+        error("chan $chan isn't implemented!")
+    end
+
+    LLegK, K, RLegK, Kx = legBasis(chan, legK, LoopIdx)
+    # println(K, ", ", Kx)
+
+    Lver = buildVer4(lPara, LLegK, Γi, true; level = level + 1, name = :Γ4i)
+    Rver = buildVer4(rPara, RLegK, Γf, true; level = level + 1, name = :Γ4f)
+
+    diag = []
+    for ldiag in Lver
+        for rdiag in Rver
+            extT, G0T, GxT = tauBasis(chan, ldiag.id.extT, rdiag.id.extT)
+            # diag, g0 = buildG(bubble.g0, K, (LvT[OUTR], RvT[INL]); diag = diag)
+            # diag, gc = buildG(bubble.gx, Kx, (RvT[OUTL], LvT[INR]); diag = diag)
+            # g0 = DiagTree.addpropagator!(diag, :Gpool, 0, :G0; site = G0T, loop = K)
+            # gc = DiagTree.addpropagator!(diag, :Gpool, 0, :Gx; site = GxT, loop = Kx)
+            g0 = Diagram(GreenId(g0Para, k = K, t = G0T), name = :G0)
+            gx = Diagram(GreenId(gxPara, k = K, t = GxT), name = :Gx)
+            append!(diag, bubble2diag(para, chan, ldiag, rdiag, legK, g0, gx))
+        end
+    end
+    return diag
+end
+
+function bubble2diag(para, chan, ldiag, rdiag, extK, g0, gx)
+    lid, rid = ldiag.id, rdiag.id
+    ln, rn = lid.response, rid.response
+    lo, ro = lid.para.innerLoopNum, rid.para.innerLoopNum
+    vtype = typeMap(lid.type, rid.type)
+
+    extT, G0T, GxT = tauBasis(chan, lid.extT, rid.extT)
+    Factor = factor(para, chan)
+    spin(response) = (response == UpUp ? "↑↑" : "↑↓")
+
+    diag = []
+
+    function add(Lresponse::Response, Rresponse::Response, Vresponse::Response, factor = 1.0)
+        if ln == Lresponse && rn == Rresponse
+            nodeName = Symbol("$(spin(Lresponse))x$(spin(Rresponse)) → $chan,")
+            id = Ver4Id(para, Vresponse, vtype, k = extK, t = extT)
+            push!(diag, Diagram(id, Prod(), [g0, gx, ldiag, rdiag], factor = factor * Factor, name = nodeName))
+        end
+    end
+
+    if chan == PHr
+        add(UpUp, UpUp, UpUp, 1.0)
+        add(UpDown, UpDown, UpUp, 1.0)
+        add(UpUp, UpDown, UpDown, 1.0)
+        add(UpDown, UpUp, UpDown, 1.0)
+    elseif chan == PHEr
+        add(UpUp, UpUp, UpUp, 1.0)
+        add(UpUp, UpUp, UpDown, 1.0)
+        add(UpDown, UpDown, UpUp, 1.0)
+        add(UpDown, UpDown, UpDown, 1.0)
+        add(UpUp, UpDown, UpDown, -1.0)
+        add(UpDown, UpUp, UpDown, -1.0)
+    elseif chan == PPr
+        add(UpUp, UpUp, UpUp, 1.0)
+        add(UpDown, UpDown, UpDown, -2.0)
+        add(UpUp, UpDown, UpDown, 1.0)
+        add(UpDown, UpUp, UpDown, 1.0)
+    else
+        error("chan $chan isn't implemented!")
+    end
+
+    return diag
 end
 
 function buildVer4(para, LegK, chan, subdiagram = false; F = [I, U, S], V = [I, T, U], All = union(F, V),
