@@ -46,13 +46,14 @@ struct InteractionId <: DiagramId
     para::GenericPara
     response::Response #UpUp, UpDown, ...
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
+    diex::DiEx # 1 for direct, 2 for exchange
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
-    function InteractionId(para::GenericPara, response::Response, type::AnalyticProperty = Instant; k, t = (0, 0))
-        return new(uid(), para, response, type, k, Tuple(t))
+    function InteractionId(para::GenericPara, diex::DiEx, response::Response, type::AnalyticProperty = Instant; k, t = (0, 0))
+        return new(uid(), para, diex, response, type, k, Tuple(t))
     end
 end
-Base.show(io::IO, v::InteractionId) = print(io, "$(short(v.response))$(short(v.type)), k$(v.extK), t$(v.extT)")
+Base.show(io::IO, v::InteractionId) = print(io, "$(v.diex) $(short(v.response))$(short(v.type)), k$(v.extK), t$(v.extT)")
 
 struct SigmaId <: DiagramId
     uid::Int
@@ -86,11 +87,14 @@ struct Ver4Id <: DiagramId
     para::GenericPara
     response::Response #UpUp, UpDown, ...
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
-    DiEx::Int # 1 for direct, 2 for exchange
+    channel::Channel # particle-hole (T), particle-hole exchange (U), particle-particle (S), irreducible (I)
     extK::Vector{Vector{Float64}}
     extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
+    function Ver4Id(para::GenericPara, chan::Channel, response::Response, type::AnalyticProperty = Dynamic; k, t = (0, 0, 0, 0))
+        return new(uid(), para, response, type, chan, k, Tuple(t))
+    end
 end
-Base.show(io::IO, v::Ver4Id) = print(io, "$(short(v.response))$(short(v.type))$(v.DiEx == DI ? :D : (v.DiEx == EX ? :E : :DE)),t$(v.extT)")
+Base.show(io::IO, v::Ver4Id) = print(io, "$(v.channel) $(short(v.response))$(short(v.type))$(v.DiEx == DI ? :D : (v.DiEx == EX ? :E : :DE)),t$(v.extT)")
 
 
 function Base.isequal(a::DiagramId, b::DiagramId)
