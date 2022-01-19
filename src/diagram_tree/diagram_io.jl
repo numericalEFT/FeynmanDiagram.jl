@@ -1,23 +1,25 @@
 function _summary(diag::Diagram{W}, color = true) where {W}
     function factor()
-        f = diag.factor
-        if f isa Number && f ≈ one(W)
+        factor = diag.factor
+        if factor isa Number && factor ≈ one(W)
             return ""
         end
-        s = "$(f)"
-        if f isa Float64
-            return length(s) <= 4 ? s : @sprintf("%6.3e", f)
+        fstr = "$(factor)"
+        if factor isa Float64
+            return length(fstr) <= 4 ? fstr : @sprintf("%6.3e", factor)
         else
-            return s
+            return fstr
         end
     end
+
     function hash()
         return color ? "\u001b[32m#$(diag.hash)\u001b[0m" : "#$(diag.hash)"
     end
+
     if length(diag.subdiagram) == 0
-        s = "$(hash()): $(diag.id)"
+        idstr = "$(hash()): $(diag.id)"
         f = factor()
-        return isempty(f) ? "$s " : "$s, $f x "
+        return isempty(f) ? "$idstr " : "$idstr, $f x "
     elseif length(diag.subdiagram) == 1
         return "$(hash()): $(diag.name == :none ? "" : diag.name) $(diag.id) = $(factor())"
     else

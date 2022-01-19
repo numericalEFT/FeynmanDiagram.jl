@@ -64,18 +64,18 @@ end
 
 function toDict(diag::Diagram, verbose::Int, maxdepth::Int = 1)
     @assert maxdepth == 1 "deep convert has not yet been implemented!"
-    if verbose >= 1
-        d = Dict{Symbol,Any}(toDict(diag.id, verbose))
-    else
-        d = Dict{Symbol,Any}()
-    end
-    # d = id2Dict(diag.id)
+    # if verbose >= 1
+    d = Dict{Symbol,Any}(toDict(diag.id, verbose))
+    # else
+    #     d = Dict{Symbol,Any}()
+    # end
     d[:hash] = diag.hash
     d[:name] = diag.name
     d[:operator] = diag.operator
     d[:factor] = diag.factor
     d[:weight] = diag.weight
     d[:Diagram] = diag
+    d[:id] = typeof(diag.id)
     d[:subdiagram] = Tuple(d.hash for d in diag.subdiagram)
     return d
 end
