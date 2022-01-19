@@ -77,7 +77,7 @@ end
     vde = Diagram(Prod(), [vd[1], ve[2]], factor = -1.0)
     ved = Diagram(Prod(), [ve[1], vd[2]], factor = -1.0)
     vsum = Diagram(Sum(), [vdd, vde, ved])
-    root = Diagram(Prod(), [vsum, ggn], factor = 1 / (2π)^D)
+    root = Diagram(Prod(), [vsum, ggn], factor = 1 / (2π)^D, name = :root)
 
     evalDiagTree!(root, x -> 1.0)
     @test root.weight ≈ -2 + spin

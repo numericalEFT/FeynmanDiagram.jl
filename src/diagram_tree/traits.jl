@@ -18,12 +18,17 @@ abstract type DiagramId end
 # eval(d::DiagramId) = error("eval for $d has not yet implemented!")
 Base.:(==)(a::DiagramId, b::DiagramId) = Base.isequal(a, b)
 
+# function summary(d::DiagramId, verbose::Int = 0, color = false)
+#     for field in fieldnames(typeof(d))
+#     end
+# end
+
 struct GenericId <: DiagramId
     uid::Int
     name::Symbol
     GenericId(name::Symbol = :none) = new(uid(), name)
 end
-Base.show(io::IO, v::GenericId) = print(io, "#$(v.uid)")
+Base.show(io::IO, v::GenericId) = print(io, "$(v.name == :none ? "" : v.name)")
 
 struct GreenId <: DiagramId
     uid::Int
@@ -36,7 +41,7 @@ struct GreenId <: DiagramId
         return new(uid(), name, para, type, k, Tuple(t))
     end
 end
-Base.show(io::IO, v::GreenId) = print(io, "#$(v.uid) G $(v.type), k$(v.extK), t$(v.extT)")
+Base.show(io::IO, v::GreenId) = print(io, "G$(v.name == :none ? "" : v.name) $(v.type), k$(v.extK), t$(v.extT)")
 
 struct InteractionId <: DiagramId
     uid::Int
@@ -50,7 +55,7 @@ struct InteractionId <: DiagramId
         return new(uid(), name, para, response, type, k, Tuple(t))
     end
 end
-Base.show(io::IO, v::InteractionId) = print(io, "#$(v.uid) W $(v.response)$(v.type), k$(v.extK), t$(v.extT)")
+Base.show(io::IO, v::InteractionId) = print(io, "W$(v.name == :none ? "" : v.name) $(short(v.response))$(short(v.type)), k$(v.extK), t$(v.extT)")
 
 struct SigmaId <: DiagramId
     uid::Int
@@ -60,7 +65,7 @@ struct SigmaId <: DiagramId
     extK::Vector{Float64}
     extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
 end
-Base.show(io::IO, v::SigmaId) = print(io, "#$(v.id) Σ $(v.type), k$(v.extK), t$(v.extT)")
+Base.show(io::IO, v::SigmaId) = print(io, "Σ$(v.name == :none ? "" : v.name) $(short(v.type)), k$(v.extK), t$(v.extT)")
 
 struct PolarId <: DiagramId
     uid::Int
@@ -70,7 +75,7 @@ struct PolarId <: DiagramId
     extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
     para::GenericPara
 end
-Base.show(io::IO, v::PolarId) = print(io, "#$(v.id) Π $(v.response)$(v.type), k$(v.extK), t$(v.extT)")
+Base.show(io::IO, v::PolarId) = print(io, "Π$(v.name == :none ? "" : v.name) $(short(v.response))$(short(v.type)), k$(v.extK), t$(v.extT)")
 
 struct Ver3Id <: DiagramId
     uid::Int
@@ -80,7 +85,7 @@ struct Ver3Id <: DiagramId
     extK::Vector{Vector{Float64}}
     extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
 end
-Base.show(io::IO, v::Ver3Id) = print(io, "#$(v.id) Γ3 $(v.type), t$(v.extT)")
+Base.show(io::IO, v::Ver3Id) = print(io, "Γ3$(v.name == :none ? "" : v.name) $(short(v.type)), t$(v.extT)")
 
 struct Ver4Id <: DiagramId
     uid::Int
@@ -92,7 +97,7 @@ struct Ver4Id <: DiagramId
     extK::Vector{Vector{Float64}}
     extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
 end
-Base.show(io::IO, v::Ver4Id) = print(io, "#$(v.id) Γ4 $(v.response)$(v.type)$(v.DiEx == DI ? :D : (v.DiEx == EX ? :E : :DE)),t$(v.extT)")
+Base.show(io::IO, v::Ver4Id) = print(io, "Γ4$(v.name == :none ? "" : v.name) $(short(v.response))$(short(v.type))$(v.DiEx == DI ? :D : (v.DiEx == EX ? :E : :DE)),t$(v.extT)")
 
 
 function Base.isequal(a::DiagramId, b::DiagramId)
