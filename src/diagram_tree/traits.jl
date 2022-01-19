@@ -98,6 +98,7 @@ Base.show(io::IO, v::Ver4Id) = print(io, "$(v.channel) $(short(v.response))$(sho
 
 
 function Base.isequal(a::DiagramId, b::DiagramId)
+    # TODO: maybe there is no need to require uid of two DiagramId to be different
     if typeof(a) != typeof(b)
         return false
     end
