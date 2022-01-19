@@ -2,19 +2,19 @@ module DiagTreeNew
 using AbstractTrees
 using Printf, PyCall, DataFrames
 
-@enum Channel I = 1 T U S Ts Us Ic Tc Uc Sc Tsc Usc
-@enum DiEx Di = 1 Ex
+@enum Channel I = 1 T U S ITUS
+@enum Permutation Di = 1 Ex DiEx
 
-export Channel, I, T, U, S
-export DiEx, Di, Ex
+export Channel, I, T, U, S, ITUS
+export Permutation, Di, Ex, DiEx
 
 Base.length(r::Channel) = 1
 Base.iterate(r::Channel) = (r, nothing)
 function Base.iterate(r::Channel, ::Nothing) end
 
-Base.length(r::DiEx) = 1
-Base.iterate(r::DiEx) = (r, nothing)
-function Base.iterate(r::DiEx, ::DiEx) end
+Base.length(r::Permutation) = 1
+Base.iterate(r::Permutation) = (r, nothing)
+function Base.iterate(r::Permutation, ::Permutation) end
 
 include("common.jl")
 include("traits.jl")

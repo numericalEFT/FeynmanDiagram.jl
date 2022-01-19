@@ -46,10 +46,10 @@ struct InteractionId <: DiagramId
     para::GenericPara
     response::Response #UpUp, UpDown, ...
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
-    diex::DiEx # 1 for direct, 2 for exchange
+    diex::Permutation
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
-    function InteractionId(para::GenericPara, diex::DiEx, response::Response, type::AnalyticProperty = Instant; k, t = (0, 0))
+    function InteractionId(para::GenericPara, diex::Permutation, response::Response, type::AnalyticProperty = Instant; k, t = (0, 0))
         return new(uid(), para, response, type, diex, k, Tuple(t))
     end
 end

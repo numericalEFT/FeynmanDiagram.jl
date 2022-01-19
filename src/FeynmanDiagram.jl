@@ -61,8 +61,8 @@ export GenericPara, Interaction
 include("diagram_tree/DiagTree.jl")
 using .DiagTreeNew
 export DiagTreeNew
-export Channel, I, T, U, S
-export DiEx, Di, Ex
+export Channel, I, T, U, S, ITUS
+export Permutation, Di, Ex, DiEx
 export Diagram, addSubDiagram!, toDataFrame
 export evalDiagNode!, evalDiagTree!
 export Operator, Sum, Prod
