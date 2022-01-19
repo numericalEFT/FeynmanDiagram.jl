@@ -1,7 +1,7 @@
 # Base.hash(d::DiagramId) = hash(d) % 1000000
 
 mutable struct Diagram{W}
-    hash::Int # Two diagram MAY have the same hash number, only provide a inttuiative way to distinish two diagrams. 
+    name::Symbol
     id::DiagramId
     operator::Operator
     factor::W
@@ -10,11 +10,13 @@ mutable struct Diagram{W}
     weight::W
     # parent::Diagram
 
-    function Diagram{W}(operator::Operator = Sum(), subdiagram = []; id::DiagramId = GenericId(), factor = W(1), weight = W(0)) where {W}
-        return new{W}(hash(id) % 1000000, id, operator, factor, subdiagram, weight)
+    function Diagram{W}(operator::Operator = Sum(), subdiagram = [];
+        name = :none, id::DiagramId = GenericId(), factor = W(1), weight = W(0)) where {W}
+        return new{W}(name, id, operator, factor, subdiagram, weight)
     end
-    function Diagram(operator::Operator = Sum(), subdiagram = []; id::DiagramId = GenericId(), factor = Float64(1), weight = Float64(0))
-        return new{Float64}(hash(id) % 1000000, id, operator, factor, subdiagram, weight)
+    function Diagram(operator::Operator = Sum(), subdiagram = [];
+        name = :none, id::DiagramId = GenericId(), factor = Float64(1), weight = Float64(0))
+        return new{Float64}(name, id, operator, factor, subdiagram, weight)
     end
 end
 
@@ -61,7 +63,7 @@ function toDataFrame(diag::Diagram, maxdepth::Int = 1)
     @assert maxdepth == 1 "deep convert has not yet been implemented!"
     d = Dict{Symbol,Any}(Dict(diag.id))
     # d = id2Dict(diag.id)
-    d[:hash] = diag.hash
+    d[:name] = diag.name
     d[:operator] = diag.operator
     d[:factor] = diag.factor
     d[:weight] = diag.weight

@@ -19,9 +19,9 @@ function _summary(diag::Diagram, color = true)
         f = factor()
         return isempty(f) ? "$s " : "$s, $f x "
     elseif length(diag.subdiagram) == 1
-        return "$(hash()): $(diag.id) = $(factor())"
+        return "$(hash()): $(diag.name == :none ? "" : diag.name) $(diag.id) = $(factor())"
     else
-        return "$(hash()): $(diag.id) = $(factor())$(diag.operator) "
+        return "$(hash()): $(diag.name == :none ? "" : diag.name) $(diag.id) = $(factor())$(diag.operator) "
     end
 end
 
@@ -32,7 +32,7 @@ function Base.show(io::IO, diag::Diagram)
         typestr = "#$(diag.id.uid)"
     else
         subdiag = prod(["#$(d.id.uid), " for d in diag.subdiagram[1:end-1]])
-        subdiag *= "#$(diag.subdiagram[end].hash)"
+        subdiag *= "#$(diag.subdiagram[end].id.uid)"
         typestr = "($subdiag)"
     end
     print(io, "$(_summary(diag, true))$typestr = $(diag.weight)")
