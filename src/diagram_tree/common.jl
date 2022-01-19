@@ -34,3 +34,22 @@ import ..Interaction
 import ..GenericPara
 
 import ..innerTauNum
+
+# unique id
+# uid() = abs(rand(Int)) % 10000
+
+# let z = 0
+#     global function uid()
+#         z += 1
+#         return z
+#     end
+# end
+_counter = 0
+function uid()
+    global _counter += 1
+    return _counter
+end
+
+function uidreset()
+    global _counter = 0
+end
