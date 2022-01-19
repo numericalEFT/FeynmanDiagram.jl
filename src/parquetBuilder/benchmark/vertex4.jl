@@ -54,12 +54,12 @@ end
 
 struct Bubble{_Ver4} # template Bubble to avoid mutually recursive struct
     id::Int
-    chan::Channel
+    chan::Int
     Lver::_Ver4
     Rver::_Ver4
     map::Vector{IdxMap{_Ver4}}
 
-    function Bubble(ver4::_Ver4, chan::Channel, oL::Int, level::Int, _id::Vector{Int}) where {_Ver4}
+    function Bubble(ver4::_Ver4, chan::Int, oL::Int, level::Int, _id::Vector{Int}) where {_Ver4}
         # @assert chan in para.chan "$chan isn't a bubble channels!"
         @assert oL < ver4.loopNum "LVer loopNum must be smaller than the ver4 loopNum"
 
@@ -170,13 +170,13 @@ end
 """
 struct Ver4{W}
     para::Any
-    chan::Vector{Channel} # list of channels
-    F::Vector{Channel}
-    V::Vector{Channel}
-    All::Vector{Channel}
-    Fouter::Vector{Channel}
-    Vouter::Vector{Channel}
-    Allouter::Vector{Channel}
+    chan::Vector{Int} # list of channels
+    F::Vector{Int}
+    V::Vector{Int}
+    All::Vector{Int}
+    Fouter::Vector{Int}
+    Vouter::Vector{Int}
+    Allouter::Vector{Int}
 
     ###### vertex topology information #####################
     id::Int
@@ -196,7 +196,7 @@ struct Ver4{W}
     child::Vector{Vector{IdxMap{Ver4{W}}}}
     weight::Vector{W}
 
-    function Ver4{W}(para, chan, F, V, All = union(F, V);
+    function Ver4{W}(para, chan, F = [I, U, S], V = [I, T, U], All = union(F, V);
         loopNum = para.innerLoopNum, loopidxOffset = 0, tidxOffset = 0,
         Fouter = F, Vouter = V, Allouter = All,
         level = 1, id = [1,]

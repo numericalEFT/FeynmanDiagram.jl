@@ -2,15 +2,15 @@ module DiagTreeNew
 using AbstractTrees
 using Printf, PyCall, DataFrames
 
-@enum Channel I = 1 T U S ITUS
+@enum TwoBodyChannel Alli = 1 PHr PHEr PPr AnyChan
 @enum Permutation Di = 1 Ex DiEx
 
-export Channel, I, T, U, S, ITUS
+export TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
 export Permutation, Di, Ex, DiEx
 
-Base.length(r::Channel) = 1
-Base.iterate(r::Channel) = (r, nothing)
-function Base.iterate(r::Channel, ::Nothing) end
+Base.length(r::TwoBodyChannel) = 1
+Base.iterate(r::TwoBodyChannel) = (r, nothing)
+function Base.iterate(r::TwoBodyChannel, ::Nothing) end
 
 Base.length(r::Permutation) = 1
 Base.iterate(r::Permutation) = (r, nothing)

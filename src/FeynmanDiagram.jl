@@ -61,7 +61,7 @@ export GenericPara, Interaction
 include("diagram_tree/DiagTree.jl")
 using .DiagTreeNew
 export DiagTreeNew
-export Channel, I, T, U, S, ITUS
+export TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
 export Permutation, Di, Ex, DiEx
 export Diagram, addSubDiagram!, toDataFrame
 export evalDiagNode!, evalDiagTree!
@@ -77,7 +77,9 @@ export setroot!, addroot!
 export evalNaive, showTree
 
 include("parquetBuilder/parquet.jl")
+using .ParquetNew
 export ParquetNew
+export ParquetBlocks
 
 include("diagramBuilder/builder.jl")
 export Builder

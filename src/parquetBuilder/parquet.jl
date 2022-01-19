@@ -22,9 +22,11 @@ const SymFactor = [1.0, -1.0, 1.0, -0.5, +1.0, -1.0]
 
 # const Fchan = [I, U, S, Ts, Us, Ic, Uc, Sc, Tsc, Usc]
 # const Vchan = [I, T, U, Ts, Us, Ic, Tc, Uc, Sc, Tsc, Usc]
-const Allchan = [I, T, U, S, Ts, Us, Ic, Tc, Uc, Sc, Tsc, Usc]
+# const Allchan = [I, T, U, S, Ts, Us, Ic, Tc, Uc, Sc, Tsc, Usc]
 
 include("common.jl")
+export ParquetBlocks
+
 include("identifier.jl")
 include("filter.jl")
 include("vertex4_utility.jl")
@@ -32,7 +34,7 @@ include("vertex4_bare.jl")
 include("vertex4.jl")
 
 # include("green.jl")
-include("sigma.jl")
+# include("sigma.jl")
 
 include("benchmark/parquet.jl")
 end
