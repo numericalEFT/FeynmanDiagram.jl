@@ -51,7 +51,7 @@ struct InteractionId <: DiagramId
         return new(para, response, type, permu, k, Tuple(t))
     end
 end
-Base.show(io::IO, v::InteractionId) = print(io, "$(v.permutation) $(short(v.response))$(short(v.type))$(v.permutation), k$(v.extK), t$(v.extT)")
+Base.show(io::IO, v::InteractionId) = print(io, "$(short(v.response))$(short(v.type))$(v.permutation), k$(v.extK), t$(v.extT)")
 
 struct SigmaId <: DiagramId
     para::GenericPara
@@ -88,7 +88,7 @@ struct Ver4Id <: DiagramId
         return new(para, response, type, chan, k, Tuple(t))
     end
 end
-Base.show(io::IO, v::Ver4Id) = print(io, "$(v.channel) $(short(v.response))$(short(v.type)),t$(v.extT)")
+Base.show(io::IO, v::Ver4Id) = print(io, (v.channel == AnyChan ? "" : "$(v.channel) ") * "$(short(v.response))$(short(v.type)),t$(v.extT)")
 
 
 function Base.isequal(a::DiagramId, b::DiagramId)
@@ -108,10 +108,10 @@ function Base.isequal(a::DiagramId, b::DiagramId)
     return true
 end
 
-function toDict(v::DiagramId, expand::Bool = false)
+function toDict(v::DiagramId, verbose::Int)
     d = Dict{Symbol,Any}()
     for field in fieldnames(typeof(v))
-        if expand && field == :extT
+        if verbose > 1 && field == :extT
             tidx = getproperty(v, :extT)
             if length(tidx) == 2 # for sigma, polar
                 d[:TinL], d[:ToutL] = tidx[1], tidx[2]
@@ -136,7 +136,9 @@ function toDict(v::DiagramId, expand::Bool = false)
             #     else
             #         error("not implemented!")
             #     end
-            d[field] = getproperty(v, field)
+            data = getproperty(v, field)
+            #DataFrame will expand a vector into multiple rows. To prevent it, we transform all vectors into tuples
+            d[field] = data isa AbstractVector ? Tuple(data) : data
         end
     end
     return d

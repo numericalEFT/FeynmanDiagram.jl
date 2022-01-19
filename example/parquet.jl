@@ -37,8 +37,8 @@ evalK(basis) = sum([basis[i] * varK[i] for i in 1:para.totalLoopNum])
 evalT(Tidx) = varT[Tidx]
 
 diags = Parquet.buildVer4(para, legK, [PHr, PHEr, PPr])
-println(DiagTreeNew.toDataFrame(diags, false))
-# println(df[:, [Not(r"DiagramId"), Not(r"para")])
+df = DiagTreeNew.toDataFrame(diags, 2)
+println(df[:, Not([:Diagram, :para])])
 # diag, nodes = Parquet.buildVer4(para, legK, [PHr, PHEr, PPr])
 # d = Parquet.groupby!(diag, nodes, :response)
 # g = groupby(nodes, :response)

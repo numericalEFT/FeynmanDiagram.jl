@@ -62,10 +62,10 @@ function evalDiagTree!(diag::Diagram, evalBare::Function, vargs...; kwargs...)
     return diag.weight
 end
 
-function toDataFrame(diag::Diagram, expand::Bool = false, maxdepth::Int = 1)
+function toDict(diag::Diagram, verbose::Int, maxdepth::Int = 1)
     @assert maxdepth == 1 "deep convert has not yet been implemented!"
-    if expand
-        d = Dict{Symbol,Any}(toDict(diag.id, expand))
+    if verbose >= 1
+        d = Dict{Symbol,Any}(toDict(diag.id, verbose))
     else
         d = Dict{Symbol,Any}()
     end
@@ -75,18 +75,30 @@ function toDataFrame(diag::Diagram, expand::Bool = false, maxdepth::Int = 1)
     d[:operator] = diag.operator
     d[:factor] = diag.factor
     d[:weight] = diag.weight
-    d[:DiagramId] = diag.id
+    d[:Diagram] = diag
     d[:subdiagram] = Tuple(d.hash for d in diag.subdiagram)
-    return DataFrame(d)
+    return d
 end
 
-function toDataFrame(diagVec::AbstractVector, expand::Bool = false, maxdepth::Int = 1)
-    diags = []
-    for diag in diagVec
-        println(diag)
-        push!(diags, toDataFrame(diag, expand, maxdepth))
+function toDataFrame(diagVec::AbstractVector, verbose::Int = 0, maxdepth::Int = 1)
+    # diags = []
+    d = Dict{Symbol,Any}()
+    k = []
+    for d in diagVec
+        # println(keys(toDict(d, verbose, maxdepth)))
+        append!(k, keys(toDict(d, verbose, maxdepth)))
     end
-    return vcat(diags)
+    for f in Set(k)
+        d[f] = []
+    end
+    # println(d)
+    df = DataFrame(d)
+
+    for d in diagVec
+        dict = toDict(d, verbose, maxdepth)
+        append!(df, dict, cols = :union)
+    end
+    return df
 end
 
 ## Things we need to define
