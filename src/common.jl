@@ -70,6 +70,7 @@ end
     ########################################################################
     filter::Vector{Filter} = [NoHatree,] #usually, the Hatree subdiagram should be removed
     transferLoop = [] #Set it to be the transfer momentum/frequency if you want to check the diagrams are proper or not
+    extra::Any = Nothing
 end
 
 # function Base.show(io::IO, para::GenericPara)
