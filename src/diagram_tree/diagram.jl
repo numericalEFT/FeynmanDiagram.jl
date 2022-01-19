@@ -62,9 +62,13 @@ function evalDiagTree!(diag::Diagram, evalBare::Function, vargs...; kwargs...)
     return diag.weight
 end
 
-function toDataFrame(diag::Diagram, maxdepth::Int = 1)
+function toDataFrame(diag::Diagram, expand::Bool = false, maxdepth::Int = 1)
     @assert maxdepth == 1 "deep convert has not yet been implemented!"
-    d = Dict{Symbol,Any}(Dict(diag.id))
+    if expand
+        d = Dict{Symbol,Any}(toDict(diag.id, expand))
+    else
+        d = Dict{Symbol,Any}()
+    end
     # d = id2Dict(diag.id)
     d[:hash] = diag.hash
     d[:name] = diag.name
@@ -76,10 +80,11 @@ function toDataFrame(diag::Diagram, maxdepth::Int = 1)
     return DataFrame(d)
 end
 
-function toDataFrame(diagVec::Vector{Diagram{W}}, maxdepth::Int = 1) where {W}
+function toDataFrame(diagVec::AbstractVector, expand::Bool = false, maxdepth::Int = 1)
     diags = []
     for diag in diagVec
-        push!(diags, toDataFrame(diag, maxdepth))
+        println(diag)
+        push!(diags, toDataFrame(diag, expand, maxdepth))
     end
     return vcat(diags)
 end

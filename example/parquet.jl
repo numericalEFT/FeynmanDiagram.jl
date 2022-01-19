@@ -8,7 +8,6 @@ const Weight = SVector{2,Float64}
 # Parquet = Builder.Parquet
 Parquet = ParquetNew
 
-chan = [Parquet.T, Parquet.U, Parquet.S]
 # chan = [Parquet.U,]
 
 # F = [Parquet.U, Parquet.S]
@@ -18,10 +17,10 @@ chan = [Parquet.T, Parquet.U, Parquet.S]
 ###################### ver4 to DiagTree ###########################################
 para = GenericPara(
     diagType = Ver4Diag,
-    innerLoopNum = 1,
+    innerLoopNum = 0,
     hasTau = true,
     filter = [Builder.NoFock,],
-    interaction = [Interaction(ChargeCharge, Instant),],
+    interaction = [Interaction(ChargeCharge, Instant), Interaction(UpUp, Instant),],
     extra = ParquetBlocks(phi = [PPr, PHEr], ppi = [PHr, PHEr], Γ4 = [PPr, PHr, PHEr])
     # interaction = [Interaction(UpUp, Instant), Interaction(UpDown, Instant),]
 )
@@ -37,14 +36,17 @@ varT = [rand() for i in 1:para.totalTauNum]
 evalK(basis) = sum([basis[i] * varK[i] for i in 1:para.totalLoopNum])
 evalT(Tidx) = varT[Tidx]
 
-diag, nodes = Parquet.buildVer4(para, legK, chan, F = F, V = V, All = All)
-d = Parquet.groupby!(diag, nodes, :response)
+diags = Parquet.buildVer4(para, legK, [PHr, PHEr, PPr])
+println(DiagTreeNew.toDataFrame(diags, false))
+# println(df[:, [Not(r"DiagramId"), Not(r"para")])
+# diag, nodes = Parquet.buildVer4(para, legK, [PHr, PHEr, PPr])
+# d = Parquet.groupby!(diag, nodes, :response)
 # g = groupby(nodes, :response)
 # uu = filter(r -> r.response == UpUp, nodes)
 # ud = filter(r -> r.response == UpDown, nodes)
 
-# DiagTree.showTree(diag, d[UpUp])
-# DiagTree.showTree(diag, d[UpDown])
+# DiagTreeNew.plot_tree(diags[1])
+exit(0)
 
 ######################################## self-energy  ################################################
 

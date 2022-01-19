@@ -1,4 +1,4 @@
-function buildVer4(para::GenericPara, LegK, chan::Vector{TwoBodyChannel}, subdiagram = false; level = 1,
+function buildVer4(para::GenericPara, legK, chan::Vector{TwoBodyChannel}, subdiagram = false; level = 1,
     phi_toplevel = para.extra.phi, ppi_toplevel = para.extra.ppi, Γ4_toplevel = para.extra.Γ4)
 
     @assert para.totalTauNum >= maxVer4TauIdx(para) "Increase totalTauNum!\n$para"
@@ -18,13 +18,14 @@ function buildVer4(para::GenericPara, LegK, chan::Vector{TwoBodyChannel}, subdia
     @assert KoutR ≈ KinL + KinR - KoutL
     legK = [KinL, KoutL, KinR, KoutR]
 
+
     loopNum = para.innerLoopNum
     @assert loopNum >= 0
 
     diags = []
 
     if loopNum == 0
-        append!(diags, bareVer4!(diag, para, legK, [Di, Ex], name))
+        append!(diags, bareVer4!(para, legK, [Di, Ex]))
     else # loopNum>0
         for c in chan
             if c == I
