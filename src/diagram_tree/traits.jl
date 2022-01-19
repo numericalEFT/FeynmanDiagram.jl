@@ -20,13 +20,71 @@ Base.:(==)(a::DiagramId, b::DiagramId) = Base.isequal(a, b)
 
 struct GenericId <: DiagramId
     uid::Int
-    GenericId() = new(uid())
+    name::Symbol
+    GenericId(name::Symbol = :none) = new(uid(), name)
 end
 Base.show(io::IO, v::GenericId) = print(io, "#$(v.uid)")
 
-struct Ver4Id <: DiagramId
-    ######### properties that defines a unique ver4 ###################
+struct GreenId <: DiagramId
     uid::Int
+    name::Symbol
+    para::GenericPara
+    type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
+    extK::Vector{Float64}
+    extT::Tuple{Int,Int} #all possible extT from different interactionType
+    function GreenId(para::GenericPara, type::AnalyticProperty = Dynamic; k, t, name = :none)
+        return new(uid(), name, para, type, k, Tuple(t))
+    end
+end
+Base.show(io::IO, v::GreenId) = print(io, "#$(v.uid) G $(v.type), k$(v.extK), t$(v.extT)")
+
+struct InteractionId <: DiagramId
+    uid::Int
+    name::Symbol
+    para::GenericPara
+    response::Response #UpUp, UpDown, ...
+    type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
+    extK::Vector{Float64}
+    extT::Tuple{Int,Int} #all possible extT from different interactionType
+    function InteractionId(para::GenericPara, response::Response, type::AnalyticProperty = Instant; k, t = (0, 0), name = :none)
+        return new(uid(), name, para, response, type, k, Tuple(t))
+    end
+end
+Base.show(io::IO, v::InteractionId) = print(io, "#$(v.uid) W $(v.response)$(v.type), k$(v.extK), t$(v.extT)")
+
+struct SigmaId <: DiagramId
+    uid::Int
+    name::Symbol
+    para::GenericPara
+    type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
+    extK::Vector{Float64}
+    extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
+end
+Base.show(io::IO, v::SigmaId) = print(io, "#$(v.id) Σ $(v.type), k$(v.extK), t$(v.extT)")
+
+struct PolarId <: DiagramId
+    uid::Int
+    name::Symbol
+    response::Response #ChargeCharge, SpinSpin, ...
+    extK::Vector{Float64}
+    extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
+    para::GenericPara
+end
+Base.show(io::IO, v::PolarId) = print(io, "#$(v.id) Π $(v.response)$(v.type), k$(v.extK), t$(v.extT)")
+
+struct Ver3Id <: DiagramId
+    uid::Int
+    name::Symbol
+    para::GenericPara
+    type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
+    extK::Vector{Vector{Float64}}
+    extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
+end
+Base.show(io::IO, v::Ver3Id) = print(io, "#$(v.id) Γ3 $(v.type), t$(v.extT)")
+
+struct Ver4Id <: DiagramId
+    uid::Int
+    name::Symbol
     para::GenericPara
     response::Response #UpUp, UpDown, ...
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
@@ -36,57 +94,6 @@ struct Ver4Id <: DiagramId
 end
 Base.show(io::IO, v::Ver4Id) = print(io, "#$(v.id) Γ4 $(v.response)$(v.type)$(v.DiEx == DI ? :D : (v.DiEx == EX ? :E : :DE)),t$(v.extT)")
 
-struct GreenId <: DiagramId
-    uid::Int
-    para::GenericPara
-    type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
-    extK::Vector{Float64}
-    extT::Tuple{Int,Int} #all possible extT from different interactionType
-    function GreenId(para::GenericPara, type::AnalyticProperty = Dynamic; k, t)
-        return new(uid(), para, type, k, Tuple(t))
-    end
-end
-Base.show(io::IO, v::GreenId) = print(io, "#$(v.uid) G $(v.type), k$(v.extK), t$(v.extT)")
-
-struct InteractionId <: DiagramId
-    uid::Int
-    para::GenericPara
-    response::Response #UpUp, UpDown, ...
-    type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
-    extK::Vector{Float64}
-    extT::Tuple{Int,Int} #all possible extT from different interactionType
-    function InteractionId(para::GenericPara, response::Response, type::AnalyticProperty = Instant; k, t = (0, 0))
-        return new(uid(), para, response, type, k, Tuple(t))
-    end
-end
-Base.show(io::IO, v::InteractionId) = print(io, "#$(v.uid) W $(v.response)$(v.type), k$(v.extK), t$(v.extT)")
-
-struct SigmaId <: DiagramId
-    uid::Int
-    para::GenericPara
-    type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
-    extK::Vector{Float64}
-    extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
-end
-Base.show(io::IO, v::SigmaId) = print(io, "#$(v.id) Σ $(v.type), k$(v.extK), t$(v.extT)")
-
-struct Ver3Id <: DiagramId
-    uid::Int
-    para::GenericPara
-    type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
-    extK::Vector{Vector{Float64}}
-    extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
-end
-Base.show(io::IO, v::Ver3Id) = print(io, "#$(v.id) Γ3 $(v.type), t$(v.extT)")
-
-struct PolarId <: DiagramId
-    uid::Int
-    response::Response #ChargeCharge, SpinSpin, ...
-    extK::Vector{Float64}
-    extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
-    para::GenericPara
-end
-Base.show(io::IO, v::PolarId) = print(io, "#$(v.id) Π $(v.response)$(v.type), k$(v.extK), t$(v.extT)")
 
 function Base.isequal(a::DiagramId, b::DiagramId)
     if typeof(a) != typeof(b)
