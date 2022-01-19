@@ -65,11 +65,11 @@ end
 
     vdK = [[0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 1.0, 0.0]]
     vdT = [[1, 1], [2, 2]]
-    vd = [Diagram(id = InteractionId(paraV, ChargeCharge, k = vdK[i]), name = :Vd) for i in 1:2]
+    vd = [Diagram(id = InteractionId(paraV, Di, ChargeCharge, k = vdK[i]), name = :Vd) for i in 1:2]
 
     veK = [[1, 0, -1, -1], [0, 1, 0, -1]]
     veT = [[1, 1], [2, 2]]
-    ve = [Diagram(id = InteractionId(paraV, ChargeCharge, k = veK[i]), name = :Ve) for i in 1:2]
+    ve = [Diagram(id = InteractionId(paraV, Ex, ChargeCharge, k = veK[i]), name = :Ve) for i in 1:2]
 
     # contruct the tree
     ggn = Diagram(Prod(), [g[1], g[2]])

@@ -5,6 +5,9 @@ using Printf, PyCall, DataFrames
 @enum Channel I = 1 T U S Ts Us Ic Tc Uc Sc Tsc Usc
 @enum DiEx Di = 1 Ex
 
+export Channel, I, T, U, S
+export DiEx, Di, Ex
+
 Base.length(r::Channel) = 1
 Base.iterate(r::Channel) = (r, nothing)
 function Base.iterate(r::Channel, ::Nothing) end

@@ -50,7 +50,7 @@ struct InteractionId <: DiagramId
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
     function InteractionId(para::GenericPara, diex::DiEx, response::Response, type::AnalyticProperty = Instant; k, t = (0, 0))
-        return new(uid(), para, diex, response, type, k, Tuple(t))
+        return new(uid(), para, response, type, diex, k, Tuple(t))
     end
 end
 Base.show(io::IO, v::InteractionId) = print(io, "$(v.diex) $(short(v.response))$(short(v.type)), k$(v.extK), t$(v.extT)")
