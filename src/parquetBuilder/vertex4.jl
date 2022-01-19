@@ -1,7 +1,49 @@
-# function buildVer4(para, LegK, chan, subdiagram = false)
-#     diags = []
-#     return diags
-# end
+function buildVer4(para::GenericPara, LegK, chan::Vector{TwoBodyChannel}, subdiagram = false; level = 1,
+    phi_toplevel = para.extra.phi, ppi_toplevel = para.extra.ppi, Γ4_toplevel = para.extra.Γ4)
+
+    @assert para.totalTauNum >= maxVer4TauIdx(para) "Increase totalTauNum!\n$para"
+    @assert para.totalLoopNum >= maxVer4LoopIdx(para) "Increase totalLoopNum\n$para"
+
+    phi, ppi = para.extra.phi, para.extra.ppi
+
+    @assert (PHr in phi) == false "PHi vertex is particle-hole irreducible, so that PHr channel is not allowed in $phi"
+    @assert (PPr in ppi) == false "PPi vertex is particle-particle irreducible, so that PPr channel is not allowed in $ppi"
+    @assert (PHr in phi_toplevel) == false "PHi vertex is particle-hole irreducible, so that PHr channel is not allowed in $phi_toplevel"
+    @assert (PPr in ppi_toplevel) == false "PPi vertex is particle-particle irreducible, so that PPr channel is not allowed in $ppi_toplevel"
+
+    @assert length(legK[1]) == length(legK[2]) == length(legK[3]) == para.totalLoopNum
+
+    KinL, KoutL, KinR = legK[1], legK[2], legK[3]
+    KoutR = (length(legK) > 3) ? legK[4] : KinL + KinR - KoutL
+    @assert KoutR ≈ KinL + KinR - KoutL
+    legK = [KinL, KoutL, KinR, KoutR]
+
+    loopNum = para.innerLoopNum
+    @assert loopNum >= 0
+
+    diags = []
+
+    if loopNum == 0
+        append!(diags, bareVer4!(diag, para, legK, [Di, Ex], name))
+    else # loopNum>0
+        for c in chan
+            if c == I
+                continue
+            end
+
+            partition = orderedPartition(loopNum - 1, 4, 0)
+
+            for p in partition
+
+                if c == T || c == U || c == S
+                    # addBubble!(ver4, c, p, level)
+                end
+            end
+        end
+        # # TODO: add envolpe diagrams
+    end
+    return diags
+end
 
 function buildVer4(para, LegK, chan, subdiagram = false; F = [I, U, S], V = [I, T, U], All = union(F, V),
     Fouter = F, Vouter = V, Allouter = All, diag = newDiagTree(para, :Ver4))
