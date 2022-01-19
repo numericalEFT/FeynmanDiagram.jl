@@ -11,9 +11,9 @@ Parquet = ParquetNew
 chan = [Parquet.T, Parquet.U, Parquet.S]
 # chan = [Parquet.U,]
 
-F = [Parquet.U, Parquet.S]
-V = [Parquet.T, Parquet.U]
-All = union(F, V)
+# F = [Parquet.U, Parquet.S]
+# V = [Parquet.T, Parquet.U]
+# Γ4 = union(F, V)
 
 ###################### ver4 to DiagTree ###########################################
 para = GenericPara(
@@ -21,7 +21,8 @@ para = GenericPara(
     innerLoopNum = 1,
     hasTau = true,
     filter = [Builder.NoFock,],
-    interaction = [Interaction(ChargeCharge, Instant),]
+    interaction = [Interaction(ChargeCharge, Instant),],
+    extra = ParquetBlocks(phi = [PPr, PHEr], ppi = [PHr, PHEr], Γ4 = [PPr, PHr, PHEr])
     # interaction = [Interaction(UpUp, Instant), Interaction(UpDown, Instant),]
 )
 

@@ -1,3 +1,8 @@
+# function buildVer4(para, LegK, chan, subdiagram = false)
+#     diags = []
+#     return diags
+# end
+
 function buildVer4(para, LegK, chan, subdiagram = false; F = [I, U, S], V = [I, T, U], All = union(F, V),
     Fouter = F, Vouter = V, Allouter = All, diag = newDiagTree(para, :Ver4))
 

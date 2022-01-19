@@ -165,7 +165,7 @@ end
         # DiagTree.showTree(diag, uu[2].index)
         # DiagTree.showTree(diag, ud[2].index)
 
-        ver4 = Benchmark.Ver4{Benchmark.Weight}(para, chan, F, V, All)
+        ver4 = Benchmark.Ver4{Benchmark.Weight}(para, Int.(chan), Int.(F), Int.(V))
         # Parquet.print_tree(ver4)
 
         if eval

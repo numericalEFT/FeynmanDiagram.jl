@@ -27,22 +27,59 @@ import ..D_Dynamic
 import ..AnalyticProperty
 
 import ..symbol
+import ..short
 
 import ..Interaction
-
 import ..GenericPara
-
 import ..innerTauNum
 
-# mutable struct Weight <: FieldVector{2,Float64}
-#     d::Float64
-#     e::Float64
-#     Weight() = new(0.0, 0.0)
-#     Weight(d, e) = new(d, e)
-# end
+import ..TwoBodyChannel
+import ..Alli
+import ..PHr
+import ..PHEr
+import ..PPr
+import ..AnyChan
 
-# const Base.zero(::Type{Weight}) = Weight(0.0, 0.0)
-# const Base.abs(w::Weight) = abs(w.d) + abs(w.e) # define abs(Weight)
+import ..Permutation
+import ..Di
+import ..Ex
+import ..DiEx
+
+"""
+    struct ParquetBlocks
+
+    The channels of the left and right sub-vertex4 of a bubble diagram in the parquet equation
+
+#Members
+- `F`   : channels of left sub-vertex for the particle-hole and particle-hole-exchange bubbles
+- `V`   : channels of left sub-vertex for the particle-particle bubble
+- `Γ4`   : channels of right sub-vertex of all channels
+- `Ftop`   : channels of left sub-vertex for the particle-hole and particle-hole-exchange bubbles, only take effect for the outermost bubble
+- `Vtop`   : channels of left sub-vertex for the particle-particle bubble, only take effect for the outermost bubble
+- `Γ4top`   : channels of right sub-vertex of all channels
+"""
+struct ParquetBlocks
+    phi::Vector{TwoBodyChannel}
+    ppi::Vector{TwoBodyChannel}
+    Γ4::Vector{TwoBodyChannel}
+    phi_toplevel::Vector{TwoBodyChannel}
+    ppi_toplevel::Vector{TwoBodyChannel}
+    Γ4_toplevel::Vector{TwoBodyChannel}
+    function ParquetBlocks(; phi = (Alli, PHEr, PPr), ppi = (Alli, PHr, PHEr), Γ4 = union(phi, ppi),
+        phi_toplevel = phi, ppi_toplevel = ppi, Γ4_toplevel = Γ4)
+        return new(phi, ppi, Γ4, phi_toplevel, ppi_toplevel, Γ4_toplevel)
+    end
+end
+
+function Base.isequal(a::ParquetBlocks, b::ParquetBlocks)
+    if issetequal(a.F, b.F) && issetequal(a.V, b.V) && issetequal(a.Γ4, b.Γ4) &&
+       issetequal(a.Ftop, b.Ftop) && issetequal(a.Vtop, b.Vtop) && issetequal(a.Γ4top, b.Γ4top)
+        return true
+    else
+        return false
+    end
+end
+Base.:(==)(a::ParquetBlocks, b::ParquetBlocks) = Base.isequal(a, b)
 
 function orderedPartition(_total, n, lowerbound = 1)
     @assert lowerbound >= 0
