@@ -62,10 +62,10 @@ function evalDiagTree!(diag::Diagram, evalBare::Function, vargs...; kwargs...)
     return diag.weight
 end
 
-function toDict(diag::Diagram, verbose::Int, maxdepth::Int = 1)
+function toDict(diag::Diagram; verbose::Int, maxdepth::Int = 1)
     @assert maxdepth == 1 "deep convert has not yet been implemented!"
     # if verbose >= 1
-    d = Dict{Symbol,Any}(toDict(diag.id, verbose))
+    d = Dict{Symbol,Any}(toDict(diag.id; verbose = verbose))
     # else
     #     d = Dict{Symbol,Any}()
     # end
@@ -80,13 +80,13 @@ function toDict(diag::Diagram, verbose::Int, maxdepth::Int = 1)
     return d
 end
 
-function toDataFrame(diagVec::AbstractVector, verbose::Int = 0, maxdepth::Int = 1)
+function toDataFrame(diagVec::AbstractVector; verbose::Int = 0, maxdepth::Int = 1)
     # diags = []
     d = Dict{Symbol,Any}()
     k = []
     for d in diagVec
         # println(keys(toDict(d, verbose, maxdepth)))
-        append!(k, keys(toDict(d, verbose, maxdepth)))
+        append!(k, keys(toDict(d, verbose = verbose, maxdepth = maxdepth)))
     end
     for f in Set(k)
         d[f] = []
@@ -95,7 +95,7 @@ function toDataFrame(diagVec::AbstractVector, verbose::Int = 0, maxdepth::Int = 
     df = DataFrame(d)
 
     for d in diagVec
-        dict = toDict(d, verbose, maxdepth)
+        dict = toDict(d, verbose = verbose, maxdepth = maxdepth)
         append!(df, dict, cols = :union)
     end
     return df

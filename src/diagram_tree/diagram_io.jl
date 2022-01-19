@@ -58,11 +58,15 @@ function plot_tree(diag::Diagram; verbose = 0, maxdepth = 999)
 
     function treeview(node, level, t = ete.Tree(name = " "))
         nt = t.add_child(name = _summary(node, false))
-        name_face = ete.TextFace(nt.name, fgcolor = "black", fsize = 10)
-        nt.add_face(name_face, column = 0, position = "branch-top")
-        for child in node.subdiagram
-            treeview(child, level + 1, nt)
+
+        if length(node.subdiagram) > 0
+            name_face = ete.TextFace(nt.name, fgcolor = "black", fsize = 10)
+            nt.add_face(name_face, column = 0, position = "branch-top")
+            for child in node.subdiagram
+                treeview(child, level + 1, nt)
+            end
         end
+
         return t
     end
 

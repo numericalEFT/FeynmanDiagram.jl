@@ -153,16 +153,18 @@ function bareVer4!(para::GenericPara, legK, diex::Vector{Permutation} = [Di, Ex]
     function addver4!(response::Response, type, _extT, vd, ve)
         # "$_extT: external T of direct and exchange diagrams are different, impossible to merge!"
         # if DI and EX have the same external T, then it is possible to merge them into a same node
-        if isnothing(vd) && isnothing(ve)
-            return
-        end
-        if _extT[DI] == _extT[EX] && isnothing(vd) == false && isnothing(ve) == false
-            id_diex = Ver4Id(para, response, type, k = legK, t = _extT[DI])
-            push!(nodes, Diagram(id_diex, Sum(), [vd, ve]))
-        else
-            (isnothing(vd) == false) && push!(nodes, vd)
-            (isnothing(ve) == false) && push!(nodes, ve)
-        end
+        # if isnothing(vd) && isnothing(ve)
+        #     return
+        # end
+        # if _extT[DI] == _extT[EX] && isnothing(vd) == false && isnothing(ve) == false
+        #     push!(nodes, Diagram(id_di, Sum(), [vd, ve]))
+        # else
+        id_di = Ver4Id(para, response, type, k = legK, t = _extT[DI])
+        (isnothing(vd) == false) && push!(nodes, Diagram(id_di, Sum(), [vd,]))
+
+        id_ex = Ver4Id(para, response, type, k = legK, t = _extT[EX])
+        (isnothing(ve) == false) && push!(nodes, Diagram(id_ex, Sum(), [ve,]))
+        # end
     end
 
     function addresponse!(response::Response, type, _extT, _innerT)

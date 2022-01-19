@@ -108,7 +108,7 @@ function Base.isequal(a::DiagramId, b::DiagramId)
     return true
 end
 
-function toDict(v::DiagramId, verbose::Int)
+function toDict(v::DiagramId; verbose::Int)
     d = Dict{Symbol,Any}()
     for field in fieldnames(typeof(v))
         if verbose > 1 && field == :extT

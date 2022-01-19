@@ -30,7 +30,7 @@ function buildVer4(para::GenericPara, legK, chan::Vector{TwoBodyChannel}, subdia
         append!(diags, bareVer4!(para, legK, [Di, Ex]))
     else # loopNum>0
         for c in chan
-            if c == I
+            if c == Alli
                 continue
             end
 
@@ -38,14 +38,23 @@ function buildVer4(para::GenericPara, legK, chan::Vector{TwoBodyChannel}, subdia
 
             for p in partition
 
-                if c == T || c == U || c == S
-                    # addBubble!(ver4, c, p, level)
+                if c == PHr || c == PHEr || c == PPr
+                    # push!(diag, bubble(para, legK, c, p, level))
                 end
             end
         end
         # # TODO: add envolpe diagrams
     end
-    return diags
+    df = DiagTreeNew.toDataFrame(diags, verbose = 0)
+    @assert all(x -> collect(x) ≈ legK, df[:, :extK]) "not all extK are the same! $(df[:, :extK])"
+    @assert all(x -> x == Ver4Id, df[:, :id]) "not all id are Ver4Id! $(df[:, :id])"
+
+    groups = []
+    for g in groupby(df, [:response, :type, :extT])
+        id = Ver4Id(para, g[1, :response], g[1, :type], k = legK, t = g[1, :extT])
+        push!(groups, Diagram(id, Sum(), g[:, :Diagram], factor = 1 / (2π)^para.loopDim))
+    end
+    return groups
 end
 
 function buildVer4(para, LegK, chan, subdiagram = false; F = [I, U, S], V = [I, T, U], All = union(F, V),
