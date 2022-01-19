@@ -52,7 +52,7 @@ function buildVer4(para::GenericPara, legK, chan::Vector{TwoBodyChannel}, subdia
     groups = []
     for g in groupby(df, [:response, :type, :extT])
         id = Ver4Id(para, g[1, :response], g[1, :type], k = legK, t = g[1, :extT])
-        push!(groups, Diagram(id, Sum(), g[:, :Diagram], factor = 1 / (2π)^para.loopDim))
+        push!(groups, Diagram(id, Sum(), g[:, :Diagram]))
     end
     return groups
 end
