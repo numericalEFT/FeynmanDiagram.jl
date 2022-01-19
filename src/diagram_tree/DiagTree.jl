@@ -2,6 +2,17 @@ module DiagTreeNew
 using AbstractTrees
 using Printf, PyCall, DataFrames
 
+@enum Channel I = 1 T U S Ts Us Ic Tc Uc Sc Tsc Usc
+@enum DiEx Di = 1 Ex
+
+Base.length(r::Channel) = 1
+Base.iterate(r::Channel) = (r, nothing)
+function Base.iterate(r::Channel, ::Nothing) end
+
+Base.length(r::DiEx) = 1
+Base.iterate(r::DiEx) = (r, nothing)
+function Base.iterate(r::DiEx, ::DiEx) end
+
 include("common.jl")
 include("traits.jl")
 include("diagram.jl")

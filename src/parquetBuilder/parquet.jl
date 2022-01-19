@@ -4,6 +4,7 @@ using AbstractTrees
 using Parameters, Combinatorics
 using DataFrames
 using ..DiagTree
+using ..DiagTreeNew
 
 
 const DI, EX, BOTH = 1, 2, 3
