@@ -136,13 +136,10 @@ function bareVer4!(para::GenericPara, legK, diex::Vector{Permutation} = [Di, Ex]
         innerT_dyn = innerT_ins
     end
 
-    function addbare!(response::Response, type::AnalyticProperty, _diex::Permutation, _innerT, _q)
+    function bare(response::Response, type::AnalyticProperty, _diex::Permutation, _innerT, _q)
         @assert _diex == Di || _diex == Ex
 
-        sign = (_diex == Di) ? -1.0 : 1.0
-        if para.isFermi == false
-            sign = abs(sign)
-        end
+        sign = (para.isFermi && (_diex == Di)) ? -1.0 : 1.0
 
         if notProper(para, _q) == false && _diex in diex
             #create new bare ver4 only if _diex is required in the diex table 
@@ -170,17 +167,17 @@ function bareVer4!(para::GenericPara, legK, diex::Vector{Permutation} = [Di, Ex]
 
     function addresponse!(response::Response, type, _extT, _innerT)
         if response == UpUp || response == UpDown
-            vd = addbare!(response, type, Di, _innerT[DI], q[DI])
-            ve = addbare!(response, type, Ex, _innerT[EX], q[EX])
+            vd = bare(response, type, Di, _innerT[DI], q[DI])
+            ve = bare(response, type, Ex, _innerT[EX], q[EX])
             addver4!(response, type, _extT, vd, ve)
         elseif response == ChargeCharge
             # UpUp channel
-            vuud = addbare!(ChargeCharge, type, Di, _innerT[DI], q[DI])
-            vuue = addbare!(ChargeCharge, type, Ex, _innerT[EX], q[EX])
+            vuud = bare(ChargeCharge, type, Di, _innerT[DI], q[DI])
+            vuue = bare(ChargeCharge, type, Ex, _innerT[EX], q[EX])
             addver4!(UpUp, type, _extT, vuud, vuue)
 
             # UpDown channel
-            vupd = addbare!(ChargeCharge, type, Di, _innerT[DI], q[DI])
+            vupd = bare(ChargeCharge, type, Di, _innerT[DI], q[DI])
             vupe = nothing
             # UpDown, exchange channel doesn't exist for the charge-charge interaction
             addver4!(UpDown, type, _extT, vupd, vupe)
