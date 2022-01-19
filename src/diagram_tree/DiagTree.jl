@@ -20,6 +20,9 @@ include("common.jl")
 include("traits.jl")
 include("diagram.jl")
 include("diagram_io.jl")
+
+const INL, OUTL, INR, OUTR = 1, 2, 3, 4
+
 export Diagram
 export addSubDiagram!
 export toDataFrame

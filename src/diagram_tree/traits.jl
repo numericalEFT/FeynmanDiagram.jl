@@ -51,7 +51,7 @@ struct InteractionId <: DiagramId
         return new(para, response, type, permu, k, Tuple(t))
     end
 end
-Base.show(io::IO, v::InteractionId) = print(io, "$(v.permutation) $(short(v.response))$(short(v.type)), k$(v.extK), t$(v.extT)")
+Base.show(io::IO, v::InteractionId) = print(io, "$(v.permutation) $(short(v.response))$(short(v.type))$(v.permutation), k$(v.extK), t$(v.extT)")
 
 struct SigmaId <: DiagramId
     para::GenericPara
@@ -81,14 +81,14 @@ struct Ver4Id <: DiagramId
     para::GenericPara
     response::Response #UpUp, UpDown, ...
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
-    channel::Channel # particle-hole (T), particle-hole exchange (U), particle-particle (S), irreducible (I)
+    channel::TwoBodyChannel # particle-hole (T), particle-hole exchange (U), particle-particle (S), irreducible (I)
     extK::Vector{Vector{Float64}}
     extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
     function Ver4Id(para::GenericPara, response::Response, type::AnalyticProperty = Dynamic; k, t = (0, 0, 0, 0), chan::TwoBodyChannel = AnyChan)
-        return new(uid(), para, response, type, chan, k, Tuple(t))
+        return new(para, response, type, chan, k, Tuple(t))
     end
 end
-Base.show(io::IO, v::Ver4Id) = print(io, "$(v.channel) $(short(v.response))$(short(v.type))$(v.DiEx == DI ? :D : (v.DiEx == EX ? :E : :DE)),t$(v.extT)")
+Base.show(io::IO, v::Ver4Id) = print(io, "$(v.channel) $(short(v.response))$(short(v.type)),t$(v.extT)")
 
 
 function Base.isequal(a::DiagramId, b::DiagramId)
@@ -108,32 +108,34 @@ function Base.isequal(a::DiagramId, b::DiagramId)
     return true
 end
 
-function Base.Dict(v::DiagramId)
+function toDict(v::DiagramId, expand::Bool = false)
     d = Dict{Symbol,Any}()
     for field in fieldnames(typeof(v))
-        if field == :extT
+        if expand && field == :extT
             tidx = getproperty(v, :extT)
             if length(tidx) == 2 # for sigma, polar
-                d[:Tin], d[:Tout] = tidx[1], tidx[2]
+                d[:TinL], d[:ToutL] = tidx[1], tidx[2]
             elseif length(tidx) == 3 # vertex3
-                d[:TinL], t[:ToutL], t[:TinR] = tidx[INL], tidx[OUTL], tidx[INR]
+                d[:TinL], d[:ToutL], d[:TinR] = tidx[INL], tidx[OUTL], tidx[INR]
             elseif length(tidx) == 4 # vertex4
-                d[:TinL], t[:ToutL], t[:TinR], t[:ToutR] = tidx[INL], tidx[OUTL], tidx[INR], tidx[OUTR]
-            else
-                error("not implemented!")
-            end
-        elseif field == :extK
-            k = getproperty(v, :extK)
-            if length(k) == 2 # for sigma, polar
-                d[:Kin], d[:Kout] = k[1], k[2]
-            elseif length(k) == 3 # vertex3
-                d[:KinL], d[:KoutL], d[:KinR] = k[INL], k[OUTL], k[INR]
-            elseif length(k) == 4 # vertex4
-                d[:KinL], d[:KoutL], d[:KinR], d[:KoutR] = k[INL], k[OUTL], k[INR], k[OUTR]
+                d[:TinL], d[:ToutL], d[:TinR], d[:ToutR] = tidx[INL], tidx[OUTL], tidx[INR], tidx[OUTR]
             else
                 error("not implemented!")
             end
         else
+            # elseif expand && field == :extK
+            #     k = getproperty(v, :extK)
+            #     if length(k) == 1 # for sigma, polar
+            #         d[:KinL] = k[1]
+            #     elseif length(k) == 2 # for sigma, polar
+            #         d[:KinL], d[:KoutL] = k[1], k[2]
+            #     elseif length(k) == 3 # vertex3
+            #         d[:KinL], d[:KoutL], d[:KinR] = k[INL], k[OUTL], k[INR]
+            #     elseif length(k) == 4 # vertex4
+            #         d[:KinL], d[:KoutL], d[:KinR], d[:KoutR] = k[INL], k[OUTL], k[INR], k[OUTR]
+            #     else
+            #         error("not implemented!")
+            #     end
             d[field] = getproperty(v, field)
         end
     end
