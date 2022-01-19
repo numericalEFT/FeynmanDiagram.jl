@@ -26,6 +26,7 @@ export toDataFrame
 export evalDiagNode!
 export evalDiagTree!
 export Operator, Sum, Prod
-export DiagramId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId, InteractionId
+export DiagramId, GenericId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId, InteractionId
+export uidreset
 
 end

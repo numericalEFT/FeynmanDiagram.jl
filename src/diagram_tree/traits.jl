@@ -24,25 +24,23 @@ Base.:(==)(a::DiagramId, b::DiagramId) = Base.isequal(a, b)
 # end
 
 struct GenericId <: DiagramId
-    uid::Int
-    GenericId() = new(uid())
+    para::GenericPara
+    GenericId(para::GenericPara) = new(para)
 end
 Base.show(io::IO, v::GenericId) = print(io, "")
 
 struct GreenId <: DiagramId
-    uid::Int
     para::GenericPara
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
     function GreenId(para::GenericPara, type::AnalyticProperty = Dynamic; k, t)
-        return new(uid(), para, type, k, Tuple(t))
+        return new(para, type, k, Tuple(t))
     end
 end
 Base.show(io::IO, v::GreenId) = print(io, "$(v.type), k$(v.extK), t$(v.extT)")
 
 struct InteractionId <: DiagramId
-    uid::Int
     para::GenericPara
     response::Response #UpUp, UpDown, ...
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
@@ -50,13 +48,12 @@ struct InteractionId <: DiagramId
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
     function InteractionId(para::GenericPara, response::Response, type::AnalyticProperty = Instant; k, t = (0, 0), permu::Permutation = DiEx)
-        return new(uid(), para, response, type, permu, k, Tuple(t))
+        return new(para, response, type, permu, k, Tuple(t))
     end
 end
 Base.show(io::IO, v::InteractionId) = print(io, "$(v.permutation) $(short(v.response))$(short(v.type)), k$(v.extK), t$(v.extT)")
 
 struct SigmaId <: DiagramId
-    uid::Int
     para::GenericPara
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
     extK::Vector{Float64}
@@ -65,7 +62,6 @@ end
 Base.show(io::IO, v::SigmaId) = print(io, "$(short(v.type)), k$(v.extK), t$(v.extT)")
 
 struct PolarId <: DiagramId
-    uid::Int
     response::Response #ChargeCharge, SpinSpin, ...
     extK::Vector{Float64}
     extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
@@ -74,7 +70,6 @@ end
 Base.show(io::IO, v::PolarId) = print(io, "$(short(v.response))$(short(v.type)), k$(v.extK), t$(v.extT)")
 
 struct Ver3Id <: DiagramId
-    uid::Int
     para::GenericPara
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
     extK::Vector{Vector{Float64}}
@@ -83,7 +78,6 @@ end
 Base.show(io::IO, v::Ver3Id) = print(io, "$(short(v.type)), t$(v.extT)")
 
 struct Ver4Id <: DiagramId
-    uid::Int
     para::GenericPara
     response::Response #UpUp, UpDown, ...
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
@@ -98,7 +92,6 @@ Base.show(io::IO, v::Ver4Id) = print(io, "$(v.channel) $(short(v.response))$(sho
 
 
 function Base.isequal(a::DiagramId, b::DiagramId)
-    # TODO: maybe there is no need to require uid of two DiagramId to be different
     if typeof(a) != typeof(b)
         return false
     end
