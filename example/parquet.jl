@@ -53,7 +53,7 @@ for d in collect(values(diags))[1:1]
     # DiagTreeNew.plot_tree(d)
 end
 # DiagTreeNew.plot_tree(diags[1])
-# exit(0)
+exit(0)
 
 ######################################## self-energy  ################################################
 

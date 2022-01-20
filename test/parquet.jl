@@ -302,7 +302,7 @@ end
 
         #################### DiagTree ####################################
         diags = Parquet.buildVer4(para, legK, chan)
-        diags = mergeby(diags, :response)
+        diags = collect(values(mergeby(diags, :response)))
         # DiagTreeNew.plot_tree(diags[1])
         # DiagTreeNew.plot_tree(diags[2])
 
