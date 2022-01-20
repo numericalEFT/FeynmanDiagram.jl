@@ -56,6 +56,7 @@ import ..Ex
 import ..DiEx
 
 import ..uidreset
+import ..toDataFrame
 
 """
     struct ParquetBlocks

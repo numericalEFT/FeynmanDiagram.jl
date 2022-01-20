@@ -25,9 +25,10 @@ Base.:(==)(a::DiagramId, b::DiagramId) = Base.isequal(a, b)
 
 struct GenericId <: DiagramId
     para::GenericPara
-    GenericId(para::GenericPara) = new(para)
+    extra::Any
+    GenericId(para::GenericPara, extra = Nothing) = new(para, extra)
 end
-Base.show(io::IO, v::GenericId) = print(io, "")
+Base.show(io::IO, v::GenericId) = print(io, v.extra == Nothing ? "" : "$(v.extra)")
 
 struct GreenId <: DiagramId
     para::GenericPara

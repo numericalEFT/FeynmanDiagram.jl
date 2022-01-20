@@ -24,7 +24,7 @@ function buildVer4(para::GenericPara, legK, chan::Vector{TwoBodyChannel}, subdia
     loopNum = para.innerLoopNum
     @assert loopNum >= 0
 
-    diags = []
+    diags = Diagram{para.weightType}[]
 
     if loopNum == 0
         append!(diags, bareVer4!(para, legK, [Di, Ex]))
@@ -49,7 +49,7 @@ function buildVer4(para::GenericPara, legK, chan::Vector{TwoBodyChannel}, subdia
     @assert all(x -> collect(x) ≈ legK, df[:, :extK]) "not all extK are the same! $(df[:, :extK])"
     @assert all(x -> x == Ver4Id, df[:, :id]) "not all id are Ver4Id! $(df[:, :id])"
 
-    groups = []
+    groups = Diagram{para.weightType}[]
     for g in groupby(df, [:response, :type, :extT])
         id = Ver4Id(para, g[1, :response], g[1, :type], k = legK, t = g[1, :extT])
         push!(groups, Diagram(id, Sum(), g[:, :Diagram], name = name))

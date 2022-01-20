@@ -101,6 +101,26 @@ function toDataFrame(diagVec::AbstractVector; verbose::Int = 0, maxdepth::Int = 
     return df
 end
 
+function mergeby(diags::Vector{Diagram{W}}, fields; para = nothing, name = :none, factor = one(W)) where {W}
+    df = toDataFrame(diags)
+    group = DataFrames.groupby(df, fields)
+
+    d = []
+
+    for g in group
+        entry = g[1, fields]
+        if length(entry) > 1
+            entry = Tuple(entry)
+        end
+        if isnothing(para)
+            para = g[1, :Diagram].id.para
+        end
+        push!(d, Diagram(GenericId(para, entry), Sum(), g[:, :Diagram], name = name, factor = factor))
+    end
+
+    return d
+end
+
 ## Things we need to define
 function AbstractTrees.children(diag::Diagram)
     return diag.subdiagram

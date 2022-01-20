@@ -67,7 +67,7 @@ export Diagram, addSubDiagram!, toDataFrame
 export evalDiagNode!, evalDiagTree!
 export Operator, Sum, Prod
 export DiagramId, GenericId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId, InteractionId
-export uidreset
+export uidreset, toDataFrame, mergeby
 
 
 include("diagramTree/DiagTree.jl")
