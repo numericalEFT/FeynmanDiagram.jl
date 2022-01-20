@@ -18,8 +18,9 @@ function Base.iterate(r::Permutation, ::Permutation) end
 
 include("common.jl")
 include("traits.jl")
-include("diagram.jl")
-include("diagram_io.jl")
+include("tree.jl")
+include("io.jl")
+include("eval.jl")
 
 const INL, OUTL, INR, OUTR = 1, 2, 3, 4
 
