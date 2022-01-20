@@ -114,13 +114,13 @@ function bareVer4!(diag, para::GenericPara, legK, diex = [DI, EX], nodeName = no
     return nodes
 end
 
-function bareVer4!(para::GenericPara, legK, diex::Vector{Permutation} = [Di, Ex])
+function bareVer4(para::GenericPara, legK, diex::Vector{Permutation} = [Di, Ex])
     # @assert para.diagType == Ver4Diag
 
     KinL, KoutL, KinR = legK[1], legK[2], legK[3]
     t0 = para.firstTauIdx
 
-    nodes = []
+    nodes = Diagram{para.weightType}[]
 
     q = [KinL - KoutL, KinR - KoutL]
 

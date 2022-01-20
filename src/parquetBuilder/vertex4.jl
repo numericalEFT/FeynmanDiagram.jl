@@ -3,6 +3,7 @@ function buildVer4(para::GenericPara, legK, chan::Vector{TwoBodyChannel}, subdia
 
     subdiagram == false && uidreset()
 
+    @assert para.extra isa ParquetBlocks
     @assert para.totalTauNum >= maxVer4TauIdx(para) "Increase totalTauNum!\n$para"
     @assert para.totalLoopNum >= maxVer4LoopIdx(para) "Increase totalLoopNum\n$para"
 
@@ -27,7 +28,7 @@ function buildVer4(para::GenericPara, legK, chan::Vector{TwoBodyChannel}, subdia
     diags = Diagram{para.weightType}[]
 
     if loopNum == 0
-        append!(diags, bareVer4!(para, legK, [Di, Ex]))
+        append!(diags, bareVer4(para, legK, [Di, Ex]))
     else # loopNum>0
         for c in chan
             if c == Alli
@@ -130,7 +131,7 @@ function bubble2diag(para, chan, ldiag, rdiag, extK, g0, gx)
     Factor = factor(para, chan)
     spin(response) = (response == UpUp ? "↑↑" : "↑↓")
 
-    diag = []
+    diag = Diagram{para.weightType}[]
 
     function add(Lresponse::Response, Rresponse::Response, Vresponse::Response, factor = 1.0)
         if ln == Lresponse && rn == Rresponse

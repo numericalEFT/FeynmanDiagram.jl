@@ -40,11 +40,18 @@ function addSubDiagram!(parent::Diagram, child::Vector{Diagram{W}}) where {W}
     end
 end
 
-function mergeby(diags::Vector{Diagram{W}}, fields; para = nothing, name = :none, factor = one(W)) where {W}
-    df = toDataFrame(diags)
+function mergeby(diags::Vector{Diagram{W}}, fields;
+    verbose::Int = 0, para = nothing, name = :none, factor = one(W), operator = Sum()
+) where {W}
+
+    df = toDataFrame(diags, verbose = verbose)
+    if all(x -> x == df[1, :id], df[:, :id]) == false
+        @warn "Not all DiagramIds in $diags are the same!"
+    end
+
     group = DataFrames.groupby(df, fields)
 
-    d = Diagram{W}[]
+    d = Dict{Any,Diagram{W}}()
 
     for g in group
         entry = g[1, fields]
@@ -54,9 +61,8 @@ function mergeby(diags::Vector{Diagram{W}}, fields; para = nothing, name = :none
         if isnothing(para)
             para = g[1, :Diagram].id.para
         end
-        push!(d, Diagram(GenericId(para, entry), Sum(), g[:, :Diagram], name = name, factor = factor))
+        d[entry] = Diagram(GenericId(para, entry), operator, g[:, :Diagram], name = name, factor = factor)
     end
-
     return d
 end
 

@@ -57,6 +57,7 @@ import ..DiEx
 
 import ..uidreset
 import ..toDataFrame
+import ..mergeby
 
 """
     struct ParquetBlocks

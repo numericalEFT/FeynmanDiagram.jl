@@ -1,5 +1,5 @@
 """
-    function buildG(para, externLoop, extT, subdiagram = false; F = [I, U, S], V = [I, T, U], All = union(F, V), diag = newDiagTree(para, :G))
+    function buildG(para, extK, extT, subdiagram = false; F = [I, U, S], V = [I, T, U], All = union(F, V), diag = newDiagTree(para, :G))
     
     Build composite Green's function.
     By definition, para.firstTauIdx is the first Tau index of the left most self-energy subdiagram.
@@ -7,32 +7,32 @@
 - `extT`: [Tau index of the left leg, Tau index of the right leg]
 
 """
-function buildG(para, externLoop, extT, subdiagram = false;
-    F = [I, U, S], V = [I, T, U], All = union(F, V),
-    diag = newDiagTree(para, :G))
-
+function buildG(para, extK, extT, subdiagram = false; name = :none)
     tin, tout = extT[1], extT[2]
     extT = [tin, tout]
     innerTauNum = para.innerLoopNum * para.interactionTauNum
     tstart = para.firstTauIdx
     tend = para.firstTauIdx + innerTauNum - 1
 
+    diags = Diagram{para.weightType}[]
+
     if isValidG(para) == false
-        return diag, zero(Component)
+        return diag
     end
 
     if para.innerLoopNum == 0
-        g = DiagTree.addpropagator!(diag, :Gpool, 0, :G; site = [tin, tout], loop = externLoop)
-        return diag, g
+        g = DiagTree.addpropagator!(diag, :Gpool, 0, :G; site = [tin, tout], loop = extK)
+        push!(diags, Diagram(GreenId(para, k = extK, t = extT), name = name))
+        return diags
     end
 
-    return zero(Component)
+    return diags
 
     # ################# after this step, the Green's function must be nontrivial! ##################
     # @assert tin < tstart || tin > tend "external T index cann't be with in [$tstart, $tend]"
     # @assert tout < tstart || tout > tend "external T index cann't be with in [$tstart, $tend]"
 
-    # gleft = DiagTree.addpropagator!(diag, :Gpool, 0, :gleft; site = [tin, tstart], loop = externLoop)
+    # gleft = DiagTree.addpropagator!(diag, :Gpool, 0, :gleft; site = [tin, tstart], loop = extK)
 
     # partition = []
     # for n = 1:para.innerLoopNum
@@ -60,7 +60,7 @@ function buildG(para, externLoop, extT, subdiagram = false;
     #         #e.g., loop = 4 or 1
     #         sigmaPara = reconstruct(para, firstTauIdx = tleft, firstLoopIdx = firstLoopIdx[li], innerLoopNum = loop)
     #         # println("sigma loop=", loop)
-    #         diag, instant, dynamic = buildSigma(sigmaPara, externLoop, true; F = F, V = V, All = All, diag = diag)
+    #         diag, instant, dynamic = buildSigma(sigmaPara, extK, true; F = F, V = V, All = All, diag = diag)
     #         root = vcat(instant, dynamic)
     #         @assert isempty(root) == false
     #         # push!(sigma, [(s, (s.object.para[1], s.object.para[2])) for s in root]) #external TauIdx of each component as a sigma
@@ -74,7 +74,7 @@ function buildG(para, externLoop, extT, subdiagram = false;
     #             if li < length(p) #not the last g
     #                 @assert t2 < tright "sigma right Tidx = $t2 should be smaller than $tright"
     #             end
-    #             g = DiagTree.addpropagator!(diag, :Gpool, 0, :g; site = [t2, tright], loop = externLoop)
+    #             g = DiagTree.addpropagator!(diag, :Gpool, 0, :g; site = [t2, tright], loop = extK)
     #             push!(nodes, DiagTree.addnode!(diag, MUL, :Σg, [r, g]; para = [tleft, tright]))
     #         end
     #         n = DiagTree.addnode!(diag, ADD, :Σgsum, nodes; para = [tleft, tright])
