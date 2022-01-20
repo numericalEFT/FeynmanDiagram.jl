@@ -20,119 +20,60 @@ function buildSigma(para, extK, subdiagram = false; name = :none)
     end
 
     K = zero(extK)
-    K[para.firstLoopIdx] = 1.0
+    LoopIdx = para.firstLoopIdx
+    K[LoopIdx] = 1.0
     t0 = para.firstTauIdx
-
-
-    # function mergeby(ver4)
-    #     df = toDataFrame(ver4, verbose = 2)
-    #     group = groupby(df, [:response, :type, :TinL, :ToutR])
-    #     for 
-    #     # for n in nodes
-    #     #     node = diag.nodePool.object[n.index]
-    #     #     extT = node.para
-    #     #     sigmaT = (extT[INL], extT[OUTR])
-    #     #     if haskey(dict, sigmaT) == false
-    #     #         dict[sigmaT] = []
-    #     #     end
-    #     #     push!(dict[sigmaT], (n, extT, factor))
-    #     # end
-    # end
-
-    ############### Fock-type diagram #######################################
-    #  /=== W ===\
-    # /           \
-    # ----- G -----
-    ##########################################################################
-    qe = K - extK
     factor = 1 / (2π)^para.loopDim
+    qe = K - extK
+    legK = [extK, K, K, extK]
 
-    # if para.interactionTauNum == 1 || para.interactionTauNum == 0
-    #     paraG = reconstruct(para, innerLoopNum = para.innerLoopNum - 1, firstLoopIdx = para.firstLoopIdx + 1, firstTauIdx = t0 + 1)
-    #     if isValidG(paraG)
-    #         diag, g = buildG(paraG, K, [t0, t0]; diag = diag)
-    #         @assert g.index != 0
-    #         # v = DiagTree.addpropagator!(diag, :Vpool, 1, :V; loop = qe)
-    #         push!(instant, DiagTree.addnode!(diag, MUL, :fockΣ, [g, v], factor; para = [t0, t0]))
-    #     end
-    # elseif para.interactionTauNum == 2
-    #     paraG = reconstruct(para, innerLoopNum = para.innerLoopNum - 1, firstLoopIdx = para.firstLoopIdx + 1, firstTauIdx = t0 + 2)
-    #     if isValidG(paraG)
-    #         diag, gv = buildG(paraG, K, [t0, t0]; diag = diag)
-    #         @assert gv.index != 0
-    #         v = DiagTree.addpropagator!(diag, :Vpool, 1, :V; loop = qe, site = (t0, t0 + 1))
-    #         push!(instant, DiagTree.addnode!(diag, MUL, :fockΣ, [gv, v], factor; para = (t0, t0)))
 
-    #         diag, gw = buildG(paraG, K, [t0, t0 + 1]; diag = diag)
-    #         @assert gw.index != 0
-    #         w = DiagTree.addpropagator!(diag, :Wpool, 1, :W; loop = qe, site = (t0, t0 + 1))
-    #         push!(dynamic, DiagTree.addnode!(diag, MUL, :fockΣ, [gw, w], factor; para = [t0, t0 + 1]))
-    #     end
-    # else
-    #     error("not implemented!")
-    # end
+    function toSigma!(ver4)
+        ver4df = toDataFrame(ver4, verbose = 2)
+        @assert all(x -> x == ver4df[1, :id], ver4df[:, :id]) == false
+        @assert all(x -> x == UpUp || x == UpDown, ver4df[:, :response])
 
-    #if interaction is dynamic, then first two tau variables are reversed for the in and out vertices
-    paraG = reconstruct(para, diagType = GreenDiag, innerLoopNum = para.innerLoopNum - 1,
-        firstLoopIdx = para.firstLoopIdx + 1, firstTauIdx = t0 + para.interactionTauNum)
-    paraW = reconstruct(para, diagType = Ver4Diag, innerLoopNum = 0, firstTauIdx = t0)
-
-    #TODO: add validation for paraW
-    if isValidG(paraG)
-        legK = [extK, K, K, extK]
-        ver4 = bareVer4(paraW, legK, [Ex,])
-        ver4dict = mergeby(ver4, [:response, :type, :TinL, :ToutR], para = paraW, verbose = 2)
-        for (key, vdiag) in enumerate(ver4dict)
-            response, type, tin, tout = key
-            @assert response == UpUp || response == UpDown
-            for g in buildG(paraG, K, (t0, t0); name = :Gfock)
-                push!(diags, Diagram(SigmaId(para, v[:response], k = extK, t = (t0, t0)), name = name))
+        for df in groupby(df, [:response, :type, :TinL, :ToutR])
+            response, type = df[:response], df[:type]
+            #type: Instant or Dynamic
+            sid = SigmaId(para, type, k = extK, t = (df[:TinL], df[:ToutR]))
+            for g in buildG(paraG, K, (df[:ToutL], df[:TinR]); name = :Gfock)
+                # Sigma = G*(2 W↑↑ - W↑↓)
+                spinfactor = (response == UpUp) ? 2 : -1
+                push!(diags, Diagram(sid, Prod(), [g, df[:Diagram]], factor = spinfactor, name = name))
             end
         end
     end
 
-    # if para.innerLoopNum >= 2
-    #     ################# Sigma beyond the Fock diagram #################################
-    #     #all self-energy diagram will be countered twice, thus a factor 1/2 is needed.
-    #     factor = 1 / (2π)^para.loopDim * (1 / 2)
-    #     KinL, KoutR = extK, extK
-    #     KinR, KoutL = K, K
-    #     for ver4LoopNum in 1:para.innerLoopNum-1
-    #         gLoopNum = para.innerLoopNum - 1 - ver4LoopNum
-    #         # if G doesn't exist, continue without creating ver4 node in the diagram
-    #         if isValidG(para.filter, gLoopNum) == false
-    #             continue
-    #         end
+    for (oG, oW) in orderedPartition(para.innerLoopNum, 2, 0)
 
-    #         ver4Para = reconstruct(para, firstLoopIdx = para.firstLoopIdx + 1, innerLoopNum = ver4LoopNum)
-    #         diag, ver4, dir, ex = buildVer4(ver4Para, [KinL, KoutL, KinR, KoutR],
-    #             [T,], F, V, All; Fouter = [], Allouter = All, diag = diag)
+        idx, maxLoop = findFirstLoopIdx([oG, oW], LoopIdx + 1)
+        @assert maxLoop <= para.totalLoopNum
+        GfirstLoopIdx, WfirstLoopIdx = idx
 
-    #         dict = Dict{Tuple{Int,Int},Vector{Any}}()
-    #         collapse!(dict, diag, dir, 1.0)
-    #         collapse!(dict, diag, ex, para.spin)
-    #         #exchange ver4 has an additional Fermi loop compared to the direct counterpart when plugged into sigma
+        idx, maxTau = findFirstTauIdx([oG, oW], [GreenDiag, Ver4Diag], para.firstTauIdx, para.interactionTauNum)
+        @assert maxTau <= para.totalTauNum
+        GfirstTauIdx, WfirstTauIdx = idx
 
-    #         for key in keys(dict)
-    #             nodes = []
-    #             for (n, extT, spinFactor) in dict[key]
+        paraG = reconstruct(para, diagType = GreenDiag, innerLoopNum = oG,
+            firstLoopIdx = GfirstLoopIdx, firstTauIdx = GfirstTauIdx)
+        paraW = reconstruct(para, diagType = Ver4Diag, innerLoopNum = oW,
+            firstLoopIdx = WfirstLoopIdx, firstTauIdx = WfirstTauIdx)
 
-    #                 tpair = [extT[INL], extT[OUTR]]
-    #                 paraG = reconstruct(para,
-    #                     innerLoopNum = gLoopNum,
-    #                     firstLoopIdx = para.firstLoopIdx + 1 + ver4LoopNum,
-    #                     firstTauIdx = maxTauIdx(ver4) + 1)
-    #                 diag, g = buildG(paraG, K, tpair; diag = diag)
-    #                 @assert g.index != 0
-    #                 push!(nodes, DiagTree.addnode!(diag, MUL, :Σ, [n, g], factor * spinFactor; para = tpair))
-    #             end
+        #TODO: add validation for paraW
+        if isValidG(paraG)
+            if oW == 0 # Fock-type Σ
+                ver4 = bareVer4(paraW, legK, [Ex,])
+            else # composite Σ
+                ver4 = buildVer4(paraW, [PHr,], true, phi_toplevel = [], Γ4_toplevel = paraW.extra.Γ4)
+            end
+            toSigma!(ver4)
+        end
+    end
 
-    #             push!(dynamic, DiagTree.addnode!(diag, DiagTree.ADD, :Σ, nodes; para = collect(key))) #key = (extT[INL], extT[OUTR])
-    #             @assert dynamic[end].index != 0
-    #         end
-    #     end
-    # end
 
+    # diag, ver4, dir, ex = buildVer4(ver4Para, [KinL, KoutL, KinR, KoutR],
+    #     [T,], F, V, All; Fouter = [], Allouter = All, diag = diag)
     # make sure all incoming Tau idx is equal
     # for nidx in dynamic
     #     node = DiagTree.getNode(diag, nidx)
