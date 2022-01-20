@@ -58,17 +58,23 @@ struct SigmaId <: DiagramId
     para::GenericPara
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
     extK::Vector{Float64}
-    extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
+    extT::Tuple{Int,Int} #all possible extT from different interactionType
+    function SigmaId(para::GenericPara, type::AnalyticProperty; k, t = (0, 0))
+        return new(para, type, k, t)
+    end
 end
 Base.show(io::IO, v::SigmaId) = print(io, "$(short(v.type)), k$(v.extK), t$(v.extT)")
 
 struct PolarId <: DiagramId
+    para::GenericPara
     response::Response #ChargeCharge, SpinSpin, ...
     extK::Vector{Float64}
     extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
-    para::GenericPara
+    function PolarId(para::GenericPara, response::Response; k, t = (0, 0))
+        return new(para, response, k, t)
+    end
 end
-Base.show(io::IO, v::PolarId) = print(io, "$(short(v.response))$(short(v.type)), k$(v.extK), t$(v.extT)")
+Base.show(io::IO, v::PolarId) = print(io, "$(short(v.response)), k$(v.extK), t$(v.extT)")
 
 struct Ver3Id <: DiagramId
     para::GenericPara

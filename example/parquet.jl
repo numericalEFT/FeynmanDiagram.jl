@@ -47,13 +47,13 @@ diags = mergeby(diags, :response)
 # g = groupby(nodes, :response)
 # uu = filter(r -> r.response == UpUp, nodes)
 # ud = filter(r -> r.response == UpDown, nodes)
-for (di, d) in enumerate(diags)
+for d in collect(values(diags))[1:1]
     println()
     print_tree(d)
     # DiagTreeNew.plot_tree(d)
 end
 # DiagTreeNew.plot_tree(diags[1])
-exit(0)
+# exit(0)
 
 ######################################## self-energy  ################################################
 
@@ -81,7 +81,7 @@ para = GenericPara(
 
 K0 = zeros(para.totalLoopNum)
 K0[1] = 1.0
-sigma, instant, dynamic = Parquet.buildSigma(para, K0)
+sigma = Parquet.buildSigma(para, K0)
 # println(root)
 # rootidx = DiagTree.addnode!(sigma, DiagTree.ADD, :sum, vcat(instant, dynamic); para = [0, 0])
 # DiagTree.showTree(sigma, rootidx)

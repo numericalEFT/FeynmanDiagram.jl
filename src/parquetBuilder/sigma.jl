@@ -1,47 +1,50 @@
 """
-    function buildSigma(para, externLoop; F = [I, U, S], V = [I, T, U], All = union(F, V), diag = newDiagTree(para, :Sigma), subdiagram = false)
+    function buildSigma(para, extK; F = [I, U, S], V = [I, T, U], All = union(F, V), diag = newDiagTree(para, :Sigma), subdiagram = false)
     
     build sigma diagram. 
     When sigma is created as a subdiagram, then no Fock diagram is generated if para.filter contains NoFock, and no sigma diagram is generated if para.filter contains Girreducible
 
 """
-function buildSigma(para, externLoop, subdiagram = false;
-    F = [I, U, S], V = [I, T, U], All = union(F, V),
-    diag = newDiagTree(para, :Sigma))
+function buildSigma(para, extK, subdiagram = false; name = :none)
+    subdiagram == false && uidreset()
     @assert para.innerLoopNum >= 1
-    @assert length(externLoop) == para.totalLoopNum
+    @assert length(extK) == para.totalLoopNum
     tright = para.firstTauIdx - 1 + para.innerLoopNum * para.interactionTauNum
     @assert para.totalTauNum >= tright "totalTauNum = $(para.totalTauNum) is not enough, sigma requires $tright\npara=$para"
     @assert para.totalLoopNum >= para.firstLoopIdx -1 + para.innerLoopNum
 
+    diags = Diagram{para.weightType}[]
+
     if isValidSigma(para.filter, para.innerLoopNum, subdiagram) == false
-        return diag, Vector{Component}([]), Vector{Component}([])
+        return diags
     end
 
-    K = zero(externLoop)
+    K = zero(extK)
     K[para.firstLoopIdx] = 1.0
     t0 = para.firstTauIdx
 
-    function collapse!(dict, diag, nodes, factor)
-        for n in nodes
-            node = diag.nodePool.object[n.index]
-            extT = node.para
-            sigmaT = (extT[INL], extT[OUTR])
-            if haskey(dict, sigmaT) == false
-                dict[sigmaT] = []
-            end
-            push!(dict[sigmaT], (n, extT, factor))
-        end
-    end
 
-    instant, dynamic = [], []
+    # function mergeby(ver4)
+    #     df = toDataFrame(ver4, verbose = 2)
+    #     group = groupby(df, [:response, :type, :TinL, :ToutR])
+    #     for 
+    #     # for n in nodes
+    #     #     node = diag.nodePool.object[n.index]
+    #     #     extT = node.para
+    #     #     sigmaT = (extT[INL], extT[OUTR])
+    #     #     if haskey(dict, sigmaT) == false
+    #     #         dict[sigmaT] = []
+    #     #     end
+    #     #     push!(dict[sigmaT], (n, extT, factor))
+    #     # end
+    # end
 
     ############### Fock-type diagram #######################################
     #  /=== W ===\
     # /           \
     # ----- G -----
     ##########################################################################
-    qe = K - externLoop
+    qe = K - extK
     factor = 1 / (2π)^para.loopDim
 
     # if para.interactionTauNum == 1 || para.interactionTauNum == 0
@@ -73,20 +76,26 @@ function buildSigma(para, externLoop, subdiagram = false;
     paraG = reconstruct(para, diagType = GreenDiag, innerLoopNum = para.innerLoopNum - 1,
         firstLoopIdx = para.firstLoopIdx + 1, firstTauIdx = t0 + para.interactionTauNum)
     paraW = reconstruct(para, diagType = Ver4Diag, innerLoopNum = 0, firstTauIdx = t0)
+
     #TODO: add validation for paraW
     if isValidG(paraG)
-        legK = [externLoop, K, K, externLoop]
-        ver4 = toDataFrame(bareVer4!(diag, paraW, legK, [EX, DI]))
-        g = groupby!(diag, ver4, [:response, :TinL, :ToutR])
-        println(ver4)
-        println(g)
+        legK = [extK, K, K, extK]
+        ver4 = bareVer4(paraW, legK, [Ex,])
+        ver4dict = mergeby(ver4, [:response, :type, :TinL, :ToutR], para = paraW, verbose = 2)
+        for (key, vdiag) in enumerate(ver4dict)
+            response, type, tin, tout = key
+            @assert response == UpUp || response == UpDown
+            for g in buildG(paraG, K, (t0, t0); name = :Gfock)
+                push!(diags, Diagram(SigmaId(para, v[:response], k = extK, t = (t0, t0)), name = name))
+            end
+        end
     end
 
     # if para.innerLoopNum >= 2
     #     ################# Sigma beyond the Fock diagram #################################
     #     #all self-energy diagram will be countered twice, thus a factor 1/2 is needed.
     #     factor = 1 / (2π)^para.loopDim * (1 / 2)
-    #     KinL, KoutR = externLoop, externLoop
+    #     KinL, KoutR = extK, extK
     #     KinR, KoutL = K, K
     #     for ver4LoopNum in 1:para.innerLoopNum-1
     #         gLoopNum = para.innerLoopNum - 1 - ver4LoopNum
@@ -131,6 +140,6 @@ function buildSigma(para, externLoop, subdiagram = false;
     #     @assert node.para[2] <= tright
     # end
     # @assert isempty(dynamic) == false || isempty(instant) == false "Sigma diagram doesn't exist for \n$para"
-    return diag, instant, dynamic
+    return diags
 
 end
