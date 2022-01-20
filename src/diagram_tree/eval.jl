@@ -4,7 +4,7 @@
 @inline apply(o::Prod, diag::Diagram{W}) where {W<:Number} = diag.weight
 
 function evalDiagNode!(diag::Diagram, evalBare::Function, vargs...; kwargs...)
-    if isbare(diag)
+    if length(diag.subdiagram) == 0
         diag.weight = evalBare(diag.id, vargs...; kwargs...) * diag.factor
     else
         diag.weight = apply(diag.operator, diag.subdiagram) * diag.factor
