@@ -110,7 +110,7 @@ function bubble(para::GenericPara, legK, chan::TwoBodyChannel, partition::Vector
             # g0 = DiagTree.addpropagator!(diag, :Gpool, 0, :G0; site = G0T, loop = K)
             # gc = DiagTree.addpropagator!(diag, :Gpool, 0, :Gx; site = GxT, loop = Kx)
             g0 = Diagram(GreenId(g0Para, k = K, t = G0T), name = :G0)
-            gx = Diagram(GreenId(gxPara, k = K, t = GxT), name = :Gx)
+            gx = Diagram(GreenId(gxPara, k = Kx, t = GxT), name = :Gx)
             append!(diag, bubble2diag(para, chan, ldiag, rdiag, legK, g0, gx))
         end
     end
