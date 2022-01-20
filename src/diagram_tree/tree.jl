@@ -40,72 +40,11 @@ function addSubDiagram!(parent::Diagram, child::Vector{Diagram{W}}) where {W}
     end
 end
 
-
-@inline apply(o::Sum, diags::Vector{Diagram{W}}) where {W<:Number} = sum(d.weight for d in diags)
-@inline apply(o::Prod, diags::Vector{Diagram{W}}) where {W<:Number} = prod(d.weight for d in diags)
-@inline apply(o::Sum, diag::Diagram{W}) where {W<:Number} = diag.weight
-@inline apply(o::Prod, diag::Diagram{W}) where {W<:Number} = diag.weight
-
-function evalDiagNode!(diag::Diagram, evalBare::Function, vargs...; kwargs...)
-    if isbare(diag)
-        diag.weight = evalBare(diag.id, vargs...; kwargs...) * diag.factor
-    else
-        diag.weight = apply(diag.operator, diag.subdiagram) * diag.factor
-    end
-    return diag.weight
-end
-
-function evalDiagTree!(diag::Diagram, evalBare::Function, vargs...; kwargs...)
-    for d in PostOrderDFS(diag)
-        evalDiagNode!(d, evalBare, vargs...; kwargs...)
-    end
-    return diag.weight
-end
-
-function toDict(diag::Diagram; verbose::Int, maxdepth::Int = 1)
-    @assert maxdepth == 1 "deep convert has not yet been implemented!"
-    # if verbose >= 1
-    d = Dict{Symbol,Any}(toDict(diag.id; verbose = verbose))
-    # else
-    #     d = Dict{Symbol,Any}()
-    # end
-    d[:hash] = diag.hash
-    d[:name] = diag.name
-    d[:operator] = diag.operator
-    d[:factor] = diag.factor
-    d[:weight] = diag.weight
-    d[:Diagram] = diag
-    d[:id] = typeof(diag.id)
-    d[:subdiagram] = Tuple(d.hash for d in diag.subdiagram)
-    return d
-end
-
-function toDataFrame(diagVec::AbstractVector; verbose::Int = 0, maxdepth::Int = 1)
-    # diags = []
-    d = Dict{Symbol,Any}()
-    k = []
-    for d in diagVec
-        # println(keys(toDict(d, verbose, maxdepth)))
-        append!(k, keys(toDict(d, verbose = verbose, maxdepth = maxdepth)))
-    end
-    for f in Set(k)
-        d[f] = []
-    end
-    # println(d)
-    df = DataFrame(d)
-
-    for d in diagVec
-        dict = toDict(d, verbose = verbose, maxdepth = maxdepth)
-        append!(df, dict, cols = :union)
-    end
-    return df
-end
-
 function mergeby(diags::Vector{Diagram{W}}, fields; para = nothing, name = :none, factor = one(W)) where {W}
     df = toDataFrame(diags)
     group = DataFrames.groupby(df, fields)
 
-    d = []
+    d = Diagram{W}[]
 
     for g in group
         entry = g[1, fields]
@@ -121,7 +60,7 @@ function mergeby(diags::Vector{Diagram{W}}, fields; para = nothing, name = :none
     return d
 end
 
-## Things we need to define
+#####################  interface to AbstractTrees ########################### 
 function AbstractTrees.children(diag::Diagram)
     return diag.subdiagram
 end
@@ -135,5 +74,3 @@ AbstractTrees.printnode(io::IO, diag::Diagram) = print(io, "$(diag)")
 # (They are not sufficient to solve all internal inference issues, however.)
 # Base.eltype(::Type{<:TreeIterator{BinaryNode{T}}}) where {T} = BinaryNode{T}
 # Base.IteratorEltype(::Type{<:TreeIterator{BinaryNode{T}}}) where {T} = Base.HasEltype()
-
-## Let's test it. First build a tree.

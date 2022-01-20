@@ -1,5 +1,5 @@
 function buildVer4(para::GenericPara, legK, chan::Vector{TwoBodyChannel}, subdiagram = false; level = 1,
-    phi_toplevel = para.extra.phi, ppi_toplevel = para.extra.ppi, Γ4_toplevel = para.extra.Γ4, name = :Γ4)
+    phi_toplevel = para.extra.phi, ppi_toplevel = para.extra.ppi, Γ4_toplevel = para.extra.Γ4, name = :none)
 
     subdiagram == false && uidreset()
 
@@ -51,8 +51,10 @@ function buildVer4(para::GenericPara, legK, chan::Vector{TwoBodyChannel}, subdia
 
     groups = Diagram{para.weightType}[]
     for g in groupby(df, [:response, :type, :extT])
+        # println(g)
         id = Ver4Id(para, g[1, :response], g[1, :type], k = legK, t = g[1, :extT])
-        push!(groups, Diagram(id, Sum(), g[:, :Diagram], name = name))
+        diagName = name == :none ? Symbol("$(g[1, :channel])") : name
+        push!(groups, Diagram(id, Sum(), g[:, :Diagram], name = diagName))
     end
     return groups
 end
@@ -96,8 +98,8 @@ function bubble(para::GenericPara, legK, chan::TwoBodyChannel, partition::Vector
     LLegK, K, RLegK, Kx = legBasis(chan, legK, LoopIdx)
     # println(K, ", ", Kx)
 
-    Lver = buildVer4(lPara, LLegK, Γi, true; level = level + 1, name = :Γ4i)
-    Rver = buildVer4(rPara, RLegK, Γf, true; level = level + 1, name = :Γ4f)
+    Lver = buildVer4(lPara, LLegK, Γi, true; level = level + 1, name = :Γi)
+    Rver = buildVer4(rPara, RLegK, Γf, true; level = level + 1, name = :Γf)
 
     diag = []
     for ldiag in Lver
@@ -130,7 +132,7 @@ function bubble2diag(para, chan, ldiag, rdiag, extK, g0, gx)
     function add(Lresponse::Response, Rresponse::Response, Vresponse::Response, factor = 1.0)
         if ln == Lresponse && rn == Rresponse
             nodeName = Symbol("$(spin(Lresponse))x$(spin(Rresponse)) → $chan,")
-            id = Ver4Id(para, Vresponse, vtype, k = extK, t = extT)
+            id = Ver4Id(para, Vresponse, vtype, k = extK, t = extT, chan = chan)
             push!(diag, Diagram(id, Prod(), [g0, gx, ldiag, rdiag], factor = factor * Factor, name = nodeName))
         end
     end

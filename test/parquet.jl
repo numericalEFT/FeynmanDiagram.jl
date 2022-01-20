@@ -92,14 +92,35 @@ function evalFakePropagator(idx, object, K, varT, diag)
 end
 
 function evalFakeG(K, τin, τout)
-    # return evalG(zero(K), τin, τout)
-    # return evalG(K, τin, τout)
     return 1.0
 end
 
 function evalFakeV(K)
     return 1.0
-    # return evalV(K)
+end
+
+evalFake(id::DiagramId, varK, varT) = 1.0
+
+function evalfixK(id::GreenId, varK, varT)
+    K = varK * id.extK
+    tin, tout = id.extT
+    return evalGfixK(K, varT[tin], varT[tout])
+end
+
+function evalfixK(id::InteractionId, varK, varT)
+    K = varK * id.extK
+    return evalVfixK(K)
+end
+
+function eval(id::GreenId, varK, varT)
+    K = varK * id.extK
+    tin, tout = id.extT
+    return evalG(K, varT[tin], varT[tout])
+end
+
+function eval(id::InteractionId, varK, varT)
+    K = varK * id.extK
+    return evalV(K)
 end
 
 
@@ -217,9 +238,9 @@ end
         end
     end
 
-    testEval(:fake)
-    testEval(:fixK)
-    testEval(:physical)
+    # testEval(:fake)
+    # testEval(:fixK)
+    # testEval(:physical)
 
     #test only proper diagrams are generated if the switch is turned on
     para, diag, ver4 = testVertex4(3, [Parquet.T, Parquet.U, Parquet.S], :physical; filter = [Builder.Proper], eval = false)
@@ -234,17 +255,17 @@ end
 
     function getfunction(type)
         if type == :physical
-            return evalPropagator, evalG, evalV
+            return eval, evalG, evalV
         elseif type == :fixK
-            return evalPropagatorfixK, evalGfixK, evalVfixK
+            return evalfixK, evalGfixK, evalVfixK
         elseif type == :fake
-            return evalFakePropagator, evalFakeG, evalFakeV
+            return evalFake, evalFakeG, evalFakeV
         else
             error("not implemented")
         end
     end
 
-    function testVertex4(loopNum, chan, type::Symbol; filter = [], timing = false, eval = true)
+    function testVertex4(loopNum, chan, type::Symbol; filter = [], timing = false, toeval = true)
         println("$(Int.(chan)) Channel Test")
         Kdim, spin = 3, 2
         interactionTauNum = 1
@@ -281,22 +302,23 @@ end
 
         #################### DiagTree ####################################
         diags = Parquet.buildVer4(para, legK, chan)
-        d = Parquet.groupby!(diag, nodes, :response)
-        DiagTree.setroot!(diag, [d[UpUp], d[UpDown]])
-        # DiagTree.showTree(diag, uu[2].index)
-        # DiagTree.showTree(diag, ud[2].index)
+        diags = mergeby(diags, :response)
+        DiagTreeNew.plot_tree(diags[1])
 
-        ver4 = Benchmark.Ver4{Benchmark.Weight}(para, Int.(chan), Int.(F), Int.(V))
-        # Parquet.print_tree(ver4)
+        ver4 = Benchmark.Ver4{Benchmark.Weight}(para, Int.(chan), Int.(blocks.phi), Int.(blocks.ppi))
 
-        if eval
+        if toeval
+
+            eval, evalG, evalV = getfunction(type)
+
             # w1 = DiagTree.evalNaive(diag, varK, varT, evalPropagator)
-            w1 = DiagTree.evalNaive(diag, varK, varT, evalPropagator)
+            evalDiagTree!(diags, eval, varK, varT)
+            w1 = [diags[1].weight, diags[2].weight]
             # println(w1)
 
             if timing
                 printstyled("naive DiagTree evaluator cost:", color = :green)
-                @time DiagTree.evalNaive(diag, varK, varT, evalPropagator)
+                @time evalDiagTree!(diags, eval, varK, varT)
             end
 
             ##################### lower level subroutines  #######################################
@@ -312,13 +334,7 @@ end
 
             w2 = ver4.weight[1]
 
-            # Parquet.print_tree(ver4)
-            # DiagTree.showTree(diag, diag.root[1])
-            # Parquet.showTree(ver4)
-            # DiagTree.printBasisPool(diag)
-            # DiagTree.printPropagator(diag)
-            # println(diag.propagatorPool[1].object[2])
-            # println(w1, " vs ", w2)
+            println(w1, " vs ", w2)
 
             # The upup channel of charge-charge vertex4 == Direct + exchange 
             @test w1[1] ≈ w2[1] + w2[2]
@@ -326,27 +342,27 @@ end
             @test w1[2] ≈ w2[1]
         end
 
-        return para, diag, ver4
+        return para, diags, ver4
     end
 
     function testEval(type)
-        for l = 1:3
-            testVertex4(l, [Parquet.T,], type)
-            testVertex4(l, [Parquet.U,], type)
-            testVertex4(l, [Parquet.S,], type)
-            testVertex4(l, [Parquet.T, Parquet.U, Parquet.S], type; timing = true)
+        for l = 1:1
+            # testVertex4(l, [PHr,], type)
+            testVertex4(l, [PHEr,], type)
+            # testVertex4(l, [PPr,], type)
+            # testVertex4(l, [PHr, PHEr, PPr], type; timing = true)
         end
     end
 
-    testEval(:fake)
-    testEval(:fixK)
+    # testEval(:fake)
+    # testEval(:fixK)
     testEval(:physical)
 
     #test only proper diagrams are generated if the switch is turned on
-    para, diag, ver4 = testVertex4(3, [Parquet.T, Parquet.U, Parquet.S], :physical; filter = [Builder.Proper], eval = false)
-    for i in 1:length(diag.basisPool)
-        @test (diag.basisPool.basis[:, i] ≈ para.transferLoop) == false
-    end
+    # para, diag, ver4 = testVertex4(3, [Parquet.T, Parquet.U, Parquet.S], :physical; filter = [Builder.Proper], eval = false)
+    # for i in 1:length(diag.basisPool)
+    #     @test (diag.basisPool.basis[:, i] ≈ para.transferLoop) == false
+    # end
 end
 
 # @testset "Parquet Sigma" begin
