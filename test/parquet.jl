@@ -335,7 +335,7 @@ end
 
             w2 = ver4.weight[1]
 
-            println(w1, " vs ", w2)
+            # println(w1, " vs ", w2)
 
             # The upup channel of charge-charge vertex4 == Direct + exchange 
             @test w1[1] ≈ w2[1] + w2[2]
@@ -347,7 +347,7 @@ end
     end
 
     function testEval(type)
-        for l = 1:1
+        for l = 1:3
             testVertex4(l, [PHr,], type)
             testVertex4(l, [PHEr,], type)
             testVertex4(l, [PPr,], type)

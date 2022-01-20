@@ -39,7 +39,9 @@ function buildVer4(para::GenericPara, legK, chan::Vector{TwoBodyChannel}, subdia
             for p in partition
 
                 if c == PHr || c == PHEr || c == PPr
-                    append!(diags, bubble(para, legK, c, p, level, name, phi_toplevel, ppi_toplevel, Γ4_toplevel))
+                    bub = bubble(para, legK, c, p, level, name, phi_toplevel, ppi_toplevel, Γ4_toplevel)
+                    # println(bub)
+                    append!(diags, bub)
                 end
             end
         end
@@ -62,10 +64,12 @@ end
 function bubble(para::GenericPara, legK, chan::TwoBodyChannel, partition::Vector{Int}, level::Int, name::Symbol,
     phi_toplevel, ppi_toplevel, Γ4_toplevel)
 
+    diag = Diagram{para.weightType}[]
+
     TauNum = para.interactionTauNum # maximum tau number for each bare interaction
     oL, oG0, oR, oGx = partition[1], partition[2], partition[3], partition[4]
     if isValidG(para.filter, oG0) == false || isValidG(para.filter, oGx) == false
-        return
+        return diag
     end
 
     #the first loop idx is the inner loop of the bubble!
@@ -101,7 +105,6 @@ function bubble(para::GenericPara, legK, chan::TwoBodyChannel, partition::Vector
     Lver = buildVer4(lPara, LLegK, Γi, true; level = level + 1, name = :Γi)
     Rver = buildVer4(rPara, RLegK, Γf, true; level = level + 1, name = :Γf)
 
-    diag = []
     for ldiag in Lver
         for rdiag in Rver
             extT, G0T, GxT = tauBasis(chan, ldiag.id.extT, rdiag.id.extT)
