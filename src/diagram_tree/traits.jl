@@ -115,40 +115,4 @@ function Base.isequal(a::DiagramId, b::DiagramId)
     return true
 end
 
-function toDict(v::DiagramId; verbose::Int)
-    d = Dict{Symbol,Any}()
-    for field in fieldnames(typeof(v))
-        if verbose > 1 && field == :extT
-            tidx = getproperty(v, :extT)
-            if length(tidx) == 2 # for sigma, polar
-                d[:TinL], d[:ToutL] = tidx[1], tidx[2]
-            elseif length(tidx) == 3 # vertex3
-                d[:TinL], d[:ToutL], d[:TinR] = tidx[INL], tidx[OUTL], tidx[INR]
-            elseif length(tidx) == 4 # vertex4
-                d[:TinL], d[:ToutL], d[:TinR], d[:ToutR] = tidx[INL], tidx[OUTL], tidx[INR], tidx[OUTR]
-            else
-                error("not implemented!")
-            end
-        else
-            # elseif expand && field == :extK
-            #     k = getproperty(v, :extK)
-            #     if length(k) == 1 # for sigma, polar
-            #         d[:KinL] = k[1]
-            #     elseif length(k) == 2 # for sigma, polar
-            #         d[:KinL], d[:KoutL] = k[1], k[2]
-            #     elseif length(k) == 3 # vertex3
-            #         d[:KinL], d[:KoutL], d[:KinR] = k[INL], k[OUTL], k[INR]
-            #     elseif length(k) == 4 # vertex4
-            #         d[:KinL], d[:KoutL], d[:KinR], d[:KoutR] = k[INL], k[OUTL], k[INR], k[OUTR]
-            #     else
-            #         error("not implemented!")
-            #     end
-            data = getproperty(v, field)
-            #DataFrame will expand a vector into multiple rows. To prevent it, we transform all vectors into tuples
-            d[field] = data isa AbstractVector ? Tuple(data) : data
-        end
-    end
-    return d
-end
-
 

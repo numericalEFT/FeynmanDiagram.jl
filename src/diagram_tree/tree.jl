@@ -43,26 +43,24 @@ end
 # _diagram(df, index) = df[index, :Diagram]
 
 function mergeby(df::DataFrame, fields;
-    verbose::Int = 0, operator = Sum(), factor = one(df.Diagram[1].factor), name::Symbol = :none,
-    getid::Function = g -> GenericId(g.Diagram[1].id.para, fields),
-    kwargs...)
+    verbose::Int = 0, operator = Sum(), factor = one(df[1, :diagram].factor), name::Symbol = :none,
+    getid::Function = g -> GenericId(g[1, :diagram].id.para, fields))
 
     # df = toDataFrame(diags, verbose = verbose)
-    if all(x -> typeof(x.id) == typeof(df.Diagram[1].id), df.Diagram) == false
+    if all(x -> typeof(x.id) == typeof(df[1, :diagram].id), df[!, :diagram]) == false
         @warn "Not all DiagramIds in $diags are the same!"
     end
 
     groups = DataFrames.groupby(df, fields)
 
-    # return combine(groups, [:id, :Diagram] =>
-    #     ((id, diagrams) -> Diagram(getid(id[1]), operator, diagrams, name = name, factor = factor)) => :Diagram)
-    gdf = combine(groups) do g
-        (Diagram = Diagram(getid(g), operator, g[:, :Diagram], name = name, factor = factor),)
+    # check the documentation of ``combine" for details https://dataframes.juliadata.org/stable/man/split_apply_combine/
+    gdf = combine(groups) do group # for each group in groups
+        (diagram = Diagram(getid(group), operator, group[:, :diagram], name = name, factor = factor),)
     end
-    return gdf
+    return gdf[:, :diagram]
 end
-function mergeby(diags::Vector{Diagram{W}}, fields; kwargs...) where {W}
-    df = toDataFrame(diags, verbose = kwargs[:verbose])
+function mergeby(diags::Vector{Diagram{W}}, fields; verbose = 0, kwargs...) where {W}
+    df = toDataFrame(diags, verbose = verbose)
     return mergeby(df, fields; kwargs...)
 end
 

@@ -1,18 +1,45 @@
 function toDict(diag::Diagram; verbose::Int, maxdepth::Int = 1)
     @assert maxdepth == 1 "deep convert has not yet been implemented!"
-    # if verbose >= 1
-    d = Dict{Symbol,Any}(toDict(diag.id; verbose = verbose))
-    # else
-    #     d = Dict{Symbol,Any}()
-    # end
+
+    d = Dict{Symbol,Any}()
+    d[:diagram] = diag
     d[:hash] = diag.hash
-    d[:name] = diag.name
-    d[:operator] = diag.operator
-    d[:factor] = diag.factor
-    d[:weight] = diag.weight
-    d[:Diagram] = diag
-    d[:id] = typeof(diag.id)
     d[:subdiagram] = Tuple(d.hash for d in diag.subdiagram)
+
+    if verbose >= 0
+        merge!(d, Dict{Symbol,Any}(toDict(diag.id; verbose = verbose)))
+    end
+
+    if verbose >= 2
+        d[:name] = diag.name
+        d[:operator] = diag.operator
+        d[:factor] = diag.factor
+        d[:weight] = diag.weight
+    end
+
+    return d
+end
+
+function toDict(v::DiagramId; verbose::Int)
+    d = Dict{Symbol,Any}()
+    for field in fieldnames(typeof(v))
+        if verbose >= 2 && field == :extT
+            tidx = getproperty(v, :extT)
+            if length(tidx) == 2 # for sigma, polar
+                d[:TinL], d[:ToutL] = tidx[1], tidx[2]
+            elseif length(tidx) == 3 # vertex3
+                d[:TinL], d[:ToutL], d[:TinR] = tidx[INL], tidx[OUTL], tidx[INR]
+            elseif length(tidx) == 4 # vertex4
+                d[:TinL], d[:ToutL], d[:TinR], d[:ToutR] = tidx[INL], tidx[OUTL], tidx[INR], tidx[OUTR]
+            else
+                error("not implemented!")
+            end
+        else
+            data = getproperty(v, field)
+            #DataFrame will expand a vector into multiple rows. To prevent it, we transform all vectors into tuples
+            d[field] = data isa AbstractVector ? Tuple(data) : data
+        end
+    end
     return d
 end
 

@@ -302,9 +302,8 @@ end
 
         #################### DiagTree ####################################
         diags = Parquet.buildVer4(para, legK, chan)
-        println(diags)
         diags = mergeby(diags, :response)
-        println(diags)
+        # println(diags)
         # DiagTreeNew.plot_tree(diags[1])
         # DiagTreeNew.plot_tree(diags[2])
 
@@ -316,9 +315,7 @@ end
 
             # w1 = DiagTree.evalNaive(diag, varK, varT, evalPropagator)
             evalDiagTree!(diags, eval, varK, varT)
-            duu = diags[diags.response.==UpUp, :Diagram][1]
-            dup = diags[diags.response.==UpDown, :Diagram][1]
-            w1 = [duu.weight, dup.weight]
+            w1 = [diags[1].weight, diags[2].weight]
             # println(w1)
 
             if timing
