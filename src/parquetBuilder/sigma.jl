@@ -72,15 +72,6 @@ function buildSigma(para, extK, subdiagram = false; name = :none)
     end
 
 
-    # diag, ver4, dir, ex = buildVer4(ver4Para, [KinL, KoutL, KinR, KoutR],
-    #     [T,], F, V, All; Fouter = [], Allouter = All, diag = diag)
-    # make sure all incoming Tau idx is equal
-    # for nidx in dynamic
-    #     node = DiagTree.getNode(diag, nidx)
-    #     @assert node.para[1] == para.firstTauIdx
-    #     @assert node.para[2] <= tright
-    # end
-    # @assert isempty(dynamic) == false || isempty(instant) == false "Sigma diagram doesn't exist for \n$para"
     return diags
 
 end
