@@ -48,18 +48,23 @@ function buildVer4(para::GenericPara, legK, chan::Vector{TwoBodyChannel}, subdia
         end
         # # TODO: add envolpe diagrams
     end
-    df = DiagTreeNew.toDataFrame(diags, verbose = 0)
-    @assert all(x -> collect(x) ≈ legK, df[:, :extK]) "not all extK are the same! $(df[:, :extK])"
-    @assert all(x -> x == Ver4Id, df[:, :id]) "not all id are Ver4Id! $(df[:, :id])"
+    @assert all(x -> x.id isa Ver4Id, diags) "not all id are Ver4Id! $diags"
+    @assert all(x -> x.id.extK ≈ legK, diags) "not all extK are the same! $diags"
 
-    groups = Diagram{para.weightType}[]
-    for g in groupby(df, [:response, :type, :extT])
-        # println(g)
-        id = Ver4Id(para, g[1, :response], g[1, :type], k = legK, t = g[1, :extT])
-        diagName = name == :none ? Symbol("$(g[1, :channel])") : name
-        push!(groups, Diagram(id, Sum(), g[:, :Diagram], name = diagName))
-    end
-    return groups
+    # df = DiagTreeNew.toDataFrame(diags, verbose = 0)
+    # groups = Diagram{para.weightType}[]
+    # for g in groupby(df, [:response, :type, :extT])
+    #     # println(g)
+    #     id = Ver4Id(para, g[1, :response], g[1, :type], k = legK, t = g[1, :extT])
+    #     diagName = name == :none ? Symbol("$(g[1, :channel])") : name
+    #     push!(groups, Diagram(id, Sum(), g[:, :Diagram], name = diagName))
+    # end
+
+    diags = mergeby(diags, [:response, :type, :extT], verbose = 0,
+        getid = g -> Ver4Id(para, g[1, :response], g[1, :type], k = legK, t = g[1, :extT]), #generate id from the dataframe
+        getname = g -> name == :none ? Symbol("$(g[1, :channel])") : name
+    )
+    return collect(values(diags))
 end
 
 function bubble(para::GenericPara, legK, chan::TwoBodyChannel, partition::Vector{Int}, level::Int, name::Symbol,

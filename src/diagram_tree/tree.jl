@@ -42,9 +42,9 @@ end
 
 _diagram(df, index) = df[index, :Diagram]
 
-function mergeby(diags::Vector{Diagram{W}}, fields;
-    verbose::Int = 0, name = :none, factor = one(W), operator = Sum(),
-    getId::Function = g -> GenericId(_diagram(g, 1).id.para, g[1, fields])
+function mergeby(diags::Vector{Diagram{W}}, fields; verbose::Int = 0, operator = Sum(), factor = one(W),
+    getid::Function = g -> GenericId(_diagram(g, 1).id.para, g[1, fields]),
+    getname::Function = g -> :none
 ) where {W}
 
     df = toDataFrame(diags, verbose = verbose)
@@ -61,7 +61,7 @@ function mergeby(diags::Vector{Diagram{W}}, fields;
         if length(key) > 1
             key = Tuple(key)
         end
-        d[key] = Diagram(getId(g), operator, g[:, :Diagram], name = name, factor = factor)
+        d[key] = Diagram(getid(g), operator, g[:, :Diagram], name = getname(g), factor = factor)
     end
     return d
 end
