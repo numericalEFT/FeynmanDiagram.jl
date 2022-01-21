@@ -45,13 +45,13 @@ diags = mergeby(diags, :response)
 
 for d in diags.diagram[1:1]
     println()
-    print_tree(d)
-    DiagTreeNew.plot_tree(d)
+    # print_tree(d)
+    # DiagTreeNew.plot_tree(d)
 end
 
 display(diags)
 # DiagTreeNew.plot_tree(diags[1])
-exit(0)
+# exit(0)
 
 ######################################## self-energy  ################################################
 
@@ -80,6 +80,10 @@ para = GenericPara(
 K0 = zeros(para.totalLoopNum)
 K0[1] = 1.0
 sigma = Parquet.buildSigma(para, K0)
+println("sigma, ", sigma)
+for d in sigma.diagram
+    plot_tree(d)
+end
 # println(root)
 # rootidx = DiagTree.addnode!(sigma, DiagTree.ADD, :sum, vcat(instant, dynamic); para = [0, 0])
 # DiagTree.showTree(sigma, rootidx)

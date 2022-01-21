@@ -52,6 +52,7 @@ function buildVer4(para::GenericPara, legK, chan::Vector{TwoBodyChannel}, subdia
     @assert all(x -> x.id.extK ≈ legK, diags) "not all extK are the same! $diags"
 
     df = toDataFrame(diags, expand = true)
+    # println(df[:, [:response, :type, :extT, :diagram]])
     groups = mergeby(df, [:response, :type, :extT], name = name,
         getid = g -> Ver4Id(para, g[1, :response], g[1, :type], k = legK, t = g[1, :extT]) #generate id from the dataframe
     )

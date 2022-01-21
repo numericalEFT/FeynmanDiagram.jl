@@ -43,8 +43,8 @@ end
 # _diagram(df, index) = df[index, :Diagram]
 
 function mergeby(df::DataFrame, fields;
-    operator = Sum(), name::Symbol = :none, factor = one(g[1, :diagram].factor,
-    getid::Function = g -> GenericId(g[1, :diagram].id.para, g[1, fields]),
+    operator = Sum(), name::Symbol = :none, factor = one(df[1, :diagram].factor),
+    getid::Function = g -> GenericId(g[1, :diagram].id.para, g[1, fields])
 )
 
     # df = toDataFrame(diags, verbose = verbose)
@@ -57,13 +57,13 @@ function mergeby(df::DataFrame, fields;
     # combine diagrams in a group into one composite diagram
     gdf = combine(groups) do group # for each group in groups
         # check the documentation of ``combine" for details https://dataframes.juliadata.org/stable/man/split_apply_combine/
-        (diagram = Diagram(getid(group), operator, group[:, :diagram], name = name, factor = getfactor(group)),)
+        (diagram = Diagram(getid(group), operator, group[:, :diagram], name = name, factor = factor),)
     end
 
     return gdf
 end
-function mergeby(diags::Vector{Diagram{W}}, fields; verbose = 0, kwargs...) where {W}
-    df = toDataFrame(diags, verbose = verbose)
+function mergeby(diags::Vector{Diagram{W}}, fields; expand::Bool = false, kwargs...) where {W}
+    df = toDataFrame(diags, expand = expand)
     return mergeby(df, fields; kwargs...)
 end
 
