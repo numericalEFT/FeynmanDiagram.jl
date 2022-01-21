@@ -26,6 +26,13 @@ function evalDiagTree!(diags::Vector{Diagram{W}}, evalBare::Function, varK, varT
     # return W[d.weight for d in diags]
 end
 
+function evalDiagTree!(df::DataFrame, evalBare::Function, varK, varT) where {W}
+    for d in df[!, :diagram]
+        evalDiagTree!(d, evalBare, varK, varT)
+    end
+    # return W[d.weight for d in df[!, :Diagram]]
+end
+
 function evalDiagNode!(diag::Diagram, evalBare::Function, vargs...)
     if length(diag.subdiagram) == 0
         diag.weight = evalBare(diag.id, vargs...) * diag.factor
@@ -47,4 +54,11 @@ function evalDiagTree!(diags::Vector{Diagram{W}}, evalBare::Function, vargs...) 
         evalDiagTree!(d, evalBare, vargs...)
     end
     return W[d.weight for d in diags]
+end
+
+function evalDiagTree!(df::DataFrame, evalBare::Function, vargs...) where {W}
+    for d in df[!, :diagram]
+        evalDiagTree!(d, evalBare, vargs...)
+    end
+    # return W[d.weight for d in df[!, :Diagram]]
 end

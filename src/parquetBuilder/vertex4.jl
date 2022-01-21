@@ -51,20 +51,9 @@ function buildVer4(para::GenericPara, legK, chan::Vector{TwoBodyChannel}, subdia
     @assert all(x -> x.id isa Ver4Id, diags) "not all id are Ver4Id! $diags"
     @assert all(x -> x.id.extK ≈ legK, diags) "not all extK are the same! $diags"
 
-    # df = DiagTreeNew.toDataFrame(diags, verbose = 0)
-    # groups = Diagram{para.weightType}[]
-    # for g in groupby(df, [:response, :type, :extT])
-    #     # println(g)
-    #     id = Ver4Id(para, g[1, :response], g[1, :type], k = legK, t = g[1, :extT])
-    #     diagName = name == :none ? Symbol("$(g[1, :channel])") : name
-    #     push!(groups, Diagram(id, Sum(), g[:, :Diagram], name = diagName))
-    # end
-
-    # df = toDataFrame(diags, verbose = 0)
     groups = mergeby(diags, [:response, :type, :extT], name = name, verbose = 0,
         getid = g -> Ver4Id(para, g[1, :response], g[1, :type], k = legK, t = g[1, :extT]) #generate id from the dataframe
     )
-    # return groups[:, :diagram]
     return groups
 end
 
@@ -109,8 +98,8 @@ function bubble(para::GenericPara, legK, chan::TwoBodyChannel, partition::Vector
     LLegK, K, RLegK, Kx = legBasis(chan, legK, LoopIdx)
     # println(K, ", ", Kx)
 
-    Lver = buildVer4(lPara, LLegK, Γi, true; level = level + 1, name = :Γi)
-    Rver = buildVer4(rPara, RLegK, Γf, true; level = level + 1, name = :Γf)
+    Lver = buildVer4(lPara, LLegK, Γi, true; level = level + 1, name = :Γi).diagram
+    Rver = buildVer4(rPara, RLegK, Γf, true; level = level + 1, name = :Γf).diagram
 
     for ldiag in Lver
         for rdiag in Rver
