@@ -17,16 +17,14 @@ function buildG(para, extK, extT, subdiagram = false; name = :none)
     diags = Diagram{para.weightType}[]
 
     if isValidG(para) == false
-        return diag
+        return nothing
     end
 
     if para.innerLoopNum == 0
-        g = DiagTree.addpropagator!(diag, :Gpool, 0, :G; site = [tin, tout], loop = extK)
-        push!(diags, Diagram(GreenId(para, k = extK, t = extT), name = name))
-        return diags
+        return Diagram(GreenId(para, k = extK, t = extT), name = name)
     end
 
-    return diags
+    return nothing
 
     # ################# after this step, the Green's function must be nontrivial! ##################
     # @assert tin < tstart || tin > tend "external T index cann't be with in [$tstart, $tend]"

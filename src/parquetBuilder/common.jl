@@ -150,11 +150,19 @@ function newDiagTree(para, name::Symbol = :none)
 end
 
 function allsame(df, name::Symbol)
-    @assert all(x -> x == df[1, :name], df[!, name]) "Not all rows of the $name field are the same.\n$df"
+    @assert all(x -> x == df[1, name], df[!, name]) "Not all rows of the $name field are the same.\n$df"
 end
 function allsame(df, names::Vector{Symbol})
     for name in names
         allsame(df, name)
+    end
+end
+function allsametype(df, name::Symbol)
+    @assert all(x -> typeof(x) == typeof(df[1, name]), df[!, name]) "Not all rows of the $name field are the same type.\n$df"
+end
+function allsametype(df, names::Vector{Symbol})
+    for name in names
+        allsametype(df, name)
     end
 end
 

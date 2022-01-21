@@ -5,7 +5,7 @@
     When sigma is created as a subdiagram, then no Fock diagram is generated if para.filter contains NoFock, and no sigma diagram is generated if para.filter contains Girreducible
 
 """
-function buildSigma(para, extK, subdiagram = false; name = :none)
+function buildSigma(para, extK, subdiagram = false; name = :Σ)
     subdiagram == false && uidreset()
     @assert para.innerLoopNum >= 1
     @assert length(extK) == para.totalLoopNum
@@ -20,13 +20,11 @@ function buildSigma(para, extK, subdiagram = false; name = :none)
     K = zero(extK)
     LoopIdx = para.firstLoopIdx
     K[LoopIdx] = 1.0
-    t0 = para.firstTauIdx
-    factor = 1 / (2π)^para.loopDim
-    qe = K - extK
     legK = [extK, K, K, extK]
 
-    function GWwithGivenExTtoΣ(group)
+    function GWwithGivenExTtoΣ(group, paraG)
         allsame(group, [:response, :type, :GT])
+        @assert all(x -> x == UpUp || x == UpDown, group[:, :response])
         #type: Instant or Dynamic
         response, type = group[1, :response], group[1, :type]
         sid = SigmaId(para, type, k = extK, t = group[1, :extT])
@@ -39,10 +37,10 @@ function buildSigma(para, extK, subdiagram = false; name = :none)
 
     compositeSigma = DataFrame()
 
-    for (oG, oW) in orderedPartition(para.innerLoopNum, 2, 0)
+    for (oG, oW) in orderedPartition(para.innerLoopNum - 1, 2, 0)
 
         idx, maxLoop = findFirstLoopIdx([oG, oW], LoopIdx + 1)
-        @assert maxLoop <= para.totalLoopNum
+        @assert maxLoop <= para.totalLoopNum "maxLoop = $maxLoop > $(para.totalLoopNum)"
         GfirstLoopIdx, WfirstLoopIdx = idx
 
         idx, maxTau = findFirstTauIdx([oG, oW], [GreenDiag, Ver4Diag], para.firstTauIdx, para.interactionTauNum)
@@ -57,25 +55,25 @@ function buildSigma(para, extK, subdiagram = false; name = :none)
         #TODO: add validation for paraW
         if isValidG(paraG)
             if oW == 0 # Fock-type Σ
-                ver4 = bareVer4(paraW, legK, [Ex,])
+                ver4 = bareVer4(paraW, legK, [Di,])
             else # composite Σ
                 ver4 = buildVer4(paraW, [PHr,], true, phi_toplevel = [], Γ4_toplevel = paraW.extra.Γ4)
             end
 
             df = toDataFrame(ver4, expand = true)
-            allsame(group, :id)
-            @assert all(x -> x == UpUp || x == UpDown, df[:, :response])
+            allsametype(df, :id)
             #transform extT coloum intwo extT for Σ and extT for G
             df = transform(df, :extT => ByRow(x -> [(x[INL], x[OUTR]), (x[OUTL], x[INR])]) => [:extT, :GT])
-            println(df)
+            println(df[:, [:extT, :GT, :response, :type, :id]])
             for group in groupby(df, [:response, :type, :GT])
-                newsigma = (type = group[1, :type], extT = group[1, :extT], diagram = GWwithGivenExTtoΣ(group))
+                newsigma = (type = group[1, :type], extT = group[1, :extT], diagram = GWwithGivenExTtoΣ(group, paraG))
                 push!(compositeSigma, newsigma)
             end
         end
     end
 
-    return mergeby(compositeSigma, [:type, :extT], name = name,
+    Factor = 1 / (2π)^para.loopDim
+    return mergeby(compositeSigma, [:type, :extT], name = name, factor = Factor,
         getid = g -> SigmaId(para, g[1, :type], k = extK, t = g[1, :extT]))
 
 end

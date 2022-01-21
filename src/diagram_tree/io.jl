@@ -41,7 +41,7 @@ function toDataFrame(diagVec::AbstractVector; expand::Bool = false, maxdepth::In
             merge!(d, vec_of_id_dict[di]) #add id dict into the diagram dict
         end
     end
-    println(names)
+    # println(names)
     df = DataFrame([name => [] for name in names])
 
     for dict in vec_of_diag_dict
