@@ -39,7 +39,7 @@ struct GreenId <: DiagramId
         return new(para, type, k, Tuple(t))
     end
 end
-Base.show(io::IO, v::GreenId) = print(io, "$(v.type), k$(v.extK), t$(v.extT)")
+Base.show(io::IO, v::GreenId) = print(io, "$(short(v.type)), k$(v.extK), t$(v.extT)")
 
 struct InteractionId <: DiagramId
     para::GenericPara

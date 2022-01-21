@@ -43,21 +43,21 @@ end
 # _diagram(df, index) = df[index, :Diagram]
 
 function mergeby(df::DataFrame, fields;
-    verbose::Int = 0, operator = Sum(), factor = one(df[1, :diagram].factor), name::Symbol = :none,
-    getid::Function = g -> GenericId(g[1, :diagram].id.para, fields))
+    operator = Sum(), factor = one(df[1, :diagram].factor), name::Symbol = :none,
+    getid::Function = g -> GenericId(g[1, :diagram].id.para, g[1, fields]))
 
     # df = toDataFrame(diags, verbose = verbose)
     if all(x -> typeof(x.id) == typeof(df[1, :diagram].id), df[!, :diagram]) == false
         @warn "Not all DiagramIds in $diags are the same!"
     end
 
-    groups = DataFrames.groupby(df, fields)
+    groups = DataFrames.groupby(df, fields, sort = true)
 
     # check the documentation of ``combine" for details https://dataframes.juliadata.org/stable/man/split_apply_combine/
     gdf = combine(groups) do group # for each group in groups
         (diagram = Diagram(getid(group), operator, group[:, :diagram], name = name, factor = factor),)
     end
-    return gdf[:, :diagram]
+    return gdf
 end
 function mergeby(diags::Vector{Diagram{W}}, fields; verbose = 0, kwargs...) where {W}
     df = toDataFrame(diags, verbose = verbose)
@@ -72,8 +72,8 @@ function AbstractTrees.children(diag::Diagram)
 end
 
 ## Things that make printing prettier
-# AbstractTrees.printnode(io::IO, diag::Diagram) = print(io, "\u001b[32m$(diag.hash)\u001b[0m : $(diag.id)")
-AbstractTrees.printnode(io::IO, diag::Diagram) = print(io, "$(diag)")
+AbstractTrees.printnode(io::IO, diag::Diagram) = print(io, "\u001b[32m$(diag.hash)\u001b[0m : $diag")
+# AbstractTrees.printnode(io::IO, diag::Diagram) = print(io, "$(diag)")
 
 ## Optional enhancements
 # These next two definitions allow inference of the item type in iteration.

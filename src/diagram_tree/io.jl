@@ -78,29 +78,23 @@ function _summary(diag::Diagram{W}, color = true) where {W}
         end
     end
 
-    function hash()
-        return color ? "\u001b[32m#$(diag.hash)\u001b[0m" : "#$(diag.hash)"
-    end
+    namestr = diag.name == :none ? "" : "$(diag.name) "
+    idstr = "$namestr$(diag.id)"
 
     if length(diag.subdiagram) == 0
-        idstr = "$(hash()): $(diag.id)"
         f = factor()
-        return isempty(f) ? "$idstr " : "$idstr, $f x "
-    elseif length(diag.subdiagram) == 1
-        return "$(hash()): $(diag.name == :none ? "" : diag.name) $(diag.id) = $(factor())"
+        return isempty(f) ? "$idstr " : "$idstr, $f⋅"
     else
-        return "$(hash()): $(diag.name == :none ? "" : diag.name) $(diag.id) = $(factor())$(diag.operator) "
+        return "$idstr=$(factor())$(diag.operator) "
     end
 end
 
 function Base.show(io::IO, diag::Diagram)
     if length(diag.subdiagram) == 0
         typestr = "bare"
-    elseif length(diag.subdiagram) == 1
-        typestr = "#$(diag.hash)"
     else
-        subdiag = prod(["#$(d.hash), " for d in diag.subdiagram[1:end-1]])
-        subdiag *= "#$(diag.subdiagram[end].hash)"
+        subdiag = prod(["$(d.hash), " for d in diag.subdiagram[1:end-1]])
+        subdiag *= "$(diag.subdiagram[end].hash)"
         typestr = "($subdiag)"
     end
     print(io, "$(_summary(diag, true))$typestr = $(diag.weight)")
@@ -123,7 +117,7 @@ function plot_tree(diag::Diagram; verbose = 0, maxdepth = 999)
     ete = PyCall.pyimport("ete3")
 
     function treeview(node, level, t = ete.Tree(name = " "))
-        nt = t.add_child(name = _summary(node, false))
+        nt = t.add_child(name = "$(node.hash): " * _summary(node, false))
 
         if length(node.subdiagram) > 0
             name_face = ete.TextFace(nt.name, fgcolor = "black", fsize = 10)

@@ -315,7 +315,7 @@ end
 
             # w1 = DiagTree.evalNaive(diag, varK, varT, evalPropagator)
             evalDiagTree!(diags, eval, varK, varT)
-            w1 = [diags[1].weight, diags[2].weight]
+            w1 = [diags.diagram[1].weight, diags.diagram[2].weight]
             # println(w1)
 
             if timing
@@ -348,11 +348,11 @@ end
     end
 
     function testEval(type)
-        for l = 1:1
+        for l = 1:3
             testVertex4(l, [PHr,], type)
-            # testVertex4(l, [PHEr,], type)
-            # testVertex4(l, [PPr,], type)
-            # testVertex4(l, [PHr, PHEr, PPr], type; timing = true)
+            testVertex4(l, [PHEr,], type)
+            testVertex4(l, [PPr,], type)
+            testVertex4(l, [PHr, PHEr, PPr], type; timing = true)
         end
     end
 
