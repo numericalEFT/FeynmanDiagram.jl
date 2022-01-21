@@ -29,9 +29,11 @@ function buildSigma(para, extK, subdiagram = false; name = :none)
 
 
     function toSigma!(ver4)
-        ver4df = toDataFrame(ver4, verbose = 2)
-        @assert all(x -> x == ver4df[1, :id], ver4df[:, :id]) == false
-        @assert all(x -> x == UpUp || x == UpDown, ver4df[:, :response])
+        df = toDataFrame(ver4, verbose = 0)
+        @assert all(d -> typeof(d.id) == Ver4Id, df.diagram) == false
+        @assert all(x -> x == UpUp || x == UpDown, df[:, :response])
+
+
 
         for df in groupby(df, [:response, :type, :TinL, :ToutR])
             response, type = df[:response], df[:type]
@@ -70,7 +72,6 @@ function buildSigma(para, extK, subdiagram = false; name = :none)
             toSigma!(ver4)
         end
     end
-
 
     return diags
 

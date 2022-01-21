@@ -1,64 +1,50 @@
-function toDict(diag::Diagram; verbose::Int, maxdepth::Int = 1)
+function toDict(diag::Diagram; maxdepth::Int)
     @assert maxdepth == 1 "deep convert has not yet been implemented!"
 
     d = Dict{Symbol,Any}()
-    d[:diagram] = diag
     d[:hash] = diag.hash
+    d[:id] = diag.id
+    d[:name] = diag.name
+    d[:diagram] = diag
     d[:subdiagram] = Tuple(d.hash for d in diag.subdiagram)
-
-    if verbose >= 0
-        merge!(d, Dict{Symbol,Any}(toDict(diag.id; verbose = verbose)))
-    end
-
-    if verbose >= 2
-        d[:name] = diag.name
-        d[:operator] = diag.operator
-        d[:factor] = diag.factor
-        d[:weight] = diag.weight
-    end
+    d[:operator] = diag.operator
+    d[:factor] = diag.factor
+    d[:weight] = diag.weight
 
     return d
 end
 
-function toDict(v::DiagramId; verbose::Int)
+function toDict(v::DiagramId)
     d = Dict{Symbol,Any}()
     for field in fieldnames(typeof(v))
-        if verbose >= 2 && field == :extT
-            tidx = getproperty(v, :extT)
-            if length(tidx) == 2 # for sigma, polar
-                d[:TinL], d[:ToutL] = tidx[1], tidx[2]
-            elseif length(tidx) == 3 # vertex3
-                d[:TinL], d[:ToutL], d[:TinR] = tidx[INL], tidx[OUTL], tidx[INR]
-            elseif length(tidx) == 4 # vertex4
-                d[:TinL], d[:ToutL], d[:TinR], d[:ToutR] = tidx[INL], tidx[OUTL], tidx[INR], tidx[OUTR]
-            else
-                error("not implemented!")
-            end
-        else
-            data = getproperty(v, field)
-            #DataFrame will expand a vector into multiple rows. To prevent it, we transform all vectors into tuples
-            d[field] = data isa AbstractVector ? Tuple(data) : data
-        end
+        data = getproperty(v, field)
+        #DataFrame will expand a vector into multiple rows. To prevent it, we transform all vectors into tuples
+        d[field] = data isa AbstractVector ? Tuple(data) : data
     end
     return d
 end
 
-function toDataFrame(diagVec::AbstractVector; verbose::Int = 0, maxdepth::Int = 1)
-    # diags = []
-    d = Dict{Symbol,Any}()
-    k = []
-    for d in diagVec
-        # println(keys(toDict(d, verbose, maxdepth)))
-        append!(k, keys(toDict(d, verbose = verbose, maxdepth = maxdepth)))
-    end
-    for f in Set(k)
-        d[f] = []
-    end
-    # println(d)
-    df = DataFrame(d)
+# function toDataFrame(diagVec::AbstractVector; expand::Bool = false)
 
-    for d in diagVec
-        dict = toDict(d, verbose = verbose, maxdepth = maxdepth)
+# end
+
+function toDataFrame(diagVec::AbstractVector; expand::Bool = false, maxdepth::Int = 1)
+    vec_of_diag_dict = [toDict(d, maxdepth = maxdepth) for d in diagVec]
+    vec_of_id_dict = [toDict(d.id) for d in diagVec]
+    names = Set(reduce(union, keys(d) for d in vec_of_diag_dict))
+    if expand
+        idnames = Set(reduce(union, keys(d) for d in vec_of_id_dict))
+        @assert isempty(intersect(names, idnames)) "collision of diagram names $names and id names $idnames"
+        names = union(names, idnames)
+
+        for (di, d) in enumerate(vec_of_diag_dict)
+            merge!(d, vec_of_id_dict[di]) #add id dict into the diagram dict
+        end
+    end
+    println(names)
+    df = DataFrame([name => [] for name in names])
+
+    for dict in vec_of_diag_dict
         append!(df, dict, cols = :union)
     end
     return df
