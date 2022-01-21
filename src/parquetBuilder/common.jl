@@ -149,6 +149,15 @@ function newDiagTree(para, name::Symbol = :none)
     return DiagTree.Diagrams(Kpool, Tuple(propagatorPool), weightType, nodeParaType = nodeParaType, name = name)
 end
 
+function allsame(df, name::Symbol)
+    @assert all(x -> x == df[1, :name], df[!, name]) "Not all rows of the $name field are the same.\n$df"
+end
+function allsame(df, names::Vector{Symbol})
+    for name in names
+        allsame(df, name)
+    end
+end
+
 
 # struct ParameterizedComponent
 #     component::Component

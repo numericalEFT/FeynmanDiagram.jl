@@ -13,10 +13,8 @@ function buildSigma(para, extK, subdiagram = false; name = :none)
     @assert para.totalTauNum >= tright "totalTauNum = $(para.totalTauNum) is not enough, sigma requires $tright\npara=$para"
     @assert para.totalLoopNum >= para.firstLoopIdx -1 + para.innerLoopNum
 
-    diags = Diagram{para.weightType}[]
-
     if isValidSigma(para.filter, para.innerLoopNum, subdiagram) == false
-        return diags
+        return nothing
     end
 
     K = zero(extK)
@@ -27,25 +25,19 @@ function buildSigma(para, extK, subdiagram = false; name = :none)
     qe = K - extK
     legK = [extK, K, K, extK]
 
-
-    function toSigma!(ver4)
-        df = toDataFrame(ver4, verbose = 0)
-        @assert all(d -> typeof(d.id) == Ver4Id, df.diagram) == false
-        @assert all(x -> x == UpUp || x == UpDown, df[:, :response])
-
-
-
-        for df in groupby(df, [:response, :type, :TinL, :ToutR])
-            response, type = df[:response], df[:type]
-            #type: Instant or Dynamic
-            sid = SigmaId(para, type, k = extK, t = (df[:TinL], df[:ToutR]))
-            for g in buildG(paraG, K, (df[:ToutL], df[:TinR]); name = :Gfock)
-                # Sigma = G*(2 W↑↑ - W↑↓)
-                spinfactor = (response == UpUp) ? 2 : -1
-                push!(diags, Diagram(sid, Prod(), [g, df[:Diagram]], factor = spinfactor, name = name))
-            end
-        end
+    function GWwithGivenExTtoΣ(group)
+        allsame(group, [:response, :type, :GT])
+        #type: Instant or Dynamic
+        response, type = group[1, :response], group[1, :type]
+        sid = SigmaId(para, type, k = extK, t = group[1, :extT])
+        g = buildG(paraG, K, group[1, :GT]; name = :Gfock) #there is only one G diagram for a extT
+        @assert g isa Diagram
+        # Sigma = G*(2 W↑↑ - W↑↓)
+        spinfactor = (response == UpUp) ? 2 : -1
+        return Diagram(sid, Prod(), [g, group[1, :diagram]], factor = spinfactor, name = name)
     end
+
+    compositeSigma = DataFrame()
 
     for (oG, oW) in orderedPartition(para.innerLoopNum, 2, 0)
 
@@ -69,10 +61,21 @@ function buildSigma(para, extK, subdiagram = false; name = :none)
             else # composite Σ
                 ver4 = buildVer4(paraW, [PHr,], true, phi_toplevel = [], Γ4_toplevel = paraW.extra.Γ4)
             end
-            toSigma!(ver4)
+
+            df = toDataFrame(ver4, expand = true)
+            allsame(group, :id)
+            @assert all(x -> x == UpUp || x == UpDown, df[:, :response])
+            #transform extT coloum intwo extT for Σ and extT for G
+            df = transform(df, :extT => ByRow(x -> [(x[INL], x[OUTR]), (x[OUTL], x[INR])]) => [:extT, :GT])
+            println(df)
+            for group in groupby(df, [:response, :type, :GT])
+                newsigma = (type = group[1, :type], extT = group[1, :extT], diagram = GWwithGivenExTtoΣ(group))
+                push!(compositeSigma, newsigma)
+            end
         end
     end
 
-    return diags
+    return mergeby(compositeSigma, [:type, :extT], name = name,
+        getid = g -> SigmaId(para, g[1, :type], k = extK, t = g[1, :extT]))
 
 end
