@@ -60,11 +60,11 @@ function buildVer4(para::GenericPara, legK, chan::Vector{TwoBodyChannel}, subdia
     #     push!(groups, Diagram(id, Sum(), g[:, :Diagram], name = diagName))
     # end
 
-    diags = mergeby(diags, [:response, :type, :extT], verbose = 0,
-        getid = g -> Ver4Id(para, g[1, :response], g[1, :type], k = legK, t = g[1, :extT]), #generate id from the dataframe
-        getname = g -> name == :none ? Symbol("$(g[1, :channel])") : name
+    df = toDataFrame(diags, verbose = 0)
+    groups = mergeby(df, [:response, :type, :extT], name = name,
+        getid = g -> Ver4Id(para, g.response[1], g.type[1], k = legK, t = g.extT[1]) #generate id from the dataframe
     )
-    return collect(values(diags))
+    return groups
 end
 
 function bubble(para::GenericPara, legK, chan::TwoBodyChannel, partition::Vector{Int}, level::Int, name::Symbol,
@@ -108,8 +108,8 @@ function bubble(para::GenericPara, legK, chan::TwoBodyChannel, partition::Vector
     LLegK, K, RLegK, Kx = legBasis(chan, legK, LoopIdx)
     # println(K, ", ", Kx)
 
-    Lver = buildVer4(lPara, LLegK, Γi, true; level = level + 1, name = :Γi)
-    Rver = buildVer4(rPara, RLegK, Γf, true; level = level + 1, name = :Γf)
+    Lver = buildVer4(lPara, LLegK, Γi, true; level = level + 1, name = :Γi).Diagram
+    Rver = buildVer4(rPara, RLegK, Γf, true; level = level + 1, name = :Γf).Diagram
 
     for ldiag in Lver
         for rdiag in Rver

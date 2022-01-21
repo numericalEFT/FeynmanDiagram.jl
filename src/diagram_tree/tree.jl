@@ -40,31 +40,33 @@ function addSubDiagram!(parent::Diagram, child::Vector{Diagram{W}}) where {W}
     end
 end
 
-_diagram(df, index) = df[index, :Diagram]
+# _diagram(df, index) = df[index, :Diagram]
 
-function mergeby(diags::Vector{Diagram{W}}, fields; verbose::Int = 0, operator = Sum(), factor = one(W),
-    getid::Function = g -> GenericId(_diagram(g, 1).id.para, g[1, fields]),
-    getname::Function = g -> :none
-) where {W}
+function mergeby(df::DataFrame, fields;
+    verbose::Int = 0, operator = Sum(), factor = one(df.Diagram[1].factor), name::Symbol = :none,
+    getid::Function = g -> GenericId(g.Diagram[1].id.para, fields),
+    kwargs...)
 
-    df = toDataFrame(diags, verbose = verbose)
-    if all(x -> x == df[1, :id], df[!, :id]) == false
+    # df = toDataFrame(diags, verbose = verbose)
+    if all(x -> typeof(x.id) == typeof(df.Diagram[1].id), df.Diagram) == false
         @warn "Not all DiagramIds in $diags are the same!"
     end
 
-    group = DataFrames.groupby(df, fields)
+    groups = DataFrames.groupby(df, fields)
 
-    d = Dict{Any,Diagram{W}}()
-
-    for g in group
-        key = g[1, fields]
-        if length(key) > 1
-            key = Tuple(key)
-        end
-        d[key] = Diagram(getid(g), operator, g[:, :Diagram], name = getname(g), factor = factor)
+    # return combine(groups, [:id, :Diagram] =>
+    #     ((id, diagrams) -> Diagram(getid(id[1]), operator, diagrams, name = name, factor = factor)) => :Diagram)
+    gdf = combine(groups) do g
+        (Diagram = Diagram(getid(g), operator, g[:, :Diagram], name = name, factor = factor),)
     end
-    return d
+    return gdf
 end
+function mergeby(diags::Vector{Diagram{W}}, fields; kwargs...) where {W}
+    df = toDataFrame(diags, verbose = kwargs[:verbose])
+    return mergeby(df, fields; kwargs...)
+end
+
+
 
 #####################  interface to AbstractTrees ########################### 
 function AbstractTrees.children(diag::Diagram)
