@@ -61,7 +61,7 @@ function mergeby(diags::Vector{Diagram{W}}, fields;
         if length(key) > 1
             key = Tuple(key)
         end
-        d[key] = Diagram(getId(g), operator, df[!, :Diagram], name = name, factor = factor)
+        d[key] = Diagram(getId(g), operator, g[:, :Diagram], name = name, factor = factor)
     end
     return d
 end

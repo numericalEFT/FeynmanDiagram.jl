@@ -41,6 +41,8 @@ df = toDataFrame(diags, verbose = 0)
 df = df[:, Not([:Diagram, :para, :channel])]
 println(groupby(df, :id))
 diags = mergeby(diags, :response)
+display(diags)
+# exit(0)
 
 # diag, nodes = Parquet.buildVer4(para, legK, [PHr, PHEr, PPr])
 # d = Parquet.groupby!(diag, nodes, :response)
@@ -50,7 +52,7 @@ diags = mergeby(diags, :response)
 for d in collect(values(diags))[1:1]
     println()
     print_tree(d)
-    # DiagTreeNew.plot_tree(d)
+    DiagTreeNew.plot_tree(d)
 end
 # DiagTreeNew.plot_tree(diags[1])
 exit(0)
