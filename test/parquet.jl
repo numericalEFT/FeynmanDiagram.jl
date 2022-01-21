@@ -302,7 +302,9 @@ end
 
         #################### DiagTree ####################################
         diags = Parquet.buildVer4(para, legK, chan)
-        diags = collect(values(mergeby(diags, :response)))
+        println(diags)
+        diags = mergeby(diags, :response)
+        println(diags)
         # DiagTreeNew.plot_tree(diags[1])
         # DiagTreeNew.plot_tree(diags[2])
 
@@ -314,7 +316,9 @@ end
 
             # w1 = DiagTree.evalNaive(diag, varK, varT, evalPropagator)
             evalDiagTree!(diags, eval, varK, varT)
-            w1 = [diags[1].weight, diags[2].weight]
+            duu = diags[diags.response.==UpUp, :Diagram][1]
+            dup = diags[diags.response.==UpDown, :Diagram][1]
+            w1 = [duu.weight, dup.weight]
             # println(w1)
 
             if timing
@@ -347,11 +351,11 @@ end
     end
 
     function testEval(type)
-        for l = 1:3
+        for l = 1:1
             testVertex4(l, [PHr,], type)
-            testVertex4(l, [PHEr,], type)
-            testVertex4(l, [PPr,], type)
-            testVertex4(l, [PHr, PHEr, PPr], type; timing = true)
+            # testVertex4(l, [PHEr,], type)
+            # testVertex4(l, [PPr,], type)
+            # testVertex4(l, [PHr, PHEr, PPr], type; timing = true)
         end
     end
 
