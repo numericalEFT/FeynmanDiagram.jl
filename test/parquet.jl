@@ -404,6 +404,7 @@ end
 
 
     function testDiagramNumber(para, diag, varK, varT)
+        plot_tree(diag)
         # w = DiagTree.evalNaive(diag, varK, varT, evalFakePropagator)
         w = evalDiagTree!(diag, evalFake, varK, varT)
         factor = (1 / (2π)^para.loopDim)^para.innerLoopNum
@@ -413,7 +414,7 @@ end
 
 
     ##################  G^2*v expansion #########################################
-    for l = 1:4
+    for l = 3:3
         # ret = getSigma(l, spin = 1, isFermi = false, filter = [Builder.Girreducible,])
         # testDiagramNumber(ret...)
         ret = getSigma(l, spin = 2, isFermi = false, filter = [Builder.Girreducible,])

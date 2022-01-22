@@ -29,11 +29,12 @@ function buildSigma(para, extK, subdiagram = false; name = :Σ)
         #type: Instant or Dynamic
         response, type = group[1, :response], group[1, :type]
         sid = SigmaId(para, type, k = extK, t = group[1, :extT])
-        g = buildG(paraG, K, group[1, :GT]; name = :Gfock) #there is only one G diagram for a extT
+        g = buildG(paraG, K, group[1, :GT]; name = oW == 0 ? :Gfock : :G_Σ) #there is only one G diagram for a extT
         @assert g isa Diagram
         # Sigma = G*(2 W↑↑ - W↑↓)
         # ! The sign of ↑↓ is from the spin symmetry, not from the fermionic statistics!
         spinfactor = (response == UpUp) ? 2 : -1
+        # spinfactor = (response == UpUp) ? 0 : 1
         if oW > 0 # oW are composte Sigma, there is a symmetry factor 1/2
             spinfactor *= 0.5
         end
@@ -64,7 +65,8 @@ function buildSigma(para, extK, subdiagram = false; name = :Σ)
                 ver4 = buildVer4(paraW0, legK, [], true)
                 # ver4 = bareVer4(paraW0, legK, [Di,])
             else # composite Σ
-                ver4 = buildVer4(paraW, legK, [PHr,], true, phi_toplevel = [], Γ4_toplevel = paraW.extra.Γ4)
+                # ver4 = buildVer4(paraW, legK, [PHr,], true, phi_toplevel = [], Γ4_toplevel = paraW.extra.Γ4)
+                ver4 = buildVer4(paraW, legK, [PHr,], true, phi_toplevel = [], Γ4_toplevel = [PHr,])
             end
 
             # df = toDataFrame(ver4, expand = true)
