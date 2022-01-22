@@ -51,39 +51,43 @@ function toDataFrame(diagVec::AbstractVector; expand::Bool = false, maxdepth::In
 end
 
 function _summary(diag::Diagram{W}, color = true) where {W}
-    function factor()
-        factor = diag.factor
-        if factor isa Number && factor ≈ one(W)
+
+    function short(factor, ignore = nothing)
+        if isnothing(ignore) == false && applicable(isapprox, factor, ignore) && factor ≈ ignore
             return ""
         end
-        fstr = "$(factor)"
+        str = "$(factor)"
         if factor isa Float64
-            return length(fstr) <= 4 ? fstr : @sprintf("%6.3e", factor)
+            return length(str) <= 4 ? str : @sprintf("%6.3e", factor)
+        elseif factor isa Vector{Float64}
+            return length(str) <= 4 ? str : reduce(*, [@sprintf("%6.3e", f) for f in factor])
         else
-            return fstr
+            return str
         end
     end
 
     namestr = diag.name == :none ? "" : "$(diag.name) "
     idstr = "$namestr$(diag.id)"
+    fstr = short(diag.factor, one(diag.factor))
+    wstr = short(diag.weight)
+    # =$(node.weight*(2π)^(3*node.id.para.innerLoopNum))
 
     if length(diag.subdiagram) == 0
-        f = factor()
-        return isempty(f) ? "$idstr " : "$idstr, $f⋅"
+        return isempty(fstr) ? "$idstr=$wstr" : "$(idstr)⋅$(fstr)=$wstr"
     else
-        return "$idstr=$(factor())$(diag.operator) "
+        return "$idstr=$wstr=$fstr$(diag.operator) "
     end
 end
 
 function Base.show(io::IO, diag::Diagram)
     if length(diag.subdiagram) == 0
-        typestr = "bare"
+        typestr = ""
     else
         subdiag = prod(["$(d.hash), " for d in diag.subdiagram[1:end-1]])
         subdiag *= "$(diag.subdiagram[end].hash)"
         typestr = "($subdiag)"
     end
-    print(io, "$(_summary(diag, true))$typestr = $(diag.weight)")
+    print(io, "$(_summary(diag, true))$typestr")
 end
 
 """
@@ -97,13 +101,16 @@ end
 - `verbose=0`: the amount of information to show
 - `depth=999`: deepest level of the diagram tree to show
 """
-function plot_tree(diag::Diagram; verbose = 0, maxdepth = 999)
+function plot_tree(diag::Diagram; verbose = 0, maxdepth = 4)
 
     # pushfirst!(PyVector(pyimport("sys")."path"), @__DIR__) #comment this line if no need to load local python module
     ete = PyCall.pyimport("ete3")
 
     function treeview(node, level, t = ete.Tree(name = " "))
-        nt = t.add_child(name = "$(node.hash): $(_summary(node, false))=$(node.weight*(2π)^(3*node.id.para.innerLoopNum))")
+        if level > maxdepth
+            return
+        end
+        nt = t.add_child(name = "$(node.hash): $(_summary(node, false))")
 
         if length(node.subdiagram) > 0
             name_face = ete.TextFace(nt.name, fgcolor = "black", fsize = 10)
@@ -135,4 +142,12 @@ function plot_tree(diag::Diagram; verbose = 0, maxdepth = 999)
     # ts.arc_span = 180
     # t.write(outfile="/home/kun/test.txt", format=8)
     t.show(tree_style = ts)
+end
+function plot_tree(diags::Vector{Diagram{W}}; kwargs...) where {W}
+    for diag in diags
+        plot_tree(diag; kwargs...)
+    end
+end
+function plot_tree(df::DataFrame; kwargs...)
+    plot_tree(df.diagram; kwargs...)
 end

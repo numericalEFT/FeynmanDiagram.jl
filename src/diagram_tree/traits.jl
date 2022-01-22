@@ -63,7 +63,7 @@ struct SigmaId <: DiagramId
         return new(para, type, k, t)
     end
 end
-Base.show(io::IO, v::SigmaId) = print(io, "$(short(v.type)), k$(v.extK), t$(v.extT)")
+Base.show(io::IO, v::SigmaId) = print(io, "$(short(v.type)), t$(v.extT)")
 
 struct PolarId <: DiagramId
     para::GenericPara

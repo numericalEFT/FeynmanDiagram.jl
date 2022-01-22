@@ -406,10 +406,10 @@ end
     function testDiagramNumber(para, diag, varK, varT)
         # w = DiagTree.evalNaive(diag, varK, varT, evalFakePropagator)
         w = evalDiagTree!(diag, evalFake, varK, varT)
-        # plot_tree(diag)
+        plot_tree(diag, maxdepth = 7)
         factor = (1 / (2π)^para.loopDim)^para.innerLoopNum
         num = w / factor
-        @test num[1] ≈ sigma_G2v(para.innerLoopNum, para.spin)
+        @test num ≈ sigma_G2v(para.innerLoopNum, para.spin)
     end
 
 

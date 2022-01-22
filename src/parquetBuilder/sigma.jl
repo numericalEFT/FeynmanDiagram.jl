@@ -38,7 +38,10 @@ function buildSigma(para, extK, subdiagram = false; name = :Σ)
         if oW > 0 # oW are composte Sigma, there is a symmetry factor 1/2
             spinfactor *= 0.5
         end
-        return Diagram(sid, Prod(), [g, group[1, :diagram]], factor = spinfactor, name = name)
+        # plot_tree(mergeby(DataFrame(group)), maxdepth = 7)
+        sigmadiag = Diagram(sid, Prod(), [g, group[1, :diagram]], factor = spinfactor, name = name)
+        plot_tree(sigmadiag, maxdepth = 7)
+        return sigmadiag
     end
 
     compositeSigma = DataFrame()
@@ -67,6 +70,7 @@ function buildSigma(para, extK, subdiagram = false; name = :Σ)
             else # composite Σ
                 # ver4 = buildVer4(paraW, legK, [PHr,], true, phi_toplevel = [], Γ4_toplevel = paraW.extra.Γ4)
                 ver4 = buildVer4(paraW, legK, [PHr,], true, phi_toplevel = [], Γ4_toplevel = [PHr, PHEr, PPr,])
+                plot_tree(mergeby(ver4).diagram[1])
             end
 
             # df = toDataFrame(ver4, expand = true)
@@ -74,6 +78,7 @@ function buildSigma(para, extK, subdiagram = false; name = :Σ)
             #transform extT coloum intwo extT for Σ and extT for G
             df = transform(ver4, :extT => ByRow(x -> [(x[INL], x[OUTR]), (x[OUTL], x[INR])]) => [:extT, :GT])
             # println(df[:, [:extT, :GT, :response, :type, :id]])
+            # println(df)
             for group in groupby(df, [:response, :type, :GT])
                 newsigma = (type = group[1, :type], extT = group[1, :extT], diagram = GWwithGivenExTtoΣ(group, oW, paraG))
                 push!(compositeSigma, newsigma)
@@ -82,7 +87,7 @@ function buildSigma(para, extK, subdiagram = false; name = :Σ)
     end
 
     Factor = 1 / (2π)^para.loopDim
-    return mergeby(compositeSigma, [:type, :extT], name = name, factor = Factor,
+    sigmadf = mergeby(compositeSigma, [:type, :extT], name = name, factor = Factor,
         getid = g -> SigmaId(para, g[1, :type], k = extK, t = g[1, :extT]))
-
+    return sigmadf
 end
