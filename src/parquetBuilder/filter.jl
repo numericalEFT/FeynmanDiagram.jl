@@ -60,3 +60,17 @@ function isValidSigma(filter, innerLoopNum::Int, subdiagram::Bool)
 
     return true
 end
+
+function isValidPolarization(filter, innerLoopNum::Int, subdiagram::Bool)
+    @assert innerLoopNum >= 0
+    if innerLoopNum == 0
+        return false
+    end
+    if subdiagram && (Wirreducible in filter)
+        return false
+    end
+    if subdiagram && (NoBubble in filer) && innerLoopNum == 1
+        return false
+    end
+    return true
+end

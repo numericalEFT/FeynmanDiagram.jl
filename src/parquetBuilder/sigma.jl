@@ -6,7 +6,8 @@
 
 """
 function buildSigma(para, extK, subdiagram = false; name = :Σ)
-    subdiagram == false && uidreset()
+    (subdiagram == false) && uidreset()
+    @assert para.diagType == SigmaDiag
     @assert para.innerLoopNum >= 1
     @assert length(extK) == para.totalLoopNum
     tright = para.firstTauIdx - 1 + para.innerLoopNum * para.interactionTauNum
@@ -15,6 +16,11 @@ function buildSigma(para, extK, subdiagram = false; name = :Σ)
 
     if isValidSigma(para.filter, para.innerLoopNum, subdiagram) == false
         return nothing
+    end
+
+    if (para.extra isa ParquetBlocks) == false
+        parquetblocks = ParquetBlocks(phi = [PPr, PHEr], ppi = [PHr, PHEr], Γ4 = [PPr, PHr, PHEr])
+        para = reconstruct(para, extra = parquetblocks)
     end
 
     K = zero(extK)

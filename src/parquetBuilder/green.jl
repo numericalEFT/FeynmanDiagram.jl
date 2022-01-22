@@ -8,6 +8,7 @@
 
 """
 function buildG(para, extK, extT, subdiagram = false; name = :none)
+    @assert para.diagType == GreenDiag
     tin, tout = extT[1], extT[2]
     extT = [tin, tout]
     innerTauNum = para.innerLoopNum * para.interactionTauNum
