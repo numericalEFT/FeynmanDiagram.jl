@@ -24,12 +24,14 @@ function buildSigma(para, extK, subdiagram = false; name = :Σ)
     legK = [extK, K, K, extK]
 
     function GWwithGivenExTtoΣ(group, oW, paraG)
-        allsame(group, [:response, :type, :GT])
-        @assert all(x -> x == UpUp || x == UpDown, group[:, :response])
+        # println(group)
+        # @assert length(group[:, :diagram]) == 1
+        # allsame(group, [:response, :type, :GT])
+        @assert group[:response] == UpUp || group[:response] == UpDown
         #type: Instant or Dynamic
-        response, type = group[1, :response], group[1, :type]
-        sid = SigmaId(para, type, k = extK, t = group[1, :extT])
-        g = buildG(paraG, K, group[1, :GT]; name = oW == 0 ? :Gfock : :G_Σ) #there is only one G diagram for a extT
+        response, type = group[:response], group[:type]
+        sid = SigmaId(para, type, k = extK, t = group[:extT])
+        g = buildG(paraG, K, group[:GT]; name = oW == 0 ? :Gfock : :G_Σ) #there is only one G diagram for a extT
         @assert g isa Diagram
         # Sigma = G*(2 W↑↑ - W↑↓)
         # ! The sign of ↑↓ is from the spin symmetry, not from the fermionic statistics!
@@ -39,9 +41,9 @@ function buildSigma(para, extK, subdiagram = false; name = :Σ)
             spinfactor *= 0.5
         end
         # plot_tree(mergeby(DataFrame(group)), maxdepth = 7)
-        sigmadiag = Diagram(sid, Prod(), [g, group[1, :diagram]], factor = spinfactor, name = name)
-        plot_tree(sigmadiag, maxdepth = 7)
-        return sigmadiag
+        sigmadiag = Diagram(sid, Prod(), [g, group[:diagram]], factor = spinfactor, name = name)
+        # plot_tree(sigmadiag, maxdepth = 7)
+        return (type = type, extT = group[:extT], diagram = sigmadiag)
     end
 
     compositeSigma = DataFrame()
@@ -66,22 +68,16 @@ function buildSigma(para, extK, subdiagram = false; name = :Σ)
             if oW == 0 # Fock-type Σ
                 paraW0 = reconstruct(paraW, filter = union(paraW.filter, Proper), transferLoop = zero(K))
                 ver4 = buildVer4(paraW0, legK, [], true)
-                # ver4 = bareVer4(paraW0, legK, [Di,])
             else # composite Σ
-                # ver4 = buildVer4(paraW, legK, [PHr,], true, phi_toplevel = [], Γ4_toplevel = paraW.extra.Γ4)
                 ver4 = buildVer4(paraW, legK, [PHr,], true, phi_toplevel = [], Γ4_toplevel = [PHr, PHEr, PPr,])
-                plot_tree(mergeby(ver4).diagram[1])
+                # plot_tree(mergeby(ver4).diagram[1])
             end
-
-            # df = toDataFrame(ver4, expand = true)
-            # allsametype(df, :id)
             #transform extT coloum intwo extT for Σ and extT for G
             df = transform(ver4, :extT => ByRow(x -> [(x[INL], x[OUTR]), (x[OUTL], x[INR])]) => [:extT, :GT])
-            # println(df[:, [:extT, :GT, :response, :type, :id]])
-            # println(df)
-            for group in groupby(df, [:response, :type, :GT])
-                newsigma = (type = group[1, :type], extT = group[1, :extT], diagram = GWwithGivenExTtoΣ(group, oW, paraG))
-                push!(compositeSigma, newsigma)
+
+            groups = mergeby(df, [:response, :type, :GT, :extT], operator = Sum())
+            for mergedVer4 in eachrow(groups)
+                push!(compositeSigma, GWwithGivenExTtoΣ(mergedVer4, oW, paraG))
             end
         end
     end

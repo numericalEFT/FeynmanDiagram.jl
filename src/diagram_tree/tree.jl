@@ -44,7 +44,7 @@ isbare(diag::Diagram) = isempty(diag.subdiagram)
 
 function mergeby(df::DataFrame, fields = [];
     operator = Sum(), name::Symbol = :none, factor = one(df[1, :diagram].factor),
-    getid::Function = g -> GenericId(g[1, :diagram].id.para, g[1, fields])
+    getid::Function = g -> GenericId(g[1, :diagram].id.para, Tuple(g[1, fields]))
 )
 
     # df = toDataFrame(diags, verbose = verbose)
@@ -57,7 +57,8 @@ function mergeby(df::DataFrame, fields = [];
     # combine diagrams in a group into one composite diagram
     gdf = combine(groups) do group # for each group in groups
         # check the documentation of ``combine" for details https://dataframes.juliadata.org/stable/man/split_apply_combine/
-        (diagram = Diagram(getid(group), operator, group[:, :diagram], name = name, factor = factor),)
+        diag = Diagram(getid(group), operator, group[:, :diagram], name = name, factor = factor)
+        (diagram = diag, hash = diag.hash)
     end
     return gdf
 end
