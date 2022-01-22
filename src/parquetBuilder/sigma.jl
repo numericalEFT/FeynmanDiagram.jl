@@ -20,9 +20,10 @@ function buildSigma(para, extK, subdiagram = false; name = :Σ)
     K = zero(extK)
     LoopIdx = para.firstLoopIdx
     K[LoopIdx] = 1.0
+    @assert (K ≈ extK) == false
     legK = [extK, K, K, extK]
 
-    function GWwithGivenExTtoΣ(group, paraG)
+    function GWwithGivenExTtoΣ(group, oW, paraG)
         allsame(group, [:response, :type, :GT])
         @assert all(x -> x == UpUp || x == UpDown, group[:, :response])
         #type: Instant or Dynamic
@@ -31,7 +32,11 @@ function buildSigma(para, extK, subdiagram = false; name = :Σ)
         g = buildG(paraG, K, group[1, :GT]; name = :Gfock) #there is only one G diagram for a extT
         @assert g isa Diagram
         # Sigma = G*(2 W↑↑ - W↑↓)
+        # ! The sign of ↑↓ is from the spin symmetry, not from the fermionic statistics!
         spinfactor = (response == UpUp) ? 2 : -1
+        if oW > 0 # oW are composte Sigma, there is a symmetry factor 1/2
+            spinfactor *= 0.5
+        end
         return Diagram(sid, Prod(), [g, group[1, :diagram]], factor = spinfactor, name = name)
     end
 
@@ -55,18 +60,20 @@ function buildSigma(para, extK, subdiagram = false; name = :Σ)
         #TODO: add validation for paraW
         if isValidG(paraG)
             if oW == 0 # Fock-type Σ
-                ver4 = bareVer4(paraW, legK, [Di,])
+                paraW0 = reconstruct(paraW, filter = union(paraW.filter, Proper), transferLoop = zero(K))
+                ver4 = buildVer4(paraW0, legK, [], true)
+                # ver4 = bareVer4(paraW0, legK, [Di,])
             else # composite Σ
-                ver4 = buildVer4(paraW, [PHr,], true, phi_toplevel = [], Γ4_toplevel = paraW.extra.Γ4)
+                ver4 = buildVer4(paraW, legK, [PHr,], true, phi_toplevel = [], Γ4_toplevel = paraW.extra.Γ4)
             end
 
-            df = toDataFrame(ver4, expand = true)
-            allsametype(df, :id)
+            # df = toDataFrame(ver4, expand = true)
+            # allsametype(df, :id)
             #transform extT coloum intwo extT for Σ and extT for G
-            df = transform(df, :extT => ByRow(x -> [(x[INL], x[OUTR]), (x[OUTL], x[INR])]) => [:extT, :GT])
-            println(df[:, [:extT, :GT, :response, :type, :id]])
+            df = transform(ver4, :extT => ByRow(x -> [(x[INL], x[OUTR]), (x[OUTL], x[INR])]) => [:extT, :GT])
+            # println(df[:, [:extT, :GT, :response, :type, :id]])
             for group in groupby(df, [:response, :type, :GT])
-                newsigma = (type = group[1, :type], extT = group[1, :extT], diagram = GWwithGivenExTtoΣ(group, paraG))
+                newsigma = (type = group[1, :type], extT = group[1, :extT], diagram = GWwithGivenExTtoΣ(group, oW, paraG))
                 push!(compositeSigma, newsigma)
             end
         end

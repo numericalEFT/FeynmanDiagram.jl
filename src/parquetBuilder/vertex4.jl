@@ -1,4 +1,4 @@
-function buildVer4(para::GenericPara, legK, chan::Vector{TwoBodyChannel}, subdiagram = false; level = 1,
+function buildVer4(para::GenericPara, legK, chan::AbstractVector, subdiagram = false; level = 1,
     phi_toplevel = para.extra.phi, ppi_toplevel = para.extra.ppi, Γ4_toplevel = para.extra.Γ4, name = :none)
 
     subdiagram == false && uidreset()
@@ -51,6 +51,11 @@ function buildVer4(para::GenericPara, legK, chan::Vector{TwoBodyChannel}, subdia
     @assert all(x -> x.id isa Ver4Id, diags) "not all id are Ver4Id! $diags"
     @assert all(x -> x.id.extK ≈ legK, diags) "not all extK are the same! $diags"
 
+    # @assert isempty(diags) == false "got empty ver4! $chan with\n $para\n"
+    if isempty(diags)
+        return nothing
+    end
+
     df = toDataFrame(diags, expand = true)
     # println(df[:, [:response, :type, :extT, :diagram]])
     groups = mergeby(df, [:response, :type, :extT], name = name,
@@ -100,11 +105,13 @@ function bubble(para::GenericPara, legK, chan::TwoBodyChannel, partition::Vector
     LLegK, K, RLegK, Kx = legBasis(chan, legK, LoopIdx)
     # println(K, ", ", Kx)
 
-    Lver = buildVer4(lPara, LLegK, Γi, true; level = level + 1, name = :Γi).diagram
-    Rver = buildVer4(rPara, RLegK, Γf, true; level = level + 1, name = :Γf).diagram
+    Lver = buildVer4(lPara, LLegK, Γi, true; level = level + 1, name = :Γi)
+    isnothing(Lver) && return diag
+    Rver = buildVer4(rPara, RLegK, Γf, true; level = level + 1, name = :Γf)
+    isnothing(Rver) && return diag
 
-    for ldiag in Lver
-        for rdiag in Rver
+    for ldiag in Lver.diagram
+        for rdiag in Rver.diagram
             extT, G0T, GxT = tauBasis(chan, ldiag.id.extT, rdiag.id.extT)
             # diag, g0 = buildG(bubble.g0, K, (LvT[OUTR], RvT[INL]); diag = diag)
             # diag, gc = buildG(bubble.gx, Kx, (RvT[OUTL], LvT[INR]); diag = diag)
@@ -148,10 +155,13 @@ function bubble2diag(para, chan, ldiag, rdiag, extK, g0, gx)
         add(UpUp, UpUp, UpDown, 1.0)
         add(UpDown, UpDown, UpUp, 1.0)
         add(UpDown, UpDown, UpDown, 1.0)
+        #! the sign here is from the spin symmetry, not from the fermionic statistics
         add(UpUp, UpDown, UpDown, -1.0)
+        #! the sign here is from the spin symmetry, not from the fermionic statistics
         add(UpDown, UpUp, UpDown, -1.0)
     elseif chan == PPr
         add(UpUp, UpUp, UpUp, 1.0)
+        #! the sign here is from the spin symmetry, not from the fermionic statistics
         add(UpDown, UpDown, UpDown, -2.0)
         add(UpUp, UpDown, UpDown, 1.0)
         add(UpDown, UpUp, UpDown, 1.0)
