@@ -66,7 +66,7 @@ function buildSigma(para, extK, subdiagram = false; name = :Σ)
                 # ver4 = bareVer4(paraW0, legK, [Di,])
             else # composite Σ
                 # ver4 = buildVer4(paraW, legK, [PHr,], true, phi_toplevel = [], Γ4_toplevel = paraW.extra.Γ4)
-                ver4 = buildVer4(paraW, legK, [PHr,], true, phi_toplevel = [], Γ4_toplevel = [PHr,])
+                ver4 = buildVer4(paraW, legK, [PHr,], true, phi_toplevel = [], Γ4_toplevel = [PHr, PHEr, PPr,])
             end
 
             # df = toDataFrame(ver4, expand = true)
