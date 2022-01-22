@@ -303,7 +303,6 @@ end
         #################### DiagTree ####################################
         diags = Parquet.buildVer4(para, legK, chan)
         diags = mergeby(diags, :response)
-        # println(diags)
         # DiagTreeNew.plot_tree(diags[1])
         # DiagTreeNew.plot_tree(diags[2])
 
@@ -367,72 +366,64 @@ end
     # end
 end
 
-# @testset "Parquet Sigma" begin
-#     function getSigma(loopNum; Kdim = 3, spin = 2, interactionTauNum = 1, filter = [], isFermi = true, subdiagram = false)
-#         println("LoopNum =$loopNum Sigma Test")
+@testset "Parquet Sigma" begin
+    Parquet = ParquetNew
+    function getSigma(loopNum; Kdim = 3, spin = 2, interactionTauNum = 1, filter = [], isFermi = true, subdiagram = false)
+        println("LoopNum =$loopNum Sigma Test")
 
-#         para = Builder.GenericPara(
-#             loopDim = Kdim,
-#             # interactionTauNum = interactionTauNum,
-#             hasTau = true,
-#             innerLoopNum = loopNum,
-#             totalLoopNum = loopNum + 1,
-#             totalTauNum = loopNum * interactionTauNum,
-#             isFermi = isFermi,
-#             spin = spin,
-#             weightType = Float64,
-#             firstLoopIdx = 2,
-#             firstTauIdx = 1,
-#             filter = filter,
-#             interaction = [Builder.Interaction(Builder.ChargeCharge, Builder.Instant),]
-#         )
+        para = GenericPara(
+            diagType = SigmaDiag,
+            loopDim = Kdim,
+            hasTau = true,
+            innerLoopNum = loopNum,
+            totalLoopNum = loopNum + 1,
+            totalTauNum = loopNum * interactionTauNum,
+            isFermi = isFermi,
+            spin = spin,
+            weightType = Float64,
+            firstLoopIdx = 2,
+            firstTauIdx = 1,
+            filter = filter,
+            interaction = [Interaction(ChargeCharge, Instant),],
+            extra = ParquetBlocks(phi = [PHEr, PPr], ppi = [PHr, PHEr])
+        )
 
-#         extK = zeros(para.totalLoopNum)
-#         extK[1] = 1.0
+        extK = zeros(para.totalLoopNum)
+        extK[1] = 1.0
 
-#         Parquet = Builder.Parquet
+        varK = rand(Kdim, para.totalLoopNum)
+        varT = [rand() for i in 1:para.totalTauNum]
 
-#         varK = rand(Kdim, para.totalLoopNum)
-#         varT = [rand() for i in 1:para.totalTauNum]
+        #################### DiagTree ####################################
+        diag = Parquet.buildSigma(para, extK, subdiagram)
+        diag = mergeby(diag)
+        # print_tree(diag.diagram[1])
 
-#         #################### DiagTree ####################################
-#         diag, instant, dynamic = Parquet.buildSigma(para, extK, subdiagram)
-#         # the weighttype of the returned ver4 is Float64
-#         sumRoot = DiagTree.addnode!(diag, DiagTree.ADD, :sum, vcat(instant, dynamic); para = [0, 0])
-#         if sumRoot.index != 0
-#             push!(diag.root, sumRoot.index)
-#         end
-
-#         return para, diag, varK, varT
-#     end
+        return para, diag.diagram[1], varK, varT
+    end
 
 
-#     function testDiagramNumber(para, diag, varK, varT)
-#         w = DiagTree.evalNaive(diag, varK, varT, evalFakePropagator)
-#         factor = (1 / (2π)^para.loopDim)^para.innerLoopNum
-#         num = w / factor
-#         @test num[1] ≈ sigma_G2v(para.innerLoopNum, para.spin)
-#     end
+    function testDiagramNumber(para, diag, varK, varT)
+        # w = DiagTree.evalNaive(diag, varK, varT, evalFakePropagator)
+        w = evalDiagTree!(diag, evalFake, varK, varT)
+        factor = (1 / (2π)^para.loopDim)^para.innerLoopNum
+        num = w / factor
+        @test num[1] ≈ sigma_G2v(para.innerLoopNum, para.spin)
+    end
 
 
-#     Parquet = Builder.Parquet
+    ##################  G^2*v expansion #########################################
+    for l = 1:4
+        # ret = getSigma(l, spin = 1, isFermi = false, filter = [Builder.Girreducible,])
+        # testDiagramNumber(ret...)
+        ret = getSigma(l, spin = 2, isFermi = false, filter = [Builder.Girreducible,])
+        testDiagramNumber(ret...)
+    end
 
-#     ##################  G^2*v expansion #########################################
-#     for l = 1:4
-#         ret = getSigma(l, spin = 1, isFermi = false, filter = [Builder.Girreducible,])
-#         testDiagramNumber(ret...)
-#         ret = getSigma(l, spin = 2, isFermi = false, filter = [Builder.Girreducible,])
-#         testDiagramNumber(ret...)
-#     end
-#     # para, diag, _, _ = getSigma(3, spin = 2, isFermi = false, filter = [])
-#     # for r in diag.root
-#     #     DiagTree.showTree(diag, r)
-#     # end
+    # para, diag, varK, varT = getSigma(1, spin = 2, isFermi = false, filter = [Builder.NoFock,], subdiagram = true)
+    # @test isempty(diag.root)
 
-#     para, diag, varK, varT = getSigma(1, spin = 2, isFermi = false, filter = [Builder.NoFock,], subdiagram = true)
-#     @test isempty(diag.root)
-
-# end
+end
 
 # @testset "Green" begin
 #     Parquet = Builder.Parquet

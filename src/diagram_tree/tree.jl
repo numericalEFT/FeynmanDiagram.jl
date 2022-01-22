@@ -42,7 +42,7 @@ end
 
 # _diagram(df, index) = df[index, :Diagram]
 
-function mergeby(df::DataFrame, fields;
+function mergeby(df::DataFrame, fields = [];
     operator = Sum(), name::Symbol = :none, factor = one(df[1, :diagram].factor),
     getid::Function = g -> GenericId(g[1, :diagram].id.para, g[1, fields])
 )
@@ -59,13 +59,15 @@ function mergeby(df::DataFrame, fields;
         # check the documentation of ``combine" for details https://dataframes.juliadata.org/stable/man/split_apply_combine/
         (diagram = Diagram(getid(group), operator, group[:, :diagram], name = name, factor = factor),)
     end
-
     return gdf
 end
-function mergeby(diags::Vector{Diagram{W}}, fields; expand::Bool = false, kwargs...) where {W}
+
+function mergeby(diags::Vector{Diagram{W}}, fields = []; expand::Bool = false, kwargs...) where {W}
     df = toDataFrame(diags, expand = expand)
     return mergeby(df, fields; kwargs...)
 end
+# mergeby(df::DataFrame; kwargs...) = mergeby(df, []; kwargs...)
+# mergeby(diags::Vector{Diagram{W}}; kwargs...) where {W} = mergeby(diags, []; kwargs...)
 
 
 
