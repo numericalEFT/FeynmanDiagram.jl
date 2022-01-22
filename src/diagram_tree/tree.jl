@@ -13,32 +13,32 @@ mutable struct Diagram{W}
 
     function Diagram(id::DiagramId, operator::Operator = Sum(), subdiagram = []; type::DataType = id.para.weightType,
         name = :none, factor = one(type), weight = zero(type))
-        return new{type}(uid(), name, id, operator, factor, subdiagram, weight)
+        return new{type}(uid(), name, id, operator, factor, deepcopy(subdiagram), weight)
     end
 
     #constructor for DiagramId without a field of GenericPara
     function Diagram{W}(id::DiagramId, operator::Operator = Sum(), subdiagram = [];
         name = :none, factor = W(1), weight = W(0)) where {W}
-        return new{W}(uid(), name, id, operator, factor, subdiagram, weight)
+        return new{W}(uid(), name, id, operator, factor, deepcopy(subdiagram), weight)
     end
 end
 
 isbare(diag::Diagram) = isempty(diag.subdiagram)
 
-function addSubDiagram!(parent::Diagram, child::Diagram)
-    for c in parent.subdiagram
-        if c.id == child.id
-            return false
-        end
-    end
-    push!(parent.subdiagram, child)
-end
+# function addSubDiagram!(parent::Diagram, child::Diagram)
+#     for c in parent.subdiagram
+#         if c.id == child.id
+#             return false
+#         end
+#     end
+#     push!(parent.subdiagram, deepcopy(child))
+# end
 
-function addSubDiagram!(parent::Diagram, child::Vector{Diagram{W}}) where {W}
-    for d in child
-        addSubDiagram!(parent, d)
-    end
-end
+# function addSubDiagram!(parent::Diagram, child::Vector{Diagram{W}}) where {W}
+#     for d in child
+#         addSubDiagram!(parent, d)
+#     end
+# end
 
 # _diagram(df, index) = df[index, :Diagram]
 
