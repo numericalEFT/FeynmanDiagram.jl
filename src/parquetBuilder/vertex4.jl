@@ -1,7 +1,7 @@
 function buildVer4(para::GenericPara, legK, chan::AbstractVector, subdiagram = false; level = 1,
     phi_toplevel = para.extra.phi, ppi_toplevel = para.extra.ppi, Γ4_toplevel = para.extra.Γ4, name = :none)
 
-    subdiagram == false && uidreset()
+    (subdiagram == false) && uidreset()
 
     @assert para.extra isa ParquetBlocks
     @assert para.totalTauNum >= maxVer4TauIdx(para) "Increase totalTauNum!\n$para"

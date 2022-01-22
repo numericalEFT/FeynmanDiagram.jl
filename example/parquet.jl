@@ -5,14 +5,8 @@ using StaticArrays
 using DataFrames
 const Weight = SVector{2,Float64}
 
-# Parquet = Builder.Parquet
 Parquet = ParquetNew
-
-# chan = [Parquet.U,]
-
-# F = [Parquet.U, Parquet.S]
-# V = [Parquet.T, Parquet.U]
-# Γ4 = union(F, V)
+blocks = ParquetBlocks(phi = [PPr, PHEr], ppi = [PHr, PHEr], Γ4 = [PPr, PHr, PHEr])
 
 ###################### ver4 to DiagTree ###########################################
 para = GenericPara(
@@ -21,8 +15,7 @@ para = GenericPara(
     hasTau = true,
     filter = [Builder.NoFock,],
     interaction = [Interaction(ChargeCharge, Instant), Interaction(UpUp, Instant),],
-    extra = ParquetBlocks(phi = [PPr, PHEr], ppi = [PHr, PHEr], Γ4 = [PPr, PHr, PHEr])
-    # interaction = [Interaction(UpUp, Instant), Interaction(UpDown, Instant),]
+    extra = blocks
 )
 
 K0 = zeros(para.totalLoopNum)
@@ -54,7 +47,6 @@ display(diags)
 # exit(0)
 
 ######################################## self-energy  ################################################
-
 para = GenericPara(
     diagType = SigmaDiag,
     innerLoopNum = 1,
@@ -63,32 +55,25 @@ para = GenericPara(
     interaction = [Interaction(ChargeCharge, [Instant, Dynamic]), Interaction(UpDown, [Instant, Dynamic])]
 )
 
-# para = Builder.GenericPara(
-#     loopDim = 3,
-#     innerLoopNum = 2,
-#     totalLoopNum = 4,
-#     totalTauNum = 3,
-#     spin = 2,
-#     # interactionTauNum = 1,
-#     firstLoopIdx = 2,
-#     firstTauIdx = 1,
-#     # weightType = Float64,
-#     hasTau = true,
-#     filter = [Builder.NoHatree,]
-# )
-
 K0 = zeros(para.totalLoopNum)
 K0[1] = 1.0
 sigma = Parquet.buildSigma(para, K0)
 println("sigma, ", sigma)
-for d in sigma.diagram
-    plot_tree(d)
-end
-# println(root)
-# rootidx = DiagTree.addnode!(sigma, DiagTree.ADD, :sum, vcat(instant, dynamic); para = [0, 0])
-# DiagTree.showTree(sigma, rootidx)
+# plot_tree(sigma)
 
+#####################################  polarization  ############################################
+para = GenericPara(
+    diagType = PolarDiag,
+    innerLoopNum = 1,
+    hasTau = true,
+    filter = [Builder.NoFock,],
+    interaction = [Interaction(ChargeCharge, [Instant, Dynamic]), Interaction(UpDown, [Instant, Dynamic])]
+)
 
+K0 = zeros(para.totalLoopNum)
+K0[1] = 1.0
+polar = Parquet.buildPolarization(para, K0)
+plot_tree(polar)
 exit(0)
 
 ##################################### vertex 3   #################################################

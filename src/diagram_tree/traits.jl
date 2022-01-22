@@ -69,7 +69,7 @@ struct PolarId <: DiagramId
     para::GenericPara
     response::Response #ChargeCharge, SpinSpin, ...
     extK::Vector{Float64}
-    extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
+    extT::Tuple{Int,Int} #all possible extT from different interactionType
     function PolarId(para::GenericPara, response::Response; k, t = (0, 0))
         return new(para, response, k, t)
     end
