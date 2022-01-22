@@ -107,6 +107,7 @@ function bubble(para::GenericPara, legK, chan::TwoBodyChannel, partition::Vector
 
     Lver = buildVer4(lPara, LLegK, Γi, true; level = level + 1, name = :Γi)
     isnothing(Lver) && return diag
+    println("Γf: ", Γf)
     Rver = buildVer4(rPara, RLegK, Γf, true; level = level + 1, name = :Γf)
     isnothing(Rver) && return diag
 

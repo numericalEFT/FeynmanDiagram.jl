@@ -103,7 +103,7 @@ function plot_tree(diag::Diagram; verbose = 0, maxdepth = 999)
     ete = PyCall.pyimport("ete3")
 
     function treeview(node, level, t = ete.Tree(name = " "))
-        nt = t.add_child(name = "$(node.hash): " * _summary(node, false))
+        nt = t.add_child(name = "$(node.hash): $(_summary(node, false))=$(node.weight*(2π)^(3*node.id.para.innerLoopNum))")
 
         if length(node.subdiagram) > 0
             name_face = ete.TextFace(nt.name, fgcolor = "black", fsize = 10)
