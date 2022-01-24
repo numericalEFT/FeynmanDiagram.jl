@@ -99,7 +99,8 @@ function polarization(para, extK, subdiagram = false; name = :Π)
     # end
 
     # legK = [extK, K, K, extK]
-    polar = mergeby(polar, [:response,]; name = name,
+    Factor = 1 / (2π)^para.loopDim
+    polar = mergeby(polar, [:response,]; name = name, factor = Factor,
         getid = g -> PolarId(para, g[1, :response], k = extK, t = extT)
     )
     return polar
