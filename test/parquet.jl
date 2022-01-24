@@ -1,18 +1,16 @@
 @testset "Partition" begin
-    p = Builder.Parquet.orderedPartition(5, 2)
+    p = Parquet.orderedPartition(5, 2)
     expect = [[4, 1], [1, 4], [2, 3], [3, 2]]
     @test Set(p) == Set(expect)
 
-    p = Builder.Parquet.orderedPartition(3, 2, 0)
+    p = Parquet.orderedPartition(3, 2, 0)
     expect = [[3, 0], [0, 3], [1, 2], [2, 1]]
     @test Set(p) == Set(expect)
 end
 
 @testset "FindFirstIdx" begin
-    # p = Builder.Parquet.orderedPartition(5, 4, 0)
-
     function testLoopIdx(partition, firstidx, expected)
-        firstLoopIdx, total = Builder.Parquet.findFirstLoopIdx(partition, firstidx)
+        firstLoopIdx, total = Parquet.findFirstLoopIdx(partition, firstidx)
         @test firstLoopIdx == expected
         totalExp = sum(partition) + firstidx - 1
         @test total == totalExp
@@ -24,12 +22,12 @@ end
     testLoopIdx([1,], 1, [1,])
 
     function testTauIdx(partition, isG, firstidx, tauNum, expected)
-        firstIdx, total = Builder.Parquet.findFirstTauIdx(partition, isG, firstidx, tauNum)
+        firstIdx, total = Parquet.findFirstTauIdx(partition, isG, firstidx, tauNum)
         @test firstIdx == expected
     end
     tauNum = 1
     # isG = [false, true, false, true]
-    isG = [Builder.Ver4Diag, Builder.GreenDiag, Builder.Ver4Diag, Builder.GreenDiag]
+    isG = [Ver4Diag, GreenDiag, Ver4Diag, GreenDiag]
     testTauIdx([1, 1, 2, 1], isG, 1, tauNum, [1, 3, 4, 7])
     testTauIdx([1, 1, 2, 1], isG, 0, tauNum, [0, 2, 3, 6])
     testTauIdx([1, 0, 2, 0], isG, 1, tauNum, [1, 3, 3, 6])
@@ -123,135 +121,8 @@ function eval(id::InteractionId, varK, varT)
     return evalV(K)
 end
 
-
-# @testset "Parquet Ver4" begin
-#     Benchmark = ParquetNew.Benchmark
-#     Parquet = ParquetNew
-
-#     function getfunction(type)
-#         if type == :physical
-#             return evalPropagator, evalG, evalV
-#         elseif type == :fixK
-#             return evalPropagatorfixK, evalGfixK, evalVfixK
-#         elseif type == :fake
-#             return evalFakePropagator, evalFakeG, evalFakeV
-#         else
-#             error("not implemented")
-#         end
-#     end
-
-#     function testVertex4(loopNum, chan, type::Symbol; filter = [], timing = false, eval = true)
-#         println("$(Int.(chan)) Channel Test")
-#         Kdim, spin = 3, 2
-#         interactionTauNum = 1
-#         isFermi = true
-
-#         K0 = zeros(loopNum + 2)
-#         KinL, KoutL, KinR, KoutR = deepcopy(K0), deepcopy(K0), deepcopy(K0), deepcopy(K0)
-#         KinL[1] = KoutL[1] = 1
-#         KinR[2] = KoutR[2] = 1
-#         legK = [KinL, KoutL, KinR, KoutR]
-
-#         para = GenericPara(
-#             diagType = Ver4Diag,
-#             loopDim = Kdim,
-#             isFermi = isFermi,
-#             hasTau = true,
-#             innerLoopNum = loopNum,
-#             totalLoopNum = length(KinL),
-#             totalTauNum = (loopNum + 1) * interactionTauNum,
-#             spin = spin,
-#             weightType = Float64,
-#             firstLoopIdx = 3,
-#             firstTauIdx = 1,
-#             filter = union(filter, [Girreducible,]), #ver4 evaluation only support one-particle-irreducible diagram
-#             transferLoop = KinL - KoutL,
-#             interaction = [Interaction(ChargeCharge, Instant),]
-#         )
-
-#         F = [Parquet.U, Parquet.S]
-#         V = [Parquet.T, Parquet.U]
-#         All = [Parquet.T, Parquet.U, Parquet.S]
-#         # F = [Parquet.U]
-#         # V = []
-#         # All = [Parquet.T, Parquet.U]
-
-#         varK = rand(Kdim, para.totalLoopNum)
-#         varT = [rand() for i in 1:para.totalTauNum]
-
-#         #################### DiagTree ####################################
-#         diag, nodes = Parquet.buildVer4(para, legK, chan, F = F, V = V, All = All)
-#         d = Parquet.groupby!(diag, nodes, :response)
-#         DiagTree.setroot!(diag, [d[UpUp], d[UpDown]])
-#         # DiagTree.showTree(diag, d[UpUp])
-#         # DiagTree.showTree(diag, d[UpDown])
-
-#         ver4 = Benchmark.Ver4{Benchmark.Weight}(para, Int.(chan), Int.(F), Int.(V))
-#         # Parquet.print_tree(ver4)
-
-#         if eval
-#             # w1 = DiagTree.evalNaive(diag, varK, varT, evalPropagator)
-#             w1 = DiagTree.evalNaive(diag, varK, varT, evalPropagator)
-#             # println(w1)
-
-#             if timing
-#                 printstyled("naive DiagTree evaluator cost:", color = :green)
-#                 @time DiagTree.evalNaive(diag, varK, varT, evalPropagator)
-#             end
-
-#             ##################### lower level subroutines  #######################################
-
-#             KinL, KoutL, KinR, KoutR = varK[:, 1], varK[:, 1], varK[:, 2], varK[:, 2]
-#             # Benchmark.eval(para, ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV, true)
-#             Benchmark.eval(para, ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV, true)
-
-#             if timing
-#                 printstyled("parquet evaluator cost:", color = :green)
-#                 @time Benchmark.eval(para, ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV, true)
-#             end
-
-#             w2 = ver4.weight[1]
-
-#             # Parquet.print_tree(ver4)
-#             # DiagTree.showTree(diag, diag.root[1])
-#             # Parquet.showTree(ver4)
-#             # DiagTree.printBasisPool(diag)
-#             # DiagTree.printPropagator(diag)
-#             # println(diag.propagatorPool[1].object[2])
-#             # println(w1, " vs ", w2)
-
-#             # The upup channel of charge-charge vertex4 == Direct + exchange 
-#             @test w1[1] ≈ w2[1] + w2[2]
-#             # The updown channel of charge-charge vertex4 == Direct
-#             @test w1[2] ≈ w2[1]
-#         end
-
-#         return para, diag, ver4
-#     end
-
-#     function testEval(type)
-#         for l = 1:3
-#             testVertex4(l, [Parquet.T,], type)
-#             testVertex4(l, [Parquet.U,], type)
-#             testVertex4(l, [Parquet.S,], type)
-#             testVertex4(l, [Parquet.T, Parquet.U, Parquet.S], type; timing = true)
-#         end
-#     end
-
-#     # testEval(:fake)
-#     # testEval(:fixK)
-#     testEval(:physical)
-
-#     #test only proper diagrams are generated if the switch is turned on
-#     para, diag, ver4 = testVertex4(3, [Parquet.T, Parquet.U, Parquet.S], :physical; filter = [Builder.Proper], eval = false)
-#     for i in 1:length(diag.basisPool)
-#         @test (diag.basisPool.basis[:, i] ≈ para.transferLoop) == false
-#     end
-# end
-
 @testset "ParquetNew Ver4" begin
-    Benchmark = ParquetNew.Benchmark
-    Parquet = ParquetNew
+    Benchmark = Parquet.Benchmark
 
     function getfunction(type)
         if type == :physical
@@ -367,7 +238,6 @@ end
 end
 
 @testset "Parquet Sigma" begin
-    Parquet = ParquetNew
     function getSigma(loopNum; Kdim = 3, spin = 2, interactionTauNum = 1, filter = [], isFermi = true, subdiagram = false)
         println("LoopNum =$loopNum Sigma Test")
 
@@ -409,7 +279,7 @@ end
         # plot_tree(diag, maxdepth = 7)
         factor = (1 / (2π)^para.loopDim)^para.innerLoopNum
         num = w / factor
-        @test num ≈ sigma_G2v(para.innerLoopNum, para.spin)
+        @test num ≈ Parquet.Benchmark.count_sigma_G2v(para.innerLoopNum, para.spin)
     end
 
 
@@ -417,7 +287,7 @@ end
     for l = 1:4
         # ret = getSigma(l, spin = 1, isFermi = false, filter = [Builder.Girreducible,])
         # testDiagramNumber(ret...)
-        ret = getSigma(l, spin = 2, isFermi = false, filter = [Builder.Girreducible,])
+        ret = getSigma(l, spin = 2, isFermi = false, filter = [Girreducible,])
         testDiagramNumber(ret...)
     end
 
@@ -468,7 +338,6 @@ end
 
 
 @testset "Parquet Vertex3" begin
-    Parquet = ParquetNew
     function getGamma3(loopNum; Kdim = 3, spin = 2, interactionTauNum = 1, filter = [Girreducible, Proper,], isFermi = true, subdiagram = false)
         println("LoopNum =$loopNum Vertex3 Test")
 
@@ -506,7 +375,7 @@ end
         # plot_tree(diag, maxdepth = 9)
         factor = (1 / (2π)^para.loopDim)^para.innerLoopNum
         num = w / factor
-        @test num ≈ gamma3_G2v(para.innerLoopNum, para.spin)
+        @test num ≈ Parquet.Benchmark.count_ver3_G2v(para.innerLoopNum, para.spin)
     end
 
 
@@ -525,7 +394,6 @@ end
 
 
 @testset "Parquet Polarization" begin
-    Parquet = ParquetNew
     function getPolar(loopNum; Kdim = 3, spin = 2, interactionTauNum = 1, filter = [Girreducible,], isFermi = true, subdiagram = false)
         println("LoopNum =$loopNum Polarization Test")
 
@@ -560,7 +428,7 @@ end
         # plot_tree(diag, maxdepth = 9)
         factor = (1 / (2π)^para.loopDim)^para.innerLoopNum
         num = w / factor
-        @test num * para.spin ≈ polar_G2v(para.innerLoopNum, para.spin)
+        @test num * para.spin ≈ Parquet.Benchmark.count_polar_G2v(para.innerLoopNum, para.spin)
     end
 
 

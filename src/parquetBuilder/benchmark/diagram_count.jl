@@ -1,9 +1,11 @@
-#see Ref. https://arxiv.org/pdf/cond-mat/0512342.pdf for details
-# We assume:
-# 1. interaction is spin-symmetric. 
-# 2. the propagator conserves the spin.
+""" Count diagram numbers
+see Ref. https://arxiv.org/pdf/cond-mat/0512342.pdf for details
+We assume:
+1. interaction is spin-symmetric. 
+2. the propagator conserves the spin.
+"""
 
-function gamma3_g2v(innerLoopNum, spin)
+function count_ver3_g2v(innerLoopNum, spin)
     @assert innerLoopNum >= 0
     if innerLoopNum == 0
         return 1
@@ -18,7 +20,7 @@ function gamma3_g2v(innerLoopNum, spin)
     end
 end
 
-function gamma3_G2v(innerLoopNum, spin)
+function count_ver3_G2v(innerLoopNum, spin)
     @assert innerLoopNum >= 0
     if innerLoopNum == 0
         return 1
@@ -33,7 +35,7 @@ function gamma3_G2v(innerLoopNum, spin)
     end
 end
 
-function gamma3_G2W(innerLoopNum, spin)
+function count_ver3_G2W(innerLoopNum, spin)
     @assert innerLoopNum >= 0
     if innerLoopNum == 0
         return 1
@@ -48,7 +50,7 @@ function gamma3_G2W(innerLoopNum, spin)
     end
 end
 
-function sigma_G2v(innerLoopNum, spin)
+function count_sigma_G2v(innerLoopNum, spin)
     @assert innerLoopNum >= 1
     if innerLoopNum == 1
         return 1
@@ -63,16 +65,16 @@ function sigma_G2v(innerLoopNum, spin)
     end
 end
 
-function sigma_G2W(innerLoopNum, spin)
+function count_sigma_G2W(innerLoopNum, spin)
     @assert innerLoopNum >= 1
-    return gamma3_G2W(innerLoopNum, spin)
+    return count_ver3_G2W(innerLoopNum, spin)
 end
 
-function polar_G2v(innerLoopNum, spin)
+function count_polar_G2v(innerLoopNum, spin)
     @assert innerLoopNum >= 1
-    return spin * gamma3_G2v(innerLoopNum - 1, spin)
+    return spin * count_ver3_G2v(innerLoopNum - 1, spin)
 end
 
-function polar_G2W(innerLoopNum, spin)
-    return spin * gamma3_G2W(innerLoopNum - 1, spin)
+function count_polar_G2W(innerLoopNum, spin)
+    return spin * count_ver3_G2W(innerLoopNum - 1, spin)
 end

@@ -19,4 +19,5 @@ const SymFactor = [1.0, -1.0, 1.0, -0.5, +1.0, -1.0]
 include("vertex4.jl")
 include("vertex4_eval.jl")
 include("vertex4_io.jl")
+include("diagram_count.jl")
 end

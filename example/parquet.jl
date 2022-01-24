@@ -1,11 +1,8 @@
 using FeynmanDiagram
 using AbstractTrees
-# using NewickTree
 using StaticArrays
 using DataFrames
-const Weight = SVector{2,Float64}
 
-Parquet = ParquetNew
 blocks = ParquetBlocks(phi = [PPr, PHEr], ppi = [PHr, PHEr], Γ4 = [PPr, PHr, PHEr])
 
 ###################### ver4 to DiagTree ###########################################
