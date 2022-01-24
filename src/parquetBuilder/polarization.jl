@@ -23,7 +23,7 @@ function buildPolarization(para, extK, subdiagram = false; name = :Π)
 
     polar = DataFrame()
 
-    ################# Π0 = GG #######################
+    ######################## Π0 = GG #########################################
     for (oG1, oG2) in orderedPartition(para.innerLoopNum - 1, 2, 0)
 
         idx, maxLoop = findFirstLoopIdx([oG1, oG2], LoopIdx + 1)
@@ -46,6 +46,10 @@ function buildPolarization(para, extK, subdiagram = false; name = :Π)
             push!(polar, (response = UpUp, diagram = Π0uu))
         end
     end
+
+    ##################### composite polarization #####################################
+    # for (oGinL, oGoutL, oGinR, oGoutR, ver4) in orderedPartition(para.innerLoopNum - 1, 5, 0)
+    # end
 
     # legK = [extK, K, K, extK]
     polar = mergeby(polar, [:response,]; name = name,

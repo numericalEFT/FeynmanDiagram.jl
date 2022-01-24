@@ -67,7 +67,7 @@ Base.show(io::IO, v::SigmaId) = print(io, "$(short(v.type)), t$(v.extT)")
 
 struct PolarId <: DiagramId
     para::GenericPara
-    response::Response #ChargeCharge, SpinSpin, ...
+    response::Response #UpUp, UpDown, ...
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
     function PolarId(para::GenericPara, response::Response; k, t = (0, 0))
@@ -78,11 +78,14 @@ Base.show(io::IO, v::PolarId) = print(io, "$(short(v.response)), k$(v.extK), t$(
 
 struct Ver3Id <: DiagramId
     para::GenericPara
-    type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
+    response::Response #UpUp, UpDown, ...
     extK::Vector{Vector{Float64}}
     extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
+    function Ver3Id(para::GenericPara, response::Response; k, t = (0, 0, 0))
+        return new(para, response, k, Tuple(t))
+    end
 end
-Base.show(io::IO, v::Ver3Id) = print(io, "$(short(v.type)), t$(v.extT)")
+Base.show(io::IO, v::Ver3Id) = print(io, "$(short(v.response)),t$(v.extT)")
 
 struct Ver4Id <: DiagramId
     para::GenericPara
