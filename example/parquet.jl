@@ -67,7 +67,8 @@ para = GenericPara(diagType = Ver3Diag,
     innerLoopNum = 1,
     hasTau = true,
     filter = [NoFock, Proper],
-    interaction = [Interaction(ChargeCharge, [Instant, Dynamic]), Interaction(UpDown, [Instant, Dynamic])]
+    interaction = [Interaction(ChargeCharge, [Instant, Dynamic])]
+    # interaction = [Interaction(UpDown, [Instant, Dynamic])]
 )
 
 K0 = zeros(para.totalLoopNum)
@@ -76,7 +77,10 @@ Q[1] = 1
 KinL[2] = 1
 legK = [Q, KinL]
 vertex3 = Parquet.Vertex3(para, legK)
-plot_tree(vertex3, maxdepth = 7)
+println(mergeby(vertex3))
+if isempty(vertex3) == false
+    plot_tree(vertex3, maxdepth = 7)
+end
 exit(0)
 
 
@@ -106,7 +110,8 @@ para = GenericPara(
     innerLoopNum = 1,
     hasTau = true,
     filter = [NoFock,],
-    interaction = [Interaction(ChargeCharge, [Instant, Dynamic]), Interaction(UpDown, [Instant, Dynamic])]
+    # interaction = [Interaction(ChargeCharge, [Instant, Dynamic]), Interaction(UpDown, [Instant, Dynamic])]
+    interaction = [Interaction(UpDown, [Instant, Dynamic])]
 )
 
 K0 = zeros(para.totalLoopNum)

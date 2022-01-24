@@ -43,9 +43,14 @@ isbare(diag::Diagram) = isempty(diag.subdiagram)
 # _diagram(df, index) = df[index, :Diagram]
 
 function mergeby(df::DataFrame, fields = [];
-    operator = Sum(), name::Symbol = :none, factor = one(df[1, :diagram].factor),
-    getid::Function = g -> GenericId(g[1, :diagram].id.para, Tuple(g[1, fields]))
+    operator = Sum(), name::Symbol = :none,
+    factor = isempty(df) ? nothing : one(df[1, :diagram].factor),
+    getid::Function = g -> isempty(g) ? nothing : GenericId(g[1, :diagram].id.para, Tuple(g[1, fields]))
 )
+
+    if isempty(df)
+        return df
+    end
 
     # df = toDataFrame(diags, verbose = verbose)
     if all(x -> typeof(x.id) == typeof(df[1, :diagram].id), df[!, :diagram]) == false

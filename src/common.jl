@@ -134,9 +134,9 @@ function innerTauNum(diagType::DiagramType, innerLoopNum, interactionTauNum)
     elseif diagType == GreenDiag
         return innerLoopNum * interactionTauNum
     elseif diagType == PolarDiag
-        return 2 + (innerLoopNum - 1) * interactionTauNum
+        return 1 + innerTauNum(Ver3Diag, innerLoopNum - 1, interactionTauNum)
     elseif diagType == Ver3Diag
-        return 1 + innerLoopNum * interactionTauNum
+        return 1 + innerTauNum(Ver4Diag, innerLoopNum - 1, interactionTauNum)
     else
         error("not implemented!")
     end
@@ -155,7 +155,15 @@ function interactionTauNum(hasTau::Bool, interactionSet)
 end
 
 function firstTauIdx(diagType::DiagramType, offset::Int = 0)
-    return 1 + offset
+    if diagType == GreenDiag
+        return 3 + offset
+    elseif diagType == Ver3Diag
+        return 1 + offset
+    elseif diagType == PolarDiag
+        return 1 + offset
+    else
+        return 1 + offset
+    end
 end
 
 function firstLoopIdx(diagType::DiagramType, offset::Int = 0)

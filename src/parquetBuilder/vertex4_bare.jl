@@ -160,10 +160,14 @@ function bareVer4(para::GenericPara, legK, diex::Vector{Permutation} = [Di, Ex])
     end
 
     function addresponse!(response::Response, type, _extT, _innerT)
-        if response == UpUp || response == UpDown
+        if response == UpUp
             vd = bare(response, type, Di, _innerT[DI], q[DI])
             ve = bare(response, type, Ex, _innerT[EX], q[EX])
-            addver4!(response, type, _extT, vd, ve)
+            addver4!(UpUp, type, _extT, vd, ve)
+        elseif response == UpDown
+            vd = bare(UpDown, type, Di, _innerT[DI], q[DI])
+            ve = nothing
+            addver4!(UpDown, type, _extT, vd, ve)
         elseif response == ChargeCharge
             # UpUp channel
             vuud = bare(ChargeCharge, type, Di, _innerT[DI], q[DI])

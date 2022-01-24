@@ -30,25 +30,27 @@ function Vertex3(para, extK, subdiagram = false; name = :Γ3, chan = [PHr, PHEr,
     vertex3 = DataFrame()
 
     ######################## Π0 = GG #########################################
-    for (oGin, oGout, oVer4) in orderedPartition(para.innerLoopNum - 1, 3, 0)
+    for (oVer4, oGin, oGout) in orderedPartition(para.innerLoopNum - 1, 3, 0)
 
-        idx, maxLoop = findFirstLoopIdx([oGin, oGout, oVer4], LoopIdx + 1)
+        idx, maxLoop = findFirstLoopIdx([oVer4, oGin, oGout], LoopIdx + 1)
         @assert maxLoop <= para.totalLoopNum "maxLoop = $maxLoop > $(para.totalLoopNum)"
-        GinKidx, GoutKidx, Ver4Kidx = idx
+        Ver4Kidx, GinKidx, GoutKidx = idx
 
-        idx, maxTau = findFirstTauIdx([oGin, oGout, oVer4], [GreenDiag, GreenDiag, Ver4Diag], para.firstTauIdx, para.interactionTauNum)
-        @assert maxTau <= para.totalTauNum
-        GinTidx, GoutTidx, Ver4Tidx = idx
+        idx, maxTau = findFirstTauIdx([oVer4, oGin, oGout], [Ver4Diag, GreenDiag, GreenDiag], para.firstTauIdx + 1, para.interactionTauNum)
+        @assert maxTau <= para.totalTauNum "maxTau = $maxTau > $(para.totalTauNum)"
+        Ver4Tidx, GinTidx, GoutTidx = idx
 
-        paraGin = reconstruct(para, diagType = GreenDiag, innerLoopNum = oGin,
-            firstLoopIdx = GinKidx, firstTauIdx = GinTidx)
-        paraGout = reconstruct(para, diagType = GreenDiag, innerLoopNum = oGout,
-            firstLoopIdx = GoutKidx, firstTauIdx = GoutTidx)
-        paraVer4 = reconstruct(para, diagType = Ver4Diag, innerLoopNum = oVer4,
-            firstLoopIdx = Ver4Kidx, firstTauIdx = Ver4Tidx)
-
-        if isValidG(paraGin) && isValidG(paraGout)
+        if isValidG(para.filter, oGin) && isValidG(para.filter, oGout)
+            paraGin = reconstruct(para, diagType = GreenDiag, innerLoopNum = oGin,
+                firstLoopIdx = GinKidx, firstTauIdx = GinTidx)
+            paraGout = reconstruct(para, diagType = GreenDiag, innerLoopNum = oGout,
+                firstLoopIdx = GoutKidx, firstTauIdx = GoutTidx)
+            paraVer4 = reconstruct(para, diagType = Ver4Diag, innerLoopNum = oVer4,
+                firstLoopIdx = Ver4Kidx, firstTauIdx = Ver4Tidx)
             ver4 = buildVer4(paraVer4, legK, chan, true)
+            if isnothing(ver4) || isempty(ver4)
+                continue
+            end
 
             #transform extT coloum into extT for Vertex4 and the extT for Gin and Gout
             df = transform(ver4, :extT => ByRow(x -> [(t0, x[INL], x[OUTL]), (t0, x[INR]), (x[OUTR], t0)]) => [:extT, :GinT, :GoutT])
@@ -68,6 +70,10 @@ function Vertex3(para, extK, subdiagram = false; name = :Γ3, chan = [PHr, PHEr,
                 push!(vertex3, (response = response, extT = v4[:extT], diagram = ver3diag))
             end
         end
+    end
+
+    if isempty(vertex3)
+        return vertex3
     end
 
     ver3 = mergeby(vertex3, [:response, :extT]; name = name,
