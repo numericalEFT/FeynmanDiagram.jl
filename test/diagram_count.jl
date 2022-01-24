@@ -4,7 +4,10 @@
 # 2. the propagator conserves the spin.
 
 function gamma3_g2v(innerLoopNum, spin)
-    if innerLoopNum == 1
+    @assert innerLoopNum >= 0
+    if innerLoopNum == 0
+        return 1
+    elseif innerLoopNum == 1
         return 1
     elseif innerLoopNum == 2
         return 3 * (2 + spin)
@@ -16,7 +19,10 @@ function gamma3_g2v(innerLoopNum, spin)
 end
 
 function gamma3_G2v(innerLoopNum, spin)
-    if innerLoopNum == 1
+    @assert innerLoopNum >= 0
+    if innerLoopNum == 0
+        return 1
+    elseif innerLoopNum == 1
         return 1
     elseif innerLoopNum == 2
         return 4 + 3 * spin
@@ -28,7 +34,10 @@ function gamma3_G2v(innerLoopNum, spin)
 end
 
 function gamma3_G2W(innerLoopNum, spin)
-    if innerLoopNum == 1
+    @assert innerLoopNum >= 0
+    if innerLoopNum == 0
+        return 1
+    elseif innerLoopNum == 1
         return 1
     elseif innerLoopNum == 2
         return 4 + 2 * spin
@@ -40,6 +49,7 @@ function gamma3_G2W(innerLoopNum, spin)
 end
 
 function sigma_G2v(innerLoopNum, spin)
+    @assert innerLoopNum >= 1
     if innerLoopNum == 1
         return 1
     elseif innerLoopNum == 2
@@ -54,13 +64,15 @@ function sigma_G2v(innerLoopNum, spin)
 end
 
 function sigma_G2W(innerLoopNum, spin)
+    @assert innerLoopNum >= 1
     return gamma3_G2W(innerLoopNum, spin)
 end
 
 function polar_G2v(innerLoopNum, spin)
-    return spin * gamma3_G2v(innerLoopNum, spin)
+    @assert innerLoopNum >= 1
+    return spin * gamma3_G2v(innerLoopNum - 1, spin)
 end
 
 function polar_G2W(innerLoopNum, spin)
-    return spin * gamma3_G2W(innerLoopNum, spin)
+    return spin * gamma3_G2W(innerLoopNum - 1, spin)
 end

@@ -522,3 +522,57 @@ end
     # @test isempty(diag.root)
 
 end
+
+
+@testset "Parquet Polarization" begin
+    Parquet = ParquetNew
+    function getPolar(loopNum; Kdim = 3, spin = 2, interactionTauNum = 1, filter = [Girreducible,], isFermi = true, subdiagram = false)
+        println("LoopNum =$loopNum Polarization Test")
+
+        para = GenericPara(
+            diagType = PolarDiag,
+            loopDim = Kdim,
+            innerLoopNum = loopNum,
+            isFermi = isFermi,
+            hasTau = true,
+            filter = filter,
+            interaction = [Interaction(ChargeCharge, Instant),]
+        )
+
+        Q = zeros(para.totalLoopNum)
+        Q[1] = 1
+
+        varK = rand(Kdim, para.totalLoopNum)
+        varT = [rand() for i in 1:para.totalTauNum]
+
+        #################### DiagTree ####################################
+        polar = Parquet.polarization(para, Q)
+        diag = mergeby(polar)
+        # print_tree(diag.diagram[1])
+
+        return para, diag.diagram[1], varK, varT
+    end
+
+
+    function testDiagramNumber(para, diag, varK, varT)
+        # w = DiagTree.evalNaive(diag, varK, varT, evalFakePropagator)
+        w = evalDiagTree!(diag, evalFake, varK, varT)
+        # plot_tree(diag, maxdepth = 9)
+        factor = (1 / (2π)^para.loopDim)^para.innerLoopNum
+        num = w / factor
+        @test num * para.spin ≈ polar_G2v(para.innerLoopNum, para.spin)
+    end
+
+
+    ##################  G^2*v expansion #########################################
+    for l = 1:4
+        # ret = getSigma(l, spin = 1, isFermi = false, filter = [Builder.Girreducible,])
+        # testDiagramNumber(ret...)
+        ret = getPolar(l, isFermi = false, filter = [Girreducible, Proper])
+        testDiagramNumber(ret...)
+    end
+
+    # para, diag, varK, varT = getSigma(1, spin = 2, isFermi = false, filter = [Builder.NoFock,], subdiagram = true)
+    # @test isempty(diag.root)
+
+end
