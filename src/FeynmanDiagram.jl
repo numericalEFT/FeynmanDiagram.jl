@@ -51,7 +51,7 @@ Base.iterate(r::AnalyticProperty) = (r, nothing)
 function Base.iterate(r::AnalyticProperty, ::Nothing) end
 
 export SigmaDiag, PolarDiag, Ver3Diag, Ver4Diag, GreenDiag
-export Wirreducible, Girreducible, NoBubble, NoHatree, Proper
+export Wirreducible, Girreducible, NoBubble, NoHatree, NoFock, Proper
 export Response, ChargeCharge, SpinSpin, UpUp, UpDown
 export AnalyticProperty, Instant, Dynamic, D_Instant, D_Dynamic
 

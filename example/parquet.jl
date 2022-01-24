@@ -13,7 +13,7 @@ para = GenericPara(
     diagType = Ver4Diag,
     innerLoopNum = 1,
     hasTau = true,
-    filter = [Builder.NoFock,],
+    filter = [NoFock,],
     interaction = [Interaction(ChargeCharge, Instant), Interaction(UpUp, Instant),],
     extra = blocks
 )
@@ -51,7 +51,7 @@ para = GenericPara(
     diagType = SigmaDiag,
     innerLoopNum = 1,
     hasTau = true,
-    filter = [Builder.NoFock,],
+    filter = [NoFock,],
     interaction = [Interaction(ChargeCharge, [Instant, Dynamic]), Interaction(UpDown, [Instant, Dynamic])]
 )
 
@@ -61,22 +61,25 @@ sigma = Parquet.buildSigma(para, K0)
 println("sigma, ", sigma)
 # plot_tree(sigma)
 
-#####################################  polarization  ############################################
-para = GenericPara(
-    diagType = PolarDiag,
+##################################### vertex 3   #################################################
+
+para = GenericPara(diagType = Ver3Diag,
     innerLoopNum = 1,
     hasTau = true,
-    filter = [Builder.NoFock,],
+    filter = [NoFock, Proper],
     interaction = [Interaction(ChargeCharge, [Instant, Dynamic]), Interaction(UpDown, [Instant, Dynamic])]
 )
 
 K0 = zeros(para.totalLoopNum)
-K0[1] = 1.0
-polar = Parquet.buildPolarization(para, K0)
-plot_tree(polar)
+KinL, Q = deepcopy(K0), deepcopy(K0)
+Q[1] = 1
+KinL[2] = 1
+legK = [Q, KinL]
+vertex3 = Parquet.Vertex3(para, legK)
+plot_tree(vertex3, maxdepth = 7)
 exit(0)
 
-##################################### vertex 3   #################################################
+
 # para = Builder.GenericPara(
 #     loopDim = 3,
 #     innerLoopNum = 1,
@@ -95,3 +98,19 @@ exit(0)
 # Kout[2] = 1
 # legK = [Kin, Kout]
 # Parquet.buildVer3(para, legK)
+
+
+#####################################  polarization  ############################################
+para = GenericPara(
+    diagType = PolarDiag,
+    innerLoopNum = 1,
+    hasTau = true,
+    filter = [NoFock,],
+    interaction = [Interaction(ChargeCharge, [Instant, Dynamic]), Interaction(UpDown, [Instant, Dynamic])]
+)
+
+K0 = zeros(para.totalLoopNum)
+K0[1] = 1.0
+polar = Parquet.buildPolarization(para, K0)
+# plot_tree(polar)
+# exit(0)

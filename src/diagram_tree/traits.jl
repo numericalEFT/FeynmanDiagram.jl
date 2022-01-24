@@ -80,7 +80,7 @@ struct Ver3Id <: DiagramId
     para::GenericPara
     response::Response #UpUp, UpDown, ...
     extK::Vector{Vector{Float64}}
-    extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
+    extT::Tuple{Int,Int,Int} #all possible extT from different interactionType
     function Ver3Id(para::GenericPara, response::Response; k, t = (0, 0, 0))
         return new(para, response, k, Tuple(t))
     end
