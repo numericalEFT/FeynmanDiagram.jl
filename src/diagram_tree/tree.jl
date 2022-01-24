@@ -47,9 +47,20 @@ function mergeby(df::DataFrame, fields = [];
     factor = isempty(df) ? nothing : one(df[1, :diagram].factor),
     getid::Function = g -> isempty(g) ? nothing : GenericId(g[1, :diagram].id.para, Tuple(g[1, fields]))
 )
-
     if isempty(df)
         return df
+    end
+
+    if nrow(df) == 1
+        # if there is only one diagram in df, and the new id is either GenericId or the id of the existing diagram, 
+        # then simply return the current df without creating a new diagram
+        # ! the new factor will be multiplied to the factor of the exisiting diagram!
+        id = getid(df)
+        if id isa GenericId || typeof(id) == typeof(df[1, :diagram].id)
+            df = deepcopy(df)
+            df[1, :diagram].factor *= factor
+            return df
+        end
     end
 
     # df = toDataFrame(diags, verbose = verbose)
