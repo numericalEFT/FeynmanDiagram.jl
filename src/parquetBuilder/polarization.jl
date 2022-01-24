@@ -1,5 +1,5 @@
 
-function buildPolarization(para, extK, subdiagram = false; name = :Π)
+function polarization(para, extK, subdiagram = false; name = :Π)
 
     (subdiagram == false) && uidreset()
     @assert para.diagType == PolarDiag
@@ -40,8 +40,8 @@ function buildPolarization(para, extK, subdiagram = false; name = :Π)
             firstLoopIdx = G2firstLoopIdx, firstTauIdx = G2firstTauIdx)
 
         if isValidG(paraG1) && isValidG(paraG2)
-            g1 = buildG(paraG1, extK .+ K, (t0, t0 + 1), true, name = :Gp)
-            g2 = buildG(paraG2, K, (t0 + 1, t0), true, name = :Gh)
+            g1 = green(paraG1, extK .+ K, (t0, t0 + 1), true, name = :Gp)
+            g2 = green(paraG2, K, (t0 + 1, t0), true, name = :Gh)
             Π0uu = Diagram(PolarId(para, UpUp, k = extK, t = extT), Prod(), [g1, g2]; name = :Π0)
             push!(polar, (response = UpUp, diagram = Π0uu))
         end

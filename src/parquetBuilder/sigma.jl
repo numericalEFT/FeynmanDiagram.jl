@@ -5,7 +5,7 @@
     When sigma is created as a subdiagram, then no Fock diagram is generated if para.filter contains NoFock, and no sigma diagram is generated if para.filter contains Girreducible
 
 """
-function buildSigma(para, extK, subdiagram = false; name = :Σ)
+function sigma(para, extK, subdiagram = false; name = :Σ)
     (subdiagram == false) && uidreset()
     @assert para.diagType == SigmaDiag
     @assert para.innerLoopNum >= 1
@@ -37,7 +37,7 @@ function buildSigma(para, extK, subdiagram = false; name = :Σ)
         #type: Instant or Dynamic
         response, type = group[:response], group[:type]
         sid = SigmaId(para, type, k = extK, t = group[:extT])
-        g = buildG(paraG, K, group[:GT]; name = oW == 0 ? :Gfock : :G_Σ) #there is only one G diagram for a extT
+        g = green(paraG, K, group[:GT]; name = oW == 0 ? :Gfock : :G_Σ) #there is only one G diagram for a extT
         @assert g isa Diagram
         # Sigma = G*(2 W↑↑ - W↑↓)
         # ! The sign of ↑↓ is from the spin symmetry, not from the fermionic statistics!
@@ -73,9 +73,9 @@ function buildSigma(para, extK, subdiagram = false; name = :Σ)
         if isValidG(paraG)
             if oW == 0 # Fock-type Σ
                 paraW0 = reconstruct(paraW, filter = union(paraW.filter, Proper), transferLoop = zero(K))
-                ver4 = buildVer4(paraW0, legK, [], true)
+                ver4 = vertex4(paraW0, legK, [], true)
             else # composite Σ
-                ver4 = buildVer4(paraW, legK, [PHr,], true, phi_toplevel = [], Γ4_toplevel = [PHr, PHEr, PPr,])
+                ver4 = vertex4(paraW, legK, [PHr,], true, phi_toplevel = [], Γ4_toplevel = [PHr, PHEr, PPr,])
                 # plot_tree(mergeby(ver4).diagram[1])
             end
             #transform extT coloum intwo extT for Σ and extT for G

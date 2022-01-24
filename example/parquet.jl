@@ -29,7 +29,7 @@ varT = [rand() for i in 1:para.totalTauNum]
 evalK(basis) = sum([basis[i] * varK[i] for i in 1:para.totalLoopNum])
 evalT(Tidx) = varT[Tidx]
 
-diags = Parquet.buildVer4(para, legK, [PHr, PHEr, PPr])
+diags = Parquet.vertex4(para, legK, [PHr, PHEr, PPr])
 # df = df[:, Not([:Diagram, :para, :channel])]
 # println(diags)
 # println(groupby(df, :id))
@@ -57,7 +57,7 @@ para = GenericPara(
 
 K0 = zeros(para.totalLoopNum)
 K0[1] = 1.0
-sigma = Parquet.buildSigma(para, K0)
+sigma = Parquet.sigma(para, K0)
 println("sigma, ", sigma)
 # plot_tree(sigma)
 
@@ -76,7 +76,7 @@ KinL, Q = deepcopy(K0), deepcopy(K0)
 Q[1] = 1
 KinL[2] = 1
 legK = [Q, KinL]
-vertex3 = Parquet.Vertex3(para, legK)
+vertex3 = Parquet.vertex3(para, legK)
 println(mergeby(vertex3))
 if isempty(vertex3) == false
     plot_tree(vertex3, maxdepth = 7)
@@ -116,6 +116,6 @@ para = GenericPara(
 
 K0 = zeros(para.totalLoopNum)
 K0[1] = 1.0
-polar = Parquet.buildPolarization(para, K0)
+polar = Parquet.polarization(para, K0)
 # plot_tree(polar)
 # exit(0)

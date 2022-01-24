@@ -1,4 +1,4 @@
-function Vertex3(para, extK, subdiagram = false; name = :Γ3, chan = [PHr, PHEr, PPr, Alli])
+function vertex3(para, extK, subdiagram = false; name = :Γ3, chan = [PHr, PHEr, PPr, Alli])
     (subdiagram == false) && uidreset()
     @assert para.diagType == Ver3Diag
     @assert para.innerLoopNum >= 1 "Only generates vertex corrections with more than one internal loops."
@@ -47,7 +47,7 @@ function Vertex3(para, extK, subdiagram = false; name = :Γ3, chan = [PHr, PHEr,
                 firstLoopIdx = GoutKidx, firstTauIdx = GoutTidx)
             paraVer4 = reconstruct(para, diagType = Ver4Diag, innerLoopNum = oVer4,
                 firstLoopIdx = Ver4Kidx, firstTauIdx = Ver4Tidx)
-            ver4 = buildVer4(paraVer4, legK, chan, true)
+            ver4 = vertex4(paraVer4, legK, chan, true)
             if isnothing(ver4) || isempty(ver4)
                 continue
             end
@@ -62,8 +62,8 @@ function Vertex3(para, extK, subdiagram = false; name = :Γ3, chan = [PHr, PHEr,
                 @assert response == UpUp || response == UpDown
                 #type: Instant or Dynamic
                 ver3id = Ver3Id(para, response, k = extK, t = v4[:extT])
-                gin = buildG(paraGin, K, v4[:GinT], true, name = :Gin)
-                gout = buildG(paraGout, K .+ q, v4[:GoutT], true, name = :Gout)
+                gin = green(paraGin, K, v4[:GinT], true, name = :Gin)
+                gout = green(paraGout, K .+ q, v4[:GoutT], true, name = :Gout)
                 @assert gin isa Diagram && gout isa Diagram
 
                 ver3diag = Diagram(ver3id, Prod(), [gin, gout, v4[:diagram]], name = name)
