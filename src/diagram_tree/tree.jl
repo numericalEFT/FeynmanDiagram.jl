@@ -51,18 +51,6 @@ function mergeby(df::DataFrame, fields = [];
         return df
     end
 
-    if nrow(df) == 1
-        # if there is only one diagram in df, and the new id is either GenericId or the id of the existing diagram, 
-        # then simply return the current df without creating a new diagram
-        # ! the new factor will be multiplied to the factor of the exisiting diagram!
-        id = getid(df)
-        if id isa GenericId || typeof(id) == typeof(df[1, :diagram].id)
-            df = deepcopy(df)
-            df[1, :diagram].factor *= factor
-            return df
-        end
-    end
-
     # df = toDataFrame(diags, verbose = verbose)
     if all(x -> typeof(x.id) == typeof(df[1, :diagram].id), df[!, :diagram]) == false
         @warn "Not all DiagramIds in $diags are the same!"
@@ -73,8 +61,21 @@ function mergeby(df::DataFrame, fields = [];
     # combine diagrams in a group into one composite diagram
     gdf = combine(groups) do group # for each group in groups
         # check the documentation of ``combine" for details https://dataframes.juliadata.org/stable/man/split_apply_combine/
+
+        if nrow(group) == 1
+            # if there is only one diagram in df, and the new id is either GenericId or the id of the existing diagram, 
+            # then simply return the current df without creating a new diagram
+            # ! the new factor will be multiplied to the factor of the exisiting diagram!
+            id = getid(group)
+            if id isa GenericId || typeof(id) == typeof(group[1, :diagram].id)
+                diag = deepcopy(group[1, :diagram])
+                diag.factor *= factor
+                return (diagram = diag, hash = diag.hash)
+            end
+        end
         diag = Diagram(getid(group), operator, group[:, :diagram], name = name, factor = factor)
-        (diagram = diag, hash = diag.hash)
+        return (diagram = diag, hash = diag.hash)
+
     end
     return gdf
 end
