@@ -53,3 +53,9 @@ end
 function uidreset()
     global _counter = 0
 end
+
+function getK(loopNum, loopIdx)
+    k = zeros(loopNum)
+    k[loopIdx] = 1.0
+    return k
+end

@@ -1,4 +1,5 @@
 module ExprTree
+using AbstractTrees
 using ..DiagTree
 
 using Printf, PyCall
@@ -20,5 +21,7 @@ include("io.jl")
 
 # diagram evaluation
 include("eval.jl")
+
+include("compile.jl")
 
 end

@@ -1,5 +1,5 @@
 
-function polarization(para, extK, subdiagram = false; name = :Π)
+function polarization(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = false; name = :Π)
     (subdiagram == false) && uidreset()
     @assert para.diagType == PolarDiag
     @assert para.innerLoopNum >= 1
@@ -30,8 +30,6 @@ function polarization(para, extK, subdiagram = false; name = :Π)
         Ver3Kidx, GinKidx, GoutKidx = idx
 
         if isValidG(para.filter, oGin) && isValidG(para.filter, oGout)
-
-
             if oVer3 == 0
                 ######################## Π0 = GG #########################################
                 gt0 = para.hasTau ? extT[2] + 1 : extT[1]
@@ -48,7 +46,7 @@ function polarization(para, extK, subdiagram = false; name = :Π)
                 polarid = PolarId(para, response, k = extK, t = extT)
                 gin = green(paraGin, K, (extT[1], extT[2]), true, name = :Gin)
                 gout = green(paraGout, K .- extK, (extT[2], extT[1]), true, name = :Gout)
-                @assert gin isa Diagram && gout isa Diagram
+                @assert gin isa Diagram && gout isa Diagram "$gin or $gout is not a single diagram"
 
                 polardiag = Diagram(polarid, Prod(), [gin, gout], name = name)
                 push!(polar, (response = response, extT = extT, diagram = polardiag))
