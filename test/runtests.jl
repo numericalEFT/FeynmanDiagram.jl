@@ -3,8 +3,8 @@ using Lehmann
 using Test, LinearAlgebra, Random, StaticArrays, Printf, Parameters
 using AbstractTrees
 
-include("diagram.jl")
 include("common.jl")
-include("diagtree.jl")
-include("parquet.jl")
+include("diagram_tree.jl")
+include("expression_tree.jl")
+include("parquet_builder.jl")
 

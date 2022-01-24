@@ -217,7 +217,14 @@ function bareVer4(para::GenericPara, legK, diex::Vector{Permutation} = [Di, Ex])
     function bare(response::Response, type::AnalyticProperty, _diex::Permutation, _innerT, _q)
         @assert _diex == Di || _diex == Ex
 
-        sign = (para.isFermi && (_diex == Di)) ? -1.0 : 1.0
+        # there is an overall sign coming from Taylor expansion of exp(-S) depsite the statistics
+        if _diex == Di
+            sign = -1.0
+        elseif _diex == Ex
+            sign = para.isFermi ? 1.0 : -1.0
+        else
+            error("not implemented!")
+        end
 
         if notProper(para, _q) == false && _diex in diex
             #create new bare ver4 only if _diex is required in the diex table 

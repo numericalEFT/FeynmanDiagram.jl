@@ -10,7 +10,7 @@
     # Base.isequal(a::ID, b::ID) = (a.index == b.index)
     # Base.Dict(d::ID) = Dict(:id => d.index)
 
-    DiagTreeNew.uidreset()
+    DiagTree.uidreset()
 
     W = Int
     ll = Diagram{W}(ID(3))
@@ -48,8 +48,7 @@ end
         k1                        k2
     """
 
-    DiagTreeNew.uidreset()
-    DiagTree = DiagTreeNew
+    DiagTree.uidreset()
     # We only consider the direct part of the above diagram
     spin = 2.0
     D = 3

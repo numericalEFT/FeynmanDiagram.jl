@@ -1,4 +1,4 @@
-module DiagTreeNew
+module DiagTree
 using AbstractTrees
 using Printf, PyCall, DataFrames
 

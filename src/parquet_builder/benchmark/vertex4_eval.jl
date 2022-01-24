@@ -36,8 +36,8 @@ function eval(para, ver4::Ver4, varK, varT, legK, evalG::Function, evalV::Functi
         qe = KinL - KoutR
         if para.interactionTauNum == 1
             sign = para.isFermi ? -1 : 1
-            ver4.weight[1].d = sign * evalV(qd)
-            ver4.weight[1].e = evalV(qe)
+            ver4.weight[1].d = -evalV(qd)
+            ver4.weight[1].e = (-evalV(qe)) * sign
         else
             Tidx = para.firstTauIdx + ver4.TidxOffset
             τIn, τOut = varT[Tidx], varT[Tidx+1]
