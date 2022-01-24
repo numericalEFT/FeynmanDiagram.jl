@@ -1,15 +1,18 @@
 function Vertex3(para, extK, subdiagram = false; name = :Γ3, chan = [PHr, PHEr, PPr, Alli])
     (subdiagram == false) && uidreset()
-    @assert para.diagType == Vertex3Diag
+    @assert para.diagType == Ver3Diag
     @assert para.innerLoopNum >= 1 "Only generates vertex corrections with more than one internal loops."
-    @assert length(extK) == para.totalLoopNum
+    for k in extK
+        @assert length(k) == para.totalLoopNum
+    end
 
     q, Kin = extK[1], extK[2]
-    Kout = q .+ Kin
+    Kout = length(extK) == 3 ? extK[3] : Kin .- q
     @assert ((q ≈ Kin) == false) && ((q ≈ Kout) == false) "The bosonic q cann't be same as the fermionic k. Ohterwise the proper diagram check will fail!"
+    extK = [q, Kin, Kout]
 
     if Proper in para.filter
-        @assert para.transferLoop ≈ q "To get proper diagrams, please set para.transferLoop as the bosonic momentum."
+        para = reconstruct(para, transferLoop = q)
     end
 
     if (para.extra isa ParquetBlocks) == false
@@ -53,7 +56,7 @@ function Vertex3(para, extK, subdiagram = false; name = :Γ3, chan = [PHr, PHEr,
             groups = mergeby(df, [:response, :GinT, :GoutT, :extT], operator = Sum())
 
             for v4 in eachrow(groups)
-                response, type = v4[:response], v4[:type]
+                response = v4[:response]
                 @assert response == UpUp || response == UpDown
                 #type: Instant or Dynamic
                 ver3id = Ver3Id(para, response, k = extK, t = v4[:extT])
@@ -62,13 +65,13 @@ function Vertex3(para, extK, subdiagram = false; name = :Γ3, chan = [PHr, PHEr,
                 @assert gin isa Diagram && gout isa Diagram
 
                 ver3diag = Diagram(ver3id, Prod(), [gin, gout, v4[:diagram]], name = name)
-                push!(vertex3, (response = response, extT = group[:extT], diagram = ver3diag))
+                push!(vertex3, (response = response, extT = v4[:extT], diagram = ver3diag))
             end
         end
     end
 
-    ver3 = mergeby(vertex3, [:response,]; name = name,
-        getid = g -> Ver3Id(para, g[1, :response], k = extK, t = extT)
+    ver3 = mergeby(vertex3, [:response, :extT]; name = name,
+        getid = g -> Ver3Id(para, g[1, :response], k = extK, t = g[1, :extT])
     )
     return ver3
 end
