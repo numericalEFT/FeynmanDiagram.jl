@@ -86,6 +86,7 @@ function vertex3(para, extK, subdiagram = false; name = :Γ3, chan = [PHr, PHEr,
     end
 
     Factor = 1 / (2π)^para.loopDim
+
     ver3 = mergeby(vertex3, [:response, :extT]; name = name, factor = Factor,
         getid = g -> Ver3Id(para, g[1, :response], k = extK, t = g[1, :extT])
     )
