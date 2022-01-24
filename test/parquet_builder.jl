@@ -45,92 +45,39 @@ function evalG(K, τin, τout)
         return Spectral.kernelFermiT(τ, ϵ, β)
     end
 end
-
 evalV(K) = 8π / (dot(K, K) + 1)
 
-function evalPropagator(idx, object, K, varT, diag)
-    if idx == 1 #GPool
-        return evalG(K, varT[object.siteBasis[1]], varT[object.siteBasis[2]])
-        # return evalFakeG(K, varT[object.siteBasis[1]], varT[object.siteBasis[2]])
-    elseif idx == 2 #VPool
-        return evalV(K)
-    else
-        error("object with name = $(object.name) is not implemented")
-    end
-end
-
-function evalGfixK(K, τin, τout)
-    # println(τBasis, ", ", varT)
-    K = zero(K)
-    kF, β = 1.0, 1.0
-    ϵ = dot(K, K) / 2 - kF^2
-    τ = τout - τin
-    if τ ≈ 0.0
-        return Spectral.kernelFermiT(-1e-8, ϵ, β)
-    else
-        return Spectral.kernelFermiT(τ, ϵ, β)
-    end
-end
-
+evalGfixK(K, τin, τout) = evalG(zero(K), τin, τout)
 evalVfixK(K) = 1.0
 
-function evalPropagatorfixK(idx, object, K, varT, diag)
-    if idx == 1 #GPool
-        return evalGfixK(K, varT[object.siteBasis[1]], varT[object.siteBasis[2]])
-        # return evalFakeG(K, varT[object.siteBasis[1]], varT[object.siteBasis[2]])
-    elseif idx == 2 #VPool
-        return evalVfixK(K)
-    else
-        error("object with name = $(object.name) is not implemented")
-    end
-end
+evalFakeG(K, τin, τout) = 1.0
+evalFakeV(K) = 1.0
 
-function evalFakePropagator(idx, object, K, varT, diag)
-    return 1.0
-end
+################## api for expression tree ##############################
+evalPropagator(id::GreenId, K, varT) = evalG(K, varT[object.siteBasis[1]], varT[object.siteBasis[2]])
+evalPropagator(id::InteractionId, K, varT) = evalV(K)
+evalPropagatorfixK(id::GreenId, K, varT) = evalGfixK(K, varT[object.siteBasis[1]], varT[object.siteBasis[2]])
+evalPropagatorfixK(id::InteractionId, K, varT) = evalVfixK(K)
+evalFakePropagator(idx::DiagramId, K, varT) = 1.0
 
-function evalFakeG(K, τin, τout)
-    return 1.0
-end
-
-function evalFakeV(K)
-    return 1.0
-end
-
+################## api for diagram tree ##############################
+eval(id::GreenId, varK, varT) = evalG(varK * id.extK, varT[id.extT[1]], varT[id.extT[2]])
+eval(id::InteractionId, varK, varT) = evalV(varK * id.extK)
+evalfixK(id::InteractionId, varK, varT) = evalVfixK(varK * id.extK)
+evalfixK(id::GreenId, varK, varT) = evalGfixK(varK * id.extK, varT[id.extT[1]], varT[id.extT[2]])
 evalFake(id::DiagramId, varK, varT) = 1.0
 
-function evalfixK(id::GreenId, varK, varT)
-    K = varK * id.extK
-    tin, tout = id.extT
-    return evalGfixK(K, varT[tin], varT[tout])
-end
-
-function evalfixK(id::InteractionId, varK, varT)
-    K = varK * id.extK
-    return evalVfixK(K)
-end
-
-function eval(id::GreenId, varK, varT)
-    K = varK * id.extK
-    tin, tout = id.extT
-    return evalG(K, varT[tin], varT[tout])
-end
-
-function eval(id::InteractionId, varK, varT)
-    K = varK * id.extK
-    return evalV(K)
-end
 
 @testset "ParquetNew Ver4" begin
     Benchmark = Parquet.Benchmark
 
     function getfunction(type)
         if type == :physical
-            return eval, evalG, evalV
+            return eval, evalG, evalV, evalPropagator
         elseif type == :fixK
-            return evalfixK, evalGfixK, evalVfixK
+            return evalfixK, evalGfixK, evalVfixK, evalPropagatorfixK
         elseif type == :fake
-            return evalFake, evalFakeG, evalFakeV
+            return evalFake, evalFakeG, evalFakeV, evalFakePropagator
         else
             error("not implemented")
         end
@@ -177,11 +124,14 @@ end
         # DiagTreeNew.plot_tree(diags[1])
         # DiagTreeNew.plot_tree(diags[2])
 
+        ################### ExprTree ###################################
+        # tree, root = ExprTree.compile(diags.diagram)
+
         ver4 = Benchmark.Ver4{Benchmark.Weight}(para, Int.(chan), Int.(blocks.phi), Int.(blocks.ppi))
 
         if toeval
 
-            eval, evalG, evalV = getfunction(type)
+            eval, evalG, evalV, evalPropagator = getfunction(type)
 
             # w1 = DiagTree.evalNaive(diag, varK, varT, evalPropagator)
             evalDiagTree!(diags, eval, varK, varT)
@@ -192,6 +142,11 @@ end
                 printstyled("naive DiagTree evaluator cost:", color = :green)
                 @time evalDiagTree!(diags, eval, varK, varT)
             end
+
+            # ExprTree.evalNaive!(tree, diags, evalPropagator, varK, varT)
+            # w1 = [diags.diagram[1].weight, diags.diagram[2].weight]
+            # println(w1)
+
 
             ##################### lower level subroutines  #######################################
 
