@@ -79,8 +79,7 @@ struct ParquetBlocks
 end
 
 function Base.isequal(a::ParquetBlocks, b::ParquetBlocks)
-    if issetequal(a.F, b.F) && issetequal(a.V, b.V) && issetequal(a.Γ4, b.Γ4) &&
-       issetequal(a.Ftop, b.Ftop) && issetequal(a.Vtop, b.Vtop) && issetequal(a.Γ4top, b.Γ4top)
+    if issetequal(a.phi, b.phi) && issetequal(a.ppi, b.ppi) && issetequal(a.Γ4, b.Γ4)
         return true
     else
         return false
