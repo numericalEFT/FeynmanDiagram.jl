@@ -134,21 +134,21 @@ function findFirstTauIdx(partition::Vector{Int}, diagType::Vector{DiagramType}, 
     return firstTauidx, maxTauIdx
 end
 
-function newDiagTree(para, name::Symbol = :none)
-    weightType = para.weightType
-    Kpool = DiagTree.LoopPool(:K, para.loopDim, para.totalLoopNum, Float64)
-    # nodeParaType = Vector{Int}
-    nodeParaType = Any
-    propagatorPool = []
-    push!(propagatorPool, DiagTree.propagatorPool(:Gpool, weightType))
-    for interaction in para.interaction
-        response = interaction.response
-        for type in interaction.type
-            push!(propagatorPool, DiagTree.propagatorPool(symbol(response, type, "pool"), weightType))
-        end
-    end
-    return DiagTree.Diagrams(Kpool, Tuple(propagatorPool), weightType, nodeParaType = nodeParaType, name = name)
-end
+# function newDiagTree(para, name::Symbol = :none)
+#     weightType = para.weightType
+#     Kpool = DiagTree.LoopPool(:K, para.loopDim, para.totalLoopNum, Float64)
+#     # nodeParaType = Vector{Int}
+#     nodeParaType = Any
+#     propagatorPool = []
+#     push!(propagatorPool, DiagTree.propagatorPool(:Gpool, weightType))
+#     for interaction in para.interaction
+#         response = interaction.response
+#         for type in interaction.type
+#             push!(propagatorPool, DiagTree.propagatorPool(symbol(response, type, "pool"), weightType))
+#         end
+#     end
+#     return DiagTree.Diagrams(Kpool, Tuple(propagatorPool), weightType, nodeParaType = nodeParaType, name = name)
+# end
 
 function allsame(df, name::Symbol)
     @assert all(x -> x == df[1, name], df[!, name]) "Not all rows of the $name field are the same.\n$df"

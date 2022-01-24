@@ -1,3 +1,22 @@
+"""
+    function Ver4{W}(para::Para, loopNum = para.internalLoopNum, tidx = 1; chan = para.chan, F = para.F, V = para.V, level = 1, id = [1,]) where {W}
+
+    Generate 4-vertex diagrams using Parquet Algorithm
+
+#Arguments
+- `para`: parameters. It should provide internalLoopNum, interactionTauNum, firstTauIdx
+- `chan`: list of channels of the current 4-vertex. 
+- `F`   : channels of left sub-vertex for the particle-hole and particle-hole-exchange bubbles
+- `V`   : channels of left sub-vertex for the particle-particle bubble
+- `All`   : channels of right sub-vertex of all channels
+- `Fouter`   : channels of left sub-vertex for the particle-hole and particle-hole-exchange bubbles, only take effect for the outermost bubble
+- `Vouter`   : channels of left sub-vertex for the particle-particle bubble, only take effect for the outermost bubble
+- `Allouter`   : channels of right sub-vertex of all channels
+- `loopNum`: momentum loop degrees of freedom of the 4-vertex diagrams
+- `tidx`: the first τ variable index. It will be the τ variable of the left incoming electron for all 4-vertex diagrams
+- `level`: level in the diagram tree
+- `id`: the first element will be used as the id of the Ver4. All nodes in the tree will be labeled in preorder depth-first search
+"""
 function vertex4(para::GenericPara, legK, chan::AbstractVector, subdiagram = false; level = 1,
     phi_toplevel = para.extra.phi, ppi_toplevel = para.extra.ppi, Γ4_toplevel = para.extra.Γ4, name = :none)
 
@@ -173,222 +192,176 @@ function bubble2diag(para, chan, ldiag, rdiag, extK, g0, gx)
     return diag
 end
 
-function buildVer4(para, LegK, chan, subdiagram = false; F = [I, U, S], V = [I, T, U], All = union(F, V),
-    Fouter = F, Vouter = V, Allouter = All, diag = newDiagTree(para, :Ver4))
+function bareVer4(para::GenericPara, legK, diex::Vector{Permutation} = [Di, Ex])
+    # @assert para.diagType == Ver4Diag
 
-    ver4 = Ver4(diag, para, LegK, chan, subdiagram; F = F, V = V, All = All, Fouter = Fouter, Vouter = Vouter, Allouter = Allouter)
+    KinL, KoutL, KinR = legK[1], legK[2], legK[3]
+    t0 = para.firstTauIdx
 
-    # return diag, ver4.nodes
-    return diag, toDataFrame(ver4.nodes)
+    nodes = Diagram{para.weightType}[]
+
+    q = [KinL - KoutL, KinR - KoutL]
+
+    if para.hasTau
+        extT_ins = [(t0, t0, t0, t0), (t0, t0, t0, t0)]
+        extT_dyn = [(t0, t0, t0 + 1, t0 + 1), (t0, t0 + 1, t0 + 1, t0)]
+        innerT_ins = [(0, 0), (0, 0)]
+        innerT_dyn = [(t0, t0 + 1), (t0, t0 + 1)]
+    else
+        extT_ins = [(0, 0, 0, 0), (0, 0, 0, 0)]
+        extT_dyn = extT_ins
+        innerT_ins = [(0, 0), (0, 0)]
+        innerT_dyn = innerT_ins
+    end
+
+    function bare(response::Response, type::AnalyticProperty, _diex::Permutation, _innerT, _q)
+        @assert _diex == Di || _diex == Ex
+
+        sign = (para.isFermi && (_diex == Di)) ? -1.0 : 1.0
+
+        if notProper(para, _q) == false && _diex in diex
+            #create new bare ver4 only if _diex is required in the diex table 
+            vid = InteractionId(para, response, type, k = _q, t = _innerT, permu = _diex)
+            return Diagram(vid, factor = sign)
+        else
+            return nothing
+        end
+    end
+
+    function addver4!(response::Response, type, _extT, vd, ve)
+        id_di = Ver4Id(para, response, type, k = legK, t = _extT[DI])
+        (isnothing(vd) == false) && push!(nodes, Diagram(id_di, Sum(), [vd,]))
+
+        id_ex = Ver4Id(para, response, type, k = legK, t = _extT[EX])
+        (isnothing(ve) == false) && push!(nodes, Diagram(id_ex, Sum(), [ve,]))
+        # end
+    end
+
+    function addresponse!(response::Response, type, _extT, _innerT)
+        if response == UpUp
+            vd = bare(response, type, Di, _innerT[DI], q[DI])
+            ve = bare(response, type, Ex, _innerT[EX], q[EX])
+            addver4!(UpUp, type, _extT, vd, ve)
+        elseif response == UpDown
+            vd = bare(UpDown, type, Di, _innerT[DI], q[DI])
+            ve = nothing
+            addver4!(UpDown, type, _extT, vd, ve)
+        elseif response == ChargeCharge
+            # UpUp channel
+            vuud = bare(ChargeCharge, type, Di, _innerT[DI], q[DI])
+            vuue = bare(ChargeCharge, type, Ex, _innerT[EX], q[EX])
+            addver4!(UpUp, type, _extT, vuud, vuue)
+
+            # UpDown channel
+            vupd = bare(ChargeCharge, type, Di, _innerT[DI], q[DI])
+            vupe = nothing
+            # UpDown, exchange channel doesn't exist for the charge-charge interaction
+            addver4!(UpDown, type, _extT, vupd, vupe)
+        else
+            error("not implemented!")
+        end
+    end
+
+    for interaction in para.interaction
+        response = interaction.response
+        typeVec = interaction.type
+
+        if Instant ∈ typeVec && Dynamic ∉ typeVec
+            addresponse!(response, Instant, extT_ins, innerT_ins)
+        elseif Instant ∉ typeVec && Dynamic ∈ typeVec
+            addresponse!(response, Dynamic, extT_dyn, innerT_dyn)
+        elseif Instant ∈ typeVec && Dynamic ∈ typeVec
+            #if hasTau, instant interaction has an additional fake tau variable, making it similar to the dynamic interaction
+            addresponse!(response, Instant, extT_ins, innerT_dyn)
+            addresponse!(response, Dynamic, extT_dyn, innerT_dyn)
+        end
+
+        if D_Instant ∈ typeVec && D_Dynamic ∉ typeVec
+            addresponse!(response, D_Instant, extT_ins, innerT_ins)
+        elseif D_Instant ∉ typeVec && D_Dynamic ∈ typeVec
+            addresponse!(response, D_Dynamic, extT_dyn, innerT_dyn)
+        elseif D_Instant ∈ typeVec && D_Dynamic ∈ typeVec
+            #if hasTau, instant interaction has an additional fake tau variable, making it similar to the dynamic interaction
+            addresponse!(response, D_Instant, extT_ins, innerT_dyn)
+            addresponse!(response, D_Dynamic, extT_dyn, innerT_dyn)
+        end
+    end
+
+    return nodes
 end
 
+######################### utility functions ############################
 maxVer4TauIdx(para) = (para.innerLoopNum + 1) * para.interactionTauNum + para.firstTauIdx - 1
 maxVer4LoopIdx(para) = para.firstLoopIdx + para.innerLoopNum - 1
 
-"""
-    function Ver4{W}(para::Para, loopNum = para.internalLoopNum, tidx = 1; chan = para.chan, F = para.F, V = para.V, level = 1, id = [1,]) where {W}
-
-    Generate 4-vertex diagrams using Parquet Algorithm
-
-#Arguments
-- `para`: parameters. It should provide internalLoopNum, interactionTauNum, firstTauIdx
-- `chan`: list of channels of the current 4-vertex. 
-- `F`   : channels of left sub-vertex for the particle-hole and particle-hole-exchange bubbles
-- `V`   : channels of left sub-vertex for the particle-particle bubble
-- `All`   : channels of right sub-vertex of all channels
-- `Fouter`   : channels of left sub-vertex for the particle-hole and particle-hole-exchange bubbles, only take effect for the outermost bubble
-- `Vouter`   : channels of left sub-vertex for the particle-particle bubble, only take effect for the outermost bubble
-- `Allouter`   : channels of right sub-vertex of all channels
-- `loopNum`: momentum loop degrees of freedom of the 4-vertex diagrams
-- `tidx`: the first τ variable index. It will be the τ variable of the left incoming electron for all 4-vertex diagrams
-- `level`: level in the diagram tree
-- `id`: the first element will be used as the id of the Ver4. All nodes in the tree will be labeled in preorder depth-first search
-"""
-struct Ver4
-    diag::Any
-    para::GenericPara
-    chan::Vector{Channel} # list of channels
-    F::Vector{Channel}
-    V::Vector{Channel}
-    All::Vector{Channel}
-    Fouter::Vector{Channel}
-    Vouter::Vector{Channel}
-    Allouter::Vector{Channel}
-
-    level::Int
-    extK::Vector{Vector{Float64}}
-    nodes::Vector{Node{Vertex4}}
-
-    function Ver4(diag, para, legK, chan, subdiagram = false; F = [I, U, S], V = [I, T, U], All = union(F, V),
-        Fouter = F, Vouter = V, Allouter = All, level = 1, name = :none)
-
-        @assert para.totalTauNum >= maxVer4TauIdx(para) "Increase totalTauNum!\n$para"
-        @assert para.totalLoopNum >= maxVer4LoopIdx(para) "Increase totalLoopNum\n$para"
-
-        if level > 1
-            @assert Set(F) == Set(Fouter)
-            @assert Set(V) == Set(Vouter)
-            @assert Set(All) == Set(Allouter)
-        end
-
-        @assert (T in F) == false "F vertex is particle-hole irreducible, so that T channel is not allowed in F=$F"
-        @assert (S in V) == false "V vertex is particle-particle irreducible, so that S channel is not allowed in V=$V"
-        @assert (T in Fouter) == false "F vertex is particle-hole irreducible, so that T channel is not allowed in F=$Fouter"
-        @assert (S in Vouter) == false "V vertex is particle-particle irreducible, so that S channel is not allowed in V=$Vouter"
-
-        @assert length(legK[1]) == length(legK[2]) == length(legK[3]) == para.totalLoopNum
-
-        KinL, KoutL, KinR = legK[1], legK[2], legK[3]
-        KoutR = (length(legK) > 3) ? legK[4] : KinL + KinR - KoutL
-        @assert KoutR ≈ KinL + KinR - KoutL
-        legK = [KinL, KoutL, KinR, KoutR]
-
-        # g = @SVector [Vector{Green}([]) for i = 1:16]
-        ver4 = new(diag, para, chan, F, V, All, Fouter, Vouter, Allouter, level, legK, [])
-
-        loopNum = para.innerLoopNum
-        @assert loopNum >= 0
-
-        if loopNum == 0
-            append!(ver4.nodes, bareVer4!(diag, para, legK, [DI, EX], name))
-        else # loopNum>0
-            for c in chan
-                if c == I
-                    continue
-                end
-
-                partition = orderedPartition(loopNum - 1, 4, 0)
-
-                for p in partition
-
-                    if c == T || c == U || c == S
-                        addBubble!(ver4, c, p, level)
-                    end
-                end
-            end
-            # # TODO: add envolpe diagrams
-            # # for c in II
-            # # end
-            # test(ver4) # more test
-            for n in ver4.nodes
-                generate_node_from_children!(diag, n, ADD, 1.0, name; para = n.id)
-            end
-        end
-
-
-        return ver4
-    end
-end
-
-struct Bubble
-    channel::Channel
-    g0::GenericPara
-    gx::GenericPara
-    lver::Ver4
-    rver::Ver4
-    parent::Ver4
-end
-
-function addBubble!(ver4::Ver4, chan::Channel, partition::Vector{Int}, level::Int)
-    diag = ver4.diag
-    para = ver4.para
-    TauNum = para.interactionTauNum # maximum tau number for each bare interaction
-    oL, oG0, oR, oGx = partition[1], partition[2], partition[3], partition[4]
-    if isValidG(para.filter, oG0) == false || isValidG(para.filter, oGx) == false
-        return
-    end
-
-    #the first loop idx is the inner loop of the bubble!
-    LoopIdx = para.firstLoopIdx
-    idx, maxLoop = findFirstLoopIdx(partition, LoopIdx + 1)
-    LfirstLoopIdx, G0firstLoopIdx, RfirstLoopIdx, GxfirstLoopIdx = idx
-    @assert maxLoop == maxVer4LoopIdx(para)
-
-    diagType = [Ver4Diag, GreenDiag, Ver4Diag, GreenDiag]
-    idx, maxTau = findFirstTauIdx(partition, diagType, para.firstTauIdx, TauNum)
-    LfirstTauIdx, G0firstTauIdx, RfirstTauIdx, GxfirstTauIdx = idx
-    @assert maxTau == maxVer4TauIdx(para) "Partition $partition with tauNum configuration $idx. maxTau = $maxTau, yet $(maxTauIdx(para)) is expected!"
-
-    if chan == T || chan == U
-        LverChan = (level == 1) ? ver4.Fouter : ver4.F
-        RverChan = (level == 1) ? ver4.Allouter : ver4.All
-    elseif chan == S
-        LverChan = (level == 1) ? ver4.Vouter : ver4.V
-        RverChan = (level == 1) ? ver4.Allouter : ver4.All
+function legBasis(chan::TwoBodyChannel, legK, loopIdx)
+    KinL, KoutL, KinR, KoutR = legK[1], legK[2], legK[3], legK[4]
+    K = zero(KinL)
+    K[loopIdx] = 1
+    if chan == PHr
+        Kx = KoutL + K - KinL
+        LLegK = [KinL, KoutL, Kx, K]
+        RLegK = [K, Kx, KinR, KoutR]
+    elseif chan == PHEr
+        Kx = KoutR + K - KinL
+        LLegK = [KinL, KoutR, Kx, K]
+        RLegK = [K, Kx, KinR, KoutL]
+    elseif chan == PPr
+        Kx = KinL + KinR - K
+        LLegK = [KinL, Kx, KinR, K]
+        RLegK = [K, KoutL, Kx, KoutR]
     else
-        error("chan $chan isn't implemented!")
+        error("not implemented!")
     end
 
-    LLegK, K, RLegK, Kx = legBasis(chan, ver4.extK, LoopIdx)
-    # println(K, ", ", Kx)
+    # check conservation and momentum assignment
+    @assert LLegK[INL] ≈ KinL
+    @assert LLegK[INL] + LLegK[INR] ≈ LLegK[OUTL] + LLegK[OUTR]
+    @assert RLegK[INL] + RLegK[INR] ≈ RLegK[OUTL] + RLegK[OUTR]
 
-    lPara = reconstruct(para, innerLoopNum = oL, firstLoopIdx = LfirstLoopIdx, firstTauIdx = LfirstTauIdx)
-    Lver = Ver4(diag, lPara, LLegK, LverChan, true; F = ver4.F, V = ver4.V, All = ver4.All, level = level + 1, name = :F)
-
-    rPara = reconstruct(para, innerLoopNum = oR, firstLoopIdx = RfirstLoopIdx, firstTauIdx = RfirstTauIdx)
-    Rver = Ver4(diag, rPara, RLegK, RverChan, true; F = ver4.F, V = ver4.V, All = ver4.All, level = level + 1, name = :All)
-
-    gxPara = reconstruct(para, innerLoopNum = oGx, firstLoopIdx = GxfirstLoopIdx, firstTauIdx = GxfirstTauIdx)
-    g0Para = reconstruct(para, innerLoopNum = oG0, firstLoopIdx = G0firstLoopIdx, firstTauIdx = G0firstTauIdx)
-
-    bubble = Bubble(chan, g0Para, gxPara, Lver, Rver, ver4)
-
-    for lnode in Lver.nodes
-        for rnode in Rver.nodes
-            addBubble2Diag!(diag, bubble, lnode, rnode, K, Kx)
-        end
-    end
-
-    return bubble
+    return LLegK, K, RLegK, Kx
 end
 
-function addBubble2Diag!(diag, bubble, lnode, rnode, K, Kx)
-    chan = bubble.channel
-    ver4, lver, rver = bubble.parent, bubble.lver, bubble.rver
-    lid, rid = lnode.id, rnode.id
-    ln, rn = lid.response, rid.response
-    lc, rc = lid.DiEx, rid.DiEx
-    vtype = typeMap(lid.type, rid.type)
-
-    extT, G0T, GxT = tauBasis(chan, lid.extT, rid.extT)
-    extK = ver4.extK
-
-    Factor = factor(ver4.para, chan)
-
-    # diag, g0 = buildG(bubble.g0, K, (LvT[OUTR], RvT[INL]); diag = diag)
-    # diag, gc = buildG(bubble.gx, Kx, (RvT[OUTL], LvT[INR]); diag = diag)
-    g0 = DiagTree.addpropagator!(diag, :Gpool, 0, :G0; site = G0T, loop = K)
-    gc = DiagTree.addpropagator!(diag, :Gpool, 0, :Gx; site = GxT, loop = Kx)
-
-    spin(response) = (response == UpUp ? "↑↑" : "↑↓")
-
-    function add(Lresponse::Response, Rresponse::Response, Vresponse::Response, factor = 1.0)
-        if ln == Lresponse && rn == Rresponse
-            nodeName = Symbol("$(spin(Lresponse))x$(spin(Rresponse)) → $chan,")
-            id = Vertex4(Vresponse, vtype, BOTH, extK, extT, ver4.para)
-            n = DiagTree.addnode!(diag, MUL, nodeName, [g0, gc, lnode.node, rnode.node], factor * Factor; para = id)
-            add!(ver4.nodes, id, children = [n,])
-        end
+function tauBasis(chan::TwoBodyChannel, LvT, RvT)
+    G0T = (LvT[OUTR], RvT[INL])
+    if chan == PHr
+        extT = (LvT[INL], LvT[OUTL], RvT[INR], RvT[OUTR])
+        GxT = (RvT[OUTL], LvT[INR])
+    elseif chan == PHEr
+        extT = (LvT[INL], RvT[OUTR], RvT[INR], LvT[OUTL])
+        GxT = (RvT[OUTL], LvT[INR])
+    elseif chan == PPr
+        extT = (LvT[INL], RvT[OUTL], LvT[INR], RvT[OUTR])
+        GxT = (LvT[OUTL], RvT[INR])
+    else
+        error("not implemented!")
     end
 
-    if chan == T
-        add(UpUp, UpUp, UpUp, 1.0)
-        add(UpDown, UpDown, UpUp, 1.0)
-        add(UpUp, UpDown, UpDown, 1.0)
-        add(UpDown, UpUp, UpDown, 1.0)
-    elseif chan == U
-        add(UpUp, UpUp, UpUp, 1.0)
-        add(UpUp, UpUp, UpDown, 1.0)
-        add(UpDown, UpDown, UpUp, 1.0)
-        add(UpDown, UpDown, UpDown, 1.0)
-        add(UpUp, UpDown, UpDown, -1.0)
-        add(UpDown, UpUp, UpDown, -1.0)
-    elseif chan == S
-        add(UpUp, UpUp, UpUp, 1.0)
-        add(UpDown, UpDown, UpDown, -2.0)
-        add(UpUp, UpDown, UpDown, 1.0)
-        add(UpDown, UpUp, UpDown, 1.0)
+    # make sure all tidx are used once and only once
+    t1 = sort(vcat(collect(G0T), collect(GxT), collect(extT)))
+    t2 = sort(vcat(collect(LvT), collect(RvT)))
+    @assert t1 == t2 "chan $(chan): G0=$G0T, Gx=$GxT, external=$extT don't match with Lver4 $LvT and Rver4 $RvT"
+    @assert extT[INL] == LvT[INL]
+    return extT, G0T, GxT
+end
+
+
+function factor(para, chan)
+    Factor = SymFactor[Int(chan)] / (2π)^para.loopDim
+    if para.isFermi == false
+        Factor = abs(Factor)
+    end
+    return Factor
+end
+
+function typeMap(ltype, rtype)
+    if (ltype == Instant || ltype == Dynamic) && (rtype == Instant || rtype == Dynamic)
+        return Dynamic
+    elseif (ltype == D_Instant || ltype == D_Dynamic) && (rtype == Instant || rtype == Dynamic)
+        return D_Dynamic
+    elseif (ltype == Instant || ltype == Dynamic) && (rtype == D_Instant || rtype == D_Dynamic)
+        return D_Dynamic
     else
-        error("chan $chan isn't implemented!")
+        return nothing
     end
 end
