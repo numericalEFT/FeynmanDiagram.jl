@@ -1,8 +1,12 @@
 module ExprTree
+using ..DiagTree
+
 using Printf, PyCall
 
 const ADD, MUL = 1, 2
 export ADD, MUL
+
+include("common.jl")
 
 # struct Cache and struct Pool
 include("pool.jl")
