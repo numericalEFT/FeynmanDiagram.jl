@@ -1,4 +1,4 @@
-function compile(diags::AbstractVector)
+function compile(diags::AbstractVector, verbose::Int = 0)
     @assert all(d -> (d.id.para == diags[1].id.para), diags) "Parameters of all diagrams shoud be the same!"
 
     tree = newExprTree(diags[1].id.para, :none)
@@ -24,8 +24,8 @@ function compile(diags::AbstractVector)
     end
     gnum = length(Set([p.index for p in values(propagators) if p.poolName == :Gpool]))
     wnum = length(Set([p.index for p in values(propagators) if p.poolName != :Gpool]))
-    println("Number of independent Greens $gnum0 → $gnum")
-    println("Number of independent Interactions $wnum0 → $wnum")
+    verbose > 0 && println("Number of independent Greens $gnum0 → $gnum")
+    verbose > 0 && println("Number of independent Interactions $wnum0 → $wnum")
 
     ############### Nodes ###############################################
     nodesVec = []
@@ -56,7 +56,7 @@ function compile(diags::AbstractVector)
     end
     nodenum = length(values(nodes))
 
-    println("Number of independent nodes in the Diagram Tree: $nodenum0 → $nodenum")
+    verbose > 0 && println("Number of independent nodes in the Diagram Tree: $nodenum0 → $nodenum")
 
     #return the roots
     roots = [nodes[d.hash] for d in diags]

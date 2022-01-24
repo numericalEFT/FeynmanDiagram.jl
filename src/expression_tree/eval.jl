@@ -48,5 +48,6 @@ function evalNaive(diag::Diagrams, loopVar, siteVar, evalPropagator, evalNodeFac
     end
 
     # println("tree root", root)
-    return view(tree.current, root)
+    return tree.current[root]
+    # return view(tree.current, root)
 end
