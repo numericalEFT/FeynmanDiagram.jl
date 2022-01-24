@@ -15,28 +15,33 @@ function vertex3(para, extK, subdiagram = false; name = :Γ3, chan = [PHr, PHEr,
         para = reconstruct(para, transferLoop = q)
     end
 
+    t0 = para.firstTauIdx
+    vertex3 = DataFrame()
+
+    # if para.innerLoopNum == 0
+    #     push!(vertex3, (response = UpUp, extT = (t0, t0, t0), diagram = ver3diag))
+    # end
+
     if (para.extra isa ParquetBlocks) == false
-        parquetblocks = ParquetBlocks(phi = [PPr, PHEr], ppi = [PHr, PHEr], Γ4 = [PPr, PHr, PHEr])
-        para = reconstruct(para, extra = parquetblocks)
+        para = reconstruct(para, extra = ParquetBlocks())
     end
 
     K = zero(q)
     LoopIdx = para.firstLoopIdx
     K[LoopIdx] = 1.0
-    t0 = para.firstTauIdx
     # extT = (t0, t0 + 1)
     legK = [Kin, Kout, K, K .+ q]
 
-    vertex3 = DataFrame()
-
     ######################## Π0 = GG #########################################
     for (oVer4, oGin, oGout) in orderedPartition(para.innerLoopNum - 1, 3, 0)
+        # ! Vertex4 must be in the first place, because we want to make sure that the TinL of the vertex4 start with t0+1
 
         idx, maxLoop = findFirstLoopIdx([oVer4, oGin, oGout], LoopIdx + 1)
         @assert maxLoop <= para.totalLoopNum "maxLoop = $maxLoop > $(para.totalLoopNum)"
         Ver4Kidx, GinKidx, GoutKidx = idx
 
-        idx, maxTau = findFirstTauIdx([oVer4, oGin, oGout], [Ver4Diag, GreenDiag, GreenDiag], para.firstTauIdx + 1, para.interactionTauNum)
+        ver4t0 = para.hasTau ? para.firstTauIdx + 1 : para.firstTauIdx
+        idx, maxTau = findFirstTauIdx([oVer4, oGin, oGout], [Ver4Diag, GreenDiag, GreenDiag], ver4t0, para.interactionTauNum)
         @assert maxTau <= para.totalTauNum "maxTau = $maxTau > $(para.totalTauNum)"
         Ver4Tidx, GinTidx, GoutTidx = idx
 
@@ -50,6 +55,10 @@ function vertex3(para, extK, subdiagram = false; name = :Γ3, chan = [PHr, PHEr,
             ver4 = vertex4(paraVer4, legK, chan, true)
             if isnothing(ver4) || isempty(ver4)
                 continue
+            end
+
+            if para.hasTau
+                @assert all(x -> x[INL] == ver4t0, ver4[:, :extT]) "The TinL of the inner Γ4 must be firstTauIdx+1"
             end
 
             #transform extT coloum into extT for Vertex4 and the extT for Gin and Gout

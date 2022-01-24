@@ -79,43 +79,22 @@ legK = [Q, KinL]
 vertex3 = Parquet.vertex3(para, legK)
 println(mergeby(vertex3))
 if isempty(vertex3) == false
-    plot_tree(vertex3, maxdepth = 7)
+    # plot_tree(vertex3, maxdepth = 7)
 end
-exit(0)
-
-
-# para = Builder.GenericPara(
-#     loopDim = 3,
-#     innerLoopNum = 1,
-#     totalLoopNum = 4,
-#     totalTauNum = 3,
-#     spin = 2,
-#     interactionTauNum = 1,
-#     firstLoopIdx = 2,
-#     weightType = Float64,
-#     filter = [Builder.Proper,]
-# )
-
-# K0 = zeros(para.totalLoopNum)
-# Kin, Kout = deepcopy(K0), deepcopy(K0)
-# Kin[1] = 1
-# Kout[2] = 1
-# legK = [Kin, Kout]
-# Parquet.buildVer3(para, legK)
-
+# exit(0)
 
 #####################################  polarization  ############################################
 para = GenericPara(
     diagType = PolarDiag,
-    innerLoopNum = 1,
+    innerLoopNum = 2,
     hasTau = true,
     filter = [NoFock,],
-    # interaction = [Interaction(ChargeCharge, [Instant, Dynamic]), Interaction(UpDown, [Instant, Dynamic])]
-    interaction = [Interaction(UpDown, [Instant, Dynamic])]
+    interaction = [Interaction(ChargeCharge, [Instant, Dynamic]),]
+    # interaction = [Interaction(UpDown, [Instant, Dynamic])]
 )
 
 K0 = zeros(para.totalLoopNum)
 K0[1] = 1.0
 polar = Parquet.polarization(para, K0)
-# plot_tree(polar)
+plot_tree(polar)
 # exit(0)

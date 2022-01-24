@@ -73,7 +73,7 @@ struct ParquetBlocks
     phi::Vector{TwoBodyChannel}
     ppi::Vector{TwoBodyChannel}
     Γ4::Vector{TwoBodyChannel}
-    function ParquetBlocks(; phi = (Alli, PHEr, PPr), ppi = (Alli, PHr, PHEr), Γ4 = union(phi, ppi))
+    function ParquetBlocks(; phi = [Alli, PHEr, PPr], ppi = [Alli, PHr, PHEr], Γ4 = union(phi, ppi))
         return new(phi, ppi, Γ4)
     end
 end
@@ -125,6 +125,7 @@ function findFirstTauIdx(partition::Vector{Int}, diagType::Vector{DiagramType}, 
     # partition = [1, 1, 2, 1], then the tau partition = [12][3][456][7], thus firstTauIdx = [1, 3, 4, 7]
     # partition = [1, 0, 2, 0], then the tau partition = [12][][345][], thus firstTauIdx = [1, 3, 3, 6]
     @assert length(partition) == length(diagType)
+    @assert _tauNum >= 0
     taupartition = [innerTauNum(diagType[i], p, _tauNum) for (i, p) in enumerate(partition)]
     accumulated = accumulate(+, taupartition; init = firstidx) #  idx[i] = firstidx + p[1]+p[2]+...+p[i]
     firstTauidx = [firstidx,]
