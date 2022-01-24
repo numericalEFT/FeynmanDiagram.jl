@@ -465,3 +465,60 @@ end
 #     @test G.index > 0
 
 # end
+
+
+@testset "Parquet Vertex3" begin
+    Parquet = ParquetNew
+    function getGamma3(loopNum; Kdim = 3, spin = 2, interactionTauNum = 1, filter = [Girreducible, Proper,], isFermi = true, subdiagram = false)
+        println("LoopNum =$loopNum Vertex3 Test")
+
+        para = GenericPara(
+            diagType = Ver3Diag,
+            loopDim = Kdim,
+            innerLoopNum = loopNum,
+            isFermi = isFermi,
+            hasTau = true,
+            filter = filter,
+            interaction = [Interaction(ChargeCharge, Instant),]
+        )
+
+        K0 = zeros(para.totalLoopNum)
+        KinL, Q = deepcopy(K0), deepcopy(K0)
+        Q[1] = 1
+        KinL[2] = 1
+        legK = [Q, KinL]
+
+        varK = rand(Kdim, para.totalLoopNum)
+        varT = [rand() for i in 1:para.totalTauNum]
+
+        #################### DiagTree ####################################
+        vertex3 = Parquet.Vertex3(para, legK)
+        diag = mergeby(vertex3)
+        # print_tree(diag.diagram[1])
+
+        return para, diag.diagram[1], varK, varT
+    end
+
+
+    function testDiagramNumber(para, diag, varK, varT)
+        # w = DiagTree.evalNaive(diag, varK, varT, evalFakePropagator)
+        w = evalDiagTree!(diag, evalFake, varK, varT)
+        # plot_tree(diag, maxdepth = 9)
+        factor = (1 / (2π)^para.loopDim)^para.innerLoopNum
+        num = w / factor
+        @test num ≈ gamma3_G2v(para.innerLoopNum, para.spin)
+    end
+
+
+    ##################  G^2*v expansion #########################################
+    for l = 1:3
+        # ret = getSigma(l, spin = 1, isFermi = false, filter = [Builder.Girreducible,])
+        # testDiagramNumber(ret...)
+        ret = getGamma3(l, isFermi = false, filter = [Girreducible, Proper])
+        testDiagramNumber(ret...)
+    end
+
+    # para, diag, varK, varT = getSigma(1, spin = 2, isFermi = false, filter = [Builder.NoFock,], subdiagram = true)
+    # @test isempty(diag.root)
+
+end
