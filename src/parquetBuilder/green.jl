@@ -7,7 +7,7 @@
 - `extT`: [Tau index of the left leg, Tau index of the right leg]
 
 """
-function buildG(para, extK, extT, subdiagram = false; name = :none)
+function green(para, extK, extT, subdiagram = false; name = :none)
     @assert para.diagType == GreenDiag
     tin, tout = extT[1], extT[2]
     extT = [tin, tout]

@@ -1,4 +1,4 @@
-function buildVer4(para::GenericPara, legK, chan::AbstractVector, subdiagram = false; level = 1,
+function vertex4(para::GenericPara, legK, chan::AbstractVector, subdiagram = false; level = 1,
     phi_toplevel = para.extra.phi, ppi_toplevel = para.extra.ppi, Γ4_toplevel = para.extra.Γ4, name = :none)
 
     (subdiagram == false) && uidreset()
@@ -105,10 +105,10 @@ function bubble(para::GenericPara, legK, chan::TwoBodyChannel, partition::Vector
     LLegK, K, RLegK, Kx = legBasis(chan, legK, LoopIdx)
     # println(K, ", ", Kx)
 
-    Lver = buildVer4(lPara, LLegK, Γi, true; level = level + 1, name = :Γi)
+    Lver = vertex4(lPara, LLegK, Γi, true; level = level + 1, name = :Γi)
     isnothing(Lver) && return diag
     # println("Γf: ", Γf)
-    Rver = buildVer4(rPara, RLegK, Γf, true; level = level + 1, name = :Γf)
+    Rver = vertex4(rPara, RLegK, Γf, true; level = level + 1, name = :Γf)
     isnothing(Rver) && return diag
 
     for ldiag in Lver.diagram
