@@ -1,4 +1,4 @@
-module ParquetNew
+module Parquet
 using StaticArrays, PyCall
 using AbstractTrees
 using Parameters, Combinatorics
@@ -35,5 +35,5 @@ include("green.jl")
 include("vertex3.jl")
 include("polarization.jl")
 
-include("benchmark/parquet.jl")
+include("benchmark/benchmark.jl")
 end
