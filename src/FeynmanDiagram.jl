@@ -59,8 +59,8 @@ include("common.jl")
 export GenericPara, Interaction
 
 include("diagram_tree/DiagTree.jl")
-using .DiagTreeNew
-export DiagTreeNew
+using .DiagTree
+export DiagTree
 export TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
 export Permutation, Di, Ex, DiEx
 export Diagram, addSubDiagram!, toDataFrame
@@ -69,17 +69,17 @@ export Operator, Sum, Prod
 export DiagramId, GenericId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId, InteractionId
 export uidreset, toDataFrame, mergeby, plot_tree
 
+include("parquet_builder/parquet.jl")
+using .Parquet
+export Parquet
+export ParquetBlocks
 
-include("diagramTree/DiagTree.jl")
-export DiagTree
+include("expression_tree/ExpressionTree.jl")
+using .ExprTree
+export ExprTree
 export Component, Diagrams
 export addpropagator!, addnode!
 export setroot!, addroot!
 export evalNaive, showTree
-
-include("parquetBuilder/parquet.jl")
-using .Parquet
-export Parquet
-export ParquetBlocks
 
 end

@@ -1,4 +1,4 @@
-module DiagTree
+module ExprTree
 using Printf, PyCall
 
 const ADD, MUL = 1, 2

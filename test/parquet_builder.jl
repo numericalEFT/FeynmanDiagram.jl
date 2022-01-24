@@ -279,7 +279,7 @@ end
         # plot_tree(diag, maxdepth = 7)
         factor = (1 / (2π)^para.loopDim)^para.innerLoopNum
         num = w / factor
-        @test num ≈ Parquet.Benchmark.count_sigma_G2v(para.innerLoopNum, para.spin)
+        @test num * (-1)^(para.innerLoopNum) ≈ Parquet.Benchmark.count_sigma_G2v(para.innerLoopNum, para.spin)
     end
 
 
@@ -375,7 +375,7 @@ end
         # plot_tree(diag, maxdepth = 9)
         factor = (1 / (2π)^para.loopDim)^para.innerLoopNum
         num = w / factor
-        @test num ≈ Parquet.Benchmark.count_ver3_G2v(para.innerLoopNum, para.spin)
+        @test num * (-1)^(para.innerLoopNum) ≈ Parquet.Benchmark.count_ver3_G2v(para.innerLoopNum, para.spin)
     end
 
 
@@ -428,7 +428,7 @@ end
         # plot_tree(diag, maxdepth = 9)
         factor = (1 / (2π)^para.loopDim)^para.innerLoopNum
         num = w / factor
-        @test num * para.spin ≈ Parquet.Benchmark.count_polar_G2v(para.innerLoopNum, para.spin)
+        @test num * para.spin * (-1)^(para.innerLoopNum - 1) ≈ Parquet.Benchmark.count_polar_G2v(para.innerLoopNum, para.spin)
     end
 
 
