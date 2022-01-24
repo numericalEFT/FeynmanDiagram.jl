@@ -97,6 +97,9 @@ function polarization(para, extK, subdiagram = false; name = :Π)
 
     # for (oGinL, oGoutL, oGinR, oGoutR, ver4) in orderedPartition(para.innerLoopNum - 1, 5, 0)
     # end
+    if isempty(polar)
+        return DataFrame(response = [], extT = [], diagram = [])
+    end
 
     # legK = [extK, K, K, extK]
     Factor = 1 / (2π)^para.loopDim

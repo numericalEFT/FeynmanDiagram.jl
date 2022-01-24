@@ -15,7 +15,7 @@ function sigma(para, extK, subdiagram = false; name = :Σ)
     @assert para.totalLoopNum >= para.firstLoopIdx -1 + para.innerLoopNum
 
     if isValidSigma(para.filter, para.innerLoopNum, subdiagram) == false
-        return nothing
+        return DataFrame(type = [], extT = [], diagram = [])
     end
 
     if (para.extra isa ParquetBlocks) == false
@@ -86,6 +86,10 @@ function sigma(para, extK, subdiagram = false; name = :Σ)
                 push!(compositeSigma, GWwithGivenExTtoΣ(mergedVer4, oW, paraG))
             end
         end
+    end
+
+    if isempty(compositeSigma)
+        return DataFrame(type = [], extT = [], diagram = [])
     end
 
     Factor = 1 / (2π)^para.loopDim

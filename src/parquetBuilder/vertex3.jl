@@ -82,7 +82,7 @@ function vertex3(para, extK, subdiagram = false; name = :Γ3, chan = [PHr, PHEr,
     end
 
     if isempty(vertex3)
-        return vertex3
+        return DataFrame(response = [], extT = [], diagram = [])
     end
 
     Factor = 1 / (2π)^para.loopDim

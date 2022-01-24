@@ -53,7 +53,7 @@ function vertex4(para::GenericPara, legK, chan::AbstractVector, subdiagram = fal
 
     # @assert isempty(diags) == false "got empty ver4! $chan with\n $para\n"
     if isempty(diags)
-        return nothing
+        return DataFrame(response = [], type = [], extT = [], diagram = [])
     end
 
     df = toDataFrame(diags, expand = true)
@@ -106,10 +106,10 @@ function bubble(para::GenericPara, legK, chan::TwoBodyChannel, partition::Vector
     # println(K, ", ", Kx)
 
     Lver = vertex4(lPara, LLegK, Γi, true; level = level + 1, name = :Γi)
-    isnothing(Lver) && return diag
+    isempty(Lver) && return diag
     # println("Γf: ", Γf)
     Rver = vertex4(rPara, RLegK, Γf, true; level = level + 1, name = :Γf)
-    isnothing(Rver) && return diag
+    isempty(Rver) && return diag
 
     for ldiag in Lver.diagram
         for rdiag in Rver.diagram
