@@ -27,10 +27,7 @@ const SymFactor = [1.0, -1.0, 1.0, -0.5, +1.0, -1.0]
 include("common.jl")
 export ParquetBlocks
 
-include("identifier.jl")
 include("filter.jl")
-include("vertex4_utility.jl")
-include("vertex4_bare.jl")
 include("vertex4.jl")
 
 include("sigma.jl")
