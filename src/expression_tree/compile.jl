@@ -59,7 +59,10 @@ function compile(diags::AbstractVector)
     println("Number of independent nodes in the Diagram Tree: $nodenum0 → $nodenum")
 
     #return the roots
-    return tree, [nodes[d.hash] for d in diags]
+    roots = [nodes[d.hash] for d in diags]
+    tree.root = [r.index for r in roots]
+
+    return tree, roots
 end
 
 function poolname(id::DiagramId)

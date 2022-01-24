@@ -54,11 +54,11 @@ evalFakeG(K, τin, τout) = 1.0
 evalFakeV(K) = 1.0
 
 ################## api for expression tree ##############################
-evalPropagator(id::GreenId, K, varT) = evalG(K, varT[object.siteBasis[1]], varT[object.siteBasis[2]])
-evalPropagator(id::InteractionId, K, varT) = evalV(K)
-evalPropagatorfixK(id::GreenId, K, varT) = evalGfixK(K, varT[object.siteBasis[1]], varT[object.siteBasis[2]])
-evalPropagatorfixK(id::InteractionId, K, varT) = evalVfixK(K)
-evalFakePropagator(idx::DiagramId, K, varT) = 1.0
+evalPropagator(id::GreenId, K, Tbasis, varT) = evalG(K, varT[Tbasis[1]], varT[Tbasis[2]])
+evalPropagator(id::InteractionId, K, Tbasis, varT) = evalV(K)
+evalPropagatorfixK(id::GreenId, K, Tbasis, varT) = evalGfixK(K, varT[Tbasis[1]], varT[Tbasis[2]])
+evalPropagatorfixK(id::InteractionId, K, Tbasis, varT) = evalVfixK(K)
+evalFakePropagator(id::DiagramId, K, Tbasis, varT) = 1.0
 
 ################## api for diagram tree ##############################
 eval(id::GreenId, varK, varT) = evalG(varK * id.extK, varT[id.extT[1]], varT[id.extT[2]])
@@ -125,8 +125,10 @@ evalFake(id::DiagramId, varK, varT) = 1.0
         # DiagTreeNew.plot_tree(diags[2])
 
         ################### ExprTree ###################################
-        # tree, root = ExprTree.compile(diags.diagram)
+        tree, root = ExprTree.compile(diags.diagram)
+        println("root", root)
 
+        ################### original Parquet builder ###################################
         ver4 = Benchmark.Ver4{Benchmark.Weight}(para, Int.(chan), Int.(blocks.phi), Int.(blocks.ppi))
 
         if toeval
@@ -136,16 +138,16 @@ evalFake(id::DiagramId, varK, varT) = 1.0
             # w1 = DiagTree.evalNaive(diag, varK, varT, evalPropagator)
             evalDiagTree!(diags, eval, varK, varT)
             w1 = [diags.diagram[1].weight, diags.diagram[2].weight]
-            # println(w1)
-
             if timing
                 printstyled("naive DiagTree evaluator cost:", color = :green)
                 @time evalDiagTree!(diags, eval, varK, varT)
             end
 
-            # ExprTree.evalNaive!(tree, diags, evalPropagator, varK, varT)
-            # w1 = [diags.diagram[1].weight, diags.diagram[2].weight]
-            # println(w1)
+            w1e = ExprTree.evalNaive(tree, varK, varT, evalPropagator)
+            if timing
+                printstyled("naive ExprTree cost:", color = :green)
+                @time ExprTree.evalNaive(tree, varK, varT, evalPropagator)
+            end
 
 
             ##################### lower level subroutines  #######################################
@@ -161,12 +163,15 @@ evalFake(id::DiagramId, varK, varT) = 1.0
 
             w2 = ver4.weight[1]
 
-            # println(w1, " vs ", w2)
+            println(w1, " vs ", w1e, " vs ", w2)
+
+            @assert w1 ≈ w1e
 
             # The upup channel of charge-charge vertex4 == Direct + exchange 
             @test w1[1] ≈ w2[1] + w2[2]
             # The updown channel of charge-charge vertex4 == Direct
             @test w1[2] ≈ w2[1]
+
         end
 
         return para, diags, ver4
