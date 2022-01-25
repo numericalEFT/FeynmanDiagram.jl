@@ -1,5 +1,5 @@
 module ExprTree
-using AbstractTrees
+using AbstractTrees, LinearAlgebra
 using ..DiagTree
 
 using Printf, PyCall

@@ -1,4 +1,6 @@
-function vertex3(para, extK, subdiagram = false; name = :Γ3, chan = [PHr, PHEr, PPr, Alli])
+function vertex3(para, extK = [DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2)],
+    subdiagram = false; name = :Γ3, chan = [PHr, PHEr, PPr, Alli])
+
     (subdiagram == false) && uidreset()
     @assert para.diagType == Ver3Diag
     @assert para.innerLoopNum >= 1 "Only generates vertex corrections with more than one internal loops."

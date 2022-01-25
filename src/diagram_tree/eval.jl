@@ -3,32 +3,33 @@
 @inline apply(o::Sum, diag::Diagram{W}) where {W<:Number} = diag.weight
 @inline apply(o::Prod, diag::Diagram{W}) where {W<:Number} = diag.weight
 
-function evalDiagNode!(diag::Diagram, evalBare::Function, varK, varT)
+function evalDiagNode!(diag::Diagram, varK, varT, evalBare::Function)
     if length(diag.subdiagram) == 0
-        diag.weight = evalBare(diag.id, varK, varT) * diag.factor
+        K = varK * diag.id.extK
+        diag.weight = evalBare(diag.id, K, diag.id.extT, varT) * diag.factor
     else
         diag.weight = apply(diag.operator, diag.subdiagram) * diag.factor
     end
     return diag.weight
 end
 
-function evalDiagTree!(diag::Diagram, evalBare::Function, varK, varT)
+function evalDiagTree!(diag::Diagram, varK, varT, evalBare::Function)
     for d in PostOrderDFS(diag)
-        evalDiagNode!(d, evalBare, varK, varT)
+        evalDiagNode!(d, varK, varT, evalBare)
     end
     return diag.weight
 end
 
-function evalDiagTree!(diags::Vector{Diagram{W}}, evalBare::Function, varK, varT) where {W}
+function evalDiagTree!(diags::Vector{Diagram{W}}, varK, varT, evalBare::Function) where {W}
     for d in diags
-        evalDiagTree!(d, evalBare, varK, varT)
+        evalDiagTree!(d, varK, varT, evalBare)
     end
     # return W[d.weight for d in diags]
 end
 
-function evalDiagTree!(df::DataFrame, evalBare::Function, varK, varT) where {W}
+function evalDiagTree!(df::DataFrame, varK, varT, evalBare::Function) where {W}
     for d in df[!, :diagram]
-        evalDiagTree!(d, evalBare, varK, varT)
+        evalDiagTree!(d, varK, varT, evalBare)
     end
     # return W[d.weight for d in df[!, :Diagram]]
 end

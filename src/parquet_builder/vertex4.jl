@@ -17,10 +17,18 @@
 - `level`: level in the diagram tree
 - `id`: the first element will be used as the id of the Ver4. All nodes in the tree will be labeled in preorder depth-first search
 """
-function vertex4(para::GenericPara, legK, chan::AbstractVector, subdiagram = false; level = 1,
-    phi_toplevel = para.extra.phi, ppi_toplevel = para.extra.ppi, Γ4_toplevel = para.extra.Γ4, name = :none)
+function vertex4(para::GenericPara,
+    legK = [DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)],
+    chan::AbstractVector = [PHr, PHEr, PPr, Alli],
+    subdiagram = false;
+    level = 1, name = :none,
+    phi_toplevel = ParquetBlocks().phi, ppi_toplevel = ParquetBlocks().ppi, Γ4_toplevel = ParquetBlocks().Γ4)
 
     (subdiagram == false) && uidreset()
+
+    if (para.extra isa ParquetBlocks) == false
+        para = reconstruct(para, extra = ParquetBlocks())
+    end
 
     @assert para.extra isa ParquetBlocks
     @assert para.totalTauNum >= maxVer4TauIdx(para) "Increase totalTauNum!\n$para"

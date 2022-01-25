@@ -5,14 +5,14 @@
     When sigma is created as a subdiagram, then no Fock diagram is generated if para.filter contains NoFock, and no sigma diagram is generated if para.filter contains Girreducible
 
 """
-function sigma(para, extK, subdiagram = false; name = :Σ)
+function sigma(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = false; name = :Σ)
     (subdiagram == false) && uidreset()
     @assert para.diagType == SigmaDiag
     @assert para.innerLoopNum >= 1
     @assert length(extK) == para.totalLoopNum
-    tright = para.firstTauIdx - 1 + para.innerLoopNum * para.interactionTauNum
-    @assert para.totalTauNum >= tright "totalTauNum = $(para.totalTauNum) is not enough, sigma requires $tright\npara=$para"
-    @assert para.totalLoopNum >= para.firstLoopIdx -1 + para.innerLoopNum
+    # tright = para.firstTauIdx - 1 + para.innerLoopNum * para.interactionTauNum
+    # @assert para.totalTauNum >= tright "totalTauNum = $(para.totalTauNum) is not enough, sigma requires $tright\npara=$para"
+    # @assert para.totalLoopNum >= para.firstLoopIdx -1 + para.innerLoopNum
 
     if isValidSigma(para.filter, para.innerLoopNum, subdiagram) == false
         return DataFrame(type = [], extT = [], diagram = [])
