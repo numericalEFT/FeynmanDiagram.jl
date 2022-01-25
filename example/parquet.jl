@@ -1,28 +1,18 @@
-using ExpressionTree
+using FeynmanDiagram
 using AbstractTrees
-# using NewickTree
 using StaticArrays
-const Weight = SVector{2,Float64}
+using DataFrames
 
-Parquet = Builder.Parquet
-
-chan = [Parquet.T, Parquet.U, Parquet.S]
-
-F = [Parquet.U, Parquet.S]
-V = [Parquet.T, Parquet.U]
+blocks = ParquetBlocks(phi = [PPr, PHEr], ppi = [PHr, PHEr], Γ4 = [PPr, PHr, PHEr])
 
 ###################### ver4 to DiagTree ###########################################
-para = Builder.GenericPara(
-    loopDim = 3,
+para = GenericPara(
+    diagType = Ver4Diag,
     innerLoopNum = 1,
-    totalLoopNum = 4,
-    totalTauNum = 3,
-    spin = 2,
-    interactionTauNum = 1,
-    weightType = Float64,
-    firstLoopIdx = 2,
-    firstTauIdx = 1,
-    filter = [Builder.NoFock,]
+    hasTau = true,
+    filter = [NoFock,],
+    interaction = [Interaction(ChargeCharge, Instant), Interaction(UpUp, Instant),],
+    extra = blocks
 )
 
 K0 = zeros(para.totalLoopNum)
@@ -36,74 +26,72 @@ varT = [rand() for i in 1:para.totalTauNum]
 evalK(basis) = sum([basis[i] * varK[i] for i in 1:para.totalLoopNum])
 evalT(Tidx) = varT[Tidx]
 
-diag, ver4, dir, ex = Parquet.buildVer4(para, legK, chan, F, V)
-rootDir = DiagTree.addnode!(diag, DiagTree.ADD, :dir, dir, para = [0, 0, 0, 0])
-rootEx = DiagTree.addnode!(diag, DiagTree.ADD, :ex, ex, para = [0, 0, 0, 0])
-diag.root = [rootDir.index, rootEx.index]
+diags = Parquet.vertex4(para, legK, [PHr, PHEr, PPr])
+# df = df[:, Not([:Diagram, :para, :channel])]
+# println(diags)
+# println(groupby(df, :id))
+diags = mergeby(diags, :response)
+# exit(0)
 
-DiagTree.showTree(diag, rootDir.index)
+for d in diags.diagram[1:1]
+    println()
+    # print_tree(d)
+    # DiagTreeNew.plot_tree(d)
+end
 
-##################### lower level subroutines  #######################################
-ver4 = Parquet.Ver4{Float64}(para, legK, chan, F, V)
-
-########## use AbstractTrees interface to print/manipulate the tree
-print_tree(ver4)
-
-# [println(node) for node in Leaves(ver4)]  #print all loopNum=0 ver4
-
-println("Iterate the tree use the AbstractTrees interface: ")
-[println(node) for node in PostOrderDFS(ver4)]  # iterator ver4 in depth-first search (children before parents)
-# [println(node) for node in PreOrderDFS(ver4)]  # iterator ver4 (parents before children)
-
-########## print tree to a newick format file  ##############
-# io = open("./test.newick", "w")
-# write(io, Parquet.newick(ver4))
-# close(io)
-
-########## use ete3 package to visualize tree
-# Parquet.showTree(ver4, verbose = 1, depth = 3)  # visualize tree using python3 package ete3
+display(diags)
+# DiagTreeNew.plot_tree(diags[1])
+# exit(0)
 
 ######################################## self-energy  ################################################
-
-para = Builder.GenericPara(
-    loopDim = 3,
-    innerLoopNum = 2,
-    totalLoopNum = 4,
-    totalTauNum = 3,
-    spin = 2,
-    interactionTauNum = 1,
-    firstLoopIdx = 2,
-    firstTauIdx = 1,
-    weightType = Float64,
-    filter = [Builder.NoHatree,]
+para = GenericPara(
+    diagType = SigmaDiag,
+    innerLoopNum = 1,
+    hasTau = true,
+    filter = [NoFock,],
+    interaction = [Interaction(ChargeCharge, [Instant, Dynamic]), Interaction(UpDown, [Instant, Dynamic])]
 )
 
 K0 = zeros(para.totalLoopNum)
 K0[1] = 1.0
-sigma, instant, dynamic = Parquet.buildSigma(para, K0)
-# println(root)
-rootidx = DiagTree.addnode!(sigma, DiagTree.ADD, :sum, vcat(instant, dynamic); para = [0, 0])
-DiagTree.showTree(sigma, rootidx)
-
-
-exit(0)
+sigma = Parquet.sigma(para, K0)
+println("sigma, ", sigma)
+# plot_tree(sigma)
 
 ##################################### vertex 3   #################################################
-para = Builder.GenericPara(
-    loopDim = 3,
+
+para = GenericPara(diagType = Ver3Diag,
     innerLoopNum = 1,
-    totalLoopNum = 4,
-    totalTauNum = 3,
-    spin = 2,
-    interactionTauNum = 1,
-    firstLoopIdx = 2,
-    weightType = Float64,
-    filter = [Builder.Proper,]
+    hasTau = true,
+    filter = [NoFock, Proper],
+    interaction = [Interaction(ChargeCharge, [Instant, Dynamic])]
+    # interaction = [Interaction(UpDown, [Instant, Dynamic])]
 )
 
 K0 = zeros(para.totalLoopNum)
-Kin, Kout = deepcopy(K0), deepcopy(K0)
-Kin[1] = 1
-Kout[2] = 1
-legK = [Kin, Kout]
-Parquet.buildVer3(para, legK)
+KinL, Q = deepcopy(K0), deepcopy(K0)
+Q[1] = 1
+KinL[2] = 1
+legK = [Q, KinL]
+vertex3 = Parquet.vertex3(para, legK)
+println(mergeby(vertex3))
+if isempty(vertex3) == false
+    # plot_tree(vertex3, maxdepth = 7)
+end
+# exit(0)
+
+#####################################  polarization  ############################################
+para = GenericPara(
+    diagType = PolarDiag,
+    innerLoopNum = 2,
+    hasTau = true,
+    filter = [NoFock,],
+    interaction = [Interaction(ChargeCharge, [Instant, Dynamic]),]
+    # interaction = [Interaction(UpDown, [Instant, Dynamic])]
+)
+
+K0 = zeros(para.totalLoopNum)
+K0[1] = 1.0
+polar = Parquet.polarization(para, K0)
+plot_tree(polar)
+# exit(0)
