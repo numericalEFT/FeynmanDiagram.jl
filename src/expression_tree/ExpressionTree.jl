@@ -1,6 +1,8 @@
 module ExprTree
 using AbstractTrees, LinearAlgebra
 using ..DiagTree
+using Unrolled
+# using InteractiveUtils
 
 using Printf, PyCall
 

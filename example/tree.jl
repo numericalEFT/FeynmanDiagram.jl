@@ -1,6 +1,7 @@
 using FeynmanDiagram
 using InteractiveUtils, LinearAlgebra
 using Lehmann
+# using Profile
 
 function evalG(K, τin, τout)
     # println(τBasis, ", ", varT)
@@ -16,8 +17,16 @@ end
 
 evalV(K) = 8π / (dot(K, K) + 1)
 
-evalPropagator(id::GreenId, K, Tbasis, varT) = evalG(K, varT[Tbasis[1]], varT[Tbasis[2]])
-evalPropagator(id::InteractionId, K, Tbasis, varT) = evalV(K)
+eval(id::GreenId, K, Tbasis, varT) = evalG(K, varT[Tbasis[1]], varT[Tbasis[2]])
+eval(id::InteractionId, K, Tbasis, varT) = evalV(K)
+# function eval(id, K, Tbasis, varT)
+#     if typeof(id) == GreenId
+#         return evalG(K, varT[Tbasis[1]], varT[Tbasis[2]])
+#     elseif typeof(id) == InteractionId
+#         return evalV(K)
+#     end
+# end
+
 
 para = GenericPara(diagType = Ver4Diag, innerLoopNum = 3, filter = [Girreducible,], hasTau = true)
 ver4 = Parquet.vertex4(para)
@@ -28,8 +37,15 @@ tree, root = ExprTree.compile(ver4.diagram)
 varK = rand(3, para.totalLoopNum)
 varT = [rand() for i in 1:para.totalTauNum]
 
-ExprTree.evalNaive!(tree, varK, varT, evalPropagator)
-@time ExprTree.evalNaive!(tree, varK, varT, evalPropagator)
+ExprTree.evalNaive!(tree, varK, varT, eval)
+@time ExprTree.evalNaive!(tree, varK, varT, eval)
 
-evalDiagTree!(ver4, varK, varT, evalPropagator)
-@time evalDiagTree!(ver4, varK, varT, evalPropagator)
+# ExprTree.warn_type(tree, varK, varT, eval)
+
+# open("typeinfo.txt", "w") do f
+#     @code_warntype(f, ExprTree.evalNaive!(tree, varK, varT, evalPropagator))
+# end
+# @profile ExprTree.evalNaive!(tree, varK, varT, evalPropagator)
+
+# evalDiagTree!(ver4, varK, varT, evalPropagator)
+# @time evalDiagTree!(ver4, varK, varT, evalPropagator)
