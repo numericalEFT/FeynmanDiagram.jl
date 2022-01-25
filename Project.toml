@@ -1,7 +1,7 @@
 name = "FeynmanDiagram"
 uuid = "e424a512-dbd9-41ff-9883-094748823e72"
-authors = ["Pengcheng Hou", "Kun Chen"]
-version = "0.1.0"
+authors = ["Kun Chen", ]
+version = "0.2.0"
 
 [deps]
 AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
