@@ -54,18 +54,18 @@ evalFakeG(K, τin, τout) = 1.0
 evalFakeV(K) = 1.0
 
 ################## api for expression tree ##############################
-evalPropagator(id::GreenId, K, Tbasis, varT) = evalG(K, varT[Tbasis[1]], varT[Tbasis[2]])
-evalPropagator(id::InteractionId, K, Tbasis, varT) = evalV(K)
-evalPropagatorfixK(id::GreenId, K, Tbasis, varT) = evalGfixK(K, varT[Tbasis[1]], varT[Tbasis[2]])
-evalPropagatorfixK(id::InteractionId, K, Tbasis, varT) = evalVfixK(K)
-evalFakePropagator(id::DiagramId, K, Tbasis, varT) = 1.0
+evalPropagator(id::GreenId, K, varT) = evalG(K, varT[id.extT[1]], varT[id.extT[2]])
+evalPropagator(id::InteractionId, K, varT) = evalV(K)
+evalPropagatorfixK(id::GreenId, K, varT) = evalGfixK(K, varT[id.extT[1]], varT[id.extT[2]])
+evalPropagatorfixK(id::InteractionId, K, varT) = evalVfixK(K)
+evalFakePropagator(id::DiagramId, K, varT) = 1.0
 
 ################## api for diagram tree ##############################
-eval(id::GreenId, varK, varT) = evalG(varK * id.extK, varT[id.extT[1]], varT[id.extT[2]])
-eval(id::InteractionId, varK, varT) = evalV(varK * id.extK)
-evalfixK(id::InteractionId, varK, varT) = evalVfixK(varK * id.extK)
-evalfixK(id::GreenId, varK, varT) = evalGfixK(varK * id.extK, varT[id.extT[1]], varT[id.extT[2]])
-evalFake(id::DiagramId, varK, varT) = 1.0
+# eval(id::GreenId, varK, varT) = evalG(varK * id.extK, varT[id.extT[1]], varT[id.extT[2]])
+# eval(id::InteractionId, varK, varT) = evalV(varK * id.extK)
+# evalfixK(id::InteractionId, varK, varT) = evalVfixK(varK * id.extK)
+# evalfixK(id::GreenId, varK, varT) = evalGfixK(varK * id.extK, varT[id.extT[1]], varT[id.extT[2]])
+# evalFake(id::DiagramId, varK, varT) = 1.0
 
 
 @testset "ParquetNew Ver4" begin
@@ -73,11 +73,11 @@ evalFake(id::DiagramId, varK, varT) = 1.0
 
     function getfunction(type)
         if type == :physical
-            return eval, evalG, evalV, evalPropagator
+            return evalG, evalV, evalPropagator
         elseif type == :fixK
-            return evalfixK, evalGfixK, evalVfixK, evalPropagatorfixK
+            return evalGfixK, evalVfixK, evalPropagatorfixK
         elseif type == :fake
-            return evalFake, evalFakeG, evalFakeV, evalFakePropagator
+            return evalFakeG, evalFakeV, evalFakePropagator
         else
             error("not implemented")
         end
@@ -133,14 +133,14 @@ evalFake(id::DiagramId, varK, varT) = 1.0
 
         if toeval
 
-            eval, evalG, evalV, evalPropagator = getfunction(type)
+            evalG, evalV, evalPropagator = getfunction(type)
 
             # w1 = DiagTree.evalNaive(diag, varK, varT, evalPropagator)
-            evalDiagTree!(diags, eval, varK, varT)
+            evalDiagTree!(diags, varK, varT, evalPropagator)
             w1 = [diags.diagram[1].weight, diags.diagram[2].weight]
             if timing
                 printstyled("naive DiagTree evaluator cost:", color = :green)
-                @time evalDiagTree!(diags, eval, varK, varT)
+                @time evalDiagTree!(diags, varK, varT, evalPropagator)
             end
 
             w1e = ExprTree.evalNaive!(tree, varK, varT, evalPropagator)
@@ -239,7 +239,7 @@ end
 
     function testDiagramNumber(para, diag, varK, varT)
         # w = DiagTree.evalNaive(diag, varK, varT, evalFakePropagator)
-        w = evalDiagTree!(diag, evalFake, varK, varT)
+        w = evalDiagTree!(diag, varK, varT, evalFakePropagator)
         # plot_tree(diag, maxdepth = 7)
         factor = (1 / (2π)^para.loopDim)^para.innerLoopNum
         num = w / factor
@@ -335,7 +335,7 @@ end
 
     function testDiagramNumber(para, diag, varK, varT)
         # w = DiagTree.evalNaive(diag, varK, varT, evalFakePropagator)
-        w = evalDiagTree!(diag, evalFake, varK, varT)
+        w = evalDiagTree!(diag, varK, varT, evalFakePropagator)
         # plot_tree(diag, maxdepth = 9)
         factor = (1 / (2π)^para.loopDim)^para.innerLoopNum
         num = w / factor
@@ -388,7 +388,7 @@ end
 
     function testDiagramNumber(para, diag, varK, varT)
         # w = DiagTree.evalNaive(diag, varK, varT, evalFakePropagator)
-        w = evalDiagTree!(diag, evalFake, varK, varT)
+        w = evalDiagTree!(diag, varK, varT, evalFakePropagator)
         # plot_tree(diag, maxdepth = 9)
         factor = (1 / (2π)^para.loopDim)^para.innerLoopNum
         num = w / factor

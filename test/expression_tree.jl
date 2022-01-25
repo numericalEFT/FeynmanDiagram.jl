@@ -130,23 +130,23 @@ end
     # function LoopPool(name::Symbol, dim::Int, N::Int, type::DataType)
     MomPool = ExprTree.LoopPool(:K, D, 4)
 
-    GPool = ExprTree.propagatorPool(:Gpool, weightType, paraType = Int)
-    VPool = ExprTree.propagatorPool(:Vpool, weightType, paraType = Int)
+    GPool = ExprTree.propagatorPool(:Gpool, weightType, paraType = Tuple{Int,Tuple{Int,Int}})
+    VPool = ExprTree.propagatorPool(:Vpool, weightType, paraType = Tuple{Int,Tuple{Int,Int}})
 
     diag = ExprTree.Diagrams(MomPool, (GPool, VPool), weightType)
 
     # #construct the propagator table
     gK = [[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0]]
     gT = [(1, 2), (2, 1)]
-    g = [ExprTree.addPropagator!(diag, :Gpool, gorder, :G; site = gT[i], loop = gK[i], para = 1) for i = 1:2]
+    g = [ExprTree.addPropagator!(diag, :Gpool, gorder, :G; site = gT[i], loop = gK[i], para = (1, gT[i])) for i = 1:2]
 
     vdK = [[0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 1.0, 0.0]]
     vdT = [[1, 1], [2, 2]]
-    vd = [ExprTree.addPropagator!(diag, :Vpool, vorder, :Vd; loop = vdK[i], para = 2) for i = 1:2]
+    vd = [ExprTree.addPropagator!(diag, :Vpool, vorder, :Vd; loop = vdK[i], para = (2, (0, 0))) for i = 1:2]
 
     veK = [[1, 0, -1, -1], [0, 1, 0, -1]]
     veT = [[1, 1], [2, 2]]
-    ve = [ExprTree.addPropagator!(diag, :Vpool, vorder, :Ve; loop = veK[i], para = 2) for i = 1:2]
+    ve = [ExprTree.addPropagator!(diag, :Vpool, vorder, :Ve; loop = veK[i], para = (2, (0, 0))) for i = 1:2]
     # ve = [ExprTree.addPropagator!(diag, Wtype, 1, veK[i], veT[i], Wsym)[1] for i = 1:2]
     # # W order is 1
 
@@ -167,7 +167,7 @@ end
 
     # #make sure the total number of diagrams are correct
 
-    evalPropagator1(para, K, Tbasis, varT) = 1.0
+    evalPropagator1(para, K, varT) = 1.0
     @test ExprTree.evalNaive!(diag, varK, varT, evalPropagator1)[1] ≈ -2 + 1 * spin
 
     # #more sophisticated test of the weight evaluation
@@ -180,10 +180,10 @@ end
 
     evalV(K) = 8π / (dot(K, K) + mass2)
 
-    function evalPropagator2(para, K, Tbasis, varT)
-        if para == 1
-            return evalG(K, Tbasis, varT)
-        elseif para == 2
+    function evalPropagator2(para, K, varT)
+        if para[1] == 1
+            return evalG(K, para[2], varT)
+        elseif para[1] == 2
             return evalV(K)
         else
             error("not implemented")
