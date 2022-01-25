@@ -1,4 +1,4 @@
-function evalNaive(diag::Diagrams, loopVar, siteVar, evalPropagator, evalNodeFactor = nothing, root = diag.root)
+function evalNaive!(diag::Diagrams, loopVar, siteVar, evalPropagator, evalNodeFactor = nothing, root = diag.root)
     loopPool = diag.basisPool
     propagatorPools = diag.propagatorPool
     tree = diag.nodePool

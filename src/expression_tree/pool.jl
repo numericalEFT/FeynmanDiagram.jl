@@ -164,6 +164,7 @@ function update(pool::LoopPool, variable = rand(eltype(pool.current), pool.dim, 
 end
 
 current(pool::LoopPool, idx) = pool.current[:, idx]
+# current(pool::LoopPool, idx) = view(pool.current, :, idx)
 
 function append(pool::LoopPool, basis::AbstractVector)
     for bi in 1:length(pool)

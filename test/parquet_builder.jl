@@ -143,10 +143,10 @@ evalFake(id::DiagramId, varK, varT) = 1.0
                 @time evalDiagTree!(diags, eval, varK, varT)
             end
 
-            w1e = ExprTree.evalNaive(tree, varK, varT, evalPropagator)
+            w1e = ExprTree.evalNaive!(tree, varK, varT, evalPropagator)
             if timing
                 printstyled("naive ExprTree cost:", color = :green)
-                @time ExprTree.evalNaive(tree, varK, varT, evalPropagator)
+                @time ExprTree.evalNaive!(tree, varK, varT, evalPropagator)
             end
 
 
