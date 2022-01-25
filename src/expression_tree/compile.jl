@@ -62,6 +62,7 @@ function compile(diags::AbstractVector, verbose::Int = 0)
     roots = [nodes[d.hash] for d in diags]
     tree.root = [r.index for r in roots]
 
+
     return tree, roots
 end
 
