@@ -1,4 +1,4 @@
-function evalNaive(diag::Diagrams, loopVar, siteVar, evalPropagator, evalNodeFactor = nothing, root = diag.root, kwargs...)
+function evalNaive(diag::Diagrams, loopVar, siteVar, evalPropagator, evalNodeFactor = nothing, root = diag.root)
     loopPool = diag.basisPool
     propagatorPools = diag.propagatorPool
     tree = diag.nodePool
@@ -7,10 +7,13 @@ function evalNaive(diag::Diagrams, loopVar, siteVar, evalPropagator, evalNodeFac
     update(loopPool, loopVar)
 
     #calculate propagators
-    for (pidx, pool) in enumerate(propagatorPools)
+    for pool in propagatorPools
         for (idx, p) in enumerate(pool.object)
-            pool.current[idx] = evalPropagator(p.para, current(loopPool, p.loopIdx), p.siteBasis, siteVar; kwargs...) *
-                                pool.object[idx].factor
+            # obj = pool.object
+            # for idx in 1:length(obj)
+            #     p = obj[idx]
+            pool.current[idx] = evalPropagator(p.para, current(loopPool, p.loopIdx), p.siteBasis, siteVar) *
+                                p.factor
         end
     end
 

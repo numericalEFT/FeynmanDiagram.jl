@@ -126,7 +126,7 @@ evalFake(id::DiagramId, varK, varT) = 1.0
 
         ################### ExprTree ###################################
         tree, root = ExprTree.compile(diags.diagram)
-        println("root", root)
+        # println("root", root)
 
         ################### original Parquet builder ###################################
         ver4 = Benchmark.Ver4{Benchmark.Weight}(para, Int.(chan), Int.(blocks.phi), Int.(blocks.ppi))
@@ -153,17 +153,21 @@ evalFake(id::DiagramId, varK, varT) = 1.0
             ##################### lower level subroutines  #######################################
 
             KinL, KoutL, KinR, KoutR = varK[:, 1], varK[:, 1], varK[:, 2], varK[:, 2]
+            legK = [KinL, KoutL, KinR, KoutR]
             # Benchmark.eval(para, ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV, true)
-            Benchmark.eval(para, ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV, true)
+            Benchmark.eval(para, ver4, varK, varT, legK, evalG, evalV, true)
 
             if timing
                 printstyled("parquet evaluator cost:", color = :green)
-                @time Benchmark.eval(para, ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV, true)
+                # @btime sin(p, ver4, var) setup = (x = rand())
+                # @time Benchmark.eval(para, ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV, true)
+                @time Benchmark.eval(para, ver4, varK, varT, legK, evalG, evalV, true)
+                # @btime Benchmark.eval(p, v4, vK, vT, lK, eG, eV, flag) setup = (p = para, v4 = ver4, vK = varK, vT = varT, l = legK, eG = evalG, eV = evalV, flag = true)
             end
 
             w2 = ver4.weight[1]
 
-            println(w1, " vs ", w1e, " vs ", w2)
+            # println(w1, " vs ", w1e, " vs ", w2)
 
             @assert w1 ≈ w1e
 
