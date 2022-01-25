@@ -17,22 +17,15 @@ end
 
 evalV(K) = 8π / (dot(K, K) + 1)
 
-eval(id::GreenId, K, Tbasis, varT) = evalG(K, varT[Tbasis[1]], varT[Tbasis[2]])
-eval(id::InteractionId, K, Tbasis, varT) = evalV(K)
-# function eval(id, K, Tbasis, varT)
-#     if typeof(id) == GreenId
-#         return evalG(K, varT[Tbasis[1]], varT[Tbasis[2]])
-#     elseif typeof(id) == InteractionId
-#         return evalV(K)
-#     end
-# end
+eval(id::GreenId, K, varT) = evalG(K, varT[id.extT[1]], varT[id.extT[2]])
+eval(id::InteractionId, K, varT) = evalV(K)
 
 
 para = GenericPara(diagType = Ver4Diag, innerLoopNum = 3, filter = [Girreducible,], hasTau = true)
 ver4 = Parquet.vertex4(para)
 ver4 = mergeby(ver4, :response)
 println(ver4)
-tree, root = ExprTree.compile(ver4.diagram)
+tree, root = ExprTree.build(ver4.diagram)
 
 varK = rand(3, para.totalLoopNum)
 varT = [rand() for i in 1:para.totalTauNum]

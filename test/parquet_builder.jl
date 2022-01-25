@@ -60,13 +60,6 @@ evalPropagatorfixK(id::GreenId, K, varT) = evalGfixK(K, varT[id.extT[1]], varT[i
 evalPropagatorfixK(id::InteractionId, K, varT) = evalVfixK(K)
 evalFakePropagator(id::DiagramId, K, varT) = 1.0
 
-################## api for diagram tree ##############################
-# eval(id::GreenId, varK, varT) = evalG(varK * id.extK, varT[id.extT[1]], varT[id.extT[2]])
-# eval(id::InteractionId, varK, varT) = evalV(varK * id.extK)
-# evalfixK(id::InteractionId, varK, varT) = evalVfixK(varK * id.extK)
-# evalfixK(id::GreenId, varK, varT) = evalGfixK(varK * id.extK, varT[id.extT[1]], varT[id.extT[2]])
-# evalFake(id::DiagramId, varK, varT) = 1.0
-
 
 @testset "ParquetNew Ver4" begin
     Benchmark = Parquet.Benchmark
@@ -125,7 +118,7 @@ evalFakePropagator(id::DiagramId, K, varT) = 1.0
         # DiagTreeNew.plot_tree(diags[2])
 
         ################### ExprTree ###################################
-        tree, root = ExprTree.compile(diags.diagram)
+        tree, root = ExprTree.build(diags.diagram)
         # println("root", root)
 
         ################### original Parquet builder ###################################

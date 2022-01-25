@@ -24,6 +24,6 @@ include("io.jl")
 # diagram evaluation
 include("eval.jl")
 
-include("compile.jl")
+include("build.jl")
 
 end

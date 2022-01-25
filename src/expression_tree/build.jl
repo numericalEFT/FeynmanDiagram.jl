@@ -1,4 +1,4 @@
-function compile(diags::AbstractVector, verbose::Int = 0)
+function build(diags::AbstractVector, verbose::Int = 0)
     @assert all(d -> (d.id.para == diags[1].id.para), diags) "Parameters of all diagrams shoud be the same!"
 
     tree = newExprTree(diags[1].id.para, :none)
