@@ -1,9 +1,14 @@
 """
-    function buildSigma(para, extK; F = [I, U, S], V = [I, T, U], All = union(F, V), diag = newDiagTree(para, :Sigma), subdiagram = false)
+    function sigma(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = false; name = :Σ)
     
     build sigma diagram. 
     When sigma is created as a subdiagram, then no Fock diagram is generated if para.filter contains NoFock, and no sigma diagram is generated if para.filter contains Girreducible
 
+#Arguments
+- `para`            : parameters. It should provide internalLoopNum, interactionTauNum, firstTauIdx
+- `extK`            : basis of external loop. 
+- `subdiagram`      : a sub-vertex or not
+- `name`            : name of the diagram
 """
 function sigma(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = false; name = :Σ)
     (subdiagram == false) && uidreset()

@@ -1,3 +1,16 @@
+"""
+    function vertex3(para, extK = [DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2)],
+        subdiagram = false; name = :Γ3, chan = [PHr, PHEr, PPr, Alli])
+
+    Generate 3-vertex diagrams using Parquet Algorithm
+
+#Arguments
+- `para`            : parameters. It should provide internalLoopNum, interactionTauNum, firstTauIdx
+- `extK`            : basis of external loops as a vector [bosonic leg, fermionic in, fermionic out]. 
+- `subdiagram`      : a sub-vertex or not
+- `name`            : name of the vertex
+- `chan`            : vector of channels of the current 4-vertex. 
+"""
 function vertex3(para, extK = [DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2)],
     subdiagram = false; name = :Γ3, chan = [PHr, PHEr, PPr, Alli])
 

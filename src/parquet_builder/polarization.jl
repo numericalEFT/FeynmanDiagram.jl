@@ -1,4 +1,15 @@
 
+"""
+    function polarization(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = false; name = :Π)
+
+    Generate polarization diagrams using Parquet Algorithm
+
+#Arguments
+- `para`            : parameters. It should provide internalLoopNum, interactionTauNum, firstTauIdx
+- `extK`            : basis of external loop. 
+- `subdiagram`      : a sub-vertex or not
+- `name`            : name of the vertex
+"""
 function polarization(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = false; name = :Π)
     (subdiagram == false) && uidreset()
     @assert para.diagType == PolarDiag
