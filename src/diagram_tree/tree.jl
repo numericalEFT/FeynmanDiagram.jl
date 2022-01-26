@@ -74,8 +74,7 @@ function mergeby(df::DataFrame, fields = [];
             end
         end
         diag = Diagram(getid(group), operator, group[:, :diagram], name = name, factor = factor)
-        return (diagram = diag, hash = diag.hash)
-
+        (diagram = diag, hash = diag.hash)
     end
     return gdf
 end

@@ -1,14 +1,17 @@
 """
     function sigma(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = false; name = :Σ)
     
-    build sigma diagram. 
+    Build sigma diagram. 
     When sigma is created as a subdiagram, then no Fock diagram is generated if para.filter contains NoFock, and no sigma diagram is generated if para.filter contains Girreducible
 
-#Arguments
+# Arguments
 - `para`            : parameters. It should provide internalLoopNum, interactionTauNum, firstTauIdx
 - `extK`            : basis of external loop. 
 - `subdiagram`      : a sub-vertex or not
 - `name`            : name of the diagram
+
+# Output
+- A DataFrame with fields :type, :extT, :diagram, :hash
 """
 function sigma(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = false; name = :Σ)
     (subdiagram == false) && uidreset()
