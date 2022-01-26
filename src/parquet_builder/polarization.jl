@@ -33,7 +33,7 @@ function polarization(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagr
     K[LoopIdx] = 1.0
     @assert (K ≈ extK) == false
     t0 = para.firstTauIdx
-    extT = para.hasTau ? (t0, t0) : (t0, t0 + 1)
+    extT = para.hasTau ? (t0, t0 + 1) : (t0, t0)
     legK = [extK, K, K .- extK]
 
     polar = DataFrame()
