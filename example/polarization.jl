@@ -6,7 +6,7 @@ using FeynmanDiagram
 using ElectronGas
 using Lehmann
 
-const steps = 1e7 # MC steps of each worker
+const steps = 1e6 # MC steps of each worker
 const Order = 3
 const rs = 1.0
 const λ = 1.0
