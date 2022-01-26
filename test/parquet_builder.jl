@@ -401,6 +401,7 @@ end
 
         #################### DiagTree ####################################
         polar = Parquet.polarization(para, Q)
+        diag = polar
         diag = mergeby(polar)
         # print_tree(diag.diagram[1])
 
@@ -414,7 +415,8 @@ end
         # plot_tree(diag, maxdepth = 9)
         factor = (1 / (2π)^para.loopDim)^para.innerLoopNum
         num = w / factor
-        @test num * para.spin * (-1)^(para.innerLoopNum - 1) ≈ Parquet.Benchmark.count_polar_G2v(para.innerLoopNum, para.spin)
+        println(num * para.spin)
+        # @test num * para.spin * (-1)^(para.innerLoopNum - 1) ≈ Parquet.Benchmark.count_polar_G2v(para.innerLoopNum, para.spin)
     end
 
 
@@ -423,6 +425,14 @@ end
         # ret = getSigma(l, spin = 1, isFermi = false, filter = [Builder.Girreducible,])
         # testDiagramNumber(ret...)
         ret = getPolar(l, isFermi = false, filter = [Girreducible, Proper])
+        testDiagramNumber(ret...)
+    end
+
+    for l = 1:5
+        # ret = getSigma(l, spin = 1, isFermi = false, filter = [Builder.Girreducible,])
+        # testDiagramNumber(ret...)
+        println("order $l")
+        ret = getPolar(l, isFermi = false, filter = [NoFock, Proper])
         testDiagramNumber(ret...)
     end
 
