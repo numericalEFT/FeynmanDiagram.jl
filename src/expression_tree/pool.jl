@@ -157,10 +157,11 @@ end
 
 function update(pool::LoopPool, variable = rand(eltype(pool.current), pool.dim, pool.N))
     # @assert length(variable) == pool.N
-    T = eltype(pool.current)
+    # T = eltype(pool.current)
     # println(pool.basis)
     # println(variable)
-    pool.current[:, 1:length(pool)] = T.(variable) * pool.basis[:, 1:length(pool)]
+    loopNum = size(pool.basis)[1]
+    pool.current[:, 1:length(pool)] = variable[:, 1:loopNum] * pool.basis[1:loopNum, 1:length(pool)]
 end
 
 current(pool::LoopPool, idx) = pool.current[:, idx]

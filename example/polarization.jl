@@ -6,7 +6,8 @@ using FeynmanDiagram
 using ElectronGas
 using Lehmann
 
-const steps = 1e6 # MC steps of each worker
+const steps = 1e7 # MC steps of each worker
+const Order = 3
 const rs = 1.0
 const λ = 1.0
 const beta = 25.0
@@ -17,23 +18,30 @@ const me = basic.me
 const spin = basic.spin
 
 ###################  build polarization diagram #######################
-const diag_para = GenericPara(diagType = PolarDiag,
-    innerLoopNum = 1,
-    hasTau = true,
-    loopDim = basic.dim,
-    spin = basic.spin,
-    interaction = [FeynmanDiagram.Interaction(ChargeCharge, Instant),]
-)
-const polar = Parquet.polarization(diag_para)
-println(polar)
-plot_tree(polar)
-const diag, root = ExprTree.build(polar.diagram, 1)
+function getDiagPara(order)
+    return GenericPara(diagType = PolarDiag,
+        innerLoopNum = order,
+        hasTau = true,
+        loopDim = basic.dim,
+        spin = basic.spin,
+        interaction = [FeynmanDiagram.Interaction(ChargeCharge, Instant),],
+        filter = [NoFock,]
+    )
+end
+
+const diag_para = [getDiagPara(o) for o in 1:Order]
+const polar = [mergeby(Parquet.polarization(diag_para[i])).diagram[1] for i in 1:Order]
+# println(polar)
+# plot_tree(polar)
+const diag = [ExprTree.build(polar[o], 1)[1] for o in 1:Order] #different order has different set of K, T variables, thus must have different exprtrees
+# println(diag)
+# exit(0)
 
 ##################### parameters for MC ##############################
 @with_kw struct ParaMC
     n::Int = 0 # external Matsubara frequency
-    Qsize::Int = 32
-    varK::Matrix = zeros(basic.dim, diag_para.totalLoopNum)
+    Qsize::Int = 8
+    varK::Matrix = zeros(basic.dim, diag_para[end].totalLoopNum) # make sure that varK is large enough for all orders
     extQ::Vector{SVector{basic.dim,Float64}} = [@SVector [q, 0.0, 0.0] for q in LinRange(0.0, 3.0 * basic.kF, Qsize)]
 end
 
@@ -52,39 +60,24 @@ end
 
 eval(id::InteractionId, K, varT) = (basic.e0)^2 / basic.ϵ0 / (dot(K, K) + basic.Λs)
 
+################### interface to MC #########################################
 function integrand(config)
-    if config.curr != 1
-        error("impossible")
-    end
+    # if config.curr == 0
+    #     error("impossible")
+    # end
+    @assert config.curr >= 0
+    order = config.curr
     para = config.para
 
-    # T, K, Ext = config.var[1], config.var[2], config.var[3]
-    # extidx = Ext[1]
-
     T, K, Ext = config.var[1], config.var[2], config.var[3]
-    # k = K[1]
-    # Tin, Tout = T[1], T[2]
     extidx = Ext[1]
-    # q = para.extQ[extidx] # external momentum
-    # kq = k - q
-    # τ = (Tout - Tin)
-    # ω1 = (dot(k, k) - kF^2) / (2me)
-    # g1 = Spectral.kernelFermiT(τ, ω1, β)
-    # ω2 = (dot(kq, kq) - kF^2) / (2me)
-    # g2 = Spectral.kernelFermiT(-τ, ω2, β)
-    # phase = 1.0 / (2π)^3
-    # w0 = g1 * g2 * spin * phase * cos(2π * para.n * τ / β) / β
 
     para.varK[:, 1] .= para.extQ[extidx] # external momentum
-    for i in 2:size(para.varK)[2]
+    for i in 2:(diag_para[order].innerLoopNum+1)
         para.varK[:, i] .= K[i-1]
     end
-    # println(q)
-    # println(K)
-    # display(para.varK)
 
-
-    weight = ExprTree.evalNaive!(diag, para.varK, T, eval)
+    weight = ExprTree.evalNaive!(diag[order], para.varK, T, eval)
     w1 = weight[1] * cos(2π * para.n * (T[2] - T[1]) / β) / β
     # @assert w0 ≈ w1 "$w0 vesus $w1"
 
@@ -97,7 +90,7 @@ function measure(config)
     factor = 1.0 / config.reweight[config.curr]
     extidx = config.var[3][1]
     weight = integrand(config)
-    obs[extidx] += weight / abs(weight) * factor
+    obs[config.curr, extidx] += weight / abs(weight) * factor
 end
 
 function run(steps)
@@ -111,24 +104,31 @@ function run(steps)
 
     Ext = MCIntegration.Discrete(1, length(extQ)) # external variable is specified
 
-    dof = [[diag_para.totalTauNum, diag_para.innerLoopNum, 1],] # degrees of freedom of the normalization diagram and the bubble
-    println(dof)
-    obs = zeros(Float64, Qsize) # observable for the normalization diagram and the bubble
+    dof = [[diag_para[o].totalTauNum, diag_para[o].innerLoopNum, 1] for o in 1:Order] # degrees of freedom of the normalization diagram and the bubble
+    obs = zeros(Float64, (Order, Qsize)) # observable for the normalization diagram and the bubble
 
     config = Configuration(steps, (T, K, Ext), dof, obs; para = para)
-    avg, std = MCIntegration.sample(config, integrand, measure; print = 0, Nblock = 16, reweight = 1000)
+    avg, std = MCIntegration.sample(config, integrand, measure; print = 0, Nblock = 16, reweight = 10000)
     # @profview MonteCarlo.sample(config, integrand, measure; print=0, Nblock=1)
     # sleep(100)
 
     if isnothing(avg) == false
         @unpack n, extQ = ParaMC()
 
+        println("Order 1")
         for (idx, q) in enumerate(extQ)
             q = q[1]
             p = Polarization.Polarization0_ZeroTemp(q, para.n, basic)
-            @printf("%10.6f  %10.6f ± %10.6f  %10.6f\n", q / basic.kF, avg[idx], std[idx], p)
+            @printf("%10.6f  %10.6f ± %10.6f  %10.6f\n", q / basic.kF, avg[1, idx], std[1, idx], p)
         end
 
+        for o = 2:Order
+            println("Order $o")
+            for (idx, q) in enumerate(extQ)
+                q = q[1]
+                @printf("%10.6f  %10.6f ± %10.6f\n", q / basic.kF, avg[o, idx], std[o, idx])
+            end
+        end
     end
 end
 
