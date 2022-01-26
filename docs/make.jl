@@ -18,9 +18,9 @@ makedocs(;
         "Manual" => [
         ],
         "API reference" => Any[
-            "lib/diagtree.md",
-            "lib/builder.md",
             "lib/parquet.md",
+            "lib/diagtree.md",
+            "lib/exprtree.md",
         ]
     ]
 )

@@ -1,5 +1,5 @@
-# Diagram Tree Builder based on the Parquet Algorithm
+# Build Feynman Diagrams with Parquet Algorithm
 
 ```@autodocs
-Modules = [FeynmanDiagram.Builder.Parquet]
+Modules = [FeynmanDiagram.Parquet]
 ```
