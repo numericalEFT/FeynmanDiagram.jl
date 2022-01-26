@@ -1,9 +1,9 @@
 """
-    function vertex4(para::GenericPara,
+    vertex4(para::GenericPara,
         extK = [DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)],
         chan::AbstractVector = [PHr, PHEr, PPr, Alli],
         subdiagram = false;
-        level = 1, name = :none,
+        level = 1, name = :none, resetuid = false,
         phi_toplevel = ParquetBlocks().phi, ppi_toplevel = ParquetBlocks().ppi, Γ4_toplevel = ParquetBlocks().Γ4)
 
     Generate 4-vertex diagrams using Parquet Algorithm
@@ -15,6 +15,7 @@
 - `subdiagram`      : a sub-vertex or not
 - `name`            : name of the vertex
 - `level`           : level in the diagram tree
+- `resetuid`        : restart uid count from 1
 - `phi_toplevel`    : channels of left sub-vertex for the particle-hole and particle-hole-exchange of the bubble at level one.
 - `ppi_toplevel`    : channels of left sub-vertex for the particle-particle bubble at level one
 - `Γ4_toplevel`     : channels of right sub-vertex for all all bubbles at level one
@@ -26,11 +27,11 @@ function vertex4(para::GenericPara,
     extK = [DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)],
     chan::AbstractVector = [PHr, PHEr, PPr, Alli],
     subdiagram = false;
-    level = 1, name = :none,
+    level = 1, name = :none, resetuid = false,
     phi_toplevel = ParquetBlocks().phi, ppi_toplevel = ParquetBlocks().ppi, Γ4_toplevel = ParquetBlocks().Γ4)
     legK = extK
 
-    (subdiagram == false) && uidreset()
+    resetuid && uidreset()
 
     if (para.extra isa ParquetBlocks) == false
         para = reconstruct(para, extra = ParquetBlocks())
@@ -147,14 +148,8 @@ function bubble(para::GenericPara, legK, chan::TwoBodyChannel, partition::Vector
     for ldiag in Lver.diagram
         for rdiag in Rver.diagram
             extT, G0T, GxT = tauBasis(chan, ldiag.id.extT, rdiag.id.extT)
-            # diag, g0 = buildG(bubble.g0, K, (LvT[OUTR], RvT[INL]); diag = diag)
-            # diag, gc = buildG(bubble.gx, Kx, (RvT[OUTL], LvT[INR]); diag = diag)
-            # g0 = DiagTree.addpropagator!(diag, :Gpool, 0, :G0; site = G0T, loop = K)
-            # gc = DiagTree.addpropagator!(diag, :Gpool, 0, :Gx; site = GxT, loop = Kx)
-            # g0 = Diagram(GreenId(g0Para, k = K, t = G0T), name = :G0)
-            # gx = Diagram(GreenId(gxPara, k = Kx, t = GxT), name = :Gx)
             g0 = green(g0Para, K, G0T, true, name = :G0)
-            gx = green(gxPara, K, GxT, true, name = :Gx)
+            gx = green(gxPara, Kx, GxT, true, name = :Gx)
             @assert g0 isa Diagram && gx isa Diagram
             append!(diag, bubble2diag(para, chan, ldiag, rdiag, legK, g0, gx))
         end

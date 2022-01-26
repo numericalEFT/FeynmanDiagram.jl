@@ -1,21 +1,31 @@
 """
-    function buildG(para, extK, extT, subdiagram = false; F = [I, U, S], V = [I, T, U], All = union(F, V), diag = newDiagTree(para, :G))
+    green(para, extK = DiagTree.getK(para.totalLoopNum, 1), extT = para.hasTau ? (1, 2) : (0, 0), subdiagram = false;
+        name = :G, resetuid = false)
     
     Build composite Green's function.
     By definition, para.firstTauIdx is the first Tau index of the left most self-energy subdiagram.
 
+# Arguments
+- `para`            : parameters. It should provide internalLoopNum, interactionTauNum, firstTauIdx
+- `extK`            : basis of external loop. 
 - `extT`: [Tau index of the left leg, Tau index of the right leg]
+- `subdiagram`      : a sub-vertex or not
+- `name`            : name of the diagram
+- `resetuid`        : restart uid count from 1
 
+
+# Output
+- A Diagram object or nothing if the Green's function is illegal. 
 """
 function green(para, extK = DiagTree.getK(para.totalLoopNum, 1), extT = para.hasTau ? (1, 2) : (0, 0), subdiagram = false;
-    name = :G)
+    name = :G, resetuid = false)
 
     @assert para.diagType == GreenDiag
     @assert para.innerLoopNum >= 0
     @assert length(extK) == para.totalLoopNum
     @assert length(extT) == 2
 
-    (subdiagram == false) && uidreset()
+    resetuid && uidreset()
 
     tin, tout = extT[1], extT[2]
     t0 = para.firstTauIdx
@@ -40,7 +50,7 @@ function green(para, extK = DiagTree.getK(para.totalLoopNum, 1), extT = para.has
         paraG = reconstruct(para, diagType = GreenDiag, firstTauIdx = Tidx, firstLoopIdx = Kidx, innerLoopNum = oG)
         G = Parquet.green(paraG, extK, group[:GT], true)
         # G = Diagram(GreenId(paraG, k = extK, t = group[:GT]), name = Symbol("g#$li")) #there is only one G diagram for a extT
-        @assert G is a Diagram
+        @assert G isa Diagram
         # println(group)
         pairT = (t = (ΣTidx, (group[:GT][2])),)
         return Diagram(GenericId(para, pairT), Prod(), [group[:diagram], G], name = :ΣG)
@@ -83,6 +93,5 @@ function green(para, extK = DiagTree.getK(para.totalLoopNum, 1), extT = para.has
     ΣGmerged = mergeby(ΣGpairs, operator = Sum(), name = :gΣG)
     @assert nrow(ΣGmerged) == 1
     G = Diagram(GreenId(para, k = extK, t = extT), Prod(), [g0, ΣGmerged.diagram[1]], name = :G)
-    DiagTree.checkuid(G)
     return G
 end
