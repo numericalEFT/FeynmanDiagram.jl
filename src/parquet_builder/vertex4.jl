@@ -8,7 +8,7 @@
 
     Generate 4-vertex diagrams using Parquet Algorithm
 
-#Arguments
+# Arguments
 - `para`            : parameters. It should provide internalLoopNum, interactionTauNum, firstTauIdx
 - `extK`            : basis of external loops as a vector [left in, left out, right in, right out]. 
 - `chan`            : vector of channels of the current 4-vertex. 
@@ -18,6 +18,9 @@
 - `phi_toplevel`    : channels of left sub-vertex for the particle-hole and particle-hole-exchange of the bubble at level one.
 - `ppi_toplevel`    : channels of left sub-vertex for the particle-particle bubble at level one
 - `Γ4_toplevel`     : channels of right sub-vertex for all all bubbles at level one
+
+# Output
+- A DataFrame with fields :response, :type, :extT, :diagram, :hash
 """
 function vertex4(para::GenericPara,
     extK = [DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)],

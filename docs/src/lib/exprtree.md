@@ -1,4 +1,6 @@
-# Feynman Diagrams as an Expression Tree
+# Diagrams as an Expression Tree
+
+## API
 
 ```@autodocs
 Modules = [FeynmanDiagram.ExprTree]
