@@ -119,10 +119,10 @@ function bubble(para::GenericPara, legK, chan::TwoBodyChannel, partition::Vector
     LfirstTauIdx, G0firstTauIdx, RfirstTauIdx, GxfirstTauIdx = idx
     @assert maxTau == maxVer4TauIdx(para) "Partition $partition with tauNum configuration $idx. maxTau = $maxTau, yet $(maxTauIdx(para)) is expected!"
 
-    lPara = reconstruct(para, innerLoopNum = oL, firstLoopIdx = LfirstLoopIdx, firstTauIdx = LfirstTauIdx)
-    rPara = reconstruct(para, innerLoopNum = oR, firstLoopIdx = RfirstLoopIdx, firstTauIdx = RfirstTauIdx)
-    gxPara = reconstruct(para, innerLoopNum = oGx, firstLoopIdx = GxfirstLoopIdx, firstTauIdx = GxfirstTauIdx)
-    g0Para = reconstruct(para, innerLoopNum = oG0, firstLoopIdx = G0firstLoopIdx, firstTauIdx = G0firstTauIdx)
+    lPara = reconstruct(para, diagType = Ver4Diag, innerLoopNum = oL, firstLoopIdx = LfirstLoopIdx, firstTauIdx = LfirstTauIdx)
+    rPara = reconstruct(para, diagType = Ver4Diag, innerLoopNum = oR, firstLoopIdx = RfirstLoopIdx, firstTauIdx = RfirstTauIdx)
+    gxPara = reconstruct(para, diagType = GreenDiag, innerLoopNum = oGx, firstLoopIdx = GxfirstLoopIdx, firstTauIdx = GxfirstTauIdx)
+    g0Para = reconstruct(para, diagType = GreenDiag, innerLoopNum = oG0, firstLoopIdx = G0firstLoopIdx, firstTauIdx = G0firstTauIdx)
 
     phi, ppi, Γ4 = para.extra.phi, para.extra.ppi, para.extra.Γ4
     if chan == PHr || chan == PHEr
@@ -151,8 +151,11 @@ function bubble(para::GenericPara, legK, chan::TwoBodyChannel, partition::Vector
             # diag, gc = buildG(bubble.gx, Kx, (RvT[OUTL], LvT[INR]); diag = diag)
             # g0 = DiagTree.addpropagator!(diag, :Gpool, 0, :G0; site = G0T, loop = K)
             # gc = DiagTree.addpropagator!(diag, :Gpool, 0, :Gx; site = GxT, loop = Kx)
-            g0 = Diagram(GreenId(g0Para, k = K, t = G0T), name = :G0)
-            gx = Diagram(GreenId(gxPara, k = Kx, t = GxT), name = :Gx)
+            # g0 = Diagram(GreenId(g0Para, k = K, t = G0T), name = :G0)
+            # gx = Diagram(GreenId(gxPara, k = Kx, t = GxT), name = :Gx)
+            g0 = green(g0Para, K, G0T, true, name = :G0)
+            gx = green(gxPara, K, GxT, true, name = :Gx)
+            @assert g0 isa Diagram && gx isa Diagram
             append!(diag, bubble2diag(para, chan, ldiag, rdiag, legK, g0, gx))
         end
     end

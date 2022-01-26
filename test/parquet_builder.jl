@@ -253,45 +253,43 @@ end
 
 end
 
-# @testset "Green" begin
-#     Parquet = Builder.Parquet
+@testset "Green" begin
+    function buildG(loopNum, extT, subdiagram; Kdim = 3, spin = 2, interactionTauNum = 1, filter = [], isFermi = true)
+        para = Builder.GenericPara(
+            diagType = GreenDiag
+            loopDim = Kdim,
+            hasTau = true,
+            innerLoopNum = loopNum,
+            isFermi = isFermi,
+            spin = spin,
+            filter = filter,
+            interaction = [Interaction(ChargeCharge, Instant),]
+        )
+        extK = zeros(para.totalLoopNum)
+        extK[1] = 1.0
+        G = Parquet.green(para, extK, extT)
+        return G
+    end
+    # diag, Gidx = buildG(2, [1, 2], 3; filter = [])
+    # DiagTree.showTree(diag, Gidx)
 
-#     function buildG(loopNum, extT, firstTauIdx; Kdim = 3, spin = 2, interactionTauNum = 1, filter = [], isFermi = true)
-#         para = Builder.GenericPara(
-#             loopDim = Kdim,
-#             # interactionTauNum = interactionTauNum,
-#             hasTau = true,
-#             innerLoopNum = loopNum,
-#             totalLoopNum = loopNum + 1,
-#             totalTauNum = loopNum * interactionTauNum + 2,
-#             isFermi = isFermi,
-#             spin = spin,
-#             weightType = Float64,
-#             firstLoopIdx = 2,
-#             firstTauIdx = firstTauIdx,
-#             filter = filter,
-#             interaction = [Builder.Interaction(Builder.ChargeCharge, Builder.Instant),]
-#         )
-#         extK = zeros(para.totalLoopNum)
-#         extK[1] = 1.0
-#         diag, Gidx = Parquet.buildG(para, extK, extT)
-#         return diag, Gidx
-#     end
-#     # diag, Gidx = buildG(2, [1, 2], 3; filter = [])
-#     # DiagTree.showTree(diag, Gidx)
+    # If G is irreducible, then only loop-0 G exist for main diagram, and no G exist for subdiagram
+    G = buildG(1, [1, 2], false; filter = [Builder.Girreducible,])
+    @test G is a Diagram
+    G = buildG(1, [1, 2], true; filter = [Builder.Girreducible,])
+    @test isnothing(G)
+    G = buildG(2, [1, 2], true; filter = [Builder.Girreducible,])
+    @test isnothing(G)
 
-#     # If G is irreducible, then only loop-0 G exist
-#     diag, G = buildG(1, [1, 2], 3; filter = [Builder.Girreducible,])
-#     @test G.index == 0
+    # If Fock diagram is not allowed, then one-loop G diagram should not be exist for subdiagram
+    G = buildG(1, [1, 2], false; filter = [Builder.NoFock,])
+    @test G is a Diagram
+    G = buildG(1, [1, 2], true; filter = [Builder.NoFock,])
+    @test isnothing(G)
+    G = buildG(2, [1, 2], true; filter = [Builder.NoFock,]) #high order subdiagram is allowed
+    @test G is a Diagram
 
-#     # If Fock diagram is not allowed, then one-loop G diagram should not be exist
-#     diag, G = buildG(1, [1, 2], 3; filter = [Builder.NoFock,])
-#     @test G.index == 0
-#     # Even if Fock diagram is not allowed, then loopNum>=1 G diagram can exist
-#     diag, G = buildG(2, [1, 2], 3; filter = [Builder.NoFock,])
-#     @test G.index > 0
-
-# end
+end
 
 
 @testset "Parquet Vertex3" begin
