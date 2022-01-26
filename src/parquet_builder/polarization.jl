@@ -3,7 +3,6 @@
     function polarization(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = false; name = :Π)
 
     Generate polarization diagrams using Parquet Algorithm.
-    Note that all polarization share the same extT = (para.firstTauIdx, para.firstTauIdx+1)
 
 # Arguments
 - `para`            : parameters. It should provide internalLoopNum, interactionTauNum, firstTauIdx
@@ -12,7 +11,8 @@
 - `name`            : name of the vertex
 
 # Output
-- A DataFrame with fields :response, :diagram, :hash. 
+- A DataFrame with fields `:response`, `:diagram`, `:hash`. 
+- All polarization all polarization share the same external Tau index. With imaginary-time variables, they are extT = (para.firstTauIdx, para.firstTauIdx+1)
 """
 function polarization(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = false; name = :Π)
     (subdiagram == false) && uidreset()
