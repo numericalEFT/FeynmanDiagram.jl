@@ -1,28 +1,31 @@
 """
-    function Ver4{W}(para::Para, loopNum = para.internalLoopNum, tidx = 1; chan = para.chan, F = para.F, V = para.V, level = 1, id = [1,]) where {W}
+    function vertex4(para::GenericPara,
+        extK = [DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)],
+        chan::AbstractVector = [PHr, PHEr, PPr, Alli],
+        subdiagram = false;
+        level = 1, name = :none,
+        phi_toplevel = ParquetBlocks().phi, ppi_toplevel = ParquetBlocks().ppi, Γ4_toplevel = ParquetBlocks().Γ4)
 
     Generate 4-vertex diagrams using Parquet Algorithm
 
 #Arguments
-- `para`: parameters. It should provide internalLoopNum, interactionTauNum, firstTauIdx
-- `chan`: list of channels of the current 4-vertex. 
-- `F`   : channels of left sub-vertex for the particle-hole and particle-hole-exchange bubbles
-- `V`   : channels of left sub-vertex for the particle-particle bubble
-- `All`   : channels of right sub-vertex of all channels
-- `Fouter`   : channels of left sub-vertex for the particle-hole and particle-hole-exchange bubbles, only take effect for the outermost bubble
-- `Vouter`   : channels of left sub-vertex for the particle-particle bubble, only take effect for the outermost bubble
-- `Allouter`   : channels of right sub-vertex of all channels
-- `loopNum`: momentum loop degrees of freedom of the 4-vertex diagrams
-- `tidx`: the first τ variable index. It will be the τ variable of the left incoming electron for all 4-vertex diagrams
-- `level`: level in the diagram tree
-- `id`: the first element will be used as the id of the Ver4. All nodes in the tree will be labeled in preorder depth-first search
+- `para`            : parameters. It should provide internalLoopNum, interactionTauNum, firstTauIdx
+- `extK`            : basis of external loops as a vector [left in, left out, right in, right out]. 
+- `chan`            : vector of channels of the current 4-vertex. 
+- `subdiagram`      : a sub-vertex or not
+- `name`            : name of the vertex
+- `level`           : level in the diagram tree
+- `phi_toplevel`    : channels of left sub-vertex for the particle-hole and particle-hole-exchange of the bubble at level one.
+- `ppi_toplevel`    : channels of left sub-vertex for the particle-particle bubble at level one
+- `Γ4_toplevel`     : channels of right sub-vertex for all all bubbles at level one
 """
 function vertex4(para::GenericPara,
-    legK = [DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)],
+    extK = [DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)],
     chan::AbstractVector = [PHr, PHEr, PPr, Alli],
     subdiagram = false;
     level = 1, name = :none,
     phi_toplevel = ParquetBlocks().phi, ppi_toplevel = ParquetBlocks().ppi, Γ4_toplevel = ParquetBlocks().Γ4)
+    legK = extK
 
     (subdiagram == false) && uidreset()
 
