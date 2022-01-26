@@ -79,7 +79,7 @@ function mergeby(df::DataFrame, fields = [];
     return gdf
 end
 
-function mergeby(diags::Vector{Diagram{W}}, fields = []; expand::Bool = false, kwargs...) where {W}
+function mergeby(diags::AbstractVector, fields = []; expand::Bool = false, kwargs...)
     df = toDataFrame(diags, expand = expand)
     return mergeby(df, fields; kwargs...)
 end
