@@ -1,6 +1,6 @@
 
 """
-    function polarization(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = false; name = :Π)
+    function polarization(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = false; name = :Π, resetuid = false)
 
     Generate polarization diagrams using Parquet Algorithm.
 
@@ -9,13 +9,14 @@
 - `extK`            : basis of external loop. 
 - `subdiagram`      : a sub-vertex or not
 - `name`            : name of the vertex
+- `resetuid`        : restart uid count from 1
 
 # Output
 - A DataFrame with fields `:response`, `:diagram`, `:hash`. 
-- All polarization all polarization share the same external Tau index. With imaginary-time variables, they are extT = (para.firstTauIdx, para.firstTauIdx+1)
+- All polarization share the same external Tau index. With imaginary-time variables, they are extT = (para.firstTauIdx, para.firstTauIdx+1)
 """
-function polarization(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = false; name = :Π)
-    (subdiagram == false) && uidreset()
+function polarization(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = false; name = :Π, resetuid = false)
+    resetuid && uidreset()
     @assert para.diagType == PolarDiag
     @assert para.innerLoopNum >= 1
     @assert length(extK) == para.totalLoopNum

@@ -1,5 +1,5 @@
 """
-    function sigma(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = false; name = :Σ)
+    function sigma(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = false; name = :Σ, resetuid = false)
     
     Build sigma diagram. 
     When sigma is created as a subdiagram, then no Fock diagram is generated if para.filter contains NoFock, and no sigma diagram is generated if para.filter contains Girreducible
@@ -9,13 +9,14 @@
 - `extK`            : basis of external loop. 
 - `subdiagram`      : a sub-vertex or not
 - `name`            : name of the diagram
+- `resetuid`        : restart uid count from 1
 
 # Output
 - A DataFrame with fields `:type`, `:extT`, `:diagram`, `:hash`
 - All sigma share the same incoming Tau index, but not the outgoing one
 """
-function sigma(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = false; name = :Σ)
-    (subdiagram == false) && uidreset()
+function sigma(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = false; name = :Σ, resetuid = false)
+    resetuid && uidreset()
     @assert para.diagType == SigmaDiag
     @assert para.innerLoopNum >= 1
     @assert length(extK) == para.totalLoopNum

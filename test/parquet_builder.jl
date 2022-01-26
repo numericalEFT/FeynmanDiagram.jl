@@ -34,6 +34,37 @@ end
 
 end
 
+@testset "Filter" begin
+
+    # for G irreducible diagrams, only 0-loop G is allowed
+    @test Parquet.isValidG([Girreducible,], 0) == true
+    @test Parquet.isValidG([Girreducible,], 1) == false
+    @test Parquet.isValidG([Girreducible,], 2) == false
+
+    # for Fock irreducible diagrams, only 0-loop or 2, 3, 4...-loop G is allowed
+    @test Parquet.isValidG([NoFock,], 0) == true
+    @test Parquet.isValidG([NoFock,], 1) == false
+    @test Parquet.isValidG([NoFock,], 2) == true
+
+    # for G irreducible diagrams, no sigma subdiagram is allowed
+    @test Parquet.isValidSigma([Girreducible,], 0, true) == false
+    @test Parquet.isValidSigma([Girreducible,], 1, true) == false
+    @test Parquet.isValidSigma([Girreducible,], 2, true) == false
+
+    @test Parquet.isValidSigma([Girreducible,], 0, false) == false
+    @test Parquet.isValidSigma([Girreducible,], 1, false) == true
+    @test Parquet.isValidSigma([Girreducible,], 2, false) == true
+
+    # for Fock irreducible diagrams, no Fock sigma subdiagram is allowed
+    @test Parquet.isValidSigma([NoFock,], 0, true) == false
+    @test Parquet.isValidSigma([NoFock,], 1, true) == false
+    @test Parquet.isValidSigma([NoFock,], 2, true) == true
+
+    @test Parquet.isValidSigma([NoFock,], 0, false) == false
+    @test Parquet.isValidSigma([NoFock,], 1, false) == true
+    @test Parquet.isValidSigma([NoFock,], 2, false) == true
+end
+
 function evalG(K, τin, τout)
     # println(τBasis, ", ", varT)
     kF, β = 1.0, 1.0
@@ -254,9 +285,9 @@ end
 end
 
 @testset "Green" begin
-    function buildG(loopNum, extT, subdiagram; Kdim = 3, spin = 2, interactionTauNum = 1, filter = [], isFermi = true)
-        para = Builder.GenericPara(
-            diagType = GreenDiag
+    function buildG(loopNum, extT; Kdim = 3, spin = 2, interactionTauNum = 1, filter = [], isFermi = true)
+        para = GenericPara(
+            diagType = GreenDiag,
             loopDim = Kdim,
             hasTau = true,
             innerLoopNum = loopNum,
@@ -274,20 +305,20 @@ end
     # DiagTree.showTree(diag, Gidx)
 
     # If G is irreducible, then only loop-0 G exist for main diagram, and no G exist for subdiagram
-    G = buildG(1, [1, 2], false; filter = [Builder.Girreducible,])
-    @test G is a Diagram
-    G = buildG(1, [1, 2], true; filter = [Builder.Girreducible,])
+    G = buildG(0, [1, 2]; filter = [Girreducible,])
+    @test G isa Diagram
+    G = buildG(1, [1, 2]; filter = [Girreducible,])
     @test isnothing(G)
-    G = buildG(2, [1, 2], true; filter = [Builder.Girreducible,])
+    G = buildG(2, [1, 2]; filter = [Girreducible,])
     @test isnothing(G)
 
     # If Fock diagram is not allowed, then one-loop G diagram should not be exist for subdiagram
-    G = buildG(1, [1, 2], false; filter = [Builder.NoFock,])
-    @test G is a Diagram
-    G = buildG(1, [1, 2], true; filter = [Builder.NoFock,])
+    G = buildG(0, [1, 2]; filter = [NoFock,])
+    @test G isa Diagram
+    G = buildG(1, [1, 2]; filter = [NoFock,])
     @test isnothing(G)
-    G = buildG(2, [1, 2], true; filter = [Builder.NoFock,]) #high order subdiagram is allowed
-    @test G is a Diagram
+    G = buildG(2, [1, 2]; filter = [NoFock,]) #high order subdiagram is allowed
+    @test G isa Diagram
 
 end
 
