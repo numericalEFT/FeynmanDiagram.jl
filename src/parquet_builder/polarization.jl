@@ -64,7 +64,8 @@ function polarization(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagr
                 gout = green(paraGout, K .- extK, (extT[2], extT[1]), true, name = :Gout)
                 @assert gin isa Diagram && gout isa Diagram "$gin or $gout is not a single diagram"
 
-                polardiag = Diagram(polarid, Prod(), [gin, gout], name = name, factor = -1.0)
+                sign = para.isFermi ? -1.0 : 1.0
+                polardiag = Diagram(polarid, Prod(), [gin, gout], name = name, factor = sign)
                 push!(polar, (response = response, extT = extT, diagram = polardiag))
             else
                 ##################### composite polarization #####################################
