@@ -6,7 +6,7 @@ using FeynmanDiagram
 using ElectronGas
 using Lehmann
 
-const steps = 1e6 # MC steps of each worker
+const steps = 1e7 # MC steps of each worker
 const Order = 3
 const rs = 1.0
 const λ = 1.0
@@ -25,7 +25,7 @@ function getDiagPara(order)
         loopDim = basic.dim,
         spin = basic.spin,
         interaction = [FeynmanDiagram.Interaction(ChargeCharge, Instant),],
-        filter = [NoFock,]
+        filter = [NoFock, Girreducible]
     )
 end
 
@@ -78,7 +78,7 @@ function integrand(config)
     end
 
     weight = ExprTree.evalNaive!(diag[order], para.varK, T, eval)
-    w1 = weight[1] * cos(2π * para.n * (T[2] - T[1]) / β) / β
+    w1 = weight[1] * cos(2π * para.n * (T[2] - T[1]) / β) / β * spin
     # @assert w0 ≈ w1 "$w0 vesus $w1"
 
     # return weight[1] * cos(2π * para.n * (T[2] - T[1]) / β) / β
