@@ -25,7 +25,7 @@ function getDiagPara(order)
         loopDim = basic.dim,
         spin = basic.spin,
         interaction = [FeynmanDiagram.Interaction(ChargeCharge, Instant),],
-        filter = [NoFock, Girreducible]
+        filter = [NoFock,]
     )
 end
 
