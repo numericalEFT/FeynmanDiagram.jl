@@ -1,6 +1,7 @@
 # This example demonstrated how to calculate the bubble diagram of free electrons using the Monte Carlo module
 
-using LinearAlgebra, Random, Printf, BenchmarkTools, InteractiveUtils, Parameters, StaticArrays
+using LinearAlgebra, Random, Printf, Parameters, StaticArrays
+using PProf
 using MCIntegration
 using FeynmanDiagram
 using ElectronGas
@@ -100,6 +101,7 @@ function run(steps)
 
     T = Tau(β, β / 2.0)
     K = FermiK(basic.dim, kF, 0.2 * kF, 10.0 * kF, offset = 1)
+    # K.data[:, 1] .= extQ[1]
 
     Ext = MCIntegration.Discrete(1, length(extQ)) # external variable is specified
 
@@ -131,5 +133,5 @@ function run(steps)
     end
 end
 
-run(steps)
+# run(steps)
 # @time run(Steps)
