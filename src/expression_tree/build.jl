@@ -65,6 +65,10 @@ function build(diags::AbstractVector, verbose::Int = 0)
 
     return tree, roots
 end
+function build(diag::Diagram{W}, verbose::Int = 0) where {W}
+    diag, root = build([diag,], verbose)
+    return diag, root[1]
+end
 
 function poolname(id::DiagramId)
     if typeof(id) == GreenId

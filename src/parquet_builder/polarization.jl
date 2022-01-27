@@ -1,6 +1,22 @@
 
-function polarization(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = false; name = :Π)
-    (subdiagram == false) && uidreset()
+"""
+    function polarization(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = false; name = :Π, resetuid = false)
+
+    Generate polarization diagrams using Parquet Algorithm.
+
+# Arguments
+- `para`            : parameters. It should provide internalLoopNum, interactionTauNum, firstTauIdx
+- `extK`            : basis of external loop. 
+- `subdiagram`      : a sub-vertex or not
+- `name`            : name of the vertex
+- `resetuid`        : restart uid count from 1
+
+# Output
+- A DataFrame with fields `:response`, `:diagram`, `:hash`. 
+- All polarization share the same external Tau index. With imaginary-time variables, they are extT = (para.firstTauIdx, para.firstTauIdx+1)
+"""
+function polarization(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = false; name = :Π, resetuid = false)
+    resetuid && uidreset()
     @assert para.diagType == PolarDiag
     @assert para.innerLoopNum >= 1
     @assert length(extK) == para.totalLoopNum
@@ -17,7 +33,7 @@ function polarization(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagr
     K[LoopIdx] = 1.0
     @assert (K ≈ extK) == false
     t0 = para.firstTauIdx
-    extT = para.hasTau ? (t0, t0) : (t0, t0 + 1)
+    extT = para.hasTau ? (t0, t0 + 1) : (t0, t0)
     legK = [extK, K, K .- extK]
 
     polar = DataFrame()
@@ -48,7 +64,8 @@ function polarization(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagr
                 gout = green(paraGout, K .- extK, (extT[2], extT[1]), true, name = :Gout)
                 @assert gin isa Diagram && gout isa Diagram "$gin or $gout is not a single diagram"
 
-                polardiag = Diagram(polarid, Prod(), [gin, gout], name = name)
+                sign = para.isFermi ? -1.0 : 1.0
+                polardiag = Diagram(polarid, Prod(), [gin, gout], name = name, factor = sign)
                 push!(polar, (response = response, extT = extT, diagram = polardiag))
             else
                 ##################### composite polarization #####################################

@@ -17,8 +17,8 @@ Modules = [FeynmanDiagram]
 ```@contents
 Pages = [
     "lib/parquet.md",
-    "lib/builder.md",
-    "lib/diagtree.md"
+    "lib/diagtree.md",
+    "lib/exprtree.md",
 ]
 Depth = 2
 ```

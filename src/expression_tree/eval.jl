@@ -2,7 +2,7 @@
 #     @code_warntype evalNaive!(diag, loopVar, siteVar, evalPropagator, evalNodeFactor, root)
 # end
 
-function evalNaive!(diag::Diagrams, loopVar, siteVar, evalPropagator, evalNodeFactor = nothing, root = diag.root)
+function evalNaive!(diag::Diagrams, loopVar, siteVar, evalPropagator, evalNodeFactor = nothing, root = diag.root; kwargs...)
     loopPool = diag.basisPool
     propagatorPools = diag.propagatorPool
     tree = diag.nodePool
@@ -14,12 +14,18 @@ function evalNaive!(diag::Diagrams, loopVar, siteVar, evalPropagator, evalNodeFa
     @assert length(propagatorPools) == 2
 
     #calculate propagators
+    # for pool in propagatorPools
+    #     for (idx, p) in enumerate(pool.object)
+    #         pool.current[idx] = evalPropagator(p.para, current(loopPool, p.loopIdx), siteVar) *
+    #                             p.factor
+    #     end
+    # end
     for (idx, p) in enumerate(propagatorPools[1].object)
-        propagatorPools[1].current[idx] = evalPropagator(p.para, current(loopPool, p.loopIdx), siteVar) *
+        propagatorPools[1].current[idx] = evalPropagator(p.para, current(loopPool, p.loopIdx), siteVar; kwargs...) *
                                           p.factor
     end
     for (idx, p) in enumerate(propagatorPools[2].object)
-        propagatorPools[2].current[idx] = evalPropagator(p.para, current(loopPool, p.loopIdx), siteVar) *
+        propagatorPools[2].current[idx] = evalPropagator(p.para, current(loopPool, p.loopIdx), siteVar; kwargs...) *
                                           p.factor
     end
 
