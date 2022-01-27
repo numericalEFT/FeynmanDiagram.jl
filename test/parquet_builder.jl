@@ -400,43 +400,40 @@ end
         varT = [rand() for i in 1:para.totalTauNum]
 
         #################### DiagTree ####################################
-        polar = Parquet.polarization(para, Q)
-        diag = polar
-        diag = mergeby(polar)
+        diag = Parquet.polarization(para, Q)
         # print_tree(diag.diagram[1])
-
-        return para, diag.diagram[1], varK, varT
+        return para, diag, varK, varT
     end
-
-
-    function testDiagramNumber(para, diag, varK, varT)
-        # w = DiagTree.evalNaive(diag, varK, varT, evalFakePropagator)
-        w = evalDiagTree!(diag, varK, varT, evalFakePropagator)
-        # plot_tree(diag, maxdepth = 9)
-        factor = (1 / (2π)^para.loopDim)^para.innerLoopNum
-        num = w / factor
-        println(num * para.spin)
-        # @test num * para.spin * (-1)^(para.innerLoopNum - 1) ≈ Parquet.Benchmark.count_polar_G2v(para.innerLoopNum, para.spin)
-    end
-
 
     ##################  G^2*v expansion #########################################
     for l = 1:4
-        # ret = getSigma(l, spin = 1, isFermi = false, filter = [Builder.Girreducible,])
-        # testDiagramNumber(ret...)
-        ret = getPolar(l, isFermi = false, filter = [Girreducible, Proper])
-        testDiagramNumber(ret...)
+        para, diag, varK, varT = getPolar(l, isFermi = false, filter = [Girreducible,])
+        diag = mergeby(diag).diagram[1]
+        w = evalDiagTree!(diag, varK, varT, evalFakePropagator)
+        factor = (1 / (2π)^para.loopDim)^para.innerLoopNum
+        num = w / factor
+        # println(num * para.spin)
+        @test num * para.spin * (-1)^(para.innerLoopNum - 1) ≈ Parquet.Benchmark.count_polar_G2v(para.innerLoopNum, para.spin)
     end
 
-    for l = 1:5
-        # ret = getSigma(l, spin = 1, isFermi = false, filter = [Builder.Girreducible,])
-        # testDiagramNumber(ret...)
-        println("order $l")
-        ret = getPolar(l, isFermi = false, filter = [NoFock, Proper])
-        testDiagramNumber(ret...)
+    ##################  g^2*v expansion #########################################
+    for l = 1:4
+        para, diag, varK, varT = getPolar(l, isFermi = false, filter = [NoFock,])
+        diag = mergeby(diag).diagram[1]
+        w = evalDiagTree!(diag, varK, varT, evalFakePropagator)
+        factor = (1 / (2π)^para.loopDim)^para.innerLoopNum
+        num = w / factor
+        # println(num * para.spin)
+        @test num * para.spin * (-1)^(para.innerLoopNum - 1) ≈ Parquet.Benchmark.count_polar_g2v_noFock(para.innerLoopNum, para.spin)
     end
 
-    # para, diag, varK, varT = getSigma(1, spin = 2, isFermi = false, filter = [Builder.NoFock,], subdiagram = true)
-    # @test isempty(diag.root)
-
+    ##################  g^2*v expansion for the upup polarization #########################################
+    for l = 1:4
+        para, diag, varK, varT = getPolar(l, isFermi = false, filter = [NoFock,])
+        w = evalDiagTree!(diag.diagram[1], varK, varT, evalFakePropagator)
+        factor = (1 / (2π)^para.loopDim)^para.innerLoopNum
+        num = w / factor
+        # println(num * para.spin)
+        @test num * para.spin * (-1)^(para.innerLoopNum - 1) ≈ Parquet.Benchmark.count_polar_g2v_noFock_upup(para.innerLoopNum, para.spin)
+    end
 end
