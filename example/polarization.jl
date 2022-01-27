@@ -6,7 +6,7 @@ using FeynmanDiagram
 using ElectronGas
 using Lehmann
 
-const steps = 1e7 # MC steps of each worker
+const steps = 1e6 # MC steps of each worker
 const Order = 3
 const rs = 1.0
 const λ = 1.0
@@ -72,12 +72,9 @@ function integrand(config)
     T, K, Ext = config.var[1], config.var[2], config.var[3]
     extidx = Ext[1]
 
-    para.varK[:, 1] .= para.extQ[extidx] # external momentum
-    for i in 2:(diag_para[order].innerLoopNum+1)
-        para.varK[:, i] .= K[i-1]
-    end
+    K[1] = para.extQ[extidx]
 
-    weight = ExprTree.evalNaive!(diag[order], para.varK, T, eval)
+    weight = ExprTree.evalNaive!(diag[order], K.data, T, eval)
     w1 = weight[1] * cos(2π * para.n * (T[2] - T[1]) / β) / β * spin
     # @assert w0 ≈ w1 "$w0 vesus $w1"
 
@@ -86,10 +83,12 @@ function integrand(config)
 end
 
 function measure(config)
+    # , I::Vararg{Any,N}
     obs = config.observable
     factor = 1.0 / config.reweight[config.curr]
-    extidx = config.var[3][1]
     weight = integrand(config)
+    # view(obs, I) .+= weight / abs(weight) * factor
+    extidx = config.var[3][1]
     obs[config.curr, extidx] += weight / abs(weight) * factor
 end
 
@@ -100,7 +99,7 @@ function run(steps)
     @unpack kF, β = basic
 
     T = Tau(β, β / 2.0)
-    K = FermiK(basic.dim, kF, 0.2 * kF, 10.0 * kF)
+    K = FermiK(basic.dim, kF, 0.2 * kF, 10.0 * kF, offset = 1)
 
     Ext = MCIntegration.Discrete(1, length(extQ)) # external variable is specified
 
