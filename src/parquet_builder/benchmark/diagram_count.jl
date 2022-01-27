@@ -78,3 +78,47 @@ end
 function count_polar_G2W(innerLoopNum, spin)
     return spin * count_ver3_G2W(innerLoopNum - 1, spin)
 end
+
+function count_polar_g2v_noFock_upup(innerLoopNum, spin)
+    #polarization for <n↑⋅n↑>
+    @assert innerLoopNum >= 1
+    @assert spin == 2 "only spin=2 has been implemented!"
+    if innerLoopNum == 1
+        return 2
+    elseif innerLoopNum == 2
+        return 2
+    elseif innerLoopNum == 3
+        return 28
+    elseif innerLoopNum == 4
+        return 274
+    elseif innerLoopNum == 5
+        return 3586
+    else
+        error("not implemented!")
+    end
+end
+
+function count_polar_g2v_noFock_updown(innerLoopNum, spin)
+    #polarization for <n↑⋅n↓>
+    @assert innerLoopNum >= 1
+    @assert spin == 2 "only spin=2 has been implemented!"
+    if innerLoopNum == 1
+        return 0
+    elseif innerLoopNum == 2
+        return 0
+    elseif innerLoopNum == 3
+        return 4
+    elseif innerLoopNum == 4
+        return 52
+    elseif innerLoopNum == 5
+        return 844
+    else
+        error("not implemented!")
+    end
+end
+
+function count_polar_g2v_noFock(innerLoopNum, spin)
+    return count_polar_g2v_noFock_upup(innerLoopNum, spin) +
+           count_polar_g2v_noFock_updown(innerLoopNum, spin)
+end
+
