@@ -1,30 +1,37 @@
 """
-    function Ver4{W}(para::Para, loopNum = para.internalLoopNum, tidx = 1; chan = para.chan, F = para.F, V = para.V, level = 1, id = [1,]) where {W}
+    vertex4(para::GenericPara,
+        extK = [DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)],
+        chan::AbstractVector = [PHr, PHEr, PPr, Alli],
+        subdiagram = false;
+        level = 1, name = :none, resetuid = false,
+        phi_toplevel = ParquetBlocks().phi, ppi_toplevel = ParquetBlocks().ppi, Γ4_toplevel = ParquetBlocks().Γ4)
 
     Generate 4-vertex diagrams using Parquet Algorithm
 
-#Arguments
-- `para`: parameters. It should provide internalLoopNum, interactionTauNum, firstTauIdx
-- `chan`: list of channels of the current 4-vertex. 
-- `F`   : channels of left sub-vertex for the particle-hole and particle-hole-exchange bubbles
-- `V`   : channels of left sub-vertex for the particle-particle bubble
-- `All`   : channels of right sub-vertex of all channels
-- `Fouter`   : channels of left sub-vertex for the particle-hole and particle-hole-exchange bubbles, only take effect for the outermost bubble
-- `Vouter`   : channels of left sub-vertex for the particle-particle bubble, only take effect for the outermost bubble
-- `Allouter`   : channels of right sub-vertex of all channels
-- `loopNum`: momentum loop degrees of freedom of the 4-vertex diagrams
-- `tidx`: the first τ variable index. It will be the τ variable of the left incoming electron for all 4-vertex diagrams
-- `level`: level in the diagram tree
-- `id`: the first element will be used as the id of the Ver4. All nodes in the tree will be labeled in preorder depth-first search
+# Arguments
+- `para`            : parameters. It should provide internalLoopNum, interactionTauNum, firstTauIdx
+- `extK`            : basis of external loops as a vector [left in, left out, right in, right out]. 
+- `chan`            : vector of channels of the current 4-vertex. 
+- `subdiagram`      : a sub-vertex or not
+- `name`            : name of the vertex
+- `level`           : level in the diagram tree
+- `resetuid`        : restart uid count from 1
+- `phi_toplevel`    : channels of left sub-vertex for the particle-hole and particle-hole-exchange of the bubble at level one.
+- `ppi_toplevel`    : channels of left sub-vertex for the particle-particle bubble at level one
+- `Γ4_toplevel`     : channels of right sub-vertex for all all bubbles at level one
+
+# Output
+- A DataFrame with fields :response, :type, :extT, :diagram, :hash
 """
 function vertex4(para::GenericPara,
-    legK = [DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)],
+    extK = [DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)],
     chan::AbstractVector = [PHr, PHEr, PPr, Alli],
     subdiagram = false;
-    level = 1, name = :none,
+    level = 1, name = :none, resetuid = false,
     phi_toplevel = ParquetBlocks().phi, ppi_toplevel = ParquetBlocks().ppi, Γ4_toplevel = ParquetBlocks().Γ4)
+    legK = extK
 
-    (subdiagram == false) && uidreset()
+    resetuid && uidreset()
 
     if (para.extra isa ParquetBlocks) == false
         para = reconstruct(para, extra = ParquetBlocks())
@@ -113,10 +120,10 @@ function bubble(para::GenericPara, legK, chan::TwoBodyChannel, partition::Vector
     LfirstTauIdx, G0firstTauIdx, RfirstTauIdx, GxfirstTauIdx = idx
     @assert maxTau == maxVer4TauIdx(para) "Partition $partition with tauNum configuration $idx. maxTau = $maxTau, yet $(maxTauIdx(para)) is expected!"
 
-    lPara = reconstruct(para, innerLoopNum = oL, firstLoopIdx = LfirstLoopIdx, firstTauIdx = LfirstTauIdx)
-    rPara = reconstruct(para, innerLoopNum = oR, firstLoopIdx = RfirstLoopIdx, firstTauIdx = RfirstTauIdx)
-    gxPara = reconstruct(para, innerLoopNum = oGx, firstLoopIdx = GxfirstLoopIdx, firstTauIdx = GxfirstTauIdx)
-    g0Para = reconstruct(para, innerLoopNum = oG0, firstLoopIdx = G0firstLoopIdx, firstTauIdx = G0firstTauIdx)
+    lPara = reconstruct(para, diagType = Ver4Diag, innerLoopNum = oL, firstLoopIdx = LfirstLoopIdx, firstTauIdx = LfirstTauIdx)
+    rPara = reconstruct(para, diagType = Ver4Diag, innerLoopNum = oR, firstLoopIdx = RfirstLoopIdx, firstTauIdx = RfirstTauIdx)
+    gxPara = reconstruct(para, diagType = GreenDiag, innerLoopNum = oGx, firstLoopIdx = GxfirstLoopIdx, firstTauIdx = GxfirstTauIdx)
+    g0Para = reconstruct(para, diagType = GreenDiag, innerLoopNum = oG0, firstLoopIdx = G0firstLoopIdx, firstTauIdx = G0firstTauIdx)
 
     phi, ppi, Γ4 = para.extra.phi, para.extra.ppi, para.extra.Γ4
     if chan == PHr || chan == PHEr
@@ -141,12 +148,9 @@ function bubble(para::GenericPara, legK, chan::TwoBodyChannel, partition::Vector
     for ldiag in Lver.diagram
         for rdiag in Rver.diagram
             extT, G0T, GxT = tauBasis(chan, ldiag.id.extT, rdiag.id.extT)
-            # diag, g0 = buildG(bubble.g0, K, (LvT[OUTR], RvT[INL]); diag = diag)
-            # diag, gc = buildG(bubble.gx, Kx, (RvT[OUTL], LvT[INR]); diag = diag)
-            # g0 = DiagTree.addpropagator!(diag, :Gpool, 0, :G0; site = G0T, loop = K)
-            # gc = DiagTree.addpropagator!(diag, :Gpool, 0, :Gx; site = GxT, loop = Kx)
-            g0 = Diagram(GreenId(g0Para, k = K, t = G0T), name = :G0)
-            gx = Diagram(GreenId(gxPara, k = Kx, t = GxT), name = :Gx)
+            g0 = green(g0Para, K, G0T, true, name = :G0)
+            gx = green(gxPara, Kx, GxT, true, name = :Gx)
+            @assert g0 isa Diagram && gx isa Diagram
             append!(diag, bubble2diag(para, chan, ldiag, rdiag, legK, g0, gx))
         end
     end

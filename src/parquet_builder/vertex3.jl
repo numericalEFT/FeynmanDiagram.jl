@@ -1,7 +1,25 @@
-function vertex3(para, extK = [DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2)],
-    subdiagram = false; name = :Γ3, chan = [PHr, PHEr, PPr, Alli])
+"""
+    function vertex3(para, extK = [DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2)],
+        subdiagram = false; name = :Γ3, chan = [PHr, PHEr, PPr, Alli], resetuid = false)
 
-    (subdiagram == false) && uidreset()
+    Generate 3-vertex diagrams using Parquet Algorithm.
+    With imaginary-time variables, all vertex3 generated has the same bosonic Tidx ``extT[1]=para.firstTauIdx`` and the incoming fermionic Tidx ``extT[2]=para.firstTauIdx+1``.
+
+#Arguments
+- `para`            : parameters. It should provide internalLoopNum, interactionTauNum, firstTauIdx
+- `extK`            : basis of external loops as a vector [bosonic leg, fermionic in, fermionic out]. 
+- `subdiagram`      : a sub-vertex or not
+- `name`            : name of the vertex
+- `chan`            : vector of channels of the current 4-vertex. 
+- `resetuid`        : restart uid count from 1
+
+# Output
+- A DataFrame with fields :response, :extT, :diagram, :hash. 
+"""
+function vertex3(para, extK = [DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2)],
+    subdiagram = false; name = :Γ3, chan = [PHr, PHEr, PPr, Alli], resetuid = false)
+
+    resetuid && uidreset()
     @assert para.diagType == Ver3Diag
     @assert para.innerLoopNum >= 1 "Only generates vertex corrections with more than one internal loops."
     for k in extK

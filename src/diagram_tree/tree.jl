@@ -74,13 +74,12 @@ function mergeby(df::DataFrame, fields = [];
             end
         end
         diag = Diagram(getid(group), operator, group[:, :diagram], name = name, factor = factor)
-        return (diagram = diag, hash = diag.hash)
-
+        (diagram = diag, hash = diag.hash)
     end
     return gdf
 end
 
-function mergeby(diags::Vector{Diagram{W}}, fields = []; expand::Bool = false, kwargs...) where {W}
+function mergeby(diags::AbstractVector, fields = []; expand::Bool = false, kwargs...)
     df = toDataFrame(diags, expand = expand)
     return mergeby(df, fields; kwargs...)
 end
