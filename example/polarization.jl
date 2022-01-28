@@ -1,61 +1,51 @@
-# This example demonstrated how to calculate the bubble diagram of free electrons using the Monte Carlo module
+"""
+This example demonstrated use NumericalEFT packages to calculate the multi-loop polarization diagrams
+of electrons with Yukawa interaction.
 
-using LinearAlgebra, Random, Printf, Parameters, StaticArrays
-using PProf
-using MCIntegration
-using FeynmanDiagram
-using ElectronGas
-using Lehmann
+If you want to run it with MPI, simply use:
+mpiexec -n julia polarization.jl
 
-const steps = 1e6 # MC steps of each worker
-const Order = 3
+Note that you may need to install julia MPI.jl following the link:
+https://juliaparallel.github.io/MPI.jl/stable/configuration/#Julia-wrapper-for-mpiexec
+"""
+
+using Printf, LinearAlgebra
+using MCIntegration, FeynmanDiagram, ElectronGas, Lehmann #NumericalEFT packages
+
+##################### parameters for 3D UEG ##############################
+const steps = 1e8 # MC steps of each block
+const Order = 3  #diagram order
+const dim = 3
 const rs = 1.0
-const λ = 1.0
-const beta = 25.0
-const basic = reconstruct(Parameter.rydbergUnit(1 / beta, rs, 3), Λs = λ)
-const β = basic.β
-const kF = basic.kF
-const me = basic.me
-const spin = basic.spin
+const beta = 25.0  # β*E_F
+const basic = Parameter.rydbergUnit(1 / beta, rs, dim, Λs = 1.0) # calculate all relevant parameters 
+const β, kF, μ, me, spin = basic.β, basic.kF, basic.μ, basic.me, basic.spin
 
-###################  build polarization diagram #######################
-function getDiagPara(order)
-    return GenericPara(diagType = PolarDiag,
-        innerLoopNum = order,
-        hasTau = true,
-        loopDim = basic.dim,
-        spin = basic.spin,
-        interaction = [FeynmanDiagram.Interaction(ChargeCharge, Instant),],
-        filter = [NoFock,]
-    )
-end
+##################### parameters for polarization ##############################
+const n = 0        # external Matsubara frequency
+const Qsize = 8    # numebr of external momentum points
+const extQ = [[q, 0.0, 0.0] for q in LinRange(0.0, 3kF, Qsize)] #samples of external momentums
 
-const diag_para = [getDiagPara(o) for o in 1:Order]
-const polar = [mergeby(Parquet.polarization(diag_para[i])).diagram[1] for i in 1:Order]
-# println(polar)
-# plot_tree(polar)
-const diag = [ExprTree.build(polar[o], 1)[1] for o in 1:Order] #different order has different set of K, T variables, thus must have different exprtrees
-# println(diag)
-# exit(0)
+###################  parameter for polarization diagram #######################
+diagPara(order) = GenericPara(diagType = PolarDiag, innerLoopNum = order, hasTau = true, loopDim = dim, spin = spin,
+    interaction = [FeynmanDiagram.Interaction(ChargeCharge, Instant),],  #instant charge-charge interaction
+    filter = [NoFock,])
 
-##################### parameters for MC ##############################
-@with_kw struct ParaMC
-    n::Int = 0 # external Matsubara frequency
-    Qsize::Int = 8
-    varK::Matrix = zeros(basic.dim, diag_para[end].totalLoopNum) # make sure that varK is large enough for all orders
-    extQ::Vector{SVector{basic.dim,Float64}} = [@SVector [q, 0.0, 0.0] for q in LinRange(0.0, 3.0 * basic.kF, Qsize)]
-end
+println("Build the diagrams into an experssion tree ...")
+const para = [diagPara(o) for o in 1:Order]
+const polar = [mergeby(Parquet.polarization(para[i])).diagram[1] for i in 1:Order]   #diagram of different orders
+#different order has different set of K, T variables, thus must have different exprtrees
+const diag = [ExprTree.build(polar[o]) for o in 1:Order]    #experssion tree representation of diagrams 
 
 ##################### propagator and interaction evaluation ##############
 function eval(id::GreenId, K, varT)
     τin, τout = varT[id.extT[1]], varT[id.extT[2]]
-    # println(τBasis, ", ", varT)
-    ϵ = dot(K, K) / (2me) - basic.μ
+    ϵ = dot(K, K) / (2me) - μ
     τ = τout - τin
     if τ ≈ 0.0
-        return Spectral.kernelFermiT(-1e-8, ϵ, basic.β)
+        return Spectral.kernelFermiT(-1e-8, ϵ, β)
     else
-        return Spectral.kernelFermiT(τ, ϵ, basic.β)
+        return Spectral.kernelFermiT(τ, ϵ, β)
     end
 end
 
@@ -63,71 +53,52 @@ eval(id::InteractionId, K, varT) = (basic.e0)^2 / basic.ϵ0 / (dot(K, K) + basic
 
 ################### interface to MC #########################################
 function integrand(config)
-    # if config.curr == 0
-    #     error("impossible")
-    # end
     @assert config.curr >= 0
     order = config.curr
-    para = config.para
-
+    #T: all internal Tau variables, K[>=2]: internal loop variables, Ext[1]: the index of the external momentum
     T, K, Ext = config.var[1], config.var[2], config.var[3]
-    extidx = Ext[1]
-
-    K[1] = para.extQ[extidx]
-
-    weight = ExprTree.evalNaive!(diag[order], K.data, T, eval)
-    w1 = weight[1] * cos(2π * para.n * (T[2] - T[1]) / β) / β * spin
-    # @assert w0 ≈ w1 "$w0 vesus $w1"
-
-    # return weight[1] * cos(2π * para.n * (T[2] - T[1]) / β) / β
-    return w1
+    # copy the external momentum into the K.data matrix, which will be used to evaluate diagrams in the next line
+    K.data[:, 1] .= extQ[Ext[1]]
+    # K.data[:, 1]: external K, K.daata[:, >=2]: internal K, so that K.data contains all momentum
+    weight = ExprTree.evalNaive!(diag[order], K.data, T, eval) #evaluate the expression tree
+    # there is an additional factor 1/β because we are integrating over both the incoming and the outing Tau variables of the poalrization
+    return weight[1] * cos(2π * n * (T[2] - T[1]) / β) / β * spin
 end
 
 function measure(config)
-    # , I::Vararg{Any,N}
     obs = config.observable
     factor = 1.0 / config.reweight[config.curr]
     weight = integrand(config)
-    # view(obs, I) .+= weight / abs(weight) * factor
     extidx = config.var[3][1]
     obs[config.curr, extidx] += weight / abs(weight) * factor
 end
 
 function run(steps)
-
-    para = ParaMC()
-    @unpack extQ, Qsize = para
-    @unpack kF, β = basic
-
-    T = Tau(β, β / 2.0)
-    K = FermiK(basic.dim, kF, 0.2 * kF, 10.0 * kF, offset = 1)
-    # K.data[:, 1] .= extQ[1]
-
+    println("Initializing MC configuration ...")
+    T = Tau(β, β / 2.0)  # Tau varaibles
+    K = FermiK(dim, kF, 0.2 * kF, 10kF, offset = 1)  #momentum variables
     Ext = MCIntegration.Discrete(1, length(extQ)) # external variable is specified
 
-    dof = [[diag_para[o].totalTauNum, diag_para[o].innerLoopNum, 1] for o in 1:Order] # degrees of freedom of the normalization diagram and the bubble
-    obs = zeros(Float64, (Order, Qsize)) # observable for the normalization diagram and the bubble
+    # degrees of freedom of the diagrams of different orders
+    dof = [[para[o].totalTauNum, para[o].innerLoopNum, 1] for o in 1:Order]
+    # observable for the diagrams of different orders
+    obs = zeros(Float64, (Order, Qsize))
 
-    config = Configuration(steps, (T, K, Ext), dof, obs; para = para)
+    config = Configuration(steps, (T, K, Ext), dof, obs)
+    println("Start MC sampling ...")
     avg, std = MCIntegration.sample(config, integrand, measure; print = 0, Nblock = 16, reweight = 10000)
-    # @profview MonteCarlo.sample(config, integrand, measure; print=0, Nblock=1)
-    # sleep(100)
 
-    if isnothing(avg) == false
-        @unpack n, extQ = ParaMC()
-
-        println("Order 1")
-        for (idx, q) in enumerate(extQ)
-            q = q[1]
-            p = Polarization.Polarization0_ZeroTemp(q, para.n, basic)
-            @printf("%10.6f  %10.6f ± %10.6f  %10.6f\n", q / basic.kF, avg[1, idx], std[1, idx], p)
-        end
-
-        for o = 2:Order
+    if isnothing(avg) == false #if run with MPI, then only the master node has meaningful avg
+        for o = 1:Order
             println("Order $o")
+            @printf("%20s%20s   %20s%20s\n", "q/kF", "polarMC", "error", "exact")
             for (idx, q) in enumerate(extQ)
-                q = q[1]
-                @printf("%10.6f  %10.6f ± %10.6f\n", q / basic.kF, avg[o, idx], std[o, idx])
+                if o == 1
+                    p = Polarization.Polarization0_ZeroTemp(q[1], n, basic)
+                    @printf("%20.6f%20.6f ± %20.6f%20.6f\n", q[1] / kF, avg[o, idx], std[o, idx], p)
+                else
+                    @printf("%20.6f%20.6f ± %20.6f\n", q[1] / kF, avg[o, idx], std[o, idx])
+                end
             end
         end
     end
