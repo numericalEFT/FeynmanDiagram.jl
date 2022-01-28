@@ -13,7 +13,7 @@ using Printf, LinearAlgebra
 using MCIntegration, FeynmanDiagram, ElectronGas, Lehmann #NumericalEFT packages
 
 ##################### parameters for 3D UEG ##############################
-const steps = 1e4 # MC steps of each block
+const steps = 1e7 # MC steps of each block
 const Order = 3  #diagram order
 const dim = 3
 const rs = 1.0
@@ -85,7 +85,8 @@ function integrand(config)
     K.data[:, 1] .= extQ[Ext[1]]
     # K.data[:, 1]: external K, K.daata[:, >=2]: internal K, so that K.data contains all momentum
     weights = ExprTree.evalNaive!(tree[order], K.data, T, eval) #evaluate the expression tree
-    return sum(w * phasefactor(extT[order][i]) for (i, w) in enumerate(weights))
+    w = sum(w * phasefactor(extT[order][i]) for (i, w) in enumerate(weights))
+    return w
 
     # return weight[1] * cos(2π * n * (T[2] - T[1]) / β) / β * spin
 end
@@ -107,16 +108,17 @@ function run(steps)
     # degrees of freedom of the diagrams of different orders
     dof = [[para[o].totalTauNum, para[o].innerLoopNum, 1] for o in 1:Order]
     # observable for the diagrams of different orders
-    obs = zeros(Complex, (Order, Qsize))
+    obs = zeros(ComplexF64, (Order, Qsize))
 
     config = Configuration(steps, (T, K, Ext), dof, obs)
     println("Start MC sampling ...")
-    avg, std = MCIntegration.sample(config, integrand, measure; print = 0, Nblock = 16, reweight = 10000)
+    avg, std = MCIntegration.sample(config, integrand, measure; print = 10, Nblock = 16, reweight = 10000)
 
     if isnothing(avg) == false #if run with MPI, then only the master node has meaningful avg
         for o = 1:Order
             println("Order $o")
-            @printf("%20s%20s%20s%20s%20s%20s\n", "q/kF", "real", "error", "imag", "error", "exact")
+            # @printf("%20s%20s%20s%20s%20s%20s\n", "q/kF", "real", "error", "imag", "error", "exact")
+            @printf("%10s%14s%12s%14s%12s%14s\n", "q/kF", "real", "error", "imag", "error", "exact")
             for (idx, q) in enumerate(extQ)
                 if o == 1
                     if diagType == PolarDiag
@@ -124,17 +126,15 @@ function run(steps)
                     else
                         p = SelfEnergy.Fock0_ZeroTemp(q[1], basic)
                     end
-                    @printf("%20.6f%20.6f%20.6f%20.6f%20.6f%20.6f\n", q[1] / kF, real(avg[o, idx]), real(std[o, idx]), imag(avg[o, idx]), imag(std[o, idx]), p)
+                    @printf("%10.6f%14.8f%12.8f%14.8f%14.6f%14.8f\n", q[1] / kF, real(avg[o, idx]), real(std[o, idx]), imag(avg[o, idx]), imag(std[o, idx]), p)
                 else
-                    @printf("%20.6f%20.6f%20.6f%20.6f%20.6f\n", q[1] / kF, real(avg[o, idx]), real(std[o, idx]), imag(avg[o, idx]), imag(std[o, idx]))
+                    @printf("%10.6f%14.8f%12.8f%14.8f%14.6f\n", q[1] / kF, real(avg[o, idx]), real(std[o, idx]), imag(avg[o, idx]), imag(std[o, idx]))
+                    # @printf("%20.6f%20.6f%20.6f%20.6f%20.6f\n", q[1] / kF, real(avg[o, idx]), real(std[o, idx]), imag(avg[o, idx]), imag(std[o, idx]))
                 end
             end
         end
     end
 
-    @time benchmark(config, 1, 100000)
-    @time benchmark(config, 2, 100000)
-    @time benchmark(config, 3, 100000)
 end
 
 run(steps)
