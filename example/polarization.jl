@@ -133,5 +133,5 @@ function run(steps)
     end
 end
 
-# run(steps)
+run(steps)
 # @time run(Steps)
