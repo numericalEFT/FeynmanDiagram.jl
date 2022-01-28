@@ -149,7 +149,7 @@ evalFakePropagator(id::DiagramId, K, varT) = 1.0
         # DiagTreeNew.plot_tree(diags[2])
 
         ################### ExprTree ###################################
-        tree, root = ExprTree.build(diags.diagram)
+        tree = ExprTree.build(diags.diagram)
         # println("root", root)
 
         ################### original Parquet builder ###################################
