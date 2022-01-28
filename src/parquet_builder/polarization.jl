@@ -118,7 +118,7 @@ function polarization(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagr
 
     # legK = [extK, K, K, extK]
     Factor = 1 / (2π)^para.loopDim
-    polar = mergeby(polar, [:response,]; name = name, factor = Factor,
+    polar = mergeby(polar, [:response, :extT]; name = name, factor = Factor,
         getid = g -> PolarId(para, g[1, :response], k = extK, t = extT)
     )
     return polar
