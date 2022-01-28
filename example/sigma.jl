@@ -14,12 +14,12 @@ using MCIntegration, FeynmanDiagram, ElectronGas, Lehmann #NumericalEFT packages
 
 ##################### parameters for 3D UEG ##############################
 const steps = 1e6 # MC steps of each block
-const Order = 3  #diagram order
+const Order = 1  #diagram order
 const dim = 3
 const rs = 1.0
 const beta = 25.0  # β*E_F
-const diagType = PolarDiag                 #build polarization diagram with Parquet algorithm
-# const diagType = SigmaDiag                #build sigma diagram with Parquet algorithm
+# const diagType = PolarDiag                 #build polarization diagram with Parquet algorithm
+const diagType = SigmaDiag                   #build sigma diagram with Parquet algorithm
 const basic = Parameter.rydbergUnit(1 / beta, rs, dim, Λs = 1.0) # calculate all relevant parameters 
 const β, kF, μ, me, spin = basic.β, basic.kF, basic.μ, basic.me, basic.spin
 
@@ -31,7 +31,8 @@ const extQ = [[q, 0.0, 0.0] for q in LinRange(0.0, 3kF, Qsize)] #samples of exte
 ###################  parameter for polarization diagram #######################
 diagPara(order) = GenericPara(diagType = diagType, innerLoopNum = order, hasTau = true, loopDim = dim, spin = spin,
     interaction = [FeynmanDiagram.Interaction(ChargeCharge, Instant),],  #instant charge-charge interaction
-    filter = [NoFock,])
+    # filter = [NoFock,])
+    filter = [Girreducible,])
 
 println("Build the diagrams into an experssion tree ...")
 const para = [diagPara(o) for o in 1:Order]
@@ -42,6 +43,13 @@ if diagType == SigmaDiag
 elseif diagType == PolarDiag
     diags = [Parquet.polarization(para[i]) for i in 1:Order]
 end
+# println("order 1")
+# println(diags[1])
+# plot_tree(diags[1].diagram, maxdepth = 9)
+# println("order 2")
+# println(diags[2])
+# plot_tree(diags[2].diagram, maxdepth = 9)
+# exit(0)
 #different order has different set of K, T variables, thus must have different exprtrees
 const extT = [diags[o].extT for o in 1:Order]                        #external tau of each diagram
 const tree = [ExprTree.build(diags[o].diagram) for o in 1:Order]     #experssion tree representation of diagrams 
@@ -62,7 +70,7 @@ eval(id::InteractionId, K, varT) = (basic.e0)^2 / basic.ϵ0 / (dot(K, K) + basic
 
 # there is an additional factor 1/β because we are integrating over both the incoming and the outing Tau variables of the poalrization
 if diagType == SigmaDiag
-    phasefactor(extT) = sin((2n + 1) * π * (extT[2] - extT[1]) / β) / β
+    phasefactor(extT) = cos((2n + 1) * π * (extT[2] - extT[1]) / β) / β
 elseif diagType == PolarDiag
     phasefactor(extT) = cos(2n * π * (extT[2] - extT[1]) / β) * spin / β
 end
@@ -108,13 +116,13 @@ function run(steps)
     if isnothing(avg) == false #if run with MPI, then only the master node has meaningful avg
         for o = 1:Order
             println("Order $o")
-            @printf("%20s%20s   %20s%20s\n", "q/kF", "polarMC", "error", "exact")
+            @printf("%20s%20s   %20s%20s\n", "q/kF", "average", "error", "exact")
             for (idx, q) in enumerate(extQ)
                 if o == 1
                     if diagType == PolarDiag
                         p = Polarization.Polarization0_ZeroTemp(q[1], n, basic)
                     else
-                        p = 0.0
+                        p = SelfEnergy.Fock0_ZeroTemp(q[1], basic)
                     end
                     @printf("%20.6f%20.6f ± %20.6f%20.6f\n", q[1] / kF, avg[o, idx], std[o, idx], p)
                 else
