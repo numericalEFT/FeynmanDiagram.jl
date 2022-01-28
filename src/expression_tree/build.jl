@@ -62,12 +62,11 @@ function build(diags::AbstractVector, verbose::Int = 0)
     roots = [nodes[d.hash] for d in diags]
     tree.root = [r.index for r in roots]
 
-
-    return tree, roots
+    return tree
 end
 function build(diag::Diagram{W}, verbose::Int = 0) where {W}
-    diag, root = build([diag,], verbose)
-    return diag, root[1]
+    diag = build([diag,], verbose)
+    return diag
 end
 
 function poolname(id::DiagramId)
