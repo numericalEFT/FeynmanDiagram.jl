@@ -13,7 +13,7 @@ using Printf, LinearAlgebra
 using MCIntegration, FeynmanDiagram, ElectronGas, Lehmann #NumericalEFT packages
 
 ##################### parameters for 3D UEG ##############################
-const steps = 1e6 # MC steps of each block
+const steps = 1e4 # MC steps of each block
 const Order = 3  #diagram order
 const dim = 3
 const rs = 1.0
@@ -131,6 +131,10 @@ function run(steps)
             end
         end
     end
+
+    @time benchmark(config, 1, 100000)
+    @time benchmark(config, 2, 100000)
+    @time benchmark(config, 3, 100000)
 end
 
 run(steps)
