@@ -3,7 +3,7 @@ using Lehmann
 using LinearAlgebra
 
 const diagType = Ver4Diag
-const Order = 3
+const Order = 4
 const Circle = 100000
 
 const kF = 1.919
@@ -54,7 +54,7 @@ varK = rand(3, 16)
 varT = [rand() for i in 1:8]
 
 benchmark(tree[1], 100, varK, varT)
-println("Run evaluation for $N times.")
+println("Run evaluation for $Circle times.")
 for i in 1:Order
     @time benchmark(tree[i], Circle, varK, varT)
 end
