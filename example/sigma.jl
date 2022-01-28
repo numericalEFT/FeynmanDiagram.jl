@@ -14,7 +14,7 @@ using MCIntegration, FeynmanDiagram, ElectronGas, Lehmann #NumericalEFT packages
 
 ##################### parameters for 3D UEG ##############################
 const steps = 1e6 # MC steps of each block
-const Order = 1  #diagram order
+const Order = 3  #diagram order
 const dim = 3
 const rs = 1.0
 const beta = 25.0  # β*E_F
@@ -70,9 +70,9 @@ eval(id::InteractionId, K, varT) = (basic.e0)^2 / basic.ϵ0 / (dot(K, K) + basic
 
 # there is an additional factor 1/β because we are integrating over both the incoming and the outing Tau variables of the poalrization
 if diagType == SigmaDiag
-    phasefactor(extT) = cos((2n + 1) * π * (extT[2] - extT[1]) / β) / β
+    phasefactor(extT) = exp(-1im * (2n + 1) * π * (extT[2] - extT[1]) / β) / β
 elseif diagType == PolarDiag
-    phasefactor(extT) = cos(2n * π * (extT[2] - extT[1]) / β) * spin / β
+    phasefactor(extT) = exp(-1im * 2n * π * (extT[2] - extT[1]) / β) * spin / β
 end
 
 ################### interface to MC #########################################
@@ -107,7 +107,7 @@ function run(steps)
     # degrees of freedom of the diagrams of different orders
     dof = [[para[o].totalTauNum, para[o].innerLoopNum, 1] for o in 1:Order]
     # observable for the diagrams of different orders
-    obs = zeros(Float64, (Order, Qsize))
+    obs = zeros(Complex, (Order, Qsize))
 
     config = Configuration(steps, (T, K, Ext), dof, obs)
     println("Start MC sampling ...")
@@ -116,7 +116,7 @@ function run(steps)
     if isnothing(avg) == false #if run with MPI, then only the master node has meaningful avg
         for o = 1:Order
             println("Order $o")
-            @printf("%20s%20s   %20s%20s\n", "q/kF", "average", "error", "exact")
+            @printf("%20s%20s%20s%20s%20s%20s\n", "q/kF", "real", "error", "imag", "error", "exact")
             for (idx, q) in enumerate(extQ)
                 if o == 1
                     if diagType == PolarDiag
@@ -124,9 +124,9 @@ function run(steps)
                     else
                         p = SelfEnergy.Fock0_ZeroTemp(q[1], basic)
                     end
-                    @printf("%20.6f%20.6f ± %20.6f%20.6f\n", q[1] / kF, avg[o, idx], std[o, idx], p)
+                    @printf("%20.6f%20.6f%20.6f%20.6f%20.6f%20.6f\n", q[1] / kF, real(avg[o, idx]), real(std[o, idx]), imag(avg[o, idx]), imag(std[o, idx]), p)
                 else
-                    @printf("%20.6f%20.6f ± %20.6f\n", q[1] / kF, avg[o, idx], std[o, idx])
+                    @printf("%20.6f%20.6f%20.6f%20.6f%20.6f\n", q[1] / kF, real(avg[o, idx]), real(std[o, idx]), imag(avg[o, idx]), imag(std[o, idx]))
                 end
             end
         end
