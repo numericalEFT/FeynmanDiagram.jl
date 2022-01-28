@@ -161,7 +161,15 @@ function update(pool::LoopPool, variable = rand(eltype(pool.current), pool.dim, 
     # println(pool.basis)
     # println(variable)
     loopNum = size(pool.basis)[1]
-    pool.current[:, 1:length(pool)] = variable[:, 1:loopNum] * pool.basis[1:loopNum, 1:length(pool)]
+    # pool.current[:, 1:length(pool)] = variable[:, 1:loopNum] * pool.basis[1:loopNum, 1:length(pool)]
+    # pool.current[:, 1:length(pool)] = view(variable, :, 1:loopNum) * view(pool.basis, 1:loopNum, :)
+    # A = view(variable, :, 1:loopNum)
+    pool.current = view(variable, :, 1:loopNum) * pool.basis
+    # B = view(pool.basis, 1:loopNum, :)
+    # B = view(pool.basis, 1:loopNum, :)
+    # C = pool.current[:, 1:length(pool)]
+    # LinearAlgebra.mul!(pool.current, A, pool.basis)
+    # LinearAlgebra.BLAS.gemm!('N', 'N', false, variable[:, 1:loopNum], pool.basis[1:loopNum, 1:length(pool)], false, pool.current[:, 1:length(pool)])
 end
 
 current(pool::LoopPool, idx) = pool.current[:, idx]
