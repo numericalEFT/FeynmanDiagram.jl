@@ -14,13 +14,13 @@ using MCIntegration, FeynmanDiagram, ElectronGas, Lehmann #NumericalEFT packages
 using JLD2
 
 ##################### parameters for 3D UEG ##############################
-const steps = 1e6       # MC steps of each block
+const steps = 1e7       # MC steps of each block
 const Order = 2         #diagram order
 const dim = 3
 const rs = 1.0
 const beta = 25.0       # β*E_F
-const diagType = PolarDiag                                         #build polarization diagram with Parquet algorithm
-# const diagType = SigmaDiag                                           #build sigma diagram with Parquet algorithm
+# const diagType = PolarDiag                                         #build polarization diagram with Parquet algorithm
+const diagType = SigmaDiag                                           #build sigma diagram with Parquet algorithm
 @assert diagType == SigmaDiag || diagType == PolarDiag               #only support sigma or polarization
 const isFermi = diagType == SigmaDiag ? true : false
 const basic = Parameter.rydbergUnit(1 / beta, rs, dim, Λs = 1.0)     # calculate all relevant parameters 
@@ -34,12 +34,12 @@ const Qsize = 8
 const extQ = [[q, 0.0, 0.0] for q in LinRange(0.0, 10kF, Qsize)]
 #construct the optimized basis using discrete Lehmann representation
 const dlr = DLRGrid(Euv = 10 * basic.EF, β = β, rtol = 1e-8, isFermi = true)
-# const Nsize = dlr.size
+const Nsize = dlr.size
 #get the optimal Matsubara frequencies
-# const ngrid = dlr.n
+const ngrid = dlr.n
 # println(dlr)
-const ngrid = collect(0:10)
-const Nsize = length(ngrid)
+# const ngrid = collect(0:10)
+# const Nsize = length(ngrid)
 
 ###################  parameter for polarization diagram #######################
 diagPara(order) = GenericPara(diagType = diagType, innerLoopNum = order, hasTau = true, loopDim = dim, spin = spin,
@@ -86,9 +86,9 @@ eval(id::InteractionId, K, varT) = (basic.e0)^2 / basic.ϵ0 / (dot(K, K) + basic
 
 # there is an additional factor 1/β because we are integrating over both the incoming and the outing Tau variables of the poalrization
 if diagType == SigmaDiag
-    phasefactor(tin, tout, n) = exp(-1im * (2n + 1) * π * (tout - tin) / β) / β
+    phasefactor(tin, tout, n) = exp(1im * (2n + 1) * π * (tout - tin) / β) / β
 elseif diagType == PolarDiag
-    phasefactor(tin, tout, n) = exp(-1im * 2n * π * (tout - tin) / β) * spin / β
+    phasefactor(tin, tout, n) = exp(1im * 2n * π * (tout - tin) / β) * spin / β
 end
 
 ################### interface to MC #########################################
@@ -130,7 +130,6 @@ function run(steps)
     dof = [[para[o].totalTauNum, para[o].innerLoopNum, 1, 1] for o in 1:Order]
     # observable for the diagrams of different orders
     obs = zeros(ComplexF64, (Nsize, Qsize, Order))
-    # obs = zeros(Float64, (Nsize, Qsize, Order))
 
     # config = Configuration(steps, (T, K, ExtQ, ExtN), dof, obs; reweight = [0.01, 0.02])
     config = Configuration(steps, (T, K, ExtQ, ExtN), dof, obs)
@@ -181,16 +180,16 @@ function run(steps)
             end
         end
 
-        # println()
-        # avg = matfreq2tau(dlr, avg, [0.0,], axis = 1)
-        # printstyled("equal time results: \n", color = :green)
-        # for o = 1:Order
-        #     printstyled("Order $o\n", color = :yellow)
-        #     @printf("%10s%14s%14s\n", "q/kF", "real", "imag")
-        #     for (idx, q) in enumerate(extQ)
-        #         @printf("%10.6f%14.8f%14.8f\n", q[1] / kF, real(avg[1, idx, o]), imag(avg[1, idx, o]))
-        #     end
-        # end
+        println()
+        avg = matfreq2tau(dlr, avg, [0.0,], axis = 1)
+        printstyled("equal time results: \n", color = :green)
+        for o = 1:Order
+            printstyled("Order $o\n", color = :yellow)
+            @printf("%10s%14s%14s\n", "q/kF", "real", "imag")
+            for (idx, q) in enumerate(extQ)
+                @printf("%10.6f%14.8f%14.8f\n", q[1] / kF, real(avg[1, idx, o]), imag(avg[1, idx, o]))
+            end
+        end
     end
 
 end
