@@ -19,8 +19,8 @@ const Order = 2         #diagram order
 const dim = 3
 const rs = 1.0
 const beta = 25.0       # β*E_F
-# const diagType = PolarDiag                                         #build polarization diagram with Parquet algorithm
-const diagType = SigmaDiag                                           #build sigma diagram with Parquet algorithm
+const diagType = PolarDiag                                         #build polarization diagram with Parquet algorithm
+# const diagType = SigmaDiag                                           #build sigma diagram with Parquet algorithm
 @assert diagType == SigmaDiag || diagType == PolarDiag               #only support sigma or polarization
 const isFermi = diagType == SigmaDiag ? true : false
 const basic = Parameter.rydbergUnit(1 / beta, rs, dim, Λs = 1.0)     # calculate all relevant parameters 
@@ -38,7 +38,7 @@ const dlr = DLRGrid(Euv = 10 * basic.EF, β = β, rtol = 1e-8, isFermi = true)
 #get the optimal Matsubara frequencies
 # const ngrid = dlr.n
 # println(dlr)
-const ngrid = collect(-10:9)
+const ngrid = collect(0:10)
 const Nsize = length(ngrid)
 
 ###################  parameter for polarization diagram #######################
@@ -64,10 +64,11 @@ end
 # println("order 3")
 # println(diags[3])
 # plot_tree(diags[2].diagram, maxdepth = 9)
-# exit(0)
 #different order has different set of K, T variables, thus must have different exprtrees
-const extT = [diags[o].extT for o in 1:Order]                        #external tau of each diagram
+const extTidx = [diags[o].extT for o in 1:Order]                        #external tau of each diagram
 const tree = [ExprTree.build(diags[o].diagram) for o in 1:Order]     #experssion tree representation of diagrams 
+# println(extT)
+# exit(0)
 
 ##################### propagator and interaction evaluation ##############
 function eval(id::GreenId, K, varT)
@@ -85,9 +86,9 @@ eval(id::InteractionId, K, varT) = (basic.e0)^2 / basic.ϵ0 / (dot(K, K) + basic
 
 # there is an additional factor 1/β because we are integrating over both the incoming and the outing Tau variables of the poalrization
 if diagType == SigmaDiag
-    phasefactor(extT, n) = exp(-1im * (2n + 1) * π * (extT[2] - extT[1]) / β) / β
+    phasefactor(tin, tout, n) = exp(-1im * (2n + 1) * π * (tout - tin) / β) / β
 elseif diagType == PolarDiag
-    phasefactor(extT, n) = exp(-1im * 2n * π * (extT[2] - extT[1]) / β) * spin / β
+    phasefactor(tin, tout, n) = exp(-1im * 2n * π * (tout - tin) / β) * spin / β
 end
 
 ################### interface to MC #########################################
@@ -100,11 +101,13 @@ function integrand(config)
     K.data[:, 1] .= extQ[ExtQ[1]]
     # K.data[:, 1]: external K, K.daata[:, >=2]: internal K, so that K.data contains all momentum
     weights = ExprTree.evalNaive!(tree[order], K.data, T, eval) #evaluate the expression tree
-    nidx = ExtN[1]
-    println(nidx)
-    w = sum(w * phasefactor(extT[order][i], ngrid[nidx]) for (i, w) in enumerate(weights))
+    n = ngrid[ExtN[1]]
+    # println(nidx)
+    tidx = extTidx[order]
+    # println(tidx)
+    w = sum(w * phasefactor(T[tidx[i][1]], T[tidx[i][2]], n) for (i, w) in enumerate(weights))
     return w
-    # return weight[1] * cos(2π * n * (T[2] - T[1]) / β) / β * spin
+    # return weights[1] * cos(2π * ngrid[nidx] * (T[2] - T[1]) / β) / β * spin
 end
 
 function measure(config)
@@ -127,6 +130,7 @@ function run(steps)
     dof = [[para[o].totalTauNum, para[o].innerLoopNum, 1, 1] for o in 1:Order]
     # observable for the diagrams of different orders
     obs = zeros(ComplexF64, (Nsize, Qsize, Order))
+    # obs = zeros(Float64, (Nsize, Qsize, Order))
 
     # config = Configuration(steps, (T, K, ExtQ, ExtN), dof, obs; reweight = [0.01, 0.02])
     config = Configuration(steps, (T, K, ExtQ, ExtN), dof, obs)
@@ -136,7 +140,7 @@ function run(steps)
     if isnothing(avg) == false #if run with MPI, then only the master node has meaningful avg
 
         jldsave("sigma.jld2"; dlr, avg, std)
-        nidx = 2
+        nidx = 1
         printstyled("zero frequency results: \n", color = :green)
         for o = 1:Order
             printstyled("Order $o\n", color = :yellow)
