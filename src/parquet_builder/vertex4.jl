@@ -25,10 +25,11 @@
 """
 function vertex4(para::GenericPara,
     extK = [DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)],
-    chan::AbstractVector = [PHr, PHEr, PPr, Alli],
-    subdiagram = false;
+    chan::AbstractVector = [PHr, PHEr, PPr, Alli], subdiagram = false;
     level = 1, name = :none, resetuid = false,
-    phi_toplevel = ParquetBlocks().phi, ppi_toplevel = ParquetBlocks().ppi, Γ4_toplevel = ParquetBlocks().Γ4)
+    phi_toplevel = ParquetBlocks().phi, ppi_toplevel = ParquetBlocks().ppi, Γ4_toplevel = ParquetBlocks().Γ4,
+    subchannel::Symbol = :All #:All, :W, :Lver3, :Rver3, :RPA
+)
     legK = extK
 
     resetuid && uidreset()
@@ -62,7 +63,12 @@ function vertex4(para::GenericPara,
     diags = Diagram{para.weightType}[]
 
     if loopNum == 0
-        append!(diags, bareVer4(para, legK, [Di, Ex]))
+        if subchannel == :W || subchannel == :RPA || subchannel == :LVer3 || subchannel == :RVer3
+            permutation = [Di,]
+        else
+            permutation = [Di, Ex]
+        end
+        append!(diags, bareVer4(para, legK, permutation))
     else # loopNum>0
         for c in chan
             if c == Alli
@@ -74,9 +80,14 @@ function vertex4(para::GenericPara,
             for p in partition
 
                 if c == PHr || c == PHEr || c == PPr
-                    bub = bubble(para, legK, c, p, level, name, phi_toplevel, ppi_toplevel, Γ4_toplevel)
-                    # println(bub)
+                    bub = bubble(para, legK, c, p, level, name, phi_toplevel, ppi_toplevel, Γ4_toplevel, 1.0, subchannel)
                     append!(diags, bub)
+                    if (NoBubble in para.filter) && (loopNum == 1) && (c == PHr || c == PHEr)
+                        #add bubble counter-diagram to remove the bubble
+                        cbub = bubble(para, legK, c, p, level, Symbol("$(name)_counter"), phi_toplevel, ppi_toplevel, Γ4_toplevel, -1.0, :RPA)
+                        append!(diags, cbub)
+                    end
+                    # println(bub)
                 end
             end
         end
@@ -99,7 +110,7 @@ function vertex4(para::GenericPara,
 end
 
 function bubble(para::GenericPara, legK, chan::TwoBodyChannel, partition::Vector{Int}, level::Int, name::Symbol,
-    phi_toplevel, ppi_toplevel, Γ4_toplevel)
+    phi_toplevel, ppi_toplevel, Γ4_toplevel, extrafactor = 1.0, subchannel = :All)
 
     diag = Diagram{para.weightType}[]
 
@@ -139,10 +150,12 @@ function bubble(para::GenericPara, legK, chan::TwoBodyChannel, partition::Vector
     LLegK, K, RLegK, Kx = legBasis(chan, legK, LoopIdx)
     # println(K, ", ", Kx)
 
-    Lver = vertex4(lPara, LLegK, Γi, true; level = level + 1, name = :Γi)
+    ls, rs = subChannel(subchannel)
+
+    Lver = vertex4(lPara, LLegK, Γi, true; level = level + 1, name = :Γi, subchannel = ls)
     isempty(Lver) && return diag
     # println("Γf: ", Γf)
-    Rver = vertex4(rPara, RLegK, Γf, true; level = level + 1, name = :Γf)
+    Rver = vertex4(rPara, RLegK, Γf, true; level = level + 1, name = :Γf, subchannel = rs)
     isempty(Rver) && return diag
 
     for ldiag in Lver.diagram
@@ -151,20 +164,20 @@ function bubble(para::GenericPara, legK, chan::TwoBodyChannel, partition::Vector
             g0 = green(g0Para, K, G0T, true, name = :G0)
             gx = green(gxPara, Kx, GxT, true, name = :Gx)
             @assert g0 isa Diagram && gx isa Diagram
-            append!(diag, bubble2diag(para, chan, ldiag, rdiag, legK, g0, gx))
+            append!(diag, bubble2diag(para, chan, ldiag, rdiag, legK, g0, gx, extrafactor))
         end
     end
     return diag
 end
 
-function bubble2diag(para, chan, ldiag, rdiag, extK, g0, gx)
+function bubble2diag(para, chan, ldiag, rdiag, extK, g0, gx, extrafactor)
     lid, rid = ldiag.id, rdiag.id
     ln, rn = lid.response, rid.response
     lo, ro = lid.para.innerLoopNum, rid.para.innerLoopNum
     vtype = typeMap(lid.type, rid.type)
 
     extT, G0T, GxT = tauBasis(chan, lid.extT, rid.extT)
-    Factor = factor(para, chan)
+    Factor = factor(para, chan) * extrafactor
     spin(response) = (response == UpUp ? "↑↑" : "↑↓")
 
     diag = Diagram{para.weightType}[]
@@ -382,5 +395,21 @@ function typeMap(ltype, rtype)
         return D_Dynamic
     else
         return nothing
+    end
+end
+
+function subChannel(subchan)
+    if subchan == :RPA
+        return :RPA, :RPA
+    elseif subchan == :LVer3
+        return :LVer3, :All
+    elseif subchan == :RVer3
+        return :All, :RVer3
+    elseif subchan == :W
+        return :LVer3, :RVer3
+    elseif subchan == :All
+        return :All, :All
+    else
+        error("not implemented!")
     end
 end
