@@ -20,6 +20,7 @@ function sigma(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = fa
     @assert para.diagType == SigmaDiag
     @assert para.innerLoopNum >= 1
     @assert length(extK) == para.totalLoopNum
+    @assert (NoBubble in para.filter) == false "The many-body correction sigma only accounts for half of the bubble counterterm right now."
 
     if isValidSigma(para.filter, para.innerLoopNum, subdiagram) == false
         return DataFrame(type = [], extT = [], diagram = [])
