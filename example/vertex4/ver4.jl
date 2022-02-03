@@ -26,14 +26,14 @@ const θgrid = collect(LinRange(0.1, π, Nk)) # external angle grid
 const ExtK = [[kF * cos(θ), kF * sin(θ), 0.0] for θ in θgrid]
 
 vqinv = [(q^2 + mass2) / (4π * e0^2) for q in qgrid.grid]
-# const dW0 = TwoPoint.dWRPA(vqinv, qgrid.grid, τgrid.grid, dim, EF, kF, β, spin, me) # dynamic part of the effective interaction
+const dW0 = TwoPoint.dWRPA(vqinv, qgrid.grid, τgrid.grid, dim, EF, kF, β, spin, me) # dynamic part of the effective interaction
 
 KinL = KoutL = [1.0, 0, 0]
 KinR = KoutR = [0, 1.0, 0]
 legK = [KinL, KoutL, KinR, KoutR]
 
 diagPara(order) = GenericPara(diagType = Ver4Diag, innerLoopNum = order, hasTau = true, loopDim = dim, spin = spin, firstLoopIdx = 3,
-    interaction = [FeynmanDiagram.Interaction(ChargeCharge, Instant),],  #instant charge-charge interaction
+    interaction = [FeynmanDiagram.Interaction(ChargeCharge, [Instant, Dynamic]),],  #instant charge-charge interaction
     filter = [
         Girreducible,
         Proper,   #one interaction irreduble diagrams or not
@@ -69,7 +69,7 @@ println(rootuu)
 println(extTuu)
 println(rootud)
 println(extTud)
-# ExprTree.showTree(diag[1], rootuu[1][1])
+ExprTree.showTree(diag[1], rootuu[1][1])
 # ExprTree.showTree(diag[1], rootud[1][1])
 
 # exit(0)
