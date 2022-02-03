@@ -6,10 +6,9 @@ using MCIntegration
 using Lehmann
 using Plots
 
-using ExpressionTree
+using FeynmanDiagram
 using StaticArrays
 
-Parquet = GWKT.Parquet
 Manual = GWKT.Manual
 DiagTree = GWKT.DiagTree
 

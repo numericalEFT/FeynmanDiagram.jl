@@ -1,5 +1,3 @@
-using ExpressionTree
-
 # DiagTree = GWKT.DiagTree
 # Parquet = GWKT.Parquet
 # Gtype, Wtype = 1, 2

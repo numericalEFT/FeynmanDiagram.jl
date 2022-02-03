@@ -82,45 +82,30 @@ function KOstatic(Fp, Fm, cp, cm, mr, qgrid)
 end
 
 
-function interactionDynamic(para, qd, τIn, τOut)
+function interactionDynamic(qd, τIn, τOut)
 
     dτ = abs(τOut - τIn)
 
     kDiQ = sqrt(dot(qd, qd))
-    vd = 4π * e0^2 / (kDiQ^2 + mass2) + fp
-    if kDiQ <= para.qgrid.grid[1]
-        q = para.qgrid.grid[1] + 1.0e-6
-        wd = vd * linear2D(para.dW0, para.qgrid, para.τgrid, q, dτ)
+    vd = 4π * e0^2 / (kDiQ^2 + mass2)
+    if kDiQ <= qgrid.grid[1]
+        q = qgrid.grid[1] + 1.0e-6
+        wd = vd * linear2D(dW0, qgrid, τgrid, q, dτ)
         # the current interpolation vanishes at q=0, which needs to be corrected!
     else
-        wd = vd * linear2D(para.dW0, para.qgrid, para.τgrid, kDiQ, dτ) # dynamic interaction, don't forget the singular factor vq
+        wd = vd * linear2D(dW0, qgrid, τgrid, kDiQ, dτ) # dynamic interaction, don't forget the singular factor vq
     end
 
-    # return vd / β, wd
-
-    #TODO introduce a fake tau variable to alleviate sign cancellation between the static and the dynamic interactions
-    vd = 4π * e0^2 / (kDiQ^2 + mass2 + 4π * e0^2 * NF * lindhard(kDiQ / 2.0 / kF)) / β
-    vd -= wd
-    return vd, wd
+    return wd
 end
 
-function interactionStatic(para, qd, τIn, τOut)
-
+function interactionStatic(qd, τIn, τOut)
     dτ = abs(τOut - τIn)
-
     kDiQ = sqrt(dot(qd, qd))
     vd = 4π * e0^2 / (kDiQ^2 + mass2) / β
-    return vd, 0.0
-end
 
-function vertexDynamic(para, qd, qe, τIn, τOut)
-    vd, wd = interactionDynamic(para, qd, τIn, τOut)
-    ve, we = interactionDynamic(para, qe, τIn, τOut)
-    return -vd, -wd, ve, we
-end
-
-function vertexStatic(para, qd, qe, τIn, τOut)
-    vd, wd = interactionStatic(para, qd, τIn, τOut)
-    ve, we = interactionStatic(para, qe, τIn, τOut)
-    return -vd, -wd, ve, we
+    #TODO introduce a fake tau variable to alleviate sign cancellation between the static and the dynamic interactions
+    # vd = 4π * e0^2 / (kDiQ^2 + mass2 + 4π * e0^2 * NF * lindhard(kDiQ / 2.0 / kF)) / β
+    # vd -= interactionDynamic(qd, τIn, τOut)
+    return vd
 end
