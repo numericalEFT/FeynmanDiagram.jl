@@ -62,7 +62,7 @@ DataFrame[6×5 DataFrame
    6 │ UpDown    Dynamic  (1, 2, 2, 1)  ↑↓Dyn,t(1, 2, 2, 1)=0.0=⨁ (44, 4…     85]
 """
 # plot_tree(ver4uu[1][1])
-plot_tree(ver4[1].diagram, maxdepth = 9)
+# plot_tree(ver4[1].diagram, maxdepth = 9)
 const diag = [ExprTree.build(ver4[o].diagram) for o in 1:Order]    #experssion tree representation of diagrams 
 const rootuu = [[idx for idx in d.root if d.nodePool.object[idx].para.response == UpUp] for d in diag]
 const rootud = [[idx for idx in d.root if d.nodePool.object[idx].para.response == UpDown] for d in diag]
