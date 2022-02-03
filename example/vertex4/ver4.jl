@@ -27,6 +27,8 @@ const ExtK = [[kF * cos(θ), kF * sin(θ), 0.0] for θ in θgrid]
 
 vqinv = [(q^2 + mass2) / (4π * e0^2) for q in qgrid.grid]
 const dW0 = TwoPoint.dWRPA(vqinv, qgrid.grid, τgrid.grid, dim, EF, kF, β, spin, me) # dynamic part of the effective interaction
+# println(dW0)
+# exit(0)
 
 KinL = KoutL = [1.0, 0, 0]
 KinR = KoutR = [0, 1.0, 0]
@@ -60,16 +62,17 @@ DataFrame[6×5 DataFrame
    6 │ UpDown    Dynamic  (1, 2, 2, 1)  ↑↓Dyn,t(1, 2, 2, 1)=0.0=⨁ (44, 4…     85]
 """
 # plot_tree(ver4uu[1][1])
+plot_tree(ver4[1].diagram, maxdepth = 9)
 const diag = [ExprTree.build(ver4[o].diagram) for o in 1:Order]    #experssion tree representation of diagrams 
 const rootuu = [[idx for idx in d.root if d.nodePool.object[idx].para.response == UpUp] for d in diag]
 const rootud = [[idx for idx in d.root if d.nodePool.object[idx].para.response == UpDown] for d in diag]
 const extTuu = [[diag[ri].nodePool.object[idx].para.extT for idx in root] for (ri, root) in enumerate(rootuu)]
 const extTud = [[diag[ri].nodePool.object[idx].para.extT for idx in root] for (ri, root) in enumerate(rootud)]
-println(rootuu)
-println(extTuu)
-println(rootud)
-println(extTud)
-ExprTree.showTree(diag[1], rootuu[1][1])
+# println(rootuu)
+# println(extTuu)
+# println(rootud)
+# println(extTud)
+# ExprTree.showTree(diag[1], rootuu[1][1])
 # ExprTree.showTree(diag[1], rootud[1][1])
 
 # exit(0)
@@ -86,7 +89,22 @@ function eval(id::GreenId, K, varT)
     end
 end
 
-eval(id::InteractionId, K, varT) = e0^2 / ϵ0 / (dot(K, K) + mass2)
+# eval(id::InteractionId, K, varT) = e0^2 / ϵ0 / (dot(K, K) + mass2)
+function eval(id::InteractionId, K, varT)
+    if id.type == Instant
+        if id.para.interactionTauNum == 1
+            return e0^2 / ϵ0 / (dot(K, K) + mass2)
+        elseif id.para.interactionTauNum == 2
+            return interactionStatic(K, varT[id.extT[1]], varT[id.extT[2]])
+        else
+            error("not implemented!")
+        end
+    elseif id.type == Dynamic
+        return interactionDynamic(K, varT[id.extT[1]], varT[id.extT[2]])
+    else
+        error("not implemented!")
+    end
+end
 
 @inline function phase(varT, extT)
     # println(extT)
@@ -152,7 +170,7 @@ function MC()
     #     t[2] = β * rand()
     # end
 
-    dof = [[1, 2, 1],] # K, T, ExtKidx
+    dof = [[1, 4, 1],] # K, T, ExtKidx
     obs = zeros(Nk, 2) # observable for the Fock diagram 
 
     config = MCIntegration.Configuration(steps, (K, T, X), dof, obs)

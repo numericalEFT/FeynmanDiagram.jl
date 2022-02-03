@@ -82,4 +82,7 @@ export addpropagator!, addnode!
 export setroot!, addroot!
 export evalNaive, showTree
 
+include("GWKT/GWKT.jl")
+export GWKT
+
 end
