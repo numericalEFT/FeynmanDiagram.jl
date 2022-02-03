@@ -102,10 +102,10 @@ end
 function interactionStatic(qd, τIn, τOut)
     dτ = abs(τOut - τIn)
     kDiQ = sqrt(dot(qd, qd))
-    vd = 4π * e0^2 / (kDiQ^2 + mass2) / β
+    # vd = 4π * e0^2 / (kDiQ^2 + mass2) / β
 
     #TODO introduce a fake tau variable to alleviate sign cancellation between the static and the dynamic interactions
-    # vd = 4π * e0^2 / (kDiQ^2 + mass2 + 4π * e0^2 * NF * lindhard(kDiQ / 2.0 / kF)) / β
-    # vd -= interactionDynamic(qd, τIn, τOut)
+    vd = 4π * e0^2 / (kDiQ^2 + mass2 + 4π * e0^2 * NF * lindhard(kDiQ / 2.0 / kF)) / β
+    vd -= interactionDynamic(qd, τIn, τOut)
     return vd
 end
