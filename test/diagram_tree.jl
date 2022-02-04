@@ -39,6 +39,54 @@
     println(toDataFrame([root,]))
 end
 
+function getdiagram(spin = 2.0, D = 3, Nk = 4, Nt = 2)
+    """
+        k1-k3                     k2+k3 
+        |                         | 
+    t1.L ↑     t1.L       t2.L     ↑ t2.L
+        |-------------->----------|
+        |       |  k3+k4   |      |
+        |   v   |          |  v   |
+        |       |    k4    |      |
+        |--------------<----------|
+    t1.L ↑    t1.L        t2.L     ↑ t2.L
+        |                         | 
+        k1                        k2
+    """
+
+    DiagTree.uidreset()
+    # We only consider the direct part of the above diagram
+
+    paraG = GenericPara(diagType = GreenDiag,
+        innerLoopNum = 0, totalLoopNum = Nk, loopDim = D,
+        hasTau = true, totalTauNum = Nt)
+    paraV = paraG
+
+    # #construct the propagator table
+    gK = [[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0]]
+    gT = [(1, 2), (2, 1)]
+    g = [Diagram(GreenId(paraG, k = gK[i], t = gT[i]), name = :G) for i in 1:2]
+
+    vdK = [[0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 1.0, 0.0]]
+    # vdT = [[1, 1], [2, 2]]
+    vd = [Diagram(InteractionId(paraV, ChargeCharge, k = vdK[i], permu = Di), name = :Vd) for i in 1:2]
+
+    veK = [[1, 0, -1, -1], [0, 1, 0, -1]]
+    # veT = [[1, 1], [2, 2]]
+    ve = [Diagram(InteractionId(paraV, ChargeCharge, k = veK[i], permu = Ex), name = :Ve) for i in 1:2]
+
+    Id = GenericId(paraV)
+    # contruct the tree
+    ggn = Diagram(Id, Prod(), [g[1], g[2]])
+    vdd = Diagram(Id, Prod(), [vd[1], vd[2]], factor = spin)
+    vde = Diagram(Id, Prod(), [vd[1], ve[2]], factor = -1.0)
+    ved = Diagram(Id, Prod(), [ve[1], vd[2]], factor = -1.0)
+    vsum = Diagram(Id, Sum(), [vdd, vde, ved])
+    root = Diagram(Id, Prod(), [vsum, ggn], factor = 1 / (2π)^D, name = :root)
+
+    return root, gK, gT, vdK, veK
+end
+
 @testset "Generic Diagrams" begin
 
     """
@@ -62,32 +110,33 @@ end
     kF, β, mass2 = 1.919, 0.5, 1.0
     Nk, Nt = 4, 2
 
-    paraG = GenericPara(diagType = GreenDiag,
-        innerLoopNum = 0, totalLoopNum = Nk, loopDim = D,
-        hasTau = true, totalTauNum = Nt)
-    paraV = paraG
+    # paraG = GenericPara(diagType = GreenDiag,
+    #     innerLoopNum = 0, totalLoopNum = Nk, loopDim = D,
+    #     hasTau = true, totalTauNum = Nt)
+    # paraV = paraG
 
-    # #construct the propagator table
-    gK = [[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0]]
-    gT = [(1, 2), (2, 1)]
-    g = [Diagram(GreenId(paraG, k = gK[i], t = gT[i]), name = :G) for i in 1:2]
+    # # #construct the propagator table
+    # gK = [[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0]]
+    # gT = [(1, 2), (2, 1)]
+    # g = [Diagram(GreenId(paraG, k = gK[i], t = gT[i]), name = :G) for i in 1:2]
 
-    vdK = [[0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 1.0, 0.0]]
-    vdT = [[1, 1], [2, 2]]
-    vd = [Diagram(InteractionId(paraV, ChargeCharge, k = vdK[i], permu = Di), name = :Vd) for i in 1:2]
+    # vdK = [[0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 1.0, 0.0]]
+    # vdT = [[1, 1], [2, 2]]
+    # vd = [Diagram(InteractionId(paraV, ChargeCharge, k = vdK[i], permu = Di), name = :Vd) for i in 1:2]
 
-    veK = [[1, 0, -1, -1], [0, 1, 0, -1]]
-    veT = [[1, 1], [2, 2]]
-    ve = [Diagram(InteractionId(paraV, ChargeCharge, k = veK[i], permu = Ex), name = :Ve) for i in 1:2]
+    # veK = [[1, 0, -1, -1], [0, 1, 0, -1]]
+    # veT = [[1, 1], [2, 2]]
+    # ve = [Diagram(InteractionId(paraV, ChargeCharge, k = veK[i], permu = Ex), name = :Ve) for i in 1:2]
 
-    Id = GenericId(paraV)
-    # contruct the tree
-    ggn = Diagram(Id, Prod(), [g[1], g[2]])
-    vdd = Diagram(Id, Prod(), [vd[1], vd[2]], factor = spin)
-    vde = Diagram(Id, Prod(), [vd[1], ve[2]], factor = -1.0)
-    ved = Diagram(Id, Prod(), [ve[1], vd[2]], factor = -1.0)
-    vsum = Diagram(Id, Sum(), [vdd, vde, ved])
-    root = Diagram(Id, Prod(), [vsum, ggn], factor = 1 / (2π)^D, name = :root)
+    # Id = GenericId(paraV)
+    # # contruct the tree
+    # ggn = Diagram(Id, Prod(), [g[1], g[2]])
+    # vdd = Diagram(Id, Prod(), [vd[1], vd[2]], factor = spin)
+    # vde = Diagram(Id, Prod(), [vd[1], ve[2]], factor = -1.0)
+    # ved = Diagram(Id, Prod(), [ve[1], vd[2]], factor = -1.0)
+    # vsum = Diagram(Id, Sum(), [vdd, vde, ved])
+    # root = Diagram(Id, Prod(), [vsum, ggn], factor = 1 / (2π)^D, name = :root)
+    root, gK, gT, vdK, veK = getdiagram(spin, D, Nk, Nt)
 
     evalDiagTree!(root, x -> 1.0)
     @test root.weight ≈ -2 + spin
@@ -122,6 +171,13 @@ end
     print_tree(root)
 
     @test root.weight ≈ Weight
+
+    ############### test diagram optimization #################
+    uniqueG, uniqueInt = DiagTree.removeDuplicatedLeaves!(root, verbose = 1)
+    @test length(uniqueG) == 2
+    @test length(uniqueInt) == 3
+    evalDiagTree!(root, eval, varK, varT)
+    @test root.weight ≈ Weight
 end
 
 @testset "optimize" begin
@@ -141,14 +197,18 @@ end
     """
 
     #remove the 2, which only has one child
-    DiagTree.removeOneChildParent(root)
+    DiagTree.removeOneChildParent!(root)
     """
     4 : 0=0=⨁ (1, 3)
     ├─ 1 : 3=0
     └─ 3 : 2=0
     """
 
-
     @test root.subdiagram[1].hash == 1
     # print_tree(root)
+
+    # root, gK, gT, vdK, veK = getdiagram()
+    # uniqueG, uniqueInt = DiagTree.removeDuplicatedLeaves!(root, verbose = 1)
+    # @test length(uniqueG) == 2
+    # @test length(uniqueInt) == 3
 end
