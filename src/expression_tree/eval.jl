@@ -15,8 +15,16 @@ function evalNaive!(diag::Diagrams, loopVar, siteVar, evalPropagator, evalNodeFa
     #calculate propagators
     for pool in propagatorPools
         for (idx, p) in enumerate(pool.object)
+            # if p.para isa GreenId
+            #     pool.current[idx] = evalPropagator(p.para::GreenId, current(loopPool, p.loopIdx), siteVar) *
+            #                         p.factor
+            # elseif p.para isa InteractionId
+            #     pool.current[idx] = evalPropagator(p.para::InteractionId, current(loopPool, p.loopIdx), siteVar) *
+            #                         p.factor
+            # else
             pool.current[idx] = evalPropagator(p.para, current(loopPool, p.loopIdx), siteVar) *
                                 p.factor
+            # end
         end
     end
     # @assert length(propagatorPools) == 2
