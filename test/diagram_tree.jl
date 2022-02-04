@@ -17,6 +17,13 @@
     l = Diagram{W}(ID(1), Sum(), [ll,])
     r = Diagram{W}(ID(2))
     root = Diagram{W}(ID(0), Sum(), [l, r])
+    print_tree(root)
+    """
+    4 : 0=0=⨁ (2, 3)
+    ├─ 2 : 1=0=⨁ (1)
+    │  └─ 1 : 3=0
+    └─ 3 : 2=0
+    """
 
     collect(PostOrderDFS(root))
     @test [node.id.uid for node in PostOrderDFS(root)] == [3, 1, 2, 0]
@@ -115,4 +122,33 @@ end
     print_tree(root)
 
     @test root.weight ≈ Weight
+end
+
+@testset "optimize" begin
+    DiagTree.uidreset()
+
+    W = Int
+    ll = Diagram{W}(ID(3))
+    l = Diagram{W}(ID(1), Sum(), [ll,])
+    r = Diagram{W}(ID(2))
+    root = Diagram{W}(ID(0), Sum(), [l, r])
+    print_tree(root)
+    """
+    4 : 0=0=⨁ (2, 3)
+    ├─ 2 : 1=0=⨁ (1)
+    │  └─ 1 : 3=0
+    └─ 3 : 2=0
+    """
+
+    #remove the 2, which only has one child
+    DiagTree.removeOneChildParent(root)
+    """
+    4 : 0=0=⨁ (1, 3)
+    ├─ 1 : 3=0
+    └─ 3 : 2=0
+    """
+
+
+    @test root.subdiagram[1].hash == 1
+    # print_tree(root)
 end

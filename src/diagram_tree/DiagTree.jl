@@ -21,6 +21,7 @@ include("traits.jl")
 include("tree.jl")
 include("io.jl")
 include("eval.jl")
+include("optimize.jl")
 
 const INL, OUTL, INR, OUTR = 1, 2, 3, 4
 
