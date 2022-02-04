@@ -35,7 +35,10 @@ KinR = KoutR = [0, 1.0, 0]
 legK = [KinL, KoutL, KinR, KoutR]
 
 diagPara(order) = GenericPara(diagType = Ver4Diag, innerLoopNum = order, hasTau = true, loopDim = dim, spin = spin, firstLoopIdx = 3,
-    interaction = [FeynmanDiagram.Interaction(ChargeCharge, [Instant, Dynamic]),],  #instant charge-charge interaction
+    interaction = [FeynmanDiagram.Interaction(ChargeCharge, [
+        Instant,
+        # Dynamic
+    ]),],  #instant charge-charge interaction
     filter = [
         Girreducible,
         Proper,   #one interaction irreduble diagrams or not
@@ -46,7 +49,7 @@ diagPara(order) = GenericPara(diagType = Ver4Diag, innerLoopNum = order, hasTau 
 
 println("Build the diagrams into an experssion tree ...")
 const para = [diagPara(o) for o in 1:Order]
-ver4 = [Parquet.vertex4(para[i], legK, [PHr,]) for i in 1:Order]   #diagram of different orders
+ver4 = [Parquet.vertex4(para[i], legK, [PHEr,]) for i in 1:Order]   #diagram of different orders
 #different order has different set of K, T variables, thus must have different exprtrees
 println(ver4)
 """
@@ -170,7 +173,7 @@ function MC()
     #     t[2] = β * rand()
     # end
 
-    dof = [[1, 4, 1],] # K, T, ExtKidx
+    dof = [[para[o].innerLoopNum, para[o].totalTauNum, 1] for o in 1:Order] # K, T, ExtKidx
     obs = zeros(Nk, 2) # observable for the Fock diagram 
 
     config = MCIntegration.Configuration(steps, (K, T, X), dof, obs)
@@ -196,11 +199,11 @@ function MC()
 
         println("S ver4: ")
         for li in 1:N
-            @printf("%8.4f   %8.4f ±%8.4f\n", grid[li], (avg[li, 1] + avg[li, 2]), (std[li, 1] + std[li, 2]))
+            @printf("%8.4f   %8.4f ±%8.4f\n", grid[li], (avg[li, 1] + avg[li, 2]) / 2, (std[li, 1] + std[li, 2]) / 2)
         end
         println("A ver4: ")
         for li in 1:N
-            @printf("%8.4f   %8.4f ±%8.4f\n", grid[li], (avg[li, 1] - avg[li, 2]), (std[li, 1] - std[li, 2]))
+            @printf("%8.4f   %8.4f ±%8.4f\n", grid[li], (avg[li, 1] - avg[li, 2]) / 2, (std[li, 1] - std[li, 2]) / 2)
         end
 
     end
