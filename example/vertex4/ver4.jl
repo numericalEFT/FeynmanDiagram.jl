@@ -42,14 +42,14 @@ diagPara(order) = GenericPara(diagType = Ver4Diag, innerLoopNum = order, hasTau 
     filter = [
         Girreducible,
         Proper,   #one interaction irreduble diagrams or not
-        # NoBubble, #allow the bubble diagram or not
+        NoBubble, #allow the bubble diagram or not
     ],
     transferLoop = KinL - KoutL
 )
 
 println("Build the diagrams into an experssion tree ...")
 const para = [diagPara(o) for o in 1:Order]
-ver4 = [Parquet.vertex4(para[i], legK, [PPr,]) for i in 1:Order]   #diagram of different orders
+ver4 = [Parquet.vertex4(para[i], legK, [PHEr,]) for i in 1:Order]   #diagram of different orders
 #different order has different set of K, T variables, thus must have different exprtrees
 println(ver4)
 """
