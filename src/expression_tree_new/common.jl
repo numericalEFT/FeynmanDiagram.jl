@@ -58,3 +58,7 @@ import ..DiEx
 import ..uidreset
 import ..toDataFrame
 import ..mergeby
+
+import ..Operator
+import ..Add
+import ..Prod
