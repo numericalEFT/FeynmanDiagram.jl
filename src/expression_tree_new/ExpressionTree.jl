@@ -14,16 +14,12 @@ include("common.jl")
 # struct Cache and struct Pool
 include("pool.jl")
 
-# struct Propagator, Node and Diagram
-include("object.jl")
-export Component
+include("tree.jl")
 
 # IO operations
 include("io.jl")
 
 # diagram evaluation
 include("eval.jl")
-
-include("build.jl")
 
 end
