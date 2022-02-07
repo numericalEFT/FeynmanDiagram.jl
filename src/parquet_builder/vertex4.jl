@@ -230,12 +230,12 @@ function bareVer4(para::GenericPara, legK, diex::Vector{Permutation} = [Di, Ex])
     if para.hasTau
         extT_ins = [(t0, t0, t0, t0), (t0, t0, t0, t0)]
         extT_dyn = [(t0, t0, t0 + 1, t0 + 1), (t0, t0 + 1, t0 + 1, t0)]
-        innerT_ins = [(0, 0), (0, 0)]
+        innerT_ins = [(1, 1), (1, 1)]
         innerT_dyn = [(t0, t0 + 1), (t0, t0 + 1)]
     else
-        extT_ins = [(0, 0, 0, 0), (0, 0, 0, 0)]
+        extT_ins = [(1, 1, 1, 1), (1, 1, 1, 1)]
         extT_dyn = extT_ins
-        innerT_ins = [(0, 0), (0, 0)]
+        innerT_ins = [(1, 1), (1, 1)]
         innerT_dyn = innerT_ins
     end
 
