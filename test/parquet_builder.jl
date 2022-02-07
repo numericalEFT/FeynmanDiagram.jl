@@ -174,6 +174,14 @@ evalFakePropagator(id::DiagramId, K, varT) = 1.0
             end
 
 
+            optdiags = DiagTree.optimize!(diags.diagram)
+            opttree = ExprTree.build(optdiags)
+            w1eopt = ExprTree.evalNaive!(tree, varK, varT, evalPropagator)
+            if timing
+                printstyled("naive optimized ExprTree cost:", color = :green)
+                @time ExprTree.evalNaive!(opttree, varK, varT, evalPropagator)
+            end
+
             ##################### lower level subroutines  #######################################
 
             KinL, KoutL, KinR, KoutR = varK[:, 1], varK[:, 1], varK[:, 2], varK[:, 2]
@@ -194,6 +202,7 @@ evalFakePropagator(id::DiagramId, K, varT) = 1.0
             # println(w1, " vs ", w1e, " vs ", w2)
 
             @assert w1 ≈ w1e
+            @assert w1 ≈ w1eopt
 
             # The upup channel of charge-charge vertex4 == Direct + exchange 
             @test w1[1] ≈ w2[1] + w2[2]
