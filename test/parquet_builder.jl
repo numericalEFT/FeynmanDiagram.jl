@@ -155,34 +155,35 @@ evalFakePropagator(id::DiagramId, K, extT, varT) = 1.0
         ################### original Parquet builder ###################################
         ver4 = Benchmark.Ver4{Benchmark.Weight}(para, Int.(chan), Int.(blocks.phi), Int.(blocks.ppi))
 
+
         if toeval
 
             evalG, evalV, evalPropagator = getfunction(type)
 
             # w1 = DiagTree.evalNaive(diag, varK, varT, evalPropagator)
-            evalDiagTree!(diags, varK, varT, evalPropagator)
+            evalDiagTree!(diags, varK, varT)
             w1 = [diags.diagram[1].weight, diags.diagram[2].weight]
             if timing
                 printstyled("naive DiagTree evaluator cost:", color = :green)
-                @time evalDiagTree!(diags, varK, varT, evalPropagator)
+                @time evalDiagTree!(diags, varK, varT)
             end
 
-            ExprTree.evalNaive!(tree, varK, varT, evalPropagator)
+            ExprTree.evalNaive!(tree, varK, varT)
             w1e = [tree[1], tree[2]]
             if timing
                 printstyled("naive ExprTree cost:", color = :green)
-                @time ExprTree.evalNaive!(tree, varK, varT, evalPropagator)
+                @time ExprTree.evalNaive!(tree, varK, varT)
             end
 
 
             optdiags = DiagTree.optimize(diags.diagram)
             opttree = ExprTree.build(optdiags)
-            ExprTree.evalNaive!(opttree, varK, varT, evalPropagator)
+            ExprTree.evalNaive!(opttree, varK, varT)
             w1eopt = [opttree[1], opttree[2]]
 
             if timing
                 printstyled("naive optimized ExprTree cost:", color = :green)
-                @time ExprTree.evalNaive!(opttree, varK, varT, evalPropagator)
+                @time ExprTree.evalNaive!(opttree, varK, varT)
             end
 
             ##################### lower level subroutines  #######################################

@@ -3,7 +3,7 @@
 @inline apply(o::Sum, diag::Diagram{W}) where {W<:Number} = diag.weight
 @inline apply(o::Prod, diag::Diagram{W}) where {W<:Number} = diag.weight
 
-# @inline eval(d::DiagramId) = error("eval for $d has not yet implemented!")
+@inline eval(d::DiagramId) = error("eval for $d has not yet implemented!")
 
 function evalDiagNode!(diag::Diagram, varK, varT, evalBare::Function)
     if length(diag.subdiagram) == 0

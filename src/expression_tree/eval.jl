@@ -2,20 +2,17 @@
 #     @code_warntype evalNaive!(diag, loopVar, siteVar, evalPropagator, evalNodeFactor, root)
 # end
 
-function evalNaive!(diag::Diagrams, loopVar, siteVar, eval, evalNodeFactor = nothing, root = diag.root; kwargs...)
-    loopPool = diag.basisPool
-    propagatorPool = diag.propagatorPool
-    tree = diag.nodePool
+function evalNaive!(diag::ExpressionTree, loopVar, siteVar, eval = DiagTree.eval)
+    loopPool = diag.loopBasis
+    propagatorPool = diag.propagator
+    tree = diag.node
     pweight = propagatorPool.current
     tweight = tree.current
 
     # calculate new loop
     update(loopPool, loopVar)
 
-    #TODO: right now we mannully unroll the pools, later it should be automated
-
     #calculate propagators
-    # println(propagatorPool)
     for (idx, p) in enumerate(propagatorPool)
         pweight[idx] = eval(p.para, current(loopPool, p.loopIdx), p.siteBasis, siteVar) * p.factor
     end
@@ -46,9 +43,9 @@ function evalNaive!(diag::Diagrams, loopVar, siteVar, eval, evalNodeFactor = not
             error("not implemented!")
         end
         tweight[ni] *= node.factor
-        if isnothing(evalNodeFactor) == false
-            tweight[ni] *= NodeWeightType(evalNodeFactor(node, loop, siteVar, diag; kwargs...))
-        end
+        # if isnothing(evalNodeFactor) == false
+        #     tweight[ni] *= NodeWeightType(evalNodeFactor(node, loop, siteVar, diag; kwargs...))
+        # end
     end
 
     # println("tree root", root)

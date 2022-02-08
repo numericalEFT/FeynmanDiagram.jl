@@ -130,9 +130,7 @@ end
     # function LoopPool(name::Symbol, dim::Int, N::Int, type::DataType)
     MomPool = ExprTree.LoopPool(:K, D, 4)
 
-    GVPool = ExprTree.propagatorPool(:GVpool, weightType, paraType = Int)
-
-    diag = ExprTree.Diagrams(MomPool, GVPool, weightType)
+    diag = ExprTree.ExpressionTree(loopBasis = MomPool, propagatorPara = Int, weight = weightType)
 
     # #construct the propagator table
     gK = [[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0]]
@@ -165,43 +163,45 @@ end
     # ExprTree.showTree(diag, diag.root[1])
 
     # #make sure the total number of diagrams are correct
-
-    evalPropagator1(para, K, Tbasis, varT) = 1.0
-    ExprTree.evalNaive!(diag, varK, varT, evalPropagator1)
-    @test diag[1] ≈ -2 + 1 * spin
+    let
+        DiagTree.eval(para, K, Tbasis, varT) = 1.0
+        ExprTree.evalNaive!(diag, varK, varT)
+        @test diag[1] ≈ -2 + 1 * spin
+    end
 
     # #more sophisticated test of the weight evaluation
-
-    function evalG(K, τBasis, varT)
-        ϵ = dot(K, K) / 2 - kF^2
-        τ = varT[τBasis[2]] - varT[τBasis[1]]
-        return Spectral.kernelFermiT(τ, ϵ, β)
-    end
-
-    evalV(K) = 8π / (dot(K, K) + mass2)
-
-    function evalPropagator2(para, K, Tbasis, varT)
-        if para[1] == 1
-            return evalG(K, Tbasis, varT)
-        elseif para[1] == 2
-            return evalV(K)
-        else
-            error("not implemented")
+    let
+        function evalG(K, τBasis, varT)
+            ϵ = dot(K, K) / 2 - kF^2
+            τ = varT[τBasis[2]] - varT[τBasis[1]]
+            return Spectral.kernelFermiT(τ, ϵ, β)
         end
+
+        evalV(K) = 8π / (dot(K, K) + mass2)
+
+        function DiagTree.eval(para, K, Tbasis, varT)
+            if para[1] == 1
+                return evalG(K, Tbasis, varT)
+            elseif para[1] == 2
+                return evalV(K)
+            else
+                error("not implemented")
+            end
+        end
+
+        # getK(basis, varK) = sum([basis[i] * K for (i, K) in enumerate(varK)])
+        getK(basis, varK) = varK * basis
+
+        gw = [evalG(getK(gK[i], varK), gT[i], varT) for i = 1:2]
+        vdw = [evalV(getK(vdK[i], varK)) for i = 1:2]
+        vew = [evalV(getK(veK[i], varK)) for i = 1:2]
+
+        Vweight = spin * vdw[1] * vdw[2] - vdw[1] * vew[2] - vew[1] * vdw[2]
+        Weight = gw[1] * gw[2] * Vweight
+
+        # println(ExprTree.printPropagator(diag))
+        ExprTree.evalNaive!(diag, varK, varT)
+        @test diag[1] ≈ Weight
     end
-
-    # getK(basis, varK) = sum([basis[i] * K for (i, K) in enumerate(varK)])
-    getK(basis, varK) = varK * basis
-
-    gw = [evalG(getK(gK[i], varK), gT[i], varT) for i = 1:2]
-    vdw = [evalV(getK(vdK[i], varK)) for i = 1:2]
-    vew = [evalV(getK(veK[i], varK)) for i = 1:2]
-
-    Vweight = spin * vdw[1] * vdw[2] - vdw[1] * vew[2] - vew[1] * vdw[2]
-    Weight = gw[1] * gw[2] * Vweight
-
-    # println(ExprTree.printPropagator(diag))
-    ExprTree.evalNaive!(diag, varK, varT, evalPropagator2)
-    @test diag[1] ≈ Weight
 
 end

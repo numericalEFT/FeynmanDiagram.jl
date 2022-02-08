@@ -12,11 +12,11 @@ const Λs = 1.0
 
 function benchmark(tree, N, varK, varT)
     for i in 1:N
-        ExprTree.evalNaive!(tree, varK, varT, eval) #evaluate the expression tree
+        ExprTree.evalNaive!(tree, varK, varT) #evaluate the expression tree
     end
 end
 
-function eval(id::GreenId, K, extT, varT)
+function DiagTree.eval(id::GreenId, K, extT, varT)
     τin, τout = varT[extT[1]], varT[extT[2]]
     ϵ = dot(K, K) - kF^2
     τ = τout - τin
@@ -27,7 +27,7 @@ function eval(id::GreenId, K, extT, varT)
     end
 end
 
-eval(id::InteractionId, K, extT, varT) = 8π / (dot(K, K) + Λs)
+DiagTree.eval(id::InteractionId, K, extT, varT) = 8π / (dot(K, K) + Λs)
 
 diagPara(order) = GenericPara(diagType = diagType, innerLoopNum = order, hasTau = true,
     interaction = [FeynmanDiagram.Interaction(ChargeCharge, Instant),],  #instant charge-charge interaction
