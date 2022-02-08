@@ -1,0 +1,61 @@
+t         - using FeynmanDiagram
+        - using Lehmann
+        - using LinearAlgebra
+        - 
+        - const diagType = Ver4Diag
+        - const Order = 3
+        - const Circle = 10000
+        - 
+        - const kF = 1.919
+        - const β = 25.0 / kF^2
+        - const Λs = 1.0
+        - 
+        - function benchmark(tree, N, varK, varT)
+        0     for i in 1:N
+        0         ExprTree.evalNaive!(tree, varK, varT, eval) #evaluate the expression tree
+        -     end
+        - end
+        - 
+        - function eval(id::GreenId, K, extT, varT)
+        0     τin, τout = varT[extT[1]], varT[extT[2]]
+        0     ϵ = dot(K, K) - kF^2
+        0     τ = τout - τin
+        0     if τ ≈ 0.0
+        0         return Spectral.kernelFermiT(-1e-8, ϵ, β)
+        -     else
+        0         return Spectral.kernelFermiT(τ, ϵ, β)
+        -     end
+        - end
+        - 
+        - eval(id::InteractionId, K, extT, varT) = 8π / (dot(K, K) + Λs)
+        - 
+     1104 diagPara(order) = GenericPara(diagType = diagType, innerLoopNum = order, hasTau = true,
+        -     interaction = [FeynmanDiagram.Interaction(ChargeCharge, Instant),],  #instant charge-charge interaction
+        -     # filter = [NoFock,])
+        -     filter = [Girreducible,])
+        - 
+        - println("Build the diagrams into an experssion tree ...")
+        - const para = [diagPara(o) for o in 1:Order]
+        - 
+        - #diagram of different orders
+        - if diagType == SigmaDiag
+        -     diags = [Parquet.sigma(para[i]) for i in 1:Order]
+        - elseif diagType == PolarDiag
+        -     diags = [Parquet.polarization(para[i]) for i in 1:Order]
+        - elseif diagType == Ver4Diag
+        -     diags = [Parquet.vertex4(para[i]) for i in 1:Order]
+        - else
+        -     error("not implemented!")
+        - end
+        - const extT = [diags[o].extT for o in 1:Order]                        #external tau of each diagram
+        - const tree = [ExprTree.build(mergeby(diags[o]).diagram[1]) for o in 1:Order]     #experssion tree representation of diagrams 
+        - # const tree = [ExprTree.build(DiagTree.optimize(mergeby(diags[o]).diagram[1])) for o in 1:Order]     #experssion tree representation of diagrams 
+        - 
+        - varK = rand(3, 16)
+        - varT = [rand() for i in 1:8]
+        - 
+        - benchmark(tree[1], 100, varK, varT)
+        - println("Run evaluation for $Circle times.")
+        0 for i in 1:Order
+        0     @time benchmark(tree[i], Circle, varK, varT)
+        - end
