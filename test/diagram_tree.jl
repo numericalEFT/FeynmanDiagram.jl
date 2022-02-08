@@ -173,7 +173,7 @@ end
     @test root.weight ≈ Weight
 
     ############### test diagram optimization #################
-    uniqueG, uniqueInt = DiagTree.removeDuplicatedLeaves!(root, verbose = 1)
+    uniqueG, uniqueInt = DiagTree.removeDuplicatedLeaves!([root,], verbose = 1)
     @test length(uniqueG) == 2
     @test length(uniqueInt) == 3
     evalDiagTree!(root, eval, varK, varT)
@@ -197,7 +197,7 @@ end
     """
 
     #remove the 2, which only has one child
-    DiagTree.removeOneChildParent!(root)
+    DiagTree.removeOneChildParent!([root,])
     """
     4 : 0=0=⨁ (1, 3)
     ├─ 1 : 3=0

@@ -5,8 +5,8 @@ function optimize(diag::Union{Diagram,Tuple,AbstractVector}, optlevel = 1; verbo
         single = true
         diag = [diag,]
     end
-    diag = removeOneChildParent!(diag, verbose = verbose)
-    diag = removeDuplicatedLeaves!(diag, verbose = verbose)
+    removeOneChildParent!(diag, verbose = verbose)
+    removeDuplicatedLeaves!(diag, verbose = verbose)
     return single ? diag[1] : diag
 end
 
@@ -95,6 +95,6 @@ function removeDuplicatedLeaves!(diags::AbstractVector; verbose = 0)
         end
     end
 
-    # return uniqueGreen, uniqueInteraction
-    return diags
+    return uniqueGreen, uniqueInteraction
+    # return diags
 end
