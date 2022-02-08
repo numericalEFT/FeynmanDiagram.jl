@@ -9,19 +9,12 @@ Base.show(io::IO, o::Operator) = print(io, typeof(o))
 Base.show(io::IO, o::Sum) = print(io, "⨁")
 Base.show(io::IO, o::Prod) = print(io, "Ⓧ")
 
-
 abstract type DiagramId end
 
 # Base.Dict(x::DiagramId) = Dict{Symbol,Any}([fn => getfield(x, fn) for fn ∈ fieldnames(typeof(x))])
 # Base.show(io::IO, d::DiagramId) = error("Base.show not implemented!")
 # Base.isequal(a::DiagramId, b::DiagramId) = error("Base.isequal not implemented!")
-# eval(d::DiagramId) = error("eval for $d has not yet implemented!")
 Base.:(==)(a::DiagramId, b::DiagramId) = Base.isequal(a, b)
-
-# function summary(d::DiagramId, verbose::Int = 0, color = false)
-#     for field in fieldnames(typeof(d))
-#     end
-# end
 
 struct GenericId <: DiagramId
     para::GenericPara

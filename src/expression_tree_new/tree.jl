@@ -23,6 +23,7 @@ function compile(diags::Union{Diagram,Tuple,AbstractVector})
     if diags isa Diagram
         diags = [diags,]
     end
+    DiagTree.optimize!(diags)
     para = diags[1].id.para
     @assert all(d -> (d.id.para.loopDim == para.loopDim), diags) "LoopDim of all diagrams shoud be the same!"
     @assert all(d -> (d.id.para.weightType == para.weightType), diags) "weightType of all diagrams shoud be the same!"
