@@ -167,7 +167,8 @@ end
     # #make sure the total number of diagrams are correct
 
     evalPropagator1(para, K, Tbasis, varT) = 1.0
-    @test ExprTree.evalNaive!(diag, varK, varT, evalPropagator1)[1] ≈ -2 + 1 * spin
+    ExprTree.evalNaive!(diag, varK, varT, evalPropagator1)
+    @test diag[1] ≈ -2 + 1 * spin
 
     # #more sophisticated test of the weight evaluation
 
@@ -200,6 +201,7 @@ end
     Weight = gw[1] * gw[2] * Vweight
 
     # println(ExprTree.printPropagator(diag))
-    @test ExprTree.evalNaive!(diag, varK, varT, evalPropagator2)[1] ≈ Weight
+    ExprTree.evalNaive!(diag, varK, varT, evalPropagator2)
+    @test diag[1] ≈ Weight
 
 end

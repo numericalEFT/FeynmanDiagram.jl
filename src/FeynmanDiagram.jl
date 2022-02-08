@@ -74,7 +74,7 @@ using .Parquet
 export Parquet
 export ParquetBlocks
 
-include("expression_tree_new/ExpressionTree.jl")
+include("expression_tree/ExpressionTree.jl")
 using .ExprTree
 export ExprTree
 export Component, Diagrams

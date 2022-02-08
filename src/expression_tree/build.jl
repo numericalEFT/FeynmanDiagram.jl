@@ -1,6 +1,8 @@
 function build(diags::AbstractVector, verbose::Int = 0)
     @assert all(d -> (d.id.para == diags[1].id.para), diags) "Parameters of all diagrams shoud be the same!"
 
+    diags = DiagTree.optimize(diags, verbose = verbose)
+
     tree = newExprTree(diags[1].id.para, :none)
 
     ################# Propagators ######################################
@@ -12,20 +14,19 @@ function build(diags::AbstractVector, verbose::Int = 0)
     sort!(leaves, by = x -> x.hash) #sort the hash of the leaves in an asscend order
     unique!(x -> x.hash, leaves) #filter out the leaves with the same hash number
 
-    gnum0 = length([l.hash for l in leaves if l.id isa GreenId])
-    wnum0 = length([l.hash for l in leaves if l.id isa InteractionId])
+    # gnum0 = length([l.hash for l in leaves if l.id isa GreenId])
+    # wnum0 = length([l.hash for l in leaves if l.id isa InteractionId])
 
     propagators = Dict{Int,Any}()
     for leaf in leaves
         id = leaf.id
-        pool = poolname(id)
-        p = addpropagator!(tree, pool, 0, leaf.name, leaf.factor; site = collect(id.extT), loop = id.extK, para = id)
+        p = addpropagator!(tree, leaf.name, leaf.factor; site = collect(id.extT), loop = id.extK, para = id)
         propagators[leaf.hash] = p
     end
-    gnum = length(Set([p.index for p in values(propagators) if p.poolName == :Gpool]))
-    wnum = length(Set([p.index for p in values(propagators) if p.poolName != :Gpool]))
-    verbose > 0 && println("Number of independent Greens $gnum0 → $gnum")
-    verbose > 0 && println("Number of independent Interactions $wnum0 → $wnum")
+    # gnum = length(Set([p.index for p in values(propagators) if p.poolName == :Gpool]))
+    # wnum = length(Set([p.index for p in values(propagators) if p.poolName != :Gpool]))
+    # verbose > 0 && println("Number of independent Greens $gnum0 → $gnum")
+    # verbose > 0 && println("Number of independent Interactions $wnum0 → $wnum")
 
     ############### Nodes ###############################################
     nodesVec = []
@@ -93,14 +94,6 @@ function newExprTree(para, name::Symbol = :none)
     weightType = para.weightType
     Kpool = LoopPool(:K, para.loopDim, para.totalLoopNum, Float64)
     # nodeParaType = Vector{Int}
-    nodeParaType = Any
-    _propagatorPool = []
-    push!(_propagatorPool, propagatorPool(:Gpool, weightType, paraType = GreenId))
-    for interaction in para.interaction
-        response = interaction.response
-        for type in interaction.type
-            push!(_propagatorPool, propagatorPool(symbol(response, type, "pool"), weightType, paraType = InteractionId))
-        end
-    end
-    return Diagrams(Kpool, Tuple(_propagatorPool), weightType, nodeParaType = nodeParaType, name = name)
+    _propagatorPool = propagatorPool(:GWpool, weightType, paraType = DiagramId)
+    return Diagrams(Kpool, _propagatorPool, weightType, name = name, nodeParaType = DiagramId)
 end

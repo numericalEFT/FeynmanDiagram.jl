@@ -167,7 +167,8 @@ evalFakePropagator(id::DiagramId, K, extT, varT) = 1.0
                 @time evalDiagTree!(diags, varK, varT, evalPropagator)
             end
 
-            w1e = ExprTree.evalNaive!(tree, varK, varT, evalPropagator)
+            ExprTree.evalNaive!(tree, varK, varT, evalPropagator)
+            w1e = [tree[1], tree[2]]
             if timing
                 printstyled("naive ExprTree cost:", color = :green)
                 @time ExprTree.evalNaive!(tree, varK, varT, evalPropagator)
@@ -176,7 +177,9 @@ evalFakePropagator(id::DiagramId, K, extT, varT) = 1.0
 
             optdiags = DiagTree.optimize(diags.diagram)
             opttree = ExprTree.build(optdiags)
-            w1eopt = ExprTree.evalNaive!(tree, varK, varT, evalPropagator)
+            ExprTree.evalNaive!(opttree, varK, varT, evalPropagator)
+            w1eopt = [opttree[1], opttree[2]]
+
             if timing
                 printstyled("naive optimized ExprTree cost:", color = :green)
                 @time ExprTree.evalNaive!(opttree, varK, varT, evalPropagator)
