@@ -1,41 +1,39 @@
-function optimize!(diag::Union{Diagram,Tuple,AbstractVector}, optlevel = 1; verbose = 0, kwargs...)
+function optimize(diag::Union{Diagram,Tuple,AbstractVector}, optlevel = 1; verbose = 0, kwargs...)
+    single = false
+    diag = deepcopy(diag)
     if diag isa Diagram
+        single = true
         diag = [diag,]
     end
-    removeOneChildParent!(diag)
-    removeDuplicatedLeaves!(diag)
-    return diag
+    diag = removeOneChildParent!(diag, verbose = verbose)
+    diag = removeDuplicatedLeaves!(diag, verbose = verbose)
+    return single ? diag[1] : diag
 end
 
 """
-    removeOneChildParent(diag::Union{Diagram,Tuple,AbstractVector})
+    removeOneChildParent!(diags::AbstractVector; verbose = 0)
 
     remove duplicated nodes such as:  ---> ver4 ---> InteractionId. Leaf will not be touched!
 """
-function removeOneChildParent!(diag::Union{Diagram,Tuple,AbstractVector}; verbose = 0)
-    if diag isa Diagram
-        diag = [diag,]
-    end
-    for d in diag
-        for (si, subdiag) in enumerate(d.subdiagram)
+function removeOneChildParent!(diags::AbstractVector; verbose = 0)
+    for diag in diags
+        for (si, subdiag) in enumerate(diag.subdiagram)
             if length(subdiag.subdiagram) == 1
                 subdiag.subdiagram[1].factor *= subdiag.factor
-                d.subdiagram[si] = subdiag.subdiagram[1]
+                diag.subdiagram[si] = subdiag.subdiagram[1]
             end
         end
+        removeOneChildParent!(diag.subdiagram)
     end
+    return diags
 end
 
 """
-    removeDuplicatedLeaves(diag::Union{Diagram,Tuple,AbstractVector})
+    removeDuplicatedLeaves!(diags::AbstractVector; verbose = 0)
 
     remove duplicated nodes such as:  ---> ver4 ---> InteractionId. Leaf will not be touched!
 """
-function removeDuplicatedLeaves!(diags::Union{Diagram,Tuple,AbstractVector}; verbose = 0)
-    if diags isa Diagram
-        diags = [diags,]
-    end
-
+function removeDuplicatedLeaves!(diags::AbstractVector; verbose = 0)
     leaves = []
     for diag in diags
         #leaves must be the propagators
@@ -97,5 +95,6 @@ function removeDuplicatedLeaves!(diags::Union{Diagram,Tuple,AbstractVector}; ver
         end
     end
 
-    return uniqueGreen, uniqueInteraction
+    # return uniqueGreen, uniqueInteraction
+    return diags
 end
