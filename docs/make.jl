@@ -16,6 +16,7 @@ makedocs(;
     pages = [
         "Home" => "index.md",
         "Manual" => [
+            "manual/interaction.md",
         ],
         "API reference" => Any[
             "lib/parquet.md",

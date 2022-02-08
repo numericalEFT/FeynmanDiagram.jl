@@ -239,7 +239,7 @@ function bareVer4(para::GenericPara, legK, diex::Vector{Permutation} = [Di, Ex])
         innerT_dyn = innerT_ins
     end
 
-    function bare(response::Response, type::AnalyticProperty, _diex::Permutation, _innerT, _q)
+    function bare(response::Response, type::AnalyticProperty, _diex::Permutation, _innerT, _q, _factor = 1.0)
         @assert _diex == Di || _diex == Ex
 
         # there is an overall sign coming from Taylor expansion of exp(-S) depsite the statistics
@@ -254,7 +254,7 @@ function bareVer4(para::GenericPara, legK, diex::Vector{Permutation} = [Di, Ex])
         if notProper(para, _q) == false && _diex in diex
             #create new bare ver4 only if _diex is required in the diex table 
             vid = InteractionId(para, response, type, k = _q, t = _innerT, permu = _diex)
-            return Diagram(vid, factor = sign)
+            return Diagram(vid, factor = sign * _factor)
         else
             return nothing
         end
@@ -288,6 +288,18 @@ function bareVer4(para::GenericPara, legK, diex::Vector{Permutation} = [Di, Ex])
             vupd = bare(ChargeCharge, type, Di, _innerT[DI], q[DI])
             vupe = nothing
             # UpDown, exchange channel doesn't exist for the charge-charge interaction
+            addver4!(UpDown, type, _extT, vupd, vupe)
+        elseif response == SpinSpin
+            # see manual/interaction.md for more details
+
+            # UpUp channel
+            vuud = bare(SpinSpin, type, Di, _innerT[DI], q[DI])
+            vuue = bare(SpinSpin, type, Ex, _innerT[EX], q[EX])
+            addver4!(UpUp, type, _extT, vuud, vuue)
+
+            # UpDown channel
+            vupd = bare(SpinSpin, type, Di, _innerT[DI], q[DI], -1.0)
+            vupe = bare(SpinSpin, type, Ex, _innerT[EX], q[EX], 2.0)
             addver4!(UpDown, type, _extT, vupd, vupe)
         else
             error("not implemented!")
