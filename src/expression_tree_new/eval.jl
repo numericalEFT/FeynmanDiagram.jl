@@ -1,10 +1,11 @@
-# function warn_type(diag::ExprTree, loopVar, siteVar, evalPropagator, evalNodeFactor = nothing, root = diag.root)
+# function warn_type(diag::Diagrams, loopVar, siteVar, evalPropagator, evalNodeFactor = nothing, root = diag.root)
 #     @code_warntype evalNaive!(diag, loopVar, siteVar, evalPropagator, evalNodeFactor, root)
 # end
 
-function evalNaive!(tree::ExprTree, loopVar, siteVar, eval; kwargs...)
-    loopPool = tree.basisPool
-    nodes = tree.propagatorPool
+function evalNaive!(diag::Diagrams, loopVar, siteVar, eval, evalNodeFactor = nothing, root = diag.root; kwargs...)
+    loopPool = diag.basisPool
+    propagatorPool = diag.propagatorPool
+    tree = diag.nodePool
 
     # calculate new loop
     update(loopPool, loopVar)
@@ -12,8 +13,9 @@ function evalNaive!(tree::ExprTree, loopVar, siteVar, eval; kwargs...)
     #TODO: right now we mannully unroll the pools, later it should be automated
 
     #calculate propagators
-    for (idx, id) in enumerate(pool.id)
-        pool.current[idx] = eval(id, current(loopPool, id.loopIdx), siteVar) * p.factor
+    # println(propagatorPool)
+    for (idx, p) in enumerate(propagatorPool)
+        propagatorPool.current[idx] = eval(p.para, current(loopPool, p.loopIdx), p.siteBasis, siteVar) * p.factor
     end
 
     #calculate diagram tree
@@ -22,34 +24,18 @@ function evalNaive!(tree::ExprTree, loopVar, siteVar, eval; kwargs...)
 
         if node.operation == MUL
             tree.current[ni] = NodeWeightType(1)
-            for (idx, propagatorIdx) in enumerate(node.propagators)
-                for pidx in propagatorIdx
-                    tree.current[ni] *= propagatorPools[idx].current[pidx]
-                end
+            for pidx in node.propagators
+                tree.current[ni] *= propagatorPool.current[pidx]
             end
-            # for pidx in node.propagators[1]
-            #     tree.current[ni] *= propagatorPools[1].current[pidx]
-            # end
-            # for pidx in node.propagators[2]
-            #     tree.current[ni] *= propagatorPools[2].current[pidx]
-            # end
-
             for nidx in node.childNodes
                 tree.current[ni] *= tree.current[nidx]
             end
+
         elseif node.operation == ADD
             tree.current[ni] = NodeWeightType(0)
-            for (idx, propagatorIdx) in enumerate(node.propagators)
-                for pidx in propagatorIdx
-                    tree.current[ni] += propagatorPools[idx].current[pidx]
-                end
+            for pidx in node.propagators
+                tree.current[ni] += propagatorPool.current[pidx]
             end
-            # for pidx in node.propagators[1]
-            #     tree.current[ni] += propagatorPools[1].current[pidx]
-            # end
-            # for pidx in node.propagators[2]
-            #     tree.current[ni] += propagatorPools[2].current[pidx]
-            # end
 
             for nidx in node.childNodes
                 tree.current[ni] += tree.current[nidx]
