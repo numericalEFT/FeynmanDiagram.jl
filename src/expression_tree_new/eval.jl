@@ -6,6 +6,8 @@ function evalNaive!(diag::Diagrams, loopVar, siteVar, eval, evalNodeFactor = not
     loopPool = diag.basisPool
     propagatorPool = diag.propagatorPool
     tree = diag.nodePool
+    pweight = propagatorPool.current
+    tweight = tree.current
 
     # calculate new loop
     update(loopPool, loopVar)
@@ -15,41 +17,41 @@ function evalNaive!(diag::Diagrams, loopVar, siteVar, eval, evalNodeFactor = not
     #calculate propagators
     # println(propagatorPool)
     for (idx, p) in enumerate(propagatorPool)
-        propagatorPool.current[idx] = eval(p.para, current(loopPool, p.loopIdx), p.siteBasis, siteVar) * p.factor
+        pweight[idx] = eval(p.para, current(loopPool, p.loopIdx), p.siteBasis, siteVar) * p.factor
     end
 
     #calculate diagram tree
     NodeWeightType = eltype(tree.current)
     for (ni, node) in enumerate(tree.object)
-
         if node.operation == MUL
-            tree.current[ni] = NodeWeightType(1)
-            for pidx in node.propagators
-                tree.current[ni] *= propagatorPool.current[pidx]
+            if isempty(node.propagators) == false
+                tweight[ni] = prod(pweight[pidx] for pidx in node.propagators)
+            else
+                tweight[ni] = NodeWeightType(1)
             end
             for nidx in node.childNodes
-                tree.current[ni] *= tree.current[nidx]
+                tweight[ni] *= tweight[nidx]
             end
 
         elseif node.operation == ADD
-            tree.current[ni] = NodeWeightType(0)
-            for pidx in node.propagators
-                tree.current[ni] += propagatorPool.current[pidx]
+            if isempty(node.propagators) == false
+                tweight[ni] = sum(pweight[pidx] for pidx in node.propagators)
+            else
+                tweight[ni] = NodeWeightType(0)
             end
-
             for nidx in node.childNodes
-                tree.current[ni] += tree.current[nidx]
+                tweight[ni] += tweight[nidx]
             end
         else
             error("not implemented!")
         end
-        tree.current[ni] *= node.factor
+        tweight[ni] *= node.factor
         if isnothing(evalNodeFactor) == false
-            tree.current[ni] *= NodeWeightType(evalNodeFactor(node, loop, siteVar, diag; kwargs...))
+            tweight[ni] *= NodeWeightType(evalNodeFactor(node, loop, siteVar, diag; kwargs...))
         end
     end
 
     # println("tree root", root)
-    return tree.current[root]
+    # return tree.current[root]
     # return view(tree.current, root)
 end

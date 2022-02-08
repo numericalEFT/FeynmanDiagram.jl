@@ -3,7 +3,7 @@ using Lehmann
 using LinearAlgebra
 
 const diagType = Ver4Diag
-const Order = 4
+const Order = 3
 const Circle = 100000
 
 const kF = 1.919
