@@ -161,29 +161,29 @@ evalFakePropagator(id::DiagramId, K, extT, varT) = 1.0
             evalG, evalV, evalPropagator = getfunction(type)
 
             # w1 = DiagTree.evalNaive(diag, varK, varT, evalPropagator)
-            evalDiagTree!(diags, varK, varT)
+            evalDiagTree!(diags, varK, varT, evalPropagator)
             w1 = [diags.diagram[1].weight, diags.diagram[2].weight]
             if timing
                 printstyled("naive DiagTree evaluator cost:", color = :green)
-                @time evalDiagTree!(diags, varK, varT)
+                @time evalDiagTree!(diags, varK, varT, evalPropagator)
             end
 
-            ExprTree.evalNaive!(tree, varK, varT)
+            ExprTree.evalNaive!(tree, varK, varT, evalPropagator)
             w1e = [tree[1], tree[2]]
             if timing
                 printstyled("naive ExprTree cost:", color = :green)
-                @time ExprTree.evalNaive!(tree, varK, varT)
+                @time ExprTree.evalNaive!(tree, varK, varT, evalPropagator)
             end
 
 
             optdiags = DiagTree.optimize(diags.diagram)
             opttree = ExprTree.build(optdiags)
-            ExprTree.evalNaive!(opttree, varK, varT)
+            ExprTree.evalNaive!(opttree, varK, varT, evalPropagator)
             w1eopt = [opttree[1], opttree[2]]
 
             if timing
                 printstyled("naive optimized ExprTree cost:", color = :green)
-                @time ExprTree.evalNaive!(opttree, varK, varT)
+                @time ExprTree.evalNaive!(opttree, varK, varT, evalPropagator)
             end
 
             ##################### lower level subroutines  #######################################
