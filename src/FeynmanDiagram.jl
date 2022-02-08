@@ -77,7 +77,8 @@ export ParquetBlocks
 include("expression_tree/ExpressionTree.jl")
 using .ExprTree
 export ExprTree
-export Component, Diagrams
+export Component, ExpressionTree
+export Propagator
 export addpropagator!, addnode!
 export setroot!, addroot!
 export evalNaive, showTree

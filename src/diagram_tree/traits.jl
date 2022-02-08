@@ -10,6 +10,7 @@ Base.show(io::IO, o::Sum) = print(io, "⨁")
 Base.show(io::IO, o::Prod) = print(io, "Ⓧ")
 
 abstract type DiagramId end
+abstract type PropagatorId <: DiagramId end
 
 # Base.Dict(x::DiagramId) = Dict{Symbol,Any}([fn => getfield(x, fn) for fn ∈ fieldnames(typeof(x))])
 # Base.show(io::IO, d::DiagramId) = error("Base.show not implemented!")
@@ -23,7 +24,7 @@ struct GenericId <: DiagramId
 end
 Base.show(io::IO, v::GenericId) = print(io, v.extra == Nothing ? "" : "$(v.extra)")
 
-struct GreenId <: DiagramId
+struct GreenId <: PropagatorId
     para::GenericPara
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
     extK::Vector{Float64}
@@ -34,7 +35,7 @@ struct GreenId <: DiagramId
 end
 Base.show(io::IO, v::GreenId) = print(io, "$(short(v.type)), k$(v.extK), t$(v.extT)")
 
-struct InteractionId <: DiagramId
+struct InteractionId <: PropagatorId
     para::GenericPara
     response::Response #UpUp, UpDown, ...
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic

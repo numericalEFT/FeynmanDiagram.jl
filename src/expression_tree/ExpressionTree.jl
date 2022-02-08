@@ -18,6 +18,9 @@ include("pool.jl")
 include("object.jl")
 export Component
 
+include("tree.jl")
+export ExpressionTree
+
 # IO operations
 include("io.jl")
 

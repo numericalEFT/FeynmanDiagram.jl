@@ -93,7 +93,5 @@ end
 function newExprTree(para, name::Symbol = :none)
     weightType = para.weightType
     Kpool = LoopPool(:K, para.loopDim, para.totalLoopNum, Float64)
-    # nodeParaType = Vector{Int}
-    _propagatorPool = propagatorPool(:GWpool, weightType, paraType = DiagramId)
-    return Diagrams(Kpool, _propagatorPool, weightType, name = name, nodeParaType = DiagramId)
+    return ExpressionTree(loopBasis = Kpool, propagatorPara = DiagramId, nodePara = DiagramId, weight = weightType, name = name)
 end
