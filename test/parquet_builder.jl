@@ -174,7 +174,7 @@ evalFakePropagator(id::DiagramId, K, varT) = 1.0
             end
 
 
-            optdiags = DiagTree.optimize!(diags.diagram)
+            optdiags = DiagTree.optimize(diags.diagram)
             opttree = ExprTree.build(optdiags)
             w1eopt = ExprTree.evalNaive!(tree, varK, varT, evalPropagator)
             if timing
