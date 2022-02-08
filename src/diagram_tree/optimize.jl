@@ -39,6 +39,7 @@ function removeDuplicatedLeaves!(diags::AbstractVector; verbose = 0)
         #leaves must be the propagators
         append!(leaves, collect(Leaves(diag)))
     end
+    # println([d.hash for d in leaves])
     sort!(leaves, by = x -> x.hash) #sort the hash of the leaves in an asscend order
     unique!(x -> x.hash, leaves) #filter out the leaves with the same hash number
 
@@ -70,14 +71,15 @@ function removeDuplicatedLeaves!(diags::AbstractVector; verbose = 0)
     end
 
     # println(leaves)
-    green = [l for l in leaves if l.id isa GreenId]
-    interaction = [l for l in leaves if l.id isa InteractionId]
+    green = [l for l in leaves if (l.id isa GreenId && isempty(l.subdiagram))]
+    interaction = [l for l in leaves if (l.id isa InteractionId && isempty(l.subdiagram))]
     # println(green)
     # println(interaction)
 
     uniqueGreen, greenMap = uniqueLeaves(green)
     uniqueInteraction, interactionMap = uniqueLeaves(interaction)
     # println(uniqueInteraction)
+    # display(greenMap)
 
     verbose > 0 && println("Number of independent Greens $(length(green)) → $(length(uniqueGreen))")
     verbose > 0 && println("Number of independent Interactions $(length(interaction)) → $(length(uniqueInteraction))")
@@ -85,10 +87,10 @@ function removeDuplicatedLeaves!(diags::AbstractVector; verbose = 0)
     for diag in diags
         for n in PreOrderDFS(diag)
             for (si, subdiag) in enumerate(n.subdiagram)
-                if subdiag.id isa GreenId
+                if subdiag.id isa GreenId && isempty(subdiag.subdiagram)
                     n.subdiagram[si] = greenMap[subdiag.hash]
                 end
-                if subdiag.id isa InteractionId
+                if subdiag.id isa InteractionId && isempty(subdiag.subdiagram)
                     n.subdiagram[si] = interactionMap[subdiag.hash]
                 end
             end

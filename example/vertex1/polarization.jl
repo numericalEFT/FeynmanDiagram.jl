@@ -60,9 +60,9 @@ function integrand(config)
     # copy the external momentum into the K.data matrix, which will be used to evaluate diagrams in the next line
     K.data[:, 1] .= extQ[Ext[1]]
     # K.data[:, 1]: external K, K.daata[:, >=2]: internal K, so that K.data contains all momentum
-    weight = ExprTree.evalNaive!(diag[order], K.data, T, eval) #evaluate the expression tree
+    ExprTree.evalNaive!(diag[order], K.data, T, eval) #evaluate the expression tree
     # there is an additional factor 1/β because we are integrating over both the incoming and the outing Tau variables of the poalrization
-    return weight[1] * cos(2π * n * (T[2] - T[1]) / β) / β * spin
+    return diag[order][1] * cos(2π * n * (T[2] - T[1]) / β) / β * spin
 end
 
 function measure(config)
