@@ -16,8 +16,8 @@ function benchmark(tree, N, varK, varT)
     end
 end
 
-function eval(id::GreenId, K, varT)
-    τin, τout = varT[id.extT[1]], varT[id.extT[2]]
+function eval(id::GreenId, K, extT, varT)
+    τin, τout = varT[extT[1]], varT[extT[2]]
     ϵ = dot(K, K) - kF^2
     τ = τout - τin
     if τ ≈ 0.0
@@ -27,7 +27,7 @@ function eval(id::GreenId, K, varT)
     end
 end
 
-eval(id::InteractionId, K, varT) = 8π / (dot(K, K) + Λs)
+eval(id::InteractionId, K, extT, varT) = 8π / (dot(K, K) + Λs)
 
 diagPara(order) = GenericPara(diagType = diagType, innerLoopNum = order, hasTau = true,
     interaction = [FeynmanDiagram.Interaction(ChargeCharge, Instant),],  #instant charge-charge interaction

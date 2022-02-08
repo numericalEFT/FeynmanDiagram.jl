@@ -12,36 +12,32 @@
 - version::Int128 : the current version
 - excited::Bool   : if set to excited, then the current status needs to be replaced with the new status
 """
-mutable struct CachedPool{O,T}
-    name::Symbol
-    object::Vector{O}
+mutable struct CachedPool{T}
+    name::Vector{Symbol}
+    hash::Vector{Int}
+    id::Vector{Any}
+    loopidx::Vector{Int}
+    operation::Vector{Operator} #1: multiply, 2: add, ...
+    children::Vector{Vector{Int}}
+    factor::Vector{T}
     current::Vector{T}
     new::Vector{T}
     version::Vector{Int128}
     excited::Vector{Bool}
 
-    function CachedPool(name::Symbol, objType::DataType, weightType::DataType)
-        object = Vector{objType}(undef, 0)
-        current = Vector{weightType}(undef, 0)
-        _new = Vector{weightType}(undef, 0)
-        version = Vector{Int128}(undef, 0)
-        excited = Vector{Bool}(undef, 0)
-        return new{objType,weightType}(name, object, current, _new, version, excited)
+    function CachedPool{T}() where {T}
+        return new{T}([], [], [], [], [], [[]], [], [], [], [], [])
     end
-    # function CachedPool{T}(obj::Vector{O}) where {O,T}
-    #     weight = zeros(5, length(obj))
-    #     return new{O,T}(obj, weight)
-    # end
 end
 
-Base.length(pool::CachedPool) = length(pool.object)
-Base.size(pool::CachedPool) = size(pool.object)
-Base.show(io::IO, pool::CachedPool) = print(io, pool.object)
+Base.length(pool::CachedPool) = length(pool.id)
+Base.size(pool::CachedPool) = size(pool.id)
+Base.show(io::IO, pool::CachedPool) = print(io, pool.id)
 # Base.view(pool::Pool, inds...) = Base.view(pool.pool, inds...)
 
 #index interface for Pool
-Base.getindex(pool::CachedPool, i) = pool.object[i]
-Base.setindex!(pool::CachedPool, v, i) = setindex!(pool.object, v, i)
+Base.getindex(pool::CachedPool, i) = pool.id[i]
+Base.setindex!(pool::CachedPool, v, i) = setindex!(pool.id, v, i)
 Base.firstindex(pool::CachedPool) = 1
 Base.lastindex(pool::CachedPool) = length(pool)
 
@@ -50,7 +46,7 @@ function Base.iterate(pool::CachedPool)
     if length(pool) == 0
         return nothing
     else
-        return (pool.object[1], 1)
+        return (pool.id[1], 1)
     end
 end
 
@@ -58,32 +54,40 @@ function Base.iterate(pool::CachedPool, state)
     if state >= length(pool) || length(pool) == 0
         return nothing
     else
-        return (pool.object[state+1], state + 1)
+        return (pool.id[state+1], state + 1)
     end
 end
 
-
-function append(pool::CachedPool, object)
-    # @assert para isa eltype(pool.pool)
-    for (oi, o) in enumerate(pool.object)
-        if o == object
-            return oi #existing obj
+function findidx(pool, hash)
+    for (i, _hash) in enumerate(pool.hash)
+        if _hash == hash
+            return i
         end
     end
+    error("hash $hash is not in the pool yet!")
+end
 
-    id = length(pool.object) + 1
-    push!(pool.object, object)
+function add!(pool::CachedPool{T}, diag::Diagram{W}) where {T,W}
+    children = [findidx(nodes, subdiag.hash) for subdiag in diag.subdiagram]
 
-    T = eltype(pool.current)
+    for c in children
+        @assert 0 < c <= length(pool) "children idx $c doesn't exist!"
+    end
+
+    push!(pool.name, diag.name)
+    push!(pool.hash, diag.hash)
+    push!(pool.id, diag.id)
+    push!(pool.children, children)
+    push!(pool.factor, diag.factor)
+    push!(pool.operator, diag.operator)
     push!(pool.current, zero(T))
     push!(pool.new, zero(T))
     push!(pool.version, 1)
     push!(pool.excited, false)
-
-    return id #new momentum
+    return length(pool) #new momentum
 end
 
-function updateAll(pool::CachedPool, ignoreCache::Bool, eval::Function; kwargs...)
+function updateAll!(pool::CachedPool, ignoreCache::Bool, eval::Function; kwargs...)
     N = length(pool.object)
     if ignoreCache
         T = eltype(pool.current)
