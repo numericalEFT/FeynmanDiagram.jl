@@ -2,10 +2,12 @@
 #     @code_warntype evalNaive!(diag, loopVar, siteVar, evalPropagator, evalNodeFactor, root)
 # end
 
-function evalNaive!(diag::Diagrams, loopVar, siteVar, evalPropagator, evalNodeFactor = nothing, root = diag.root; kwargs...)
+function evalNaive!(diag::Diagrams, loopVar, siteVar, eval, evalNodeFactor = nothing, root = diag.root; kwargs...)
     loopPool = diag.basisPool
-    propagatorPools = diag.propagatorPool
+    propagatorPool = diag.propagatorPool
     tree = diag.nodePool
+    pweight = propagatorPool.current
+    tweight = tree.current
 
     # calculate new loop
     update(loopPool, loopVar)
@@ -13,113 +15,43 @@ function evalNaive!(diag::Diagrams, loopVar, siteVar, evalPropagator, evalNodeFa
     #TODO: right now we mannully unroll the pools, later it should be automated
 
     #calculate propagators
-    # @assert length(propagatorPools) == 2
-    if length(propagatorPools) == 2
-        for (idx, p) in enumerate(propagatorPools[1].object)
-            propagatorPools[1].current[idx] = evalPropagator(p.para, current(loopPool, p.loopIdx), siteVar; kwargs...) *
-                                              p.factor
-        end
-        for (idx, p) in enumerate(propagatorPools[2].object)
-            propagatorPools[2].current[idx] = evalPropagator(p.para, current(loopPool, p.loopIdx), siteVar; kwargs...) *
-                                              p.factor
-        end
-    elseif length(propagatorPools) == 3
-        for (idx, p) in enumerate(propagatorPools[1].object)
-            propagatorPools[1].current[idx] = evalPropagator(p.para, current(loopPool, p.loopIdx), siteVar; kwargs...) *
-                                              p.factor
-        end
-        for (idx, p) in enumerate(propagatorPools[2].object)
-            propagatorPools[2].current[idx] = evalPropagator(p.para, current(loopPool, p.loopIdx), siteVar; kwargs...) *
-                                              p.factor
-        end
-        for (idx, p) in enumerate(propagatorPools[3].object)
-            propagatorPools[3].current[idx] = evalPropagator(p.para, current(loopPool, p.loopIdx), siteVar; kwargs...) *
-                                              p.factor
-        end
-    else #generic case, but julia failed to derive the type
-        for pool in propagatorPools
-            for (idx, p) in enumerate(pool.object)
-                pool.current[idx] = evalPropagator(p.para, current(loopPool, p.loopIdx), siteVar) *
-                                    p.factor
-            end
-        end
+    # println(propagatorPool)
+    for (idx, p) in enumerate(propagatorPool)
+        pweight[idx] = eval(p.para, current(loopPool, p.loopIdx), p.siteBasis, siteVar) * p.factor
     end
 
     #calculate diagram tree
     NodeWeightType = eltype(tree.current)
     for (ni, node) in enumerate(tree.object)
-
         if node.operation == MUL
-            tree.current[ni] = NodeWeightType(1)
-            if length(propagatorPools) == 2
-                for pidx in node.propagators[1]
-                    tree.current[ni] *= propagatorPools[1].current[pidx]
-                end
-                for pidx in node.propagators[2]
-                    tree.current[ni] *= propagatorPools[2].current[pidx]
-                end
-            elseif length(propagatorPools) == 3
-                for pidx in node.propagators[1]
-                    tree.current[ni] *= propagatorPools[1].current[pidx]
-                end
-                for pidx in node.propagators[2]
-                    tree.current[ni] *= propagatorPools[2].current[pidx]
-                end
-                for pidx in node.propagators[3]
-                    tree.current[ni] *= propagatorPools[3].current[pidx]
-                end
+            if isempty(node.propagators) == false
+                tweight[ni] = prod(pweight[pidx] for pidx in node.propagators)
             else
-                for (idx, propagatorIdx) in enumerate(node.propagators)
-                    for pidx in propagatorIdx
-                        tree.current[ni] *= propagatorPools[idx].current[pidx]
-                    end
-                end
+                tweight[ni] = NodeWeightType(1)
             end
-
-
             for nidx in node.childNodes
-                tree.current[ni] *= tree.current[nidx]
+                tweight[ni] *= tweight[nidx]
             end
+
         elseif node.operation == ADD
-            tree.current[ni] = NodeWeightType(0)
-            if length(propagatorPools) == 2
-                for pidx in node.propagators[1]
-                    tree.current[ni] += propagatorPools[1].current[pidx]
-                end
-                for pidx in node.propagators[2]
-                    tree.current[ni] += propagatorPools[2].current[pidx]
-                end
-            elseif length(propagatorPools) == 3
-                for pidx in node.propagators[1]
-                    tree.current[ni] += propagatorPools[1].current[pidx]
-                end
-                for pidx in node.propagators[2]
-                    tree.current[ni] += propagatorPools[2].current[pidx]
-                end
-                for pidx in node.propagators[3]
-                    tree.current[ni] += propagatorPools[3].current[pidx]
-                end
+            if isempty(node.propagators) == false
+                tweight[ni] = sum(pweight[pidx] for pidx in node.propagators)
             else
-                for (idx, propagatorIdx) in enumerate(node.propagators)
-                    for pidx in propagatorIdx
-                        tree.current[ni] += propagatorPools[idx].current[pidx]
-                    end
-                end
+                tweight[ni] = NodeWeightType(0)
             end
-
             for nidx in node.childNodes
-                tree.current[ni] += tree.current[nidx]
+                tweight[ni] += tweight[nidx]
             end
         else
             error("not implemented!")
         end
-        tree.current[ni] *= node.factor
+        tweight[ni] *= node.factor
         if isnothing(evalNodeFactor) == false
-            tree.current[ni] *= NodeWeightType(evalNodeFactor(node, loop, siteVar, diag; kwargs...))
+            tweight[ni] *= NodeWeightType(evalNodeFactor(node, loop, siteVar, diag; kwargs...))
         end
     end
 
     # println("tree root", root)
-    return tree.current[root]
+    # return tree.current[root]
     # return view(tree.current, root)
 end

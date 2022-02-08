@@ -1,5 +1,5 @@
 module ExprTree
-using AbstractTrees, LinearAlgebra
+using AbstractTrees, LinearAlgebra, StaticArrays
 using ..DiagTree
 # using Unrolled
 # using InteractiveUtils
