@@ -31,45 +31,41 @@ Base.:(==)(a::DiagramId, b::DiagramId) = Base.isequal(a, b)
 struct BareGreenId <: PropagatorId
     para::GenericPara
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
-    order::Int
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
-    function BareGreenId(para::GenericPara, type::AnalyticProperty = Dynamic, order::Int = 0; k, t)
-        return new(para, type, order, k, Tuple(t))
+    function BareGreenId(para::GenericPara, type::AnalyticProperty = Dynamic; k, t)
+        return new(para, type, k, Tuple(t))
     end
 end
-Base.show(io::IO, v::BareGreenId) = print(io, "$(short(v.type)), order $order, k$(v.extK), t$(v.extT)")
+Base.show(io::IO, v::BareGreenId) = print(io, "$(short(v.type)), k$(v.extK), t$(v.extT)")
 
 struct BareInteractionId <: PropagatorId
     para::GenericPara
     response::Response #UpUp, UpDown, ...
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
-    order::Int
     permutation::Permutation
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
-    function BareInteractionId(para::GenericPara, response::Response, type::AnalyticProperty = Instant, order::Int = 1; k, t = (0, 0), permu::Permutation = DiEx)
-        return new(para, response, type, order, permu, k, Tuple(t))
+    function BareInteractionId(para::GenericPara, response::Response, type::AnalyticProperty = Instant; k, t = (0, 0), permu::Permutation = DiEx)
+        return new(para, response, type, permu, k, Tuple(t))
     end
 end
-Base.show(io::IO, v::BareInteractionId) = print(io, "$(short(v.response))$(short(v.type))$(v.permutation), order $order, k$(v.extK), t$(v.extT)")
+Base.show(io::IO, v::BareInteractionId) = print(io, "$(short(v.response))$(short(v.type))$(v.permutation), k$(v.extK), t$(v.extT)")
 
 struct GenericId <: DiagramId
     para::GenericPara
-    order::Vector{Int}
     extra::Any
-    GenericId(para::GenericPara, extra = Nothing, order = []) = new(para, order, extra)
+    GenericId(para::GenericPara, extra = Nothing) = new(para, extra)
 end
 Base.show(io::IO, v::GenericId) = print(io, v.extra == Nothing ? "" : "$(v.extra)")
 
 struct GreenId <: DiagramId
     para::GenericPara
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
-    order::Vector{Int}
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
-    function GreenId(para::GenericPara, type::AnalyticProperty = Dynamic, order = []; k, t)
-        return new(para, type, order, k, Tuple(t))
+    function GreenId(para::GenericPara, type::AnalyticProperty = Dynamic; k, t)
+        return new(para, type, k, Tuple(t))
     end
 end
 Base.show(io::IO, v::GreenId) = print(io, "$(short(v.type)), k$(v.extK), t$(v.extT)")
@@ -77,11 +73,10 @@ Base.show(io::IO, v::GreenId) = print(io, "$(short(v.type)), k$(v.extK), t$(v.ex
 struct SigmaId <: DiagramId
     para::GenericPara
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
-    order::Vector{Int}
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
-    function SigmaId(para::GenericPara, type::AnalyticProperty, order = []; k, t = (0, 0))
-        return new(para, type, order, k, t)
+    function SigmaId(para::GenericPara, type::AnalyticProperty; k, t = (0, 0))
+        return new(para, type, k, t)
     end
 end
 Base.show(io::IO, v::SigmaId) = print(io, "$(short(v.type)), t$(v.extT)")
@@ -89,11 +84,10 @@ Base.show(io::IO, v::SigmaId) = print(io, "$(short(v.type)), t$(v.extT)")
 struct PolarId <: DiagramId
     para::GenericPara
     response::Response #UpUp, UpDown, ...
-    order::Vector{Int}
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
-    function PolarId(para::GenericPara, response::Response, order = []; k, t = (0, 0))
-        return new(para, response, order, k, t)
+    function PolarId(para::GenericPara, response::Response; k, t = (0, 0))
+        return new(para, response, k, t)
     end
 end
 Base.show(io::IO, v::PolarId) = print(io, "$(short(v.response)), k$(v.extK), t$(v.extT)")
@@ -101,11 +95,10 @@ Base.show(io::IO, v::PolarId) = print(io, "$(short(v.response)), k$(v.extK), t$(
 struct Ver3Id <: DiagramId
     para::GenericPara
     response::Response #UpUp, UpDown, ...
-    order::Vector{Int}
     extK::Vector{Vector{Float64}}
     extT::Tuple{Int,Int,Int} #all possible extT from different interactionType
-    function Ver3Id(para::GenericPara, response::Response, order = []; k, t = (0, 0, 0))
-        return new(para, response, order, k, Tuple(t))
+    function Ver3Id(para::GenericPara, response::Response; k, t = (0, 0, 0))
+        return new(para, response, k, Tuple(t))
     end
 end
 Base.show(io::IO, v::Ver3Id) = print(io, "$(short(v.response)),t$(v.extT)")
@@ -114,12 +107,11 @@ struct Ver4Id <: DiagramId
     para::GenericPara
     response::Response #UpUp, UpDown, ...
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
-    order::Vector{Int}
     channel::TwoBodyChannel # particle-hole (T), particle-hole exchange (U), particle-particle (S), irreducible (I)
     extK::Vector{Vector{Float64}}
     extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
-    function Ver4Id(para::GenericPara, response::Response, type::AnalyticProperty = Dynamic, order = []; k, t = (0, 0, 0, 0), chan::TwoBodyChannel = AnyChan)
-        return new(para, response, type, order, chan, k, Tuple(t))
+    function Ver4Id(para::GenericPara, response::Response, type::AnalyticProperty = Dynamic; k, t = (0, 0, 0, 0), chan::TwoBodyChannel = AnyChan)
+        return new(para, response, type, chan, k, Tuple(t))
     end
 end
 Base.show(io::IO, v::Ver4Id) = print(io, (v.channel == AnyChan ? "" : "$(v.channel) ") * "$(short(v.response))$(short(v.type)),t$(v.extT)")

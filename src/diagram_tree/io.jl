@@ -67,7 +67,7 @@ function _summary(diag::Diagram{W}, color = true) where {W}
     end
 
     namestr = diag.name == :none ? "" : "$(diag.name) "
-    idstr = "$namestr$(diag.id)"
+    idstr = "$namestr$(diag.id)#$(diag.order)"
     fstr = short(diag.factor, one(diag.factor))
     wstr = short(diag.weight)
     # =$(node.weight*(2π)^(3*node.id.para.innerLoopNum))
