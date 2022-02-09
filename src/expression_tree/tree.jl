@@ -13,10 +13,12 @@ mutable struct ExpressionTree{V,pPARA,nPARA,F,W}
     name::Symbol
     loopBasis::V
     propagator::CachedPool{Propagator{pPARA,F},W}
-    node::CachedPool{Node{nPARA,F},W}
+    # node::CachedPool{Node{nPARA,F},W}
+    node::CachedPool{Any,W}
     root::Vector{Int}
     function ExpressionTree(; loopBasis::V, weight::DataType, factor::DataType = weight, nodePara::DataType = Nothing, propagatorPara::DataType = Nothing, name = :none) where {V,P}
-        nodePool = CachedPool(:node, Node{nodePara,factor}, weight)
+        # nodePool = CachedPool(:node, Node{nodePara,factor}, weight)
+        nodePool = CachedPool(:node, Any, weight)
         propagatorPool = CachedPool(:propagator, Propagator{propagatorPara,factor}, weight)
         return new{V,propagatorPara,nodePara,factor,weight}(name, loopBasis, propagatorPool, nodePool, [])
     end
@@ -54,19 +56,19 @@ end
 - loop = nothing : loop basis (e.g, momentum and frequency) of the propagator.
 - para = nothing : Additional paramenter required to evaluate the propagator.
 """
-function addPropagator!(diag::ExpressionTree, name, factor = 1.0; site = [], loop = nothing, para = nothing, order::Int = 0)
+function addPropagator!(diag::ExpressionTree{V,pPARA,nPARA,F,W}, name, factor = 1.0; site = [], loop = nothing, para = nothing, order::Int = 0) where {V,pPARA,nPARA,F,W}
     loopPool = diag.loopBasis
     propagatorPool = diag.propagator
     # @assert length(basis) == length(variablePool) == length(currVar) "$(length(basis)) == $(length(variablePool)) == $(length(currVar)) breaks"
 
     # @assert 0 < index <= length(propagatorPool) "proapgator Pool index $index is illegal!"
 
-    PROPAGATOR_POOL = typeof(propagatorPool)
-    PROPAGATOR = eltype(fieldtype(PROPAGATOR_POOL, :object))
-    PARA = fieldtype(PROPAGATOR, :para)
-    F = fieldtype(PROPAGATOR, :factor)
+    # PROPAGATOR_POOL = typeof(propagatorPool)
+    # PROPAGATOR = eltype(fieldtype(PROPAGATOR_POOL, :object))
+    # PARA = fieldtype(PROPAGATOR, :para)
+    # F = fieldtype(PROPAGATOR, :factor)
 
-    @assert typeof(para) <: PARA "Type of $para is $(typeof(para)), while we expect $PARA"
+    # @assert typeof(para) <: PARA "Type of $para is $(typeof(para)), while we expect $PARA"
 
     # function Propagator{P,F}(order, para, factor, loopbasis, localbasis) where {P,F}
     loopidx = 0
@@ -74,8 +76,9 @@ function addPropagator!(diag::ExpressionTree, name, factor = 1.0; site = [], loo
         @assert typeof(loop) <: AbstractVector "LoopBasis should be a Vector!"
         loopidx = append(loopPool, loop)
     end
-    prop = Propagator{PARA,F}(name, order, para, factor, loopidx, collect(site))
-    pidx = append(diag.propagator, prop)
+    prop = Propagator{pPARA,F}(name, order, para, factor, loopidx, collect(site))
+    # pidx = append(diag.propagator, prop)
+    pidx = append(diag.node, prop)
     # return component(pidx, false, propagatorPool[index].name)
     return pidx
 end
@@ -94,7 +97,7 @@ end
 - child = []            : Indices to the cached nodes stored in certain pool. They are the child of the current node in the diagram tree. It should be in the format of Vector{Int}.
 - para = nothing        : Additional paramenter required to evaluate the node. Set to nothing by default.
 """
-function addNode!(diag::ExpressionTree, operator, name, factor = 1.0; propagator = nothing, child = [], para = nothing)
+function addNode!(diag::ExpressionTree{V,pPARA,nPARA,F,W}, operator, name, factor = 1.0; propagator = nothing, child = [], para = nothing) where {V,pPARA,nPARA,F,W}
     nodePool = diag.node
 
     if isnothing(propagator)
@@ -103,44 +106,48 @@ function addNode!(diag::ExpressionTree, operator, name, factor = 1.0; propagator
 
     # @assert length(propagator) == length(diag.propagatorPool) "each element of the propagator is an index vector of the corresponding propagator"
 
-    filterZero(list) = [l for l in list if l != 0]
+    # filterZero(list) = [l for l in list if l != 0]
 
-    #filter the propagators and nodes with index 0, they are the empty object
-    propagator = filterZero(propagator)
-    childNodes = filterZero(child)
+    # #filter the propagators and nodes with index 0, they are the empty object
+    # propagator = filterZero(propagator)
+    # childNodes = filterZero(child)
 
-    empty = true
-    for c in propagator
-        if isempty(c) == false
-            empty = false
-        end
+    # empty = true
+    # for c in propagator
+    #     if isempty(c) == false
+    #         empty = false
+    #     end
+    # end
+    # # if all components are empty and the childnodes are empty, then no need to create new node, simply return 0
+    # if (empty == true) && isempty(childNodes)
+    #     return 0
+    # end
+    # # if all components are empty && there is only one child node && factor=1, then no need to create new node, simply return the child node
+    # if (empty == true) && length(childNodes) == 1 && (factor ≈ 1)
+    #     return childNodes[1]
+    # end
+
+    # _NodePool = typeof(nodePool)
+    # println(_NodePool)
+    # _Node = eltype(fieldtype(_NodePool, :object))
+    # println(_Node)
+    # PARA = fieldtype(_Node, :para)
+    # F = fieldtype(_Node, :factor)
+    # # println("node PARA: ", PARA)
+    # # println("node F: ", F)
+    # # @assert PARA == typeof(para) "Type of $para is not $PARA"
+
+    # for pidx in propagator
+    #     @assert pidx <= length(diag.propagator) "Failed to add node with propagator = $propagator, and child =$childNodes. $pidx is not in GW pool (length = $(length(diag.propagator)))."
+    # end
+
+    children = deepcopy(propagator)
+    append!(children, child)
+    for nidx in children
+        @assert nidx <= length(diag.node) "Failed to add node with propagator = $propagator, and child =$children. $nidx is not in nodePool."
     end
-    # if all components are empty and the childnodes are empty, then no need to create new node, simply return 0
-    if (empty == true) && isempty(childNodes)
-        return 0
-    end
-    # if all components are empty && there is only one child node && factor=1, then no need to create new node, simply return the child node
-    if (empty == true) && length(childNodes) == 1 && (factor ≈ 1)
-        return childNodes[1]
-    end
 
-    _NodePool = typeof(nodePool)
-    _Node = eltype(fieldtype(_NodePool, :object))
-    PARA = fieldtype(_Node, :para)
-    F = fieldtype(_Node, :factor)
-    # println("node PARA: ", PARA)
-    # println("node F: ", F)
-    # @assert PARA == typeof(para) "Type of $para is not $PARA"
-
-    for pidx in propagator
-        @assert pidx <= length(diag.propagator) "Failed to add node with propagator = $propagator, and child =$childNodes. $pidx is not in GW pool (length = $(length(diag.propagator)))."
-    end
-    for nidx in childNodes
-        @assert nidx <= length(diag.node) "Failed to add node with propagator = $propagator, and child =$childNodes. $nidx is not in nodePool."
-    end
-
-
-    node = Node{PARA,F}(name, operator, para, propagator, childNodes, factor, 0)
+    node = Node{nPARA,F}(name, operator, para, [], children, factor, 0)
 
     nidx = append(nodePool, node)
     return nidx
@@ -182,7 +189,7 @@ end
 function addpropagator!(diag, name, factor = 1.0; site = [], loop = nothing, para = nothing, order::Int = 0)
     pidx = addPropagator!(diag, name, factor; site = site, loop = loop, para = para, order = order)
     @assert pidx > 0
-    return Component(pidx, false, :propagator, diag.propagator.object[pidx])
+    return Component(pidx, false, :propagator, diag.node.object[pidx])
 end
 
 function addnode!(diag, operator, name, components, factor = 1.0; para = nothing)

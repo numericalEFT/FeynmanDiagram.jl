@@ -159,7 +159,7 @@ end
 
     # printBasisPool(diag)
     # printPropagator(diag)
-    # printNodes(diag)
+    # ExprTree.printNodes(diag)
     # ExprTree.showTree(diag, diag.root[1])
 
     # #make sure the total number of diagrams are correct
