@@ -66,7 +66,8 @@ export Permutation, Di, Ex, DiEx
 export Diagram, addSubDiagram!, toDataFrame
 export evalDiagNode!, evalDiagTree!
 export Operator, Sum, Prod
-export DiagramId, GenericId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId, InteractionId
+export DiagramId, GenericId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId
+export PropagatorId, BareGreenId, BareInteractionId
 export uidreset, toDataFrame, mergeby, plot_tree
 
 include("parquet_builder/parquet.jl")
@@ -78,7 +79,7 @@ include("expression_tree/ExpressionTree.jl")
 using .ExprTree
 export ExprTree
 export Component, ExpressionTree
-export Propagator
+# export Propagator
 export addpropagator!, addnode!
 export setroot!, addroot!
 export evalNaive, showTree

@@ -253,7 +253,7 @@ function bareVer4(para::GenericPara, legK, diex::Vector{Permutation} = [Di, Ex])
 
         if notProper(para, _q) == false && _diex in diex
             #create new bare ver4 only if _diex is required in the diex table 
-            vid = InteractionId(para, response, type, k = _q, t = _innerT, permu = _diex)
+            vid = BareInteractionId(para, response, type, k = _q, t = _innerT, permu = _diex)
             return Diagram(vid, factor = sign * _factor)
         else
             return nothing
