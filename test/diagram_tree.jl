@@ -65,15 +65,15 @@ function getdiagram(spin = 2.0, D = 3, Nk = 4, Nt = 2)
     # #construct the propagator table
     gK = [[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0]]
     gT = [(1, 2), (2, 1)]
-    g = [Diagram(GreenId(paraG, k = gK[i], t = gT[i]), name = :G) for i in 1:2]
+    g = [Diagram(BareGreenId(paraG, k = gK[i], t = gT[i]), name = :G) for i in 1:2]
 
     vdK = [[0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 1.0, 0.0]]
     # vdT = [[1, 1], [2, 2]]
-    vd = [Diagram(InteractionId(paraV, ChargeCharge, k = vdK[i], permu = Di), name = :Vd) for i in 1:2]
+    vd = [Diagram(BareInteractionId(paraV, ChargeCharge, k = vdK[i], permu = Di), name = :Vd) for i in 1:2]
 
     veK = [[1, 0, -1, -1], [0, 1, 0, -1]]
     # veT = [[1, 1], [2, 2]]
-    ve = [Diagram(InteractionId(paraV, ChargeCharge, k = veK[i], permu = Ex), name = :Ve) for i in 1:2]
+    ve = [Diagram(BareInteractionId(paraV, ChargeCharge, k = veK[i], permu = Ex), name = :Ve) for i in 1:2]
 
     Id = GenericId(paraV)
     # contruct the tree
@@ -156,8 +156,8 @@ end
     # # getK(basis, varK) = sum([basis[i] * K for (i, K) in enumerate(varK)])
     getK(basis, varK) = varK * basis
 
-    eval(id::GreenId, varK, varT) = evalG(getK(id.extK, varK), id.extT, varT)
-    eval(id::InteractionId, varK, varT) = evalV(getK(id.extK, varK))
+    eval(id::BareGreenId, varK, varT) = evalG(getK(id.extK, varK), id.extT, varT)
+    eval(id::BareInteractionId, varK, varT) = evalV(getK(id.extK, varK))
 
     gw = [evalG(getK(gK[i], varK), gT[i], varT) for i = 1:2]
     vdw = [evalV(getK(vdK[i], varK)) for i = 1:2]

@@ -45,7 +45,7 @@ function removeDuplicatedLeaves!(diags::AbstractVector; verbose = 0)
 
     for l in leaves
         #make sure all leaves are either Green's functions or interactions
-        @assert (l.id isa GreenId) || (l.id isa InteractionId)
+        @assert (l.id isa BareGreenId) || (l.id isa BareInteractionId)
     end
 
     function uniqueLeaves(_diags::AbstractVector)
@@ -71,8 +71,8 @@ function removeDuplicatedLeaves!(diags::AbstractVector; verbose = 0)
     end
 
     # println(leaves)
-    green = [l for l in leaves if (l.id isa GreenId && isempty(l.subdiagram))]
-    interaction = [l for l in leaves if (l.id isa InteractionId && isempty(l.subdiagram))]
+    green = [l for l in leaves if l.id isa BareGreenId]
+    interaction = [l for l in leaves if l.id isa BareInteractionId]
     # println(green)
     # println(interaction)
 
@@ -87,11 +87,16 @@ function removeDuplicatedLeaves!(diags::AbstractVector; verbose = 0)
     for diag in diags
         for n in PreOrderDFS(diag)
             for (si, subdiag) in enumerate(n.subdiagram)
-                if subdiag.id isa GreenId && isempty(subdiag.subdiagram)
-                    n.subdiagram[si] = greenMap[subdiag.hash]
-                end
-                if subdiag.id isa InteractionId && isempty(subdiag.subdiagram)
-                    n.subdiagram[si] = interactionMap[subdiag.hash]
+                @assert (n.id isa PropagatorId) == false "a diagram with subdiagrams cannot be a proapgator!"
+
+                if subdiag.id isa PropagatorId
+                    if subdiag.id isa BareGreenId
+                        n.subdiagram[si] = greenMap[subdiag.hash]
+                    elseif subdiag.id isa BareInteractionId
+                        n.subdiagram[si] = interactionMap[subdiag.hash]
+                    else
+                        error("not implemented!")
+                    end
                 end
             end
         end

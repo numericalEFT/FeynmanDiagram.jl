@@ -53,7 +53,7 @@ using Printf, LinearAlgebra
 using MCIntegration, FeynmanDiagram, ElectronGas, Lehmann #NumericalEFT packages
 
 ##################### parameters for 3D UEG ##############################
-const steps = 1e7 # MC steps of each block
+const steps = 1e6 # MC steps of each block
 const Order = 3  #diagram order
 const dim = 3
 const rs = 1.0
@@ -78,7 +78,7 @@ const polar = [mergeby(Parquet.polarization(para[i])).diagram[1] for i in 1:Orde
 const diag = [ExprTree.build(polar[o]) for o in 1:Order]    #experssion tree representation of diagrams 
 
 ##################### propagator and interaction evaluation ##############
-function eval(id::GreenId, K, extT, varT)
+function eval(id::BareGreenId, K, extT, varT)
     τin, τout = varT[extT[1]], varT[extT[2]]
     ϵ = dot(K, K) / (2me) - μ
     τ = τout - τin
@@ -89,7 +89,7 @@ function eval(id::GreenId, K, extT, varT)
     end
 end
 
-eval(id::InteractionId, K, extT, varT) = (basic.e0)^2 / basic.ϵ0 / (dot(K, K) + basic.Λs)
+eval(id::BareInteractionId, K, extT, varT) = (basic.e0)^2 / basic.ϵ0 / (dot(K, K) + basic.Λs)
 
 ################### interface to MC #########################################
 function integrand(config)

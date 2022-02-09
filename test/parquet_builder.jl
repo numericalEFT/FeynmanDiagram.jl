@@ -85,11 +85,11 @@ evalFakeG(K, τin, τout) = 1.0
 evalFakeV(K) = 1.0
 
 ################## api for expression tree ##############################
-evalPropagator(id::GreenId, K, extT, varT) = evalG(K, varT[extT[1]], varT[extT[2]])
-evalPropagator(id::InteractionId, K, extT, varT) = evalV(K)
-evalPropagatorfixK(id::GreenId, K, extT, varT) = evalGfixK(K, varT[extT[1]], varT[extT[2]])
-evalPropagatorfixK(id::InteractionId, K, extT, varT) = evalVfixK(K)
-evalFakePropagator(id::DiagramId, K, extT, varT) = 1.0
+evalPropagator(id::BareGreenId, K, extT, varT) = evalG(K, varT[extT[1]], varT[extT[2]])
+evalPropagator(id::BareInteractionId, K, extT, varT) = evalV(K)
+evalPropagatorfixK(id::BareGreenId, K, extT, varT) = evalGfixK(K, varT[extT[1]], varT[extT[2]])
+evalPropagatorfixK(id::BareInteractionId, K, extT, varT) = evalVfixK(K)
+evalFakePropagator(id::PropagatorId, K, extT, varT) = 1.0
 
 
 @testset "ParquetNew Ver4" begin
