@@ -3,7 +3,7 @@ using Lehmann
 using LinearAlgebra
 
 const diagType = Ver4Diag
-const Order = 3
+const Order = 4
 const Circle = 100000
 
 const kF = 1.919
@@ -51,7 +51,9 @@ else
     error("not implemented!")
 end
 const extT = [diags[o].extT for o in 1:Order]                        #external tau of each diagram
-const tree = [ExprTree.build(mergeby(diags[o]).diagram[1]) for o in 1:Order]     #experssion tree representation of diagrams 
+println("Building tree")
+const tree = [ExprTree.build(mergeby(diags[o]).diagram[1], verbose = 1) for o in 1:Order]     #experssion tree representation of diagrams 
+println("Done.")
 # const tree = [ExprTree.build(DiagTree.optimize(mergeby(diags[o]).diagram[1])) for o in 1:Order]     #experssion tree representation of diagrams 
 
 varK = rand(3, 16)

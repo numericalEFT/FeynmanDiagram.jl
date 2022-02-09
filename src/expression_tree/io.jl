@@ -126,7 +126,7 @@ function showTree(tree::ExpressionTree, _root::Int; verbose = 0, depth = 999)
     # t.write(outfile="/home/kun/test.txt", format=8)
     t.show(tree_style = ts)
 end
-function showTree(diag::ExpressionTree, _root::Component; kwargs...)
-    @assert _root.isNode "Can not visualize $_root, because it is not a Node!"
-    return showTree(diag, _root.index; kwargs...)
-end
+# function showTree(diag::ExpressionTree, _root::Component; kwargs...)
+#     @assert _root.isNode "Can not visualize $_root, because it is not a Node!"
+#     return showTree(diag, _root.index; kwargs...)
+# end

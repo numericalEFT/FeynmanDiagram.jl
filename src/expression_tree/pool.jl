@@ -65,22 +65,30 @@ end
 
 function append(pool::CachedPool, object)
     # @assert para isa eltype(pool.pool)
-    for (oi, o) in enumerate(pool.object)
-        if o == object
-            return oi #existing obj
-        end
-    end
+    # for (oi, o) in enumerate(pool.object)
+    #     if o == object
+    #         return oi #existing obj
+    #     end
+    # end
 
     id = length(pool.object) + 1
     push!(pool.object, object)
 
-    T = eltype(pool.current)
-    push!(pool.current, zero(T))
-    push!(pool.new, zero(T))
-    push!(pool.version, 1)
-    push!(pool.excited, false)
+    # T = eltype(pool.current)
+    # push!(pool.current, zero(T))
+    # push!(pool.new, zero(T))
+    # push!(pool.version, 1)
+    # push!(pool.excited, false)
 
     return id #new momentum
+end
+
+function initialize!(pool::CachedPool{O,T}) where {O,T}
+    N = length(pool)
+    pool.current = zeros(T, N)
+    pool.new = zeros(T, N)
+    pool.version = ones(T, N)
+    pool.excited = Vector{Bool}(zeros(Int, N))
 end
 
 function updateAll(pool::CachedPool, ignoreCache::Bool, eval::Function; kwargs...)
