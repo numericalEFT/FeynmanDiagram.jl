@@ -3,7 +3,7 @@ using Lehmann
 using LinearAlgebra
 
 const diagType = Ver4Diag
-const Order = 3
+const Order = 4
 const Circle = 100000
 
 const kF = 1.919
@@ -18,7 +18,8 @@ end
 
 function DiagTree.eval(id::BareGreenId, K, extT, varT)
     τin, τout = varT[extT[1]], varT[extT[2]]
-    ϵ = dot(K, K) - kF^2
+    # ϵ = dot(K, K) - kF^2
+    ϵ = K[1] * K[1] + K[2] * K[2] + K[3] * K[3] - kF^2
     τ = τout - τin
     if τ ≈ 0.0
         return Spectral.kernelFermiT(-1e-8, ϵ, β)
@@ -27,7 +28,9 @@ function DiagTree.eval(id::BareGreenId, K, extT, varT)
     end
 end
 
-DiagTree.eval(id::BareInteractionId, K, extT, varT) = 8π / (dot(K, K) + Λs)
+# DiagTree.eval(id::BareInteractionId, K, extT, varT) = 8π / (dot(K, K) + Λs)
+DiagTree.eval(id::BareInteractionId, K, extT, varT) = 8π / (K[1] * K[1] + K[2] * K[2] + K[3] * K[3] + Λs)
+# DiagTree.eval(id, K, extT, varT) = 1.0
 
 diagPara(order) = GenericPara(diagType = diagType, innerLoopNum = order, hasTau = true,
     interaction = [FeynmanDiagram.Interaction(ChargeCharge, Instant),],  #instant charge-charge interaction
