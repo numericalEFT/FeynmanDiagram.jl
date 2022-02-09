@@ -41,7 +41,8 @@ import ..Ver3Id
 import ..GreenId
 import ..SigmaId
 import ..PolarId
-import ..InteractionId
+import ..BareInteractionId
+import ..BareGreenId
 
 import ..TwoBodyChannel
 import ..Alli

@@ -28,10 +28,10 @@ const INL, OUTL, INR, OUTR = 1, 2, 3, 4
 export Diagram
 export addSubDiagram!
 export toDataFrame
-export evalDiagNode!
 export evalDiagTree!
 export Operator, Sum, Prod
-export DiagramId, GenericId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId, InteractionId
+export DiagramId, GenericId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId
+export PropagatorId, BareGreenId, BareInteractionId
 export uidreset, toDataFrame, mergeby, plot_tree
 
 end

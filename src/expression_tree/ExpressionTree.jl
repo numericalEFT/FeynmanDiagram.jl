@@ -1,5 +1,5 @@
 module ExprTree
-using AbstractTrees, LinearAlgebra
+using AbstractTrees, LinearAlgebra, StaticArrays
 using ..DiagTree
 # using Unrolled
 # using InteractiveUtils
@@ -14,9 +14,8 @@ include("common.jl")
 # struct Cache and struct Pool
 include("pool.jl")
 
-# struct Propagator, Node and Diagram
-include("object.jl")
-export Component
+include("tree.jl")
+export ExpressionTree
 
 # IO operations
 include("io.jl")

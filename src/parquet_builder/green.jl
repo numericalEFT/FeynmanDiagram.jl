@@ -35,7 +35,7 @@ function green(para, extK = DiagTree.getK(para.totalLoopNum, 1), extT = para.has
     end
 
     if para.innerLoopNum == 0
-        return Diagram(GreenId(para, k = extK, t = extT), name = name)
+        return Diagram(BareGreenId(para, k = extK, t = extT), name = name)
     end
 
     # ################# after this step, the Green's function must be nontrivial! ##################
@@ -57,7 +57,7 @@ function green(para, extK = DiagTree.getK(para.totalLoopNum, 1), extT = para.has
     end
 
     para0 = reconstruct(para, innerLoopNum = 0) #parameter for g0
-    g0 = Diagram(GreenId(para0, k = extK, t = (tin, t0)), name = :g0)
+    g0 = Diagram(BareGreenId(para0, k = extK, t = (tin, t0)), name = :g0)
     ΣGpairs = []
     for p in orderedPartition(para.innerLoopNum, 2, 0)
         oΣ, oG = p

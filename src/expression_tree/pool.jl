@@ -65,22 +65,24 @@ end
 
 function append(pool::CachedPool, object)
     # @assert para isa eltype(pool.pool)
-    for (oi, o) in enumerate(pool.object)
-        if o == object
-            return oi #existing obj
-        end
-    end
+    # for (oi, o) in enumerate(pool.object)
+    #     if o == object
+    #         return oi #existing obj
+    #     end
+    # end
 
     id = length(pool.object) + 1
     push!(pool.object, object)
 
-    T = eltype(pool.current)
-    push!(pool.current, zero(T))
-    push!(pool.new, zero(T))
-    push!(pool.version, 1)
-    push!(pool.excited, false)
-
     return id #new momentum
+end
+
+function initialize!(pool::CachedPool{O,T}) where {O,T}
+    N = length(pool)
+    pool.current = zeros(T, N)
+    pool.new = zeros(T, N)
+    pool.version = ones(T, N)
+    pool.excited = Vector{Bool}(zeros(Int, N))
 end
 
 function updateAll(pool::CachedPool, ignoreCache::Bool, eval::Function; kwargs...)
@@ -156,14 +158,7 @@ function Base.iterate(pool::LoopPool, state)
 end
 
 function update(pool::LoopPool, variable = rand(eltype(pool.current), pool.dim, pool.N))
-    # @assert length(variable) == pool.N
-    # T = eltype(pool.current)
-    # println(pool.basis)
-    # println(variable)
     loopNum = size(pool.basis)[1]
-    # pool.current[:, 1:length(pool)] = variable[:, 1:loopNum] * pool.basis[1:loopNum, 1:length(pool)]
-    # pool.current[:, 1:length(pool)] = view(variable, :, 1:loopNum) * view(pool.basis, 1:loopNum, :)
-    # A = view(variable, :, 1:loopNum)
     pool.current = view(variable, :, 1:loopNum) * pool.basis
     # B = view(pool.basis, 1:loopNum, :)
     # B = view(pool.basis, 1:loopNum, :)
@@ -172,8 +167,8 @@ function update(pool::LoopPool, variable = rand(eltype(pool.current), pool.dim, 
     # LinearAlgebra.BLAS.gemm!('N', 'N', false, variable[:, 1:loopNum], pool.basis[1:loopNum, 1:length(pool)], false, pool.current[:, 1:length(pool)])
 end
 
-current(pool::LoopPool, idx) = pool.current[:, idx]
-# current(pool::LoopPool, idx) = view(pool.current, :, idx)
+# current(pool::LoopPool, idx) = pool.current[:, idx]
+current(pool::LoopPool, idx) = view(pool.current, :, idx)
 
 function append(pool::LoopPool, basis::AbstractVector)
     for bi in 1:length(pool)
