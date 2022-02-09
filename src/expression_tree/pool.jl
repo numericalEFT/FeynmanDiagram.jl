@@ -74,12 +74,6 @@ function append(pool::CachedPool, object)
     id = length(pool.object) + 1
     push!(pool.object, object)
 
-    # T = eltype(pool.current)
-    # push!(pool.current, zero(T))
-    # push!(pool.new, zero(T))
-    # push!(pool.version, 1)
-    # push!(pool.excited, false)
-
     return id #new momentum
 end
 
