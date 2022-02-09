@@ -14,10 +14,6 @@ include("common.jl")
 # struct Cache and struct Pool
 include("pool.jl")
 
-# struct Propagator, Node and Diagram
-include("object.jl")
-export Component
-
 include("tree.jl")
 export ExpressionTree
 

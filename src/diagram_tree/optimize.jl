@@ -16,6 +16,7 @@ end
     remove duplicated nodes such as:  ---> ver4 ---> InteractionId. Leaf will not be touched!
 """
 function removeOneChildParent!(diags::AbstractVector; verbose = 0)
+    verbose > 0 && println("remove nodes with only one child.")
     for diag in diags
         for (si, subdiag) in enumerate(diag.subdiagram)
             if length(subdiag.subdiagram) == 1
@@ -34,6 +35,7 @@ end
     remove duplicated nodes such as:  ---> ver4 ---> InteractionId. Leaf will not be touched!
 """
 function removeDuplicatedLeaves!(diags::AbstractVector; verbose = 0)
+    verbose > 0 && println("remove duplicated leaves.")
     leaves = []
     for diag in diags
         #leaves must be the propagators
