@@ -16,6 +16,15 @@ function oneOrderHigher(diag::Diagram{W}, ::Type{Id}, subdiagram = []) where {W,
     return d
 end
 
+"""
+    function derivative(diags::Union{Diagram,Tuple,AbstractVector}, ::Type{ID}) where {ID<:PropagatorId}
+    
+    Automatic differentiation derivative on the diagrams
+
+# Arguments
+- diags     : diagrams to take derivative
+- ID        : DiagramId to apply the differentiation
+"""
 function derivative(diags::Union{Diagram,Tuple,AbstractVector}, ::Type{ID}) where {ID<:PropagatorId}
     # use a dictionary to host the dual diagram of a diagram for a given hash number
     # a dual diagram is defined as the derivative of the original diagram
