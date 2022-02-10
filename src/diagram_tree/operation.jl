@@ -3,16 +3,16 @@ function oneOrderHigher(diag::Diagram{W}, ::Type{Id}, subdiagram = []) where {W,
         #for bare propagator, a derivative of different id vanishes
         return nothing
     end
-    order = deepcopy(diag.order)
+    id = deepcopy(diag.id)
     if Id == BareGreenId
-        order[1] += 1
+        id.order[1] += 1
     elseif Id == BareInteractionId
-        order[2] += 1
+        id.order[2] += 1
     else
         error("not implemented!")
     end
 
-    d = Diagram{W}(diag.id, diag.operator, subdiagram; name = diag.name, factor = diag.factor, weight = diag.weight, order = order)
+    d = Diagram{W}(id, diag.operator, subdiagram; name = diag.name, factor = diag.factor, weight = diag.weight)
     return d
 end
 
@@ -61,7 +61,9 @@ function derivative(diags::Union{Diagram,Tuple,AbstractVector}, ::Type{ID}) wher
                     if isempty(terms)
                         dual[d.hash] = nothing
                     else
-                        dual[d.hash] = Diagram{id.para.weightType}(id, Sum(), terms, name = Symbol("$(diag.name)'"), order = terms[1].order)
+                        newid = deepcopy(id)
+                        newid.order .= terms[1].id.order
+                        dual[d.hash] = Diagram{id.para.weightType}(newid, Sum(), terms, name = Symbol("$(d.name)'"))
                     end
                 else
                     error("not implemented!")
