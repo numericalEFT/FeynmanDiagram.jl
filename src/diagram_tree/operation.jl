@@ -16,8 +16,16 @@ function oneOrderHigher(diag::Diagram{W}, ::Type{Id}, subdiagram = []) where {W,
     return d
 end
 
-function derivative(diags::Union{Tuple,AbstractVector}, ::Type{ID}) where {ID<:PropagatorId}
-    dual = Dict{Int,Any}() # the dual diagram of a diagram for a given hash number
+function derivative(diags::Union{Diagram,Tuple,AbstractVector}, ::Type{ID}) where {ID<:PropagatorId}
+    # use a dictionary to host the dual diagram of a diagram for a given hash number
+    # a dual diagram is defined as the derivative of the original diagram
+
+    single = false
+    if diags isa Diagram
+        diags = [diags,]
+        single = true
+    end
+    dual = Dict{Int,Any}()
     for diag in diags
         for d in PostOrderDFS(diag)
             if haskey(dual, d.hash)
@@ -25,10 +33,11 @@ function derivative(diags::Union{Tuple,AbstractVector}, ::Type{ID}) where {ID<:P
             end
             id = d.id
             if id isa PropagatorId
+                # for propagators like bare Green's function and interaction, derivative simply means increase an order by one
                 dual[d.hash] = oneOrderHigher(d, ID)
-                # println(d.hash, ", ", typeof(d.id), ", ", d.id, " => ", dual[d.hash])
             else # composite diagram
                 if d.operator isa Sum
+                    # for a diagram which is a sum of subdiagrams, derivative means a sub of derivative subdiagrams
                     children = [dual[sub.hash] for sub in d.subdiagram if isnothing(dual[sub.hash]) == false]
                     if isempty(children)
                         dual[d.hash] = nothing
@@ -36,6 +45,7 @@ function derivative(diags::Union{Tuple,AbstractVector}, ::Type{ID}) where {ID<:P
                         dual[d.hash] = oneOrderHigher(d, ID, children)
                     end
                 elseif d.operator isa Prod
+                    # d = s1xs2x... = s1'xs2x... + s1xs2'x... + ...
                     terms = []
                     for (si, sub) in enumerate(d.subdiagram)
                         if isnothing(dual[sub.hash])
@@ -59,5 +69,9 @@ function derivative(diags::Union{Tuple,AbstractVector}, ::Type{ID}) where {ID<:P
             end
         end
     end
-    return [dual[diag.hash] for diag in diags]
+    if single
+        return dual[diags[1].hash]
+    else
+        return [dual[diag.hash] for diag in diags]
+    end
 end
