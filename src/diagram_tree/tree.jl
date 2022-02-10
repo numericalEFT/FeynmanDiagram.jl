@@ -7,20 +7,19 @@ mutable struct Diagram{W}
     operator::Operator
     factor::W
     subdiagram::Vector{Diagram{W}}
-    order::Vector{Int}
 
     weight::W
     # parent::Diagram
 
     function Diagram(id::DiagramId, operator::Operator = Sum(), subdiagram = []; type::DataType = id.para.weightType,
-        name = :none, factor = one(type), weight = zero(type), order = [0, 0])
-        return new{type}(uid(), name, id, operator, factor, deepcopy(subdiagram), order, weight)
+        name = :none, factor = one(type), weight = zero(type))
+        return new{type}(uid(), name, id, operator, factor, deepcopy(subdiagram), weight)
     end
 
     #constructor for DiagramId without a field of GenericPara
     function Diagram{W}(id::DiagramId, operator::Operator = Sum(), subdiagram = [];
-        name = :none, factor = W(1), weight = W(0), order = [0, 0]) where {W}
-        return new{W}(uid(), name, id, operator, factor, deepcopy(subdiagram), order, weight)
+        name = :none, factor = W(1), weight = W(0)) where {W}
+        return new{W}(uid(), name, id, operator, factor, deepcopy(subdiagram), weight)
     end
 end
 

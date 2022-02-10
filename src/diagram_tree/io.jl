@@ -67,7 +67,7 @@ function _summary(diag::Diagram{W}, color = true) where {W}
     end
 
     namestr = diag.name == :none ? "" : "$(diag.name) "
-    idstr = "$namestr$(diag.id)#$(diag.order)"
+    idstr = "$namestr$(diag.id)"
     fstr = short(diag.factor, one(diag.factor))
     wstr = short(diag.weight)
     # =$(node.weight*(2π)^(3*node.id.para.innerLoopNum))
@@ -91,17 +91,16 @@ function Base.show(io::IO, diag::Diagram)
 end
 
 """
-    showTree(diag::Diagrams, _root = diag.root[end]; verbose = 0, depth = 999)
+    function plot_tree(diag::Diagram; verbose = 0, maxdepth = 6)
 
     Visualize the diagram tree using ete3 python package
 
 #Arguments
-- `diag`: the Diagrams struct to visualize
-- `_root`: the index of the root node to visualize
-- `verbose=0`: the amount of information to show
-- `depth=999`: deepest level of the diagram tree to show
+- `diag`        : the Diagram struct to visualize
+- `verbose=0`   : the amount of information to show
+- `maxdepth=6`  : deepest level of the diagram tree to show
 """
-function plot_tree(diag::Diagram; verbose = 0, maxdepth = 4)
+function plot_tree(diag::Diagram; verbose = 0, maxdepth = 6)
 
     # pushfirst!(PyVector(pyimport("sys")."path"), @__DIR__) #comment this line if no need to load local python module
     ete = PyCall.pyimport("ete3")
