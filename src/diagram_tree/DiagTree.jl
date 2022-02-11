@@ -19,6 +19,7 @@ function Base.iterate(r::Permutation, ::Permutation) end
 include("common.jl")
 include("traits.jl")
 include("tree.jl")
+include("operation.jl")
 include("io.jl")
 include("eval.jl")
 include("optimize.jl")
