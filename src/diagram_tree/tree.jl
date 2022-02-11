@@ -1,5 +1,18 @@
 # Base.hash(d::DiagramId) = hash(d) % 1000000
+"""
+    mutable struct Diagram{W}
+    
+    struct of a diagram. A diagram of a sum or produce of various subdiagrams.
 
+# Members
+- hash::Int          : the unique hash number to identify the diagram
+- name::Symbol       : name of the diagram
+- id::DiagramId      : diagram id 
+- operator::Operator : operation, support Sum() and Prod()
+- factor::W          : additional factor of the diagram
+- subdiagram::Vector{Diagram{W}}   : vector of sub-diagrams
+- weight::W          : weight of the diagram
+"""
 mutable struct Diagram{W}
     hash::Int
     name::Symbol
@@ -11,15 +24,26 @@ mutable struct Diagram{W}
     weight::W
     # parent::Diagram
 
-    function Diagram(id::DiagramId, operator::Operator = Sum(), subdiagram = []; type::DataType = id.para.weightType,
-        name = :none, factor = one(type), weight = zero(type))
-        return new{type}(uid(), name, id, operator, factor, deepcopy(subdiagram), weight)
-    end
+    """
+        function Diagram{W}(id::DiagramId, operator::Operator = Sum(), subdiagram = []; name = :none, factor = W(1), weight = W(0)) where {W}
 
-    #constructor for DiagramId without a field of GenericPara
+        construct Diagram struct.
+
+    # Arguments
+    - id            : DiagramId of the diagram
+    - operator      : Sum() or Prod()
+    - subdiagram    : subdiagrams of the diagram, it should be a vector of Diagram struct
+    - name          : name of the diaram
+    - factor        : the additional factor of the diagram
+    - weight        : the initial weight
+    """
     function Diagram{W}(id::DiagramId, operator::Operator = Sum(), subdiagram = [];
         name = :none, factor = W(1), weight = W(0)) where {W}
         return new{W}(uid(), name, id, operator, factor, deepcopy(subdiagram), weight)
+    end
+    function Diagram(id::DiagramId, operator::Operator = Sum(), subdiagram = []; type::DataType = id.para.weightType,
+        name = :none, factor = one(type), weight = zero(type))
+        return new{type}(uid(), name, id, operator, factor, deepcopy(subdiagram), weight)
     end
 end
 
