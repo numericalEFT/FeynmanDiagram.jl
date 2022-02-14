@@ -4,7 +4,6 @@ using ElectronGas
 using Parameters, Random
 using MCIntegration
 using Lehmann
-include("interpolation.jl")
 
 const steps = 1e6
 beta = 25.0
@@ -15,6 +14,7 @@ const kF = para.kF
 const EF = para.EF
 const β = para.β
 
+########################### prepare the dynamic interaction #####################################################
 qgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, 6 * kF], [0.0, 2kF], 16, 0.01 * kF, 8)
 τgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, β], [0.0, β], 16, β * 1e-4, 8)
 
@@ -27,6 +27,7 @@ for (qi, q) in enumerate(qgrid.grid)
     end
 end
 const dW0 = matfreq2tau(dlr, W, τgrid.grid, axis = 2)
+###############################################################################################################
 
 function integrand(config)
     if config.curr == 1
@@ -47,7 +48,8 @@ function interactionDynamic(qd, τIn, τOut)
         wd = vd * linear2D(dW0, qgrid, τgrid, q, dτ)
         # the current interpolation vanishes at q=0, which needs to be corrected!
     else
-        wd = vd * linear2D(dW0, qgrid, τgrid, kDiQ, dτ) # dynamic interaction, don't forget the singular factor vq
+        # wd = vd * linear2D(dW0, qgrid, τgrid, kDiQ, dτ) # dynamic interaction, don't forget the singular factor vq
+        wd = vd * Interp.linear2D(dW0, qgrid, τgrid, kDiQ, dτ) # dynamic interaction, don't forget the singular factor vq
     end
 
     return wd
