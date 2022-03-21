@@ -124,6 +124,61 @@ struct Ver4Id <: DiagramId
 end
 Base.show(io::IO, v::Ver4Id) = print(io, (v.channel == AnyChan ? "" : "$(v.channel) ") * "$(short(v.response))$(short(v.type))#$(v.order),t$(v.extT)")
 
+"""
+time-ordered N-point Bare Green's function
+"""
+struct BareGreenNId <: PropagatorId
+    para::GenericPara
+    site::Int
+    creation::Vector{Bool}
+    orbital::Vector{Int}
+    extT::Vector{Int}
+    N::Int
+    function BareGreenNId(para::GenericPara, creation = [], orbital = [], t = [], r = 0)
+        @assert length(orbital) == length(t) == length(creation)
+        return new(para, r, creation, orbital, t, length(orbital))
+    end
+end
+function fieldstr(creation, orbital, extT)
+    cstr(x) = x ? "⁺" : "⁻"
+    N = length(creation)
+    return reduce(*, ["$(extT[i])_$(orbital[i])$(cstr(creation[i]))" for i in 1:N])
+end
+Base.show(io::IO, v::BareGreenNId) = print(io, "gn$(v.N)($(v.site)ᵣ|$(fieldstr(v.creation, v.orbital, v.extT)))")
+
+"""
+time-ordered N-point Composite Green's function
+"""
+struct GreenNId <: PropagatorId
+    para::GenericPara
+    site::Vector{Int}
+    creation::Vector{Bool}
+    orbital::Vector{Int}
+    extT::Vector{Int}
+    N::Int
+    function GreenNId(para::GenericPara, creation = [], orbital = [], t = [], r = [])
+        @assert length(orbital) == length(t) == length(creation)
+        return new(para, r, creation, orbital, t, length(orbital))
+    end
+end
+Base.show(io::IO, v::GreenNId) = print(io, "Gn$(v.N)($(v.site)ᵣ|$(fieldstr(v.creation, v.orbital, v.extT)))")
+
+"""
+time-ordered N-point Composite Green's function
+"""
+struct ConnectedGreenNId <: PropagatorId
+    para::GenericPara
+    site::Vector{Int}
+    creation::Vector{Bool}
+    orbital::Vector{Int}
+    extT::Vector{Int}
+    N::Int
+    function GreenNId(para::GenericPara, creation = [], orbital = [], t = [], r = [])
+        @assert length(orbital) == length(t) == length(creation)
+        return new(para, r, creation, orbital, t, length(orbital))
+    end
+end
+Base.show(io::IO, v::ConnectedGreenNId) = print(io, "Gc$(v.N)($(v.site)ᵣ|$(fieldstr(v.creation, v.orbital, v.extT)))")
 
 function Base.isequal(a::DiagramId, b::DiagramId)
     if typeof(a) != typeof(b)
