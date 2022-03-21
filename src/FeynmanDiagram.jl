@@ -7,6 +7,8 @@ using Random, LinearAlgebra, Parameters
     PolarDiag          #polarization
     Ver3Diag           #3-point vertex function
     Ver4Diag           #4-point vertex function
+    GnDiag             #n-point Green's function
+    GcDiag             #n-point connected Green's function
 end
 Base.length(r::DiagramType) = 1
 Base.iterate(r::DiagramType) = (r, nothing)
