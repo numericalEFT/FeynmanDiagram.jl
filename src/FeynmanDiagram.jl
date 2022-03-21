@@ -80,6 +80,11 @@ using .Parquet
 export Parquet
 export ParquetBlocks
 
+include("strong_coupling_expansion_builder/strong_coupling_expansion")
+using .SCE
+export SCE
+export Gn
+
 include("expression_tree/ExpressionTree.jl")
 using .ExprTree
 export ExprTree

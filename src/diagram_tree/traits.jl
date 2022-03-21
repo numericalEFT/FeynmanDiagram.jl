@@ -130,55 +130,57 @@ time-ordered N-point Bare Green's function
 struct BareGreenNId <: PropagatorId
     para::GenericPara
     site::Int
-    creation::Vector{Bool}
     orbital::Vector{Int}
     extT::Vector{Int}
     N::Int
-    function BareGreenNId(para::GenericPara, creation = [], orbital = [], t = [], r = 0)
-        @assert length(orbital) == length(t) == length(creation)
-        return new(para, r, creation, orbital, t, length(orbital))
+    function BareGreenNId(para::GenericPara, orbital = [], t = [], r = 0)
+        @assert length(orbital) == length(t)
+        return new(para, r, orbital, t, length(orbital))
     end
 end
-function fieldstr(creation, orbital, extT)
-    cstr(x) = x ? "⁺" : "⁻"
-    N = length(creation)
-    return reduce(*, ["$(extT[i])_$(orbital[i])$(cstr(creation[i]))" for i in 1:N])
+function vstr(r, c)
+    N = length(r)
+    # cstr(x) = x ? "⁺" : "⁻"
+    s = ""
+    for i = 1:N-1
+        s *= "$(r[i])$c"
+    end
+    s *= "$(r[end])$c"
+    return s
 end
-Base.show(io::IO, v::BareGreenNId) = print(io, "gn$(v.N)($(v.site)ᵣ|$(fieldstr(v.creation, v.orbital, v.extT)))")
+Base.show(io::IO, v::BareGreenNId) = print(io, "($(v.site)ᵣ|$(vstr(v.orbital, "ₒ"))|$(vstr(v.extT, "")))")
 
 """
 time-ordered N-point Composite Green's function
 """
-struct GreenNId <: PropagatorId
+struct GreenNId <: DiagramId
     para::GenericPara
     site::Vector{Int}
-    creation::Vector{Bool}
     orbital::Vector{Int}
     extT::Vector{Int}
     N::Int
-    function GreenNId(para::GenericPara, creation = [], orbital = [], t = [], r = [])
-        @assert length(orbital) == length(t) == length(creation)
-        return new(para, r, creation, orbital, t, length(orbital))
+    function GreenNId(para::GenericPara, orbital = [], t = [], r = [])
+        @assert length(orbital) == length(t) == length(r)
+        return new(para, r, orbital, t, length(orbital))
     end
 end
-Base.show(io::IO, v::GreenNId) = print(io, "Gn$(v.N)($(v.site)ᵣ|$(fieldstr(v.creation, v.orbital, v.extT)))")
+Base.show(io::IO, v::GreenNId) = print(io, "($(vstr(v.site, "ᵣ"))|$(vstr(v.orbital, "ₒ"))|$(vstr(v.extT, "")))")
 
 """
 time-ordered N-point Composite Green's function
 """
-struct ConnectedGreenNId <: PropagatorId
+struct ConnectedGreenNId <: DiagramId
     para::GenericPara
     site::Vector{Int}
-    creation::Vector{Bool}
     orbital::Vector{Int}
     extT::Vector{Int}
     N::Int
-    function GreenNId(para::GenericPara, creation = [], orbital = [], t = [], r = [])
-        @assert length(orbital) == length(t) == length(creation)
-        return new(para, r, creation, orbital, t, length(orbital))
+    function ConnectedGreenNId(para::GenericPara, orbital = [], t = [], r = [])
+        @assert length(orbital) == length(t) == length(r)
+        return new(para, r, orbital, t, length(orbital))
     end
 end
-Base.show(io::IO, v::ConnectedGreenNId) = print(io, "Gc$(v.N)($(v.site)ᵣ|$(fieldstr(v.creation, v.orbital, v.extT)))")
+Base.show(io::IO, v::ConnectedGreenNId) = print(io, "($(vstr(v.site, "ᵣ"))|$(vstr(v.orbital, "ₒ"))|$(vstr(v.extT, "")))")
 
 function Base.isequal(a::DiagramId, b::DiagramId)
     if typeof(a) != typeof(b)

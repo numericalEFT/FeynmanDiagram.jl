@@ -11,6 +11,7 @@ const INL, OUTL, INR, OUTR = 1, 2, 3, 4
 # symmetry factor for Alli, PHr, PHEr, PPr, PHrc, PHErc 
 
 include("common.jl")
-include("vacuum.jl")
+include("Gn.jl")
+include("Gc.jl")
 
 end
