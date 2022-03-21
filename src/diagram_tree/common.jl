@@ -12,6 +12,8 @@ import ..SigmaDiag
 import ..PolarDiag
 import ..Ver3Diag
 import ..Ver4Diag
+import ..GnDiag
+import ..GcDiag
 
 import ..Composite
 import ..ChargeCharge
