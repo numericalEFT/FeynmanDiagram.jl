@@ -2,6 +2,7 @@ module FeynmanDiagram
 using Random, LinearAlgebra, Parameters
 
 @enum DiagramType begin
+    VacuumDiag         #vaccum diagram for the free energy
     SigmaDiag          #self-energy
     GreenDiag          #green's function
     PolarDiag          #polarization
@@ -53,6 +54,7 @@ Base.iterate(r::AnalyticProperty) = (r, nothing)
 function Base.iterate(r::AnalyticProperty, ::Nothing) end
 
 export SigmaDiag, PolarDiag, Ver3Diag, Ver4Diag, GreenDiag
+export VacuumDiag, GnDiag, GcDiag
 export Wirreducible, Girreducible, NoBubble, NoHatree, NoFock, Proper
 export Response, ChargeCharge, SpinSpin, UpUp, UpDown
 export AnalyticProperty, Instant, Dynamic, D_Instant, D_Dynamic
@@ -70,6 +72,7 @@ export evalDiagNode!, evalDiagTree!
 export Operator, Sum, Prod
 export DiagramId, GenericId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId
 export PropagatorId, BareGreenId, BareInteractionId
+export BareGreenNId, GreenNId, ConnectedGreenNId
 export uidreset, toDataFrame, mergeby, plot_tree
 
 include("parquet_builder/parquet.jl")
