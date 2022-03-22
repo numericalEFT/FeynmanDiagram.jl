@@ -5,7 +5,7 @@
 [![Build Status](https://github.com/numericalEFT/FeynmanDiagram.jl/workflows/CI/badge.svg)](https://github.com/numericalEFT/FeynmanDiagram.jl/actions)
 [![Coverage](https://codecov.io/gh/numericalEFT/FeynmanDiagram.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/numericalEFT/FeynmanDiagram.jl)
 
-This library includes several algorithms to generate the optimized expression tree representations of high-order Feynman diagrams. Here we give a tutorial on the algorithms.
+This package implements a mini-compiler that compiles generic Feynman diagrams into expression tree representations for fast computation. 
 
 ## Parquet Algorithm
 
