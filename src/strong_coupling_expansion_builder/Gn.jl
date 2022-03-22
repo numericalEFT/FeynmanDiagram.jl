@@ -29,12 +29,12 @@
 #     end
 # end
 
-function fullGreen(para, hop::Vector{BareHoppingId}, subdiagram = false; name = Symbol("Gn$(length(site))"), resetuid = false, even = true)
+function fullGreen(para, hop::Vector{BareHoppingId}, subdiagram = false; name = Symbol("Gn$(length(hop)*2)"), resetuid = false, even = true)
     # @assert para.diagType == GreenNDiag
     # @assert length(extT) == length(orbital) == length(site)
-    if even
-        @assert length(extT) % 2 == 0
-    end
+    # if even
+    #     @assert length(extT) % 2 == 0
+    # end
     extT, orbital, site = [], [], []
     for h in hop
         append!(extT, h.extT)

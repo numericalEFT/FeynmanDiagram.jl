@@ -1,6 +1,8 @@
-function connectedGreen(para, hop::Vector{BareHoppingId}, subdiagram = false; name = Symbol("Gc$(length(site))"), resetuid = false, even = true)
+function connectedGreen(para, hop::Vector{BareHoppingId}, subdiagram = false; name = Symbol("Gc$(length(hop)*2)"), resetuid = false, even = true)
     # @assert para.diagType == GreenNDiag
     # @assert length(extT) == length(orbital) == length(site)
+    println("wip")
+    println(hop)
     N = length(hop)
 
     resetuid && uidreset()
@@ -8,9 +10,9 @@ function connectedGreen(para, hop::Vector{BareHoppingId}, subdiagram = false; na
     Gc = []
 
     # for paired Green's function, odd number of legs always leads to zero 
-    if even && (length(site) % 2 == 1)
-        return nothing
-    end
+    # if even && (length(site) % 2 == 1)
+    #     return nothing
+    # end
 
     Gfull = fullGreen(para, hop, true; resetuid = false, even = even)
     if isnothing(Gfull)
@@ -20,9 +22,9 @@ function connectedGreen(para, hop::Vector{BareHoppingId}, subdiagram = false; na
 
     for (lind, rind) in partitions(collect(1:N), 2)
         #this partition will not generate fermionic sign because the hopping term is always a bosonic operator
-        if even && (length(lind) % 2 == 1)
-            continue
-        end
+        # if even && (length(lind) % 2 == 1)
+        #     continue
+        # end
         subGc = connectedGreen(para, hop[lind], true; resetuid = false, even = even)
         subGn = fullGreen(para, hop[rind], true; resetuid = false, even = even)
         if isnothing(subGn) || isnothing(subGc)
