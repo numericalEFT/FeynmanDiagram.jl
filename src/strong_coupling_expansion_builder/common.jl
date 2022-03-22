@@ -44,6 +44,7 @@ import ..GreenId
 import ..SigmaId
 import ..PolarId
 import ..BareInteractionId
+import ..BareHoppingId
 import ..BareGreenId
 import ..BareGreenNId
 import ..GreenNId

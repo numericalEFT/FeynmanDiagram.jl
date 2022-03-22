@@ -124,6 +124,31 @@ struct Ver4Id <: DiagramId
 end
 Base.show(io::IO, v::Ver4Id) = print(io, (v.channel == AnyChan ? "" : "$(v.channel) ") * "$(short(v.response))$(short(v.type))#$(v.order),t$(v.extT)")
 
+function vstr(r, c)
+    N = length(r)
+    # cstr(x) = x ? "⁺" : "⁻"
+    s = ""
+    for i = 1:N-1
+        s *= "$(r[i])$c"
+    end
+    s *= "$(r[end])$c"
+    return s
+end
+
+"""
+hopping function
+"""
+struct BareHoppingId <: PropagatorId
+    para::GenericPara
+    site::Tuple{Int,Int}
+    orbital::Tuple{Int,Int}
+    extT::Tuple{Int,Int}
+    function BareHoppingId(para::GenericPara, orbital, t, r)
+        return new(para, r, orbital, t)
+    end
+end
+Base.show(io::IO, v::BareHoppingId) = print(io, "($(vstr(v.site, "ᵣ"))|$(vstr(v.orbital, "ₒ"))|$(vstr(v.extT, "")))")
+
 """
 time-ordered N-point Bare Green's function
 """
@@ -137,16 +162,6 @@ struct BareGreenNId <: PropagatorId
         @assert length(orbital) == length(t)
         return new(para, r, orbital, t, length(orbital))
     end
-end
-function vstr(r, c)
-    N = length(r)
-    # cstr(x) = x ? "⁺" : "⁻"
-    s = ""
-    for i = 1:N-1
-        s *= "$(r[i])$c"
-    end
-    s *= "$(r[end])$c"
-    return s
 end
 Base.show(io::IO, v::BareGreenNId) = print(io, "($(v.site)ᵣ|$(vstr(v.orbital, "ₒ"))|$(vstr(v.extT, "")))")
 
