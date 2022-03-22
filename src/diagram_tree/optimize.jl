@@ -78,18 +78,21 @@ function removeDuplicatedLeaves!(diags::AbstractVector; verbose = 0)
     green = [l for l in leaves if l.id isa BareGreenId]
     interaction = [l for l in leaves if l.id isa BareInteractionId]
     greenN = [l for l in leaves if l.id isa BareGreenNId]
+    hopping = [l for l in leaves if l.id isa BareHoppingId]
     # println(green)
     # println(interaction)
 
     uniqueGreen, greenMap = uniqueLeaves(green)
     uniqueGreenN, greenNMap = uniqueLeaves(greenN)
     uniqueInteraction, interactionMap = uniqueLeaves(interaction)
+    uniqueHopping, hoppingMap = uniqueLeaves(hopping)
     # println(uniqueInteraction)
     # display(greenMap)
 
     verbose > 0 && length(green) > 0 && println("Number of independent Greens $(length(green)) → $(length(uniqueGreen))")
     verbose > 0 && length(greenN) > 0 && println("Number of independent GreenNs $(length(greenN)) → $(length(uniqueGreenN))")
     verbose > 0 && length(interaction) > 0 && println("Number of independent Interactions $(length(interaction)) → $(length(uniqueInteraction))")
+    verbose > 0 && length(hopping) > 0 && println("Number of independent Hopping $(length(hopping)) → $(length(uniqueHopping))")
 
     for diag in diags
         for n in PreOrderDFS(diag)
@@ -103,6 +106,8 @@ function removeDuplicatedLeaves!(diags::AbstractVector; verbose = 0)
                         n.subdiagram[si] = interactionMap[subdiag.hash]
                     elseif subdiag.id isa BareGreenNId
                         n.subdiagram[si] = greenNMap[subdiag.hash]
+                    elseif subdiag.id isa BareHoppingId
+                        n.subdiagram[si] = hoppingMap[subdiag.hash]
                     else
                         error("not implemented!")
                     end
