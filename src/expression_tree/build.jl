@@ -16,7 +16,8 @@ function build(diags::AbstractVector, hasLoop = true; verbose::Int = 0)
             if haskey(nodes, d.hash) == false
                 id = d.id
                 if isempty(d.subdiagram)
-                    nodes[d.hash] = addpropagator!(tree, d.name, d.factor; site = collect(id.extT), loop = id.extK, para = id)
+                    K = hasLoop ? id.extK : nothing
+                    nodes[d.hash] = addpropagator!(tree, d.name, d.factor; site = collect(id.extT), loop = K, para = id)
                 else
                     children = [nodes[sub.hash] for sub in d.subdiagram]
                     nodes[d.hash] = addnode!(tree, operator(d.operator), d.name, children, d.factor, para = id)
