@@ -33,7 +33,7 @@ export evalDiagTree!
 export Operator, Sum, Prod
 export DiagramId, GenericId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId
 export PropagatorId, BareGreenId, BareInteractionId
-export BareGreenNId, GreenNId, ConnectedGreenNId
+export BareGreenNId, BareHoppingId, GreenNId, ConnectedGreenNId
 export uidreset, toDataFrame, mergeby, plot_tree
 
 end
