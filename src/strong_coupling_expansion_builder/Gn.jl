@@ -29,18 +29,19 @@
 #     end
 # end
 
-function fullGreen(para, hop::Vector{BareHoppingId}, subdiagram = false; name = Symbol("Gn$(length(hop)*2)"), resetuid = false, even = true)
+function fullGreen(para, hop::Vector{BareHoppingId}, creation::AbstractVector, annihilation::AbstractVector, subdiagram = false; name = Symbol("Gn$(length(hop)*2)"), resetuid = false, even = true)
     # @assert para.diagType == GreenNDiag
     # @assert length(extT) == length(orbital) == length(site)
     # if even
     #     @assert length(extT) % 2 == 0
     # end
-    extT, orbital, site, creation = [], [], [], []
+    extT, orbital, site, _creation, transition = [], [], [], [], []
     for h in hop
         append!(extT, h.extT)
         append!(site, h.site)
-        append!(creation, [true, false])
+        append!(_creation, [true, false])
         append!(orbital, h.orbital)
+        append!(transition, [creation[h.orbital[1]], annihilation[h.orbital[2]]])
     end
 
     resetuid && uidreset()
@@ -55,8 +56,9 @@ function fullGreen(para, hop::Vector{BareHoppingId}, subdiagram = false; name = 
         end
         t = extT[ind]
         o = orbital[ind]
-        c = creation[ind]
-        bareGId = BareGreenNId(para, orbital = o, t = t, r = r, creation = c)
+        c = _creation[ind]
+        tran = transition[ind]
+        bareGId = BareGreenNId(para, orbital = o, t = t, r = r, creation = c, transition = tran)
         push!(gn, Diagram(bareGId, name = Symbol("gn$(length(t))")))
         append!(permutation, ind)
     end
@@ -67,6 +69,6 @@ function fullGreen(para, hop::Vector{BareHoppingId}, subdiagram = false; name = 
         for h in hop
             push!(gn, Diagram(h, name = :hop))
         end
-        return Diagram(GreenNId(para, orbital = orbital, t = extT, r = site, creation = creation), Prod(), gn, name = name, factor = parity(permutation))
+        return Diagram(GreenNId(para, orbital = orbital, t = extT, r = site, creation = _creation), Prod(), gn, name = name, factor = parity(permutation))
     end
 end
