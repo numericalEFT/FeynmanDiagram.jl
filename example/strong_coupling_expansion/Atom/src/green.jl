@@ -174,7 +174,7 @@ struct GreenN
     orbital::Vector{Int} # 1:2n, array of orbitals 
     hop::Vector{Operator}
     partition::Vector{Partition}
-    function GreenN(m::Model, τ, orbital, N = Int(length(τ)) / 2)
+    function GreenN(m::Model, τ, orbital, N = Int(length(τ) / 2))
         # @assert length(τ) == length(orbital)
         # N = Int(length(τ) / 2)
 
@@ -214,6 +214,8 @@ function Gn(m::Model, g::GreenN, idx, level = 1)
     # printstyled("...."^level, "start $level Gn-$idx\n", color=:green)
     if g.N == 1 # fast treatment of one-body Green's function
         i, o = idx[1], idx[2]
+        println(g.hop[o])
+        println(g.hop[i])
         if g.τ[i] < g.τ[o]
             return thermalavg(g.hop[o] * g.hop[i], m.E, m.β, m.Z)
         else

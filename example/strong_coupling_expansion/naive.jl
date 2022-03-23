@@ -21,6 +21,7 @@ const c⁻ = collect(model.c⁻)
 # println(model)
 const T = MCIntegration.Tau(β, β / 2.0)
 const O = MCIntegration.Discrete(1, 2)
+O.data[1] = O.data[2] = 1
 const para = GenericPara(diagType = Ver4Diag, innerLoopNum = 1, hasTau = true)
 
 const h1 = BareHoppingId(para, (1, 1), (1, 1), (1, 2))
@@ -32,12 +33,25 @@ const tree = [tree1,]
 
 function DiagTree.eval(id::BareGreenNId, K, Tbasis, varT)
     if id.N == 2
-        t1, t2 = varT[id.extT[1]], varT[id.extT[2]]
-        opt1, opt2 = Green.Heisenberg(id.transition[1], model.E, t1), Green.Heisenberg(id.transition[2], model.E, t2)
-        if t2 > t1
-            return Green.thermalavg(opt1 * opt2, model.E, β, model.Z)
+        t1, t2 = T[id.extT[1]], T[id.extT[2]]
+        o1, o2 = O[id.orbital[1]], O[id.orbital[2]]
+        println(t1, ", ", t2, " - ", id.creation)
+        if id.creation[1]
+            opt1 = Green.Heisenberg(c⁺[o1], model.E, t1)
         else
-            return -Green.thermalavg(opt2 * opt1, model.E, β, model.Z)
+            opt1 = Green.Heisenberg(c⁻[o1], model.E, t1)
+        end
+        if id.creation[2]
+            opt2 = Green.Heisenberg(c⁺[o2], model.E, t2)
+        else
+            opt2 = Green.Heisenberg(c⁻[o2], model.E, t2)
+        end
+        println(opt1)
+        println(opt2)
+        if t2 > t1
+            return Green.thermalavg(opt2 * opt1, model.E, β, model.Z)
+        else
+            return -Green.thermalavg(opt1 * opt2, model.E, β, model.Z)
         end
     else
         error("not implemented!")
