@@ -1,4 +1,4 @@
-function connectedGreen(para, hop::Vector{BareHoppingId}, creation::AbstractVector, annihilation::AbstractVector, subdiagram = false; name = Symbol("Gc$(length(hop)*2)"), resetuid = false, even = true)
+function connectedGreen(para, hop::Vector{BareHoppingId}, subdiagram = false; name = Symbol("Gc$(length(hop)*2)"), resetuid = false, even = true)
     # @assert para.diagType == GreenNDiag
     # @assert length(extT) == length(orbital) == length(site)
     # println("wip")
@@ -14,7 +14,7 @@ function connectedGreen(para, hop::Vector{BareHoppingId}, creation::AbstractVect
     #     return nothing
     # end
 
-    Gfull = fullGreen(para, hop, creation, annihilation, true; resetuid = false, even = even)
+    Gfull = fullGreen(para, hop, true; resetuid = false, even = even)
     if isnothing(Gfull)
         return nothing
     end
@@ -25,8 +25,8 @@ function connectedGreen(para, hop::Vector{BareHoppingId}, creation::AbstractVect
         # if even && (length(lind) % 2 == 1)
         #     continue
         # end
-        subGc = connectedGreen(para, hop[lind], creation, annihilation, true; resetuid = false, even = even)
-        subGn = fullGreen(para, hop[rind], creation, annihilation, true; resetuid = false, even = even)
+        subGc = connectedGreen(para, hop[lind], true; resetuid = false, even = even)
+        subGn = fullGreen(para, hop[rind], true; resetuid = false, even = even)
         if isnothing(subGn) || isnothing(subGc)
             continue
         end
