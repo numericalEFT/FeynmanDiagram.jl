@@ -177,11 +177,10 @@ struct BareGreenNId <: PropagatorId
     creation::Vector{Bool}
     orbital::Vector{Int}
     extT::Vector{Int}
-    transition::Vector{Matrix}
     N::Int
-    function BareGreenNId(para::GenericPara; orbital = [], t = [], creation = [], transition = [], r = 0)
-        @assert length(orbital) == length(t) == length(creation) == length(transition)
-        return new(para, r, creation, orbital, t, transition, length(orbital))
+    function BareGreenNId(para::GenericPara; orbital = [], t = [], creation = [], r = 0)
+        @assert length(orbital) == length(t) == length(creation)
+        return new(para, r, creation, orbital, t, length(orbital))
     end
 end
 Base.show(io::IO, v::BareGreenNId) = print(io, "($(v.site)ᵣ|$(vstr(v.orbital, "ₒ"))|$(vcstr(v.extT, v.creation)))")

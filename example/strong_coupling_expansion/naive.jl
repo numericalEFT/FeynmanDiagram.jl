@@ -5,7 +5,7 @@ using Lehmann
 using FeynmanDiagram
 using LinearAlgebra
 
-const totalStep = 1e6
+const totalStep = 1e4
 const β, U, μ = 3.0, 1.0, 1.0 / 3
 const L = [1, 2]
 const dim = length(L)
@@ -26,36 +26,44 @@ const para = GenericPara(diagType = Ver4Diag, innerLoopNum = 1, hasTau = true)
 
 const h1 = BareHoppingId(para, (1, 1), (1, 1), (1, 2))
 const h2 = BareHoppingId(para, (2, 2), (2, 2), (2, 1))
+const h3 = BareHoppingId(para, (3, 3), (3, 3), (1, 2))
+const h4 = BareHoppingId(para, (4, 4), (4, 4), (2, 1))
 
-const diag1 = SCE.connectedGreen(para, [h1, h2], c⁺, c⁻)
+const diag1 = SCE.connectedGreen(para, [h1, h2])
 const tree1 = ExprTree.build([diag1,], false)
+# const diag2 = SCE.connectedGreen(para, [h1, h2, h3, h4], c⁺, c⁻)
+# const tree2 = ExprTree.build([diag2,], false)
+# const tree = [tree1, tree2]
 const tree = [tree1,]
 
+include("green.jl")
+
 function DiagTree.eval(id::BareGreenNId, K, Tbasis, varT)
-    if id.N == 2
-        t1, t2 = T[id.extT[1]], T[id.extT[2]]
-        o1, o2 = O[id.orbital[1]], O[id.orbital[2]]
-        # println(t1, ", ", t2, " - ", id.creation)
-        if id.creation[1]
-            opt1 = Green.Heisenberg(c⁺[o1], model.E, t1)
-        else
-            opt1 = Green.Heisenberg(c⁻[o1], model.E, t1)
-        end
-        if id.creation[2]
-            opt2 = Green.Heisenberg(c⁺[o2], model.E, t2)
-        else
-            opt2 = Green.Heisenberg(c⁻[o2], model.E, t2)
-        end
-        # println(opt1)
-        # println(opt2)
-        if t2 > t1
-            return Green.thermalavg(opt2 * opt1, model.E, β, model.Z)
-        else
-            return -Green.thermalavg(opt1 * opt2, model.E, β, model.Z)
-        end
-    else
-        error("not implemented!")
-    end
+    return greenN(id)
+    # if id.N == 2
+    #     t1, t2 = T[id.extT[1]], T[id.extT[2]]
+    #     o1, o2 = O[id.orbital[1]], O[id.orbital[2]]
+    #     # println(t1, ", ", t2, " - ", id.creation)
+    #     if id.creation[1]
+    #         opt1 = Green.Heisenberg(c⁺[o1], model.E, t1)
+    #     else
+    #         opt1 = Green.Heisenberg(c⁻[o1], model.E, t1)
+    #     end
+    #     if id.creation[2]
+    #         opt2 = Green.Heisenberg(c⁺[o2], model.E, t2)
+    #     else
+    #         opt2 = Green.Heisenberg(c⁻[o2], model.E, t2)
+    #     end
+    #     # println(opt1)
+    #     # println(opt2)
+    #     if t2 > t1
+    #         return Green.thermalavg(opt2 * opt1, model.E, β, model.Z)
+    #     else
+    #         return -Green.thermalavg(opt1 * opt2, model.E, β, model.Z)
+    #     end
+    # else
+    #     error("not implemented!")
+    # end
 end
 DiagTree.eval(id::BareHoppingId, K, Tbasis, varT) = 1.0
 
@@ -67,7 +75,7 @@ DiagTree.evalDiagTree!(diag1, nothing, T.data, DiagTree.eval)
 function integrand(config)
     if config.curr == 1
         ExprTree.evalNaive!(tree[1], nothing, T.data)
-        return tree[1][1] / 2.0 # additional factor from 1/n!
+        return tree[1][1] / 2.0 * 2 # additional factor from 1/n! Then there are two copies of bonds (1->2) (2->1) and (2->1) (1->2)
     else
         error("not implemented!")
     end
@@ -82,6 +90,8 @@ end
 function run(totalStep)
     dof = [[2, 2],]
     observable = zeros(1)
+    # dof = [[2, 2], [4, 4]]
+    # observable = zeros(2)
 
     # g = Green.GreenN(paraAtom.m, [0.0, extT[1]], [UP, UP])
     # g2 = Green.Gn(paraAtom.m, g)
@@ -94,7 +104,9 @@ function run(totalStep)
     # std[3] /= β * 2 * 4 * 2^2
 
     if isnothing(avg) == false
-        println(avg ./ β, " ± ", std ./ β)
+        for o in 1:length(avg)
+            println("Order $o    $(avg[o] ./ β)  ±  $(std[o] ./ β)")
+        end
     end
 end
 
