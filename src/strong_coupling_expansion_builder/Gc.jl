@@ -30,7 +30,7 @@ function connectedGreen(para, hop::Vector{BareHoppingId}, subdiagram = false; na
         if isnothing(subGn) || isnothing(subGc)
             continue
         end
-        push!(Gc, Diagram(GenericId(para), Prod(), [subGc, subGn], factor = 1.0)) #additional minus sign because Gc(s) = Gn(s) - \sum_o Gc(o)Gn(s-o)
+        push!(Gc, Diagram(GenericId(para), Prod(), [subGc, subGn], factor = -1.0)) #additional minus sign because Gc(s) = Gn(s) - \sum_o Gc(o)Gn(s-o)
     end
 
     extT, orbital, site, creation = [], [], [], []
