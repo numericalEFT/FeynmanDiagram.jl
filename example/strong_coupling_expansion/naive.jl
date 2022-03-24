@@ -42,7 +42,7 @@ const diag2_1122 = SCE.connectedGreen(para, [h1_12, h2_12, h3_21, h4_21])
 const diag2_1221 = SCE.connectedGreen(para, [h1_12, h2_21, h3_21, h4_12])
 const diag2_1212 = SCE.connectedGreen(para, [h1_12, h2_21, h3_12, h4_21])
 # const tree2 = ExprTree.build([diag2_1122, diag2_1221, diag2_1212], false)
-const tree2 = ExprTree.build([diag2_1221], false)
+const tree2 = ExprTree.build([diag2_1122], false)
 const tree = [tree1, tree2]
 # const tree = [tree1,]
 # plot_tree(diag2_1122)
@@ -83,14 +83,18 @@ end
 DiagTree.eval(id::BareHoppingId, K, Tbasis, varT) = 1.0
 
 # plot_tree(diag1)
-# DiagTree.evalDiagTree!(diag1, nothing, T.data, DiagTree.eval)
+DiagTree.evalDiagTree!(diag2_1122, nothing, T.data, DiagTree.eval)
 # plot_tree(diag1)
+# exit(0)
+# plot_tree(diag2_1122)
+# plot_tree(diag2_1221)
+# plot_tree(diag2_1212)
 # exit(0)
 
 function integrand(config)
     if config.curr == 1
-        #     ExprTree.evalNaive!(tree[1], nothing, T.data)
-        #     return tree[1][1] / 2.0 * 2 # additional factor from 1/n! Then there are two copies of bonds (1->2) (2->1) and (2->1) (1->2)
+        # ExprTree.evalNaive!(tree[1], nothing, T.data)
+        # return tree[1][1] / 2.0 * 2 # additional factor from 1/n! Then there are two copies of bonds (1->2) (2->1) and (2->1) (1->2)
         # elseif config.curr == 2
         ExprTree.evalNaive!(tree[2], nothing, T.data)
         return tree[2][1] / 12.0  # additional factor from 1/n! Then there are two copies of bonds (1->2) (2->1) and (2->1) (1->2)
