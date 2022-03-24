@@ -2,8 +2,10 @@ function greenN(id::BareGreenNId)
     # if id.N == 2
     #     return green2(id, orbital, tau)
     # else
-    tau = view(T.data, id.extT)
-    orbital = view(O.data, id.orbital)
+    # tau = view(T.data, id.extT)
+    # orbital = view(O.data, id.orbital)
+    tau = T.data[id.extT]
+    orbital = O.data[id.orbital]
     op = [Green.Heisenberg(id.creation[i] ? c⁺[orbital[i]] : c⁻[orbital[i]], model.E, tau[i]) for i in 1:length(tau)]
     perm = sortperm(tau, rev = true) # large τ, ..., small τ
     M = prod(op[perm])
