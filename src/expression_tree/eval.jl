@@ -18,7 +18,7 @@ function evalNaive!(diag::ExpressionTree, loopVar, siteVar, eval = DiagTree.eval
             if isnothing(loopPool) == false
                 tweight[ni] = eval(node.para, current(loopPool, node.loopidx), node.siteidx, siteVar) * node.factor
             else
-                tweight[ni] = eval(node.para, node.siteidx, siteVar) * node.factor
+                tweight[ni] = eval(node.para, nothing, node.siteidx, siteVar) * node.factor
             end
         else
             if node.operation == MUL

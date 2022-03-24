@@ -5,7 +5,7 @@ using Lehmann
 using FeynmanDiagram
 using LinearAlgebra
 
-const totalStep = 1e5
+const totalStep = 1e6
 const β, U, μ = 3.0, 1.0, 1.0 / 3
 const L = [1, 2]
 const dim = length(L)
@@ -35,7 +35,7 @@ function DiagTree.eval(id::BareGreenNId, K, Tbasis, varT)
     if id.N == 2
         t1, t2 = T[id.extT[1]], T[id.extT[2]]
         o1, o2 = O[id.orbital[1]], O[id.orbital[2]]
-        println(t1, ", ", t2, " - ", id.creation)
+        # println(t1, ", ", t2, " - ", id.creation)
         if id.creation[1]
             opt1 = Green.Heisenberg(c⁺[o1], model.E, t1)
         else
@@ -46,8 +46,8 @@ function DiagTree.eval(id::BareGreenNId, K, Tbasis, varT)
         else
             opt2 = Green.Heisenberg(c⁻[o2], model.E, t2)
         end
-        println(opt1)
-        println(opt2)
+        # println(opt1)
+        # println(opt2)
         if t2 > t1
             return Green.thermalavg(opt2 * opt1, model.E, β, model.Z)
         else
@@ -61,13 +61,13 @@ DiagTree.eval(id::BareHoppingId, K, Tbasis, varT) = 1.0
 
 # plot_tree(diag1)
 DiagTree.evalDiagTree!(diag1, nothing, T.data, DiagTree.eval)
-plot_tree(diag1)
-exit(0)
+# plot_tree(diag1)
+# exit(0)
 
 function integrand(config)
     if config.curr == 1
         ExprTree.evalNaive!(tree[1], nothing, T.data)
-        return tree[1][1]
+        return tree[1][1] / 2.0 # additional factor from 1/n!
     else
         error("not implemented!")
     end
@@ -87,14 +87,14 @@ function run(totalStep)
     # g2 = Green.Gn(paraAtom.m, g)
     # println("test : $g2")
 
-    config = MonteCarlo.Configuration(totalStep, (T, extT), dof, observable)
-    avg, std = MonteCarlo.sample(config, integrand, measure, print = 2, Nblock = 8)
+    config = MCIntegration.Configuration(totalStep, (T, O), dof, observable)
+    avg, std = MCIntegration.sample(config, integrand, measure, print = 2, Nblock = 8)
 
     # avg[3] /= β * 2 * 4 * 2^2  #
     # std[3] /= β * 2 * 4 * 2^2
 
     if isnothing(avg) == false
-        println(avg, " ± ", std)
+        println(avg ./ β, " ± ", std ./ β)
     end
 end
 
