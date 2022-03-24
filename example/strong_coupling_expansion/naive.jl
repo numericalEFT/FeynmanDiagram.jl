@@ -93,10 +93,16 @@ DiagTree.evalDiagTree!(diag2_1122, nothing, T.data, DiagTree.eval)
 
 function integrand(config)
     if config.curr == 1
-        # ExprTree.evalNaive!(tree[1], nothing, T.data)
-        # return tree[1][1] / 2.0 * 2 # additional factor from 1/n! Then there are two copies of bonds (1->2) (2->1) and (2->1) (1->2)
-        # elseif config.curr == 2
+        ExprTree.evalNaive!(tree[1], nothing, T.data)
+        return tree[1][1] / 2.0 * 2 # additional factor from 1/n! Then there are two copies of bonds (1->2) (2->1) and (2->1) (1->2)
+    elseif config.curr == 2
         ExprTree.evalNaive!(tree[2], nothing, T.data)
+        ExprTree.showTree(tree[2], tree[2].root[1])
+        # if tree[2][1] > 1e6
+        #     plot_tree(tree[2])
+        #     error("large value! $(tree[2][1])")
+        #     exit(0)
+        # end
         return tree[2][1] / 12.0  # additional factor from 1/n! Then there are two copies of bonds (1->2) (2->1) and (2->1) (1->2)
     else
         error("not implemented!")
@@ -110,10 +116,10 @@ function measure(config)
 end
 
 function run(totalStep)
-    dof = [[4, 4],]
-    observable = zeros(1)
-    # dof = [[2, 2], [4, 4]]
-    # observable = zeros(2)
+    # dof = [[4, 4],]
+    # observable = zeros(1)
+    dof = [[2, 2], [4, 4]]
+    observable = zeros(2)
 
     # g = Green.GreenN(paraAtom.m, [0.0, extT[1]], [UP, UP])
     # g2 = Green.Gn(paraAtom.m, g)

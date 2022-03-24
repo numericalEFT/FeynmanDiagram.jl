@@ -62,8 +62,8 @@ function showTree(tree::ExpressionTree, _root::Int; verbose = 0, depth = 999)
         end
     end
 
-    function info(node, id)
-        s = "N$(id)$(name_para(node))"
+    function info(node, idx)
+        s = "N$(idx)$(name_para(node)) = $(tree.node.current[idx])"
         # s *= sprint(show, node.para)
         # s *= ": "
 
@@ -83,7 +83,7 @@ function showTree(tree::ExpressionTree, _root::Int; verbose = 0, depth = 999)
             t = ete.Tree(name = " ")
         end
 
-        if tree.node.object[idx] isa Propagator
+        if tree.node.object[idx] isa PropagatorId
             p = tree.node.object[idx]    #Propagator
             site = isempty(p.siteBasis) ? "" : " t$(p.siteBasis),"
             loop = p.loopIdx <= 0 ? "" : "k$(tree.loopBasis[p.loopIdx])"
@@ -94,7 +94,7 @@ function showTree(tree::ExpressionTree, _root::Int; verbose = 0, depth = 999)
             name_face = ete.TextFace(nt.name, fgcolor = "black", fsize = 10)
             nt.add_face(name_face, column = 0, position = "branch-top")
 
-            for child in tree.node.object[idx].childNodes
+            for child in tree.node.object[idx].children
                 if child != -1
                     treeview(child, level + 1, nt)
                 else
