@@ -5,7 +5,7 @@ using Lehmann
 using FeynmanDiagram
 using LinearAlgebra
 
-const totalStep = 1e4
+const totalStep = 1e5
 const β, U, μ = 3.0, 1.0, 1.0 / 3
 const L = [1, 2]
 const dim = length(L)
@@ -21,24 +21,39 @@ const c⁻ = collect(model.c⁻)
 # println(model)
 const T = MCIntegration.Tau(β, β / 2.0)
 const O = MCIntegration.Discrete(1, 2)
-O.data[1] = O.data[2] = 1
+O.data[1] = O.data[2] = O.data[3] = O.data[4] = 1
 const para = GenericPara(diagType = Ver4Diag, innerLoopNum = 1, hasTau = true)
 
 const h1 = BareHoppingId(para, (1, 1), (1, 1), (1, 2))
 const h2 = BareHoppingId(para, (2, 2), (2, 2), (2, 1))
-const h3 = BareHoppingId(para, (3, 3), (3, 3), (1, 2))
-const h4 = BareHoppingId(para, (4, 4), (4, 4), (2, 1))
 
 const diag1 = SCE.connectedGreen(para, [h1, h2])
 const tree1 = ExprTree.build([diag1,], false)
-# const diag2 = SCE.connectedGreen(para, [h1, h2, h3, h4], c⁺, c⁻)
-# const tree2 = ExprTree.build([diag2,], false)
-# const tree = [tree1, tree2]
-const tree = [tree1,]
+
+const h1_12 = BareHoppingId(para, (1, 1), (1, 1), (1, 2))
+const h1_21 = BareHoppingId(para, (1, 1), (1, 1), (2, 1))
+const h2_12 = BareHoppingId(para, (2, 2), (2, 2), (1, 2))
+const h2_21 = BareHoppingId(para, (2, 2), (2, 2), (2, 1))
+const h3_12 = BareHoppingId(para, (3, 3), (3, 3), (1, 2))
+const h3_21 = BareHoppingId(para, (3, 3), (3, 3), (2, 1))
+const h4_12 = BareHoppingId(para, (4, 4), (4, 4), (1, 2))
+const h4_21 = BareHoppingId(para, (4, 4), (4, 4), (2, 1))
+const diag2_1122 = SCE.connectedGreen(para, [h1_12, h2_12, h3_21, h4_21])
+const diag2_1221 = SCE.connectedGreen(para, [h1_12, h2_21, h3_21, h4_12])
+const diag2_1212 = SCE.connectedGreen(para, [h1_12, h2_21, h3_12, h4_21])
+# const tree2 = ExprTree.build([diag2_1122, diag2_1221, diag2_1212], false)
+const tree2 = ExprTree.build([diag2_1221], false)
+const tree = [tree1, tree2]
+# const tree = [tree1,]
+# plot_tree(diag2_1122)
+# plot_tree(diag2_1221)
+# plot_tree(diag2_1212)
+# exit(0)
 
 include("green.jl")
 
 function DiagTree.eval(id::BareGreenNId, K, Tbasis, varT)
+    # println(id.N)
     return greenN(id)
     # if id.N == 2
     #     t1, t2 = T[id.extT[1]], T[id.extT[2]]
@@ -68,14 +83,17 @@ end
 DiagTree.eval(id::BareHoppingId, K, Tbasis, varT) = 1.0
 
 # plot_tree(diag1)
-DiagTree.evalDiagTree!(diag1, nothing, T.data, DiagTree.eval)
+# DiagTree.evalDiagTree!(diag1, nothing, T.data, DiagTree.eval)
 # plot_tree(diag1)
 # exit(0)
 
 function integrand(config)
     if config.curr == 1
-        ExprTree.evalNaive!(tree[1], nothing, T.data)
-        return tree[1][1] / 2.0 * 2 # additional factor from 1/n! Then there are two copies of bonds (1->2) (2->1) and (2->1) (1->2)
+        #     ExprTree.evalNaive!(tree[1], nothing, T.data)
+        #     return tree[1][1] / 2.0 * 2 # additional factor from 1/n! Then there are two copies of bonds (1->2) (2->1) and (2->1) (1->2)
+        # elseif config.curr == 2
+        ExprTree.evalNaive!(tree[2], nothing, T.data)
+        return tree[2][1] / 12.0  # additional factor from 1/n! Then there are two copies of bonds (1->2) (2->1) and (2->1) (1->2)
     else
         error("not implemented!")
     end
@@ -88,7 +106,7 @@ function measure(config)
 end
 
 function run(totalStep)
-    dof = [[2, 2],]
+    dof = [[4, 4],]
     observable = zeros(1)
     # dof = [[2, 2], [4, 4]]
     # observable = zeros(2)
@@ -97,6 +115,7 @@ function run(totalStep)
     # g2 = Green.Gn(paraAtom.m, g)
     # println("test : $g2")
 
+    # config = MCIntegration.Configuration(totalStep, (T, O), dof, observable; neighbor = [[3, 2], [1, 3], [1, 3]])
     config = MCIntegration.Configuration(totalStep, (T, O), dof, observable)
     avg, std = MCIntegration.sample(config, integrand, measure, print = 2, Nblock = 8)
 
