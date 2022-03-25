@@ -2,11 +2,14 @@ module FeynmanDiagram
 using Random, LinearAlgebra, Parameters
 
 @enum DiagramType begin
+    VacuumDiag         #vaccum diagram for the free energy
     SigmaDiag          #self-energy
     GreenDiag          #green's function
     PolarDiag          #polarization
     Ver3Diag           #3-point vertex function
     Ver4Diag           #4-point vertex function
+    GnDiag             #n-point Green's function
+    GcDiag             #n-point connected Green's function
 end
 Base.length(r::DiagramType) = 1
 Base.iterate(r::DiagramType) = (r, nothing)
@@ -51,6 +54,7 @@ Base.iterate(r::AnalyticProperty) = (r, nothing)
 function Base.iterate(r::AnalyticProperty, ::Nothing) end
 
 export SigmaDiag, PolarDiag, Ver3Diag, Ver4Diag, GreenDiag
+export VacuumDiag, GnDiag, GcDiag
 export Wirreducible, Girreducible, NoBubble, NoHatree, NoFock, Proper
 export Response, ChargeCharge, SpinSpin, UpUp, UpDown
 export AnalyticProperty, Instant, Dynamic, D_Instant, D_Dynamic
@@ -68,12 +72,18 @@ export evalDiagNode!, evalDiagTree!
 export Operator, Sum, Prod
 export DiagramId, GenericId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId
 export PropagatorId, BareGreenId, BareInteractionId
+export BareGreenNId, BareHoppingId, GreenNId, ConnectedGreenNId
 export uidreset, toDataFrame, mergeby, plot_tree
 
 include("parquet_builder/parquet.jl")
 using .Parquet
 export Parquet
 export ParquetBlocks
+
+include("strong_coupling_expansion_builder/strong_coupling_expansion")
+using .SCE
+export SCE
+export Gn
 
 include("expression_tree/ExpressionTree.jl")
 using .ExprTree

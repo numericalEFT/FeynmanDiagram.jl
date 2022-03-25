@@ -1,0 +1,13 @@
+name = "Atom"
+uuid = "affcc3a7-7447-47a3-b417-a768a41011fc"
+authors = ["Kun Chen <chenkun@mail.ustc.edu.cn>"]
+version = "0.1.0"
+
+[deps]
+Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
+FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+QuantumStatistics = "08acf9d9-9812-4184-bb82-ed7be26454cb"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
