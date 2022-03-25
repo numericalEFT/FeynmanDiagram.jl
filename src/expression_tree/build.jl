@@ -1,9 +1,13 @@
-function build(diags::AbstractVector; verbose::Int = 0)
+function build(diags::AbstractVector, hasLoop = true; verbose::Int = 0)
     @assert all(d -> (d.id.para == diags[1].id.para), diags) "Parameters of all diagrams shoud be the same!"
 
     diags = DiagTree.optimize(diags, verbose = verbose)
 
-    tree = newExprTree(diags[1].id.para, :none)
+    if hasLoop
+        tree = newExprTree(diags[1].id.para, :none)
+    else
+        tree = newExprTreeXT(diags[1].id.para, :none)
+    end
 
     verbose > 0 && println("Constructing expression tree...")
     nodes = Dict{Int,Any}()
@@ -12,7 +16,8 @@ function build(diags::AbstractVector; verbose::Int = 0)
             if haskey(nodes, d.hash) == false
                 id = d.id
                 if isempty(d.subdiagram)
-                    nodes[d.hash] = addpropagator!(tree, d.name, d.factor; site = collect(id.extT), loop = id.extK, para = id)
+                    K = hasLoop ? id.extK : nothing
+                    nodes[d.hash] = addpropagator!(tree, d.name, d.factor; site = collect(id.extT), loop = K, para = id)
                 else
                     children = [nodes[sub.hash] for sub in d.subdiagram]
                     nodes[d.hash] = addnode!(tree, operator(d.operator), d.name, children, d.factor, para = id)
@@ -45,4 +50,9 @@ function newExprTree(para, name::Symbol = :none)
     weightType = para.weightType
     Kpool = LoopPool(:K, para.loopDim, para.totalLoopNum, Float64)
     return ExpressionTree(loopBasis = Kpool, nodePara = DiagramId, weight = weightType, name = name)
+end
+
+function newExprTreeXT(para, name::Symbol = :none)
+    weightType = para.weightType
+    return ExpressionTree(loopBasis = nothing, nodePara = DiagramId, weight = weightType, name = name)
 end

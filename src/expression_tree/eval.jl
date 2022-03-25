@@ -8,12 +8,18 @@ function evalNaive!(diag::ExpressionTree, loopVar, siteVar, eval = DiagTree.eval
     tweight = tree.current
 
     # calculate new loop
-    update(loopPool, loopVar)
+    if isnothing(loopPool) == false
+        update(loopPool, loopVar)
+    end
 
     #calculate diagram tree
     for (ni, node) in enumerate(tree.object)
         if isempty(node.children)
-            tweight[ni] = eval(node.para, current(loopPool, node.loopidx), node.siteidx, siteVar) * node.factor
+            if isnothing(loopPool) == false
+                tweight[ni] = eval(node.para, current(loopPool, node.loopidx), node.siteidx, siteVar) * node.factor
+            else
+                tweight[ni] = eval(node.para, nothing, node.siteidx, siteVar) * node.factor
+            end
         else
             if node.operation == MUL
                 tweight[ni] = node.factor

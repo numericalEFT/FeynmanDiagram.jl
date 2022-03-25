@@ -7,8 +7,12 @@
 
 function evalDiagNode!(diag::Diagram, varK, varT, evalBare::Function)
     if length(diag.subdiagram) == 0
-        K = varK * diag.id.extK
-        diag.weight = evalBare(diag.id, K, diag.id.extT, varT) * diag.factor
+        if hasproperty(diag.id, :extK)
+            K = varK * diag.id.extK
+            diag.weight = evalBare(diag.id, K, diag.id.extT, varT) * diag.factor
+        else
+            diag.weight = evalBare(diag.id, nothing, diag.id.extT, varT) * diag.factor
+        end
     else
         diag.weight = apply(diag.operator, diag.subdiagram) * diag.factor
     end
