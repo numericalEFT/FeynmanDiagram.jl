@@ -189,16 +189,18 @@ end
     DiagTree.uidreset()
 
     W = Int
-    ll = Diagram{W}(ID(3))
+    lll = Diagram{W}(ID(5))
+    ll = Diagram{W}(ID(3), Prod(), [lll,])
     l = Diagram{W}(ID(1), Sum(), [ll,])
     r = Diagram{W}(ID(2))
     root = Diagram{W}(ID(0), Sum(), [l, r])
-    print_tree(root)
+    # print_tree(root)
     """
-    4 : 0=0=⨁ (2, 3)
-    ├─ 2 : 1=0=⨁ (1)
-    │  └─ 1 : 3=0
-    └─ 3 : 2=0
+    5 : 0=0=⨁ (3, 4)
+    ├─ 3 : 1=0=⨁ (2)
+    │  └─ 2 : 3=0=Ⓧ (1)
+    │     └─ 1 : 5=0
+    └─ 4 : 2=0
     """
 
     #remove the 2, which only has one child
@@ -208,6 +210,8 @@ end
     ├─ 1 : 3=0
     └─ 3 : 2=0
     """
+
+    # print_tree(root)
 
     @test root.subdiagram[1].hash == 1
     # print_tree(root)
