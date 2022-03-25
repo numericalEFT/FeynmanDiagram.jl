@@ -42,6 +42,7 @@ function fullGreen(para, hop::Vector{BareHoppingId}, subdiagram = false; name = 
         append!(_creation, [true, false])
         append!(orbital, h.orbital)
     end
+    # println("calculate: ", hop, " . site: ", site)
 
     resetuid && uidreset()
 
@@ -51,7 +52,7 @@ function fullGreen(para, hop::Vector{BareHoppingId}, subdiagram = false; name = 
     for r in uniqueR
         ind = findall(x -> x == r, site)
         if even && (length(ind) % 2 == 1)
-            continue
+            return nothing
         end
         t = extT[ind]
         o = orbital[ind]
@@ -67,6 +68,7 @@ function fullGreen(para, hop::Vector{BareHoppingId}, subdiagram = false; name = 
         for h in hop
             push!(gn, Diagram(h, name = :hop))
         end
+        # println(permutation)
         return Diagram(GreenNId(para, orbital = orbital, t = extT, r = site, creation = _creation), Prod(), gn, name = name, factor = parity(permutation))
     end
 end
