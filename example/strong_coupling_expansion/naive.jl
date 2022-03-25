@@ -44,13 +44,16 @@ const h8_21 = BareHoppingId(para, (8, 8), (8, 8), (2, 1))
 const h9_12 = BareHoppingId(para, (9, 9), (9, 9), (1, 2))
 const h9_21 = BareHoppingId(para, (9, 9), (9, 9), (2, 1))
 
+const diag0_11 = SCE.connectedGreen(para, [n11,])
+const tree0 = ExprTree.build([diag0_11,], false)
+
 const diag1_12 = SCE.connectedGreen(para, [n12, h2_21])
 const tree1 = ExprTree.build([diag1_12,], false)
 
 const diag2_11 = SCE.connectedGreen(para, [n11, h2_12, h3_21])
 const tree2 = ExprTree.build([diag2_11,], false)
-plot_tree(diag2_11)
-exit(0)
+# plot_tree(diag2_11)
+# exit(0)
 
 const diag3_12 = SCE.connectedGreen(para, [n12, h2_12, h3_21, h4_21])
 const tree3 = ExprTree.build([diag3_12,], false)
@@ -171,6 +174,9 @@ function integrand(config)
     elseif config.curr == 8
         ExprTree.evalNaive!(tree[8], nothing, T.data)
         return tree[8][1] / 1000.0
+        # elseif config.curr == 9
+        #     ExprTree.evalNaive!(tree[9], nothing, T.data)
+        #     return tree[9][1] / 1000.0
     else
         error("not implemented!")
     end
@@ -187,6 +193,7 @@ function run(totalStep)
     # observable = zeros(1)
     # dof = [[2, 2], [4, 4]]
     dof = [[2, 2], [3, 3], [4, 4], [5, 5], [6, 6], [7, 7], [8, 8], [9, 9]]
+    # dof = [[1, 1], [2, 2], [3, 3],]
     observable = zeros(8)
 
     # g = Green.GreenN(paraAtom.m, [0.0, extT[1]], [UP, UP])
@@ -194,7 +201,7 @@ function run(totalStep)
     # println("test : $g2")
 
     # config = MCIntegration.Configuration(totalStep, (T, O), dof, observable; neighbor = [[3, 2], [1, 3], [1, 3]])
-    config = MCIntegration.Configuration(totalStep, (T, O), dof, observable, reweight = [1.0, 1.0, 1.0, 1.0, 0.5, 0.25, 0.125, 0.125 / 2])
+    config = MCIntegration.Configuration(totalStep, (T, O), dof, observable)
     avg, std = MCIntegration.sample(config, integrand, measure, print = 2, Nblock = 8)
 
     # avg[3] /= β * 2 * 4 * 2^2  #
