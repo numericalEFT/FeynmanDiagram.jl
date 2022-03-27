@@ -12,6 +12,7 @@ This package implements a mini-compiler that compiles generic Feynman diagrams i
 In general, Feynman diagrams represents high-order integral. The integrand are propagators/interactions composed by the basis arithmetic operations (multiplication, addition). The sequence of calculating the integrand by combining the propagators/interactions with the arithmetic operatos can be represented as an algebraic expression tree. In this sense, the expression tree provides an intermediate representation (IR) for Feynman diagrams that completely independent of the diagram type. 
 
 ![infrastructure](docs/figures/diagram_compiler.jpeg?raw=true "Compiler Infrastructure")
+
 Base on this observation, we develop a package to compile the integrand of Feynman diagrams into machine code so that one can evaluate the it efficiently. The infrastructure of this package is similar to the modern compiler LLVM for generic programming language. There are three layers: a front-end translates a source code into an IR as an expression tree, then a mid-end optimizes and transforms the IR, and a back-end to compiles the IR to machine code. 
 
 - The front-end supports Feynman diagrams from weak coupling expansion or strong coupling expansion. The user can incorprate new types of diagrams by writing their own front-end.
