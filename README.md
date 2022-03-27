@@ -22,52 +22,36 @@ Base on this observation, we develop a package to compile the integrand of Feynm
 
 ## Supported Front-end
 
-### 1. Parquet Algorithm for generic Weak Coupling Expansion
+### 1. Generic Weak Coupling Expansion based on the Parquet Algorithm
 
-The ExpressionTree.Parquet model uses parquet equations to generate high-order Feynman diagrams. In this representation, a 4-point one-particle-irreducible (1PI) diagram of loop order N is a product of a left and a right 4-point 1PI subdiagrams (loop order M and loop order N-M where M=0, 1, ..., N). Note that there are three ways to glue the left and right subdiagrams: the particle-hole channel (Parquet.T), the particle-hole exchange channel (Parquet.U) and the particle-particle channel (Parquet.S). Each of them could have a counter-term (Parquet.TC, Parquet.UC and Parquet.SC).
+This algorithm generates the Feynman diagrams of weak coupling expansion. It supports the diagrams of self-energy, polarization, 3-point vertex function and 4-point vertex function. The internal degrees of freedom can be either the loop variables (e.g., momentum or frequency) or the site variables (e.g., imaginary-time or lattice site).
+
+The main idea of the algorithm is to use the parquet equation to build high-order-vertex-function diagrams from the lower order sub-diagrams. 
+
+The following code is a simple example to generate the one-loop 4-point vertex function diagrams, then visualize the expression tree.
 
 ```julia
-using AbstractTrees, StaticArrays, ExpressionTree
+using FeynmanDiagram
 
-# Define the type of the weight of a 4-vertex diagram
-const Weight = SVector{2,Float64} 
+# Define a parameter structure for the 4-vertex diagram with one-loop, in the momentum and the imaginary-time representation. Require the diagrams to be green's function irreducible.
+para = GenericPara(diagType =Ver4Diag, innerLoopNum = 1,hasTau = true, filter=[Girreducible,])
 
-# Define the possibilities to build a 4-vertex diagram from the left and right 4-vertex subdiagrams.
-chan = [Parquet.T, Parquet.U, Parquet.S] 
+ver4=Parquet.build(para) #build the diagram tree with the parquet algorithm.
 
-# Generate the parameter for the expression tree. The second argument lists the possible number of imaginary-time variables in the bare 4-vertex (namely, the bare interaction of your model). For example, the instaneous Coulomb interaction only has one time variable, while the retared effective interaction has two time variables.
-para = Parquet.Para(chan, [1, 2]) 
+plot_tree(ver4) # visualize the generated diagram tree
 
-# Generate an expression tree for a set of 4-vertex diagrams with loop order 1, initial imaginary-time index 1, and the parameter set para.
-ver4 = Parquet.Ver4{Weight}(1, 1, para) 
-
-# use AbstractTrees interface to print/manipulate the tree
-print_tree(ver4)
-
-# [println(node) for node in Leaves(ver4)]  #print all loopNum=0 ver4
-# [println(node) for node in PostOrderDFS(ver4)]  # iterator ver4 in depth-first search (children before parents)
-# [println(node) for node in PreOrderDFS(ver4)]  # iterator ver4 (parents before children)
-
-# You can also use ete3 python3 package to visualize tree
-Parquet.showTree(ver4, para, verbose = 1, depth = 3)
-
-# You can also print tree to a newick format file, there are many visualization software for the newick format
-io = open("./test.newick", "w")
-write(io, Parquet.newick(ver4))
-close(io)
+tree=ExprTree.build(ver4.diagram) #optimize the diagram tree to get an optimized expression tree
 ```
 
-Run the above script will print out the tree on the terminal,
-![terminal](docs/figures/terminal_example.png?raw=true "Terminal Ouptut")
-where the 4-pair (t1, t2, t3, t4) gives the imaginary-time indices of the four legs (left in, left out, right in, right out). For each channel, the loop order of the left and the right subdiagrams is given.
+The generated diagram tree is as shown in the following figure. The leaves of the tree are the propagators (labeled with `G`) and the interactions (labeled with `Ins`). By default, the interactions is assumed to spin-symmetric. A typical example is the Coulomb interaction.
+![tree](docs/figures/ver4tree.png?raw=true "Diagram Tree")
+
 
 ### 2. Generic Strong Coupling Expansion (work in progress)
 ### 3. Hand-drawing Feynman diagrams (work in progress)
 
 ## Expression Tree visualization
-If you have installed ete3 python3 package (http://etetoolkit.org/), you will get a visualization of tree by running the above script,
-![ete](docs/figures/ete_example.png?raw=true "Ete3 visualization")
-where "lp" stands for the loop order of the current set of the 4-vertex diagrams.
+To visualize the diagram tree, you need to install the ete3 python3 package (http://etetoolkit.org/).
 
 Note that we rely on "PyCall.jl" to call the ete3 python functions from julia. Therefore, you have to install ete3 python package use the python distribution associated with PyCall. According to the tutorial of PyCall (https://github.com/JuliaPy/PyCall.jl), "by default on Mac and Windows systems, Pkg.add("PyCall") or Pkg.build("PyCall") will use the Conda.jl package to install a minimal Python distribution (via Miniconda) that is private to Julia (not in your PATH). You can use the Conda Julia package to install more Python packages, and import Conda to print the Conda.PYTHONDIR directory where python was installed. On GNU/Linux systems, PyCall will default to using the python3 program (if any, otherwise python) in your PATH."
 
