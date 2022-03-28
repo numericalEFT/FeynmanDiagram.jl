@@ -14,7 +14,7 @@ include("interaction.jl")
 
 const steps = 1e5
 const Order = 1
-const isF = false
+const isF = true
 
 const RefK = [kF, 0.0, 0.0]
 const qgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, 6 * kF], [0.0, 2kF], 16, 0.01 * kF, 8)
@@ -49,28 +49,28 @@ diagPara(order) = GenericPara(diagType=Ver4Diag, innerLoopNum=order, hasTau=true
 
 println("Build the diagrams into an experssion tree ...")
 const para = [diagPara(o) for o in 1:Order]
-ver4 = [Parquet.vertex4(para[i], legK, [PHr,]) for i in 1:Order]   #diagram of different orders
+ver4 = [Parquet.vertex4(para[i], legK, [PHr, PHEr, PPr]) for i in 1:Order]   #diagram of different orders
 # ver4 = [Parquet.vertex4(para[i], legK, [PHEr,]) for i in 1:Order]   #diagram of different orders
 # ver4 = [Parquet.vertex4(para[i], legK, [PPr,]) for i in 1:Order]   #diagram of different orders
 #different order has different set of K, T variables, thus must have different exprtrees
-println(ver4)
+# println(ver4)
 
 # plot_tree(ver4[1].diagram)
 # exit(0)
 # plot_tree(ver4uu[1][1])
 # plot_tree(ver4[1].diagram, maxdepth = 9)
 const diag = [ExprTree.build(ver4[o].diagram) for o in 1:Order]    #experssion tree representation of diagrams 
-println(diag[1].root)
-println(length(diag[1].node.current))
+# println(diag[1].root)
+# println(length(diag[1].node.current))
 const rootuu = [[idx for idx in d.root if d.node.object[idx].para.response == UpUp] for d in diag] #select the diagram with upup
 const rootud = [[idx for idx in d.root if d.node.object[idx].para.response == UpDown] for d in diag] #select the diagram with updown
 #assign the external Tau to the corresponding diagrams
 const extTuu = [[diag[ri].node.object[idx].para.extT for idx in root] for (ri, root) in enumerate(rootuu)]
 const extTud = [[diag[ri].node.object[idx].para.extT for idx in root] for (ri, root) in enumerate(rootud)]
-println(rootuu)
-println(extTuu)
-println(rootud)
-println(extTud)
+# println(rootuu)
+# println(extTuu)
+# println(rootud)
+# println(extTud)
 # ExprTree.showTree(diag[1], rootuu[1][1])
 # ExprTree.showTree(diag[1], rootud[1][1])
 
