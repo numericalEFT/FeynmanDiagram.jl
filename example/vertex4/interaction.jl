@@ -109,3 +109,11 @@ function interactionStatic(qd, τIn, τOut)
     vd -= interactionDynamic(qd, τIn, τOut)
     return vd
 end
+
+const RefK = [kF, 0.0, 0.0]
+const qgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, 6 * kF], [0.0, 2kF], 16, 0.01 * kF, 8)
+const τgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, β], [0.0, β], 16, β * 1e-4, 8)
+const lgrid = [1, 2]
+const Nl = length(lgrid)
+vqinv = [(q^2 + mass2) / (4π * e0^2) for q in qgrid.grid]
+const dW0 = TwoPoint.dWRPA(vqinv, qgrid.grid, τgrid.grid, dim, EF, kF, β, spin, me) # dynamic part of the effective interaction
