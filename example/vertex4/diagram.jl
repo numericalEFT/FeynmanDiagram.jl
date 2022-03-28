@@ -47,34 +47,6 @@ const extTud = [[diag[ri].node.object[idx].para.extT for idx in root] for (ri, r
 
 # exit(0)
 
-##################### propagator and interaction evaluation ##############
-function eval(id::BareGreenId, K, extT, varT)
-    τin, τout = varT[id.extT[1]], varT[id.extT[2]]
-    ϵ = dot(K, K) / (2me) - μ
-    τ = τout - τin
-    if τ ≈ 0.0
-        return Spectral.kernelFermiT(-1e-8, ϵ, β)
-    else
-        return Spectral.kernelFermiT(τ, ϵ, β)
-    end
-end
-
-# eval(id::InteractionId, K, varT) = e0^2 / ϵ0 / (dot(K, K) + mass2)
-function eval(id::BareInteractionId, K, extT, varT)
-    if id.type == Instant
-        if id.para.interactionTauNum == 1
-            return e0^2 / ϵ0 / (dot(K, K) + mass2)
-        elseif id.para.interactionTauNum == 2
-            return interactionStatic(K, varT[id.extT[1]], varT[id.extT[2]])
-        else
-            error("not implemented!")
-        end
-    elseif id.type == Dynamic
-        return interactionDynamic(K, varT[id.extT[1]], varT[id.extT[2]])
-    else
-        error("not implemented!")
-    end
-end
 
 @inline function phase(varT, extT)
     # println(extT)
