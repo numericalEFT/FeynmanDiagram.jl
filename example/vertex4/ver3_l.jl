@@ -8,18 +8,65 @@ using Lehmann
 using FeynmanDiagram
 using StaticArrays
 
-const steps = 1e6
+const steps = 1e7
 const isF = true
 
 include("parameter.jl")
 include("interaction.jl")
-include("diagram.jl")
-
 
 # println(dW0)
 # exit(0)
 const lgrid = [1, 2]
 const Nl = length(lgrid)
+
+println("Build the diagrams into an experssion tree ...")
+
+const Order = 1
+
+Qin = [1.0, 0, 0]
+Kin = [0, 1.0, 0]
+legK = [Qin, Kin]
+
+diagPara(order) = GenericPara(diagType=Ver3Diag, innerLoopNum=order, hasTau=true, loopDim=dim, spin=spin, firstLoopIdx=3,
+    interaction=[FeynmanDiagram.Interaction(ChargeCharge, [
+        Instant,
+        Dynamic
+    ]),],  #instant charge-charge interaction
+    filter=[
+        Girreducible,
+        Proper,   #one interaction irreduble diagrams or not
+        NoBubble, #allow the bubble diagram or not
+    ],
+    transferLoop=Qin
+)
+
+const para = [diagPara(o) for o in 1:Order]
+ver3 = [Parquet.vertex3(para[i], legK) for i in 1:Order]   #diagram of different orders
+# println(ver3)
+
+# plot_tree(ver3[1].diagram)
+# exit(0)
+# plot_tree(ver4uu[1][1])
+# plot_tree(ver4[1].diagram, maxdepth = 9)
+const diag = [ExprTree.build(ver3[o].diagram) for o in 1:Order]    #experssion tree representation of diagrams 
+# println(diag[1].root)
+# println(length(diag[1].node.current))
+const rootuu = [[idx for idx in d.root if d.node.object[idx].para.response == UpUp] for d in diag] #select the diagram with upup
+const rootud = [[idx for idx in d.root if d.node.object[idx].para.response == UpDown] for d in diag] #select the diagram with updown
+#assign the external Tau to the corresponding diagrams
+const extTuu = [[diag[ri].node.object[idx].para.extT for idx in root] for (ri, root) in enumerate(rootuu)]
+const extTud = [[diag[ri].node.object[idx].para.extT for idx in root] for (ri, root) in enumerate(rootud)]
+
+
+@inline function phase(varT, extT)
+    # println(extT)
+    tb, tfin, tfout = varT[extT[1]], varT[extT[2]], varT[extT[3]]
+    if (isF)
+        return cos(π / β * ((2tb) - (tfin + tfout)))
+    else
+        return cos(π / β * (tfin - tfout))
+    end
+end
 
 function integrand(config)
     order = config.curr
@@ -60,11 +107,12 @@ end
 
 function MC()
     K = MCIntegration.FermiK(dim, kF, 0.2 * kF, 10.0 * kF, offset=2)
-    K.data[:, 1] .= [kF, 0.0, 0.0]
+    K.data[:, 1] .= [0.0, 0.0, 0.0]
     T = MCIntegration.Tau(β, β / 2.0)
     X = MCIntegration.Continuous([-1.0, 1.0], 0.2) #x=cos(θ)
 
     dof = [[para[o].innerLoopNum, para[o].totalTauNum, 1] for o in 1:Order] # K, T, ExtKidx
+    # println(dof)
     obs = zeros(Nl, 2) # observable for the Fock diagram 
 
     config = MCIntegration.Configuration(steps, (K, T, X), dof, obs)
@@ -75,8 +123,8 @@ function MC()
     end
 
     if isnothing(avg) == false
-        avg *= NF
-        std *= NF
+        # avg *= NF
+        # std *= NF
         N = size(avg)[1]
         grid = lgrid
 
@@ -88,17 +136,6 @@ function MC()
         for li in 1:N
             @printf("%8.4f   %8.4f ±%8.4f\n", grid[li], avg[li, 2], std[li, 2])
         end
-
-        println("S ver4: ")
-        for li in 1:N
-            @printf("%8.4f   %8.4f ±%8.4f\n", grid[li], (avg[li, 1] + avg[li, 2]) / 2, (std[li, 1] + std[li, 2]) / 2)
-        end
-        println("A ver4: ")
-        for li in 1:N
-            @printf("%8.4f   %8.4f ±%8.4f\n", grid[li], (avg[li, 1] - avg[li, 2]) / 2, (std[li, 1] - std[li, 2]) / 2)
-        end
-
-
     end
 
 end
