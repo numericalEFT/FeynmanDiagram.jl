@@ -86,24 +86,3 @@ end
         return cos(π / β * ((tInL - tOutL) + (tInR - tOutR)))
     end
 end
-
-function integrand(config)
-    order = config.curr
-    x = config.var[3][1]
-    varK, varT = config.var[1], config.var[2]
-    varK.data[:, 2] .= ExtK[x]
-    # @assert varK.data[:, 1] ≈ [kF, 0.0, 0.0]
-    ExprTree.evalNaive!(diag[order], varK.data, varT.data, eval)
-    if !isempty(rootuu[order])
-        wuu = sum(diag[order].node.current[root] * phase(varT, extTuu[order][ri]) for (ri, root) in enumerate(rootuu[order]))
-    else
-        wuu = 0.0
-    end
-    if !isempty(rootud[order])
-        wud = sum(diag[order].node.current[root] * phase(varT, extTud[order][ri]) for (ri, root) in enumerate(rootud[order]))
-    else
-        wud = 0.0
-    end
-    # println(wuu, ",  ", wud)
-    return Weight(wuu / β, wud / β)
-end
