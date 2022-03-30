@@ -1,4 +1,28 @@
-# global constant e0 and mass2 is expected
+import ElectronGas: Interaction as Inter
+using CompositeGrids
+using Lehmann
+
+include("parameter.jl")
+
+function KO(qgrid, τgrid)
+    para = Parameter.rydbergUnit(1.0 / beta, rs, 3, Λs=mass2)
+    dlr = DLRGrid(Euv=10 * para.EF, β=β, rtol=1e-10, isFermi=false, symmetry=:ph) # effective interaction is a correlation function of the form <O(τ)O(0)>
+    Nq, Nτ = length(qgrid), length(τgrid)
+    Rs = zeros(Complex{Float64}, (Nq, dlr.size)) # Matsubara grid is the optimized sparse DLR grid 
+    Ra = zeros(Complex{Float64}, (Nq, dlr.size)) # Matsubara grid is the optimized sparse DLR grid 
+    for (ni, n) in enumerate(dlr.n)
+        for (qi, q) in enumerate(qgrid)
+            Rs[qi, ni], Ra[qi, ni] = Inter.KO(q, n, para, landaufunc=Inter.landauParameterConst,
+                Fs=Fs, Fa=0.0, regular=true)
+        end
+    end
+    # println(Rs[:, 1])
+    Rs = matfreq2tau(dlr, Rs, τgrid.grid, axis=2)
+    return real.(Rs)
+end
+
+const dW0 = KO(qgrid, τgrid)
+
 """
    linear2D(data, xgrid, ygrid, x, y) 
 
@@ -110,10 +134,10 @@ function interactionStatic(qd, τIn, τOut)
     return vd
 end
 
-const qgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, 6 * kF], [0.0, 2kF], 16, 0.01 * kF, 8)
-const τgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, β], [0.0, β], 16, β * 1e-4, 8)
-vqinv = [(q^2 + mass2) / (4π * e0^2) for q in qgrid.grid]
-const dW0 = TwoPoint.dWRPA(vqinv, qgrid.grid, τgrid.grid, dim, EF, kF, β, spin, me) # dynamic part of the effective interaction
+# const qgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, 6 * kF], [0.0, 2kF], 16, 0.01 * kF, 8)
+# const τgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, β], [0.0, β], 16, β * 1e-4, 8)
+# vqinv = [(q^2 + mass2) / (4π * e0^2) for q in qgrid.grid]
+# const dW0 = TwoPoint.dWRPA(vqinv, qgrid.grid, τgrid.grid, dim, EF, kF, β, spin, me) # dynamic part of the effective interaction
 
 ##################### propagator and interaction evaluation ##############
 function eval(id::BareGreenId, K, extT, varT)

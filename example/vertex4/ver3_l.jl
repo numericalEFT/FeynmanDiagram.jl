@@ -40,8 +40,8 @@ diagPara(order) = GenericPara(diagType=Ver3Diag, innerLoopNum=order, hasTau=true
     transferLoop=Qin
 )
 
-const para = [diagPara(o) for o in 1:Order]
-ver3 = [Parquet.vertex3(para[i], legK) for i in 1:Order]   #diagram of different orders
+const diagpara = [diagPara(o) for o in 1:Order]
+ver3 = [Parquet.vertex3(diagpara[i], legK) for i in 1:Order]   #diagram of different orders
 # println(ver3)
 
 # plot_tree(ver3[1].diagram)
@@ -111,7 +111,7 @@ function MC()
     T = MCIntegration.Tau(β, β / 2.0)
     X = MCIntegration.Continuous([-1.0, 1.0], 0.2) #x=cos(θ)
 
-    dof = [[para[o].innerLoopNum, para[o].totalTauNum, 1] for o in 1:Order] # K, T, ExtKidx
+    dof = [[diagpara[o].innerLoopNum, diagpara[o].totalTauNum, 1] for o in 1:Order] # K, T, ExtKidx
     # println(dof)
     obs = zeros(Nl, 2) # observable for the Fock diagram 
 
