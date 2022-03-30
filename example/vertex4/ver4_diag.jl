@@ -6,7 +6,7 @@ KinL = KoutL = [1.0, 0, 0]
 KinR = KoutR = [0, 1.0, 0]
 legK = [KinL, KoutL, KinR, KoutR]
 
-diagPara(order) = GenericPara(diagType=Ver4Diag, innerLoopNum=order, hasTau=true, loopDim=dim, spin=spin, firstLoopIdx=3,
+diagPara(order) = GenericPara(diagType=Ver4Diag, innerLoopNum=order, hasTau=true, loopDim=para.dim, spin=para.spin, firstLoopIdx=3,
     interaction=[FeynmanDiagram.Interaction(ChargeCharge, [
         Instant,
         Dynamic
@@ -19,8 +19,8 @@ diagPara(order) = GenericPara(diagType=Ver4Diag, innerLoopNum=order, hasTau=true
     transferLoop=KinL - KoutL
 )
 
-const para = [diagPara(o) for o in 1:Order]
-ver4 = [Parquet.vertex4(para[i], legK, [PHr, PHEr, PPr]) for i in 1:Order]   #diagram of different orders
+const diagpara = [diagPara(o) for o in 1:Order]
+ver4 = [Parquet.vertex4(diagpara[i], legK, [PHr, PHEr, PPr]) for i in 1:Order]   #diagram of different orders
 # ver4 = [Parquet.vertex4(para[i], legK, [PHEr,]) for i in 1:Order]   #diagram of different orders
 # ver4 = [Parquet.vertex4(para[i], legK, [PPr,]) for i in 1:Order]   #diagram of different orders
 #different order has different set of K, T variables, thus must have different exprtrees
