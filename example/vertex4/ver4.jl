@@ -8,7 +8,7 @@ using Lehmann
 using FeynmanDiagram
 using StaticArrays
 
-const steps = 1e5
+const steps = 1e6
 const isF = true
 
 include("interaction.jl")
