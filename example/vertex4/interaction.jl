@@ -41,8 +41,8 @@ function KO(qgrid, τgrid)
     end
     for (qi, q) in enumerate(qgrid)
         w = KOinstant(q) * (1.0 + Rs[qi, 1])
-        @assert abs(w - KOstatic(q)) < 1e-4 "$q  ==> $w != $(KOstatic(q))"
-        # println(q, "   ", w, "  ", KOstatic(q))
+        # turn on this to check consistencey between two static KO interactions
+        # @assert abs(w - KOstatic(q)) < 1e-4 "$q  ==> $w != $(KOstatic(q))"
     end
     # exit(0)
     # println(Rs[:, 1])
@@ -108,20 +108,22 @@ function interactionDynamic(qd, τIn, τOut)
 
     dτ = abs(τOut - τIn)
 
-    # kDiQ = sqrt(dot(qd, qd))
-    vd = KOinstant(qd)
-    if qd <= qgrid.grid[1]
-        q = qgrid.grid[1] + 1.0e-6
-        wd = vd * linear2D(dW0, qgrid, τgrid, q, dτ)
-        # the current interpolation vanishes at q=0, which needs to be corrected!
-    else
-        wd = vd * linear2D(dW0, qgrid, τgrid, qd, dτ) # dynamic interaction, don't forget the singular factor vq
+    # if qd <= qgrid.grid[1]
+    # the current interpolation vanishes at q=0, which needs to be corrected!
+    if qd <= 1e-2 * kF
+        # q = qgrid.grid[1] + 1.0e-6
+        qd = 1e-2 * kF
     end
 
-    return wd
+    vd = KOinstant(qd)
+    return vd * linear2D(dW0, qgrid, τgrid, qd, dτ) # dynamic interaction, don't forget the singular factor vq
 end
 
 function interactionStatic(qd, τIn, τOut)
+    if qd <= 1e-2 * kF
+        qd = 1e-2 * kF
+    end
+
     # one must divide by beta because there is an auxiliary time variable for each interaction
     # return KOinstant(qd) / β
 
