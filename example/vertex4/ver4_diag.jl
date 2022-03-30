@@ -20,8 +20,8 @@ diagPara(order) = GenericPara(diagType=Ver4Diag, innerLoopNum=order, hasTau=true
 )
 
 const diagpara = [diagPara(o) for o in 1:Order]
-# ver4 = [Parquet.vertex4(diagpara[i], legK, [PHr, PHEr, PPr]) for i in 1:Order]   #diagram of different orders
-ver4 = [Parquet.vertex4(diagpara[i], legK, [PHEr,]) for i in 1:Order]   #diagram of different orders
+ver4 = [Parquet.vertex4(diagpara[i], legK, [PHr, PHEr, PPr]) for i in 1:Order]   #diagram of different orders
+# ver4 = [Parquet.vertex4(diagpara[i], legK, [PHEr,]) for i in 1:Order]   #diagram of different orders
 # ver4 = [Parquet.vertex4(para[i], legK, [PPr,]) for i in 1:Order]   #diagram of different orders
 #different order has different set of K, T variables, thus must have different exprtrees
 # println(ver4)
