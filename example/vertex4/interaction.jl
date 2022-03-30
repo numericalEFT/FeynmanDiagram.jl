@@ -31,8 +31,8 @@ function KO(qgrid, τgrid)
     para = Parameter.rydbergUnit(1.0 / beta, rs, 3, Λs=mass2)
     dlr = DLRGrid(Euv=10 * para.EF, β=β, rtol=1e-10, isFermi=false, symmetry=:ph) # effective interaction is a correlation function of the form <O(τ)O(0)>
     Nq, Nτ = length(qgrid), length(τgrid)
-    Rs = zeros(Complex{Float64}, (Nq, dlr.size)) # Matsubara grid is the optimized sparse DLR grid 
-    Ra = zeros(Complex{Float64}, (Nq, dlr.size)) # Matsubara grid is the optimized sparse DLR grid 
+    Rs = zeros(Float64, (Nq, dlr.size)) # Matsubara grid is the optimized sparse DLR grid 
+    Ra = zeros(Float64, (Nq, dlr.size)) # Matsubara grid is the optimized sparse DLR grid 
     for (ni, n) in enumerate(dlr.n)
         for (qi, q) in enumerate(qgrid)
             Rs[qi, ni], Ra[qi, ni] = Inter.KO(q, n, para, landaufunc=Inter.landauParameterConst,
