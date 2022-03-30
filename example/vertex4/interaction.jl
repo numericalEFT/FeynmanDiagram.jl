@@ -40,9 +40,10 @@ function KO(qgrid, τgrid)
         end
     end
     for (qi, q) in enumerate(qgrid)
-        w = KOinstant(q) * (1.0 + Rs[qi, 1])
+        w = KOinstant(q) * (1.0 + Rs[qi, 2])
         # turn on this to check consistencey between two static KO interactions
         # @assert abs(w - KOstatic(q)) < 1e-4 "$q  ==> $w != $(KOstatic(q))"
+        # println("$(q/kF)   $(w*NF)")
     end
     # exit(0)
     # println(Rs[:, 1])
@@ -105,6 +106,9 @@ linear interpolation of data(x, y)
 end
 
 function interactionDynamic(qd, τIn, τOut)
+    if qd > 3 * kF
+        return 0.0
+    end
 
     dτ = abs(τOut - τIn)
 
@@ -120,6 +124,9 @@ function interactionDynamic(qd, τIn, τOut)
 end
 
 function interactionStatic(qd, τIn, τOut)
+    if qd > 3 * kF
+        return 0.0
+    end
     if qd <= 1e-2 * kF
         qd = 1e-2 * kF
     end
