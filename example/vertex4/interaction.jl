@@ -4,6 +4,29 @@ using Lehmann
 
 include("parameter.jl")
 
+function lindhard(x)
+    if (abs(x) < 1.0e-4)
+        return 1.0
+    elseif (abs(x - 1.0) < 1.0e-4)
+        return 0.5
+    else
+        return 0.5 - (x^2 - 1) / 4.0 / x * log(abs((1 + x) / (1 - x)))
+    end
+end
+
+function KOinstant(q)
+    fp = Fs / NF
+    return 4π * e0^2 / (q^2 + mass2) + fp
+end
+
+function KOstatic(q)
+    fp = Fs / NF
+    Pi = -NF * lindhard(q / 2.0 / kF)
+
+    vd = (4π * e0^2 + fp * (q^2 + mass2)) / ((1 - fp * Pi) * (q^2 + mass2) - 4π * e0^2 * Pi)
+    return vd
+end
+
 function KO(qgrid, τgrid)
     para = Parameter.rydbergUnit(1.0 / beta, rs, 3, Λs=mass2)
     dlr = DLRGrid(Euv=10 * para.EF, β=β, rtol=1e-10, isFermi=false, symmetry=:ph) # effective interaction is a correlation function of the form <O(τ)O(0)>
@@ -13,9 +36,15 @@ function KO(qgrid, τgrid)
     for (ni, n) in enumerate(dlr.n)
         for (qi, q) in enumerate(qgrid)
             Rs[qi, ni], Ra[qi, ni] = Inter.KO(q, n, para, landaufunc=Inter.landauParameterConst,
-                Fs=Fs, Fa=0.0, regular=true)
+                Fs=-Fs, Fa=-Fa, regular=true)
         end
     end
+    for (qi, q) in enumerate(qgrid)
+        w = KOinstant(q) * (1.0 + Rs[qi, 1])
+        @assert abs(w - KOstatic(q)) < 1e-4 "$q  ==> $w != $(KOstatic(q))"
+        # println(q, "   ", w, "  ", KOstatic(q))
+    end
+    # exit(0)
     # println(Rs[:, 1])
     Rs = matfreq2tau(dlr, Rs, τgrid.grid, axis=2)
     return real.(Rs)
@@ -65,8 +94,8 @@ linear interpolation of data(x, y)
     dx0, dx1 = x - xarray[xi0], xarray[xi1] - x
     dy0, dy1 = y - yarray[yi0], yarray[yi1] - y
 
-    d00, d01 = data[xi0, yi0], data[xi0, yi1]
-    d10, d11 = data[xi1, yi0], data[xi1, yi1]
+    # d00, d01 = data[xi0, yi0], data[xi0, yi1]
+    # d10, d11 = data[xi1, yi0], data[xi1, yi1]
 
     g0 = data[xi0, yi0] * dx1 + data[xi1, yi0] * dx0
     g1 = data[xi0, yi1] * dx1 + data[xi1, yi1] * dx0
@@ -75,63 +104,29 @@ linear interpolation of data(x, y)
     return gx
 end
 
-function lindhard(x)
-    if (abs(x) < 1.0e-4)
-        return 1.0
-    elseif (abs(x - 1.0) < 1.0e-4)
-        return 0.5
-    else
-        return 0.5 - (x^2 - 1) / 4.0 / x * log(abs((1 + x) / (1 - x)))
-    end
-end
-
-function KOstatic(Fp, Fm, cp, cm, mr, qgrid)
-    fp = Fp / NF / mr
-    fm = Fm / NF / mr
-    cp = cp / NF / mr
-    cm = cm / NF / mr
-    Wp = similar(qgrid)
-    Wm = similar(qgrid)
-
-    for (qi, q) in enumerate(qgrid)
-        Π = mr * NF * lindhard(q / 2 / kF)
-        Wp[qi] = (4π * e0^2 + fp * q^2) / ((1 + fp * Π) * q^2 + 4π * e0^2 * Π) - fp
-        Wm[qi] = fm / (1 + fm * Π) - fm
-        # Wp[qi] = (4π * e0^2 + fp * q^2) / ((1 + fp * Π) * q^2 + 4π * e0^2 * Π) + cp
-        # Wm[qi] = fm / (1 + fm * Π) + cm
-        # Wp[qi] = (4π * e0^2 + fp * (q^2 + mass2)) / ((1 + fp * Π) * (q^2 + mass2) + 4π * e0^2 * Π)
-        # Wm[qi] = fm / (1 + fm * Π)
-    end
-    return Wp, Wm
-end
-
-
 function interactionDynamic(qd, τIn, τOut)
 
     dτ = abs(τOut - τIn)
 
-    kDiQ = sqrt(dot(qd, qd))
-    vd = 4π * e0^2 / (kDiQ^2 + mass2)
-    if kDiQ <= qgrid.grid[1]
+    # kDiQ = sqrt(dot(qd, qd))
+    vd = KOinstant(qd)
+    if qd <= qgrid.grid[1]
         q = qgrid.grid[1] + 1.0e-6
         wd = vd * linear2D(dW0, qgrid, τgrid, q, dτ)
         # the current interpolation vanishes at q=0, which needs to be corrected!
     else
-        wd = vd * linear2D(dW0, qgrid, τgrid, kDiQ, dτ) # dynamic interaction, don't forget the singular factor vq
+        wd = vd * linear2D(dW0, qgrid, τgrid, qd, dτ) # dynamic interaction, don't forget the singular factor vq
     end
 
     return wd
 end
 
 function interactionStatic(qd, τIn, τOut)
-    dτ = abs(τOut - τIn)
-    kDiQ = sqrt(dot(qd, qd))
-    # vd = 4π * e0^2 / (kDiQ^2 + mass2) / β
+    # one must divide by beta because there is an auxiliary time variable for each interaction
+    # return KOinstant(qd) / β
 
-    #TODO introduce a fake tau variable to alleviate sign cancellation between the static and the dynamic interactions
-    vd = 4π * e0^2 / (kDiQ^2 + mass2 + 4π * e0^2 * NF * lindhard(kDiQ / 2.0 / kF)) / β
-    vd -= interactionDynamic(qd, τIn, τOut)
-    return vd
+    # introduce a fake tau variable to alleviate sign cancellation between the static and the dynamic interactions
+    return KOstatic(qd) / β - interactionDynamic(qd, τIn, τOut)
 end
 
 # const qgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, 6 * kF], [0.0, 2kF], 16, 0.01 * kF, 8)
@@ -153,16 +148,17 @@ end
 
 # eval(id::InteractionId, K, varT) = e0^2 / ϵ0 / (dot(K, K) + mass2)
 function eval(id::BareInteractionId, K, extT, varT)
+    qd = sqrt(dot(K, K))
     if id.type == Instant
         if id.para.interactionTauNum == 1
             return e0^2 / ϵ0 / (dot(K, K) + mass2)
         elseif id.para.interactionTauNum == 2
-            return interactionStatic(K, varT[id.extT[1]], varT[id.extT[2]])
+            return interactionStatic(qd, varT[id.extT[1]], varT[id.extT[2]])
         else
             error("not implemented!")
         end
     elseif id.type == Dynamic
-        return interactionDynamic(K, varT[id.extT[1]], varT[id.extT[2]])
+        return interactionDynamic(qd, varT[id.extT[1]], varT[id.extT[2]])
     else
         error("not implemented!")
     end
