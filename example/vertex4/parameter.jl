@@ -5,7 +5,7 @@ using ElectronGas: Parameter
 const beta = 25.0
 const rs = 5.0
 const mass2 = 0.01
-const Fs = -0.0
+const Fs = -1.0
 const Fa = -0.0
 
 const para = Parameter.rydbergUnit(1.0 / beta, rs, 3, Λs=mass2)
