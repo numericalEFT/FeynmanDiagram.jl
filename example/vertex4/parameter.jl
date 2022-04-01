@@ -5,7 +5,7 @@ using ElectronGas: Parameter
 const beta = 25.0
 const rs = 5.0
 const mass2 = 0.01
-const Fs = -1.0
+const Fs = -0.6
 const Fa = -0.0
 
 const para = Parameter.rydbergUnit(1.0 / beta, rs, 3, Λs=mass2)
@@ -21,8 +21,9 @@ const dim = para.dim
 const μ = para.μ
 const NF = para.NF
 const spin = para.spin
+const maxK = 6 * kF
 
-const qgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, 6 * kF], [0.0, 2kF], 16, 0.01 * kF, 8)
+const qgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, maxK], [0.0, 2kF], 16, 0.01 * kF, 8)
 const τgrid = CompositeGrid.LogDensedGrid(:uniform, [0.0, β], [0.0, β], 16, β * 1e-4, 8)
 
 const INL, OUTL, INR, OUTR = 1, 2, 3, 4
