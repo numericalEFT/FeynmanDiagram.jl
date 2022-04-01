@@ -1,6 +1,7 @@
 import ElectronGas: Interaction as Inter
 using CompositeGrids
 using Lehmann
+using FeynmanDiagram
 
 include("parameter.jl")
 
@@ -14,6 +15,10 @@ function lindhard(x)
     end
 end
 
+function Coulombinstant(q)
+    return 4π * e0^2 / (q^2 + mass2)
+end
+
 function KOinstant(q)
     fp = Fs / NF
     return 4π * e0^2 / (q^2 + mass2) + fp
@@ -23,7 +28,7 @@ function KOstatic(q)
     fp = Fs / NF
     Pi = -NF * lindhard(q / 2.0 / kF)
 
-    vd = (4π * e0^2 + fp * (q^2 + mass2)) / ((1 - fp * Pi) * (q^2 + mass2) - 4π * e0^2 * Pi)
+    vd = (4π * e0^2 + fp * (q^2 + mass2)) / ((1 - fp * Pi) * (q^2 + mass2) - 4π * e0^2 * Pi) - fp
     return vd
 end
 
@@ -40,14 +45,17 @@ function KO(qgrid, τgrid)
         end
     end
     for (qi, q) in enumerate(qgrid)
-        w = KOinstant(q) * (1.0 + Rs[qi, 2])
+        w = KOinstant(q) * Rs[qi, 1] + Coulombinstant(q)
         # turn on this to check consistencey between two static KO interactions
-        # @assert abs(w - KOstatic(q)) < 1e-4 "$q  ==> $w != $(KOstatic(q))"
+        @assert abs(w - KOstatic(q)) < 1e-4 "$q  ==> $w != $(KOstatic(q))"
         # println("$(q/kF)   $(w*NF)")
     end
     # exit(0)
     # println(Rs[:, 1])
     Rs = matfreq2tau(dlr, Rs, τgrid.grid, axis=2)
+    # for (qi, q) in enumerate(qgrid)
+    #     println("$(q/kF)   $(Rs[qi, 1])")
+    # end
     return real.(Rs)
 end
 
@@ -106,7 +114,7 @@ linear interpolation of data(x, y)
 end
 
 function interactionDynamic(qd, τIn, τOut)
-    if qd > 3 * kF
+    if qd > maxK
         return 0.0
     end
 
@@ -114,9 +122,9 @@ function interactionDynamic(qd, τIn, τOut)
 
     # if qd <= qgrid.grid[1]
     # the current interpolation vanishes at q=0, which needs to be corrected!
-    if qd <= 1e-2 * kF
+    if qd <= 1e-6 * kF
         # q = qgrid.grid[1] + 1.0e-6
-        qd = 1e-2 * kF
+        qd = 1e-6 * kF
     end
 
     vd = KOinstant(qd)
@@ -124,17 +132,23 @@ function interactionDynamic(qd, τIn, τOut)
 end
 
 function interactionStatic(qd, τIn, τOut)
-    if qd > 3 * kF
+    if qd > maxK
         return 0.0
     end
-    if qd <= 1e-2 * kF
-        qd = 1e-2 * kF
+    if qd <= 1e-6 * kF
+        qd = 1e-6 * kF
     end
 
     # one must divide by beta because there is an auxiliary time variable for each interaction
     # return KOinstant(qd) / β
 
     # introduce a fake tau variable to alleviate sign cancellation between the static and the dynamic interactions
+    fp = Fs / NF
+    # if qd > 50 * kF
+    #     println("$τIn, $τOut")
+    #     println("$(KOstatic(qd) / β), $(interactionDynamic(qd, τIn, τOut)), $(fp / β)")
+    #     exit(0)
+    # end
     return KOstatic(qd) / β - interactionDynamic(qd, τIn, τOut)
 end
 
