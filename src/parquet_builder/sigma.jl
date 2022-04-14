@@ -15,20 +15,20 @@
 - A DataFrame with fields `:type`, `:extT`, `:diagram`, `:hash`
 - All sigma share the same incoming Tau index, but not the outgoing one
 """
-function sigma(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = false; name = :Σ, resetuid = false)
+function sigma(para, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false; name=:Σ, resetuid=false)
     resetuid && uidreset()
     @assert para.diagType == SigmaDiag
     @assert para.innerLoopNum >= 1
     @assert length(extK) == para.totalLoopNum
-    @assert (NoBubble in para.filter) == false "The many-body correction sigma only accounts for half of the bubble counterterm right now."
+    @assert (para.innerLoopNum <= 1) || ((NoBubble in para.filter) == false) "The many-body correction sigma only accounts for half of the bubble counterterm right now."
 
     if isValidSigma(para.filter, para.innerLoopNum, subdiagram) == false
-        return DataFrame(type = [], extT = [], diagram = [])
+        return DataFrame(type=[], extT=[], diagram=[])
     end
 
     if (para.extra isa ParquetBlocks) == false
-        parquetblocks = ParquetBlocks(phi = [PPr, PHEr], ppi = [PHr, PHEr], Γ4 = [PPr, PHr, PHEr])
-        para = reconstruct(para, extra = parquetblocks)
+        parquetblocks = ParquetBlocks(phi=[PPr, PHEr], ppi=[PHr, PHEr], Γ4=[PPr, PHr, PHEr])
+        para = reconstruct(para, extra=parquetblocks)
     end
 
     K = zero(extK)
@@ -44,8 +44,8 @@ function sigma(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = fa
         @assert group[:response] == UpUp || group[:response] == UpDown
         #type: Instant or Dynamic
         response, type = group[:response], group[:type]
-        sid = SigmaId(para, type, k = extK, t = group[:extT])
-        g = green(paraG, K, group[:GT], true; name = oW == 0 ? :Gfock : :G_Σ) #there is only one G diagram for a extT
+        sid = SigmaId(para, type, k=extK, t=group[:extT])
+        g = green(paraG, K, group[:GT], true; name=oW == 0 ? :Gfock : :G_Σ) #there is only one G diagram for a extT
         @assert g isa Diagram
         # Sigma = G*(2 W↑↑ - W↑↓)
         # ! The sign of ↑↓ is from the spin symmetry, not from the fermionic statistics!
@@ -55,9 +55,9 @@ function sigma(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = fa
             spinfactor *= 0.5
         end
         # plot_tree(mergeby(DataFrame(group)), maxdepth = 7)
-        sigmadiag = Diagram(sid, Prod(), [g, group[:diagram]], factor = spinfactor, name = name)
+        sigmadiag = Diagram(sid, Prod(), [g, group[:diagram]], factor=spinfactor, name=name)
         # plot_tree(sigmadiag, maxdepth = 7)
-        return (type = type, extT = group[:extT], diagram = sigmadiag)
+        return (type=type, extT=group[:extT], diagram=sigmadiag)
     end
 
     compositeSigma = DataFrame()
@@ -73,25 +73,25 @@ function sigma(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = fa
         @assert maxTau <= para.totalTauNum
         WfirstTauIdx, GfirstTauIdx = idx
 
-        paraG = reconstruct(para, diagType = GreenDiag, innerLoopNum = oG,
-            firstLoopIdx = GfirstLoopIdx, firstTauIdx = GfirstTauIdx)
-        paraW = reconstruct(para, diagType = Ver4Diag, innerLoopNum = oW,
-            firstLoopIdx = WfirstLoopIdx, firstTauIdx = WfirstTauIdx)
+        paraG = reconstruct(para, diagType=GreenDiag, innerLoopNum=oG,
+            firstLoopIdx=GfirstLoopIdx, firstTauIdx=GfirstTauIdx)
+        paraW = reconstruct(para, diagType=Ver4Diag, innerLoopNum=oW,
+            firstLoopIdx=WfirstLoopIdx, firstTauIdx=WfirstTauIdx)
 
         #TODO: add validation for paraW
         if isValidG(paraG)
             if oW == 0 # Fock-type Σ
-                paraW0 = reconstruct(paraW, filter = union(paraW.filter, Proper), transferLoop = zero(K))
+                paraW0 = reconstruct(paraW, filter=union(paraW.filter, Proper), transferLoop=zero(K))
                 ver4 = vertex4(paraW0, legK, [], true)
             else # composite Σ
-                ver4 = vertex4(paraW, legK, [PHr,], true, phi_toplevel = [], Γ4_toplevel = [PHr, PHEr, PPr,])
+                ver4 = vertex4(paraW, legK, [PHr,], true, phi_toplevel=[], Γ4_toplevel=[PHr, PHEr, PPr,])
                 # plot_tree(mergeby(ver4).diagram[1])
             end
             #transform extT coloum intwo extT for Σ and extT for G
             # plot_tree(ver4)
             df = transform(ver4, :extT => ByRow(x -> [(x[INL], x[OUTR]), (x[OUTL], x[INR])]) => [:extT, :GT])
 
-            groups = mergeby(df, [:response, :type, :GT, :extT], operator = Sum())
+            groups = mergeby(df, [:response, :type, :GT, :extT], operator=Sum())
             for mergedVer4 in eachrow(groups)
                 push!(compositeSigma, GWwithGivenExTtoΣ(mergedVer4, oW, paraG))
             end
@@ -99,12 +99,12 @@ function sigma(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = fa
     end
 
     if isempty(compositeSigma)
-        return DataFrame(type = [], extT = [], diagram = [])
+        return DataFrame(type=[], extT=[], diagram=[])
     end
 
     Factor = 1 / (2π)^para.loopDim
-    sigmadf = mergeby(compositeSigma, [:type, :extT], name = name, factor = Factor,
-        getid = g -> SigmaId(para, g[1, :type], k = extK, t = g[1, :extT]))
+    sigmadf = mergeby(compositeSigma, [:type, :extT], name=name, factor=Factor,
+        getid=g -> SigmaId(para, g[1, :type], k=extK, t=g[1, :extT]))
 
     @assert all(x -> x[1] == para.firstTauIdx, sigmadf.extT) "all sigma should share the same in Tidx\n$sigmadf"
     # println(sigmadf)
