@@ -24,18 +24,23 @@
 - A DataFrame with fields :response, :type, :extT, :diagram, :hash
 """
 function vertex4(para::GenericPara,
-    extK = [DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)],
-    chan::AbstractVector = [PHr, PHEr, PPr, Alli], subdiagram = false;
-    level = 1, name = :none, resetuid = false,
-    phi_toplevel = ParquetBlocks().phi, ppi_toplevel = ParquetBlocks().ppi, Γ4_toplevel = ParquetBlocks().Γ4,
-    subchannel::Symbol = :All #:All, :W, :Lver3, :Rver3, :RPA
+    extK=[DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)],
+    chan::AbstractVector=[PHr, PHEr, PPr, Alli], subdiagram=false;
+    level=1, name=:none, resetuid=false,
+    phi_toplevel=ParquetBlocks().phi, ppi_toplevel=ParquetBlocks().ppi, Γ4_toplevel=ParquetBlocks().Γ4,
+    subchannel::Symbol=:All #:All, :W, :Lver3, :Rver3, :RPA
 )
+
+    for k in extK
+        @assert length(k) >= para.totalLoopNum "expect dim of extK>=$(para.totalLoopNum), got $(length(k))"
+    end
+    extK = [k[1:para.totalLoopNum] for k in extK]
     legK = extK
 
     resetuid && uidreset()
 
     if (para.extra isa ParquetBlocks) == false
-        para = reconstruct(para, extra = ParquetBlocks())
+        para = reconstruct(para, extra=ParquetBlocks())
     end
 
     @assert para.extra isa ParquetBlocks
@@ -98,19 +103,19 @@ function vertex4(para::GenericPara,
 
     # @assert isempty(diags) == false "got empty ver4! $chan with\n $para\n"
     if isempty(diags)
-        return DataFrame(response = [], type = [], extT = [], diagram = [])
+        return DataFrame(response=[], type=[], extT=[], diagram=[])
     end
 
-    df = toDataFrame(diags, expand = true)
+    df = toDataFrame(diags, expand=true)
     # println(df[:, [:response, :type, :extT, :diagram]])
-    groups = mergeby(df, [:response, :type, :extT], name = name,
-        getid = g -> Ver4Id(para, g[1, :response], g[1, :type], k = legK, t = g[1, :extT]) #generate id from the dataframe
+    groups = mergeby(df, [:response, :type, :extT], name=name,
+        getid=g -> Ver4Id(para, g[1, :response], g[1, :type], k=legK, t=g[1, :extT]) #generate id from the dataframe
     )
     return groups
 end
 
 function bubble(para::GenericPara, legK, chan::TwoBodyChannel, partition::Vector{Int}, level::Int, name::Symbol,
-    phi_toplevel, ppi_toplevel, Γ4_toplevel, extrafactor = 1.0, subchannel = :All)
+    phi_toplevel, ppi_toplevel, Γ4_toplevel, extrafactor=1.0, subchannel=:All)
 
     diag = Diagram{para.weightType}[]
 
@@ -131,10 +136,10 @@ function bubble(para::GenericPara, legK, chan::TwoBodyChannel, partition::Vector
     LfirstTauIdx, G0firstTauIdx, RfirstTauIdx, GxfirstTauIdx = idx
     @assert maxTau == maxVer4TauIdx(para) "Partition $partition with tauNum configuration $idx. maxTau = $maxTau, yet $(maxTauIdx(para)) is expected!"
 
-    lPara = reconstruct(para, diagType = Ver4Diag, innerLoopNum = oL, firstLoopIdx = LfirstLoopIdx, firstTauIdx = LfirstTauIdx)
-    rPara = reconstruct(para, diagType = Ver4Diag, innerLoopNum = oR, firstLoopIdx = RfirstLoopIdx, firstTauIdx = RfirstTauIdx)
-    gxPara = reconstruct(para, diagType = GreenDiag, innerLoopNum = oGx, firstLoopIdx = GxfirstLoopIdx, firstTauIdx = GxfirstTauIdx)
-    g0Para = reconstruct(para, diagType = GreenDiag, innerLoopNum = oG0, firstLoopIdx = G0firstLoopIdx, firstTauIdx = G0firstTauIdx)
+    lPara = reconstruct(para, diagType=Ver4Diag, innerLoopNum=oL, firstLoopIdx=LfirstLoopIdx, firstTauIdx=LfirstTauIdx)
+    rPara = reconstruct(para, diagType=Ver4Diag, innerLoopNum=oR, firstLoopIdx=RfirstLoopIdx, firstTauIdx=RfirstTauIdx)
+    gxPara = reconstruct(para, diagType=GreenDiag, innerLoopNum=oGx, firstLoopIdx=GxfirstLoopIdx, firstTauIdx=GxfirstTauIdx)
+    g0Para = reconstruct(para, diagType=GreenDiag, innerLoopNum=oG0, firstLoopIdx=G0firstLoopIdx, firstTauIdx=G0firstTauIdx)
 
     phi, ppi, Γ4 = para.extra.phi, para.extra.ppi, para.extra.Γ4
     if chan == PHr || chan == PHEr
@@ -152,17 +157,17 @@ function bubble(para::GenericPara, legK, chan::TwoBodyChannel, partition::Vector
 
     ls, rs = subChannel(subchannel)
 
-    Lver = vertex4(lPara, LLegK, Γi, true; level = level + 1, name = :Γi, subchannel = ls)
+    Lver = vertex4(lPara, LLegK, Γi, true; level=level + 1, name=:Γi, subchannel=ls)
     isempty(Lver) && return diag
     # println("Γf: ", Γf)
-    Rver = vertex4(rPara, RLegK, Γf, true; level = level + 1, name = :Γf, subchannel = rs)
+    Rver = vertex4(rPara, RLegK, Γf, true; level=level + 1, name=:Γf, subchannel=rs)
     isempty(Rver) && return diag
 
     for ldiag in Lver.diagram
         for rdiag in Rver.diagram
             extT, G0T, GxT = tauBasis(chan, ldiag.id.extT, rdiag.id.extT)
-            g0 = green(g0Para, K, G0T, true, name = :G0)
-            gx = green(gxPara, Kx, GxT, true, name = :Gx)
+            g0 = green(g0Para, K, G0T, true, name=:G0)
+            gx = green(gxPara, Kx, GxT, true, name=:Gx)
             @assert g0 isa Diagram && gx isa Diagram
             append!(diag, bubble2diag(para, chan, ldiag, rdiag, legK, g0, gx, extrafactor))
         end
@@ -182,11 +187,11 @@ function bubble2diag(para, chan, ldiag, rdiag, extK, g0, gx, extrafactor)
 
     diag = Diagram{para.weightType}[]
 
-    function add(Lresponse::Response, Rresponse::Response, Vresponse::Response, factor = 1.0)
+    function add(Lresponse::Response, Rresponse::Response, Vresponse::Response, factor=1.0)
         if ln == Lresponse && rn == Rresponse
             nodeName = Symbol("$(spin(Lresponse))x$(spin(Rresponse)) → $chan,")
-            id = Ver4Id(para, Vresponse, vtype, k = extK, t = extT, chan = chan)
-            push!(diag, Diagram(id, Prod(), [g0, gx, ldiag, rdiag], factor = factor * Factor, name = nodeName))
+            id = Ver4Id(para, Vresponse, vtype, k=extK, t=extT, chan=chan)
+            push!(diag, Diagram(id, Prod(), [g0, gx, ldiag, rdiag], factor=factor * Factor, name=nodeName))
         end
     end
 
@@ -217,7 +222,7 @@ function bubble2diag(para, chan, ldiag, rdiag, extK, g0, gx, extrafactor)
     return diag
 end
 
-function bareVer4(para::GenericPara, legK, diex::Vector{Permutation} = [Di, Ex])
+function bareVer4(para::GenericPara, legK, diex::Vector{Permutation}=[Di, Ex])
     # @assert para.diagType == Ver4Diag
 
     KinL, KoutL, KinR = legK[1], legK[2], legK[3]
@@ -239,7 +244,7 @@ function bareVer4(para::GenericPara, legK, diex::Vector{Permutation} = [Di, Ex])
         innerT_dyn = innerT_ins
     end
 
-    function bare(response::Response, type::AnalyticProperty, _diex::Permutation, _innerT, _q, _factor = 1.0)
+    function bare(response::Response, type::AnalyticProperty, _diex::Permutation, _innerT, _q, _factor=1.0)
         @assert _diex == Di || _diex == Ex
 
         # there is an overall sign coming from Taylor expansion of exp(-S) depsite the statistics
@@ -253,18 +258,18 @@ function bareVer4(para::GenericPara, legK, diex::Vector{Permutation} = [Di, Ex])
 
         if notProper(para, _q) == false && _diex in diex
             #create new bare ver4 only if _diex is required in the diex table 
-            vid = BareInteractionId(para, response, type, k = _q, t = _innerT, permu = _diex)
-            return Diagram(vid, factor = sign * _factor)
+            vid = BareInteractionId(para, response, type, k=_q, t=_innerT, permu=_diex)
+            return Diagram(vid, factor=sign * _factor)
         else
             return nothing
         end
     end
 
     function addver4!(response::Response, type, _extT, vd, ve)
-        id_di = Ver4Id(para, response, type, k = legK, t = _extT[DI])
+        id_di = Ver4Id(para, response, type, k=legK, t=_extT[DI])
         (isnothing(vd) == false) && push!(nodes, Diagram(id_di, Sum(), [vd,]))
 
-        id_ex = Ver4Id(para, response, type, k = legK, t = _extT[EX])
+        id_ex = Ver4Id(para, response, type, k=legK, t=_extT[EX])
         (isnothing(ve) == false) && push!(nodes, Diagram(id_ex, Sum(), [ve,]))
         # end
     end
