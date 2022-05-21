@@ -11,9 +11,8 @@ using StaticArrays
 const steps = 1e6
 const isF = true
 
-include("parameter.jl")
 include("interaction.jl")
-include("diagram.jl")
+include("ver4_diag.jl")
 
 
 # println(dW0)
@@ -58,7 +57,7 @@ end
 
 function MC()
     K = MCIntegration.FermiK(dim, kF, 0.2 * kF, 10.0 * kF, offset=2)
-    K.data[:, 1] .= RefK
+    K.data[:, 1] .= [kF, 0.0, 0.0]
     T = MCIntegration.Tau(β, β / 2.0)
     # X = MCIntegration.Continuous([-1.0, 1.0], 0.2) #x=cos(θ)
     X = MCIntegration.Discrete(1, Nk)
@@ -68,7 +67,7 @@ function MC()
     #     t[2] = β * rand()
     # end
 
-    dof = [[para[o].innerLoopNum, para[o].totalTauNum, 1] for o in 1:Order] # K, T, ExtKidx
+    dof = [[diagpara[o].innerLoopNum, diagpara[o].totalTauNum, 1] for o in 1:Order] # K, T, ExtKidx
     obs = zeros(Nk, 2) # observable for the Fock diagram 
 
     config = MCIntegration.Configuration(steps, (K, T, X), dof, obs)

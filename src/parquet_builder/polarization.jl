@@ -15,17 +15,19 @@
 - A DataFrame with fields `:response`, `:diagram`, `:hash`. 
 - All polarization share the same external Tau index. With imaginary-time variables, they are extT = (para.firstTauIdx, para.firstTauIdx+1)
 """
-function polarization(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = false; name = :Π, resetuid = false)
+function polarization(para, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false; name=:Π, resetuid=false)
     resetuid && uidreset()
     @assert para.diagType == PolarDiag
     @assert para.innerLoopNum >= 1
-    @assert length(extK) == para.totalLoopNum
+    # @assert length(extK) == para.totalLoopNum
+    @assert length(extK) >= para.totalLoopNum "expect dim of extK>=$(para.totalLoopNum), got $(length(extK))"
+    extK = extK[1:para.totalLoopNum]
 
     #polarization diagram is always proper
-    para = reconstruct(para, filter = union(Proper, para.filter), transferLoop = extK)
+    para = reconstruct(para, filter=union(Proper, para.filter), transferLoop=extK)
 
     if (para.extra isa ParquetBlocks) == false
-        para = reconstruct(para, extra = ParquetBlocks())
+        para = reconstruct(para, extra=ParquetBlocks())
     end
 
     K = zero(extK)
@@ -53,33 +55,33 @@ function polarization(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagr
                 @assert maxTau <= para.totalTauNum "maxTau = $maxTau > $(para.totalTauNum)"
                 GinTidx, GoutTidx = idx
 
-                paraGin = reconstruct(para, diagType = GreenDiag, innerLoopNum = oGin,
-                    firstLoopIdx = GinKidx, firstTauIdx = GinTidx)
-                paraGout = reconstruct(para, diagType = GreenDiag, innerLoopNum = oGout,
-                    firstLoopIdx = GoutKidx, firstTauIdx = GoutTidx)
+                paraGin = reconstruct(para, diagType=GreenDiag, innerLoopNum=oGin,
+                    firstLoopIdx=GinKidx, firstTauIdx=GinTidx)
+                paraGout = reconstruct(para, diagType=GreenDiag, innerLoopNum=oGout,
+                    firstLoopIdx=GoutKidx, firstTauIdx=GoutTidx)
 
                 response = UpUp
-                polarid = PolarId(para, response, k = extK, t = extT)
-                gin = green(paraGin, K, (extT[1], extT[2]), true, name = :Gin)
-                gout = green(paraGout, K .- extK, (extT[2], extT[1]), true, name = :Gout)
+                polarid = PolarId(para, response, k=extK, t=extT)
+                gin = green(paraGin, K, (extT[1], extT[2]), true, name=:Gin)
+                gout = green(paraGout, K .- extK, (extT[2], extT[1]), true, name=:Gout)
                 @assert gin isa Diagram && gout isa Diagram "$gin or $gout is not a single diagram"
 
                 sign = para.isFermi ? -1.0 : 1.0
-                polardiag = Diagram(polarid, Prod(), [gin, gout], name = name, factor = sign)
-                push!(polar, (response = response, extT = extT, diagram = polardiag))
+                polardiag = Diagram(polarid, Prod(), [gin, gout], name=name, factor=sign)
+                push!(polar, (response=response, extT=extT, diagram=polardiag))
             else
                 ##################### composite polarization #####################################
                 idx, maxTau = findFirstTauIdx([oVer3, oGin, oGout], [Ver3Diag, GreenDiag, GreenDiag], extT[2], para.interactionTauNum)
                 @assert maxTau <= para.totalTauNum "maxTau = $maxTau > $(para.totalTauNum)"
                 Ver3Tidx, GinTidx, GoutTidx = idx
 
-                paraGin = reconstruct(para, diagType = GreenDiag, innerLoopNum = oGin,
-                    firstLoopIdx = GinKidx, firstTauIdx = GinTidx)
-                paraGout = reconstruct(para, diagType = GreenDiag, innerLoopNum = oGout,
-                    firstLoopIdx = GoutKidx, firstTauIdx = GoutTidx)
+                paraGin = reconstruct(para, diagType=GreenDiag, innerLoopNum=oGin,
+                    firstLoopIdx=GinKidx, firstTauIdx=GinTidx)
+                paraGout = reconstruct(para, diagType=GreenDiag, innerLoopNum=oGout,
+                    firstLoopIdx=GoutKidx, firstTauIdx=GoutTidx)
 
-                paraVer3 = reconstruct(para, diagType = Ver3Diag, innerLoopNum = oVer3,
-                    firstLoopIdx = Ver3Kidx, firstTauIdx = Ver3Tidx)
+                paraVer3 = reconstruct(para, diagType=Ver3Diag, innerLoopNum=oVer3,
+                    firstLoopIdx=Ver3Kidx, firstTauIdx=Ver3Tidx)
                 ver3 = vertex3(paraVer3, legK, true)
                 if isnothing(ver3) || isempty(ver3)
                     continue
@@ -92,19 +94,19 @@ function polarization(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagr
                 #transform extT coloum into extT for Vertex4 and the extT for Gin and Gout
                 df = transform(ver3, :extT => ByRow(x -> [extT, (extT[1], x[2]), (x[3], extT[1])]) => [:extT, :GinT, :GoutT])
 
-                groups = mergeby(df, [:response, :GinT, :GoutT, :extT], operator = Sum())
+                groups = mergeby(df, [:response, :GinT, :GoutT, :extT], operator=Sum())
 
                 for v3 in eachrow(groups)
                     response = v3[:response]
                     @assert response == UpUp || response == UpDown
                     #type: Instant or Dynamic
-                    polarid = PolarId(para, response, k = extK, t = v3[:extT])
-                    gin = green(paraGin, K, v3[:GinT], true, name = :Gin)
-                    gout = green(paraGout, K .- extK, v3[:GoutT], true, name = :Gout)
+                    polarid = PolarId(para, response, k=extK, t=v3[:extT])
+                    gin = green(paraGin, K, v3[:GinT], true, name=:Gin)
+                    gout = green(paraGout, K .- extK, v3[:GoutT], true, name=:Gout)
                     @assert gin isa Diagram && gout isa Diagram
 
-                    polardiag = Diagram(polarid, Prod(), [gin, gout, v3[:diagram]], name = name)
-                    push!(polar, (response = response, extT = v3[:extT], diagram = polardiag))
+                    polardiag = Diagram(polarid, Prod(), [gin, gout, v3[:diagram]], name=name)
+                    push!(polar, (response=response, extT=v3[:extT], diagram=polardiag))
                 end
             end
         end
@@ -113,13 +115,13 @@ function polarization(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagr
     # for (oGinL, oGoutL, oGinR, oGoutR, ver4) in orderedPartition(para.innerLoopNum - 1, 5, 0)
     # end
     if isempty(polar)
-        return DataFrame(response = [], extT = [], diagram = [])
+        return DataFrame(response=[], extT=[], diagram=[])
     end
 
     # legK = [extK, K, K, extK]
     Factor = 1 / (2π)^para.loopDim
-    polar = mergeby(polar, [:response, :extT]; name = name, factor = Factor,
-        getid = g -> PolarId(para, g[1, :response], k = extK, t = extT)
+    polar = mergeby(polar, [:response, :extT]; name=name, factor=Factor,
+        getid=g -> PolarId(para, g[1, :response], k=extK, t=extT)
     )
     return polar
 end
