@@ -57,7 +57,7 @@ function sigma(para, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false;
         if oW > 0 # oW are composte Sigma, there is a symmetry factor 1/2
             spinfactor *= 0.5
         elseif oW == 0 # the Fock diagram requires an additional minus sign, because the interaction is currently a direct one, but is expected to be exchange.
-            spinfactor *= -1
+            spinfactor *= paraG.isFermi ? -1.0 : 1.0
         end
         # plot_tree(mergeby(DataFrame(group)), maxdepth = 7)
         sigmadiag = Diagram(sid, Prod(), [g, group[:diagram]], factor=spinfactor, name=name)
