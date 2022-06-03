@@ -20,7 +20,7 @@ function sigma(para, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false;
     @assert para.diagType == SigmaDiag
     @assert para.innerLoopNum >= 1
     # @assert length(extK) == para.totalLoopNum
-    @assert (para.innerLoopNum <= 1) || ((NoBubble in para.filter) == false) "The many-body correction sigma only accounts for half of the bubble counterterm right now."
+    # @assert (para.innerLoopNum <= 1) || ((NoBubble in para.filter) == false) "The many-body correction sigma only accounts for half of the bubble counterterm right now."
 
     @assert length(extK) >= para.totalLoopNum "expect dim of extK>=$(para.totalLoopNum), got $(length(extK))"
     extK = extK[1:para.totalLoopNum]
@@ -56,6 +56,8 @@ function sigma(para, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false;
         # spinfactor = (response == UpUp) ? 0 : 1
         if oW > 0 # oW are composte Sigma, there is a symmetry factor 1/2
             spinfactor *= 0.5
+        elseif oW == 0 # the Fock diagram requires an additional minus sign, because the interaction is currently a direct one, but is expected to be exchange.
+            spinfactor *= -1
         end
         # plot_tree(mergeby(DataFrame(group)), maxdepth = 7)
         sigmadiag = Diagram(sid, Prod(), [g, group[:diagram]], factor=spinfactor, name=name)
