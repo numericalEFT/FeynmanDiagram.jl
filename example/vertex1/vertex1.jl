@@ -11,35 +11,36 @@ https://juliaparallel.github.io/MPI.jl/stable/configuration/#Julia-wrapper-for-m
 
 using Printf, LinearAlgebra
 using MCIntegration, FeynmanDiagram, ElectronGas, Lehmann #NumericalEFT packages
-using JLD2
+# using JLD5
 
 ##################### parameters for 3D UEG ##############################
 const steps = 1e7       # MC steps of each block
-const Order = 2         #diagram order
+const Order = 3         #diagram order
 const dim = 3
-const rs = 1.0
+const rs = 5.0
 const beta = 25.0       # β*E_F
+const mass2 = 0.1
 # const diagType = PolarDiag                                         #build polarization diagram with Parquet algorithm
 const diagType = SigmaDiag                                           #build sigma diagram with Parquet algorithm
 @assert diagType == SigmaDiag || diagType == PolarDiag               #only support sigma or polarization
 const isFermi = diagType == SigmaDiag ? true : false
-const basic = Parameter.rydbergUnit(1 / beta, rs, dim, Λs = 1.0)     # calculate all relevant parameters 
+const basic = Parameter.rydbergUnit(1 / beta, rs, dim, Λs = mass2)     # calculate all relevant parameters 
 const β, kF, μ, me, spin = basic.β, basic.kF, basic.μ, basic.me, basic.spin
 
 ##################### parameters for polarization ##############################
 # const n = 0        # external Matsubara frequency
 # numebr of external momentum points
-const Qsize = 8
+const Qsize = 4
 #samples of external momentums
-const extQ = [[q, 0.0, 0.0] for q in LinRange(0.0, 10kF, Qsize)]
+const extQ = [[q, 0.0, 0.0] for q in LinRange(0.0, 1kF, Qsize)]
 #construct the optimized basis using discrete Lehmann representation
 const dlr = DLRGrid(Euv = 10 * basic.EF, β = β, rtol = 1e-8, isFermi = true)
-const Nsize = dlr.size
+# const Nsize = dlr.size
 #get the optimal Matsubara frequencies
-const ngrid = dlr.n
+# const ngrid = dlr.n
 # println(dlr)
-# const ngrid = collect(0:10)
-# const Nsize = length(ngrid)
+const ngrid = [0, 1]
+const Nsize = length(ngrid)
 
 ###################  parameter for polarization diagram #######################
 diagPara(order) = GenericPara(diagType = diagType, innerLoopNum = order, hasTau = true, loopDim = dim, spin = spin,
@@ -71,7 +72,7 @@ const tree = [ExprTree.build(diags[o].diagram) for o in 1:Order]     #experssion
 # exit(0)
 
 ##################### propagator and interaction evaluation ##############
-function eval(id::GreenId, K, varT)
+function eval(id::BareGreenId, K, extT, varT)
     τin, τout = varT[id.extT[1]], varT[id.extT[2]]
     ϵ = dot(K, K) / (2me) - μ
     τ = τout - τin
@@ -82,7 +83,7 @@ function eval(id::GreenId, K, varT)
     end
 end
 
-eval(id::InteractionId, K, varT) = (basic.e0)^2 / basic.ϵ0 / (dot(K, K) + basic.Λs)
+eval(id::BareInteractionId, K, extT, varT) = (basic.e0)^2 / basic.ϵ0 / (dot(K, K) + basic.Λs)
 
 # there is an additional factor 1/β because we are integrating over both the incoming and the outing Tau variables of the poalrization
 if diagType == SigmaDiag
@@ -100,12 +101,12 @@ function integrand(config)
     # copy the external momentum into the K.data matrix, which will be used to evaluate diagrams in the next line
     K.data[:, 1] .= extQ[ExtQ[1]]
     # K.data[:, 1]: external K, K.daata[:, >=2]: internal K, so that K.data contains all momentum
-    weights = ExprTree.evalNaive!(tree[order], K.data, T, eval) #evaluate the expression tree
+    ExprTree.evalNaive!(tree[order], K.data, T, eval) #evaluate the expression tree
     n = ngrid[ExtN[1]]
     # println(nidx)
     tidx = extTidx[order]
     # println(tidx)
-    w = sum(w * phasefactor(T[tidx[i][1]], T[tidx[i][2]], n) for (i, w) in enumerate(weights))
+    w = sum(tree[order].node.current[ri] * phasefactor(T[tidx[i][1]], T[tidx[i][2]], n) for (i, ri) in enumerate(tree[order].root))
     return w
     # return weights[1] * cos(2π * ngrid[nidx] * (T[2] - T[1]) / β) / β * spin
 end
@@ -138,58 +139,58 @@ function run(steps)
 
     if isnothing(avg) == false #if run with MPI, then only the master node has meaningful avg
 
-        jldsave("sigma.jld2"; dlr, avg, std)
+        # jldsave("sigma.jld2"; dlr, avg, std)
         nidx = 1
         printstyled("zero frequency results: \n", color = :green)
         for o = 1:Order
             printstyled("Order $o\n", color = :yellow)
             # @printf("%20s%20s%20s%20s%20s%20s\n", "q/kF", "real", "error", "imag", "error", "exact")
             @printf("%10s%14s%12s%14s%12s%14s\n", "q/kF", "real", "error", "imag", "error", "exact")
-            # for (idx, q) in enumerate(extQ)
-            #     if o == 1
-            #         if diagType == PolarDiag
-            #             p = Polarization.Polarization0_ZeroTemp(q[1], n, basic)
-            #         else
-            #             p = SelfEnergy.Fock0_ZeroTemp(q[1], basic)
-            #         end
-            #         @printf("%10.6f%14.8f%12.8f%14.8f%14.6f%14.8f\n", q[1] / kF, real(avg[nidx, idx, o]), real(std[nidx, idx, o]),
-            #             imag(avg[nidx, idx, o]), imag(std[nidx, idx, o]), p)
-            #     else
-            #         @printf("%10.6f%14.8f%12.8f%14.8f%14.6f\n", q[1] / kF, real(avg[nidx, idx, o]), real(std[nidx, idx, o]),
-            #             imag(avg[nidx, idx, o]), imag(std[nidx, idx, o]))
-            #         # @printf("%20.6f%20.6f%20.6f%20.6f%20.6f\n", q[1] / kF, real(avg[o, idx]), real(std[o, idx]), imag(avg[o, idx]), imag(std[o, idx]))
-            #     end
-            # end
-
-            idx = 1
-            q = extQ[1][1]
-            for (nidx, n) in enumerate(ngrid)
+            for (idx, q) in enumerate(extQ)
                 if o == 1
                     if diagType == PolarDiag
-                        p = Polarization.Polarization0_ZeroTemp(q, n, basic)
+                        p = Polarization.Polarization0_ZeroTemp(q[1], n, basic)
                     else
-                        p = SelfEnergy.Fock0_ZeroTemp(q, basic)
+                        p = SelfEnergy.Fock0_ZeroTemp(q[1], basic)
                     end
-                    @printf("%10.6f%14.8f%12.8f%14.8f%14.6f%14.8f\n", n, real(avg[nidx, idx, o]), real(std[nidx, idx, o]),
+                    @printf("%10.6f%14.8f%12.8f%14.8f%14.6f%14.8f\n", q[1] / kF, real(avg[nidx, idx, o]), real(std[nidx, idx, o]),
                         imag(avg[nidx, idx, o]), imag(std[nidx, idx, o]), p)
                 else
-                    @printf("%10.6f%14.8f%12.8f%14.8f%14.6f\n", n, real(avg[nidx, idx, o]), real(std[nidx, idx, o]),
+                    @printf("%10.6f%14.8f%12.8f%14.8f%14.6f\n", q[1] / kF, real(avg[nidx, idx, o]), real(std[nidx, idx, o]),
                         imag(avg[nidx, idx, o]), imag(std[nidx, idx, o]))
                     # @printf("%20.6f%20.6f%20.6f%20.6f%20.6f\n", q[1] / kF, real(avg[o, idx]), real(std[o, idx]), imag(avg[o, idx]), imag(std[o, idx]))
                 end
             end
+
+            # idx = 1
+            # q = extQ[1][1]
+            # for (nidx, n) in enumerate(ngrid)
+            #     if o == 1
+            #         if diagType == PolarDiag
+            #             p = Polarization.Polarization0_ZeroTemp(q, n, basic)
+            #         else
+            #             p = SelfEnergy.Fock0_ZeroTemp(q, basic)
+            #         end
+            #         @printf("%10.6f%14.8f%12.8f%14.8f%14.6f%14.8f\n", n, real(avg[nidx, idx, o]), real(std[nidx, idx, o]),
+            #             imag(avg[nidx, idx, o]), imag(std[nidx, idx, o]), p)
+            #     else
+            #         @printf("%10.6f%14.8f%12.8f%14.8f%14.6f\n", n, real(avg[nidx, idx, o]), real(std[nidx, idx, o]),
+            #             imag(avg[nidx, idx, o]), imag(std[nidx, idx, o]))
+            #         # @printf("%20.6f%20.6f%20.6f%20.6f%20.6f\n", q[1] / kF, real(avg[o, idx]), real(std[o, idx]), imag(avg[o, idx]), imag(std[o, idx]))
+            #     end
+            # end
         end
 
         println()
-        avg = matfreq2tau(dlr, avg, [0.0,], axis = 1)
-        printstyled("equal time results: \n", color = :green)
-        for o = 1:Order
-            printstyled("Order $o\n", color = :yellow)
-            @printf("%10s%14s%14s\n", "q/kF", "real", "imag")
-            for (idx, q) in enumerate(extQ)
-                @printf("%10.6f%14.8f%14.8f\n", q[1] / kF, real(avg[1, idx, o]), imag(avg[1, idx, o]))
-            end
-        end
+        # avg = matfreq2tau(dlr, avg, [0.0,], axis = 1)
+        # printstyled("equal time results: \n", color = :green)
+        # for o = 1:Order
+        #     printstyled("Order $o\n", color = :yellow)
+        #     @printf("%10s%14s%14s\n", "q/kF", "real", "imag")
+        #     for (idx, q) in enumerate(extQ)
+        #         @printf("%10.6f%14.8f%14.8f\n", q[1] / kF, real(avg[1, idx, o]), imag(avg[1, idx, o]))
+        #     end
+        # end
     end
 
 end
