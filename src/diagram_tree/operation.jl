@@ -118,7 +118,8 @@ end
 - diags      : diagrams to remove the Fock insertion
 
 # Remarks
-    The operations removeHatreeFock! and taking derivatives doesn't commute with each other! 
+- The operations removeHatreeFock! and taking derivatives doesn't commute with each other! 
+- If the input diagram is a Hatree-Fock diagram, then the overall weight will become zero! 
 """
 function removeHatreeFock!(diags::Union{Diagram,Tuple,AbstractVector})
     single = false
