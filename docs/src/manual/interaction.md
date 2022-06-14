@@ -1,6 +1,6 @@
 # Interaction/Scattering-Amplitude Convention
 
-In general, the interaction (or scattering amplitude) between two spin-$1/2$ particles is controlled by only two parameters. Here we briefly review some of the common conventions of the parameters in literature, and show how to map between different conventions.
+In general, the interaction (or scattering amplitude) between two spin-$1/2$ particles only has two independent spin components. Here we briefly review some of the common conventions of the spin components in literature, and show how to map between different conventions.
 
 We assume a particle from the left collides with a particle from the right. Due to the interaction between the two particles, one of them scatters to the left, and the other to the right. 
 
