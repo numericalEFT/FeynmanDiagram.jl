@@ -11,7 +11,7 @@ This package implements a mini-compiler that compiles generic Feynman diagrams i
 
 In general, Feynman diagrams represents high-order integral. The integrand are propagators/interactions composed by the basis arithmetic operations (multiplication, addition). The sequence of calculating the integrand by combining the propagators/interactions with the arithmetic operatos can be represented as an algebraic expression tree. In this sense, the expression tree provides an intermediate representation (IR) for Feynman diagrams that completely independent of the diagram type. 
 
-![infrastructure](docs/figures/diagram_compiler.jpeg?raw=true "Compiler Infrastructure")
+![infrastructure](assets/diagram_compiler.jpeg?raw=true "Compiler Infrastructure")
 
 Base on this observation, we develop a package to compile the integrand of Feynman diagrams into machine code so that one can evaluate the it efficiently. The infrastructure of this package is similar to the modern compiler LLVM for generic programming language. There are three layers: a front-end translates a source code into an IR as an expression tree, then a mid-end optimizes and transforms the IR, and a back-end to compiles the IR to machine code. 
 
@@ -45,7 +45,7 @@ tree=ExprTree.build(ver4.diagram) #optimize the diagram tree to get an optimized
 ```
 
 The generated diagram tree is as shown in the following figure. The leaves of the tree are the propagators (labeled with `G`) and the interactions (labeled with `Ins`). By default, the interactions is assumed to spin-symmetric. A typical example is the Coulomb interaction.
-![tree](docs/figures/ver4tree.png?raw=true "Diagram Tree")
+![tree](assets/ver4tree.png?raw=true "Diagram Tree")
 
 
 ### 2. Generic Strong Coupling Expansion (work in progress)
