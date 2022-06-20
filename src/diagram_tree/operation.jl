@@ -4,6 +4,7 @@ function oneOrderHigher(diag::Diagram{W}, ::Type{Id}, subdiagram=[]; index::Int=
         return nothing
     end
     id = deepcopy(diag.id)
+    @assert index <= length(id.order) "$(id) only supports derivatives up to the index $(length(id.order))!"
     id.order[index] += 1
 
     # if Id == BareGreenId
