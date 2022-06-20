@@ -1,16 +1,18 @@
-function oneOrderHigher(diag::Diagram{W}, ::Type{Id}, subdiagram=[]) where {W,Id}
+function oneOrderHigher(diag::Diagram{W}, ::Type{Id}, subdiagram=[]; index::Int=index(Id)) where {W,Id}
     if diag.id isa PropagatorId && (diag.id isa Id) == false
         #for bare propagator, a derivative of different id vanishes
         return nothing
     end
     id = deepcopy(diag.id)
-    if Id == BareGreenId
-        id.order[1] += 1
-    elseif Id == BareInteractionId
-        id.order[2] += 1
-    else
-        error("not implemented!")
-    end
+    id.order[index] += 1
+
+    # if Id == BareGreenId
+    #     id.order[1] += 1
+    # elseif Id == BareInteractionId
+    #     id.order[2] += 1
+    # else
+    #     error("not implemented!")
+    # end
 
     d = Diagram{W}(id, diag.operator, subdiagram; name=diag.name, factor=diag.factor, weight=diag.weight)
     return d
@@ -25,7 +27,7 @@ end
 - diags     : diagrams to take derivative
 - ID        : DiagramId to apply the differentiation
 """
-function derivative(diags::Union{Diagram,Tuple,AbstractVector}, ::Type{ID}) where {ID<:PropagatorId}
+function derivative(diags::Union{Diagram,Tuple,AbstractVector}, ::Type{ID}; index::Int=index(ID)) where {ID<:PropagatorId}
     # use a dictionary to host the dual diagram of a diagram for a given hash number
     # a dual diagram is defined as the derivative of the original diagram
 
@@ -43,7 +45,7 @@ function derivative(diags::Union{Diagram,Tuple,AbstractVector}, ::Type{ID}) wher
             id = d.id
             if id isa PropagatorId
                 # for propagators like bare Green's function and interaction, derivative simply means increase an order by one
-                dual[d.hash] = oneOrderHigher(d, ID)
+                dual[d.hash] = oneOrderHigher(d, ID; index=index)
             else # composite diagram
                 if d.operator isa Sum
                     # for a diagram which is a sum of subdiagrams, derivative means a sub of derivative subdiagrams
@@ -51,7 +53,7 @@ function derivative(diags::Union{Diagram,Tuple,AbstractVector}, ::Type{ID}) wher
                     if isempty(children)
                         dual[d.hash] = nothing
                     else
-                        dual[d.hash] = oneOrderHigher(d, ID, children)
+                        dual[d.hash] = oneOrderHigher(d, ID, children; index=index)
                     end
                 elseif d.operator isa Prod
                     # d = s1xs2x... = s1'xs2x... + s1xs2'x... + ...
@@ -97,14 +99,14 @@ end
 - ID         : DiagramId to apply the differentiation
 - order::Int : derivative order
 """
-function derivative(diags::Union{Diagram,Tuple,AbstractVector}, ::Type{ID}, order::Int) where {ID<:PropagatorId}
+function derivative(diags::Union{Diagram,Tuple,AbstractVector}, ::Type{ID}, order::Int; index::Int=index(ID)) where {ID<:PropagatorId}
     @assert order >= 0
     if order == 0
         return diags
     end
     result = diags
     for o in 1:order
-        result = derivative(result, ID)
+        result = derivative(result, ID; index=index)
     end
     return result
 end

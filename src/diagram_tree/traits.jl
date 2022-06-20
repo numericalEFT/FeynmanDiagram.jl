@@ -236,4 +236,18 @@ function Base.isequal(a::DiagramId, b::DiagramId)
     return true
 end
 
+function index(type)
+    if type == BareGreenId
+        return 1
+    elseif type == BareInteractionId
+        return 2
+    elseif type == BareGreenNId
+        return 3
+    elseif type == BareHoppingId
+        return 4
+    else
+        error("Not Implemented!")
+    end
+end
+
 
