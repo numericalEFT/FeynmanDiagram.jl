@@ -34,7 +34,7 @@ struct BareGreenId <: PropagatorId
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
     order::Vector{Int}
-    function BareGreenId(para::GenericPara, type::AnalyticProperty = Dynamic, order = [0, 0]; k, t)
+    function BareGreenId(para::GenericPara, type::AnalyticProperty=Dynamic, order=[0, 0, 0, 0]; k, t)
         return new(para, type, k, Tuple(t), order)
     end
 end
@@ -48,7 +48,7 @@ struct BareInteractionId <: PropagatorId
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
     order::Vector{Int}
-    function BareInteractionId(para::GenericPara, response::Response, type::AnalyticProperty = Instant, order = [0, 0]; k, t = (0, 0), permu::Permutation = DiEx)
+    function BareInteractionId(para::GenericPara, response::Response, type::AnalyticProperty=Instant, order=[0, 0, 0, 0]; k, t=(0, 0), permu::Permutation=DiEx)
         return new(para, response, type, permu, k, Tuple(t), order)
     end
 end
@@ -58,7 +58,7 @@ struct GenericId <: DiagramId
     para::GenericPara
     extra::Any
     order::Vector{Int}
-    GenericId(para::GenericPara, extra = Nothing, order = [0, 0]) = new(para, extra, order)
+    GenericId(para::GenericPara, extra=Nothing, order=[0, 0, 0, 0]) = new(para, extra, order)
 end
 Base.show(io::IO, v::GenericId) = print(io, v.extra == Nothing ? "#$(v.order)" : "$(v.extra)#$(v.order)")
 
@@ -68,7 +68,7 @@ struct GreenId <: DiagramId
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
     order::Vector{Int}
-    function GreenId(para::GenericPara, type::AnalyticProperty = Dynamic, order = [0, 0]; k, t)
+    function GreenId(para::GenericPara, type::AnalyticProperty=Dynamic, order=[0, 0, 0, 0]; k, t)
         return new(para, type, k, Tuple(t), order)
     end
 end
@@ -80,7 +80,7 @@ struct SigmaId <: DiagramId
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
     order::Vector{Int}
-    function SigmaId(para::GenericPara, type::AnalyticProperty, order = [0, 0]; k, t = (0, 0))
+    function SigmaId(para::GenericPara, type::AnalyticProperty, order=[0, 0, 0, 0]; k, t=(0, 0))
         return new(para, type, k, t, order)
     end
 end
@@ -92,7 +92,7 @@ struct PolarId <: DiagramId
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
     order::Vector{Int}
-    function PolarId(para::GenericPara, response::Response, order = [0, 0]; k, t = (0, 0))
+    function PolarId(para::GenericPara, response::Response, order=[0, 0, 0, 0]; k, t=(0, 0))
         return new(para, response, k, t, order)
     end
 end
@@ -104,7 +104,7 @@ struct Ver3Id <: DiagramId
     extK::Vector{Vector{Float64}}
     extT::Tuple{Int,Int,Int} #all possible extT from different interactionType
     order::Vector{Int}
-    function Ver3Id(para::GenericPara, response::Response, order = [0, 0]; k, t = (0, 0, 0))
+    function Ver3Id(para::GenericPara, response::Response, order=[0, 0, 0, 0]; k, t=(0, 0, 0))
         return new(para, response, k, Tuple(t), order)
     end
 end
@@ -118,7 +118,7 @@ struct Ver4Id <: DiagramId
     extK::Vector{Vector{Float64}}
     extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
     order::Vector{Int}
-    function Ver4Id(para::GenericPara, response::Response, type::AnalyticProperty = Dynamic, order = [0, 0]; k, t = (0, 0, 0, 0), chan::TwoBodyChannel = AnyChan)
+    function Ver4Id(para::GenericPara, response::Response, type::AnalyticProperty=Dynamic, order=[0, 0, 0, 0]; k, t=(0, 0, 0, 0), chan::TwoBodyChannel=AnyChan)
         return new(para, response, type, chan, k, Tuple(t), order)
     end
 end
@@ -178,7 +178,7 @@ struct BareGreenNId <: PropagatorId
     orbital::Vector{Int}
     extT::Vector{Int}
     N::Int
-    function BareGreenNId(para::GenericPara; orbital = [], t = [], creation = [], r = 0)
+    function BareGreenNId(para::GenericPara; orbital=[], t=[], creation=[], r=0)
         @assert length(orbital) == length(t) == length(creation)
         return new(para, r, creation, orbital, t, length(orbital))
     end
@@ -195,7 +195,7 @@ struct GreenNId <: DiagramId
     orbital::Vector{Int}
     extT::Vector{Int}
     N::Int
-    function GreenNId(para::GenericPara; orbital = [], t = [], creation = [], r = [])
+    function GreenNId(para::GenericPara; orbital=[], t=[], creation=[], r=[])
         @assert length(orbital) == length(t) == length(r) == length(creation)
         return new(para, r, creation, orbital, t, length(orbital))
     end
@@ -212,7 +212,7 @@ struct ConnectedGreenNId <: DiagramId
     orbital::Vector{Int}
     extT::Vector{Int}
     N::Int
-    function ConnectedGreenNId(para::GenericPara; orbital = [], t = [], creation = [], r = [])
+    function ConnectedGreenNId(para::GenericPara; orbital=[], t=[], creation=[], r=[])
         @assert length(orbital) == length(t) == length(r) == length(creation)
         return new(para, r, creation, orbital, t, length(orbital))
     end
