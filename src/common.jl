@@ -12,6 +12,10 @@ end
 Base.isequal(a::Interaction, b::Interaction) = (a.response == b.response) && issetequal(a.type, b.type)
 Base.:(==)(a::Interaction, b::Interaction) = Base.isequal(a, b)
 
+function short(inter::Interaction)
+    return "$(short(inter.response))_$(reduce(*, [short(t) for t in inter.type]))"
+end
+
 function short(name::Response)
     if name == ChargeCharge
         return "cc"
@@ -40,7 +44,7 @@ function short(type::AnalyticProperty)
     end
 end
 
-function symbol(name::Response, type::AnalyticProperty, addition = nothing)
+function symbol(name::Response, type::AnalyticProperty, addition=nothing)
     if isnothing(addition)
         return Symbol("$(short(name))$(short(type))")
     else
@@ -154,7 +158,7 @@ function interactionTauNum(hasTau::Bool, interactionSet)
     return 1
 end
 
-function firstTauIdx(diagType::DiagramType, offset::Int = 0)
+function firstTauIdx(diagType::DiagramType, offset::Int=0)
     if diagType == GreenDiag
         return 3 + offset
     elseif diagType == Ver3Diag
@@ -166,7 +170,7 @@ function firstTauIdx(diagType::DiagramType, offset::Int = 0)
     end
 end
 
-function firstLoopIdx(diagType::DiagramType, offset::Int = 0)
+function firstLoopIdx(diagType::DiagramType, offset::Int=0)
     if diagType == Ver4Diag #three extK
         return 4 + offset
     elseif diagType == SigmaDiag #one extK
@@ -182,15 +186,15 @@ function firstLoopIdx(diagType::DiagramType, offset::Int = 0)
     end
 end
 
-function totalTauNum(diagType::DiagramType, innerLoopNum, interactionTauNum, offset::Int = 0)
+function totalTauNum(diagType::DiagramType, innerLoopNum, interactionTauNum, offset::Int=0)
     return firstTauIdx(diagType, offset) + innerTauNum(diagType, innerLoopNum, interactionTauNum) - 1
 end
 
-function totalLoopNum(diagType::DiagramType, innerLoopNum, offset::Int = 0)
+function totalLoopNum(diagType::DiagramType, innerLoopNum, offset::Int=0)
     return firstLoopIdx(diagType, offset) + innerLoopNum - 1
 end
 
-function totalTauNum(para, diagType::Symbol = :none)
+function totalTauNum(para, diagType::Symbol=:none)
     return para.totalTauNum
     # if diagType == :Ver4
     #     return (para.internalLoopNum + 1) * para.interactionTauNum
@@ -199,7 +203,7 @@ function totalTauNum(para, diagType::Symbol = :none)
     # end
 end
 
-function totalLoopNum(para, diagType::Symbol = :none)
+function totalLoopNum(para, diagType::Symbol=:none)
     return para.totalLoopNum
 end
 
