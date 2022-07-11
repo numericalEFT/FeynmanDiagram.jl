@@ -68,7 +68,7 @@ export DiagTree
 export TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
 export Permutation, Di, Ex, DiEx
 export Diagram, addSubDiagram!, toDataFrame
-export evalDiagNode!, evalDiagTree!
+export evalDiagNode!, evalDiagTree!, evalDiagTreeKT!
 export Operator, Sum, Prod
 export DiagramId, GenericId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId
 export PropagatorId, BareGreenId, BareInteractionId

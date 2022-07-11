@@ -2,7 +2,7 @@
 #     @code_warntype evalNaive!(diag, loopVar, siteVar, evalPropagator, evalNodeFactor, root)
 # end
 
-function evalNaive!(diag::ExpressionTree, loopVar, siteVar, eval = DiagTree.eval)
+function evalNaive!(diag::ExpressionTree, loopVar, siteVar, additional=nothing; eval=DiagTree.eval)
     loopPool = diag.loopBasis
     tree = diag.node
     tweight = tree.current
@@ -16,9 +16,17 @@ function evalNaive!(diag::ExpressionTree, loopVar, siteVar, eval = DiagTree.eval
     for (ni, node) in enumerate(tree.object)
         if isempty(node.children)
             if isnothing(loopPool) == false
-                tweight[ni] = eval(node.para, current(loopPool, node.loopidx), node.siteidx, siteVar) * node.factor
+                if isnothing(additional) == false
+                    tweight[ni] = eval(node.para, current(loopPool, node.loopidx), node.siteidx, siteVar, additional) * node.factor
+                else
+                    tweight[ni] = eval(node.para, current(loopPool, node.loopidx), node.siteidx, siteVar) * node.factor
+                end
             else
-                tweight[ni] = eval(node.para, nothing, node.siteidx, siteVar) * node.factor
+                if isnothing(additional) == false
+                    tweight[ni] = eval(node.para, nothing, node.siteidx, siteVar, additional) * node.factor
+                else
+                    tweight[ni] = eval(node.para, nothing, node.siteidx, siteVar) * node.factor
+                end
             end
         else
             if node.operation == MUL
