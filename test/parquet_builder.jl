@@ -161,29 +161,29 @@ evalFakePropagator(id::PropagatorId, K, extT, varT) = 1.0
             evalG, evalV, evalPropagator = getfunction(type)
 
             # w1 = DiagTree.evalNaive(diag, varK, varT, evalPropagator)
-            evalDiagTreeKT!(diags, varK, varT; eval=evalPropagator)
+            DiagTree.evalKT!(diags, varK, varT; eval=evalPropagator)
             w1 = [diags.diagram[1].weight, diags.diagram[2].weight]
             if timing
                 printstyled("naive DiagTree evaluator cost:", color=:green)
-                @time evalDiagTreeKT!(diags, varK, varT; eval=evalPropagator)
+                @time DiagTree.evalKT!(diags, varK, varT; eval=evalPropagator)
             end
 
             ExprTree.evalNaive!(tree, varK, varT; eval=evalPropagator)
             w1e = [tree[1], tree[2]]
             if timing
                 printstyled("naive ExprTree cost:", color=:green)
-                @time ExprTree.evalNaive!(tree, varK, varT; eval=evalPropagator)
+                @time ExprTree.evalKT!(tree, varK, varT; eval=evalPropagator)
             end
 
 
             optdiags = DiagTree.optimize(diags.diagram)
             opttree = ExprTree.build(optdiags)
-            ExprTree.evalNaive!(opttree, varK, varT; eval=evalPropagator)
+            ExprTree.evalKT!(opttree, varK, varT; eval=evalPropagator)
             w1eopt = [opttree[1], opttree[2]]
 
             if timing
                 printstyled("naive optimized ExprTree cost:", color=:green)
-                @time ExprTree.evalNaive!(opttree, varK, varT; eval=evalPropagator)
+                @time ExprTree.evalKT!(opttree, varK, varT; eval=evalPropagator)
             end
 
             ##################### lower level subroutines  #######################################
@@ -276,7 +276,7 @@ end
 
     function testDiagramNumber(para, diag, varK, varT)
         # w = DiagTree.evalNaive(diag, varK, varT, evalFakePropagator)
-        w = evalDiagTreeKT!(diag, varK, varT; eval=evalFakePropagator)
+        w = DiagTree.evalKT!(diag, varK, varT; eval=evalFakePropagator)
         # plot_tree(diag, maxdepth = 7)
         factor = (1 / (2π)^para.loopDim)^para.innerLoopNum
         num = w / factor
@@ -370,7 +370,7 @@ end
 
     function testDiagramNumber(para, diag, varK, varT)
         # w = DiagTree.evalNaive(diag, varK, varT, evalFakePropagator)
-        w = evalDiagTreeKT!(diag, varK, varT; eval=evalFakePropagator)
+        w = DiagTree.evalKT!(diag, varK, varT; eval=evalFakePropagator)
         # plot_tree(diag, maxdepth = 9)
         factor = (1 / (2π)^para.loopDim)^para.innerLoopNum
         num = w / factor
@@ -422,7 +422,7 @@ end
     for l = 1:4
         para, diag, varK, varT = getPolar(l, isFermi=false, filter=[Girreducible,])
         diag = mergeby(diag).diagram[1]
-        w = evalDiagTreeKT!(diag, varK, varT; eval=evalFakePropagator)
+        w = DiagTree.evalKT!(diag, varK, varT; eval=evalFakePropagator)
         factor = (1 / (2π)^para.loopDim)^para.innerLoopNum
         num = w / factor
         # println(num * para.spin)
@@ -433,7 +433,7 @@ end
     for l = 1:4
         para, diag, varK, varT = getPolar(l, isFermi=false, filter=[NoFock,])
         diag = mergeby(diag).diagram[1]
-        w = evalDiagTreeKT!(diag, varK, varT, eval=evalFakePropagator)
+        w = DiagTree.evalKT!(diag, varK, varT, eval=evalFakePropagator)
         factor = (1 / (2π)^para.loopDim)^para.innerLoopNum
         num = w / factor
         # println(num * para.spin)
@@ -443,7 +443,7 @@ end
     ##################  g^2*v expansion for the upup polarization #########################################
     for l = 1:4
         para, diag, varK, varT = getPolar(l, isFermi=false, filter=[NoFock,])
-        w = evalDiagTreeKT!(diag.diagram[1], varK, varT, eval=evalFakePropagator)
+        w = DiagTree.evalKT!(diag.diagram[1], varK, varT, eval=evalFakePropagator)
         factor = (1 / (2π)^para.loopDim)^para.innerLoopNum
         num = w / factor
         # println(num * para.spin)

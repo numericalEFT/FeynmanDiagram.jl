@@ -12,7 +12,8 @@ const Λs = 1.0
 
 function benchmark(tree, N, varK, varT)
     for i in 1:N
-        ExprTree.evalNaive!(tree, varK, varT) #evaluate the expression tree
+        ExprTree.evalKT!(tree, varK, varT) #evaluate the expression tree
+        # ExprTree.evalTree!(tree; loopVar=varK, siteVar=varT) #evaluate the expression tree
     end
 end
 
