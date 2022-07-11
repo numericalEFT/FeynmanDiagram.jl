@@ -31,7 +31,7 @@
     @test [node.id.uid for node in Leaves(root)] == [3, 2]
 
     # eval(d::ID, vargs...) = d.uid
-    @test evalDiagTree!(root; eval=(d -> d.uid)) == sum(node.id.uid for node in Leaves(root))
+    @test DiagTree.eval!(root; eval=(d -> d.uid)) == sum(node.id.uid for node in Leaves(root))
 
     print_tree(root)
     # DiagTreeNew.plot_tree(root)
@@ -106,13 +106,13 @@ end
     droot_dv = DiagTree.derivative(root, BareInteractionId)
     # plot_tree(droot_dg)
 
-    evalDiagTree!(root; eval=(x -> 1.0))
+    DiagTree.eval!(root; eval=(x -> 1.0))
     @test root.weight ≈ -2 + spin
 
-    evalDiagTree!(droot_dg; eval=(x -> 1.0))
+    DiagTree.eval!(droot_dg; eval=(x -> 1.0))
     @test root.weight ≈ (-2 + spin) * 2
 
-    evalDiagTree!(droot_dv; eval=(x -> 1.0))
+    DiagTree.eval!(droot_dv; eval=(x -> 1.0))
     @test root.weight ≈ (-2 + spin) * 2
 
     # #more sophisticated test of the weight evaluation
@@ -168,20 +168,20 @@ end
     dWeight_dv = Gweight * dVweight / (2π)^D
 
     # print_tree(root)
-    evalDiagTree!(root, varK, varT; eval=eval)
+    DiagTree.eval!(root, varK, varT; eval=eval)
     @test root.weight ≈ Weight
 
-    evalDiagTree!(droot_dg, varK, varT; eval=eval)
+    DiagTree.eval!(droot_dg, varK, varT; eval=eval)
     @test droot_dg.weight ≈ dWeight_dg
 
-    evalDiagTree!(droot_dv, varK, varT; eval=eval)
+    DiagTree.eval!(droot_dv, varK, varT; eval=eval)
     @test droot_dv.weight ≈ dWeight_dv
 
     ############### test diagram optimization #################
     uniqueG, uniqueInt = DiagTree.removeDuplicatedLeaves!([root,], verbose=1)
     @test length(uniqueG) == 2
     @test length(uniqueInt) == 3
-    evalDiagTree!(root, varK, varT; eval=eval)
+    DiagTree.eval!(root, varK, varT; eval=eval)
     @test root.weight ≈ Weight
 end
 

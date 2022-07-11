@@ -72,31 +72,31 @@ end
     # function LoopPool(name::Symbol, dim::Int, N::Int, type::DataType)
     MomPool = ExprTree.LoopPool(:K, D, 4)
 
-    diag = ExprTree.ExpressionTree(loopBasis = MomPool, nodePara = Int, weight = weightType)
+    diag = ExprTree.ExpressionTree(loopBasis=MomPool, nodePara=Int, weight=weightType)
 
     # #construct the propagator table
     gK = [[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0]]
     gT = [(1, 2), (2, 1)]
-    g = [ExprTree.addpropagator!(diag, :G; site = gT[i], loop = gK[i], para = 1) for i = 1:2]
+    g = [ExprTree.addpropagator!(diag, :G; site=gT[i], loop=gK[i], para=1) for i = 1:2]
 
     vdK = [[0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 1.0, 0.0]]
     vdT = [[1, 1], [2, 2]]
-    vd = [ExprTree.addpropagator!(diag, :Vd; loop = vdK[i], para = 2) for i = 1:2]
+    vd = [ExprTree.addpropagator!(diag, :Vd; loop=vdK[i], para=2) for i = 1:2]
 
     veK = [[1, 0, -1, -1], [0, 1, 0, -1]]
     veT = [[1, 1], [2, 2]]
-    ve = [ExprTree.addpropagator!(diag, :Ve; loop = veK[i], para = 2) for i = 1:2]
+    ve = [ExprTree.addpropagator!(diag, :Ve; loop=veK[i], para=2) for i = 1:2]
     # ve = [ExprTree.addPropagator!(diag, Wtype, 1, veK[i], veT[i], Wsym)[1] for i = 1:2]
     # # W order is 1
 
     # # contruct the tree
     MUL, ADD = ExprTree.MUL, ExprTree.ADD
-    ggn = ExprTree.addnode!(diag, MUL, :gxg, [g[1], g[2]], 1.0, para = 0)
-    vdd = ExprTree.addnode!(diag, MUL, :dxd, [vd[1], vd[2]], spin, para = 0)
-    vde = ExprTree.addnode!(diag, MUL, :dxe, [vd[1], ve[2]], -1.0, para = 0)
-    ved = ExprTree.addnode!(diag, MUL, :exd, [ve[1], vd[2]], -1.0, para = 0)
-    vsum = ExprTree.addnode!(diag, ADD, :sum, [vdd, vde, ved], 1.0, para = 0)
-    root = ExprTree.addnode!(diag, MUL, :root, [ggn, vsum], 1.0, para = 0)
+    ggn = ExprTree.addnode!(diag, MUL, :gxg, [g[1], g[2]], 1.0, para=0)
+    vdd = ExprTree.addnode!(diag, MUL, :dxd, [vd[1], vd[2]], spin, para=0)
+    vde = ExprTree.addnode!(diag, MUL, :dxe, [vd[1], ve[2]], -1.0, para=0)
+    ved = ExprTree.addnode!(diag, MUL, :exd, [ve[1], vd[2]], -1.0, para=0)
+    vsum = ExprTree.addnode!(diag, ADD, :sum, [vdd, vde, ved], 1.0, para=0)
+    root = ExprTree.addnode!(diag, MUL, :root, [ggn, vsum], 1.0, para=0)
     push!(diag.root, root)
     ExprTree.initialize!(diag.node)
 
@@ -108,7 +108,7 @@ end
     # #make sure the total number of diagrams are correct
     let
         DiagTree.eval(para, K, Tbasis, varT) = 1.0
-        ExprTree.evalNaive!(diag, varK, varT)
+        ExprTree.evalKT!(diag, varK, varT)
         @test diag[1] ≈ -2 + 1 * spin
     end
 
@@ -143,7 +143,7 @@ end
         Weight = gw[1] * gw[2] * Vweight
 
         # println(ExprTree.printPropagator(diag))
-        ExprTree.evalNaive!(diag, varK, varT)
+        ExprTree.evalKT!(diag, varK, varT)
         @test diag[1] ≈ Weight
     end
 

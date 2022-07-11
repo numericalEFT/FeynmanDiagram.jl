@@ -8,18 +8,32 @@
 ######################### evaluator for KT representation ######################### 
 function evalDiagNodeKT!(diag::Diagram, varK, varT, additional=nothing; eval=DiagTree.eval)
     if length(diag.subdiagram) == 0
-        if hasproperty(diag.id, :extK)
+        # if hasproperty(diag.id, :extK)
+        if (isnothing(varK) == false) && (isnothing(varT) == false)
             K = varK * diag.id.extK
             if isnothing(additional)
                 diag.weight = eval(diag.id, K, diag.id.extT, varT) * diag.factor
             else
                 diag.weight = eval(diag.id, K, diag.id.extT, varT, additional) * diag.factor
             end
+        elseif isnothing(varK)
+            if isnothing(additional)
+                diag.weight = eval(diag.id, diag.id.extT, varT) * diag.factor
+            else
+                diag.weight = eval(diag.id, diag.id.extT, varT, additional) * diag.factor
+            end
+        elseif isnothing(varT)
+            K = varK * diag.id.extK
+            if isnothing(additional)
+                diag.weight = eval(diag.id, K) * diag.factor
+            else
+                diag.weight = eval(diag.id, K, additional) * diag.factor
+            end
         else
             if isnothing(additional)
-                diag.weight = eval(diag.id, nothing, diag.id.extT, varT) * diag.factor
+                diag.weight = eval(diag.id) * diag.factor
             else
-                diag.weight = eval(diag.id, nothing, diag.id.extT, varT, additional) * diag.factor
+                diag.weight = eval(diag.id, additional) * diag.factor
             end
         end
     else
@@ -28,23 +42,23 @@ function evalDiagNodeKT!(diag::Diagram, varK, varT, additional=nothing; eval=Dia
     return diag.weight
 end
 
-function evalDiagTreeKT!(diag::Diagram, varK, varT; eval=DiagTree.eval)
+function evalKT!(diag::Diagram, varK, varT; eval=DiagTree.eval)
     for d in PostOrderDFS(diag)
         evalDiagNodeKT!(d, varK, varT; eval=eval)
     end
     return diag.weight
 end
 
-function evalDiagTreeKT!(diags::Vector{Diagram{W}}, varK, varT; eval=DiagTree.eval) where {W}
+function evalKT!(diags::Vector{Diagram{W}}, varK, varT; eval=DiagTree.eval) where {W}
     for d in diags
-        evalDiagTreeKT!(d, varK, varT; eval=eval)
+        evalKT!(d, varK, varT; eval=eval)
     end
     # return W[d.weight for d in diags]
 end
 
-function evalDiagTreeKT!(df::DataFrame, varK, varT; eval=DiagTree.eval) where {W}
+function evalKT!(df::DataFrame, varK, varT; eval=DiagTree.eval) where {W}
     for d in df[!, :diagram]
-        evalDiagTreeKT!(d, varK, varT; eval=eval)
+        evalKT!(d, varK, varT; eval=eval)
     end
     # return W[d.weight for d in df[!, :Diagram]]
 end
@@ -59,23 +73,23 @@ function evalDiagNode!(diag::Diagram, vargs...; eval=DiagTree.eval)
     return diag.weight
 end
 
-function evalDiagTree!(diag::Diagram, vargs...; eval=DiagTree.eval)
+function eval!(diag::Diagram, vargs...; eval=DiagTree.eval)
     for d in PostOrderDFS(diag)
         evalDiagNode!(d, vargs...; eval=eval)
     end
     return diag.weight
 end
 
-function evalDiagTree!(diags::Vector{Diagram{W}}, vargs...; eval=DiagTree.eval) where {W}
+function eval!(diags::Vector{Diagram{W}}, vargs...; eval=DiagTree.eval) where {W}
     for d in diags
-        evalDiagTree!(d, vargs...; eval=eval)
+        eval!(d, vargs...; eval=eval)
     end
-    return W[d.weight for d in diags]
+    # return W[d.weight for d in diags]
 end
 
-function evalDiagTree!(df::DataFrame, vargs...; eval=DiagTree.eval) where {W}
+function eval!(df::DataFrame, vargs...; eval=DiagTree.eval) where {W}
     for d in df[!, :diagram]
-        evalDiagTree!(d, vargs...; eval=eval)
+        eval!(d, vargs...; eval=eval)
     end
     # return W[d.weight for d in df[!, :Diagram]]
 end
