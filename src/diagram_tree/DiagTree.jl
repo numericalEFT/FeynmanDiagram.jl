@@ -30,6 +30,7 @@ export Diagram
 export addSubDiagram!
 export toDataFrame
 export evalDiagTree!
+export evalDiagTreeKT!
 export Operator, Sum, Prod
 export DiagramId, GenericId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId
 export PropagatorId, BareGreenId, BareInteractionId

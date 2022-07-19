@@ -2,7 +2,15 @@
 #     @code_warntype evalNaive!(diag, loopVar, siteVar, evalPropagator, evalNodeFactor, root)
 # end
 
-function evalNaive!(diag::ExpressionTree, loopVar, siteVar, eval = DiagTree.eval)
+function evalKT!(diag::ExpressionTree, additional=nothing; K=nothing, T=nothing, eval=DiagTree.eval)
+    evalKT!(diag, K, T, additional; eval=eval)
+end
+
+function evalNaive!(diag::ExpressionTree, loopVar, siteVar, additional=nothing; eval=DiagTree.eval)
+    evalKT!(diag, loopVar, siteVar, additional; eval=eval)
+end
+
+function evalKT!(diag::ExpressionTree, loopVar, siteVar, additional=nothing; eval=DiagTree.eval)
     loopPool = diag.loopBasis
     tree = diag.node
     tweight = tree.current
@@ -15,11 +23,32 @@ function evalNaive!(diag::ExpressionTree, loopVar, siteVar, eval = DiagTree.eval
     #calculate diagram tree
     for (ni, node) in enumerate(tree.object)
         if isempty(node.children)
-            if isnothing(loopPool) == false
-                tweight[ni] = eval(node.para, current(loopPool, node.loopidx), node.siteidx, siteVar) * node.factor
+            if (isnothing(loopPool) == false) && (isnothing(siteVar) == false)
+                if isnothing(additional)
+                    tweight[ni] = eval(node.para, current(loopPool, node.loopidx), node.siteidx, siteVar)
+                else
+                    tweight[ni] = eval(node.para, current(loopPool, node.loopidx), node.siteidx, siteVar, additional)
+                end
+            elseif isnothing(loopPool) == false
+                if isnothing(additional)
+                    tweight[ni] = eval(node.para, node.siteidx, siteVar)
+                else
+                    tweight[ni] = eval(node.para, node.siteidx, siteVar, additional)
+                end
+            elseif isnothing(siteVar) == false
+                if isnothing(additional)
+                    tweight[ni] = eval(node.para, current(loopPool, node.loopidx))
+                else
+                    tweight[ni] = eval(node.para, current(loopPool, node.loopidx), additional)
+                end
             else
-                tweight[ni] = eval(node.para, nothing, node.siteidx, siteVar) * node.factor
+                if isnothing(additional)
+                    tweight[ni] = eval(node.para)
+                else
+                    tweight[ni] = eval(node.para, additional)
+                end
             end
+            tweight[ni] *= node.factor
         else
             if node.operation == MUL
                 tweight[ni] = node.factor
