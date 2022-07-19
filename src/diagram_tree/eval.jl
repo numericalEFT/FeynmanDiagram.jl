@@ -5,13 +5,36 @@
 
 @inline eval(d::DiagramId) = error("eval for $d has not yet implemented!")
 
-function evalDiagNode!(diag::Diagram, varK, varT, evalBare::Function)
+######################### evaluator for KT representation ######################### 
+function evalDiagNodeKT!(diag::Diagram, varK, varT, additional=nothing; eval=DiagTree.eval)
     if length(diag.subdiagram) == 0
-        if hasproperty(diag.id, :extK)
+        # if hasproperty(diag.id, :extK)
+        if (isnothing(varK) == false) && (isnothing(varT) == false)
             K = varK * diag.id.extK
-            diag.weight = evalBare(diag.id, K, diag.id.extT, varT) * diag.factor
+            if isnothing(additional)
+                diag.weight = eval(diag.id, K, diag.id.extT, varT) * diag.factor
+            else
+                diag.weight = eval(diag.id, K, diag.id.extT, varT, additional) * diag.factor
+            end
+        elseif isnothing(varK)
+            if isnothing(additional)
+                diag.weight = eval(diag.id, diag.id.extT, varT) * diag.factor
+            else
+                diag.weight = eval(diag.id, diag.id.extT, varT, additional) * diag.factor
+            end
+        elseif isnothing(varT)
+            K = varK * diag.id.extK
+            if isnothing(additional)
+                diag.weight = eval(diag.id, K) * diag.factor
+            else
+                diag.weight = eval(diag.id, K, additional) * diag.factor
+            end
         else
-            diag.weight = evalBare(diag.id, nothing, diag.id.extT, varT) * diag.factor
+            if isnothing(additional)
+                diag.weight = eval(diag.id) * diag.factor
+            else
+                diag.weight = eval(diag.id, additional) * diag.factor
+            end
         end
     else
         diag.weight = apply(diag.operator, diag.subdiagram) * diag.factor
@@ -19,53 +42,54 @@ function evalDiagNode!(diag::Diagram, varK, varT, evalBare::Function)
     return diag.weight
 end
 
-function evalDiagTree!(diag::Diagram, varK, varT, evalBare::Function)
+function evalKT!(diag::Diagram, varK, varT; eval=DiagTree.eval)
     for d in PostOrderDFS(diag)
-        evalDiagNode!(d, varK, varT, evalBare)
+        evalDiagNodeKT!(d, varK, varT; eval=eval)
     end
     return diag.weight
 end
 
-function evalDiagTree!(diags::Vector{Diagram{W}}, varK, varT, evalBare::Function) where {W}
+function evalKT!(diags::Vector{Diagram{W}}, varK, varT; eval=DiagTree.eval) where {W}
     for d in diags
-        evalDiagTree!(d, varK, varT, evalBare)
+        evalKT!(d, varK, varT; eval=eval)
     end
     # return W[d.weight for d in diags]
 end
 
-function evalDiagTree!(df::DataFrame, varK, varT, evalBare::Function) where {W}
+function evalKT!(df::DataFrame, varK, varT; eval=DiagTree.eval) where {W}
     for d in df[!, :diagram]
-        evalDiagTree!(d, varK, varT, evalBare)
+        evalKT!(d, varK, varT; eval=eval)
     end
     # return W[d.weight for d in df[!, :Diagram]]
 end
 
-function evalDiagNode!(diag::Diagram, evalBare::Function, vargs...)
+######################### generic evaluator ######################### 
+function evalDiagNode!(diag::Diagram, vargs...; eval=DiagTree.eval)
     if length(diag.subdiagram) == 0
-        diag.weight = evalBare(diag.id, vargs...) * diag.factor
+        diag.weight = eval(diag.id, vargs...) * diag.factor
     else
         diag.weight = apply(diag.operator, diag.subdiagram) * diag.factor
     end
     return diag.weight
 end
 
-function evalDiagTree!(diag::Diagram, evalBare::Function, vargs...)
+function eval!(diag::Diagram, vargs...; eval=DiagTree.eval)
     for d in PostOrderDFS(diag)
-        evalDiagNode!(d, evalBare, vargs...)
+        evalDiagNode!(d, vargs...; eval=eval)
     end
     return diag.weight
 end
 
-function evalDiagTree!(diags::Vector{Diagram{W}}, evalBare::Function, vargs...) where {W}
+function eval!(diags::Vector{Diagram{W}}, vargs...; eval=DiagTree.eval) where {W}
     for d in diags
-        evalDiagTree!(d, evalBare, vargs...)
+        eval!(d, vargs...; eval=eval)
     end
-    return W[d.weight for d in diags]
+    # return W[d.weight for d in diags]
 end
 
-function evalDiagTree!(df::DataFrame, evalBare::Function, vargs...) where {W}
+function eval!(df::DataFrame, vargs...; eval=DiagTree.eval) where {W}
     for d in df[!, :diagram]
-        evalDiagTree!(d, evalBare, vargs...)
+        eval!(d, vargs...; eval=eval)
     end
     # return W[d.weight for d in df[!, :Diagram]]
 end
