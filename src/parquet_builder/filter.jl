@@ -20,7 +20,7 @@ function notProper(para, K)
     if Proper in para.filter
         transferLoop = para.transferLoop
         @assert isempty(transferLoop) == false "Please initialize para.transferLoop to check proper diagrams."
-        if transferLoop ≈ K
+        if transferLoop[1:length(K)] ≈ K #transfer loop may have higher dimension than K, then only compare the first K elements
             return true
         end
     end
