@@ -84,9 +84,9 @@ function derivative(diags::Union{Diagram,Tuple,AbstractVector}, ::Type{ID}; inde
         end
     end
     if single
-        return dual[diags[1].hash]
+        return isnothing(dual[diags[1].hash]) ? nothing : dual[diags[1].hash]
     else
-        return [dual[diag.hash] for diag in diags]
+        return [dual[diag.hash] for diag in diags if isnothing(dual[diag.hash]) == false]
     end
 end
 
