@@ -19,11 +19,15 @@ struct Node{PARA,F}
     loopidx::Int
     siteidx::Vector{Int}
     children::Vector{Int}
-    function Node{P,F}(name::Symbol, para; loopidx = 0, siteidx = [], operator = ADD, children = [], factor = 1.0) where {F,P}
+    function Node{P,F}(name::Symbol, para; loopidx=0, siteidx=[], operator=ADD, children=[], factor=1.0) where {F,P}
         # @assert typeof(para) == P
         return new{P,F}(name, para, operator, F(factor), loopidx, siteidx, children)
     end
 end
+
+# function Base.show(io::IO, node::Node)
+#     print(io, "Node#$(node.name):$(node.para)")
+# end
 
 function Base.isequal(a::Node{P}, b::Node{P}) where {P}
     # only parent is allowed to be different
@@ -51,7 +55,7 @@ mutable struct ExpressionTree{V,PARA,F,W}
     loopBasis::V
     node::CachedPool{Node{PARA,F},W}
     root::Vector{Int}
-    function ExpressionTree(; loopBasis::V, weight::DataType, factor::DataType = weight, nodePara::DataType = Nothing, name = :none) where {V}
+    function ExpressionTree(; loopBasis::V, weight::DataType, factor::DataType=weight, nodePara::DataType=Nothing, name=:none) where {V}
         nodePool = CachedPool(:node, Node{nodePara,factor}, weight)
         return new{V,nodePara,factor,weight}(name, loopBasis, nodePool, [])
     end
@@ -77,7 +81,7 @@ Base.lastindex(diag::ExpressionTree) = length(diag.root)
 - loop = nothing : loop basis (e.g, momentum and frequency) of the propagator.
 - para = nothing : Additional paramenter required to evaluate the propagator.
 """
-function addpropagator!(diag::ExpressionTree{V,PARA,F,W}, name, factor = 1.0; site = [], loop = nothing, para = nothing, order::Int = 0) where {V,PARA,F,W}
+function addpropagator!(diag::ExpressionTree{V,PARA,F,W}, name, factor=1.0; site=[], loop=nothing, para=nothing, order::Int=0) where {V,PARA,F,W}
     loopPool = diag.loopBasis
     loopidx = 0
     if isnothing(loop) == false
@@ -85,7 +89,7 @@ function addpropagator!(diag::ExpressionTree{V,PARA,F,W}, name, factor = 1.0; si
         loopidx = append(loopPool, loop)
     end
     # prop = Propagator{pPARA,F}(name, order, para, factor, loopidx, collect(site))
-    prop = Node{PARA,F}(name, para; factor = factor, loopidx = loopidx, siteidx = collect(site))
+    prop = Node{PARA,F}(name, para; factor=factor, loopidx=loopidx, siteidx=collect(site))
     # pidx = append(diag.propagator, prop)
     pidx = append(diag.node, prop)
     # return component(pidx, false, propagatorPool[index].name)
@@ -105,14 +109,14 @@ end
 - factor = 1.0          : Factor of the node
 - para = nothing        : Additional paramenter required to evaluate the node. Set to nothing by default.
 """
-function addnode!(diag::ExpressionTree{V,PARA,F,W}, operator, name, children::Union{Tuple,AbstractVector}, factor = 1.0; para = nothing) where {V,PARA,F,W}
+function addnode!(diag::ExpressionTree{V,PARA,F,W}, operator, name, children::Union{Tuple,AbstractVector}, factor=1.0; para=nothing) where {V,PARA,F,W}
     nodePool = diag.node
 
     for nidx in children
         @assert nidx <= length(diag.node) "Failed to add node with propagator = $propagator, and child =$children. $nidx is not in nodePool."
     end
 
-    node = Node{PARA,F}(name, para; operator = operator, children = children, factor = factor)
+    node = Node{PARA,F}(name, para; operator=operator, children=children, factor=factor)
 
     nidx = append(nodePool, node)
     return nidx
