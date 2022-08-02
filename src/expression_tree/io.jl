@@ -1,7 +1,7 @@
-function printBasisPool(diag, io = Base.stdout)
-    printstyled(io, "Loop Basis ($(length(diag.loopBasis)) in total)\n", color = :blue)
+function printBasisPool(diag, io=Base.stdout)
+    printstyled(io, "Loop Basis ($(length(diag.loopBasis)) in total)\n", color=:blue)
     title = @sprintf("%5s%40s\n", "index", "loopBasis")
-    printstyled(io, title, color = :green)
+    printstyled(io, title, color=:green)
     for i = 1:length(diag.loopBasis)
         b = diag.loopBasis.basis[:, i]
         @printf(io, "%5i%40s\n", i, "$b")
@@ -9,10 +9,10 @@ function printBasisPool(diag, io = Base.stdout)
     println(io)
 end
 
-function printNodes(diag, io = Base.stdout)
-    printstyled(io, "Node ($(length(diag.node)) in total)\n", color = :blue)
+function printNodes(diag, io=Base.stdout)
+    printstyled(io, "Node ($(length(diag.node)) in total)\n", color=:blue)
     title = @sprintf("%5s%5s%40s%40s\n", "index", "name", "para", "child")
-    printstyled(io, title, color = :green)
+    printstyled(io, title, color=:green)
     for (idx, n) in enumerate(diag.node.object)
         # site = isempty(p.siteBasis) ? "" : "$(p.siteBasis)"
         # loop = p.loopIdx <= 0 ? "" : "$(diag.basisPool[p.loopIdx])"
@@ -28,6 +28,12 @@ function printNodes(diag, io = Base.stdout)
     println(io)
 end
 
+function Base.show(io::IO, tree::ExpressionTree)
+    print(io, "ExprTree: $(tree.name) with root $(tree.root)")
+    # print(io, "$(short(v.response))#$(v.order), k$(v.extK), t$(v.extT)")
+end
+
+
 """
     showTree(diag::Diagrams, _root = diag.root[end]; verbose = 0, depth = 999)
 
@@ -39,7 +45,7 @@ end
 - `verbose=0`: the amount of information to show
 - `depth=999`: deepest level of the diagram tree to show
 """
-function showTree(tree::ExpressionTree, _root::Int; verbose = 0, depth = 999)
+function showTree(tree::ExpressionTree, _root::Int; verbose=0, depth=999)
 
     # pushfirst!(PyVector(pyimport("sys")."path"), @__DIR__) #comment this line if no need to load local python module
     ete = PyCall.pyimport("ete3")
@@ -78,9 +84,9 @@ function showTree(tree::ExpressionTree, _root::Int; verbose = 0, depth = 999)
     end
 
 
-    function treeview(idx::Int, level, t = nothing)
+    function treeview(idx::Int, level, t=nothing)
         if isnothing(t)
-            t = ete.Tree(name = " ")
+            t = ete.Tree(name=" ")
         end
 
         if tree.node.object[idx] isa PropagatorId
@@ -88,17 +94,17 @@ function showTree(tree::ExpressionTree, _root::Int; verbose = 0, depth = 999)
             site = isempty(p.siteBasis) ? "" : " t$(p.siteBasis),"
             loop = p.loopIdx <= 0 ? "" : "k$(tree.loopBasis[p.loopIdx])"
             # loop = p.loopIdx <= 0 ? "" : "$(p.loopIdx)"
-            nnt = t.add_child(name = "P$(idx)$(name_para(p)): $loop,$site $(factor(p.factor))")
+            nnt = t.add_child(name="P$(idx)$(name_para(p)): $loop,$site $(factor(p.factor))")
         else # composite node
-            nt = t.add_child(name = info(tree.node.object[idx], idx))
-            name_face = ete.TextFace(nt.name, fgcolor = "black", fsize = 10)
-            nt.add_face(name_face, column = 0, position = "branch-top")
+            nt = t.add_child(name=info(tree.node.object[idx], idx))
+            name_face = ete.TextFace(nt.name, fgcolor="black", fsize=10)
+            nt.add_face(name_face, column=0, position="branch-top")
 
             for child in tree.node.object[idx].children
                 if child != -1
                     treeview(child, level + 1, nt)
                 else
-                    nnt = nt.add_child(name = "0")
+                    nnt = nt.add_child(name="0")
                 end
             end
         end
@@ -124,7 +130,7 @@ function showTree(tree::ExpressionTree, _root::Int; verbose = 0, depth = 999)
     # ts.arc_start = -180
     # ts.arc_span = 180
     # t.write(outfile="/home/kun/test.txt", format=8)
-    t.show(tree_style = ts)
+    t.show(tree_style=ts)
 end
 # function showTree(diag::ExpressionTree, _root::Component; kwargs...)
 #     @assert _root.isNode "Can not visualize $_root, because it is not a Node!"
