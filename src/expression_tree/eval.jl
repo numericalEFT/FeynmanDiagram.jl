@@ -16,7 +16,7 @@ function evalKT!(diag::ExpressionTree, loopVar, siteVar, additional=nothing; eva
     tweight = tree.current
 
     # calculate new loop
-    if isnothing(loopPool) == false
+    if (isnothing(loopPool) == false) && (isnothing(loopVar) == false)
         update(loopPool, loopVar)
     end
 
