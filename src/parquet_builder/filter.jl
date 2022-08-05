@@ -29,7 +29,7 @@ end
 
 # check if G exist without creating objects in the pool
 function isValidG(filter, innerLoopNum::Int)
-    if (NoFock in filter) && (innerLoopNum == 1)
+    if ((NoFock in filter) || (NoHatree in filter)) && (innerLoopNum == 1)
         return false
     end
 
@@ -54,7 +54,7 @@ function isValidSigma(filter, innerLoopNum::Int, subdiagram::Bool)
         return false
     end
 
-    if subdiagram && (NoFock in filter) && innerLoopNum == 1
+    if subdiagram && ((NoFock in filter) || (NoHatree in filter)) && innerLoopNum == 1
         return false
     end
 
