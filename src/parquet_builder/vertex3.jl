@@ -106,7 +106,8 @@ function vertex3(para, extK=[DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(
         return DataFrame(response=[], extT=[], diagram=[])
     end
 
-    Factor = 1 / (2π)^para.loopDim
+    # Factor = 1 / (2π)^para.loopDim
+    Factor = 1.0
 
     ver3 = mergeby(vertex3, [:response, :extT]; name=name, factor=Factor,
         getid=g -> Ver3Id(para, g[1, :response], k=extK, t=g[1, :extT])

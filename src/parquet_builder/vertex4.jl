@@ -396,7 +396,8 @@ end
 
 
 function factor(para, chan)
-    Factor = SymFactor[Int(chan)] / (2π)^para.loopDim
+    # Factor = SymFactor[Int(chan)] / (2π)^para.loopDim
+    Factor = SymFactor[Int(chan)]
     if para.isFermi == false
         Factor = abs(Factor)
     end

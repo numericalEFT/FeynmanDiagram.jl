@@ -89,8 +89,12 @@ function sigma(para, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false;
         #TODO: add validation for paraW
         if isValidG(paraG)
             if oW == 0 # Fock-type Σ
-                paraW0 = reconstruct(paraW, filter=union(paraW.filter, Proper), transferLoop=zero(K))
-                ver4 = vertex4(paraW0, legK, [], true)
+                if NoHatree in paraW.filter
+                    paraW0 = reconstruct(paraW, filter=union(paraW.filter, Proper), transferLoop=zero(K))
+                    ver4 = vertex4(paraW0, legK, [], true)
+                else
+                    ver4 = vertex4(paraW, legK, [], true)
+                end
             else # composite Σ
                 # paraW0 = reconstruct(paraW, filter=union(paraW.filter, Proper), transferLoop=extK-K)
                 ver4 = vertex4(paraW, legK, [PHr,], true, phi_toplevel=[], Γ4_toplevel=[PHr, PHEr, PPr,])
@@ -111,7 +115,8 @@ function sigma(para, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false;
         return DataFrame(type=[], extT=[], diagram=[])
     end
 
-    Factor = 1 / (2π)^para.loopDim
+    # Factor = 1 / (2π)^para.loopDim
+    Factor = 1.0
     sigmadf = mergeby(compositeSigma, [:type, :extT], name=name, factor=Factor,
         getid=g -> SigmaId(para, g[1, :type], k=extK, t=g[1, :extT]))
 
