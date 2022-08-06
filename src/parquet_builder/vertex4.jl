@@ -111,6 +111,7 @@ function vertex4(para::GenericPara,
     groups = mergeby(df, [:response, :type, :extT], name=name,
         getid=g -> Ver4Id(para, g[1, :response], g[1, :type], k=legK, t=g[1, :extT]) #generate id from the dataframe
     )
+    # println(typeof(groups))
     return groups
 end
 
