@@ -3,7 +3,7 @@ using Lehmann
 using LinearAlgebra
 
 const diagType = Ver4Diag
-const Order = 3
+const Order = 4
 const Circle = 100000
 
 const kF = 1.919
@@ -41,8 +41,18 @@ diagPara(order) = GenericPara(diagType=diagType, innerLoopNum=order, hasTau=true
 println("Build the diagrams into an experssion tree ...")
 const para = [diagPara(o) for o in 1:Order]
 
-#diagram of different orders
 if diagType == SigmaDiag
+    diags = [Parquet.sigma(para[i]) for i in 1:1]
+elseif diagType == PolarDiag
+    diags = [Parquet.polarization(para[i]) for i in 1:1]
+elseif diagType == Ver4Diag
+    diags = [Parquet.vertex4(para[i]) for i in 1:1]
+else
+    error("not implemented!")
+end
+
+#diagram of different orders
+@time if diagType == SigmaDiag
     diags = [Parquet.sigma(para[i]) for i in 1:Order]
 elseif diagType == PolarDiag
     diags = [Parquet.polarization(para[i]) for i in 1:Order]
