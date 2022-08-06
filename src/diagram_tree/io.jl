@@ -14,6 +14,24 @@ function toDict(diag::Diagram; maxdepth::Int)
     return d
 end
 
+function _addkey!(dict, key, val)
+    @assert haskey(dict, key) == false "key already exists!"
+    dict[key] = val
+end
+
+function _DiagtoDict!(dict::Dict{Symbol,Any}, diagVec::Vector{Diagram{W}}; maxdepth::Int) where {W}
+    @assert maxdepth == 1 "deep convert has not yet been implemented!"
+    _addkey!(dict, :hash, [diag.hash for diag in diagVec])
+    _addkey!(dict, :id, [diag.id for diag in diagVec])
+    _addkey!(dict, :name, [diag.name for diag in diagVec])
+    _addkey!(dict, :diagram, diagVec)
+    _addkey!(dict, :subdiagram, [Tuple(d.hash for d in diag.subdiagram) for diag in diagVec])
+    _addkey!(dict, :operator, [diag.operator for diag in diagVec])
+    _addkey!(dict, :factor, [diag.factor for diag in diagVec])
+    _addkey!(dict, :weight, [diag.weight for diag in diagVec])
+    return dict
+end
+
 function toDict(v::DiagramId)
     d = Dict{Symbol,Any}()
     for field in fieldnames(typeof(v))
@@ -24,15 +42,58 @@ function toDict(v::DiagramId)
     return d
 end
 
-# function toDataFrame(diagVec::AbstractVector; expand::Bool = false)
+function _vec2tup(data)
+    return data isa AbstractVector ? Tuple(data) : data
+end
 
-# end
+function _IdstoDict!(dict::Dict{Symbol,Any}, diagVec::Vector{Diagram{W}}, idkey::Symbol) where {W}
+    sameId = all(x -> (typeof(x.id) == typeof(diagVec[1].id)), diagVec)
+    if sameId
+        data = [_vec2tup(getproperty(diagVec[1].id, idkey)),]
+        for idx in 2:length(diagVec)
+            push!(data, _vec2tup(getproperty(diagVec[idx].id, idkey)))
+        end
+    else
+        data = Vector{Any}(_vec2tup(getproperty(diag.id, idkey)) for diag in diagVec)
+    end
+    _addkey!(dict, idkey, data)
+    return dict
+end
 
-function toDataFrame(diagVec::AbstractVector; expand::Bool = false, maxdepth::Int = 1)
-    vec_of_diag_dict = [toDict(d, maxdepth = maxdepth) for d in diagVec]
-    vec_of_id_dict = [toDict(d.id) for d in diagVec]
+function toDataFrame2(diagVec::AbstractVector; expand::Symbol=:all, maxdepth::Int=1)
+    if expand == :all || expand == :All
+        names = Set{Symbol}()
+        for diag in diagVec
+            for field in fieldnames(typeof(diag.id))
+                push!(names, field)
+            end
+        end
+        return toDataFrame(diagVec; expand=collect(names), maxdepth=maxdepth)
+    else
+        return toDataFrame(diagVec; expand=[expand,], maxdepth=maxdepth)
+    end
+end
+
+function toDataFrame3(diagVec::AbstractVector; expand::Vector{Symbol}=[], maxdepth::Int=1)
+    if isempty(diagVec)
+        return DataFrame()
+    end
+    d = Dict{Symbol,Any}()
+    _DiagtoDict!(d, diagVec, maxdepth=maxdepth)
+    if isempty(expand) == false
+        for idkey in expand
+            _IdstoDict!(d, diagVec, idkey)
+        end
+    end
+    df = DataFrame(d)
+    return df
+end
+
+function toDataFrame(diagVec::AbstractVector; expand::Bool=false, maxdepth::Int=1)
+    vec_of_diag_dict = [toDict(d, maxdepth=maxdepth) for d in diagVec]
     names = Set(reduce(union, keys(d) for d in vec_of_diag_dict))
     if expand
+        vec_of_id_dict = [toDict(d.id) for d in diagVec]
         idnames = Set(reduce(union, keys(d) for d in vec_of_id_dict))
         @assert isempty(intersect(names, idnames)) "collision of diagram names $names and id names $idnames"
         names = union(names, idnames)
@@ -45,14 +106,14 @@ function toDataFrame(diagVec::AbstractVector; expand::Bool = false, maxdepth::In
     df = DataFrame([name => [] for name in names])
 
     for dict in vec_of_diag_dict
-        append!(df, dict, cols = :union)
+        append!(df, dict, cols=:union)
     end
     return df
 end
 
-function _summary(diag::Diagram{W}, color = true) where {W}
+function _summary(diag::Diagram{W}, color=true) where {W}
 
-    function short(factor, ignore = nothing)
+    function short(factor, ignore=nothing)
         if isnothing(ignore) == false && applicable(isapprox, factor, ignore) && factor ≈ ignore
             return ""
         end
@@ -100,20 +161,20 @@ end
 - `verbose=0`   : the amount of information to show
 - `maxdepth=6`  : deepest level of the diagram tree to show
 """
-function plot_tree(diag::Diagram; verbose = 0, maxdepth = 6)
+function plot_tree(diag::Diagram; verbose=0, maxdepth=6)
 
     # pushfirst!(PyVector(pyimport("sys")."path"), @__DIR__) #comment this line if no need to load local python module
     ete = PyCall.pyimport("ete3")
 
-    function treeview(node, level, t = ete.Tree(name = " "))
+    function treeview(node, level, t=ete.Tree(name=" "))
         if level > maxdepth
             return
         end
-        nt = t.add_child(name = "$(node.hash): $(_summary(node, false))")
+        nt = t.add_child(name="$(node.hash): $(_summary(node, false))")
 
         if length(node.subdiagram) > 0
-            name_face = ete.TextFace(nt.name, fgcolor = "black", fsize = 10)
-            nt.add_face(name_face, column = 0, position = "branch-top")
+            name_face = ete.TextFace(nt.name, fgcolor="black", fsize=10)
+            nt.add_face(name_face, column=0, position="branch-top")
             for child in node.subdiagram
                 treeview(child, level + 1, nt)
             end
@@ -140,7 +201,7 @@ function plot_tree(diag::Diagram; verbose = 0, maxdepth = 6)
     # ts.arc_start = -180
     # ts.arc_span = 180
     # t.write(outfile="/home/kun/test.txt", format=8)
-    t.show(tree_style = ts)
+    t.show(tree_style=ts)
 end
 function plot_tree(diags::Vector{Diagram{W}}; kwargs...) where {W}
     for diag in diags
