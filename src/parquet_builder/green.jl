@@ -61,7 +61,7 @@ function green(para, extK=DiagTree.getK(para.totalLoopNum, 1), extT=para.hasTau 
 
     para0 = reconstruct(para, innerLoopNum=0) #parameter for g0
     g0 = Diagram(BareGreenId(para0, k=extK, t=(tin, t0)), name=:g0)
-    ΣGpairs = []
+    ΣGpairs = Vector{Diagram{para.weightType}}()
     for p in orderedPartition(para.innerLoopNum, 2, 0)
         oΣ, oG = p
 
@@ -93,8 +93,9 @@ function green(para, extK=DiagTree.getK(para.totalLoopNum, 1), extT=para.hasTau 
         #for each sigma group, attach a G, all pair ΣG share the same in and out Tidx
         append!(ΣGpairs, [ΣG(g, oG, GfirstTidx, GfirstKidx, ΣfirstTidx) for g in eachrow(groups)])
     end
-    ΣGmerged = mergeby(ΣGpairs, operator=Sum(), name=:gΣG)
-    @assert nrow(ΣGmerged) == 1
-    G = Diagram(GreenId(para, k=extK, t=extT), Prod(), [g0, ΣGmerged.diagram[1]], name=:G)
+    # println(ΣGpairs)
+    # println(operator)
+    ΣGmerged = mergeby(ΣGpairs; operator=Sum(), name=:gΣG)
+    G = Diagram(GreenId(para, k=extK, t=extT), Prod(), [g0, ΣGmerged], name=:G)
     return G
 end

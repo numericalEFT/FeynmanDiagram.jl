@@ -149,9 +149,32 @@ function mergeby(df::DataFrame, fields=Vector{Symbol}();
     end
 end
 
-function mergeby(diags::AbstractVector, fields=[]; expand::Bool=false, kwargs...)
-    df = toDataFrame(diags, expand=expand)
-    return mergeby(df, fields; kwargs...)
+# function mergeby(diags::AbstractVector, fields=[]; idkey::Vector{Symbol}=[], kwargs...)
+function mergeby(diags::AbstractVector{Diagram{W}}, fields; idkey=Vector{Symbol}(), kwargs...) where {W}
+    df = toDataFrame(diags, idkey)
+    mergedf = mergeby(df, fields; kwargs...)
+    return mergedf.diagram
+end
+
+function mergeby(diags::AbstractVector{Diagram{W}};
+    operator=Sum(), name::Symbol=:none, factor=1.0,
+    getid::Function=d -> GenericId(d[1].id.para)
+) where {W}
+    if isempty(diags)
+        return diags
+    else
+        id = getid(diags)
+        # if there is only one diagram, and the new id is either GenericId or the id of the existing diagram, 
+        # then simply return the current diagram without creating a new diagram
+        # ! the new factor will be multiplied to the factor of the exisiting diagram!
+        if length(diags) == 1 && (id isa GenericId || typeof(id) == typeof(diags[1].id))
+            diag = diags[1]
+            diag.factor *= factor
+            return diag
+        end
+        diag = Diagram(id, operator, diags, name=name, factor=factor)
+        return diag
+    end
 end
 # mergeby(df::DataFrame; kwargs...) = mergeby(df, []; kwargs...)
 # mergeby(diags::Vector{Diagram{W}}; kwargs...) where {W} = mergeby(diags, []; kwargs...)

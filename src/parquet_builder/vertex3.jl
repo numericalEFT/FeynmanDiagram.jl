@@ -37,7 +37,7 @@ function vertex3(para, extK=[DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(
     end
 
     t0 = para.firstTauIdx
-    vertex3 = DataFrame()
+    vertex3 = DataFrame(response=Response[], extT=Tuple{Int,Int,Int}[], diagram=Diagram{para.weightType}[])
 
     # if para.innerLoopNum == 0
     #     push!(vertex3, (response = UpUp, extT = (t0, t0, t0), diagram = ver3diag))
@@ -103,14 +103,13 @@ function vertex3(para, extK=[DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(
     end
 
     if isempty(vertex3)
-        return DataFrame(response=[], extT=[], diagram=[])
+        return vertex3
+    else
+        # Factor = 1 / (2π)^para.loopDim
+        Factor = 1.0
+        ver3 = mergeby(vertex3, [:response, :extT]; name=name, factor=Factor,
+            getid=g -> Ver3Id(para, g[1, :response], k=extK, t=g[1, :extT])
+        )
+        return ver3
     end
-
-    # Factor = 1 / (2π)^para.loopDim
-    Factor = 1.0
-
-    ver3 = mergeby(vertex3, [:response, :extT]; name=name, factor=Factor,
-        getid=g -> Ver3Id(para, g[1, :response], k=extK, t=g[1, :extT])
-    )
-    return ver3
 end

@@ -65,7 +65,7 @@ function vertex4(para::GenericPara,
     loopNum = para.innerLoopNum
     @assert loopNum >= 0
 
-    diags = Diagram{para.weightType}[]
+    # diags = Diagram{para.weightType}[]
 
     if loopNum == 0
         if subchannel == :W || subchannel == :RPA || subchannel == :LVer3 || subchannel == :RVer3
@@ -73,8 +73,11 @@ function vertex4(para::GenericPara,
         else
             permutation = [Di, Ex]
         end
-        append!(diags, bareVer4(para, legK, permutation))
+        ver4df = bareVer4(para, legK, permutation)
+        # push!(ver4df, (response =))
+        # append!(diags, bareVer4(para, legK, permutation))
     else # loopNum>0
+        ver4df = DataFrame(response=Response[], type=AnalyticProperty[], extT=Tuple{Int,Int,Int,Int}[], diagram=Diagram{para.weightType}[])
         for c in chan
             if c == Alli
                 continue
@@ -85,12 +88,10 @@ function vertex4(para::GenericPara,
             for p in partition
 
                 if c == PHr || c == PHEr || c == PPr
-                    bub = bubble(para, legK, c, p, level, name, phi_toplevel, ppi_toplevel, Γ4_toplevel, 1.0, subchannel)
-                    append!(diags, bub)
+                    bubble!(ver4df, para, legK, c, p, level, name, phi_toplevel, ppi_toplevel, Γ4_toplevel, 1.0, subchannel)
                     if (NoBubble in para.filter) && (loopNum == 1) && (c == PHr || c == PHEr)
                         #add bubble counter-diagram to remove the bubble
-                        cbub = bubble(para, legK, c, p, level, Symbol("$(name)_counter"), phi_toplevel, ppi_toplevel, Γ4_toplevel, -1.0, :RPA)
-                        append!(diags, cbub)
+                        bubble!(ver4df, para, legK, c, p, level, Symbol("$(name)_counter"), phi_toplevel, ppi_toplevel, Γ4_toplevel, -1.0, :RPA)
                     end
                     # println(bub)
                 end
@@ -98,32 +99,43 @@ function vertex4(para::GenericPara,
         end
         # # TODO: add envolpe diagrams
     end
+    diags = ver4df.diagram
     @assert all(x -> x.id isa Ver4Id, diags) "not all id are Ver4Id! $diags"
     @assert all(x -> x.id.extK ≈ legK, diags) "not all extK are the same! $diags"
 
     # @assert isempty(diags) == false "got empty ver4! $chan with\n $para\n"
-    if isempty(diags)
-        return DataFrame(response=[], type=[], extT=[], diagram=[])
-    end
+    # if isempty(diags)
+    #     return DataFrame(response=[], type=[], extT=[], diagram=[])
+    # end
 
-    df = toDataFrame(diags, expand=true)
-    # println(df[:, [:response, :type, :extT, :diagram]])
-    groups = mergeby(df, [:response, :type, :extT], name=name,
-        getid=g -> Ver4Id(para, g[1, :response], g[1, :type], k=legK, t=g[1, :extT]) #generate id from the dataframe
-    )
+    # df = toDataFrame(diags, [:response, :type, :extT])
+    # # println(df[:, [:response, :type, :extT, :diagram]])
+    # groups = mergeby(df, [:response, :type, :extT], name=name,
+    #     getid=g -> Ver4Id(para, g[1, :response], g[1, :type], k=legK, t=g[1, :extT]) #generate id from the dataframe
+    # )
+
+    if isempty(ver4df)
+        return ver4df
+    else
+        df = mergeby(ver4df, [:response, :type, :extT], name=name,
+            getid=g -> Ver4Id(para, g[1, :response], g[1, :type], k=legK, t=g[1, :extT]) #generate id from the dataframe
+        )
+        return df
+    end
     # println(typeof(groups))
-    return groups
+    # return groups
 end
 
-function bubble(para::GenericPara, legK, chan::TwoBodyChannel, partition::Vector{Int}, level::Int, name::Symbol,
+function bubble!(ver4df, para::GenericPara, legK, chan::TwoBodyChannel, partition::Vector{Int}, level::Int, name::Symbol,
     phi_toplevel, ppi_toplevel, Γ4_toplevel, extrafactor=1.0, subchannel=:All)
 
-    diag = Diagram{para.weightType}[]
+    # diag = Diagram{para.weightType}[]
 
     TauNum = para.interactionTauNum # maximum tau number for each bare interaction
     oL, oG0, oR, oGx = partition[1], partition[2], partition[3], partition[4]
     if isValidG(para.filter, oG0) == false || isValidG(para.filter, oGx) == false
-        return diag
+        # return diag
+        return
     end
 
     #the first loop idx is the inner loop of the bubble!
@@ -159,10 +171,12 @@ function bubble(para::GenericPara, legK, chan::TwoBodyChannel, partition::Vector
     ls, rs = subChannel(subchannel)
 
     Lver = vertex4(lPara, LLegK, Γi, true; level=level + 1, name=:Γi, subchannel=ls)
-    isempty(Lver) && return diag
+    # isempty(Lver) && return diag
+    isempty(Lver) && return
     # println("Γf: ", Γf)
     Rver = vertex4(rPara, RLegK, Γf, true; level=level + 1, name=:Γf, subchannel=rs)
-    isempty(Rver) && return diag
+    # isempty(Rver) && return diag
+    isempty(Rver) && return
 
     for ldiag in Lver.diagram
         for rdiag in Rver.diagram
@@ -170,13 +184,15 @@ function bubble(para::GenericPara, legK, chan::TwoBodyChannel, partition::Vector
             g0 = green(g0Para, K, G0T, true, name=:G0)
             gx = green(gxPara, Kx, GxT, true, name=:Gx)
             @assert g0 isa Diagram && gx isa Diagram
-            append!(diag, bubble2diag(para, chan, ldiag, rdiag, legK, g0, gx, extrafactor))
+            # append!(diag, bubble2diag(para, chan, ldiag, rdiag, legK, g0, gx, extrafactor))
+            bubble2diag!(ver4df, para, chan, ldiag, rdiag, legK, g0, gx, extrafactor)
         end
     end
-    return diag
+    # return diag
+    return
 end
 
-function bubble2diag(para, chan, ldiag, rdiag, extK, g0, gx, extrafactor)
+function bubble2diag!(ver4df, para, chan, ldiag, rdiag, extK, g0, gx, extrafactor)
     lid, rid = ldiag.id, rdiag.id
     ln, rn = lid.response, rid.response
     lo, ro = lid.para.innerLoopNum, rid.para.innerLoopNum
@@ -186,13 +202,15 @@ function bubble2diag(para, chan, ldiag, rdiag, extK, g0, gx, extrafactor)
     Factor = factor(para, chan) * extrafactor
     spin(response) = (response == UpUp ? "↑↑" : "↑↓")
 
-    diag = Diagram{para.weightType}[]
+    # diag = Diagram{para.weightType}[]
 
     function add(Lresponse::Response, Rresponse::Response, Vresponse::Response, factor=1.0)
         if ln == Lresponse && rn == Rresponse
             nodeName = Symbol("$(spin(Lresponse))x$(spin(Rresponse)) → $chan,")
             id = Ver4Id(para, Vresponse, vtype, k=extK, t=extT, chan=chan)
-            push!(diag, Diagram(id, Prod(), [g0, gx, ldiag, rdiag], factor=factor * Factor, name=nodeName))
+            diag = Diagram(id, Prod(), [g0, gx, ldiag, rdiag], factor=factor * Factor, name=nodeName)
+            push!(ver4df, (response=Vresponse, type=vtype, extT=extT, diagram=diag))
+            # push!(diag, Diagram(id, Prod(), [g0, gx, ldiag, rdiag], factor=factor * Factor, name=nodeName))
         end
     end
 
@@ -220,7 +238,8 @@ function bubble2diag(para, chan, ldiag, rdiag, extK, g0, gx, extrafactor)
         error("chan $chan isn't implemented!")
     end
 
-    return diag
+    # return diag
+    return
 end
 
 function bareVer4(para::GenericPara, legK, diex::Vector{Permutation}=[Di, Ex])
@@ -229,7 +248,8 @@ function bareVer4(para::GenericPara, legK, diex::Vector{Permutation}=[Di, Ex])
     KinL, KoutL, KinR = legK[1], legK[2], legK[3]
     t0 = para.firstTauIdx
 
-    nodes = Diagram{para.weightType}[]
+    nodes = DataFrame(response=Response[], type=AnalyticProperty[], extT=Tuple{Int,Int,Int,Int}[], diagram=Diagram{para.weightType}[])
+    # nodes = Diagram{para.weightType}[]
 
     q = [KinL - KoutL, KinR - KoutL]
 
@@ -268,10 +288,10 @@ function bareVer4(para::GenericPara, legK, diex::Vector{Permutation}=[Di, Ex])
 
     function addver4!(response::Response, type, _extT, vd, ve)
         id_di = Ver4Id(para, response, type, k=legK, t=_extT[DI])
-        (isnothing(vd) == false) && push!(nodes, Diagram(id_di, Sum(), [vd,]))
+        (isnothing(vd) == false) && push!(nodes, (response=response, type=type, extT=_extT[DI], diagram=Diagram(id_di, Sum(), [vd,])))
 
         id_ex = Ver4Id(para, response, type, k=legK, t=_extT[EX])
-        (isnothing(ve) == false) && push!(nodes, Diagram(id_ex, Sum(), [ve,]))
+        (isnothing(ve) == false) && push!(nodes, (response=response, type=type, extT=_extT[EX], diagram=Diagram(id_ex, Sum(), [ve,])))
         # end
     end
 
