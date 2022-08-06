@@ -28,8 +28,11 @@ function sigma(para, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false;
     @assert length(extK) >= para.totalLoopNum "expect dim of extK>=$(para.totalLoopNum), got $(length(extK))"
     extK = extK[1:para.totalLoopNum]
 
+    compositeSigma = DataFrame(type=AnalyticProperty[], extT=Tuple{Int,Int}[], diagram=Diagram{para.weightType}[])
+
     if isValidSigma(para.filter, para.innerLoopNum, subdiagram) == false
-        return DataFrame(type=[], extT=[], diagram=[])
+        # return DataFrame(type=[], extT=[], diagram=[])
+        return compositeSigma
     end
 
     if (para.extra isa ParquetBlocks) == false
@@ -67,8 +70,6 @@ function sigma(para, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false;
         # plot_tree(sigmadiag, maxdepth = 7)
         return (type=type, extT=group[:extT], diagram=sigmadiag)
     end
-
-    compositeSigma = DataFrame()
 
     for (oG, oW) in orderedPartition(para.innerLoopNum - 1, 2, 0)
 
@@ -112,16 +113,16 @@ function sigma(para, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false;
     end
 
     if isempty(compositeSigma)
-        return DataFrame(type=[], extT=[], diagram=[])
+        return compositeSigma
+    else
+        # Factor = 1 / (2π)^para.loopDim
+        Factor = 1.0
+        sigmadf = mergeby(compositeSigma, [:type, :extT], name=name, factor=Factor,
+            getid=g -> SigmaId(para, g[1, :type], k=extK, t=g[1, :extT]))
+
+        @assert all(x -> x[1] == para.firstTauIdx, sigmadf.extT) "all sigma should share the same in Tidx\n$sigmadf"
+        # println(sigmadf)
+        # plot_tree(sigmadf)
+        return sigmadf
     end
-
-    # Factor = 1 / (2π)^para.loopDim
-    Factor = 1.0
-    sigmadf = mergeby(compositeSigma, [:type, :extT], name=name, factor=Factor,
-        getid=g -> SigmaId(para, g[1, :type], k=extK, t=g[1, :extT]))
-
-    @assert all(x -> x[1] == para.firstTauIdx, sigmadf.extT) "all sigma should share the same in Tidx\n$sigmadf"
-    # println(sigmadf)
-    # plot_tree(sigmadf)
-    return sigmadf
 end

@@ -38,7 +38,7 @@ function polarization(para, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram
     extT = para.hasTau ? (t0, t0 + 1) : (t0, t0)
     legK = [extK, K, K .- extK]
 
-    polar = DataFrame()
+    polar = DataFrame(response=Response[], extT=Tuple{Int,Int}[], diagram=Diagram{para.weightType}[])
 
     for (oVer3, oGin, oGout) in orderedPartition(para.innerLoopNum - 1, 3, 0)
         # ! Vertex3 must be in the first place, because we want to make sure that the bosonic extT of the vertex3 start with t0+1
@@ -112,17 +112,13 @@ function polarization(para, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram
         end
     end
 
-    # for (oGinL, oGoutL, oGinR, oGoutR, ver4) in orderedPartition(para.innerLoopNum - 1, 5, 0)
-    # end
-    if isempty(polar)
-        return DataFrame(response=[], extT=[], diagram=[])
+    if isempty(polar) == false
+        # legK = [extK, K, K, extK]
+        # Factor = 1 / (2π)^para.loopDim
+        Factor = 1.0
+        polar = mergeby(polar, [:response, :extT]; name=name, factor=Factor,
+            getid=g -> PolarId(para, g[1, :response], k=extK, t=extT)
+        )
     end
-
-    # legK = [extK, K, K, extK]
-    # Factor = 1 / (2π)^para.loopDim
-    Factor = 1.0
-    polar = mergeby(polar, [:response, :extT]; name=name, factor=Factor,
-        getid=g -> PolarId(para, g[1, :response], k=extK, t=extT)
-    )
     return polar
 end

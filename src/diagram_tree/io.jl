@@ -54,62 +54,69 @@ function _IdstoDict!(dict::Dict{Symbol,Any}, diagVec::Vector{Diagram{W}}, idkey:
             push!(data, _vec2tup(getproperty(diagVec[idx].id, idkey)))
         end
     else
-        data = Vector{Any}(_vec2tup(getproperty(diag.id, idkey)) for diag in diagVec)
+        data = Vector{Any}[]
+        for diag in diagVec
+            if hasproperty(diag.id, idkey)
+                push!(data, _vec2tup(getproperty(diag.id, idkey)))
+            else
+                push!(data, missing)
+            end
+        end
     end
     _addkey!(dict, idkey, data)
     return dict
 end
 
-function toDataFrame2(diagVec::AbstractVector; expand::Symbol=:all, maxdepth::Int=1)
-    if expand == :all || expand == :All
+function toDataFrame(diagVec::AbstractVector, idkey::Symbol; maxdepth::Int=1)
+    if idkey == :all || idkey == :All
         names = Set{Symbol}()
         for diag in diagVec
             for field in fieldnames(typeof(diag.id))
                 push!(names, field)
             end
         end
-        return toDataFrame(diagVec; expand=collect(names), maxdepth=maxdepth)
+        return toDataFrame(diagVec, collect(names); maxdepth=maxdepth)
     else
-        return toDataFrame(diagVec; expand=[expand,], maxdepth=maxdepth)
+        return toDataFrame(diagVec, [idkey,]; maxdepth=maxdepth)
     end
 end
 
-function toDataFrame3(diagVec::AbstractVector; expand::Vector{Symbol}=[], maxdepth::Int=1)
+function toDataFrame(diagVec::AbstractVector, idkey=Vector{Symbol}(); maxdepth::Int=1)
     if isempty(diagVec)
         return DataFrame()
     end
     d = Dict{Symbol,Any}()
     _DiagtoDict!(d, diagVec, maxdepth=maxdepth)
-    if isempty(expand) == false
-        for idkey in expand
-            _IdstoDict!(d, diagVec, idkey)
+    if isempty(idkey) == false
+        for _key in idkey
+            _IdstoDict!(d, diagVec, _key)
         end
     end
     df = DataFrame(d)
     return df
 end
 
-function toDataFrame(diagVec::AbstractVector; expand::Bool=false, maxdepth::Int=1)
-    vec_of_diag_dict = [toDict(d, maxdepth=maxdepth) for d in diagVec]
-    names = Set(reduce(union, keys(d) for d in vec_of_diag_dict))
-    if expand
-        vec_of_id_dict = [toDict(d.id) for d in diagVec]
-        idnames = Set(reduce(union, keys(d) for d in vec_of_id_dict))
-        @assert isempty(intersect(names, idnames)) "collision of diagram names $names and id names $idnames"
-        names = union(names, idnames)
+# function toDataFrame(diagVec::AbstractVector; expand::Bool=false, maxdepth::Int=1)
+#     vec_of_diag_dict = [toDict(d, maxdepth=maxdepth) for d in diagVec]
+#     names = Set(reduce(union, keys(d) for d in vec_of_diag_dict))
+#     if expand
+#         vec_of_id_dict = [toDict(d.id) for d in diagVec]
+#         idnames = Set(reduce(union, keys(d) for d in vec_of_id_dict))
+#         @assert isempty(intersect(names, idnames)) "collision of diagram names $names and id names $idnames"
+#         names = union(names, idnames)
 
-        for (di, d) in enumerate(vec_of_diag_dict)
-            merge!(d, vec_of_id_dict[di]) #add id dict into the diagram dict
-        end
-    end
-    # println(names)
-    df = DataFrame([name => [] for name in names])
+#         for (di, d) in enumerate(vec_of_diag_dict)
+#             merge!(d, vec_of_id_dict[di]) #add id dict into the diagram dict
+#         end
+#     end
+#     # println(names)
+#     df = DataFrame([name => [] for name in names])
 
-    for dict in vec_of_diag_dict
-        append!(df, dict, cols=:union)
-    end
-    return df
-end
+#     for dict in vec_of_diag_dict
+#         append!(df, dict, cols=:union)
+#     end
+#     return df
+# end
 
 function _summary(diag::Diagram{W}, color=true) where {W}
 
