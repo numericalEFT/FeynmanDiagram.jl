@@ -94,7 +94,28 @@ export addpropagator!, addnode!
 export setroot!, addroot!
 export evalNaive, showTree
 
-# include("GWKT/GWKT.jl")
-# export GWKT
+##################### precompile #######################
+# precompile as the final step of the module definition:
+if ccall(:jl_generating_output, Cint, ()) == 1   # if we're precompiling the package
+    let
+        para = GenericPara(diagType=Ver4Diag, innerLoopNum=2)
+        ver4 = Parquet.vertex4(para)  # this will force precompilation
+        para = GenericPara(diagType=SigmaDiag, innerLoopNum=2)
+        Parquet.sigma(para)  # this will force precompilation
+        para = GenericPara(diagType=PolarDiag, innerLoopNum=2)
+        Parquet.polarization(para)  # this will force precompilation
+        para = GenericPara(diagType=Ver3Diag, innerLoopNum=2)
+        Parquet.vertex3(para)  # this will force precompilation
+        # mergeby(ver4, [])
+        # mergeby(ver4, [:extT,])
+        # mergeby(ver4.diagram, [])
+        # mergeby(ver4.diagram, [:extT,]; idkey=[:extT,])
+        DiagTree.removeHatreeFock!(ver4.diagram)
+        DiagTree.derivative(ver4.diagram, BareGreenId)
+        DiagTree.derivative(ver4.diagram, BareInteractionId)
+        DiagTree.removeHatreeFock!(ver4.diagram)
+        ExprTree.build(ver4.diagram)
+    end
+end
 
 end
