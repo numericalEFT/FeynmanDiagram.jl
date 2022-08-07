@@ -82,6 +82,7 @@ function green(para, extK=DiagTree.getK(para.totalLoopNum, 1), extT=para.hasTau 
         ΣfirstKidx, GfirstKidx = idx
 
         sigmaPara = reconstruct(para, diagType=SigmaDiag, firstTauIdx=ΣfirstTidx, firstLoopIdx=ΣfirstKidx, innerLoopNum=oΣ)
+        # println(ΣfirstTidx)
         sigma = Parquet.sigma(sigmaPara, extK, true, name=:Σ)
         @assert all(x -> x[1] == ΣfirstTidx, sigma.extT) "all sigma should share the same in Tidx\n$sigma"
 
