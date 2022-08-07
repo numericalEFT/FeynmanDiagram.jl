@@ -63,8 +63,15 @@ function derivative(diags::Union{Diagram,Tuple,AbstractVector}, ::Type{ID}; inde
                         if isnothing(dual[sub.hash])
                             continue
                         end
-                        children = deepcopy(d.subdiagram)
-                        children[si] = dual[sub.hash]
+                        # children = deepcopy(d.subdiagram)
+                        children = []
+                        for (sj, sub) in enumerate(d.subdiagram)
+                            if si == sj
+                                push!(children, dual[sub.hash])
+                            else
+                                push!(children, sub)
+                            end
+                        end
                         dd = oneOrderHigher(d, ID, children)
                         if isnothing(dd) == false
                             push!(terms, dd)
