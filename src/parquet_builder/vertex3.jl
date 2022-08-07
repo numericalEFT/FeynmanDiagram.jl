@@ -79,7 +79,7 @@ function vertex3(para, extK=[DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(
             end
 
             if para.hasTau
-                @assert all(x -> x[INL] == ver4t0, ver4[:, :extT]) "The TinL of the inner Γ4 must be firstTauIdx+1"
+                @assert all(x -> x[INL] == ver4t0, ver4.extT) "The TinL of the inner Γ4 must be firstTauIdx+1"
             end
 
             #transform extT coloum into extT for Vertex4 and the extT for Gin and Gout
@@ -88,28 +88,27 @@ function vertex3(para, extK=[DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(
             groups = mergeby(df, [:response, :GinT, :GoutT, :extT], operator=Sum())
 
             for v4 in eachrow(groups)
-                response = v4[:response]
+                response = v4.response
                 @assert response == UpUp || response == UpDown
                 #type: Instant or Dynamic
-                ver3id = Ver3Id(para, response, k=extK, t=v4[:extT])
-                gin = green(paraGin, K, v4[:GinT], true, name=:Gin)
-                gout = green(paraGout, K .+ q, v4[:GoutT], true, name=:Gout)
+                ver3id = Ver3Id(para, response, k=extK, t=v4.extT)
+                gin = green(paraGin, K, v4.GinT, true, name=:Gin)
+                gout = green(paraGout, K .+ q, v4.GoutT, true, name=:Gout)
                 @assert gin isa Diagram && gout isa Diagram
 
-                ver3diag = Diagram(ver3id, Prod(), [gin, gout, v4[:diagram]], name=name)
-                push!(vertex3, (response=response, extT=v4[:extT], diagram=ver3diag))
+                ver3diag = Diagram(ver3id, Prod(), [gin, gout, v4.diagram], name=name)
+                push!(vertex3, (response=response, extT=v4.extT, diagram=ver3diag))
             end
         end
     end
+    # println(vertex3)
 
-    if isempty(vertex3)
-        return vertex3
-    else
+    if isempty(vertex3) == false
         # Factor = 1 / (2π)^para.loopDim
         Factor = 1.0
-        ver3 = mergeby(vertex3, [:response, :extT]; name=name, factor=Factor,
+        vertex3 = mergeby(vertex3, [:response, :extT]; name=name, factor=Factor,
             getid=g -> Ver3Id(para, g[1, :response], k=extK, t=g[1, :extT])
         )
-        return ver3
     end
+    return vertex3
 end

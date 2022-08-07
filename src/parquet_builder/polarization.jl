@@ -87,8 +87,8 @@ function polarization(para, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram
                     continue
                 end
                 if para.hasTau
-                    @assert all(x -> x[1] == extT[2], ver3[:, :extT]) "The bosonic T must be firstTauIdx+1 if hasTau\n$ver3"
-                    @assert all(x -> x[2] == ver3[1, :extT][2], ver3[:, :extT]) "The TinL must be firstTauIdx+2 if hasTau\n$ver3"
+                    @assert all(x -> x[1] == extT[2], ver3.extT) "The bosonic T must be firstTauIdx+1 if hasTau\n$ver3"
+                    @assert all(x -> x[2] == ver3[1, :extT][2], ver3.extT) "The TinL must be firstTauIdx+2 if hasTau\n$ver3"
                 end
 
                 #transform extT coloum into extT for Vertex4 and the extT for Gin and Gout
@@ -97,16 +97,16 @@ function polarization(para, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram
                 groups = mergeby(df, [:response, :GinT, :GoutT, :extT], operator=Sum())
 
                 for v3 in eachrow(groups)
-                    response = v3[:response]
+                    response = v3.response
                     @assert response == UpUp || response == UpDown
                     #type: Instant or Dynamic
-                    polarid = PolarId(para, response, k=extK, t=v3[:extT])
-                    gin = green(paraGin, K, v3[:GinT], true, name=:Gin)
-                    gout = green(paraGout, K .- extK, v3[:GoutT], true, name=:Gout)
+                    polarid = PolarId(para, response, k=extK, t=v3.extT)
+                    gin = green(paraGin, K, v3.GinT, true, name=:Gin)
+                    gout = green(paraGout, K .- extK, v3.GoutT, true, name=:Gout)
                     @assert gin isa Diagram && gout isa Diagram
 
-                    polardiag = Diagram(polarid, Prod(), [gin, gout, v3[:diagram]], name=name)
-                    push!(polar, (response=response, extT=v3[:extT], diagram=polardiag))
+                    polardiag = Diagram(polarid, Prod(), [gin, gout, v3.diagram], name=name)
+                    push!(polar, (response=response, extT=v3.extT, diagram=polardiag))
                 end
             end
         end
