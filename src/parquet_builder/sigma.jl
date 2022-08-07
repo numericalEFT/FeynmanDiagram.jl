@@ -88,6 +88,7 @@ function sigma(para, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false;
             firstLoopIdx=WfirstLoopIdx, firstTauIdx=WfirstTauIdx)
 
         #TODO: add validation for paraW
+        # println("oG: $oG, oW: $oW  -> ", isValidG(paraG))
         if isValidG(paraG)
             if oW == 0 # Fock-type Σ
                 if NoHatree in paraW.filter
@@ -96,6 +97,7 @@ function sigma(para, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false;
                 else
                     ver4 = vertex4(paraW, legK, [], true)
                 end
+                # println(ver4)
             else # composite Σ
                 # paraW0 = reconstruct(paraW, filter=union(paraW.filter, Proper), transferLoop=extK-K)
                 ver4 = vertex4(paraW, legK, [PHr,], true, phi_toplevel=[], Γ4_toplevel=[PHr, PHEr, PPr,])
