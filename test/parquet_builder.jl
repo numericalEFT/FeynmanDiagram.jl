@@ -43,8 +43,10 @@ end
 
     # for Fock irreducible diagrams, only 0-loop or 2, 3, 4...-loop G is allowed
     @test Parquet.isValidG([NoFock,], 0) == true
-    @test Parquet.isValidG([NoFock,], 1) == false
-    @test Parquet.isValidG([NoFock,], 2) == true
+    @test Parquet.isValidG([NoFock,], 1) == true
+    #one-loop G diagram becomes invalid only if both Hatree and Fock are filtered
+    @test Parquet.isValidG([NoFock, NoHatree], 1) == false
+    @test Parquet.isValidG([NoFock, NoHatree], 2) == true
 
     # for G irreducible diagrams, no sigma subdiagram is allowed
     @test Parquet.isValidSigma([Girreducible,], 0, true) == false
@@ -57,11 +59,15 @@ end
 
     # for Fock irreducible diagrams, no Fock sigma subdiagram is allowed
     @test Parquet.isValidSigma([NoFock,], 0, true) == false
-    @test Parquet.isValidSigma([NoFock,], 1, true) == false
-    @test Parquet.isValidSigma([NoFock,], 2, true) == true
+    #one-loop sigma diagram can be either Hatree or Fock diagram
+    #one-loop sigma sub-diagram becomes invalid only if both Hatree and Fock are filtered
+    @test Parquet.isValidSigma([NoFock,], 1, true) == true
+    @test Parquet.isValidSigma([NoFock, NoHatree], 1, true) == false
+    @test Parquet.isValidSigma([NoFock, NoHatree], 2, true) == true
 
     @test Parquet.isValidSigma([NoFock,], 0, false) == false
     @test Parquet.isValidSigma([NoFock,], 1, false) == true
+    @test Parquet.isValidSigma([NoFock, NoHatree], 1, false) == true
     @test Parquet.isValidSigma([NoFock,], 2, false) == true
 end
 
