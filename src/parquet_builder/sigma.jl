@@ -90,6 +90,7 @@ function sigma(para, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false;
         #TODO: add validation for paraW
         # println("oG: $oG, oW: $oW  -> ", isValidG(paraG))
         if isValidG(paraG)
+            # println(paraW)
             if oW == 0 # Fock-type Σ
                 if NoHatree in paraW.filter
                     paraW0 = reconstruct(paraW, filter=union(paraW.filter, Proper), transferLoop=zero(K))

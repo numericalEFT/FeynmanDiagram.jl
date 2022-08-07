@@ -114,16 +114,14 @@ function vertex4(para::GenericPara,
     #     getid=g -> Ver4Id(para, g[1, :response], g[1, :type], k=legK, t=g[1, :extT]) #generate id from the dataframe
     # )
 
-    if isempty(ver4df)
-        return ver4df
-    else
-        df = mergeby(ver4df, [:response, :type, :extT], name=name,
+    if isempty(ver4df) == false
+        ver4df = mergeby(ver4df, [:response, :type, :extT], name=name,
             getid=g -> Ver4Id(para, g[1, :response], g[1, :type], k=legK, t=g[1, :extT]) #generate id from the dataframe
         )
-        return df
     end
+    @assert all(x -> x[1] == para.firstTauIdx, ver4df.extT) "not all extT[1] are the same! $ver4df"
     # println(typeof(groups))
-    # return groups
+    return ver4df
 end
 
 function bubble!(ver4df, para::GenericPara, legK, chan::TwoBodyChannel, partition::Vector{Int}, level::Int, name::Symbol,
@@ -253,13 +251,20 @@ function bareVer4(para::GenericPara, legK, diex::Vector{Permutation}=[Di, Ex])
 
     q = [KinL - KoutL, KinR - KoutL]
 
+    """
+    extT is a Tuple{Int, Int, Int, Int} of four tau indices of the external legs.
+    innerT is a Tuple{Int, Int} of two tau indices of the bare interaction. 
+    The innerT doesn't have to be the same of extT. Because the instant interaction is 
+    independent of the tau variables, this gives a freedom how to choose the actual tau variables. 
+    See Line 346 for more details.
+    """
     if para.hasTau
         extT_ins = [(t0, t0, t0, t0), (t0, t0, t0, t0)]
         extT_dyn = [(t0, t0, t0 + 1, t0 + 1), (t0, t0 + 1, t0 + 1, t0)]
         innerT_ins = [(1, 1), (1, 1)]
         innerT_dyn = [(t0, t0 + 1), (t0, t0 + 1)]
     else
-        extT_ins = [(1, 1, 1, 1), (1, 1, 1, 1)]
+        extT_ins = [(t0, t0, t0, t0), (t0, t0, t0, t0)]
         extT_dyn = extT_ins
         innerT_ins = [(1, 1), (1, 1)]
         innerT_dyn = innerT_ins
@@ -296,6 +301,7 @@ function bareVer4(para::GenericPara, legK, diex::Vector{Permutation}=[Di, Ex])
     end
 
     function addresponse!(response::Response, type, _extT, _innerT)
+        # println(_extT, " and inner: ", _innerT)
         if response == UpUp
             vd = bare(response, type, Di, _innerT[DI], q[DI])
             ve = bare(response, type, Ex, _innerT[EX], q[EX])
