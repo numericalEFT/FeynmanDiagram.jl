@@ -1,18 +1,18 @@
-function toDict(diag::Diagram; maxdepth::Int)
-    @assert maxdepth == 1 "deep convert has not yet been implemented!"
+# function toDict(diag::Diagram; maxdepth::Int)
+#     @assert maxdepth == 1 "deep convert has not yet been implemented!"
 
-    d = Dict{Symbol,Any}()
-    d[:hash] = diag.hash
-    d[:id] = diag.id
-    d[:name] = diag.name
-    d[:diagram] = diag
-    d[:subdiagram] = Tuple(d.hash for d in diag.subdiagram)
-    d[:operator] = diag.operator
-    d[:factor] = diag.factor
-    d[:weight] = diag.weight
+#     d = Dict{Symbol,Any}()
+#     d[:hash] = diag.hash
+#     d[:id] = diag.id
+#     d[:name] = diag.name
+#     d[:diagram] = diag
+#     d[:subdiagram] = Tuple(d.hash for d in diag.subdiagram)
+#     d[:operator] = diag.operator
+#     d[:factor] = diag.factor
+#     d[:weight] = diag.weight
 
-    return d
-end
+#     return d
+# end
 
 function _addkey!(dict, key, val)
     @assert haskey(dict, key) == false "key already exists!"
@@ -32,15 +32,15 @@ function _DiagtoDict!(dict::Dict{Symbol,Any}, diagVec::Vector{Diagram{W}}; maxde
     return dict
 end
 
-function toDict(v::DiagramId)
-    d = Dict{Symbol,Any}()
-    for field in fieldnames(typeof(v))
-        data = getproperty(v, field)
-        #DataFrame will expand a vector into multiple rows. To prevent it, we transform all vectors into tuples
-        d[field] = data isa AbstractVector ? Tuple(data) : data
-    end
-    return d
-end
+# function toDict(v::DiagramId)
+#     d = Dict{Symbol,Any}()
+#     for field in fieldnames(typeof(v))
+#         data = getproperty(v, field)
+#         #DataFrame will expand a vector into multiple rows. To prevent it, we transform all vectors into tuples
+#         d[field] = data isa AbstractVector ? Tuple(data) : data
+#     end
+#     return d
+# end
 
 function _vec2tup(data)
     return data isa AbstractVector ? Tuple(data) : data
