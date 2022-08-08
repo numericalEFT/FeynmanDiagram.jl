@@ -92,7 +92,8 @@ function toDataFrame(diagVec::AbstractVector, idkey=Vector{Symbol}(); maxdepth::
             _IdstoDict!(d, diagVec, _key)
         end
     end
-    df = DataFrame(d)
+    df = DataFrame(d, copycols=false)
+    # df = DataFrame(d)
     return df
 end
 
@@ -155,7 +156,7 @@ function Base.show(io::IO, diag::Diagram)
         subdiag *= "$(diag.subdiagram[end].hash)"
         typestr = "($subdiag)"
     end
-    print(io, "$(_summary(diag, true))$typestr")
+    print(io, "$(diag.hash):$(_summary(diag, true))$typestr")
 end
 
 """

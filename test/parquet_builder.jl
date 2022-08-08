@@ -458,6 +458,7 @@ end
         factor = 1.0
         num = w / factor
         # println(num * para.spin)
+        println("$diag")
         @test num * para.spin * (-1)^(para.innerLoopNum - 1) ≈ Parquet.Benchmark.count_polar_g2v_noFock_upup(para.innerLoopNum, para.spin)
     end
 end
