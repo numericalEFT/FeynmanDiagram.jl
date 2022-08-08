@@ -30,7 +30,7 @@ import ..symbol
 import ..short
 
 import ..Interaction
-import ..GenericPara
+import ..DiagPara
 import ..innerTauNum
 import ..interactionTauNum
 import ..derive
@@ -62,7 +62,7 @@ import ..uidreset
 import ..toDataFrame
 import ..mergeby
 
-function build(para::GenericPara, extK=nothing, subdiagram=false)
+function build(para::DiagPara, extK=nothing, subdiagram=false)
     if para.diagType == Ver4Diag
         if isnothing(extK)
             extK = [DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)]

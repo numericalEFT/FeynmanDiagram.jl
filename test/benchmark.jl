@@ -33,7 +33,7 @@ end
 DiagTree.eval(id::BareInteractionId, K, extT, varT) = 8π / (K[1] * K[1] + K[2] * K[2] + K[3] * K[3] + Λs)
 # DiagTree.eval(id, K, extT, varT) = 1.0
 
-diagPara(order) = GenericPara(diagType=diagType, innerLoopNum=order, hasTau=true,
+diagPara(order) = DiagPara(diagType=diagType, innerLoopNum=order, hasTau=true,
     interaction=[FeynmanDiagram.Interaction(ChargeCharge, Instant),],  #instant charge-charge interaction
     # filter = [NoFock,])
     filter=[NoHatree, Girreducible,])

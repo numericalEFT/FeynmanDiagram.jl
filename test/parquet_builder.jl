@@ -127,7 +127,7 @@ evalFakePropagator(id::PropagatorId, K, extT, varT) = 1.0
 
         blocks = ParquetBlocks(phi=[PHEr, PPr], ppi=[PHr, PHEr])
 
-        para = GenericPara(
+        para = DiagPara(
             diagType=Ver4Diag,
             loopDim=Kdim,
             isFermi=isFermi,
@@ -248,7 +248,7 @@ end
     function getSigma(loopNum; Kdim=3, spin=2, interactionTauNum=1, filter=[NoHatree,], isFermi=true, subdiagram=false)
         println("LoopNum =$loopNum Sigma Test")
 
-        para = GenericPara(
+        para = DiagPara(
             diagType=SigmaDiag,
             loopDim=Kdim,
             hasTau=true,
@@ -306,7 +306,7 @@ end
 
 @testset "Green" begin
     function buildG(loopNum, extT; Kdim=3, spin=2, interactionTauNum=1, filter=[NoHatree,], isFermi=true)
-        para = GenericPara(
+        para = DiagPara(
             diagType=GreenDiag,
             loopDim=Kdim,
             hasTau=true,
@@ -347,7 +347,7 @@ end
     function getGamma3(loopNum; Kdim=3, spin=2, interactionTauNum=1, filter=[NoHatree, Girreducible, Proper,], isFermi=true, subdiagram=false)
         println("LoopNum =$loopNum Vertex3 Test")
 
-        para = GenericPara(
+        para = DiagPara(
             diagType=Ver3Diag,
             loopDim=Kdim,
             innerLoopNum=loopNum,
@@ -404,7 +404,7 @@ end
     function getPolar(loopNum; Kdim=3, spin=2, interactionTauNum=1, filter=[NoHatree, Girreducible,], isFermi=true, subdiagram=false)
         println("LoopNum =$loopNum Polarization Test")
 
-        para = GenericPara(
+        para = DiagPara(
             diagType=PolarDiag,
             loopDim=Kdim,
             innerLoopNum=loopNum,

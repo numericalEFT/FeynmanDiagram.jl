@@ -20,7 +20,7 @@ using MCIntegration
         sigma = []
         diagpara = []
         for o in orders
-            p = GenericPara(diagType=SigmaDiag, innerLoopNum=o, hasTau=true, interaction=inter, filter=filter)
+            p = DiagPara(diagType=SigmaDiag, innerLoopNum=o, hasTau=true, interaction=inter, filter=filter)
             push!(diagpara, p)
             _s = Parquet.build(p)
             push!(sigma, _s)

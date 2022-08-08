@@ -60,7 +60,7 @@ export Response, ChargeCharge, SpinSpin, UpUp, UpDown
 export AnalyticProperty, Instant, Dynamic, D_Instant, D_Dynamic
 
 include("common.jl")
-export GenericPara, Interaction, interactionTauNum, innerTauNum
+export DiagPara, Interaction, interactionTauNum, innerTauNum
 
 include("diagram_tree/DiagTree.jl")
 using .DiagTree
@@ -98,17 +98,17 @@ export evalNaive, showTree
 # precompile as the final step of the module definition:
 if ccall(:jl_generating_output, Cint, ()) == 1   # if we're precompiling the package
     let
-        para = GenericPara(diagType=Ver4Diag, innerLoopNum=2, hasTau=true)
+        para = DiagPara(diagType=Ver4Diag, innerLoopNum=2, hasTau=true)
         # ver4 = Parquet.vertex4(para)  # this will force precompilation
         ver4 = Parquet.build(para)  # this will force precompilation
-        para = GenericPara(diagType=SigmaDiag, innerLoopNum=2, hasTau=true)
+        para = DiagPara(diagType=SigmaDiag, innerLoopNum=2, hasTau=true)
         Parquet.build(para)  # this will force precompilation
-        para = GenericPara(diagType=GreenDiag, innerLoopNum=2, hasTau=true)
+        para = DiagPara(diagType=GreenDiag, innerLoopNum=2, hasTau=true)
         Parquet.green(para)  # this will force precompilation
-        para = GenericPara(diagType=PolarDiag, innerLoopNum=2, hasTau=true)
+        para = DiagPara(diagType=PolarDiag, innerLoopNum=2, hasTau=true)
         # Parquet.polarization(para)  # this will force precompilation
         Parquet.build(para)  # this will force precompilation
-        para = GenericPara(diagType=Ver3Diag, innerLoopNum=2, hasTau=true)
+        para = DiagPara(diagType=Ver3Diag, innerLoopNum=2, hasTau=true)
         # Parquet.vertex3(para)  # this will force precompilation
         Parquet.build(para)  # this will force precompilation
         # mergeby(ver4, [])

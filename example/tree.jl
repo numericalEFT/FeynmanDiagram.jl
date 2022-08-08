@@ -21,7 +21,7 @@ eval(id::BareGreenId, K, extT, varT) = evalG(K, varT[id.extT[1]], varT[id.extT[2
 eval(id::BareInteractionId, K, extT, varT) = evalV(K)
 
 
-para = GenericPara(diagType=Ver4Diag, innerLoopNum=3, filter=[Girreducible,], hasTau=true)
+para = DiagPara(diagType=Ver4Diag, innerLoopNum=3, filter=[Girreducible,], hasTau=true)
 ver4 = Parquet.vertex4(para)
 ver4 = mergeby(ver4, :response)
 println(ver4)

@@ -16,7 +16,7 @@
 - A DataFrame with fields `:type`, `:extT`, `:diagram`, `:hash`
 - All sigma share the same incoming Tau index, but not the outgoing one
 """
-function sigma(para::GenericPara, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false; name=:Σ, resetuid=false, blocks::ParquetBlocks=ParquetBlocks())
+function sigma(para::DiagPara, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false; name=:Σ, resetuid=false, blocks::ParquetBlocks=ParquetBlocks())
     resetuid && uidreset()
     (para.diagType == SigmaDiag) || error("$para is not for a sigma diagram")
     (para.innerLoopNum >= 1) || error("sigma must has more than one inner loop")
@@ -38,7 +38,7 @@ function sigma(para::GenericPara, extK=DiagTree.getK(para.totalLoopNum, 1), subd
 
     # if (para.extra isa ParquetBlocks) == false
     #     parquetblocks = ParquetBlocks(phi=[PPr, PHEr], ppi=[PHr, PHEr], Γ4=[PPr, PHr, PHEr])
-    #     para::GenericPara = reconstruct(para, extra=parquetblocks)
+    #     para::DiagPara = reconstruct(para, extra=parquetblocks)
     # end
 
     K = zero(extK)

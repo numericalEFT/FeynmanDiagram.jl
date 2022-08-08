@@ -1,5 +1,5 @@
 """
-    vertex4(para::GenericPara,
+    vertex4(para::DiagPara,
         extK = [DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)],
         chan::AbstractVector = [PHr, PHEr, PPr, Alli],
         subdiagram = false;
@@ -26,7 +26,7 @@
 # Output
 - A DataFrame with fields :response, :type, :extT, :diagram, :hash
 """
-function vertex4(para::GenericPara,
+function vertex4(para::DiagPara,
     extK=[DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)],
     chan::AbstractVector=[PHr, PHEr, PPr, Alli], subdiagram=false;
     level=1, name=:none, resetuid=false,
@@ -45,7 +45,7 @@ function vertex4(para::GenericPara,
 
     # if (para.extra isa ParquetBlocks) == false
     #     #type annotation here is crucial for type stability
-    #     para::GenericPara = reconstruct(para, extra=ParquetBlocks())
+    #     para::DiagPara = reconstruct(para, extra=ParquetBlocks())
     # end
 
     # @assert para.extra isa ParquetBlocks
@@ -117,7 +117,7 @@ function vertex4(para::GenericPara,
     return ver4df
 end
 
-function bubble!(ver4df::DataFrame, para::GenericPara, legK, chan::TwoBodyChannel, partition::Vector{Int}, level::Int, name::Symbol,
+function bubble!(ver4df::DataFrame, para::DiagPara, legK, chan::TwoBodyChannel, partition::Vector{Int}, level::Int, name::Symbol,
     blocks::ParquetBlocks, blockstoplevel::ParquetBlocks,
     extrafactor=1.0, subchannel=:All)
 
@@ -180,7 +180,7 @@ function bubble!(ver4df::DataFrame, para::GenericPara, legK, chan::TwoBodyChanne
     return
 end
 
-function bubble2diag!(ver4df::DataFrame, para::GenericPara, chan::TwoBodyChannel, ldiag, rdiag, extK, g0, gx, extrafactor)
+function bubble2diag!(ver4df::DataFrame, para::DiagPara, chan::TwoBodyChannel, ldiag, rdiag, extK, g0, gx, extrafactor)
     lid, rid = ldiag.id, rdiag.id
     ln, rn = lid.response, rid.response
     lo, ro = lid.para.innerLoopNum, rid.para.innerLoopNum
@@ -228,7 +228,7 @@ function bubble2diag!(ver4df::DataFrame, para::GenericPara, chan::TwoBodyChannel
     return
 end
 
-function _bare(para::GenericPara, diex::Vector{Permutation}, response::Response, type::AnalyticProperty,
+function _bare(para::DiagPara, diex::Vector{Permutation}, response::Response, type::AnalyticProperty,
     _diex::Permutation, _innerT::Tuple{Int,Int}, _q, _factor=1.0)
     @assert _diex == Di || _diex == Ex
 
@@ -250,7 +250,7 @@ function _bare(para::GenericPara, diex::Vector{Permutation}, response::Response,
     end
 end
 
-function _pushbarever4!(para::GenericPara, nodes::DataFrame, response::Response, type::AnalyticProperty, _extT, legK,
+function _pushbarever4!(para::DiagPara, nodes::DataFrame, response::Response, type::AnalyticProperty, _extT, legK,
     vd::Union{Nothing,Diagram{W}}, ve::Union{Nothing,Diagram{W}}) where {W}
 
     if isnothing(vd) == false
@@ -264,7 +264,7 @@ function _pushbarever4!(para::GenericPara, nodes::DataFrame, response::Response,
     end
 end
 
-function _pushbarever4_with_response!(para::GenericPara, nodes::DataFrame, response::Response, type::AnalyticProperty,
+function _pushbarever4_with_response!(para::DiagPara, nodes::DataFrame, response::Response, type::AnalyticProperty,
     legK, q, diex::Vector{Permutation}, _extT, _innerT)
     # println(_extT, " and inner: ", _innerT)
     if response == UpUp
@@ -303,7 +303,7 @@ function _pushbarever4_with_response!(para::GenericPara, nodes::DataFrame, respo
     end
 end
 
-function bareVer4(nodes::DataFrame, para::GenericPara, legK, diex::Vector{Permutation}=[Di, Ex])
+function bareVer4(nodes::DataFrame, para::DiagPara, legK, diex::Vector{Permutation}=[Di, Ex])
     # @assert para.diagType == Ver4Diag
 
     KinL, KoutL, KinR = legK[1], legK[2], legK[3]
@@ -417,7 +417,7 @@ function tauBasis(chan::TwoBodyChannel, LvT, RvT)
 end
 
 
-function factor(para::GenericPara, chan::TwoBodyChannel)
+function factor(para::DiagPara, chan::TwoBodyChannel)
     # Factor = SymFactor[Int(chan)] / (2π)^para.loopDim
     Factor = SymFactor[Int(chan)]
     if para.isFermi == false

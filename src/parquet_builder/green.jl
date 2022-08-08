@@ -1,5 +1,5 @@
 """
-    green(para, extK = DiagTree.getK(para.totalLoopNum, 1), extT = para.hasTau ? (1, 2) : (0, 0), subdiagram = false;
+    green(para::DiagPara, extK = DiagTree.getK(para.totalLoopNum, 1), extT = para.hasTau ? (1, 2) : (0, 0), subdiagram = false;
         name = :G, resetuid = false, blocks::ParquetBlocks=ParquetBlocks())
     
     Build composite Green's function.
@@ -18,7 +18,7 @@
 # Output
 - A Diagram object or nothing if the Green's function is illegal. 
 """
-function green(para::GenericPara, extK=DiagTree.getK(para.totalLoopNum, 1), extT=para.hasTau ? (1, 2) : (0, 0), subdiagram=false;
+function green(para::DiagPara, extK=DiagTree.getK(para.totalLoopNum, 1), extT=para.hasTau ? (1, 2) : (0, 0), subdiagram=false;
     name=:G, resetuid=false, blocks::ParquetBlocks=ParquetBlocks())
 
     @assert para.diagType == GreenDiag
@@ -46,7 +46,7 @@ function green(para::GenericPara, extK=DiagTree.getK(para.totalLoopNum, 1), extT
 
     # if (para.extra isa ParquetBlocks) == false
     #     parquetblocks = ParquetBlocks(phi=[PPr, PHEr], ppi=[PHr, PHEr], Γ4=[PPr, PHr, PHEr])
-    #     para::GenericPara = reconstruct(para, extra=parquetblocks)
+    #     para::DiagPara = reconstruct(para, extra=parquetblocks)
     # end
 
     function ΣG(group, oG, Tidx, Kidx, ΣTidx)

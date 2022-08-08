@@ -53,7 +53,7 @@ function symbol(name::Response, type::AnalyticProperty, addition=nothing)
 
 end
 
-@with_kw struct GenericPara
+@with_kw struct DiagPara
     diagType::DiagramType
     innerLoopNum::Int
 
@@ -77,18 +77,18 @@ end
     extra::Any = Nothing
 end
 
-@inline interactionTauNum(para::GenericPara) = interactionTauNum(para.hasTau, para.interaction)
-@inline innerTauNum(para::GenericPara) = innerTauNum(para.diagType, para.innerLoopNum, para.interactionTauNum)
+@inline interactionTauNum(para::DiagPara) = interactionTauNum(para.hasTau, para.interaction)
+@inline innerTauNum(para::DiagPara) = innerTauNum(para.diagType, para.innerLoopNum, para.interactionTauNum)
 
 """
-    Parameters.reconstruct(p::GenericPara; kws...)
+    Parameters.reconstruct(p::DiagPara; kws...)
 
     Type-stable version of the Parameters.reconstruct
 """
-function Parameters.reconstruct(::Type{GenericPara}, p::GenericPara, di)
+function Parameters.reconstruct(::Type{DiagPara}, p::DiagPara, di)
     di = !isa(di, AbstractDict) ? Dict(di) : copy(di)
     get(p, di, key) = pop!(di, key, getproperty(p, key))
-    return GenericPara(
+    return DiagPara(
         # diagType = pop!(di, :diagType, p.diagType),
         diagType=get(p, di, :diagType),
         innerLoopNum=get(p, di, :innerLoopNum),
@@ -109,12 +109,12 @@ function Parameters.reconstruct(::Type{GenericPara}, p::GenericPara, di)
     length(di) != 0 && error("Fields $(keys(di)) not in type $T")
 end
 
-function derive(p::GenericPara; kwargs...)
+function derive(p::DiagPara; kwargs...)
     # println(kwargs)
     di = !isa(kwargs, AbstractDict) ? Dict(kwargs) : copy(kwargs)
     # println(di)
     get(p, di, key) = pop!(di, key, getproperty(p, key))
-    return GenericPara(
+    return DiagPara(
         # diagType = pop!(di, :diagType, p.diagType),
         diagType=get(p, di, :diagType),
         innerLoopNum=get(p, di, :innerLoopNum),
@@ -135,11 +135,11 @@ function derive(p::GenericPara; kwargs...)
     length(di) != 0 && error("Fields $(keys(di)) not in type $T")
 end
 
-# function Base.show(io::IO, para::GenericPara)
+# function Base.show(io::IO, para::DiagPara)
 
 # end
 
-# function Base.getproperty(obj::GenericPara, sym::Symbol)
+# function Base.getproperty(obj::DiagPara, sym::Symbol)
 #     # if sym === :hasTau
 #     #     return obj.totalTauNum > 0
 #     if sym == :interactionTauNum
@@ -152,7 +152,7 @@ end
 #     end
 # end
 
-function Base.isequal(p::GenericPara, q::GenericPara)
+function Base.isequal(p::DiagPara, q::DiagPara)
     for field in fieldnames(typeof(p)) #fieldnames doesn't include user-defined entries in Base.getproperty
         if field == :filter
             if Set(p.filter) != Set(q.filter)
@@ -179,7 +179,7 @@ function Base.isequal(p::GenericPara, q::GenericPara)
     return true
 end
 
-Base.:(==)(a::GenericPara, b::GenericPara) = Base.isequal(a, b)
+Base.:(==)(a::DiagPara, b::DiagPara) = Base.isequal(a, b)
 
 """
     function innerTauNum(diagType::DiagramType, innerLoopNum, interactionTauNum)

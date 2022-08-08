@@ -33,7 +33,7 @@ import ..short
 
 import ..Interaction
 
-import ..GenericPara
+import ..DiagPara
 
 import ..innerTauNum
 

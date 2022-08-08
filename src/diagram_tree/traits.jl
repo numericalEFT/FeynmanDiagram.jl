@@ -29,96 +29,96 @@ abstract type PropagatorId <: DiagramId end
 Base.:(==)(a::DiagramId, b::DiagramId) = Base.isequal(a, b)
 
 struct BareGreenId <: PropagatorId
-    para::GenericPara
+    para::DiagPara
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
     order::Vector{Int}
-    function BareGreenId(para::GenericPara, type::AnalyticProperty=Dynamic, order=[0, 0, 0, 0]; k, t)
+    function BareGreenId(para::DiagPara, type::AnalyticProperty=Dynamic, order=[0, 0, 0, 0]; k, t)
         return new(para, type, k, Tuple(t), order)
     end
 end
 Base.show(io::IO, v::BareGreenId) = print(io, "$(short(v.type))#$(v.order), k$(v.extK), t$(v.extT)")
 
 struct BareInteractionId <: PropagatorId
-    para::GenericPara
+    para::DiagPara
     response::Response #UpUp, UpDown, ...
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
     permutation::Permutation
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
     order::Vector{Int}
-    function BareInteractionId(para::GenericPara, response::Response, type::AnalyticProperty=Instant, order=[0, 0, 0, 0]; k, t=(0, 0), permu::Permutation=DiEx)
+    function BareInteractionId(para::DiagPara, response::Response, type::AnalyticProperty=Instant, order=[0, 0, 0, 0]; k, t=(0, 0), permu::Permutation=DiEx)
         return new(para, response, type, permu, k, Tuple(t), order)
     end
 end
 Base.show(io::IO, v::BareInteractionId) = print(io, "$(short(v.response))$(short(v.type))$(v.permutation)#$(v.order), k$(v.extK), t$(v.extT)")
 
 struct GenericId <: DiagramId
-    para::GenericPara
+    para::DiagPara
     extra::Any
     order::Vector{Int}
-    GenericId(para::GenericPara, extra=Nothing, order=[0, 0, 0, 0]) = new(para, extra, order)
+    GenericId(para::DiagPara, extra=Nothing, order=[0, 0, 0, 0]) = new(para, extra, order)
 end
 Base.show(io::IO, v::GenericId) = print(io, v.extra == Nothing ? "#$(v.order)" : "$(v.extra)#$(v.order)")
 
 struct GreenId <: DiagramId
-    para::GenericPara
+    para::DiagPara
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
     order::Vector{Int}
-    function GreenId(para::GenericPara, type::AnalyticProperty=Dynamic, order=[0, 0, 0, 0]; k, t)
+    function GreenId(para::DiagPara, type::AnalyticProperty=Dynamic, order=[0, 0, 0, 0]; k, t)
         return new(para, type, k, Tuple(t), order)
     end
 end
 Base.show(io::IO, v::GreenId) = print(io, "$(short(v.type))#$(v.order), k$(v.extK), t$(v.extT)")
 
 struct SigmaId <: DiagramId
-    para::GenericPara
+    para::DiagPara
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
     order::Vector{Int}
-    function SigmaId(para::GenericPara, type::AnalyticProperty, order=[0, 0, 0, 0]; k, t=(0, 0))
+    function SigmaId(para::DiagPara, type::AnalyticProperty, order=[0, 0, 0, 0]; k, t=(0, 0))
         return new(para, type, k, t, order)
     end
 end
 Base.show(io::IO, v::SigmaId) = print(io, "$(short(v.type))#$(v.order), t$(v.extT)")
 
 struct PolarId <: DiagramId
-    para::GenericPara
+    para::DiagPara
     response::Response #UpUp, UpDown, ...
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
     order::Vector{Int}
-    function PolarId(para::GenericPara, response::Response, order=[0, 0, 0, 0]; k, t=(0, 0))
+    function PolarId(para::DiagPara, response::Response, order=[0, 0, 0, 0]; k, t=(0, 0))
         return new(para, response, k, t, order)
     end
 end
 Base.show(io::IO, v::PolarId) = print(io, "$(short(v.response))#$(v.order), k$(v.extK), t$(v.extT)")
 
 struct Ver3Id <: DiagramId
-    para::GenericPara
+    para::DiagPara
     response::Response #UpUp, UpDown, ...
     extK::Vector{Vector{Float64}}
     extT::Tuple{Int,Int,Int} #all possible extT from different interactionType
     order::Vector{Int}
-    function Ver3Id(para::GenericPara, response::Response, order=[0, 0, 0, 0]; k, t=(0, 0, 0))
+    function Ver3Id(para::DiagPara, response::Response, order=[0, 0, 0, 0]; k, t=(0, 0, 0))
         return new(para, response, k, Tuple(t), order)
     end
 end
 Base.show(io::IO, v::Ver3Id) = print(io, "$(short(v.response))#$(v.order),t$(v.extT)")
 
 struct Ver4Id <: DiagramId
-    para::GenericPara
+    para::DiagPara
     response::Response #UpUp, UpDown, ...
     type::AnalyticProperty #Instant, Dynamic, D_Instant, D_Dynamic
     channel::TwoBodyChannel # particle-hole, particle-hole exchange, particle-particle, irreducible
     extK::Vector{Vector{Float64}}
     extT::Tuple{Int,Int,Int,Int} #all possible extT from different interactionType
     order::Vector{Int}
-    function Ver4Id(para::GenericPara, response::Response, type::AnalyticProperty=Dynamic, order=[0, 0, 0, 0]; k, t=(0, 0, 0, 0), chan::TwoBodyChannel=AnyChan)
+    function Ver4Id(para::DiagPara, response::Response, type::AnalyticProperty=Dynamic, order=[0, 0, 0, 0]; k, t=(0, 0, 0, 0), chan::TwoBodyChannel=AnyChan)
         return new(para, response, type, chan, k, Tuple(t), order)
     end
 end
@@ -158,11 +158,11 @@ end
 hopping function c⁺c⁻
 """
 struct BareHoppingId <: PropagatorId
-    para::GenericPara
+    para::DiagPara
     site::Tuple{Int,Int}
     orbital::Tuple{Int,Int}
     extT::Tuple{Int,Int}
-    function BareHoppingId(para::GenericPara, orbital, t, r)
+    function BareHoppingId(para::DiagPara, orbital, t, r)
         return new(para, r, orbital, t)
     end
 end
@@ -172,13 +172,13 @@ Base.show(io::IO, v::BareHoppingId) = print(io, "($(vstr(v.site, "ᵣ"))|$(vstr(
 time-ordered N-point Bare Green's function
 """
 struct BareGreenNId <: PropagatorId
-    para::GenericPara
+    para::DiagPara
     site::Int
     creation::Vector{Bool}
     orbital::Vector{Int}
     extT::Vector{Int}
     N::Int
-    function BareGreenNId(para::GenericPara; orbital=[], t=[], creation=[], r=0)
+    function BareGreenNId(para::DiagPara; orbital=[], t=[], creation=[], r=0)
         @assert length(orbital) == length(t) == length(creation)
         return new(para, r, creation, orbital, t, length(orbital))
     end
@@ -189,13 +189,13 @@ Base.show(io::IO, v::BareGreenNId) = print(io, "($(v.site)ᵣ|$(vstr(v.orbital, 
 time-ordered N-point Composite Green's function
 """
 struct GreenNId <: DiagramId
-    para::GenericPara
+    para::DiagPara
     site::Vector{Int}
     creation::Vector{Bool}
     orbital::Vector{Int}
     extT::Vector{Int}
     N::Int
-    function GreenNId(para::GenericPara; orbital=[], t=[], creation=[], r=[])
+    function GreenNId(para::DiagPara; orbital=[], t=[], creation=[], r=[])
         @assert length(orbital) == length(t) == length(r) == length(creation)
         return new(para, r, creation, orbital, t, length(orbital))
     end
@@ -206,13 +206,13 @@ Base.show(io::IO, v::GreenNId) = print(io, "($(vstr(v.site, "ᵣ"))|$(vstr(v.orb
 time-ordered N-point Composite Green's function
 """
 struct ConnectedGreenNId <: DiagramId
-    para::GenericPara
+    para::DiagPara
     site::Vector{Int}
     creation::Vector{Bool}
     orbital::Vector{Int}
     extT::Vector{Int}
     N::Int
-    function ConnectedGreenNId(para::GenericPara; orbital=[], t=[], creation=[], r=[])
+    function ConnectedGreenNId(para::DiagPara; orbital=[], t=[], creation=[], r=[])
         @assert length(orbital) == length(t) == length(r) == length(creation)
         return new(para, r, creation, orbital, t, length(orbital))
     end
