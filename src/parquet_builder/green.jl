@@ -1,6 +1,6 @@
 """
     green(para, extK = DiagTree.getK(para.totalLoopNum, 1), extT = para.hasTau ? (1, 2) : (0, 0), subdiagram = false;
-        name = :G, resetuid = false)
+        name = :G, resetuid = false, blocks::ParquetBlocks=ParquetBlocks())
     
     Build composite Green's function.
     By definition, para.firstTauIdx is the first Tau index of the left most self-energy subdiagram.
@@ -12,13 +12,14 @@
 - `subdiagram`      : a sub-vertex or not
 - `name`            : name of the diagram
 - `resetuid`        : restart uid count from 1
+- `blocks`          : building blocks of the Parquet equation. See the struct ParquetBlocks for more details.
 
 
 # Output
 - A Diagram object or nothing if the Green's function is illegal. 
 """
 function green(para::GenericPara, extK=DiagTree.getK(para.totalLoopNum, 1), extT=para.hasTau ? (1, 2) : (0, 0), subdiagram=false;
-    name=:G, resetuid=false)
+    name=:G, resetuid=false, blocks::ParquetBlocks=ParquetBlocks())
 
     @assert para.diagType == GreenDiag
     @assert para.innerLoopNum >= 0
@@ -43,15 +44,15 @@ function green(para::GenericPara, extK=DiagTree.getK(para.totalLoopNum, 1), extT
 
     # ################# after this step, the Green's function must be nontrivial! ##################
 
-    if (para.extra isa ParquetBlocks) == false
-        parquetblocks = ParquetBlocks(phi=[PPr, PHEr], ppi=[PHr, PHEr], Γ4=[PPr, PHr, PHEr])
-        para::GenericPara = reconstruct(para, extra=parquetblocks)
-    end
+    # if (para.extra isa ParquetBlocks) == false
+    #     parquetblocks = ParquetBlocks(phi=[PPr, PHEr], ppi=[PHr, PHEr], Γ4=[PPr, PHr, PHEr])
+    #     para::GenericPara = reconstruct(para, extra=parquetblocks)
+    # end
 
     function ΣG(group, oG, Tidx, Kidx, ΣTidx)
         #type: Instant or Dynamic
         paraG = reconstruct(para, diagType=GreenDiag, firstTauIdx=Tidx, firstLoopIdx=Kidx, innerLoopNum=oG)
-        G = Parquet.green(paraG, extK, group[:GT], true)
+        G = Parquet.green(paraG, extK, group[:GT], true; blocks=blocks)
         # G = Diagram(GreenId(paraG, k = extK, t = group[:GT]), name = Symbol("g#$li")) #there is only one G diagram for a extT
         @assert G isa Diagram
         # println(group)
@@ -83,7 +84,7 @@ function green(para::GenericPara, extK=DiagTree.getK(para.totalLoopNum, 1), extT
 
         sigmaPara = reconstruct(para, diagType=SigmaDiag, firstTauIdx=ΣfirstTidx, firstLoopIdx=ΣfirstKidx, innerLoopNum=oΣ)
         # println(ΣfirstTidx)
-        sigma = Parquet.sigma(sigmaPara, extK, true, name=:Σ)
+        sigma = Parquet.sigma(sigmaPara, extK, true, name=:Σ, blocks=blocks)
         @assert all(x -> x[1] == ΣfirstTidx, sigma.extT) "all sigma should share the same in Tidx\n$sigma"
 
         #combine sigmas with the same out Tidx

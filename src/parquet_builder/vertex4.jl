@@ -4,8 +4,9 @@
         chan::AbstractVector = [PHr, PHEr, PPr, Alli],
         subdiagram = false;
         level = 1, name = :none, resetuid = false,
-        phi_toplevel = ParquetBlocks().phi, ppi_toplevel = ParquetBlocks().ppi, Γ4_toplevel = ParquetBlocks().Γ4,
-        subchannel::Symbol=:All #:All, :W, :Lver3, :Rver3, :RPA
+        subchannel::Symbol=:All, #:All, :W, :Lver3, :Rver3, :RPA
+        blocks::ParquetBlocks=ParquetBlocks(),
+        blockstoplevel::ParquetBlocks=blocks
         )
 
     Generate 4-vertex diagrams using Parquet Algorithm
@@ -18,10 +19,9 @@
 - `name`            : name of the vertex
 - `level`           : level in the diagram tree
 - `resetuid`        : restart uid count from 1
-- `phi_toplevel`    : channels of left sub-vertex for the particle-hole and particle-hole-exchange of the bubble at level one.
-- `ppi_toplevel`    : channels of left sub-vertex for the particle-particle bubble at level one
-- `Γ4_toplevel`     : channels of right sub-vertex for all all bubbles at level one
 - `subchannel`      : :All, :W, :Lver3, :Rver3, :RPA to select all, W-interaction, left-vertex-correction, right-vertex-correction or RPA-interaction diagrams
+- `blocks`          : building blocks of the Parquet equation. See the struct ParquetBlocks for more details.
+- `blockstoplevel`  : building blocks of the Parquet equation at the toplevel. See the struct ParquetBlocks for more details.
 
 # Output
 - A DataFrame with fields :response, :type, :extT, :diagram, :hash
@@ -30,10 +30,10 @@ function vertex4(para::GenericPara,
     extK=[DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)],
     chan::AbstractVector=[PHr, PHEr, PPr, Alli], subdiagram=false;
     level=1, name=:none, resetuid=false,
-    phi_toplevel=ParquetBlocks().phi, ppi_toplevel=ParquetBlocks().ppi, Γ4_toplevel=ParquetBlocks().Γ4,
-    subchannel::Symbol=:All #:All, :W, :Lver3, :Rver3, :RPA
-    # blocks=ParquetBlocks(),
-    # toplevelblocks=blocks
+    # phi_toplevel=ParquetBlocks().phi, ppi_toplevel=ParquetBlocks().ppi, Γ4_toplevel=ParquetBlocks().Γ4,
+    subchannel::Symbol=:All, #:All, :W, :Lver3, :Rver3, :RPA
+    blocks::ParquetBlocks=ParquetBlocks(),
+    blockstoplevel::ParquetBlocks=blocks
 )
     for k in extK
         @assert length(k) >= para.totalLoopNum "expect dim of extK>=$(para.totalLoopNum), got $(length(k))"
@@ -43,16 +43,17 @@ function vertex4(para::GenericPara,
 
     resetuid && uidreset()
 
-    if (para.extra isa ParquetBlocks) == false
-        #type annotation here is crucial for type stability
-        para::GenericPara = reconstruct(para, extra=ParquetBlocks())
-    end
+    # if (para.extra isa ParquetBlocks) == false
+    #     #type annotation here is crucial for type stability
+    #     para::GenericPara = reconstruct(para, extra=ParquetBlocks())
+    # end
 
-    @assert para.extra isa ParquetBlocks
+    # @assert para.extra isa ParquetBlocks
     @assert para.totalTauNum >= maxVer4TauIdx(para) "Increase totalTauNum!\n$para"
     @assert para.totalLoopNum >= maxVer4LoopIdx(para) "Increase totalLoopNum\n$para"
 
-    phi, ppi = para.extra.phi, para.extra.ppi
+    phi, ppi = blocks.phi, blocks.ppi
+    phi_toplevel, ppi_toplevel = blockstoplevel.phi, blockstoplevel.ppi
 
     @assert (PHr in phi) == false "PHi vertex is particle-hole irreducible, so that PHr channel is not allowed in $phi"
     @assert (PPr in ppi) == false "PPi vertex is particle-particle irreducible, so that PPr channel is not allowed in $ppi"
@@ -90,10 +91,10 @@ function vertex4(para::GenericPara,
             for p in partition
 
                 if c == PHr || c == PHEr || c == PPr
-                    bubble!(ver4df, para, legK, c, p, level, name, phi_toplevel, ppi_toplevel, Γ4_toplevel, 1.0, subchannel)
+                    bubble!(ver4df, para, legK, c, p, level, name, blocks, blockstoplevel, 1.0, subchannel)
                     if (NoBubble in para.filter) && (loopNum == 1) && (c == PHr || c == PHEr)
                         #add bubble counter-diagram to remove the bubble
-                        bubble!(ver4df, para, legK, c, p, level, Symbol("$(name)_counter"), phi_toplevel, ppi_toplevel, Γ4_toplevel, -1.0, :RPA)
+                        bubble!(ver4df, para, legK, c, p, level, Symbol("$(name)_counter"), blocks, blockstoplevel, -1.0, :RPA)
                     end
                     # println(bub)
                 end
@@ -117,9 +118,8 @@ function vertex4(para::GenericPara,
 end
 
 function bubble!(ver4df::DataFrame, para::GenericPara, legK, chan::TwoBodyChannel, partition::Vector{Int}, level::Int, name::Symbol,
-    phi_toplevel, ppi_toplevel, Γ4_toplevel, extrafactor=1.0, subchannel=:All)
-
-    # diag = Diagram{para.weightType}[]
+    blocks::ParquetBlocks, blockstoplevel::ParquetBlocks,
+    extrafactor=1.0, subchannel=:All)
 
     TauNum = interactionTauNum(para) # maximum tau number for each bare interaction
     oL, oG0, oR, oGx = partition[1], partition[2], partition[3], partition[4]
@@ -144,7 +144,8 @@ function bubble!(ver4df::DataFrame, para::GenericPara, legK, chan::TwoBodyChanne
     gxPara = reconstruct(para, diagType=GreenDiag, innerLoopNum=oGx, firstLoopIdx=GxfirstLoopIdx, firstTauIdx=GxfirstTauIdx)
     g0Para = reconstruct(para, diagType=GreenDiag, innerLoopNum=oG0, firstLoopIdx=G0firstLoopIdx, firstTauIdx=G0firstTauIdx)
 
-    phi, ppi, Γ4 = para.extra.phi, para.extra.ppi, para.extra.Γ4
+    phi, ppi, Γ4 = blocks.phi, blocks.ppi, blocks.Γ4
+    phi_toplevel, ppi_toplevel, Γ4_toplevel = blockstoplevel.phi, blockstoplevel.ppi, blockstoplevel.Γ4
     if chan == PHr || chan == PHEr
         Γi = (level == 1) ? phi_toplevel : phi
         Γf = (level == 1) ? Γ4_toplevel : Γ4
@@ -160,19 +161,16 @@ function bubble!(ver4df::DataFrame, para::GenericPara, legK, chan::TwoBodyChanne
 
     ls, rs = subChannel(subchannel)
 
-    Lver = vertex4(lPara, LLegK, Γi, true; level=level + 1, name=:Γi, subchannel=ls)
-    # isempty(Lver) && return diag
+    Lver = vertex4(lPara, LLegK, Γi, true; level=level + 1, name=:Γi, subchannel=ls, blocks=blocks)
     isempty(Lver) && return
-    # println("Γf: ", Γf)
-    Rver = vertex4(rPara, RLegK, Γf, true; level=level + 1, name=:Γf, subchannel=rs)
-    # isempty(Rver) && return diag
+    Rver = vertex4(rPara, RLegK, Γf, true; level=level + 1, name=:Γf, subchannel=rs, blocks=blocks)
     isempty(Rver) && return
 
     for ldiag in Lver.diagram
         for rdiag in Rver.diagram
             extT, G0T, GxT = tauBasis(chan, ldiag.id.extT, rdiag.id.extT)
-            g0 = green(g0Para, K, G0T, true, name=:G0)
-            gx = green(gxPara, Kx, GxT, true, name=:Gx)
+            g0 = green(g0Para, K, G0T, true, name=:G0, blocks=blocks)
+            gx = green(gxPara, Kx, GxT, true, name=:Gx, blocks=blocks)
             @assert g0 isa Diagram && gx isa Diagram
             # append!(diag, bubble2diag(para, chan, ldiag, rdiag, legK, g0, gx, extrafactor))
             bubble2diag!(ver4df, para, chan, ldiag, rdiag, legK, g0, gx, extrafactor)
@@ -182,7 +180,7 @@ function bubble!(ver4df::DataFrame, para::GenericPara, legK, chan::TwoBodyChanne
     return
 end
 
-function bubble2diag!(ver4df, para, chan, ldiag, rdiag, extK, g0, gx, extrafactor)
+function bubble2diag!(ver4df::DataFrame, para::GenericPara, chan::TwoBodyChannel, ldiag, rdiag, extK, g0, gx, extrafactor)
     lid, rid = ldiag.id, rdiag.id
     ln, rn = lid.response, rid.response
     lo, ro = lid.para.innerLoopNum, rid.para.innerLoopNum
@@ -191,8 +189,6 @@ function bubble2diag!(ver4df, para, chan, ldiag, rdiag, extK, g0, gx, extrafacto
     extT, G0T, GxT = tauBasis(chan, lid.extT, rid.extT)
     Factor = factor(para, chan) * extrafactor
     spin(response) = (response == UpUp ? "↑↑" : "↑↓")
-
-    # diag = Diagram{para.weightType}[]
 
     function add(Lresponse::Response, Rresponse::Response, Vresponse::Response, factor=1.0)
         if ln == Lresponse && rn == Rresponse

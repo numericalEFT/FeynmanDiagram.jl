@@ -1,5 +1,5 @@
 """
-    function sigma(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = false; name = :Σ, resetuid = false)
+    function sigma(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = false; name = :Σ, resetuid = false, blocks::ParquetBlocks=ParquetBlocks())
     
     Build sigma diagram. 
     When sigma is created as a subdiagram, then no Fock diagram is generated if para.filter contains NoFock, and no sigma diagram is generated if para.filter contains Girreducible
@@ -10,12 +10,13 @@
 - `subdiagram`      : a sub-vertex or not
 - `name`            : name of the diagram
 - `resetuid`        : restart uid count from 1
+- `blocks`          : building blocks of the Parquet equation. See the struct ParquetBlocks for more details.
 
 # Output
 - A DataFrame with fields `:type`, `:extT`, `:diagram`, `:hash`
 - All sigma share the same incoming Tau index, but not the outgoing one
 """
-function sigma(para::GenericPara, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false; name=:Σ, resetuid=false)
+function sigma(para::GenericPara, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false; name=:Σ, resetuid=false, blocks::ParquetBlocks=ParquetBlocks())
     resetuid && uidreset()
     (para.diagType == SigmaDiag) || error("$para is not for a sigma diagram")
     (para.innerLoopNum >= 1) || error("sigma must has more than one inner loop")
@@ -35,10 +36,10 @@ function sigma(para::GenericPara, extK=DiagTree.getK(para.totalLoopNum, 1), subd
         return compositeSigma
     end
 
-    if (para.extra isa ParquetBlocks) == false
-        parquetblocks = ParquetBlocks(phi=[PPr, PHEr], ppi=[PHr, PHEr], Γ4=[PPr, PHr, PHEr])
-        para::GenericPara = reconstruct(para, extra=parquetblocks)
-    end
+    # if (para.extra isa ParquetBlocks) == false
+    #     parquetblocks = ParquetBlocks(phi=[PPr, PHEr], ppi=[PHr, PHEr], Γ4=[PPr, PHr, PHEr])
+    #     para::GenericPara = reconstruct(para, extra=parquetblocks)
+    # end
 
     K = zero(extK)
     LoopIdx = para.firstLoopIdx
@@ -54,7 +55,7 @@ function sigma(para::GenericPara, extK=DiagTree.getK(para.totalLoopNum, 1), subd
         #type: Instant or Dynamic
         response, type = group[:response], group[:type]
         sid = SigmaId(para, type, k=extK, t=group[:extT])
-        g = green(paraG, K, group[:GT], true; name=oW == 0 ? :Gfock : :G_Σ) #there is only one G diagram for a extT
+        g = green(paraG, K, group[:GT], true; name=(oW == 0 ? :Gfock : :G_Σ), blocks=blocks) #there is only one G diagram for a extT
         (g isa Diagram) || error("green function must return a Diagram")
         # Sigma = G*(2 W↑↑ - W↑↓)
         # ! The sign of ↑↓ is from the spin symmetry, not from the fermionic statistics!
@@ -101,7 +102,7 @@ function sigma(para::GenericPara, extK=DiagTree.getK(para.totalLoopNum, 1), subd
                 # println(ver4)
             else # composite Σ
                 # paraW0 = reconstruct(paraW, filter=union(paraW.filter, Proper), transferLoop=extK-K)
-                ver4 = vertex4(paraW, legK, [PHr,], true, phi_toplevel=[], Γ4_toplevel=[PHr, PHEr, PPr,])
+                ver4 = vertex4(paraW, legK, [PHr,], true; blocks=blocks, blockstoplevel=ParquetBlocks(phi=[], Γ4=[PHr, PHEr, PPr]))
                 # plot_tree(mergeby(ver4).diagram[1])
             end
             #transform extT coloum intwo extT for Σ and extT for G
