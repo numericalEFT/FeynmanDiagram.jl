@@ -16,7 +16,7 @@
 - A DataFrame with fields `:type`, `:extT`, `:diagram`, `:hash`
 - All sigma share the same incoming Tau index, but not the outgoing one
 """
-function sigma(para::DiagPara, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false; name=:Σ, resetuid=false, blocks::ParquetBlocks=ParquetBlocks())
+function sigma(para::DiagPara{W}, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false; name=:Σ, resetuid=false, blocks::ParquetBlocks=ParquetBlocks()) where {W}
     resetuid && uidreset()
     (para.diagType == SigmaDiag) || error("$para is not for a sigma diagram")
     (para.innerLoopNum >= 1) || error("sigma must has more than one inner loop")
@@ -29,7 +29,7 @@ function sigma(para::DiagPara, extK=DiagTree.getK(para.totalLoopNum, 1), subdiag
     (length(extK) >= para.totalLoopNum) || error("expect dim of extK>=$(para.totalLoopNum), got $(length(extK))")
     extK = extK[1:para.totalLoopNum]
 
-    compositeSigma = DataFrame(type=AnalyticProperty[], extT=Tuple{Int,Int}[], diagram=Diagram{para.weightType}[])
+    compositeSigma = DataFrame(type=AnalyticProperty[], extT=Tuple{Int,Int}[], diagram=Diagram{W}[])
 
     if isValidSigma(para.filter, para.innerLoopNum, subdiagram) == false
         # return DataFrame(type=[], extT=[], diagram=[])
@@ -67,7 +67,7 @@ function sigma(para::DiagPara, extK=DiagTree.getK(para.totalLoopNum, 1), subdiag
             #     spinfactor *= paraG.isFermi ? -1.0 : 1.0
         end
         # plot_tree(mergeby(DataFrame(group)), maxdepth = 7)
-        sigmadiag = Diagram(sid, Prod(), [g, group[:diagram]], factor=spinfactor, name=name)
+        sigmadiag = Diagram{W}(sid, Prod(), [g, group[:diagram]], factor=spinfactor, name=name)
         # plot_tree(sigmadiag, maxdepth = 7)
         return (type=type, extT=group[:extT], diagram=sigmadiag)
     end

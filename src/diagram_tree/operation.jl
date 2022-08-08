@@ -28,15 +28,20 @@ end
 - diags     : diagrams to take derivative
 - ID        : DiagramId to apply the differentiation
 """
-function derivative(diags::Union{Diagram,Tuple,AbstractVector}, ::Type{ID}; index::Int=index(ID)) where {ID<:PropagatorId}
+
+function derivative(diags::Union{Tuple,AbstractVector}, ::Type{ID}; index::Int=index(ID)) where {W,ID<:PropagatorId}
+    if isempty(diags)
+        return diags
+    else
+        diags = collect(diags)
+        diags = derivative(diags, ID; index=index)
+        return diags
+    end
+end
+function derivative(diags::Vector{Diagram{W}}, ::Type{ID}; index::Int=index(ID)) where {W,ID<:PropagatorId}
     # use a dictionary to host the dual diagram of a diagram for a given hash number
     # a dual diagram is defined as the derivative of the original diagram
 
-    single = false
-    if diags isa Diagram
-        diags = [diags,]
-        single = true
-    end
     dual = Dict{Int,Any}()
     for diag in diags
         for d in PostOrderDFS(diag)
@@ -82,7 +87,7 @@ function derivative(diags::Union{Diagram,Tuple,AbstractVector}, ::Type{ID}; inde
                     else
                         newid = deepcopy(id)
                         newid.order .= terms[1].id.order
-                        dual[d.hash] = Diagram{id.para.weightType}(newid, Sum(), terms, name=Symbol("$(d.name)'"))
+                        dual[d.hash] = Diagram{W}(newid, Sum(), terms, name=Symbol("$(d.name)'"))
                     end
                 else
                     error("not implemented!")
@@ -90,11 +95,7 @@ function derivative(diags::Union{Diagram,Tuple,AbstractVector}, ::Type{ID}; inde
             end
         end
     end
-    if single
-        return isnothing(dual[diags[1].hash]) ? nothing : dual[diags[1].hash]
-    else
-        return [dual[diag.hash] for diag in diags if isnothing(dual[diag.hash]) == false]
-    end
+    return Vector{Diagram{W}}([dual[diag.hash] for diag in diags if isnothing(dual[diag.hash]) == false])
 end
 
 """
@@ -107,7 +108,7 @@ end
 - ID         : DiagramId to apply the differentiation
 - order::Int : derivative order
 """
-function derivative(diags::Union{Diagram,Tuple,AbstractVector}, ::Type{ID}, order::Int; index::Int=index(ID)) where {ID<:PropagatorId}
+function derivative(diags::Union{Tuple,AbstractVector}, ::Type{ID}, order::Int; index::Int=index(ID)) where {ID<:PropagatorId}
     @assert order >= 0
     if order == 0
         return diags

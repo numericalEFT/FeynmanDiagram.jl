@@ -19,37 +19,47 @@
 # Output
 - A DataFrame with fields :response, :extT, :diagram, :hash. 
 """
-function vertex3(para::DiagPara, extK=[DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2)],
-    subdiagram=false; name=:Γ3, chan=[PHr, PHEr, PPr, Alli], resetuid=false,
+function vertex3(para::DiagPara{WW},
+    _extK=[DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2)],
+    subdiagram=false;
+    name=:Γ3,
+    chan=[PHr, PHEr, PPr, Alli],
+    resetuid=false,
     blocks::ParquetBlocks=ParquetBlocks()
-)
+) where {WW}
+
 
     resetuid && uidreset()
     @assert para.diagType == Ver3Diag
     @assert para.innerLoopNum >= 1 "Only generates vertex corrections with more than one internal loops."
-    for k in extK
+    for k in _extK
         @assert length(k) >= para.totalLoopNum "expect dim of extK>=$(para.totalLoopNum), got $(length(k))"
     end
-    extK = [k[1:para.totalLoopNum] for k in extK]
 
-    q, Kin = extK[1], extK[2]
-    Kout = length(extK) == 3 ? extK[3] : Kin .- q
+    q, Kin = _extK[1][1:para.totalLoopNum], _extK[2][1:para.totalLoopNum]
+    # Kout = length(extK) == 3 ? extK[3] : Kin .- q
+    Kout = Kin - q
     @assert ((q ≈ Kin) == false) && ((q ≈ Kout) == false) "The bosonic q cann't be same as the fermionic k. Ohterwise the proper diagram check will fail!"
     extK = [q, Kin, Kout]
 
+    ############ reset transferLoop to be q ################
     if Proper in para.filter
-        para::DiagPara = reconstruct(para, transferLoop=q)
+        if (length(para.transferLoop) != length(q)) #first check if the dimension is wrong
+            empty!(para.transferLoop)
+            append!(para.transferLoop, q)
+        else #dimension is right, then need to check if q is the same as the transferLoop
+            if !(para.transferLoop ≈ q)
+                para.transferLoop .= q
+            end
+        end
     end
+    ######################################################
 
     t0 = para.firstTauIdx
-    vertex3 = DataFrame(response=Response[], extT=Tuple{Int,Int,Int}[], diagram=Diagram{para.weightType}[])
+    vertex3 = DataFrame(response=Response[], extT=Tuple{Int,Int,Int}[], diagram=Diagram{WW}[])
 
     # if para.innerLoopNum == 0
     #     push!(vertex3, (response = UpUp, extT = (t0, t0, t0), diagram = ver3diag))
-    # end
-
-    # if (para.extra isa ParquetBlocks) == false
-    #     para = reconstruct(para, extra=ParquetBlocks())
     # end
 
     K = zero(q)
@@ -101,7 +111,7 @@ function vertex3(para::DiagPara, extK=[DiagTree.getK(para.totalLoopNum, 1), Diag
                 gout = green(paraGout, K .+ q, v4.GoutT, true, name=:Gout, blocks=blocks)
                 @assert gin isa Diagram && gout isa Diagram
 
-                ver3diag = Diagram(ver3id, Prod(), [gin, gout, v4.diagram], name=name)
+                ver3diag = Diagram{WW}(ver3id, Prod(), [gin, gout, v4.diagram], name=name)
                 push!(vertex3, (response=response, extT=v4.extT, diagram=ver3diag))
             end
         end

@@ -26,7 +26,7 @@
 # Output
 - A DataFrame with fields :response, :type, :extT, :diagram, :hash
 """
-function vertex4(para::DiagPara,
+function vertex4(para::DiagPara{W},
     extK=[DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)],
     chan::AbstractVector=[PHr, PHEr, PPr, Alli], subdiagram=false;
     level=1, name=:none, resetuid=false,
@@ -34,12 +34,13 @@ function vertex4(para::DiagPara,
     subchannel::Symbol=:All, #:All, :W, :Lver3, :Rver3, :RPA
     blocks::ParquetBlocks=ParquetBlocks(),
     blockstoplevel::ParquetBlocks=blocks
-)
+) where {W}
     for k in extK
         @assert length(k) >= para.totalLoopNum "expect dim of extK>=$(para.totalLoopNum), got $(length(k))"
     end
-    extK = [k[1:para.totalLoopNum] for k in extK]
-    legK = extK
+    legK = [k[1:para.totalLoopNum] for k in extK[1:3]]
+    push!(legK, legK[1] + legK[3] - legK[2])
+    # legK = extK
 
     resetuid && uidreset()
 
@@ -62,16 +63,17 @@ function vertex4(para::DiagPara,
 
     # @assert length(legK[1]) == length(legK[2]) == length(legK[3]) == para.totalLoopNum
 
-    KinL, KoutL, KinR = legK[1], legK[2], legK[3]
-    KoutR = (length(legK) > 3) ? legK[4] : KinL + KinR - KoutL
-    # @assert KoutR ≈ KinL + KinR - KoutL
-    legK = [KinL, KoutL, KinR, KoutR]
+    # KinL, KoutL, KinR = legK[1], legK[2], legK[3]
+    # KoutR = (length(legK) > 3) ? legK[4] : KinL + KinR - KoutL
+    # # @assert KoutR ≈ KinL + KinR - KoutL
+    # legK = [KinL, KoutL, KinR, KoutR]
+    # legK = [extK[1], extK[2], extK[3], extK[1] + extK[3] - extK[2]]
 
 
     loopNum = para.innerLoopNum
     # @assert loopNum >= 0
 
-    ver4df = DataFrame(response=Response[], type=AnalyticProperty[], extT=Tuple{Int,Int,Int,Int}[], diagram=Diagram{para.weightType}[])
+    ver4df = DataFrame(response=Response[], type=AnalyticProperty[], extT=Tuple{Int,Int,Int,Int}[], diagram=Diagram{W}[])
 
     if loopNum == 0
         if subchannel == :W || subchannel == :RPA || subchannel == :LVer3 || subchannel == :RVer3
@@ -180,7 +182,7 @@ function bubble!(ver4df::DataFrame, para::DiagPara, legK, chan::TwoBodyChannel, 
     return
 end
 
-function bubble2diag!(ver4df::DataFrame, para::DiagPara, chan::TwoBodyChannel, ldiag, rdiag, extK, g0, gx, extrafactor)
+function bubble2diag!(ver4df::DataFrame, para::DiagPara{W}, chan::TwoBodyChannel, ldiag, rdiag, extK, g0, gx, extrafactor) where {W}
     lid, rid = ldiag.id, rdiag.id
     ln, rn = lid.response, rid.response
     lo, ro = lid.para.innerLoopNum, rid.para.innerLoopNum
@@ -194,7 +196,7 @@ function bubble2diag!(ver4df::DataFrame, para::DiagPara, chan::TwoBodyChannel, l
         if ln == Lresponse && rn == Rresponse
             nodeName = Symbol("$(spin(Lresponse))x$(spin(Rresponse)) → $chan,")
             id = Ver4Id(para, Vresponse, vtype, k=extK, t=extT, chan=chan)
-            diag = Diagram(id, Prod(), [g0, gx, ldiag, rdiag], factor=factor * Factor, name=nodeName)
+            diag = Diagram{W}(id, Prod(), [g0, gx, ldiag, rdiag], factor=factor * Factor, name=nodeName)
             push!(ver4df, (response=Vresponse, type=vtype, extT=extT, diagram=diag))
             # push!(diag, Diagram(id, Prod(), [g0, gx, ldiag, rdiag], factor=factor * Factor, name=nodeName))
         end
@@ -228,8 +230,8 @@ function bubble2diag!(ver4df::DataFrame, para::DiagPara, chan::TwoBodyChannel, l
     return
 end
 
-function _bare(para::DiagPara, diex::Vector{Permutation}, response::Response, type::AnalyticProperty,
-    _diex::Permutation, _innerT::Tuple{Int,Int}, _q, _factor=1.0)
+function _bare(para::DiagPara{W}, diex::Vector{Permutation}, response::Response, type::AnalyticProperty,
+    _diex::Permutation, _innerT::Tuple{Int,Int}, _q, _factor=1.0) where {W}
     @assert _diex == Di || _diex == Ex
 
     # there is an overall sign coming from Taylor expansion of exp(-S) depsite the statistics
@@ -244,23 +246,23 @@ function _bare(para::DiagPara, diex::Vector{Permutation}, response::Response, ty
     if notProper(para, _q) == false && _diex in diex
         #create new bare ver4 only if _diex is required in the diex table 
         vid = BareInteractionId(para, response, type, k=_q, t=_innerT, permu=_diex)
-        return Diagram(vid, factor=sign * _factor)
+        return Diagram{W}(vid, factor=sign * _factor)
     else
         return nothing
     end
 end
 
-function _pushbarever4!(para::DiagPara, nodes::DataFrame, response::Response, type::AnalyticProperty, _extT, legK,
+function _pushbarever4!(para::DiagPara{W}, nodes::DataFrame, response::Response, type::AnalyticProperty, _extT, legK,
     vd::Union{Nothing,Diagram{W}}, ve::Union{Nothing,Diagram{W}}) where {W}
 
     if isnothing(vd) == false
         id_di = Ver4Id(para, response, type, k=legK, t=_extT[DI])
-        push!(nodes, (response=response, type=type, extT=_extT[DI], diagram=Diagram(id_di, Sum(), [vd,])))
+        push!(nodes, (response=response, type=type, extT=_extT[DI], diagram=Diagram{W}(id_di, Sum(), [vd,])))
     end
 
     if isnothing(ve) == false
         id_ex = Ver4Id(para, response, type, k=legK, t=_extT[EX])
-        push!(nodes, (response=response, type=type, extT=_extT[EX], diagram=Diagram(id_ex, Sum(), [ve,])))
+        push!(nodes, (response=response, type=type, extT=_extT[EX], diagram=Diagram{W}(id_ex, Sum(), [ve,])))
     end
 end
 
@@ -308,9 +310,6 @@ function bareVer4(nodes::DataFrame, para::DiagPara, legK, diex::Vector{Permutati
 
     KinL, KoutL, KinR = legK[1], legK[2], legK[3]
     t0 = para.firstTauIdx
-
-    # nodes = DataFrame(response=Response[], type=AnalyticProperty[], extT=Tuple{Int,Int,Int,Int}[], diagram=Diagram{para.weightType}[])
-    # nodes = Diagram{para.weightType}[]
 
     q = [KinL - KoutL, KinR - KoutL]
 

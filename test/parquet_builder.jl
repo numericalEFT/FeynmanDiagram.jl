@@ -127,7 +127,7 @@ evalFakePropagator(id::PropagatorId, K, extT, varT) = 1.0
 
         blocks = ParquetBlocks(phi=[PHEr, PPr], ppi=[PHr, PHEr])
 
-        para = DiagPara(
+        para = DiagParaF64(
             diagType=Ver4Diag,
             loopDim=Kdim,
             isFermi=isFermi,
@@ -136,7 +136,6 @@ evalFakePropagator(id::PropagatorId, K, extT, varT) = 1.0
             totalLoopNum=length(KinL),
             totalTauNum=(loopNum + 1) * interactionTauNum,
             spin=spin,
-            weightType=Float64,
             firstLoopIdx=3,
             firstTauIdx=1,
             filter=union(filter, [Girreducible,]), #ver4 evaluation only support one-particle-irreducible diagram
@@ -248,7 +247,7 @@ end
     function getSigma(loopNum; Kdim=3, spin=2, interactionTauNum=1, filter=[NoHatree,], isFermi=true, subdiagram=false)
         println("LoopNum =$loopNum Sigma Test")
 
-        para = DiagPara(
+        para = DiagParaF64(
             diagType=SigmaDiag,
             loopDim=Kdim,
             hasTau=true,
@@ -257,7 +256,6 @@ end
             totalTauNum=loopNum * interactionTauNum,
             isFermi=isFermi,
             spin=spin,
-            weightType=Float64,
             firstLoopIdx=2,
             firstTauIdx=1,
             filter=filter,
@@ -306,7 +304,7 @@ end
 
 @testset "Green" begin
     function buildG(loopNum, extT; Kdim=3, spin=2, interactionTauNum=1, filter=[NoHatree,], isFermi=true)
-        para = DiagPara(
+        para = DiagParaF64(
             diagType=GreenDiag,
             loopDim=Kdim,
             hasTau=true,
@@ -347,7 +345,7 @@ end
     function getGamma3(loopNum; Kdim=3, spin=2, interactionTauNum=1, filter=[NoHatree, Girreducible, Proper,], isFermi=true, subdiagram=false)
         println("LoopNum =$loopNum Vertex3 Test")
 
-        para = DiagPara(
+        para = DiagParaF64(
             diagType=Ver3Diag,
             loopDim=Kdim,
             innerLoopNum=loopNum,
@@ -404,7 +402,7 @@ end
     function getPolar(loopNum; Kdim=3, spin=2, interactionTauNum=1, filter=[NoHatree, Girreducible,], isFermi=true, subdiagram=false)
         println("LoopNum =$loopNum Polarization Test")
 
-        para = DiagPara(
+        para = DiagParaF64(
             diagType=PolarDiag,
             loopDim=Kdim,
             innerLoopNum=loopNum,
@@ -458,7 +456,7 @@ end
         factor = 1.0
         num = w / factor
         # println(num * para.spin)
-        println("$diag")
+        # println("$diag")
         @test num * para.spin * (-1)^(para.innerLoopNum - 1) ≈ Parquet.Benchmark.count_polar_g2v_noFock_upup(para.innerLoopNum, para.spin)
     end
 end

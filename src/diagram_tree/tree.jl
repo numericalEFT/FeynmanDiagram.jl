@@ -42,11 +42,11 @@ mutable struct Diagram{W}
         # return new{W}(uid(), name, id, operator, factor, deepcopy(subdiagram), weight)
         return new{W}(uid(), name, id, operator, factor, subdiagram, weight)
     end
-    function Diagram(id::DiagramId, operator::Operator=Sum(), subdiagram=[]; type::DataType=id.para.weightType,
-        name=:none, factor=one(type), weight=zero(type))
-        # return new{type}(uid(), name, id, operator, factor, deepcopy(subdiagram), weight)
-        return new{type}(uid(), name, id, operator, factor, subdiagram, weight)
-    end
+    # function Diagram(id::DiagramId, operator::Operator=Sum(), subdiagram=[]; type::DataType=id.para.weightType,
+    #     name=:none, factor=one(type), weight=zero(type))
+    #     # return new{type}(uid(), name, id, operator, factor, deepcopy(subdiagram), weight)
+    #     return new{type}(uid(), name, id, operator, factor, subdiagram, weight)
+    # end
 end
 
 isbare(diag::Diagram) = isempty(diag.subdiagram)
@@ -68,29 +68,29 @@ isbare(diag::Diagram) = isempty(diag.subdiagram)
 
 # _diagram(df, index) = df[index, :Diagram]
 
-function _combinegroups(groups, getid, factor, operator, name)
-    # combine diagrams in a group into one composite diagram
-    gdf = combine(groups) do group # for each group in groups
-        # check the documentation of ``combine" for details https://dataframes.juliadata.org/stable/man/split_apply_combine/
-        # id = isnothing(getid) ? GenericId(group.diagram[1].id.para, Tuple(group[1, fields])) : getid(group)
-        id = getid(group)
+# function _combinegroups(groups, getid, factor, operator, name)
+#     # combine diagrams in a group into one composite diagram
+#     gdf = combine(groups) do group # for each group in groups
+#         # check the documentation of ``combine" for details https://dataframes.juliadata.org/stable/man/split_apply_combine/
+#         # id = isnothing(getid) ? GenericId(group.diagram[1].id.para, Tuple(group[1, fields])) : getid(group)
+#         id = getid(group)
 
-        if nrow(group) == 1
-            # if there is only one diagram in df, and the new id is either GenericId or the id of the existing diagram, 
-            # then simply return the current df without creating a new diagram
-            # ! the new factor will be multiplied to the factor of the exisiting diagram!
-            if id isa GenericId || typeof(id) == typeof(group.diagram[1].id)
-                # diag = deepcopy(group[1, :diagram])
-                diag = group.diagram[1]
-                diag.factor *= factor
-                return (diagram=diag, hash=diag.hash)
-            end
-        end
-        diag = Diagram(id, operator, group.diagram, name=name, factor=factor)
-        return (diagram=diag, hash=diag.hash)
-    end
-    return gdf
-end
+#         if nrow(group) == 1
+#             # if there is only one diagram in df, and the new id is either GenericId or the id of the existing diagram, 
+#             # then simply return the current df without creating a new diagram
+#             # ! the new factor will be multiplied to the factor of the exisiting diagram!
+#             if id isa GenericId || typeof(id) == typeof(group.diagram[1].id)
+#                 # diag = deepcopy(group[1, :diagram])
+#                 diag = group.diagram[1]
+#                 diag.factor *= factor
+#                 return (diagram=diag, hash=diag.hash)
+#             end
+#         end
+#         diag = Diagram(id, operator, group.diagram, name=name, factor=factor)
+#         return (diagram=diag, hash=diag.hash)
+#     end
+#     return gdf
+# end
 
 function _merge(group, factor, id, operator, name)
     if nrow(group) == 1
@@ -104,7 +104,8 @@ function _merge(group, factor, id, operator, name)
             return diag
         end
     end
-    return Diagram(id, operator, group.diagram, name=name, factor=factor)
+    W = typeof(group.diagram[1].weight)
+    return Diagram{W}(id, operator, group.diagram, name=name, factor=factor)
 end
 
 function _makedict(groups, factor, getid, operator, name)
@@ -175,7 +176,7 @@ function mergeby(diags::AbstractVector{Diagram{W}};
             diag.factor *= factor
             return diag
         end
-        diag = Diagram(id, operator, diags, name=name, factor=factor)
+        diag = Diagram{W}(id, operator, diags, name=name, factor=factor)
         return diag
     end
 end
