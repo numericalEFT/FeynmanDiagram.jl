@@ -73,7 +73,7 @@ end
     #if there is no imaginary-time at all, then set this number to zero!
     ########################################################################
     filter::Vector{Filter} = [NoHatree,] #usually, the Hatree subdiagram should be removed
-    transferLoop = [] #Set it to be the transfer momentum/frequency if you want to check the diagrams are proper or not
+    transferLoop::Vector{Float64} = [] #Set it to be the transfer momentum/frequency if you want to check the diagrams are proper or not
     extra::Any = Nothing
 end
 
