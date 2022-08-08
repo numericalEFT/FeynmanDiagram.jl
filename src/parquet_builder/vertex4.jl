@@ -114,7 +114,7 @@ function vertex4(para::GenericPara,
     return ver4df
 end
 
-function bubble!(ver4df, para::GenericPara, legK, chan::TwoBodyChannel, partition::Vector{Int}, level::Int, name::Symbol,
+function bubble!(ver4df::DataFrame, para::GenericPara, legK, chan::TwoBodyChannel, partition::Vector{Int}, level::Int, name::Symbol,
     phi_toplevel, ppi_toplevel, Γ4_toplevel, extrafactor=1.0, subchannel=:All)
 
     # diag = Diagram{para.weightType}[]
