@@ -1,6 +1,6 @@
 
 """
-    function polarization(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = false; name = :Π, resetuid = false)
+    function polarization(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = false; name = :Π, resetuid = false, blocks::ParquetBlocks=ParquetBlocks())
 
     Generate polarization diagrams using Parquet Algorithm.
 
@@ -10,12 +10,15 @@
 - `subdiagram`      : a sub-vertex or not
 - `name`            : name of the vertex
 - `resetuid`        : restart uid count from 1
+- `blocks`          : building blocks of the Parquet equation. See the struct ParquetBlocks for more details.
 
 # Output
 - A DataFrame with fields `:response`, `:diagram`, `:hash`. 
 - All polarization share the same external Tau index. With imaginary-time variables, they are extT = (para.firstTauIdx, para.firstTauIdx+1)
 """
-function polarization(para::GenericPara, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false; name=:Π, resetuid=false)
+function polarization(para::GenericPara, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false; name=:Π, resetuid=false,
+    blocks::ParquetBlocks=ParquetBlocks()
+)
     resetuid && uidreset()
     @assert para.diagType == PolarDiag
     @assert para.innerLoopNum >= 1
@@ -23,12 +26,15 @@ function polarization(para::GenericPara, extK=DiagTree.getK(para.totalLoopNum, 1
     @assert length(extK) >= para.totalLoopNum "expect dim of extK>=$(para.totalLoopNum), got $(length(extK))"
     extK = extK[1:para.totalLoopNum]
 
-    #polarization diagram is always proper
-    para = reconstruct(para, filter=union(Proper, para.filter), transferLoop=extK)
-
-    if (para.extra isa ParquetBlocks) == false
-        para::GenericPara = reconstruct(para, extra=ParquetBlocks())
+    #polarization diagram should always proper
+    if !(Proper in para.filter) || (lenth(para.transferLoop) != length(extK)) || (para.transferLoop ≈ extK)
+        # @warn "Polarization diagram parameter is not proper. It will be reconstructed with proper transfer loops."
+        para::GenericPara = reconstruct(para, filter=union(Proper, para.filter), transferLoop=extK)
     end
+
+    # if (para.extra isa ParquetBlocks) == false
+    #     para::GenericPara = reconstruct(para, extra=ParquetBlocks())
+    # end
 
     K = zero(extK)
     LoopIdx = para.firstLoopIdx
@@ -82,7 +88,7 @@ function polarization(para::GenericPara, extK=DiagTree.getK(para.totalLoopNum, 1
 
                 paraVer3 = reconstruct(para, diagType=Ver3Diag, innerLoopNum=oVer3,
                     firstLoopIdx=Ver3Kidx, firstTauIdx=Ver3Tidx)
-                ver3 = vertex3(paraVer3, legK, true)
+                ver3 = vertex3(paraVer3, legK, true; blocks=blocks)
                 if isnothing(ver3) || isempty(ver3)
                     continue
                 end
@@ -101,8 +107,8 @@ function polarization(para::GenericPara, extK=DiagTree.getK(para.totalLoopNum, 1
                     @assert response == UpUp || response == UpDown
                     #type: Instant or Dynamic
                     polarid = PolarId(para, response, k=extK, t=v3.extT)
-                    gin = green(paraGin, K, v3.GinT, true, name=:Gin)
-                    gout = green(paraGout, K .- extK, v3.GoutT, true, name=:Gout)
+                    gin = green(paraGin, K, v3.GinT, true, name=:Gin, blocks=blocks)
+                    gout = green(paraGout, K .- extK, v3.GoutT, true, name=:Gout, blocks=blocks)
                     @assert gin isa Diagram && gout isa Diagram
 
                     polardiag = Diagram(polarid, Prod(), [gin, gout, v3.diagram], name=name)

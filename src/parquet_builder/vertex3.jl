@@ -1,6 +1,8 @@
 """
     function vertex3(para, extK = [DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2)],
-        subdiagram = false; name = :Γ3, chan = [PHr, PHEr, PPr, Alli], resetuid = false)
+        subdiagram = false; name = :Γ3, chan = [PHr, PHEr, PPr, Alli], resetuid = false, 
+        blocks::ParquetBlocks=ParquetBlocks()
+        )
 
     Generate 3-vertex diagrams using Parquet Algorithm.
     With imaginary-time variables, all vertex3 generated has the same bosonic Tidx ``extT[1]=para.firstTauIdx`` and the incoming fermionic Tidx ``extT[2]=para.firstTauIdx+1``.
@@ -12,12 +14,15 @@
 - `name`            : name of the vertex
 - `chan`            : vector of channels of the current 4-vertex. 
 - `resetuid`        : restart uid count from 1
+- `blocks`          : building blocks of the Parquet equation. See the struct ParquetBlocks for more details.
 
 # Output
 - A DataFrame with fields :response, :extT, :diagram, :hash. 
 """
 function vertex3(para::GenericPara, extK=[DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2)],
-    subdiagram=false; name=:Γ3, chan=[PHr, PHEr, PPr, Alli], resetuid=false)
+    subdiagram=false; name=:Γ3, chan=[PHr, PHEr, PPr, Alli], resetuid=false,
+    blocks::ParquetBlocks=ParquetBlocks()
+)
 
     resetuid && uidreset()
     @assert para.diagType == Ver3Diag
@@ -43,9 +48,9 @@ function vertex3(para::GenericPara, extK=[DiagTree.getK(para.totalLoopNum, 1), D
     #     push!(vertex3, (response = UpUp, extT = (t0, t0, t0), diagram = ver3diag))
     # end
 
-    if (para.extra isa ParquetBlocks) == false
-        para = reconstruct(para, extra=ParquetBlocks())
-    end
+    # if (para.extra isa ParquetBlocks) == false
+    #     para = reconstruct(para, extra=ParquetBlocks())
+    # end
 
     K = zero(q)
     LoopIdx = para.firstLoopIdx
@@ -73,7 +78,7 @@ function vertex3(para::GenericPara, extK=[DiagTree.getK(para.totalLoopNum, 1), D
                 firstLoopIdx=GoutKidx, firstTauIdx=GoutTidx)
             paraVer4 = reconstruct(para, diagType=Ver4Diag, innerLoopNum=oVer4,
                 firstLoopIdx=Ver4Kidx, firstTauIdx=Ver4Tidx)
-            ver4 = vertex4(paraVer4, legK, chan, true)
+            ver4 = vertex4(paraVer4, legK, chan, true; blocks=blocks)
             if isnothing(ver4) || isempty(ver4)
                 continue
             end
@@ -92,8 +97,8 @@ function vertex3(para::GenericPara, extK=[DiagTree.getK(para.totalLoopNum, 1), D
                 @assert response == UpUp || response == UpDown
                 #type: Instant or Dynamic
                 ver3id = Ver3Id(para, response, k=extK, t=v4.extT)
-                gin = green(paraGin, K, v4.GinT, true, name=:Gin)
-                gout = green(paraGout, K .+ q, v4.GoutT, true, name=:Gout)
+                gin = green(paraGin, K, v4.GinT, true, name=:Gin, blocks=blocks)
+                gout = green(paraGout, K .+ q, v4.GoutT, true, name=:Gout, blocks=blocks)
                 @assert gin isa Diagram && gout isa Diagram
 
                 ver3diag = Diagram(ver3id, Prod(), [gin, gout, v4.diagram], name=name)
