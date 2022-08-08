@@ -40,7 +40,7 @@ function vertex4(para::GenericPara,
     resetuid && uidreset()
 
     if (para.extra isa ParquetBlocks) == false
-        para = reconstruct(para, extra=ParquetBlocks())
+        para::GenericPara = reconstruct(para, extra=ParquetBlocks())
     end
 
     @assert para.extra isa ParquetBlocks
@@ -54,18 +54,18 @@ function vertex4(para::GenericPara,
     @assert (PHr in phi_toplevel) == false "PHi vertex is particle-hole irreducible, so that PHr channel is not allowed in $phi_toplevel"
     @assert (PPr in ppi_toplevel) == false "PPi vertex is particle-particle irreducible, so that PPr channel is not allowed in $ppi_toplevel"
 
-    @assert length(legK[1]) == length(legK[2]) == length(legK[3]) == para.totalLoopNum
+    # @assert length(legK[1]) == length(legK[2]) == length(legK[3]) == para.totalLoopNum
 
     KinL, KoutL, KinR = legK[1], legK[2], legK[3]
     KoutR = (length(legK) > 3) ? legK[4] : KinL + KinR - KoutL
-    @assert KoutR ≈ KinL + KinR - KoutL
+    # @assert KoutR ≈ KinL + KinR - KoutL
     legK = [KinL, KoutL, KinR, KoutR]
 
 
     loopNum = para.innerLoopNum
-    @assert loopNum >= 0
+    # @assert loopNum >= 0
 
-    # diags = Diagram{para.weightType}[]
+    ver4df = DataFrame(response=Response[], type=AnalyticProperty[], extT=Tuple{Int,Int,Int,Int}[], diagram=Diagram{para.weightType}[])
 
     if loopNum == 0
         if subchannel == :W || subchannel == :RPA || subchannel == :LVer3 || subchannel == :RVer3
@@ -73,11 +73,8 @@ function vertex4(para::GenericPara,
         else
             permutation = [Di, Ex]
         end
-        ver4df = bareVer4(para, legK, permutation)
-        # push!(ver4df, (response =))
-        # append!(diags, bareVer4(para, legK, permutation))
+        bareVer4(ver4df, para, legK, permutation)
     else # loopNum>0
-        ver4df = DataFrame(response=Response[], type=AnalyticProperty[], extT=Tuple{Int,Int,Int,Int}[], diagram=Diagram{para.weightType}[])
         for c in chan
             if c == Alli
                 continue
@@ -119,7 +116,7 @@ function bubble!(ver4df::DataFrame, para::GenericPara, legK, chan::TwoBodyChanne
 
     # diag = Diagram{para.weightType}[]
 
-    TauNum = para.interactionTauNum # maximum tau number for each bare interaction
+    TauNum = interactionTauNum(para) # maximum tau number for each bare interaction
     oL, oG0, oR, oGx = partition[1], partition[2], partition[3], partition[4]
     if isValidG(para.filter, oG0) == false || isValidG(para.filter, oGx) == false
         # return diag
@@ -305,13 +302,13 @@ function _pushbarever4_with_response!(para::GenericPara, nodes::DataFrame, respo
     end
 end
 
-function bareVer4(para::GenericPara, legK, diex::Vector{Permutation}=[Di, Ex])
+function bareVer4(nodes::DataFrame, para::GenericPara, legK, diex::Vector{Permutation}=[Di, Ex])
     # @assert para.diagType == Ver4Diag
 
     KinL, KoutL, KinR = legK[1], legK[2], legK[3]
     t0 = para.firstTauIdx
 
-    nodes = DataFrame(response=Response[], type=AnalyticProperty[], extT=Tuple{Int,Int,Int,Int}[], diagram=Diagram{para.weightType}[])
+    # nodes = DataFrame(response=Response[], type=AnalyticProperty[], extT=Tuple{Int,Int,Int,Int}[], diagram=Diagram{para.weightType}[])
     # nodes = Diagram{para.weightType}[]
 
     q = [KinL - KoutL, KinR - KoutL]
@@ -364,7 +361,7 @@ function bareVer4(para::GenericPara, legK, diex::Vector{Permutation}=[Di, Ex])
 end
 
 ######################### utility functions ############################
-maxVer4TauIdx(para) = (para.innerLoopNum + 1) * para.interactionTauNum + para.firstTauIdx - 1
+maxVer4TauIdx(para) = (para.innerLoopNum + 1) * interactionTauNum(para) + para.firstTauIdx - 1
 maxVer4LoopIdx(para) = para.firstLoopIdx + para.innerLoopNum - 1
 
 function legBasis(chan::TwoBodyChannel, legK, loopIdx::Int)

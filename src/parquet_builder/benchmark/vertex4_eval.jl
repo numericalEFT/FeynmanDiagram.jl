@@ -34,7 +34,7 @@ function eval(para, ver4::Ver4, varK, varT, legK, evalG::Function, evalV::Functi
     if ver4.loopNum == 0
         qd = KinL - KoutL
         qe = KinL - KoutR
-        if para.interactionTauNum == 1
+        if interactionTauNum(para) == 1
             sign = para.isFermi ? -1 : 1
             ver4.weight[1].d = -evalV(qd)
             ver4.weight[1].e = (-evalV(qe)) * sign

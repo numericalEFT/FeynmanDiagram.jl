@@ -62,7 +62,7 @@ function vertex3(para, extK=[DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(
         Ver4Kidx, GinKidx, GoutKidx = idx
 
         ver4t0 = para.hasTau ? para.firstTauIdx + 1 : para.firstTauIdx
-        idx, maxTau = findFirstTauIdx([oVer4, oGin, oGout], [Ver4Diag, GreenDiag, GreenDiag], ver4t0, para.interactionTauNum)
+        idx, maxTau = findFirstTauIdx([oVer4, oGin, oGout], [Ver4Diag, GreenDiag, GreenDiag], ver4t0, interactionTauNum(para))
         @assert maxTau <= para.totalTauNum "maxTau = $maxTau > $(para.totalTauNum)"
         Ver4Tidx, GinTidx, GoutTidx = idx
 

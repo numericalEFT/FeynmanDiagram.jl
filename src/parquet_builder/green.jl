@@ -69,7 +69,7 @@ function green(para, extK=DiagTree.getK(para.totalLoopNum, 1), extT=para.hasTau 
             continue
         end
 
-        idx, maxTau = findFirstTauIdx(p, [SigmaDiag, GreenDiag], t0, para.interactionTauNum)
+        idx, maxTau = findFirstTauIdx(p, [SigmaDiag, GreenDiag], t0, interactionTauNum(para))
         @assert maxTau <= para.totalTauNum "maxTau = $maxTau > $(para.totalTauNum)"
         if para.hasTau
             @assert tin < t0 || tin > maxTau "external T index cann't be with in [$t0, $maxTau]"

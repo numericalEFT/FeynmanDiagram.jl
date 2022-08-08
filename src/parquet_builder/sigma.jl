@@ -78,7 +78,7 @@ function sigma(para, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false;
         WfirstLoopIdx, GfirstLoopIdx = idx
 
         # it is important to do W first, because the left in of W is also the incoming leg of sigma, they have the same Tidx
-        idx, maxTau = findFirstTauIdx([oW, oG], [Ver4Diag, GreenDiag], para.firstTauIdx, para.interactionTauNum)
+        idx, maxTau = findFirstTauIdx([oW, oG], [Ver4Diag, GreenDiag], para.firstTauIdx, interactionTauNum(para))
         @assert maxTau <= para.totalTauNum
         WfirstTauIdx, GfirstTauIdx = idx
 
