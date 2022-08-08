@@ -16,9 +16,9 @@
 - A DataFrame with fields `:response`, `:diagram`, `:hash`. 
 - All polarization share the same external Tau index. With imaginary-time variables, they are extT = (para.firstTauIdx, para.firstTauIdx+1)
 """
-function polarization(para::DiagPara, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false; name=:Π, resetuid=false,
+function polarization(para::DiagPara{W}, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false; name=:Π, resetuid=false,
     blocks::ParquetBlocks=ParquetBlocks()
-)
+) where {W}
     resetuid && uidreset()
     @assert para.diagType == PolarDiag
     @assert para.innerLoopNum >= 1
@@ -29,7 +29,7 @@ function polarization(para::DiagPara, extK=DiagTree.getK(para.totalLoopNum, 1), 
     #polarization diagram should always proper
     if !(Proper in para.filter) || (lenth(para.transferLoop) != length(extK)) || (para.transferLoop ≈ extK)
         # @warn "Polarization diagram parameter is not proper. It will be reconstructed with proper transfer loops."
-        para::DiagPara = reconstruct(para, filter=union(Proper, para.filter), transferLoop=extK)
+        para = reconstruct(para, filter=union(Proper, para.filter), transferLoop=extK)
     end
 
     # if (para.extra isa ParquetBlocks) == false
@@ -44,7 +44,7 @@ function polarization(para::DiagPara, extK=DiagTree.getK(para.totalLoopNum, 1), 
     extT = para.hasTau ? (t0, t0 + 1) : (t0, t0)
     legK = [extK, K, K .- extK]
 
-    polar = DataFrame(response=Response[], extT=Tuple{Int,Int}[], diagram=Diagram{para.weightType}[])
+    polar = DataFrame(response=Response[], extT=Tuple{Int,Int}[], diagram=Diagram{W}[])
 
     for (oVer3, oGin, oGout) in orderedPartition(para.innerLoopNum - 1, 3, 0)
         # ! Vertex3 must be in the first place, because we want to make sure that the bosonic extT of the vertex3 start with t0+1
@@ -73,7 +73,7 @@ function polarization(para::DiagPara, extK=DiagTree.getK(para.totalLoopNum, 1), 
                 @assert gin isa Diagram && gout isa Diagram "$gin or $gout is not a single diagram"
 
                 sign = para.isFermi ? -1.0 : 1.0
-                polardiag = Diagram(polarid, Prod(), [gin, gout], name=name, factor=sign)
+                polardiag = Diagram{W}(polarid, Prod(), [gin, gout], name=name, factor=sign)
                 push!(polar, (response=response, extT=extT, diagram=polardiag))
             else
                 ##################### composite polarization #####################################
@@ -111,7 +111,7 @@ function polarization(para::DiagPara, extK=DiagTree.getK(para.totalLoopNum, 1), 
                     gout = green(paraGout, K .- extK, v3.GoutT, true, name=:Gout, blocks=blocks)
                     @assert gin isa Diagram && gout isa Diagram
 
-                    polardiag = Diagram(polarid, Prod(), [gin, gout, v3.diagram], name=name)
+                    polardiag = Diagram{W}(polarid, Prod(), [gin, gout, v3.diagram], name=name)
                     push!(polar, (response=response, extT=v3.extT, diagram=polardiag))
                 end
             end

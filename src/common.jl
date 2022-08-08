@@ -53,7 +53,7 @@ function symbol(name::Response, type::AnalyticProperty, addition=nothing)
 
 end
 
-@with_kw struct DiagPara
+@with_kw struct DiagPara{W}
     diagType::DiagramType
     innerLoopNum::Int
 
@@ -61,7 +61,6 @@ end
     spin::Int = 2
     loopDim::Int = 3
     interaction::Vector{Interaction} = [Interaction(ChargeCharge, [Instant,]),] # :ChargeCharge, :SpinSpin, ...
-    weightType::DataType = Float64
 
     firstLoopIdx::Int = firstLoopIdx(diagType)
     totalLoopNum::Int = firstLoopIdx + innerLoopNum - 1
@@ -77,6 +76,8 @@ end
     extra::Any = Nothing
 end
 
+const DiagParaF64 = DiagPara{Float64}
+
 @inline interactionTauNum(para::DiagPara) = interactionTauNum(para.hasTau, para.interaction)
 @inline innerTauNum(para::DiagPara) = innerTauNum(para.diagType, para.innerLoopNum, para.interactionTauNum)
 
@@ -85,10 +86,10 @@ end
 
     Type-stable version of the Parameters.reconstruct
 """
-function Parameters.reconstruct(::Type{DiagPara}, p::DiagPara, di)
+function Parameters.reconstruct(::Type{DiagPara{W}}, p::DiagPara{W}, di) where {W}
     di = !isa(di, AbstractDict) ? Dict(di) : copy(di)
     get(p, di, key) = pop!(di, key, getproperty(p, key))
-    return DiagPara(
+    return DiagPara{W}(
         # diagType = pop!(di, :diagType, p.diagType),
         diagType=get(p, di, :diagType),
         innerLoopNum=get(p, di, :innerLoopNum),
@@ -96,7 +97,6 @@ function Parameters.reconstruct(::Type{DiagPara}, p::DiagPara, di)
         spin=get(p, di, :spin),
         loopDim=get(p, di, :loopDim),
         interaction=get(p, di, :interaction),
-        weightType=get(p, di, :weightType),
         firstLoopIdx=get(p, di, :firstLoopIdx),
         totalLoopNum=get(p, di, :totalLoopNum),
         hasTau=get(p, di, :hasTau),
@@ -109,12 +109,10 @@ function Parameters.reconstruct(::Type{DiagPara}, p::DiagPara, di)
     length(di) != 0 && error("Fields $(keys(di)) not in type $T")
 end
 
-function derive(p::DiagPara; kwargs...)
-    # println(kwargs)
+function derivepara(p::DiagPara{W}; kwargs...) where {W}
     di = !isa(kwargs, AbstractDict) ? Dict(kwargs) : copy(kwargs)
-    # println(di)
     get(p, di, key) = pop!(di, key, getproperty(p, key))
-    return DiagPara(
+    return DiagPara{W}(
         # diagType = pop!(di, :diagType, p.diagType),
         diagType=get(p, di, :diagType),
         innerLoopNum=get(p, di, :innerLoopNum),
@@ -122,7 +120,6 @@ function derive(p::DiagPara; kwargs...)
         spin=get(p, di, :spin),
         loopDim=get(p, di, :loopDim),
         interaction=get(p, di, :interaction),
-        weightType=get(p, di, :weightType),
         firstLoopIdx=get(p, di, :firstLoopIdx),
         totalLoopNum=get(p, di, :totalLoopNum),
         hasTau=get(p, di, :hasTau),
@@ -135,24 +132,7 @@ function derive(p::DiagPara; kwargs...)
     length(di) != 0 && error("Fields $(keys(di)) not in type $T")
 end
 
-# function Base.show(io::IO, para::DiagPara)
-
-# end
-
-# function Base.getproperty(obj::DiagPara, sym::Symbol)
-#     # if sym === :hasTau
-#     #     return obj.totalTauNum > 0
-#     if sym == :interactionTauNum
-#         return interactionTauNum(obj.hasTau, obj.interaction)
-#     elseif sym == :innerTauNum
-#         # println(innerTauNum(obj.diagType, obj.innerLoopNum, obj.interactionTauNum))
-#         return innerTauNum(obj.diagType, obj.innerLoopNum, obj.interactionTauNum)
-#     else # fallback to getfield
-#         return getfield(obj, sym)
-#     end
-# end
-
-function Base.isequal(p::DiagPara, q::DiagPara)
+function Base.isequal(p::DiagPara{W}, q::DiagPara{W}) where {W}
     for field in fieldnames(typeof(p)) #fieldnames doesn't include user-defined entries in Base.getproperty
         if field == :filter
             if Set(p.filter) != Set(q.filter)
@@ -179,7 +159,7 @@ function Base.isequal(p::DiagPara, q::DiagPara)
     return true
 end
 
-Base.:(==)(a::DiagPara, b::DiagPara) = Base.isequal(a, b)
+Base.:(==)(a::DiagPara{W}, b::DiagPara{W}) where {W} = Base.isequal(a, b)
 
 """
     function innerTauNum(diagType::DiagramType, innerLoopNum, interactionTauNum)

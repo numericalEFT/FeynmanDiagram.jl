@@ -18,8 +18,8 @@
 # Output
 - A Diagram object or nothing if the Green's function is illegal. 
 """
-function green(para::DiagPara, extK=DiagTree.getK(para.totalLoopNum, 1), extT=para.hasTau ? (1, 2) : (0, 0), subdiagram=false;
-    name=:G, resetuid=false, blocks::ParquetBlocks=ParquetBlocks())
+function green(para::DiagPara{W}, extK=DiagTree.getK(para.totalLoopNum, 1), extT=para.hasTau ? (1, 2) : (0, 0), subdiagram=false;
+    name=:G, resetuid=false, blocks::ParquetBlocks=ParquetBlocks()) where {W}
 
     @assert para.diagType == GreenDiag
     @assert para.innerLoopNum >= 0
@@ -39,7 +39,7 @@ function green(para::DiagPara, extK=DiagTree.getK(para.totalLoopNum, 1), extT=pa
     end
 
     if para.innerLoopNum == 0
-        return Diagram(BareGreenId(para, k=extK, t=extT), name=name)
+        return Diagram{W}(BareGreenId(para, k=extK, t=extT), name=name)
     end
 
     # ################# after this step, the Green's function must be nontrivial! ##################
@@ -57,12 +57,12 @@ function green(para::DiagPara, extK=DiagTree.getK(para.totalLoopNum, 1), extT=pa
         @assert G isa Diagram
         # println(group)
         pairT = (t=(ΣTidx, (group[:GT][2])),)
-        return Diagram(GenericId(para, pairT), Prod(), [group[:diagram], G], name=:ΣG)
+        return Diagram{W}(GenericId(para, pairT), Prod(), [group[:diagram], G], name=:ΣG)
     end
 
     para0 = reconstruct(para, innerLoopNum=0) #parameter for g0
-    g0 = Diagram(BareGreenId(para0, k=extK, t=(tin, t0)), name=:g0)
-    ΣGpairs = Vector{Diagram{para.weightType}}()
+    g0 = Diagram{W}(BareGreenId(para0, k=extK, t=(tin, t0)), name=:g0)
+    ΣGpairs = Vector{Diagram{W}}()
     for p in orderedPartition(para.innerLoopNum, 2, 0)
         oΣ, oG = p
 
@@ -98,6 +98,6 @@ function green(para::DiagPara, extK=DiagTree.getK(para.totalLoopNum, 1), extT=pa
     # println(ΣGpairs)
     # println(operator)
     ΣGmerged = mergeby(ΣGpairs; operator=Sum(), name=:gΣG)
-    G = Diagram(GreenId(para, k=extK, t=extT), Prod(), [g0, ΣGmerged], name=:G)
+    G = Diagram{W}(GreenId(para, k=extK, t=extT), Prod(), [g0, ΣGmerged], name=:G)
     return G
 end
