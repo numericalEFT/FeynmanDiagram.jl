@@ -41,7 +41,7 @@ function isValidG(filter, innerLoopNum::Int)
     return true
 end
 
-function isValidG(para::GenericPara)
+function isValidG(para::DiagPara)
     @assert para.diagType == GreenDiag
     return isValidG(para.filter, para.innerLoopNum)
 end

@@ -32,7 +32,7 @@ import ..symbol
 import ..short
 
 import ..Interaction
-import ..GenericPara
+import ..DiagPara
 import ..innerTauNum
 
 import ..Diagram
@@ -66,7 +66,7 @@ import ..uidreset
 import ..toDataFrame
 import ..mergeby
 
-# function build(para::GenericPara, extT = nothing, subdiagram = false)
+# function build(para::DiagPara, extT = nothing, subdiagram = false)
 #     if para.diagType == GcDiag
 #         if isnothing(extK)
 #             extK = [DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)]

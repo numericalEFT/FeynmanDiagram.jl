@@ -22,7 +22,7 @@ const c⁻ = collect(model.c⁻)
 const T = MCIntegration.Tau(β, β / 2.0)
 const O = MCIntegration.Discrete(1, 2)
 O.data[1] = O.data[2] = O.data[3] = O.data[4] = 1
-const para = GenericPara(diagType = Ver4Diag, innerLoopNum = 1, hasTau = true)
+const para = DiagPara(diagType=Ver4Diag, innerLoopNum=1, hasTau=true)
 
 const n12 = BareHoppingId(para, (1, 1), (1, 1), (1, 2))
 const n11 = BareHoppingId(para, (1, 1), (1, 1), (1, 1))
@@ -202,7 +202,7 @@ function run(totalStep)
 
     # config = MCIntegration.Configuration(totalStep, (T, O), dof, observable; neighbor = [[3, 2], [1, 3], [1, 3]])
     config = MCIntegration.Configuration(totalStep, (T, O), dof, observable)
-    avg, std = MCIntegration.sample(config, integrand, measure, print = 2, Nblock = 8)
+    avg, std = MCIntegration.sample(config, integrand, measure, print=2, Nblock=8)
 
     # avg[3] /= β * 2 * 4 * 2^2  #
     # std[3] /= β * 2 * 4 * 2^2

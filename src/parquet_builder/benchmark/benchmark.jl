@@ -3,7 +3,7 @@ using StaticArrays, PyCall
 using AbstractTrees
 using Parameters, Combinatorics
 
-import ..GenericPara
+import ..DiagPara
 import ..interactionTauNum
 
 const DI, EX = 1, 2
