@@ -4,6 +4,7 @@ using AbstractTrees
 using Parameters, Combinatorics
 
 import ..GenericPara
+import ..interactionTauNum
 
 const DI, EX = 1, 2
 const INL, OUTL, INR, OUTR = 1, 2, 3, 4

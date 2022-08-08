@@ -60,7 +60,7 @@ export Response, ChargeCharge, SpinSpin, UpUp, UpDown
 export AnalyticProperty, Instant, Dynamic, D_Instant, D_Dynamic
 
 include("common.jl")
-export GenericPara, Interaction
+export GenericPara, Interaction, interactionTauNum, innerTauNum
 
 include("diagram_tree/DiagTree.jl")
 using .DiagTree

@@ -51,7 +51,7 @@ function polarization(para, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram
             if oVer3 == 0
                 ######################## Π0 = GG #########################################
                 gt0 = para.hasTau ? extT[2] + 1 : extT[1]
-                idx, maxTau = findFirstTauIdx([oGin, oGout], [GreenDiag, GreenDiag], gt0, para.interactionTauNum)
+                idx, maxTau = findFirstTauIdx([oGin, oGout], [GreenDiag, GreenDiag], gt0, interactionTauNum(para))
                 @assert maxTau <= para.totalTauNum "maxTau = $maxTau > $(para.totalTauNum)"
                 GinTidx, GoutTidx = idx
 
@@ -71,7 +71,7 @@ function polarization(para, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram
                 push!(polar, (response=response, extT=extT, diagram=polardiag))
             else
                 ##################### composite polarization #####################################
-                idx, maxTau = findFirstTauIdx([oVer3, oGin, oGout], [Ver3Diag, GreenDiag, GreenDiag], extT[2], para.interactionTauNum)
+                idx, maxTau = findFirstTauIdx([oVer3, oGin, oGout], [Ver3Diag, GreenDiag, GreenDiag], extT[2], interactionTauNum(para))
                 @assert maxTau <= para.totalTauNum "maxTau = $maxTau > $(para.totalTauNum)"
                 Ver3Tidx, GinTidx, GoutTidx = idx
 

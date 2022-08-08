@@ -77,22 +77,25 @@ end
     extra::Any = Nothing
 end
 
+@inline interactionTauNum(para::GenericPara) = interactionTauNum(para.hasTau, para.interaction)
+@inline innerTauNum(para::GenericPara) = innerTauNum(para.diagType, para.innerLoopNum, para.interactionTauNum)
+
 # function Base.show(io::IO, para::GenericPara)
 
 # end
 
-function Base.getproperty(obj::GenericPara, sym::Symbol)
-    # if sym === :hasTau
-    #     return obj.totalTauNum > 0
-    if sym == :interactionTauNum
-        return interactionTauNum(obj.hasTau, obj.interaction)
-    elseif sym == :innerTauNum
-        # println(innerTauNum(obj.diagType, obj.innerLoopNum, obj.interactionTauNum))
-        return innerTauNum(obj.diagType, obj.innerLoopNum, obj.interactionTauNum)
-    else # fallback to getfield
-        return getfield(obj, sym)
-    end
-end
+# function Base.getproperty(obj::GenericPara, sym::Symbol)
+#     # if sym === :hasTau
+#     #     return obj.totalTauNum > 0
+#     if sym == :interactionTauNum
+#         return interactionTauNum(obj.hasTau, obj.interaction)
+#     elseif sym == :innerTauNum
+#         # println(innerTauNum(obj.diagType, obj.innerLoopNum, obj.interactionTauNum))
+#         return innerTauNum(obj.diagType, obj.innerLoopNum, obj.interactionTauNum)
+#     else # fallback to getfield
+#         return getfield(obj, sym)
+#     end
+# end
 
 function Base.isequal(p::GenericPara, q::GenericPara)
     for field in fieldnames(typeof(p)) #fieldnames doesn't include user-defined entries in Base.getproperty
