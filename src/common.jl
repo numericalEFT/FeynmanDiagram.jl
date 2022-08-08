@@ -80,6 +80,61 @@ end
 @inline interactionTauNum(para::GenericPara) = interactionTauNum(para.hasTau, para.interaction)
 @inline innerTauNum(para::GenericPara) = innerTauNum(para.diagType, para.innerLoopNum, para.interactionTauNum)
 
+"""
+    Parameters.reconstruct(p::GenericPara; kws...)
+
+    Type-stable version of the Parameters.reconstruct
+"""
+function Parameters.reconstruct(::Type{GenericPara}, p::GenericPara, di)
+    di = !isa(di, AbstractDict) ? Dict(di) : copy(di)
+    get(p, di, key) = pop!(di, key, getproperty(p, key))
+    return GenericPara(
+        # diagType = pop!(di, :diagType, p.diagType),
+        diagType=get(p, di, :diagType),
+        innerLoopNum=get(p, di, :innerLoopNum),
+        isFermi=get(p, di, :isFermi),
+        spin=get(p, di, :spin),
+        loopDim=get(p, di, :loopDim),
+        interaction=get(p, di, :interaction),
+        weightType=get(p, di, :weightType),
+        firstLoopIdx=get(p, di, :firstLoopIdx),
+        totalLoopNum=get(p, di, :totalLoopNum),
+        hasTau=get(p, di, :hasTau),
+        firstTauIdx=get(p, di, :firstTauIdx),
+        totalTauNum=get(p, di, :totalTauNum),
+        filter=get(p, di, :filter),
+        transferLoop=get(p, di, :transferLoop),
+        extra=get(p, di, :extra)
+    )
+    length(di) != 0 && error("Fields $(keys(di)) not in type $T")
+end
+
+function derive(p::GenericPara; kwargs...)
+    # println(kwargs)
+    di = !isa(kwargs, AbstractDict) ? Dict(kwargs) : copy(kwargs)
+    # println(di)
+    get(p, di, key) = pop!(di, key, getproperty(p, key))
+    return GenericPara(
+        # diagType = pop!(di, :diagType, p.diagType),
+        diagType=get(p, di, :diagType),
+        innerLoopNum=get(p, di, :innerLoopNum),
+        isFermi=get(p, di, :isFermi),
+        spin=get(p, di, :spin),
+        loopDim=get(p, di, :loopDim),
+        interaction=get(p, di, :interaction),
+        weightType=get(p, di, :weightType),
+        firstLoopIdx=get(p, di, :firstLoopIdx),
+        totalLoopNum=get(p, di, :totalLoopNum),
+        hasTau=get(p, di, :hasTau),
+        firstTauIdx=get(p, di, :firstTauIdx),
+        totalTauNum=get(p, di, :totalTauNum),
+        filter=get(p, di, :filter),
+        transferLoop=get(p, di, :transferLoop),
+        extra=get(p, di, :extra)
+    )
+    length(di) != 0 && error("Fields $(keys(di)) not in type $T")
+end
+
 # function Base.show(io::IO, para::GenericPara)
 
 # end

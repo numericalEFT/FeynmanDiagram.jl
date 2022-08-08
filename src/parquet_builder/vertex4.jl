@@ -4,7 +4,9 @@
         chan::AbstractVector = [PHr, PHEr, PPr, Alli],
         subdiagram = false;
         level = 1, name = :none, resetuid = false,
-        phi_toplevel = ParquetBlocks().phi, ppi_toplevel = ParquetBlocks().ppi, Γ4_toplevel = ParquetBlocks().Γ4)
+        phi_toplevel = ParquetBlocks().phi, ppi_toplevel = ParquetBlocks().ppi, Γ4_toplevel = ParquetBlocks().Γ4,
+        subchannel::Symbol=:All #:All, :W, :Lver3, :Rver3, :RPA
+        )
 
     Generate 4-vertex diagrams using Parquet Algorithm
 
@@ -19,6 +21,7 @@
 - `phi_toplevel`    : channels of left sub-vertex for the particle-hole and particle-hole-exchange of the bubble at level one.
 - `ppi_toplevel`    : channels of left sub-vertex for the particle-particle bubble at level one
 - `Γ4_toplevel`     : channels of right sub-vertex for all all bubbles at level one
+- `subchannel`      : :All, :W, :Lver3, :Rver3, :RPA to select all, W-interaction, left-vertex-correction, right-vertex-correction or RPA-interaction diagrams
 
 # Output
 - A DataFrame with fields :response, :type, :extT, :diagram, :hash
@@ -29,8 +32,9 @@ function vertex4(para::GenericPara,
     level=1, name=:none, resetuid=false,
     phi_toplevel=ParquetBlocks().phi, ppi_toplevel=ParquetBlocks().ppi, Γ4_toplevel=ParquetBlocks().Γ4,
     subchannel::Symbol=:All #:All, :W, :Lver3, :Rver3, :RPA
+    # blocks=ParquetBlocks(),
+    # toplevelblocks=blocks
 )
-
     for k in extK
         @assert length(k) >= para.totalLoopNum "expect dim of extK>=$(para.totalLoopNum), got $(length(k))"
     end
@@ -40,6 +44,7 @@ function vertex4(para::GenericPara,
     resetuid && uidreset()
 
     if (para.extra isa ParquetBlocks) == false
+        #type annotation here is crucial for type stability
         para::GenericPara = reconstruct(para, extra=ParquetBlocks())
     end
 

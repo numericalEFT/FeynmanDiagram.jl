@@ -16,7 +16,7 @@
 # Output
 - A DataFrame with fields :response, :extT, :diagram, :hash. 
 """
-function vertex3(para, extK=[DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2)],
+function vertex3(para::GenericPara, extK=[DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2)],
     subdiagram=false; name=:Γ3, chan=[PHr, PHEr, PPr, Alli], resetuid=false)
 
     resetuid && uidreset()
@@ -33,7 +33,7 @@ function vertex3(para, extK=[DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(
     extK = [q, Kin, Kout]
 
     if Proper in para.filter
-        para = reconstruct(para, transferLoop=q)
+        para::GenericPara = reconstruct(para, transferLoop=q)
     end
 
     t0 = para.firstTauIdx
