@@ -56,7 +56,7 @@ function uidreset()
     global _counter = 0
 end
 
-function getK(loopNum, loopIdx)
+function getK(loopNum::Int, loopIdx::Int)
     k = zeros(loopNum)
     k[loopIdx] = 1.0
     return k

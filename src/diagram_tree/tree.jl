@@ -92,42 +92,42 @@ function _combinegroups(groups, getid, factor, operator, name)
     return gdf
 end
 
-# function _merge(group, factor, id, operator, name)
-#     if nrow(group) == 1
-#         # if there is only one diagram in df, and the new id is either GenericId or the id of the existing diagram, 
-#         # then simply return the current df without creating a new diagram
-#         # ! the new factor will be multiplied to the factor of the exisiting diagram!
-#         if id isa GenericId || typeof(id) == typeof(group[1, :diagram].id)
-#             # diag = deepcopy(group[1, :diagram])
-#             diag = group.diagram[1]
-#             diag.factor *= factor
-#             return return diag
-#         end
-#     end
-#     # return Diagram(id, operator, group[:, :diagram], name=name, factor=factor)
-#     return Diagram(id, operator, group.diagram, name=name, factor=factor)
-# end
+function _merge(group, factor, id, operator, name)
+    if nrow(group) == 1
+        # if there is only one diagram in df, and the new id is either GenericId or the id of the existing diagram, 
+        # then simply return the current df without creating a new diagram
+        # ! the new factor will be multiplied to the factor of the exisiting diagram!
+        if id isa GenericId || typeof(id) == typeof(group.diagram[1].id)
+            # diag = deepcopy(group[1, :diagram])
+            diag = group.diagram[1]
+            diag.factor *= factor
+            return diag
+        end
+    end
+    return Diagram(id, operator, group.diagram, name=name, factor=factor)
+end
 
-# function _makedict(groups, factor, getid, operator, name)
-#     """
-#     # if fields = [:response, :extT], then
+function _makedict(groups, factor, getid, operator, name)
+    """
+    # if fields = [:response, :extT], then
 
-#     # 1. groups.cols is like: Vector{Symbol}[:response, :extT]
+    # 1. groups.cols is like: Vector{Symbol}[:response, :extT]
 
-#     # 2. groups.keymap is like: 
+    # 2. groups.keymap is like: 
 
-#     #     Dict{Any, Int64} with 2 entries:
-#     #     (UpDown, (1, 1, 1, 1)) => 2
-#     #     (UpUp, (1, 1, 1, 1))   => 1
-#     # """
-#     d = Dict{Symbol,Any}()
-#     for (ki, k) in enumerate(groups.cols)
-#         d[k] = [key[ki] for (key, val) in groups.keymap]
-#     end
-#     d[:diagram] = [_merge(groups[val], factor, getid(groups[val]), operator, name) for (key, val) in groups.keymap]
-#     d[:hash] = [diag.hash for diag in d[:diagram]]
-#     return d
-# end
+    #     Dict{Any, Int64} with 2 entries:
+    #     (UpDown, (1, 1, 1, 1)) => 2
+    #     (UpUp, (1, 1, 1, 1))   => 1
+    # """
+    d = Dict{Symbol,Any}()
+    _keys = keys(groups)
+    for col in groupcols(groups)
+        d[col] = [key[col] for key in _keys]
+    end
+    d[:diagram] = [_merge(groups[key], factor, getid(groups[key]), operator, name) for key in _keys]
+    d[:hash] = [diag.hash for diag in d[:diagram]]
+    return d
+end
 
 function mergeby(df::DataFrame, fields=Vector{Symbol}();
     operator=Sum(), name::Symbol=:none, factor=1.0,
@@ -141,11 +141,14 @@ function mergeby(df::DataFrame, fields=Vector{Symbol}();
             @warn "Not all DiagramIds in $diags are the same!"
         end
         groups = DataFrames.groupby(df, fields, sort=true)
-        return _combinegroups(groups, getid, factor, operator, name)
         ########  less memory usage but can not pass the test right now ##############
-        # d = _makedict(groups, factor, getid, operator, name) 
-        # return DataFrame(d)
+        d = _makedict(groups, factor, getid, operator, name)
+        d = DataFrame(d, copycols=false)
+        # d = DataFrame(d)
         ##############################################################################
+        # cd = _combinegroups(groups, getid, factor, operator, name)
+        # println("old\n$d \n new\n$cd")
+        return d
     end
 end
 

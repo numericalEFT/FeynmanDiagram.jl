@@ -240,6 +240,81 @@ function bubble2diag!(ver4df, para, chan, ldiag, rdiag, extK, g0, gx, extrafacto
     return
 end
 
+function _bare(para::GenericPara, diex::Vector{Permutation}, response::Response, type::AnalyticProperty,
+    _diex::Permutation, _innerT::Tuple{Int,Int}, _q, _factor=1.0)
+    @assert _diex == Di || _diex == Ex
+
+    # there is an overall sign coming from Taylor expansion of exp(-S) depsite the statistics
+    if _diex == Di
+        sign = -1.0
+    elseif _diex == Ex
+        sign = para.isFermi ? 1.0 : -1.0
+    else
+        error("not implemented!")
+    end
+
+    if notProper(para, _q) == false && _diex in diex
+        #create new bare ver4 only if _diex is required in the diex table 
+        vid = BareInteractionId(para, response, type, k=_q, t=_innerT, permu=_diex)
+        return Diagram(vid, factor=sign * _factor)
+    else
+        return nothing
+    end
+end
+
+function _pushbarever4!(para::GenericPara, nodes::DataFrame, response::Response, type::AnalyticProperty, _extT, legK,
+    vd::Union{Nothing,Diagram{W}}, ve::Union{Nothing,Diagram{W}}) where {W}
+
+    if isnothing(vd) == false
+        id_di = Ver4Id(para, response, type, k=legK, t=_extT[DI])
+        push!(nodes, (response=response, type=type, extT=_extT[DI], diagram=Diagram(id_di, Sum(), [vd,])))
+    end
+
+    if isnothing(ve) == false
+        id_ex = Ver4Id(para, response, type, k=legK, t=_extT[EX])
+        push!(nodes, (response=response, type=type, extT=_extT[EX], diagram=Diagram(id_ex, Sum(), [ve,])))
+    end
+end
+
+function _pushbarever4_with_response!(para::GenericPara, nodes::DataFrame, response::Response, type::AnalyticProperty,
+    legK, q, diex::Vector{Permutation}, _extT, _innerT)
+    # println(_extT, " and inner: ", _innerT)
+    if response == UpUp
+        vd = _bare(para, diex, response, type, Di, _innerT[DI], q[DI])
+        ve = _bare(para, diex, response, type, Ex, _innerT[EX], q[EX])
+        _pushbarever4!(para, nodes, UpUp, type, _extT, legK, vd, ve)
+    elseif response == UpDown
+        vd = _bare(para, diex, UpDown, type, Di, _innerT[DI], q[DI])
+        ve = nothing
+        _pushbarever4!(para, nodes, UpDown, type, _extT, legK, vd, ve)
+    elseif response == ChargeCharge
+        # UpUp channel
+        vuud = _bare(para, diex, ChargeCharge, type, Di, _innerT[DI], q[DI])
+        vuue = _bare(para, diex, ChargeCharge, type, Ex, _innerT[EX], q[EX])
+        _pushbarever4!(para, nodes, UpUp, type, _extT, legK, vuud, vuue)
+
+        # UpDown channel
+        vupd = _bare(para, diex, ChargeCharge, type, Di, _innerT[DI], q[DI])
+        vupe = nothing
+        # UpDown, exchange channel doesn't exist for the charge-charge interaction
+        _pushbarever4!(para, nodes, UpDown, type, _extT, legK, vupd, vupe)
+    elseif response == SpinSpin
+        # see manual/interaction.md for more details
+
+        # UpUp channel
+        vuud = _bare(para, diex, SpinSpin, type, Di, _innerT[DI], q[DI])
+        vuue = _bare(para, diex, SpinSpin, type, Ex, _innerT[EX], q[EX])
+        _pushbarever4!(para, nodes, UpUp, type, _extT, legK, vuud, vuue)
+
+        # UpDown channel
+        vupd = _bare(para, diex, SpinSpin, type, Di, _innerT[DI], q[DI], -1.0)
+        vupe = _bare(para, diex, SpinSpin, type, Ex, _innerT[EX], q[EX], 2.0)
+        _pushbarever4!(para, nodes, UpDown, type, _extT, legK, vupd, vupe)
+    else
+        error("not implemented!")
+    end
+end
+
 function bareVer4(para::GenericPara, legK, diex::Vector{Permutation}=[Di, Ex])
     # @assert para.diagType == Ver4Diag
 
@@ -270,97 +345,29 @@ function bareVer4(para::GenericPara, legK, diex::Vector{Permutation}=[Di, Ex])
         innerT_dyn = innerT_ins
     end
 
-    function bare(response::Response, type::AnalyticProperty, _diex::Permutation, _innerT, _q, _factor=1.0)
-        @assert _diex == Di || _diex == Ex
-
-        # there is an overall sign coming from Taylor expansion of exp(-S) depsite the statistics
-        if _diex == Di
-            sign = -1.0
-        elseif _diex == Ex
-            sign = para.isFermi ? 1.0 : -1.0
-        else
-            error("not implemented!")
-        end
-
-        if notProper(para, _q) == false && _diex in diex
-            #create new bare ver4 only if _diex is required in the diex table 
-            vid = BareInteractionId(para, response, type, k=_q, t=_innerT, permu=_diex)
-            return Diagram(vid, factor=sign * _factor)
-        else
-            return nothing
-        end
-    end
-
-    function addver4!(response::Response, type, _extT, vd, ve)
-        id_di = Ver4Id(para, response, type, k=legK, t=_extT[DI])
-        (isnothing(vd) == false) && push!(nodes, (response=response, type=type, extT=_extT[DI], diagram=Diagram(id_di, Sum(), [vd,])))
-
-        id_ex = Ver4Id(para, response, type, k=legK, t=_extT[EX])
-        (isnothing(ve) == false) && push!(nodes, (response=response, type=type, extT=_extT[EX], diagram=Diagram(id_ex, Sum(), [ve,])))
-        # end
-    end
-
-    function addresponse!(response::Response, type, _extT, _innerT)
-        # println(_extT, " and inner: ", _innerT)
-        if response == UpUp
-            vd = bare(response, type, Di, _innerT[DI], q[DI])
-            ve = bare(response, type, Ex, _innerT[EX], q[EX])
-            addver4!(UpUp, type, _extT, vd, ve)
-        elseif response == UpDown
-            vd = bare(UpDown, type, Di, _innerT[DI], q[DI])
-            ve = nothing
-            addver4!(UpDown, type, _extT, vd, ve)
-        elseif response == ChargeCharge
-            # UpUp channel
-            vuud = bare(ChargeCharge, type, Di, _innerT[DI], q[DI])
-            vuue = bare(ChargeCharge, type, Ex, _innerT[EX], q[EX])
-            addver4!(UpUp, type, _extT, vuud, vuue)
-
-            # UpDown channel
-            vupd = bare(ChargeCharge, type, Di, _innerT[DI], q[DI])
-            vupe = nothing
-            # UpDown, exchange channel doesn't exist for the charge-charge interaction
-            addver4!(UpDown, type, _extT, vupd, vupe)
-        elseif response == SpinSpin
-            # see manual/interaction.md for more details
-
-            # UpUp channel
-            vuud = bare(SpinSpin, type, Di, _innerT[DI], q[DI])
-            vuue = bare(SpinSpin, type, Ex, _innerT[EX], q[EX])
-            addver4!(UpUp, type, _extT, vuud, vuue)
-
-            # UpDown channel
-            vupd = bare(SpinSpin, type, Di, _innerT[DI], q[DI], -1.0)
-            vupe = bare(SpinSpin, type, Ex, _innerT[EX], q[EX], 2.0)
-            addver4!(UpDown, type, _extT, vupd, vupe)
-        else
-            error("not implemented!")
-        end
-    end
-
     for interaction in para.interaction
         response = interaction.response
         typeVec = interaction.type
 
         if Instant ∈ typeVec && Dynamic ∉ typeVec
-            addresponse!(response, Instant, extT_ins, innerT_ins)
+            _pushbarever4_with_response!(para, nodes, response, Instant, legK, q, diex, extT_ins, innerT_ins)
         elseif Instant ∉ typeVec && Dynamic ∈ typeVec
-            addresponse!(response, Dynamic, extT_dyn, innerT_dyn)
+            _pushbarever4_with_response!(para, nodes, response, Dynamic, legK, q, diex, extT_dyn, innerT_dyn)
         elseif Instant ∈ typeVec && Dynamic ∈ typeVec
             #if hasTau, instant interaction has an additional fake tau variable, making it similar to the dynamic interaction
-            addresponse!(response, Instant, extT_ins, innerT_dyn)
-            addresponse!(response, Dynamic, extT_dyn, innerT_dyn)
+            _pushbarever4_with_response!(para, nodes, response, Instant, legK, q, diex, extT_ins, innerT_dyn)
+            _pushbarever4_with_response!(para, nodes, response, Dynamic, legK, q, diex, extT_dyn, innerT_dyn)
         end
 
-        if D_Instant ∈ typeVec && D_Dynamic ∉ typeVec
-            addresponse!(response, D_Instant, extT_ins, innerT_ins)
-        elseif D_Instant ∉ typeVec && D_Dynamic ∈ typeVec
-            addresponse!(response, D_Dynamic, extT_dyn, innerT_dyn)
-        elseif D_Instant ∈ typeVec && D_Dynamic ∈ typeVec
-            #if hasTau, instant interaction has an additional fake tau variable, making it similar to the dynamic interaction
-            addresponse!(response, D_Instant, extT_ins, innerT_dyn)
-            addresponse!(response, D_Dynamic, extT_dyn, innerT_dyn)
-        end
+        # if D_Instant ∈ typeVec && D_Dynamic ∉ typeVec
+        #     addresponse!(response, D_Instant, extT_ins, innerT_ins)
+        # elseif D_Instant ∉ typeVec && D_Dynamic ∈ typeVec
+        #     addresponse!(response, D_Dynamic, extT_dyn, innerT_dyn)
+        # elseif D_Instant ∈ typeVec && D_Dynamic ∈ typeVec
+        #     #if hasTau, instant interaction has an additional fake tau variable, making it similar to the dynamic interaction
+        #     addresponse!(response, D_Instant, extT_ins, innerT_dyn)
+        #     addresponse!(response, D_Dynamic, extT_dyn, innerT_dyn)
+        # end
     end
 
     return nodes
@@ -370,7 +377,7 @@ end
 maxVer4TauIdx(para) = (para.innerLoopNum + 1) * para.interactionTauNum + para.firstTauIdx - 1
 maxVer4LoopIdx(para) = para.firstLoopIdx + para.innerLoopNum - 1
 
-function legBasis(chan::TwoBodyChannel, legK, loopIdx)
+function legBasis(chan::TwoBodyChannel, legK, loopIdx::Int)
     KinL, KoutL, KinR, KoutR = legK[1], legK[2], legK[3], legK[4]
     K = zero(KinL)
     K[loopIdx] = 1
@@ -422,7 +429,7 @@ function tauBasis(chan::TwoBodyChannel, LvT, RvT)
 end
 
 
-function factor(para, chan)
+function factor(para::GenericPara, chan::TwoBodyChannel)
     # Factor = SymFactor[Int(chan)] / (2π)^para.loopDim
     Factor = SymFactor[Int(chan)]
     if para.isFermi == false
@@ -431,16 +438,17 @@ function factor(para, chan)
     return Factor
 end
 
-function typeMap(ltype, rtype)
-    if (ltype == Instant || ltype == Dynamic) && (rtype == Instant || rtype == Dynamic)
-        return Dynamic
-    elseif (ltype == D_Instant || ltype == D_Dynamic) && (rtype == Instant || rtype == Dynamic)
-        return D_Dynamic
-    elseif (ltype == Instant || ltype == Dynamic) && (rtype == D_Instant || rtype == D_Dynamic)
-        return D_Dynamic
-    else
-        return nothing
-    end
+function typeMap(ltype::AnalyticProperty, rtype::AnalyticProperty)
+    return Dynamic
+    # if (ltype == Instant || ltype == Dynamic) && (rtype == Instant || rtype == Dynamic)
+    #     return Dynamic
+    # elseif (ltype == D_Instant || ltype == D_Dynamic) && (rtype == Instant || rtype == Dynamic)
+    #     return D_Dynamic
+    # elseif (ltype == Instant || ltype == Dynamic) && (rtype == D_Instant || rtype == D_Dynamic)
+    #     return D_Dynamic
+    # else
+    #     return nothing
+    # end
 end
 
 function subChannel(subchan)
