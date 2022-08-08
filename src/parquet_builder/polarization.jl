@@ -15,7 +15,7 @@
 - A DataFrame with fields `:response`, `:diagram`, `:hash`. 
 - All polarization share the same external Tau index. With imaginary-time variables, they are extT = (para.firstTauIdx, para.firstTauIdx+1)
 """
-function polarization(para, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false; name=:Π, resetuid=false)
+function polarization(para::GenericPara, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false; name=:Π, resetuid=false)
     resetuid && uidreset()
     @assert para.diagType == PolarDiag
     @assert para.innerLoopNum >= 1
@@ -27,7 +27,7 @@ function polarization(para, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram
     para = reconstruct(para, filter=union(Proper, para.filter), transferLoop=extK)
 
     if (para.extra isa ParquetBlocks) == false
-        para = reconstruct(para, extra=ParquetBlocks())
+        para::GenericPara = reconstruct(para, extra=ParquetBlocks())
     end
 
     K = zero(extK)

@@ -17,7 +17,7 @@
 # Output
 - A Diagram object or nothing if the Green's function is illegal. 
 """
-function green(para, extK=DiagTree.getK(para.totalLoopNum, 1), extT=para.hasTau ? (1, 2) : (0, 0), subdiagram=false;
+function green(para::GenericPara, extK=DiagTree.getK(para.totalLoopNum, 1), extT=para.hasTau ? (1, 2) : (0, 0), subdiagram=false;
     name=:G, resetuid=false)
 
     @assert para.diagType == GreenDiag
@@ -45,7 +45,7 @@ function green(para, extK=DiagTree.getK(para.totalLoopNum, 1), extT=para.hasTau 
 
     if (para.extra isa ParquetBlocks) == false
         parquetblocks = ParquetBlocks(phi=[PPr, PHEr], ppi=[PHr, PHEr], Γ4=[PPr, PHr, PHEr])
-        para = reconstruct(para, extra=parquetblocks)
+        para::GenericPara = reconstruct(para, extra=parquetblocks)
     end
 
     function ΣG(group, oG, Tidx, Kidx, ΣTidx)

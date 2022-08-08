@@ -15,17 +15,17 @@
 - A DataFrame with fields `:type`, `:extT`, `:diagram`, `:hash`
 - All sigma share the same incoming Tau index, but not the outgoing one
 """
-function sigma(para, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false; name=:Σ, resetuid=false)
+function sigma(para::GenericPara, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false; name=:Σ, resetuid=false)
     resetuid && uidreset()
-    @assert para.diagType == SigmaDiag
-    @assert para.innerLoopNum >= 1
+    (para.diagType == SigmaDiag) || error("$para is not for a sigma diagram")
+    (para.innerLoopNum >= 1) || error("sigma must has more than one inner loop")
     # @assert length(extK) == para.totalLoopNum
     # @assert (para.innerLoopNum <= 1) || ((NoBubble in para.filter) == false) "The many-body correction sigma only accounts for half of the bubble counterterm right now."
     if (para.innerLoopNum > 1) && (NoBubble in para.filter)
         @warn "Sigma with two or more loop orders still contain bubble subdiagram even if NoBubble is turned on in para.filter!"
     end
 
-    @assert length(extK) >= para.totalLoopNum "expect dim of extK>=$(para.totalLoopNum), got $(length(extK))"
+    (length(extK) >= para.totalLoopNum) || error("expect dim of extK>=$(para.totalLoopNum), got $(length(extK))")
     extK = extK[1:para.totalLoopNum]
 
     compositeSigma = DataFrame(type=AnalyticProperty[], extT=Tuple{Int,Int}[], diagram=Diagram{para.weightType}[])
@@ -37,25 +37,25 @@ function sigma(para, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false;
 
     if (para.extra isa ParquetBlocks) == false
         parquetblocks = ParquetBlocks(phi=[PPr, PHEr], ppi=[PHr, PHEr], Γ4=[PPr, PHr, PHEr])
-        para = reconstruct(para, extra=parquetblocks)
+        para::GenericPara = reconstruct(para, extra=parquetblocks)
     end
 
     K = zero(extK)
     LoopIdx = para.firstLoopIdx
     K[LoopIdx] = 1.0
-    @assert (K ≈ extK) == false
+    (isapprox(K, extK) == false) || error("K and extK can not be the same")
     legK = [extK, K, K, extK]
 
     function GWwithGivenExTtoΣ(group, oW, paraG)
         # println(group)
         # @assert length(group[:, :diagram]) == 1
         # allsame(group, [:response, :type, :GT])
-        @assert group[:response] == UpUp || group[:response] == UpDown
+        (group[:response] == UpUp || group[:response] == UpDown) || error("GW with given ExT to Σ only works for UpUp or UpDown")
         #type: Instant or Dynamic
         response, type = group[:response], group[:type]
         sid = SigmaId(para, type, k=extK, t=group[:extT])
         g = green(paraG, K, group[:GT], true; name=oW == 0 ? :Gfock : :G_Σ) #there is only one G diagram for a extT
-        @assert g isa Diagram
+        (g isa Diagram) || error("green function must return a Diagram")
         # Sigma = G*(2 W↑↑ - W↑↓)
         # ! The sign of ↑↓ is from the spin symmetry, not from the fermionic statistics!
         spinfactor = (response == UpUp) ? 2 : -1
@@ -74,12 +74,12 @@ function sigma(para, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false;
     for (oG, oW) in orderedPartition(para.innerLoopNum - 1, 2, 0)
 
         idx, maxLoop = findFirstLoopIdx([oW, oG], LoopIdx + 1)
-        @assert maxLoop <= para.totalLoopNum "maxLoop = $maxLoop > $(para.totalLoopNum)"
+        (maxLoop <= para.totalLoopNum) || error("maxLoop = $maxLoop > $(para.totalLoopNum)")
         WfirstLoopIdx, GfirstLoopIdx = idx
 
         # it is important to do W first, because the left in of W is also the incoming leg of sigma, they have the same Tidx
         idx, maxTau = findFirstTauIdx([oW, oG], [Ver4Diag, GreenDiag], para.firstTauIdx, interactionTauNum(para))
-        @assert maxTau <= para.totalTauNum
+        (maxTau <= para.totalTauNum) || error("maxTau = $maxTau > $(para.totalTauNum)")
         WfirstTauIdx, GfirstTauIdx = idx
 
         paraG = reconstruct(para, diagType=GreenDiag, innerLoopNum=oG,
@@ -126,7 +126,7 @@ function sigma(para, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false;
         sigmadf = mergeby(compositeSigma, [:type, :extT], name=name, factor=Factor,
             getid=g -> SigmaId(para, g[1, :type], k=extK, t=g[1, :extT]))
 
-        @assert all(x -> x[1] == para.firstTauIdx, sigmadf.extT) "all sigma should share the same in Tidx\n$sigmadf"
+        all(x -> x[1] == para.firstTauIdx, sigmadf.extT) || error("all sigma should share the same in Tidx\n$sigmadf")
         # println(sigmadf)
         # plot_tree(sigmadf)
         return sigmadf

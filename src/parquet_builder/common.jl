@@ -33,6 +33,7 @@ import ..Interaction
 import ..GenericPara
 import ..innerTauNum
 import ..interactionTauNum
+import ..derive
 
 import ..Diagram
 
