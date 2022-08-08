@@ -115,13 +115,16 @@ function sigma(para, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false;
         end
     end
 
+    function sigmaid(g)
+        return SigmaId(para, g[1, :type], k=extK, t=g[1, :extT])
+    end
+
     if isempty(compositeSigma)
         return compositeSigma
     else
         # Factor = 1 / (2π)^para.loopDim
         Factor = 1.0
-        sigmadf = mergeby(compositeSigma, [:type, :extT], name=name, factor=Factor,
-            getid=g -> SigmaId(para, g[1, :type], k=extK, t=g[1, :extT]))
+        sigmadf = mergeby(compositeSigma, [:type, :extT], name=name, factor=Factor, getid=sigmaid)
 
         @assert all(x -> x[1] == para.firstTauIdx, sigmadf.extT) "all sigma should share the same in Tidx\n$sigmadf"
         # println(sigmadf)
