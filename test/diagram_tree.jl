@@ -99,7 +99,7 @@ end
     root, gK, gT, vdK, veK = getdiagram(spin, D, Nk, Nt)
 
     #optimize the diagram
-    root = DiagTree.optimize([root,])[1]
+    DiagTree.optimize!([root,])
 
     # autodiff
     droot_dg = DiagTree.derivative([root,], BareGreenId)[1]

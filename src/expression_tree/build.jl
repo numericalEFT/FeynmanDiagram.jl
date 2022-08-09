@@ -12,13 +12,9 @@ function _build(diags::Vector{Diagram{W}}, hasLoop=true; verbose::Int=0) where {
     # println(diags)
     @assert all(d -> (d.id.para == diags[1].id.para), diags) "Parameters of all diagrams shoud be the same!"
 
-    diags = DiagTree.optimize(diags, verbose=verbose)
+    diags = DiagTree.optimize!(diags, verbose=verbose)
 
-    if hasLoop
-        tree = newExprTree(diags[1].id.para, :none)
-    else
-        tree = newExprTreeXT(diags[1].id.para, :none)
-    end
+    tree = newExprTree(diags[1].id.para::DiagPara{W}, :none, hasLoop)
 
     verbose > 0 && println("Constructing expression tree...")
     nodes = Dict{Int,Any}()
@@ -57,11 +53,11 @@ function operator(op::Operator)
     end
 end
 
-function newExprTree(para::DiagPara{W}, name::Symbol=:none) where {W}
-    Kpool = LoopPool(:K, para.loopDim, para.totalLoopNum, Float64)
+function newExprTree(para::DiagPara{W}, name::Symbol=:none, hasLoop=true) where {W}
+    if hasLoop
+        Kpool = LoopPool(:K, para.loopDim, para.totalLoopNum, Float64)
+    else
+        Kpool = LoopPool(:K, 0, para.totalLoopNum, Float64)
+    end
     return ExpressionTree{W,DiagramId}(loopBasis=Kpool, name=name)
-end
-
-function newExprTreeXT(para::DiagPara{W}, name::Symbol=:none) where {W}
-    return ExpressionTree{W,DiagramId}(loopBasis=nothing, name=name)
 end
