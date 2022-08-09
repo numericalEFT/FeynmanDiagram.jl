@@ -28,7 +28,6 @@ function vertex3(para::DiagPara{WW},
     blocks::ParquetBlocks=ParquetBlocks()
 ) where {WW}
 
-
     resetuid && uidreset()
     @assert para.diagType == Ver3Diag
     @assert para.innerLoopNum >= 1 "Only generates vertex corrections with more than one internal loops."
@@ -42,18 +41,7 @@ function vertex3(para::DiagPara{WW},
     @assert ((q ≈ Kin) == false) && ((q ≈ Kout) == false) "The bosonic q cann't be same as the fermionic k. Ohterwise the proper diagram check will fail!"
     extK = [q, Kin, Kout]
 
-    ############ reset transferLoop to be q ################
-    if Proper in para.filter
-        if (length(para.transferLoop) != length(q)) #first check if the dimension is wrong
-            empty!(para.transferLoop)
-            append!(para.transferLoop, q)
-        else #dimension is right, then need to check if q is the same as the transferLoop
-            if !(para.transferLoop ≈ q)
-                para.transferLoop .= q
-            end
-        end
-    end
-    ######################################################
+    para = _properVer3Para(para, q)
 
     t0 = para.firstTauIdx
     vertex3 = DataFrame(response=Response[], extT=Tuple{Int,Int,Int}[], diagram=Diagram{WW}[])
@@ -126,4 +114,14 @@ function vertex3(para::DiagPara{WW},
         )
     end
     return vertex3
+end
+
+function _properVer3Para(p::DiagPara{W}, q) where {W}
+    # ############ reset transferLoop to be q ################
+    if Proper in p.filter
+        if (length(p.transferLoop) != length(q)) || (!(p.transferLoop ≈ q)) #first check if the dimension is wrong
+            return derivepara(p, transferLoop=q)
+        end
+    end
+    return p
 end
