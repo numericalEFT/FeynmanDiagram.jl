@@ -68,47 +68,47 @@ isbare(diag::Diagram) = isempty(diag.subdiagram)
 
 # _diagram(df, index) = df[index, :Diagram]
 
-# function _combinegroups(groups, getid, factor, operator, name)
-#     # combine diagrams in a group into one composite diagram
-#     gdf = combine(groups) do group # for each group in groups
-#         # check the documentation of ``combine" for details https://dataframes.juliadata.org/stable/man/split_apply_combine/
-#         # id = isnothing(getid) ? GenericId(group.diagram[1].id.para, Tuple(group[1, fields])) : getid(group)
-#         id = getid(group)
+function _combinegroups(groups, getid, factor, operator, name)
+    # combine diagrams in a group into one composite diagram
+    gdf = combine(groups) do group # for each group in groups
+        # check the documentation of ``combine" for details https://dataframes.juliadata.org/stable/man/split_apply_combine/
+        # id = isnothing(getid) ? GenericId(group.diagram[1].id.para, Tuple(group[1, fields])) : getid(group)
+        id = getid(group)
 
-#         if nrow(group) == 1
-#             # if there is only one diagram in df, and the new id is either GenericId or the id of the existing diagram, 
-#             # then simply return the current df without creating a new diagram
-#             # ! the new factor will be multiplied to the factor of the exisiting diagram!
-#             if id isa GenericId || typeof(id) == typeof(group.diagram[1].id)
-#                 # diag = deepcopy(group[1, :diagram])
-#                 diag = group.diagram[1]
-#                 diag.factor *= factor
-#                 return (diagram=diag, hash=diag.hash)
-#             end
-#         end
-#         diag = Diagram(id, operator, group.diagram, name=name, factor=factor)
-#         return (diagram=diag, hash=diag.hash)
-#     end
-#     return gdf
-# end
+        if nrow(group) == 1
+            # if there is only one diagram in df, and the new id is either GenericId or the id of the existing diagram, 
+            # then simply return the current df without creating a new diagram
+            # ! the new factor will be multiplied to the factor of the exisiting diagram!
+            if id isa GenericId || typeof(id) == typeof(group.diagram[1].id)
+                # diag = deepcopy(group[1, :diagram])
+                diag = group.diagram[1]
+                diag.factor *= factor
+                return (diagram=diag, hash=diag.hash)
+            end
+        end
+        W = typeof(group.diagram[1].weight)
+        diag = Diagram{W}(id, operator, group.diagram, name=name, factor=factor)
+        return (diagram=diag, hash=diag.hash)
+    end
+    return gdf
+end
 
-function _merge(group, factor, id, operator, name)
+function _mergediag(::Type{W}, group, factor, id, operator, name) where {W}
     if nrow(group) == 1
         # if there is only one diagram in df, and the new id is either GenericId or the id of the existing diagram, 
         # then simply return the current df without creating a new diagram
         # ! the new factor will be multiplied to the factor of the exisiting diagram!
         if id isa GenericId || typeof(id) == typeof(group.diagram[1].id)
             # diag = deepcopy(group[1, :diagram])
-            diag = group.diagram[1]
+            diag::Diagram{W} = group.diagram[1]
             diag.factor *= factor
             return diag
         end
     end
-    W = typeof(group.diagram[1].weight)
     return Diagram{W}(id, operator, group.diagram, name=name, factor=factor)
 end
 
-function _makedict(groups, factor, getid, operator, name)
+function _combine(::Type{W}, groups, factor, getid, operator, name) where {W}
     """
     # if fields = [:response, :extT], then
 
@@ -125,29 +125,38 @@ function _makedict(groups, factor, getid, operator, name)
     for col in groupcols(groups)
         d[col] = [key[col] for key in _keys]
     end
-    d[:diagram] = [_merge(groups[key], factor, getid(groups[key]), operator, name) for key in _keys]
+    d[:diagram] = [_mergediag(W, groups[key], factor, getid(groups[key]), operator, name) for key in _keys]
     d[:hash] = [diag.hash for diag in d[:diagram]]
-    return d
+    return DataFrame(d, copycols=false)
 end
 
 function mergeby(df::DataFrame, fields=Vector{Symbol}();
     operator=Sum(), name::Symbol=:none, factor=1.0,
     getid::Function=g -> GenericId(g[1, :diagram].id.para, Tuple(g[1, fields]))
 )
+    if isempty(df)
+        return df
+    else
+        W = typeof(df.diagram[1].weight)
+        return mergeby(W, df, fields; operator=operator, name=name, factor=factor, getid=getid)
+    end
+end
 
+function mergeby(::Type{W}, df::DataFrame, fields=Vector{Symbol}();
+    operator=Sum(), name::Symbol=:none, factor=1.0,
+    getid::Function=g -> GenericId(g[1, :diagram].id.para, Tuple(g[1, fields]))
+) where {W}
     if isempty(df)
         return df
     else
         if all(x -> typeof(x.id) == typeof(df.diagram[1].id), df[!, :diagram]) == false
-            @warn "Not all DiagramIds in $diags are the same!"
+            @warn "Not all DiagramIds in $df are the same!"
         end
         groups = DataFrames.groupby(df, fields, sort=true)
         ########  less memory usage but can not pass the test right now ##############
-        d = _makedict(groups, factor, getid, operator, name)
-        d = DataFrame(d, copycols=false)
-        # d = DataFrame(d)
-        ##############################################################################
-        # cd = _combinegroups(groups, getid, factor, operator, name)
+        d = _combine(W, groups, factor, getid, operator, name)
+        ######## alternative approach (more memory)  ##################
+        # d = _combinegroups(groups, getid, factor, operator, name)
         # println("old\n$d \n new\n$cd")
         return d
     end
