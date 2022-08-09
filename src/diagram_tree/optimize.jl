@@ -1,4 +1,4 @@
-function optimize(diag::Union{Tuple,AbstractVector}, optlevel=1; verbose=0, kwargs...)
+function optimize!(diag::Union{Tuple,AbstractVector}, optlevel=1; verbose=0, kwargs...)
     if isempty(diag)
         return diag
     else

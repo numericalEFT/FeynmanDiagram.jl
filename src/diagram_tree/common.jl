@@ -46,7 +46,7 @@ import ..innerTauNum
 #         return z
 #     end
 # end
-_counter::Vector{Int} = [0,]
+const _counter = [0,]
 
 function uid()
     _counter[1] += 1

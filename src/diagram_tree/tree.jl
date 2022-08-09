@@ -225,8 +225,14 @@ end
 AbstractTrees.printnode(io::IO, diag::Diagram) = print(io, "\u001b[32m$(diag.hash)\u001b[0m : $diag")
 # AbstractTrees.printnode(io::IO, diag::Diagram) = print(io, "$(diag)")
 
+######### define the following for the type stability #########################
+# AbstractTrees.childrentype(diag::Diagram{W}) where {W} = Vector{Diagram{W}}
+
+# AbstractTrees.NodeType(::Diagram{W}) where {W} = HasNodeType()
+# AbstractTrees.nodetype(::Diagram{W}) where {W} = Diagram{W}
+
 ## Optional enhancements
 # These next two definitions allow inference of the item type in iteration.
 # (They are not sufficient to solve all internal inference issues, however.)
-# Base.eltype(::Type{<:TreeIterator{BinaryNode{T}}}) where {T} = BinaryNode{T}
-# Base.IteratorEltype(::Type{<:TreeIterator{BinaryNode{T}}}) where {T} = Base.HasEltype()
+Base.eltype(::Type{<:TreeIterator{Diagram{W}}}) where {W} = Diagram{W}
+Base.IteratorEltype(::Type{<:TreeIterator{Diagram{W}}}) where {W} = Base.HasEltype()

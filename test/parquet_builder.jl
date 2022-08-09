@@ -181,8 +181,8 @@ evalFakePropagator(id::PropagatorId, K, extT, varT) = 1.0
             end
 
 
-            optdiags = DiagTree.optimize(diags.diagram)
-            opttree = ExprTree.build(optdiags)
+            # optdiags = DiagTree.optimize!(diags.diagram)
+            opttree = ExprTree.build(diags.diagram)
             ExprTree.evalKT!(opttree, varK, varT; eval=evalPropagator)
             w1eopt = [opttree[1], opttree[2]]
 
