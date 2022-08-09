@@ -1,34 +1,38 @@
-function oneOrderHigher(diag::Diagram{W}, ::Type{Id}, subdiagram=[]; index::Int=index(Id)) where {W,Id}
-    if diag.id isa PropagatorId && (diag.id isa Id) == false
-        #for bare propagator, a derivative of different id vanishes
-        return nothing
-    end
+function oneOrderHigher(diag::Diagram{W}, ::Type{Id}, subdiagram=[];
+    index::Int=index(Id), #which index to increase the order
+    operator::Operator=diag.operator,
+    name::Symbol=diag.name, factor::W=diag.factor) where {W,Id}
+    # if diag.id isa PropagatorId && (diag.id isa Id) == false
+    #     #for bare propagator, a derivative of different id vanishes
+    #     return nothing
+    # end
     id = deepcopy(diag.id)
     @assert index <= length(id.order) "$(id) only supports derivatives up to the index $(length(id.order))!"
     id.order[index] += 1
-
-    # if Id == BareGreenId
-    #     id.order[1] += 1
-    # elseif Id == BareInteractionId
-    #     id.order[2] += 1
-    # else
-    #     error("not implemented!")
-    # end
-
-    d = Diagram{W}(id, diag.operator, subdiagram; name=diag.name, factor=diag.factor, weight=diag.weight)
+    d = Diagram{W}(id, operator, subdiagram; name=name, factor=factor)
     return d
 end
 
+function hasOrderHigher(diag::Diagram{W}, ::Type{ID}) where {W,ID<:PropagatorId}
+    if diag.id isa ID
+        #for bare propagator, a derivative of different id vanishes
+        return true
+    else
+        return false
+    end
+end
+
 """
-    function derivative(diags::Union{Diagram,Tuple,AbstractVector}, ::Type{ID}) where {ID<:PropagatorId}
+    function derivative(diags::Union{Tuple,AbstractVector}, ::Type{ID}; index::Int=index(ID)) where {W,ID<:PropagatorId}
+    function derivative(diags::Vector{Diagram{W}}, ::Type{ID}; index::Int=index(ID)) where {W,ID<:PropagatorId}
     
     Automatic differentiation derivative on the diagrams
 
 # Arguments
 - diags     : diagrams to take derivative
 - ID        : DiagramId to apply the differentiation
+- index     : index of the id.order array element to increase the order
 """
-
 function derivative(diags::Union{Tuple,AbstractVector}, ::Type{ID}; index::Int=index(ID)) where {W,ID<:PropagatorId}
     if isempty(diags)
         return diags
@@ -38,56 +42,77 @@ function derivative(diags::Union{Tuple,AbstractVector}, ::Type{ID}; index::Int=i
         return diags
     end
 end
+
 function derivative(diags::Vector{Diagram{W}}, ::Type{ID}; index::Int=index(ID)) where {W,ID<:PropagatorId}
     # use a dictionary to host the dual diagram of a diagram for a given hash number
     # a dual diagram is defined as the derivative of the original diagram
 
-    dual = Dict{Int,Any}()
+    dual = Dict{Int,Diagram{W}}()
     for diag in diags
-        for d in PostOrderDFS(diag)
+        for d::Diagram{W} in PostOrderDFS(diag) # postorder traversal will visit all subdiagrams of a diagram first
             if haskey(dual, d.hash)
                 continue
             end
-            id = d.id
-            if id isa PropagatorId
+            if d.id isa PropagatorId
                 # for propagators like bare Green's function and interaction, derivative simply means increase an order by one
-                dual[d.hash] = oneOrderHigher(d, ID; index=index)
+                # dual[d.hash] = oneOrderHigher(d, ID; index=index)
+                if hasOrderHigher(d, ID)
+                    dual[d.hash] = oneOrderHigher(d, ID; index=index)
+                end
             else # composite diagram
                 if d.operator isa Sum
                     # for a diagram which is a sum of subdiagrams, derivative means a sub of derivative subdiagrams
-                    children = [dual[sub.hash] for sub in d.subdiagram if isnothing(dual[sub.hash]) == false]
-                    if isempty(children)
-                        dual[d.hash] = nothing
-                    else
+                    children = [dual[sub.hash] for sub in d.subdiagram if haskey(dual, sub.hash)]
+                    # if !isempty(children) && hasOrderHigher(d, ID)
+                    # if isempty(children)
+                    #     dual[d.hash] = nothing
+                    # else
+                    #     dual[d.hash] = oneOrderHigher(d, ID, children; index=index)
+                    #     @assert isnothing(dual[d.hash]) == false
+                    # end
+                    if isempty(children) == false
                         dual[d.hash] = oneOrderHigher(d, ID, children; index=index)
+                        # @assert isnothing(dual[d.hash]) == false
                     end
                 elseif d.operator isa Prod
                     # d = s1xs2x... = s1'xs2x... + s1xs2'x... + ...
-                    terms = []
+                    terms = Vector{Diagram{W}}()
                     for (si, sub) in enumerate(d.subdiagram)
-                        if isnothing(dual[sub.hash])
+                        if haskey(dual, sub.hash) == false
                             continue
                         end
                         # children = deepcopy(d.subdiagram)
-                        children = []
-                        for (sj, sub) in enumerate(d.subdiagram)
-                            if si == sj
-                                push!(children, dual[sub.hash])
-                            else
-                                push!(children, sub)
-                            end
+                        children = [si == sj ? dual[sub.hash] : sub for (sj, sub) in enumerate(d.subdiagram)]
+                        # for (sj, sub) in enumerate(d.subdiagram)
+                        #     if si == sj
+                        #         push!(children, dual[sub.hash])
+                        #     else
+                        #         push!(children, sub)
+                        #     end
+                        # end
+                        if isempty(children) == false
+                            push!(terms, oneOrderHigher(d, ID, children; index=index))
                         end
-                        dd = oneOrderHigher(d, ID, children)
-                        if isnothing(dd) == false
-                            push!(terms, dd)
-                        end
+                        # dd = oneOrderHigher(d, ID, children)
+                        # @assert isnothing(dd) == false
+                        # if isnothing(dd) == false
+                        #     push!(terms, dd)
+                        # end
                     end
-                    if isempty(terms)
-                        dual[d.hash] = nothing
-                    else
-                        newid = deepcopy(id)
-                        newid.order .= terms[1].id.order
-                        dual[d.hash] = Diagram{W}(newid, Sum(), terms, name=Symbol("$(d.name)'"))
+                    # if isempty(terms)
+                    #     dual[d.hash] = nothing
+                    # else
+                    #     newid = deepcopy(d.id)
+                    #     newid.order .= terms[1].id.order
+                    #     dual[d.hash] = Diagram{W}(newid, Sum(), terms, name=Symbol("$(d.name)'"))
+                    # end
+
+                    if isempty(terms) == false
+                        # !the summed dual diagram must have factor = 1.0
+                        dual[d.hash] = oneOrderHigher(d, ID, terms; index=index, name=Symbol("$(d.name)'"), factor=W(1), operator=Sum())
+                        # newid = deepcopy(d.id)
+                        # newid.order .= terms[1].id.order
+                        # dual[d.hash] = Diagram{W}(newid, Sum(), terms, name=Symbol("$(d.name)'"))
                     end
                 else
                     error("not implemented!")
@@ -95,7 +120,7 @@ function derivative(diags::Vector{Diagram{W}}, ::Type{ID}; index::Int=index(ID))
             end
         end
     end
-    return Vector{Diagram{W}}([dual[diag.hash] for diag in diags if isnothing(dual[diag.hash]) == false])
+    return [dual[diag.hash] for diag in diags if haskey(dual, diag.hash)]
 end
 
 """

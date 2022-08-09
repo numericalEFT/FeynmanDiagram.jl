@@ -54,10 +54,12 @@ function _IdstoDict!(dict::Dict{Symbol,Any}, diagVec::Vector{Diagram{W}}, idkey:
             push!(data, _vec2tup(getproperty(diagVec[idx].id, idkey)))
         end
     else
-        data = Vector{Any}[]
+        data = Vector{Any}()
         for diag in diagVec
             if hasproperty(diag.id, idkey)
-                push!(data, _vec2tup(getproperty(diag.id, idkey)))
+                tup = _vec2tup(getproperty(diag.id, idkey))
+                # println(tup)
+                push!(data, tup)
             else
                 push!(data, missing)
             end
