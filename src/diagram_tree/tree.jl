@@ -229,7 +229,7 @@ AbstractTrees.printnode(io::IO, diag::Diagram) = print(io, "\u001b[32m$(diag.has
 # AbstractTrees.childrentype(diag::Diagram{W}) where {W} = Vector{Diagram{W}}
 
 # AbstractTrees.NodeType(::Diagram{W}) where {W} = HasNodeType()
-# AbstractTrees.nodetype(::Diagram{W}) where {W} = Diagram{W}
+AbstractTrees.nodetype(::Diagram{W}) where {W} = Diagram{W}
 
 ## Optional enhancements
 # These next two definitions allow inference of the item type in iteration.

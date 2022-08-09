@@ -12,14 +12,14 @@ function _build(diags::Vector{Diagram{W}}, hasLoop=true; verbose::Int=0) where {
     # println(diags)
     @assert all(d -> (d.id.para == diags[1].id.para), diags) "Parameters of all diagrams shoud be the same!"
 
-    diags = DiagTree.optimize!(diags, verbose=verbose)
+    DiagTree.optimize!(diags, verbose=verbose)
 
     tree = newExprTree(diags[1].id.para::DiagPara{W}, :none, hasLoop)
 
     verbose > 0 && println("Constructing expression tree...")
     nodes = Dict{Int,Any}()
     for diag in diags
-        for d in PostOrderDFS(diag)
+        for d::Diagram{W} in PostOrderDFS(diag)
             if haskey(nodes, d.hash) == false
                 id = d.id
                 if isempty(d.subdiagram)

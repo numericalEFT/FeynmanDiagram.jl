@@ -185,6 +185,21 @@ end
     @test root.weight ≈ Weight
 end
 
+@testset "dataframe" begin
+    DiagTree.uidreset()
+    # We only consider the direct part of the above diagram
+    spin = 2.0
+    D = 3
+    kF, β, mass2 = 1.919, 0.5, 1.0
+    Nk, Nt = 4, 2
+
+    root, gK, gT, vdK, veK = getdiagram(spin, D, Nk, Nt)
+    diags = root.subdiagram
+    diags = collect(Leaves(root))
+    println(DiagTree.toDataFrame(diags))
+    println(DiagTree.toDataFrame(diags, :extT))
+end
+
 @testset "optimize" begin
     DiagTree.uidreset()
 
