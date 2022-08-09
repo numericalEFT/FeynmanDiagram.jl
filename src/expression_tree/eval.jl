@@ -16,20 +16,20 @@ function evalKT!(diag::ExpressionTree, loopVar, siteVar, additional=nothing; eva
     tweight = tree.current
 
     # calculate new loop
-    if isnothing(loopPool) == false
+    if hasloop(loopPool) && (isnothing(loopVar) == false)
         update(loopPool, loopVar)
     end
 
     #calculate diagram tree
     for (ni, node) in enumerate(tree.object)
         if isempty(node.children)
-            if (isnothing(loopPool) == false) && (isnothing(siteVar) == false)
+            if hasloop(loopPool) && (isnothing(siteVar) == false)
                 if isnothing(additional)
                     tweight[ni] = eval(node.para, current(loopPool, node.loopidx), node.siteidx, siteVar)
                 else
                     tweight[ni] = eval(node.para, current(loopPool, node.loopidx), node.siteidx, siteVar, additional)
                 end
-            elseif isnothing(loopPool) == false
+            elseif hasloop(loopPool)
                 if isnothing(additional)
                     tweight[ni] = eval(node.para, node.siteidx, siteVar)
                 else

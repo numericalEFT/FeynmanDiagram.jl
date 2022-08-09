@@ -57,7 +57,7 @@ function getdiagram(spin=2.0, D=3, Nk=4, Nt=2)
     DiagTree.uidreset()
     # We only consider the direct part of the above diagram
 
-    paraG = GenericPara(diagType=GreenDiag,
+    paraG = DiagParaF64(type=GreenDiag,
         innerLoopNum=0, totalLoopNum=Nk, loopDim=D,
         hasTau=true, totalTauNum=Nt)
     paraV = paraG
@@ -65,24 +65,24 @@ function getdiagram(spin=2.0, D=3, Nk=4, Nt=2)
     # #construct the propagator table
     gK = [[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0]]
     gT = [(1, 2), (2, 1)]
-    g = [Diagram(BareGreenId(paraG, k=gK[i], t=gT[i]), name=:G) for i in 1:2]
+    g = [Diagram{Float64}(BareGreenId(paraG, k=gK[i], t=gT[i]), name=:G) for i in 1:2]
 
     vdK = [[0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 1.0, 0.0]]
     # vdT = [[1, 1], [2, 2]]
-    vd = [Diagram(BareInteractionId(paraV, ChargeCharge, k=vdK[i], permu=Di), name=:Vd) for i in 1:2]
+    vd = [Diagram{Float64}(BareInteractionId(paraV, ChargeCharge, k=vdK[i], permu=Di), name=:Vd) for i in 1:2]
 
     veK = [[1, 0, -1, -1], [0, 1, 0, -1]]
     # veT = [[1, 1], [2, 2]]
-    ve = [Diagram(BareInteractionId(paraV, ChargeCharge, k=veK[i], permu=Ex), name=:Ve) for i in 1:2]
+    ve = [Diagram{Float64}(BareInteractionId(paraV, ChargeCharge, k=veK[i], permu=Ex), name=:Ve) for i in 1:2]
 
     Id = GenericId(paraV)
     # contruct the tree
-    ggn = Diagram(Id, Prod(), [g[1], g[2]])
-    vdd = Diagram(Id, Prod(), [vd[1], vd[2]], factor=spin)
-    vde = Diagram(Id, Prod(), [vd[1], ve[2]], factor=-1.0)
-    ved = Diagram(Id, Prod(), [ve[1], vd[2]], factor=-1.0)
-    vsum = Diagram(Id, Sum(), [vdd, vde, ved])
-    root = Diagram(Id, Prod(), [vsum, ggn], factor=1 / (2π)^D, name=:root)
+    ggn = Diagram{Float64}(Id, Prod(), [g[1], g[2]])
+    vdd = Diagram{Float64}(Id, Prod(), [vd[1], vd[2]], factor=spin)
+    vde = Diagram{Float64}(Id, Prod(), [vd[1], ve[2]], factor=-1.0)
+    ved = Diagram{Float64}(Id, Prod(), [ve[1], vd[2]], factor=-1.0)
+    vsum = Diagram{Float64}(Id, Sum(), [vdd, vde, ved])
+    root = Diagram{Float64}(Id, Prod(), [vsum, ggn], factor=1 / (2π)^D, name=:root)
 
     return root, gK, gT, vdK, veK
 end
@@ -99,11 +99,11 @@ end
     root, gK, gT, vdK, veK = getdiagram(spin, D, Nk, Nt)
 
     #optimize the diagram
-    root = DiagTree.optimize(root)
+    DiagTree.optimize!([root,])
 
     # autodiff
-    droot_dg = DiagTree.derivative(root, BareGreenId)
-    droot_dv = DiagTree.derivative(root, BareInteractionId)
+    droot_dg = DiagTree.derivative([root,], BareGreenId)[1]
+    droot_dv = DiagTree.derivative([root,], BareInteractionId)[1]
     # plot_tree(droot_dg)
 
     DiagTree.eval!(root; eval=(x -> 1.0))
@@ -183,6 +183,28 @@ end
     @test length(uniqueInt) == 3
     DiagTree.eval!(root, varK, varT; eval=eval)
     @test root.weight ≈ Weight
+end
+
+@testset "dataframe" begin
+    DiagTree.uidreset()
+    # We only consider the direct part of the above diagram
+    spin = 2.0
+    D = 3
+    kF, β, mass2 = 1.919, 0.5, 1.0
+    Nk, Nt = 4, 2
+
+    root, gK, gT, vdK, veK = getdiagram(spin, D, Nk, Nt)
+    diags = root.subdiagram
+    diags = collect(Leaves(root))
+    df1 = DiagTree.toDataFrame(diags)
+    df2 = DiagTree.toDataFrame(diags, :extT)
+    s1 = size(df1)
+    s2 = size(df2)
+    @assert s1[1] == s2[1]
+    @assert s1[2] == s2[2] - 1
+
+    d = mergeby(diags) #should return a vector of a single diagram
+    @assert length(d) == 1
 end
 
 @testset "optimize" begin

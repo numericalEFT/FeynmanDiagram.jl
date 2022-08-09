@@ -1,22 +1,25 @@
-function build(diags::AbstractVector, hasLoop=true; verbose::Int=0)
-    # println(diags)
+function build(diags::Union{Diagram,Tuple,AbstractVector}, hasLoop=true; verbose::Int=0)
     if isempty(diags)
         return nothing
+    else
+        diags = collect(diags)
+        @assert eltype(diags) <: Diagram "Diagram struct expected for $diags"
+        return _build(diags, hasLoop; verbose=verbose)
     end
+end
+
+function _build(diags::Vector{Diagram{W}}, hasLoop=true; verbose::Int=0) where {W}
+    # println(diags)
     @assert all(d -> (d.id.para == diags[1].id.para), diags) "Parameters of all diagrams shoud be the same!"
 
-    diags = DiagTree.optimize(diags, verbose=verbose)
+    DiagTree.optimize!(diags, verbose=verbose)
 
-    if hasLoop
-        tree = newExprTree(diags[1].id.para, :none)
-    else
-        tree = newExprTreeXT(diags[1].id.para, :none)
-    end
+    tree = newExprTree(diags[1].id.para::DiagPara{W}, :none, hasLoop)
 
     verbose > 0 && println("Constructing expression tree...")
     nodes = Dict{Int,Any}()
     for diag in diags
-        for d in PostOrderDFS(diag)
+        for d::Diagram{W} in PostOrderDFS(diag)
             if haskey(nodes, d.hash) == false
                 id = d.id
                 if isempty(d.subdiagram)
@@ -35,10 +38,10 @@ function build(diags::AbstractVector, hasLoop=true; verbose::Int=0)
     initialize!(tree.node)
     return tree
 end
-function build(diag::Diagram{W}; verbose::Int=0) where {W}
-    diag = build([diag,], verbose=verbose)
-    return diag
-end
+# function build(diag::Diagram{W}; verbose::Int=0) where {W}
+#     diag = build([diag,], verbose=verbose)
+#     return diag
+# end
 
 function operator(op::Operator)
     if op isa Sum
@@ -50,13 +53,11 @@ function operator(op::Operator)
     end
 end
 
-function newExprTree(para, name::Symbol=:none)
-    weightType = para.weightType
-    Kpool = LoopPool(:K, para.loopDim, para.totalLoopNum, Float64)
-    return ExpressionTree(loopBasis=Kpool, nodePara=DiagramId, weight=weightType, name=name)
-end
-
-function newExprTreeXT(para, name::Symbol=:none)
-    weightType = para.weightType
-    return ExpressionTree(loopBasis=nothing, nodePara=DiagramId, weight=weightType, name=name)
+function newExprTree(para::DiagPara{W}, name::Symbol=:none, hasLoop=true) where {W}
+    if hasLoop
+        Kpool = LoopPool(:K, para.loopDim, para.totalLoopNum, Float64)
+    else
+        Kpool = LoopPool(:K, 0, para.totalLoopNum, Float64)
+    end
+    return ExpressionTree{W,DiagramId}(loopBasis=Kpool, name=name)
 end

@@ -25,7 +25,7 @@ end
 #     end
 # end
 
-function eval(para, ver4::Ver4, varK, varT, legK, evalG::Function, evalV::Function, fast = false; kwargs...)
+function eval(para, ver4::Ver4, varK, varT, legK, evalG::Function, evalV::Function, fast=false; kwargs...)
     KinL, KoutL, KinR, KoutR = legK
     spin = para.spin
     T0idx = para.firstTauIdx
@@ -34,7 +34,7 @@ function eval(para, ver4::Ver4, varK, varT, legK, evalG::Function, evalV::Functi
     if ver4.loopNum == 0
         qd = KinL - KoutL
         qe = KinL - KoutR
-        if para.interactionTauNum == 1
+        if interactionTauNum(para) == 1
             sign = para.isFermi ? -1 : 1
             ver4.weight[1].d = -evalV(qd)
             ver4.weight[1].e = (-evalV(qe)) * sign
@@ -64,7 +64,8 @@ function eval(para, ver4::Ver4, varK, varT, legK, evalG::Function, evalV::Functi
 
     evalAllG!(G[1], K, T0idx, varT, evalG, kwargs...)
 
-    PhaseFactor = 1.0 / (2π)^para.loopDim
+    # PhaseFactor = 1.0 / (2π)^para.loopDim
+    PhaseFactor = 1.0
     Kt, Ku, Ks = similar(K), similar(K), similar(K) #Kt, Ku and Ks will be re-created later, slow in performance
 
     for c in ver4.chan

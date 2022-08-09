@@ -30,7 +30,7 @@ import ..symbol
 import ..short
 
 import ..Interaction
-import ..GenericPara
+import ..DiagPara
 import ..innerTauNum
 
 import ..Diagram

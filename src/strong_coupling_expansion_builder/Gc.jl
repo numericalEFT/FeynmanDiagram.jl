@@ -1,5 +1,5 @@
-function connectedGreen(para, hop::Vector{BareHoppingId}, subdiagram = false; name = Symbol("Gc$(length(hop)*2)"), resetuid = false, even = true)
-    # @assert para.diagType == GreenNDiag
+function connectedGreen(para, hop::Vector{BareHoppingId}, subdiagram=false; name=Symbol("Gc$(length(hop)*2)"), resetuid=false, even=true)
+    # @assert para.type == GreenNDiag
     # @assert length(extT) == length(orbital) == length(site)
     # println("wip")
     # println(hop)
@@ -14,7 +14,7 @@ function connectedGreen(para, hop::Vector{BareHoppingId}, subdiagram = false; na
     #     return nothing
     # end
 
-    Gfull = fullGreen(para, hop, true; resetuid = false, even = even)
+    Gfull = fullGreen(para, hop, true; resetuid=false, even=even)
     if isnothing(Gfull)
         return nothing
     end
@@ -25,12 +25,12 @@ function connectedGreen(para, hop::Vector{BareHoppingId}, subdiagram = false; na
         # if even && (length(lind) % 2 == 1)
         #     continue
         # end
-        subGc = connectedGreen(para, hop[lind], true; resetuid = false, even = even)
-        subGn = fullGreen(para, hop[rind], true; resetuid = false, even = even)
+        subGc = connectedGreen(para, hop[lind], true; resetuid=false, even=even)
+        subGn = fullGreen(para, hop[rind], true; resetuid=false, even=even)
         if isnothing(subGn) || isnothing(subGc)
             continue
         end
-        push!(Gc, Diagram(GenericId(para), Prod(), [subGc, subGn], factor = -1.0)) #additional minus sign because Gc(s) = Gn(s) - \sum_o Gc(o)Gn(s-o)
+        push!(Gc, Diagram(GenericId(para), Prod(), [subGc, subGn], factor=-1.0)) #additional minus sign because Gc(s) = Gn(s) - \sum_o Gc(o)Gn(s-o)
     end
 
     extT, orbital, site, creation = [], [], [], []
@@ -40,11 +40,11 @@ function connectedGreen(para, hop::Vector{BareHoppingId}, subdiagram = false; na
         append!(creation, [true, false])
         append!(orbital, h.orbital)
     end
-    return Diagram(ConnectedGreenNId(para, orbital = orbital, t = extT, r = site, creation = creation), Sum(), Gc, name = name)
+    return Diagram(ConnectedGreenNId(para, orbital=orbital, t=extT, r=site, creation=creation), Sum(), Gc, name=name)
 end
 
 # function connectedGreen(para, site::AbstractVector, orbital::AbstractVector, extT::AbstractVector = collect(1:length(orbital)), subdiagram = false; name = Symbol("Gc$(length(site))"), resetuid = false, even = true)
-#     # @assert para.diagType == GreenNDiag
+#     # @assert para.type == GreenNDiag
 #     @assert length(extT) == length(orbital) == length(site)
 #     N = length(extT)
 

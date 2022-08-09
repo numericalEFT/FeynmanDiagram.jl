@@ -32,7 +32,7 @@ import ..symbol
 import ..short
 
 import ..Interaction
-import ..GenericPara
+import ..DiagPara
 import ..innerTauNum
 
 import ..Diagram
@@ -66,23 +66,23 @@ import ..uidreset
 import ..toDataFrame
 import ..mergeby
 
-# function build(para::GenericPara, extT = nothing, subdiagram = false)
-#     if para.diagType == GcDiag
+# function build(para::DiagPara, extT = nothing, subdiagram = false)
+#     if para.type == GcDiag
 #         if isnothing(extK)
 #             extK = [DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)]
 #         end
 #         return vertex4(para, extK, [PHr, PHEr, PPr, Alli], subdiagram)
-#     elseif para.diagType == SigmaDiag
+#     elseif para.type == SigmaDiag
 #         if isnothing(extK)
 #             extK = DiagTree.getK(para.totalLoopNum, 1)
 #         end
 #         return sigma(para, extK, subdiagram)
-#     elseif para.diagType == PolarDiag
+#     elseif para.type == PolarDiag
 #         if isnothing(extK)
 #             extK = DiagTree.getK(para.totalLoopNum, 1)
 #         end
 #         return polarization(para, extK, subdiagram)
-#     elseif para.diagType == Ver3Diag
+#     elseif para.type == Ver3Diag
 #         if isnothing(extK)
 #             extK = [DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2)]
 #         end

@@ -1,81 +1,86 @@
-function oneOrderHigher(diag::Diagram{W}, ::Type{Id}, subdiagram=[]; index::Int=index(Id)) where {W,Id}
-    if diag.id isa PropagatorId && (diag.id isa Id) == false
-        #for bare propagator, a derivative of different id vanishes
-        return nothing
-    end
+function oneOrderHigher(diag::Diagram{W}, ::Type{Id}, subdiagram=[];
+    index::Int=index(Id), #which index to increase the order
+    operator::Operator=diag.operator,
+    name::Symbol=diag.name, factor::W=diag.factor) where {W,Id}
+    # if diag.id isa PropagatorId && (diag.id isa Id) == false
+    #     #for bare propagator, a derivative of different id vanishes
+    #     return nothing
+    # end
     id = deepcopy(diag.id)
     @assert index <= length(id.order) "$(id) only supports derivatives up to the index $(length(id.order))!"
     id.order[index] += 1
-
-    # if Id == BareGreenId
-    #     id.order[1] += 1
-    # elseif Id == BareInteractionId
-    #     id.order[2] += 1
-    # else
-    #     error("not implemented!")
-    # end
-
-    d = Diagram{W}(id, diag.operator, subdiagram; name=diag.name, factor=diag.factor, weight=diag.weight)
+    d = Diagram{W}(id, operator, subdiagram; name=name, factor=factor)
     return d
 end
 
+function hasOrderHigher(diag::Diagram{W}, ::Type{ID}) where {W,ID<:PropagatorId}
+    if diag.id isa ID
+        #for bare propagator, a derivative of different id vanishes
+        return true
+    else
+        return false
+    end
+end
+
 """
-    function derivative(diags::Union{Diagram,Tuple,AbstractVector}, ::Type{ID}) where {ID<:PropagatorId}
+    function derivative(diags::Union{Tuple,AbstractVector}, ::Type{ID}; index::Int=index(ID)) where {W,ID<:PropagatorId}
+    function derivative(diags::Vector{Diagram{W}}, ::Type{ID}; index::Int=index(ID)) where {W,ID<:PropagatorId}
     
     Automatic differentiation derivative on the diagrams
 
 # Arguments
 - diags     : diagrams to take derivative
 - ID        : DiagramId to apply the differentiation
+- index     : index of the id.order array element to increase the order
 """
-function derivative(diags::Union{Diagram,Tuple,AbstractVector}, ::Type{ID}; index::Int=index(ID)) where {ID<:PropagatorId}
+function derivative(diags::Union{Tuple,AbstractVector}, ::Type{ID}; index::Int=index(ID)) where {W,ID<:PropagatorId}
+    if isempty(diags)
+        return diags
+    else
+        diags = collect(diags)
+        diags = derivative(diags, ID; index=index)
+        return diags
+    end
+end
+
+function derivative(diags::Vector{Diagram{W}}, ::Type{ID}; index::Int=index(ID)) where {W,ID<:PropagatorId}
     # use a dictionary to host the dual diagram of a diagram for a given hash number
     # a dual diagram is defined as the derivative of the original diagram
 
-    single = false
-    if diags isa Diagram
-        diags = [diags,]
-        single = true
-    end
-    dual = Dict{Int,Any}()
+    dual = Dict{Int,Diagram{W}}()
     for diag in diags
-        for d in PostOrderDFS(diag)
+        for d::Diagram{W} in PostOrderDFS(diag) # postorder traversal will visit all subdiagrams of a diagram first
             if haskey(dual, d.hash)
                 continue
             end
-            id = d.id
-            if id isa PropagatorId
+            if d.id isa PropagatorId
                 # for propagators like bare Green's function and interaction, derivative simply means increase an order by one
-                dual[d.hash] = oneOrderHigher(d, ID; index=index)
+                if hasOrderHigher(d, ID)
+                    dual[d.hash] = oneOrderHigher(d, ID; index=index)
+                end
             else # composite diagram
                 if d.operator isa Sum
                     # for a diagram which is a sum of subdiagrams, derivative means a sub of derivative subdiagrams
-                    children = [dual[sub.hash] for sub in d.subdiagram if isnothing(dual[sub.hash]) == false]
-                    if isempty(children)
-                        dual[d.hash] = nothing
-                    else
+                    children = [dual[sub.hash] for sub in d.subdiagram if haskey(dual, sub.hash)]
+                    if isempty(children) == false
                         dual[d.hash] = oneOrderHigher(d, ID, children; index=index)
                     end
                 elseif d.operator isa Prod
                     # d = s1xs2x... = s1'xs2x... + s1xs2'x... + ...
-                    terms = []
+                    terms = Vector{Diagram{W}}()
                     for (si, sub) in enumerate(d.subdiagram)
-                        if isnothing(dual[sub.hash])
+                        if haskey(dual, sub.hash) == false
                             continue
                         end
-                        children = deepcopy(d.subdiagram)
-                        children[si] = dual[sub.hash]
-                        dd = oneOrderHigher(d, ID, children)
-                        if isnothing(dd) == false
-                            push!(terms, dd)
+                        children = [si == sj ? dual[sub.hash] : sub for (sj, sub) in enumerate(d.subdiagram)]
+                        if isempty(children) == false
+                            push!(terms, oneOrderHigher(d, ID, children; index=index))
                         end
                     end
-                    if isempty(terms)
-                        dual[d.hash] = nothing
-                    else
-                        newid = deepcopy(id)
-                        newid.order .= terms[1].id.order
-                        dual[d.hash] = Diagram{id.para.weightType}(newid, Sum(), terms, name=Symbol("$(d.name)'"))
+
+                    if isempty(terms) == false
+                        # !the summed dual diagram must have factor = 1.0
+                        dual[d.hash] = oneOrderHigher(d, ID, terms; index=index, name=Symbol("$(d.name)'"), factor=W(1), operator=Sum())
                     end
                 else
                     error("not implemented!")
@@ -83,11 +88,7 @@ function derivative(diags::Union{Diagram,Tuple,AbstractVector}, ::Type{ID}; inde
             end
         end
     end
-    if single
-        return isnothing(dual[diags[1].hash]) ? nothing : dual[diags[1].hash]
-    else
-        return [dual[diag.hash] for diag in diags if isnothing(dual[diag.hash]) == false]
-    end
+    return [dual[diag.hash] for diag in diags if haskey(dual, diag.hash)]
 end
 
 """
@@ -100,7 +101,7 @@ end
 - ID         : DiagramId to apply the differentiation
 - order::Int : derivative order
 """
-function derivative(diags::Union{Diagram,Tuple,AbstractVector}, ::Type{ID}, order::Int; index::Int=index(ID)) where {ID<:PropagatorId}
+function derivative(diags::Union{Tuple,AbstractVector}, ::Type{ID}, order::Int; index::Int=index(ID)) where {ID<:PropagatorId}
     @assert order >= 0
     if order == 0
         return diags
@@ -113,7 +114,8 @@ function derivative(diags::Union{Diagram,Tuple,AbstractVector}, ::Type{ID}, orde
 end
 
 """
-    function removeHatreeFock!(diags::Union{Diagram,Tuple,AbstractVector})
+    function removeHatreeFock!(diag::Diagram{W}) where {W}
+    function removeHatreeFock!(diags::Union{Tuple,AbstractVector})
     
     Remove the Hatree-Fock insertions that without any derivatives on the propagator and the interaction. 
 
@@ -123,30 +125,23 @@ end
 # Remarks
 - The operations removeHatreeFock! and taking derivatives doesn't commute with each other! 
 - If the input diagram is a Hatree-Fock diagram, then the overall weight will become zero! 
+- The return value is always nothing
 """
-function removeHatreeFock!(diags::Union{Diagram,Tuple,AbstractVector})
-    single = false
-    if diags isa Diagram
-        diags = [diags,]
-        single = true
-    end
-    for diag in diags
-        for d in PreOrderDFS(diag)
-            # for subdiag in d.subdiagram
-            if d.id isa SigmaId
-                # println(d, " with ", d.id.para.innerLoopNum)
-                if isempty(d.id.order) || all(x -> x == 0, d.id.order) #eithr order is empty or a vector of zeros
-                    if d.id.para.innerLoopNum == 1
-                        d.factor = 0.0
-                    end
+function removeHatreeFock!(diag::Diagram{W}) where {W}
+    for d in PreOrderDFS(diag)
+        # for subdiag in d.subdiagram
+        if d.id isa SigmaId
+            # println(d, " with ", d.id.para.innerLoopNum)
+            if isempty(d.id.order) || all(x -> x == 0, d.id.order) #eithr order is empty or a vector of zeros
+                if d.id.para.innerLoopNum == 1
+                    d.factor = 0.0
                 end
             end
-            # end
         end
     end
-    if single
-        return diags[1]
-    else
-        return diags
+end
+function removeHatreeFock!(diags::Union{Tuple,AbstractVector})
+    for diag in diags
+        removeHatreeFock!(diag)
     end
 end

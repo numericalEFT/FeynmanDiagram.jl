@@ -3,16 +3,16 @@ using AbstractTrees
 using StaticArrays
 using DataFrames
 
-blocks = ParquetBlocks(phi = [PPr, PHEr], ppi = [PHr, PHEr], Γ4 = [PPr, PHr, PHEr])
+blocks = ParquetBlocks(phi=[PPr, PHEr], ppi=[PHr, PHEr], Γ4=[PPr, PHr, PHEr])
 
 ###################### ver4 to DiagTree ###########################################
-para = GenericPara(
-    diagType = Ver4Diag,
-    innerLoopNum = 1,
-    hasTau = true,
-    filter = [NoFock,],
-    interaction = [Interaction(ChargeCharge, Instant), Interaction(UpUp, Instant),],
-    extra = blocks
+para = DiagPara(
+    type=Ver4Diag,
+    innerLoopNum=1,
+    hasTau=true,
+    filter=[NoFock,],
+    interaction=[Interaction(ChargeCharge, Instant), Interaction(UpUp, Instant),],
+    extra=blocks
 )
 
 K0 = zeros(para.totalLoopNum)
@@ -44,12 +44,12 @@ display(diags)
 # exit(0)
 
 ######################################## self-energy  ################################################
-para = GenericPara(
-    diagType = SigmaDiag,
-    innerLoopNum = 1,
-    hasTau = true,
-    filter = [NoFock,],
-    interaction = [Interaction(ChargeCharge, [Instant, Dynamic]), Interaction(UpDown, [Instant, Dynamic])]
+para = DiagPara(
+    type=SigmaDiag,
+    innerLoopNum=1,
+    hasTau=true,
+    filter=[NoFock,],
+    interaction=[Interaction(ChargeCharge, [Instant, Dynamic]), Interaction(UpDown, [Instant, Dynamic])]
 )
 
 K0 = zeros(para.totalLoopNum)
@@ -60,11 +60,11 @@ println("sigma, ", sigma)
 
 ##################################### vertex 3   #################################################
 
-para = GenericPara(diagType = Ver3Diag,
-    innerLoopNum = 1,
-    hasTau = true,
-    filter = [NoFock, Proper],
-    interaction = [Interaction(ChargeCharge, [Instant, Dynamic])]
+para = DiagPara(type=Ver3Diag,
+    innerLoopNum=1,
+    hasTau=true,
+    filter=[NoFock, Proper],
+    interaction=[Interaction(ChargeCharge, [Instant, Dynamic])]
     # interaction = [Interaction(UpDown, [Instant, Dynamic])]
 )
 
@@ -81,12 +81,12 @@ end
 # exit(0)
 
 #####################################  polarization  ############################################
-para = GenericPara(
-    diagType = PolarDiag,
-    innerLoopNum = 2,
-    hasTau = true,
-    filter = [NoFock,],
-    interaction = [Interaction(ChargeCharge, [Instant, Dynamic]),]
+para = DiagPara(
+    type=PolarDiag,
+    innerLoopNum=2,
+    hasTau=true,
+    filter=[NoFock,],
+    interaction=[Interaction(ChargeCharge, [Instant, Dynamic]),]
     # interaction = [Interaction(UpDown, [Instant, Dynamic])]
 )
 
