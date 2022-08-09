@@ -24,13 +24,15 @@ function polarization(para::DiagPara{W}, extK=DiagTree.getK(para.totalLoopNum, 1
     @assert para.innerLoopNum >= 1
     # @assert length(extK) == para.totalLoopNum
     @assert length(extK) >= para.totalLoopNum "expect dim of extK>=$(para.totalLoopNum), got $(length(extK))"
-    extK = extK[1:para.totalLoopNum]
 
     #polarization diagram should always proper
-    if !(Proper in para.filter) || (lenth(para.transferLoop) != length(extK)) || (para.transferLoop ≈ extK)
-        # @warn "Polarization diagram parameter is not proper. It will be reconstructed with proper transfer loops."
-        para = reconstruct(para, filter=union(Proper, para.filter), transferLoop=extK)
-    end
+    # if !(Proper in _para.filter) || (lenth(_para.transferLoop) != length(extK)) || (_para.transferLoop ≈ extK)
+    #     # @warn "Polarization diagram parameter is not proper. It will be reconstructed with proper transfer loops."
+    # para = derivepara(_para, filter=union(Proper, _para.filter), transferLoop=extK)
+    # end
+    para = _properPolarPara(para, extK)
+
+    extK = extK[1:para.totalLoopNum]
 
     # if (para.extra isa ParquetBlocks) == false
     #     para::DiagPara = reconstruct(para, extra=ParquetBlocks())
@@ -127,4 +129,12 @@ function polarization(para::DiagPara{W}, extK=DiagTree.getK(para.totalLoopNum, 1
         )
     end
     return polar
+end
+
+function _properPolarPara(p::DiagPara{W}, q) where {W}
+    # ############ reset transferLoop to be q ################
+    if !(Proper in p.filter) || (lenth(p.transferLoop) != length(extK)) || (p.transferLoop ≈ extK)
+        return derivepara(p, transferLoop=q, filter=union(Proper, p.filter))
+    end
+    return p
 end

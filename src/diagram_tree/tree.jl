@@ -162,7 +162,7 @@ end
 
 function mergeby(diags::AbstractVector{Diagram{W}};
     operator=Sum(), name::Symbol=:none, factor=1.0,
-    getid::Function=d -> GenericId(d[1].id.para)
+    getid::Function=d -> GenericId(d[1].id.para::DiagPara{W})
 ) where {W}
     if isempty(diags)
         return diags
