@@ -196,8 +196,15 @@ end
     root, gK, gT, vdK, veK = getdiagram(spin, D, Nk, Nt)
     diags = root.subdiagram
     diags = collect(Leaves(root))
-    println(DiagTree.toDataFrame(diags))
-    println(DiagTree.toDataFrame(diags, :extT))
+    df1 = DiagTree.toDataFrame(diags)
+    df2 = DiagTree.toDataFrame(diags, :extT)
+    s1 = size(df1)
+    s2 = size(df2)
+    @assert s1[1] == s2[1]
+    @assert s1[2] == s2[2] - 1
+
+    d = mergeby(diags) #should return a vector of a single diagram
+    @assert length(d) == 1
 end
 
 @testset "optimize" begin
