@@ -35,21 +35,20 @@ function vertex4(para::DiagPara{W},
     blocks::ParquetBlocks=ParquetBlocks(),
     blockstoplevel::ParquetBlocks=blocks
 ) where {W}
+
+    if (para.innerLoopNum > 1) && (NoBubble in para.filter)
+        @warn "Vertex4 with two or more loop orders still contain bubble subdiagram even if NoBubble is turned on in para.filter!"
+    end
+
     for k in extK
         @assert length(k) >= para.totalLoopNum "expect dim of extK>=$(para.totalLoopNum), got $(length(k))"
     end
+
     legK = [k[1:para.totalLoopNum] for k in extK[1:3]]
     push!(legK, legK[1] + legK[3] - legK[2])
-    # legK = extK
 
     resetuid && uidreset()
 
-    # if (para.extra isa ParquetBlocks) == false
-    #     #type annotation here is crucial for type stability
-    #     para::DiagPara = reconstruct(para, extra=ParquetBlocks())
-    # end
-
-    # @assert para.extra isa ParquetBlocks
     @assert para.totalTauNum >= maxVer4TauIdx(para) "Increase totalTauNum!\n$para"
     @assert para.totalLoopNum >= maxVer4LoopIdx(para) "Increase totalLoopNum\n$para"
 
@@ -60,15 +59,6 @@ function vertex4(para::DiagPara{W},
     @assert (PPr in ppi) == false "PPi vertex is particle-particle irreducible, so that PPr channel is not allowed in $ppi"
     @assert (PHr in phi_toplevel) == false "PHi vertex is particle-hole irreducible, so that PHr channel is not allowed in $phi_toplevel"
     @assert (PPr in ppi_toplevel) == false "PPi vertex is particle-particle irreducible, so that PPr channel is not allowed in $ppi_toplevel"
-
-    # @assert length(legK[1]) == length(legK[2]) == length(legK[3]) == para.totalLoopNum
-
-    # KinL, KoutL, KinR = legK[1], legK[2], legK[3]
-    # KoutR = (length(legK) > 3) ? legK[4] : KinL + KinR - KoutL
-    # # @assert KoutR ≈ KinL + KinR - KoutL
-    # legK = [KinL, KoutL, KinR, KoutR]
-    # legK = [extK[1], extK[2], extK[3], extK[1] + extK[3] - extK[2]]
-
 
     loopNum = para.innerLoopNum
     # @assert loopNum >= 0
@@ -178,7 +168,6 @@ function bubble!(ver4df::DataFrame, para::DiagPara, legK, chan::TwoBodyChannel, 
             bubble2diag!(ver4df, para, chan, ldiag, rdiag, legK, g0, gx, extrafactor)
         end
     end
-    # return diag
     return
 end
 
