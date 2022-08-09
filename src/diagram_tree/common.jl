@@ -46,14 +46,15 @@ import ..innerTauNum
 #         return z
 #     end
 # end
-_counter = 0
+_counter::Vector{Int} = [0,]
+
 function uid()
-    global _counter += 1
-    return _counter
+    _counter[1] += 1
+    return _counter[1]
 end
 
 function uidreset()
-    global _counter = 0
+    _counter[1] = 0
 end
 
 function getK(loopNum::Int, loopIdx::Int)

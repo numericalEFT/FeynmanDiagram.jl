@@ -316,8 +316,12 @@ end
         )
         extK = zeros(para.totalLoopNum)
         extK[1] = 1.0
-        G = Parquet.green(para, extK, extT)
-        return G
+        if Parquet.isValidG(para)
+            G = Parquet.green(para, extK, extT)
+            return G
+        else
+            return nothing
+        end
     end
     # diag, Gidx = buildG(2, [1, 2], 3; filter = [])
     # DiagTree.showTree(diag, Gidx)

@@ -21,6 +21,7 @@
 function green(para::DiagPara{W}, extK=DiagTree.getK(para.totalLoopNum, 1), extT=para.hasTau ? (1, 2) : (0, 0), subdiagram=false;
     name=:G, resetuid=false, blocks::ParquetBlocks=ParquetBlocks()) where {W}
 
+    @assert isValidG(para) "$para doesn't gives a valid Green's function"
     @assert para.diagType == GreenDiag
     @assert para.innerLoopNum >= 0
     # @assert length(extK) == para.totalLoopNum
@@ -34,9 +35,9 @@ function green(para::DiagPara{W}, extK=DiagTree.getK(para.totalLoopNum, 1), extT
     tin, tout = extT[1], extT[2]
     t0 = para.firstTauIdx
 
-    if isValidG(para) == false
-        return nothing
-    end
+    # if isValidG(para) == false
+    #     return nothing
+    # end
 
     if para.innerLoopNum == 0
         return Diagram{W}(BareGreenId(para, k=extK, t=extT), name=name)
@@ -97,7 +98,7 @@ function green(para::DiagPara{W}, extK=DiagTree.getK(para.totalLoopNum, 1), extT
     end
     # println(ΣGpairs)
     # println(operator)
-    ΣGmerged = mergeby(ΣGpairs; operator=Sum(), name=:gΣG)
-    G = Diagram{W}(GreenId(para, k=extK, t=extT), Prod(), [g0, ΣGmerged], name=:G)
-    return G
+    ΣGmerged = mergeby(ΣGpairs; operator=Sum(), name=:gΣG)[1]
+    compositeG = Diagram{W}(GreenId(para, k=extK, t=extT), Prod(), [g0, ΣGmerged], name=:G)
+    return compositeG
 end

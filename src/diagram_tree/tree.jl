@@ -153,14 +153,37 @@ function mergeby(df::DataFrame, fields=Vector{Symbol}();
     end
 end
 
-# function mergeby(diags::AbstractVector, fields=[]; idkey::Vector{Symbol}=[], kwargs...)
-function mergeby(diags::AbstractVector{Diagram{W}}, fields; idkey=Vector{Symbol}(), kwargs...) where {W}
-    df = toDataFrame(diags, idkey)
-    mergedf = mergeby(df, fields; kwargs...)
-    return mergedf.diagram
+function mergeby(diags::Union{Diagram,Tuple,AbstractVector}, fields=nothing; idkey=nothing, kwargs...)
+    if diags isa Diagram
+        return diags
+    else
+        if isempty(diags)
+            return diags
+        else
+            W = typeof(diags[1].weight)
+            @assert all(x -> (x.weight isa W), diags) "all diagrams should be of the same type. \n$diags"
+            diags = collect(diags)
+            if isnothing(fields) && isnothing(idkey)
+                return mergeby(diags; kwargs...)
+            else
+                return mergeby(diags, fields; idkey=idkey, kwargs...)
+            end
+        end
+    end
 end
 
-function mergeby(diags::AbstractVector{Diagram{W}};
+# function mergeby(diags::AbstractVector, fields=[]; idkey::Vector{Symbol}=[], kwargs...)
+function mergeby(diags::Vector{Diagram{W}}, fields; idkey=Vector{Symbol}(), kwargs...) where {W}
+    if isempty(diags)
+        return diags
+    else
+        df = toDataFrame(diags, idkey)
+        mergedf = mergeby(df, fields; kwargs...)
+        return Vector{Diagram{W}}(mergedf.diagram)
+    end
+end
+
+function mergeby(diags::Vector{Diagram{W}};
     operator=Sum(), name::Symbol=:none, factor=1.0,
     getid::Function=d -> GenericId(d[1].id.para::DiagPara{W})
 ) where {W}
@@ -168,16 +191,15 @@ function mergeby(diags::AbstractVector{Diagram{W}};
         return diags
     else
         id = getid(diags)
-        # if there is only one diagram, and the new id is either GenericId or the id of the existing diagram, 
-        # then simply return the current diagram without creating a new diagram
-        # ! the new factor will be multiplied to the factor of the exisiting diagram!
         if length(diags) == 1 && (id isa GenericId || typeof(id) == typeof(diags[1].id))
-            diag = diags[1]
-            diag.factor *= factor
-            return diag
+            # if there is only one diagram, and the new id is either GenericId or the id of the existing diagram, 
+            # then simply return the current diagram without creating a new diagram
+            # ! the new factor will be multiplied to the factor of the exisiting diagram!
+            diags[1].factor *= factor
+            return diags
         end
         diag = Diagram{W}(id, operator, diags, name=name, factor=factor)
-        return diag
+        return [diag,]
     end
 end
 # mergeby(df::DataFrame; kwargs...) = mergeby(df, []; kwargs...)

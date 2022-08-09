@@ -87,6 +87,8 @@ function toDataFrame(diagVec::AbstractVector, idkey=Vector{Symbol}(); maxdepth::
     end
     d = Dict{Symbol,Any}()
     _DiagtoDict!(d, diagVec, maxdepth=maxdepth)
+
+    idkey = isnothing(idkey) ? Vector{Symbol}() : collect(idkey)
     if isempty(idkey) == false
         for _key in idkey
             _IdstoDict!(d, diagVec, _key)
