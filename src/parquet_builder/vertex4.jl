@@ -136,15 +136,15 @@ function bubble!(ver4df::DataFrame, para::DiagPara, legK, chan::TwoBodyChannel, 
     LfirstLoopIdx, G0firstLoopIdx, RfirstLoopIdx, GxfirstLoopIdx = idx
     @assert maxLoop == maxVer4LoopIdx(para)
 
-    diagType = [Ver4Diag, GreenDiag, Ver4Diag, GreenDiag]
-    idx, maxTau = findFirstTauIdx(partition, diagType, para.firstTauIdx, TauNum)
+    type = [Ver4Diag, GreenDiag, Ver4Diag, GreenDiag]
+    idx, maxTau = findFirstTauIdx(partition, type, para.firstTauIdx, TauNum)
     LfirstTauIdx, G0firstTauIdx, RfirstTauIdx, GxfirstTauIdx = idx
     @assert maxTau == maxVer4TauIdx(para) "Partition $partition with tauNum configuration $idx. maxTau = $maxTau, yet $(maxTauIdx(para)) is expected!"
 
-    lPara = reconstruct(para, diagType=Ver4Diag, innerLoopNum=oL, firstLoopIdx=LfirstLoopIdx, firstTauIdx=LfirstTauIdx)
-    rPara = reconstruct(para, diagType=Ver4Diag, innerLoopNum=oR, firstLoopIdx=RfirstLoopIdx, firstTauIdx=RfirstTauIdx)
-    gxPara = reconstruct(para, diagType=GreenDiag, innerLoopNum=oGx, firstLoopIdx=GxfirstLoopIdx, firstTauIdx=GxfirstTauIdx)
-    g0Para = reconstruct(para, diagType=GreenDiag, innerLoopNum=oG0, firstLoopIdx=G0firstLoopIdx, firstTauIdx=G0firstTauIdx)
+    lPara = reconstruct(para, type=Ver4Diag, innerLoopNum=oL, firstLoopIdx=LfirstLoopIdx, firstTauIdx=LfirstTauIdx)
+    rPara = reconstruct(para, type=Ver4Diag, innerLoopNum=oR, firstLoopIdx=RfirstLoopIdx, firstTauIdx=RfirstTauIdx)
+    gxPara = reconstruct(para, type=GreenDiag, innerLoopNum=oGx, firstLoopIdx=GxfirstLoopIdx, firstTauIdx=GxfirstTauIdx)
+    g0Para = reconstruct(para, type=GreenDiag, innerLoopNum=oG0, firstLoopIdx=G0firstLoopIdx, firstTauIdx=G0firstTauIdx)
 
     phi, ppi, Γ4 = blocks.phi, blocks.ppi, blocks.Γ4
     phi_toplevel, ppi_toplevel, Γ4_toplevel = blockstoplevel.phi, blockstoplevel.ppi, blockstoplevel.Γ4
@@ -306,7 +306,7 @@ function _pushbarever4_with_response!(para::DiagPara, nodes::DataFrame, response
 end
 
 function bareVer4(nodes::DataFrame, para::DiagPara, legK, diex::Vector{Permutation}=[Di, Ex])
-    # @assert para.diagType == Ver4Diag
+    # @assert para.type == Ver4Diag
 
     KinL, KoutL, KinR = legK[1], legK[2], legK[3]
     t0 = para.firstTauIdx

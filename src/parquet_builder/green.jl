@@ -22,7 +22,7 @@ function green(para::DiagPara{W}, extK=DiagTree.getK(para.totalLoopNum, 1), extT
     name=:G, resetuid=false, blocks::ParquetBlocks=ParquetBlocks()) where {W}
 
     @assert isValidG(para) "$para doesn't gives a valid Green's function"
-    @assert para.diagType == GreenDiag
+    @assert para.type == GreenDiag
     @assert para.innerLoopNum >= 0
     # @assert length(extK) == para.totalLoopNum
     @assert length(extT) == 2
@@ -52,7 +52,7 @@ function green(para::DiagPara{W}, extK=DiagTree.getK(para.totalLoopNum, 1), extT
 
     function ΣG(group, oG, Tidx, Kidx, ΣTidx)
         #type: Instant or Dynamic
-        paraG = reconstruct(para, diagType=GreenDiag, firstTauIdx=Tidx, firstLoopIdx=Kidx, innerLoopNum=oG)
+        paraG = reconstruct(para, type=GreenDiag, firstTauIdx=Tidx, firstLoopIdx=Kidx, innerLoopNum=oG)
         G = Parquet.green(paraG, extK, group[:GT], true; blocks=blocks)
         # G = Diagram(GreenId(paraG, k = extK, t = group[:GT]), name = Symbol("g#$li")) #there is only one G diagram for a extT
         @assert G isa Diagram
@@ -83,7 +83,7 @@ function green(para::DiagPara{W}, extK=DiagTree.getK(para.totalLoopNum, 1), extT
         @assert maxLoop <= para.totalLoopNum "maxLoop = $maxLoop > $(para.totalLoopNum)"
         ΣfirstKidx, GfirstKidx = idx
 
-        sigmaPara = reconstruct(para, diagType=SigmaDiag, firstTauIdx=ΣfirstTidx, firstLoopIdx=ΣfirstKidx, innerLoopNum=oΣ)
+        sigmaPara = reconstruct(para, type=SigmaDiag, firstTauIdx=ΣfirstTidx, firstLoopIdx=ΣfirstKidx, innerLoopNum=oΣ)
         # println(ΣfirstTidx)
         sigma = Parquet.sigma(sigmaPara, extK, true, name=:Σ, blocks=blocks)
         @assert all(x -> x[1] == ΣfirstTidx, sigma.extT) "all sigma should share the same in Tidx\n$sigma"

@@ -63,22 +63,22 @@ import ..toDataFrame
 import ..mergeby
 
 function build(para::DiagPara{W}, extK=nothing, subdiagram=false) where {W}
-    if para.diagType == Ver4Diag
+    if para.type == Ver4Diag
         if isnothing(extK)
             extK = [DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)]
         end
         return vertex4(para, extK, [PHr, PHEr, PPr, Alli], subdiagram)
-    elseif para.diagType == SigmaDiag
+    elseif para.type == SigmaDiag
         if isnothing(extK)
             extK = DiagTree.getK(para.totalLoopNum, 1)
         end
         return sigma(para, extK, subdiagram)
-    elseif para.diagType == PolarDiag
+    elseif para.type == PolarDiag
         if isnothing(extK)
             extK = DiagTree.getK(para.totalLoopNum, 1)
         end
         return polarization(para, extK, subdiagram)
-    elseif para.diagType == Ver3Diag
+    elseif para.type == Ver3Diag
         if isnothing(extK)
             extK = [DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2)]
         end
@@ -147,14 +147,14 @@ function findFirstLoopIdx(partition, firstidx::Int)
     return firstLoopIdx, maxLoopIdx
 end
 
-function findFirstTauIdx(partition::Vector{Int}, diagType::Vector{DiagramType}, firstidx::Int, _tauNum::Int)
-    ## example: diagType =[Vertex4, GreenDiagram, Vertex4, GreenDiagram], firstidx = 1
+function findFirstTauIdx(partition::Vector{Int}, type::Vector{DiagramType}, firstidx::Int, _tauNum::Int)
+    ## example: type =[Vertex4, GreenDiagram, Vertex4, GreenDiagram], firstidx = 1
     # n-loop G has n*_tauNum DOF, while n-loop ver4 has (n+1)*_tauNum DOF
     # partition = [1, 1, 2, 1], then the tau partition = [12][3][456][7], thus firstTauIdx = [1, 3, 4, 7]
     # partition = [1, 0, 2, 0], then the tau partition = [12][][345][], thus firstTauIdx = [1, 3, 3, 6]
-    @assert length(partition) == length(diagType)
+    @assert length(partition) == length(type)
     @assert _tauNum >= 0
-    taupartition = [innerTauNum(diagType[i], p, _tauNum) for (i, p) in enumerate(partition)]
+    taupartition = [innerTauNum(type[i], p, _tauNum) for (i, p) in enumerate(partition)]
     accumulated = accumulate(+, taupartition; init=firstidx) #  idx[i] = firstidx + p[1]+p[2]+...+p[i]
     firstTauidx = [firstidx,]
     append!(firstTauidx, accumulated[1:end-1])

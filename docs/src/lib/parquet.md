@@ -10,15 +10,15 @@ Modules = [FeynmanDiagram.Parquet]
 
 ```@repl
 using FeynmanDiagram
-para = DiagPara(diagType = Ver4Diag, innerLoopNum = 1, hasTau = true);
+para = DiagPara(type = Ver4Diag, innerLoopNum = 1, hasTau = true);
 Parquet.vertex4(para)
 
-para = DiagPara(diagType = Ver3Diag, innerLoopNum = 1, hasTau = true);
+para = DiagPara(type = Ver3Diag, innerLoopNum = 1, hasTau = true);
 Parquet.vertex3(para)
 
-para = DiagPara(diagType = SigmaDiag, innerLoopNum = 1, hasTau = true);
+para = DiagPara(type = SigmaDiag, innerLoopNum = 1, hasTau = true);
 Parquet.sigma(para)
 
-para = DiagPara(diagType = PolarDiag, innerLoopNum = 1, hasTau = true);
+para = DiagPara(type = PolarDiag, innerLoopNum = 1, hasTau = true);
 Parquet.polarization(para)
 ```

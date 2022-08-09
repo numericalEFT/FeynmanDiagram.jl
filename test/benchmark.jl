@@ -2,7 +2,7 @@ using FeynmanDiagram
 using Lehmann
 using LinearAlgebra
 
-const diagType = Ver4Diag
+const type = Ver4Diag
 const Order = 4
 const Circle = 100000
 
@@ -33,7 +33,7 @@ end
 DiagTree.eval(id::BareInteractionId, K, extT, varT) = 8π / (K[1] * K[1] + K[2] * K[2] + K[3] * K[3] + Λs)
 # DiagTree.eval(id, K, extT, varT) = 1.0
 
-diagPara(order) = DiagParaF64(diagType=diagType, innerLoopNum=order, hasTau=true,
+diagPara(order) = DiagParaF64(type=type, innerLoopNum=order, hasTau=true,
     interaction=[FeynmanDiagram.Interaction(ChargeCharge, Instant),],  #instant charge-charge interaction
     # filter = [NoFock,])
     filter=[NoHatree, Girreducible,])
@@ -41,22 +41,22 @@ diagPara(order) = DiagParaF64(diagType=diagType, innerLoopNum=order, hasTau=true
 println("Build the diagrams into an experssion tree ...")
 const para = [diagPara(o) for o in 1:Order]
 
-if diagType == SigmaDiag
+if type == SigmaDiag
     diags = [Parquet.sigma(para[i]) for i in 1:1]
-elseif diagType == PolarDiag
+elseif type == PolarDiag
     diags = [Parquet.polarization(para[i]) for i in 1:1]
-elseif diagType == Ver4Diag
+elseif type == Ver4Diag
     diags = [Parquet.vertex4(para[i]) for i in 1:1]
 else
     error("not implemented!")
 end
 
 #diagram of different orders
-@time if diagType == SigmaDiag
+@time if type == SigmaDiag
     diags = [Parquet.sigma(para[i]) for i in 1:Order]
-elseif diagType == PolarDiag
+elseif type == PolarDiag
     diags = [Parquet.polarization(para[i]) for i in 1:Order]
-elseif diagType == Ver4Diag
+elseif type == Ver4Diag
     diags = [Parquet.vertex4(para[i]) for i in 1:Order]
 else
     error("not implemented!")

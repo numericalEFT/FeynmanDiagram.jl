@@ -57,7 +57,7 @@ function getdiagram(spin=2.0, D=3, Nk=4, Nt=2)
     DiagTree.uidreset()
     # We only consider the direct part of the above diagram
 
-    paraG = DiagParaF64(diagType=GreenDiag,
+    paraG = DiagParaF64(type=GreenDiag,
         innerLoopNum=0, totalLoopNum=Nk, loopDim=D,
         hasTau=true, totalTauNum=Nt)
     paraV = paraG
