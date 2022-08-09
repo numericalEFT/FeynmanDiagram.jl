@@ -33,7 +33,7 @@ end
 DiagTree.eval(id::BareInteractionId, K, extT, varT) = 8π / (K[1] * K[1] + K[2] * K[2] + K[3] * K[3] + Λs)
 # DiagTree.eval(id, K, extT, varT) = 1.0
 
-diagPara(order) = DiagPara(diagType=diagType, innerLoopNum=order, hasTau=true,
+diagPara(order) = DiagParaF64(diagType=diagType, innerLoopNum=order, hasTau=true,
     interaction=[FeynmanDiagram.Interaction(ChargeCharge, Instant),],  #instant charge-charge interaction
     # filter = [NoFock,])
     filter=[NoHatree, Girreducible,])
@@ -63,7 +63,7 @@ else
 end
 const extT = [diags[o].extT for o in 1:Order]                        #external tau of each diagram
 println("Building tree")
-const tree = [ExprTree.build(mergeby(diags[o]).diagram[1], verbose=1) for o in 1:Order]     #experssion tree representation of diagrams 
+const tree = [ExprTree.build(mergeby(diags[o].diagram), verbose=1) for o in 1:Order]     #experssion tree representation of diagrams 
 println("Done.")
 # const tree = [ExprTree.build(DiagTree.optimize(mergeby(diags[o]).diagram[1])) for o in 1:Order]     #experssion tree representation of diagrams 
 

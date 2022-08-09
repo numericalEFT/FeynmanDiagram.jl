@@ -102,7 +102,7 @@ function polarization(para::DiagPara{W}, extK=DiagTree.getK(para.totalLoopNum, 1
                 #transform extT coloum into extT for Vertex4 and the extT for Gin and Gout
                 df = transform(ver3, :extT => ByRow(x -> [extT, (extT[1], x[2]), (x[3], extT[1])]) => [:extT, :GinT, :GoutT])
 
-                groups = mergeby(df, [:response, :GinT, :GoutT, :extT], operator=Sum())
+                groups = mergeby(W, df, [:response, :GinT, :GoutT, :extT], operator=Sum())
 
                 for v3 in eachrow(groups)
                     response = v3.response
@@ -124,7 +124,7 @@ function polarization(para::DiagPara{W}, extK=DiagTree.getK(para.totalLoopNum, 1
         # legK = [extK, K, K, extK]
         # Factor = 1 / (2π)^para.loopDim
         Factor = 1.0
-        polar = mergeby(polar, [:response, :extT]; name=name, factor=Factor,
+        polar = mergeby(W, polar, [:response, :extT]; name=name, factor=Factor,
             getid=g -> PolarId(para, g[1, :response], k=extK, t=extT)
         )
     end

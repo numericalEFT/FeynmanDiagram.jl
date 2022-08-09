@@ -110,7 +110,7 @@ function vertex4(para::DiagPara{W},
 
     # @assert isempty(diags) == false "got empty ver4! $chan with\n $para\n"
     if isempty(ver4df) == false
-        ver4df = mergeby(ver4df, [:response, :type, :extT], name=name,
+        ver4df = mergeby(W, ver4df, [:response, :type, :extT], name=name,
             getid=g -> Ver4Id(para, g[1, :response], g[1, :type], k=legK, t=g[1, :extT]) #generate id from the dataframe
         )
     end
