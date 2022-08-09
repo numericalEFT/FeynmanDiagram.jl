@@ -20,7 +20,7 @@ function polarization(para::DiagPara{W}, extK=DiagTree.getK(para.totalLoopNum, 1
     blocks::ParquetBlocks=ParquetBlocks()
 ) where {W}
     resetuid && uidreset()
-    @assert para.diagType == PolarDiag
+    @assert para.type == PolarDiag
     @assert para.innerLoopNum >= 1
     # @assert length(extK) == para.totalLoopNum
     @assert length(extK) >= para.totalLoopNum "expect dim of extK>=$(para.totalLoopNum), got $(length(extK))"
@@ -63,9 +63,9 @@ function polarization(para::DiagPara{W}, extK=DiagTree.getK(para.totalLoopNum, 1
                 @assert maxTau <= para.totalTauNum "maxTau = $maxTau > $(para.totalTauNum)"
                 GinTidx, GoutTidx = idx
 
-                paraGin = reconstruct(para, diagType=GreenDiag, innerLoopNum=oGin,
+                paraGin = reconstruct(para, type=GreenDiag, innerLoopNum=oGin,
                     firstLoopIdx=GinKidx, firstTauIdx=GinTidx)
-                paraGout = reconstruct(para, diagType=GreenDiag, innerLoopNum=oGout,
+                paraGout = reconstruct(para, type=GreenDiag, innerLoopNum=oGout,
                     firstLoopIdx=GoutKidx, firstTauIdx=GoutTidx)
 
                 response = UpUp
@@ -83,12 +83,12 @@ function polarization(para::DiagPara{W}, extK=DiagTree.getK(para.totalLoopNum, 1
                 @assert maxTau <= para.totalTauNum "maxTau = $maxTau > $(para.totalTauNum)"
                 Ver3Tidx, GinTidx, GoutTidx = idx
 
-                paraGin = reconstruct(para, diagType=GreenDiag, innerLoopNum=oGin,
+                paraGin = reconstruct(para, type=GreenDiag, innerLoopNum=oGin,
                     firstLoopIdx=GinKidx, firstTauIdx=GinTidx)
-                paraGout = reconstruct(para, diagType=GreenDiag, innerLoopNum=oGout,
+                paraGout = reconstruct(para, type=GreenDiag, innerLoopNum=oGout,
                     firstLoopIdx=GoutKidx, firstTauIdx=GoutTidx)
 
-                paraVer3 = reconstruct(para, diagType=Ver3Diag, innerLoopNum=oVer3,
+                paraVer3 = reconstruct(para, type=Ver3Diag, innerLoopNum=oVer3,
                     firstLoopIdx=Ver3Kidx, firstTauIdx=Ver3Tidx)
                 ver3 = vertex3(paraVer3, legK, true; blocks=blocks)
                 if isnothing(ver3) || isempty(ver3)

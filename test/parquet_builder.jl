@@ -128,7 +128,7 @@ evalFakePropagator(id::PropagatorId, K, extT, varT) = 1.0
         blocks = ParquetBlocks(phi=[PHEr, PPr], ppi=[PHr, PHEr])
 
         para = DiagParaF64(
-            diagType=Ver4Diag,
+            type=Ver4Diag,
             loopDim=Kdim,
             isFermi=isFermi,
             hasTau=true,
@@ -248,7 +248,7 @@ end
         println("LoopNum =$loopNum Sigma Test")
 
         para = DiagParaF64(
-            diagType=SigmaDiag,
+            type=SigmaDiag,
             loopDim=Kdim,
             hasTau=true,
             innerLoopNum=loopNum,
@@ -305,7 +305,7 @@ end
 @testset "Green" begin
     function buildG(loopNum, extT; Kdim=3, spin=2, interactionTauNum=1, filter=[NoHatree,], isFermi=true)
         para = DiagParaF64(
-            diagType=GreenDiag,
+            type=GreenDiag,
             loopDim=Kdim,
             hasTau=true,
             innerLoopNum=loopNum,
@@ -350,7 +350,7 @@ end
         println("LoopNum =$loopNum Vertex3 Test")
 
         para = DiagParaF64(
-            diagType=Ver3Diag,
+            type=Ver3Diag,
             loopDim=Kdim,
             innerLoopNum=loopNum,
             isFermi=isFermi,
@@ -407,7 +407,7 @@ end
         println("LoopNum =$loopNum Polarization Test")
 
         para = DiagParaF64(
-            diagType=PolarDiag,
+            type=PolarDiag,
             loopDim=Kdim,
             innerLoopNum=loopNum,
             isFermi=isFermi,

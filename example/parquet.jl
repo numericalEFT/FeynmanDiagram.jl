@@ -7,7 +7,7 @@ blocks = ParquetBlocks(phi=[PPr, PHEr], ppi=[PHr, PHEr], Γ4=[PPr, PHr, PHEr])
 
 ###################### ver4 to DiagTree ###########################################
 para = DiagPara(
-    diagType=Ver4Diag,
+    type=Ver4Diag,
     innerLoopNum=1,
     hasTau=true,
     filter=[NoFock,],
@@ -45,7 +45,7 @@ display(diags)
 
 ######################################## self-energy  ################################################
 para = DiagPara(
-    diagType=SigmaDiag,
+    type=SigmaDiag,
     innerLoopNum=1,
     hasTau=true,
     filter=[NoFock,],
@@ -60,7 +60,7 @@ println("sigma, ", sigma)
 
 ##################################### vertex 3   #################################################
 
-para = DiagPara(diagType=Ver3Diag,
+para = DiagPara(type=Ver3Diag,
     innerLoopNum=1,
     hasTau=true,
     filter=[NoFock, Proper],
@@ -82,7 +82,7 @@ end
 
 #####################################  polarization  ############################################
 para = DiagPara(
-    diagType=PolarDiag,
+    type=PolarDiag,
     innerLoopNum=2,
     hasTau=true,
     filter=[NoFock,],

@@ -18,7 +18,7 @@
 """
 function sigma(para::DiagPara{W}, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false; name=:Σ, resetuid=false, blocks::ParquetBlocks=ParquetBlocks()) where {W}
     resetuid && uidreset()
-    (para.diagType == SigmaDiag) || error("$para is not for a sigma diagram")
+    (para.type == SigmaDiag) || error("$para is not for a sigma diagram")
     (para.innerLoopNum >= 1) || error("sigma must has more than one inner loop")
     # @assert length(extK) == para.totalLoopNum
     # @assert (para.innerLoopNum <= 1) || ((NoBubble in para.filter) == false) "The many-body correction sigma only accounts for half of the bubble counterterm right now."
@@ -83,9 +83,9 @@ function sigma(para::DiagPara{W}, extK=DiagTree.getK(para.totalLoopNum, 1), subd
         (maxTau <= para.totalTauNum) || error("maxTau = $maxTau > $(para.totalTauNum)")
         WfirstTauIdx, GfirstTauIdx = idx
 
-        paraG = reconstruct(para, diagType=GreenDiag, innerLoopNum=oG,
+        paraG = reconstruct(para, type=GreenDiag, innerLoopNum=oG,
             firstLoopIdx=GfirstLoopIdx, firstTauIdx=GfirstTauIdx)
-        paraW = reconstruct(para, diagType=Ver4Diag, innerLoopNum=oW,
+        paraW = reconstruct(para, type=Ver4Diag, innerLoopNum=oW,
             firstLoopIdx=WfirstLoopIdx, firstTauIdx=WfirstTauIdx)
 
         #TODO: add validation for paraW

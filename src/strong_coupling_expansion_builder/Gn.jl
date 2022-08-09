@@ -1,5 +1,5 @@
 # function fullGreen(para, site::AbstractVector, orbital::AbstractVector, extT::AbstractVector = collect(1:length(orbital)), subdiagram = false; name = Symbol("Gn$(length(site))"), resetuid = false, even = true)
-#     # @assert para.diagType == GreenNDiag
+#     # @assert para.type == GreenNDiag
 #     @assert length(extT) == length(orbital) == length(site)
 #     if even
 #         @assert length(extT) % 2 == 0
@@ -29,8 +29,8 @@
 #     end
 # end
 
-function fullGreen(para, hop::Vector{BareHoppingId}, subdiagram = false; name = Symbol("Gn$(length(hop)*2)"), resetuid = false, even = true)
-    # @assert para.diagType == GreenNDiag
+function fullGreen(para, hop::Vector{BareHoppingId}, subdiagram=false; name=Symbol("Gn$(length(hop)*2)"), resetuid=false, even=true)
+    # @assert para.type == GreenNDiag
     # @assert length(extT) == length(orbital) == length(site)
     # if even
     #     @assert length(extT) % 2 == 0
@@ -57,8 +57,8 @@ function fullGreen(para, hop::Vector{BareHoppingId}, subdiagram = false; name = 
         t = extT[ind]
         o = orbital[ind]
         c = _creation[ind]
-        bareGId = BareGreenNId(para, orbital = o, t = t, r = r, creation = c)
-        push!(gn, Diagram(bareGId, name = Symbol("gn$(length(t))")))
+        bareGId = BareGreenNId(para, orbital=o, t=t, r=r, creation=c)
+        push!(gn, Diagram(bareGId, name=Symbol("gn$(length(t))")))
         append!(permutation, ind)
     end
 
@@ -66,9 +66,9 @@ function fullGreen(para, hop::Vector{BareHoppingId}, subdiagram = false; name = 
         return nothing
     else
         for h in hop
-            push!(gn, Diagram(h, name = :hop))
+            push!(gn, Diagram(h, name=:hop))
         end
         # println(permutation)
-        return Diagram(GreenNId(para, orbital = orbital, t = extT, r = site, creation = _creation), Prod(), gn, name = name, factor = parity(permutation))
+        return Diagram(GreenNId(para, orbital=orbital, t=extT, r=site, creation=_creation), Prod(), gn, name=name, factor=parity(permutation))
     end
 end

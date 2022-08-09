@@ -22,7 +22,7 @@ const c⁻ = collect(model.c⁻)
 const T = MCIntegration.Tau(β, β / 2.0)
 const O = MCIntegration.Discrete(1, 2)
 O.data[1] = O.data[2] = O.data[3] = O.data[4] = 1
-const para = DiagPara(diagType=Ver4Diag, innerLoopNum=1, hasTau=true)
+const para = DiagPara(type=Ver4Diag, innerLoopNum=1, hasTau=true)
 
 No = 9
 bond(o, rin, rout) = BareHoppingId(para, (o, o), (o, o), (rin, rout))

@@ -29,7 +29,7 @@ function vertex3(para::DiagPara{WW},
 ) where {WW}
 
     resetuid && uidreset()
-    @assert para.diagType == Ver3Diag
+    @assert para.type == Ver3Diag
     @assert para.innerLoopNum >= 1 "Only generates vertex corrections with more than one internal loops."
     for k in _extK
         @assert length(k) >= para.totalLoopNum "expect dim of extK>=$(para.totalLoopNum), got $(length(k))"
@@ -70,11 +70,11 @@ function vertex3(para::DiagPara{WW},
         Ver4Tidx, GinTidx, GoutTidx = idx
 
         if isValidG(para.filter, oGin) && isValidG(para.filter, oGout)
-            paraGin = reconstruct(para, diagType=GreenDiag, innerLoopNum=oGin,
+            paraGin = reconstruct(para, type=GreenDiag, innerLoopNum=oGin,
                 firstLoopIdx=GinKidx, firstTauIdx=GinTidx)
-            paraGout = reconstruct(para, diagType=GreenDiag, innerLoopNum=oGout,
+            paraGout = reconstruct(para, type=GreenDiag, innerLoopNum=oGout,
                 firstLoopIdx=GoutKidx, firstTauIdx=GoutTidx)
-            paraVer4 = reconstruct(para, diagType=Ver4Diag, innerLoopNum=oVer4,
+            paraVer4 = reconstruct(para, type=Ver4Diag, innerLoopNum=oVer4,
                 firstLoopIdx=Ver4Kidx, firstTauIdx=Ver4Tidx)
             ver4 = vertex4(paraVer4, legK, chan, true; blocks=blocks)
             if isnothing(ver4) || isempty(ver4)
