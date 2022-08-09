@@ -1,13 +1,12 @@
-function optimize(diag::Union{Diagram,Tuple,AbstractVector}, optlevel = 1; verbose = 0, kwargs...)
-    single = false
-    diag = deepcopy(diag)
-    if diag isa Diagram
-        single = true
-        diag = [diag,]
+function optimize!(diag::Union{Tuple,AbstractVector}, optlevel=1; verbose=0, kwargs...)
+    if isempty(diag)
+        return diag
+    else
+        diag = collect(diag)
+        removeOneChildParent!(diag, verbose=verbose)
+        removeDuplicatedLeaves!(diag, verbose=verbose)
+        return diag
     end
-    removeOneChildParent!(diag, verbose = verbose)
-    removeDuplicatedLeaves!(diag, verbose = verbose)
-    return single ? diag[1] : diag
 end
 
 """
@@ -15,7 +14,7 @@ end
 
     remove duplicated nodes such as:  ---> ver4 ---> InteractionId. Leaf will not be touched!
 """
-function removeOneChildParent!(diags::AbstractVector; verbose = 0)
+function removeOneChildParent!(diags::Vector{Diagram{W}}; verbose=0) where {W}
     verbose > 0 && println("remove nodes with only one child.")
     for diag in diags
         #deep first search, remove one-child parent from the leaf level first
@@ -36,15 +35,15 @@ end
 
     remove duplicated nodes such as:  ---> ver4 ---> InteractionId. Leaf will not be touched!
 """
-function removeDuplicatedLeaves!(diags::AbstractVector; verbose = 0)
+function removeDuplicatedLeaves!(diags::Vector{Diagram{W}}; verbose=0) where {W}
     verbose > 0 && println("remove duplicated leaves.")
-    leaves = []
+    leaves = Vector{Diagram{W}}()
     for diag in diags
         #leaves must be the propagators
         append!(leaves, collect(Leaves(diag)))
     end
     # println([d.hash for d in leaves])
-    sort!(leaves, by = x -> x.hash) #sort the hash of the leaves in an asscend order
+    sort!(leaves, by=x -> x.hash) #sort the hash of the leaves in an asscend order
     unique!(x -> x.hash, leaves) #filter out the leaves with the same hash number
 
     for l in leaves
@@ -52,7 +51,7 @@ function removeDuplicatedLeaves!(diags::AbstractVector; verbose = 0)
         @assert l.id isa PropagatorId
     end
 
-    function uniqueLeaves(_diags::AbstractVector)
+    function uniqueLeaves(_diags::Vector{Diagram{W}}) where {W}
         ############### find the unique Leaves #####################
         uniqueDiag = []
         mapping = Dict{Int,Any}()

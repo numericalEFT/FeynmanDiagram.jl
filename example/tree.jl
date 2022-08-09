@@ -17,21 +17,21 @@ end
 
 evalV(K) = 8π / (dot(K, K) + 1)
 
-eval(id::GreenId, K, varT) = evalG(K, varT[id.extT[1]], varT[id.extT[2]])
-eval(id::InteractionId, K, varT) = evalV(K)
+eval(id::BareGreenId, K, extT, varT) = evalG(K, varT[id.extT[1]], varT[id.extT[2]])
+eval(id::BareInteractionId, K, extT, varT) = evalV(K)
 
 
-para = GenericPara(diagType = Ver4Diag, innerLoopNum = 3, filter = [Girreducible,], hasTau = true)
+para = DiagPara(type=Ver4Diag, innerLoopNum=3, filter=[Girreducible,], hasTau=true)
 ver4 = Parquet.vertex4(para)
 ver4 = mergeby(ver4, :response)
 println(ver4)
-tree, root = ExprTree.build(ver4.diagram)
+tree = ExprTree.build(ver4.diagram)
 
 varK = rand(3, para.totalLoopNum)
 varT = [rand() for i in 1:para.totalTauNum]
 
-ExprTree.evalNaive!(tree, varK, varT, eval)
-@time ExprTree.evalNaive!(tree, varK, varT, eval)
+ExprTree.evalKT!(tree, varK, varT; eval=eval)
+@time ExprTree.evalKT!(tree, varK, varT; eval=eval)
 
 # ExprTree.warn_type(tree, varK, varT, eval)
 

@@ -30,8 +30,10 @@ import ..symbol
 import ..short
 
 import ..Interaction
-import ..GenericPara
+import ..DiagPara
 import ..innerTauNum
+import ..interactionTauNum
+import ..derivepara
 
 import ..Diagram
 
@@ -60,23 +62,23 @@ import ..uidreset
 import ..toDataFrame
 import ..mergeby
 
-function build(para::GenericPara, extK = nothing, subdiagram = false)
-    if para.diagType == Ver4Diag
+function build(para::DiagPara{W}, extK=nothing, subdiagram=false) where {W}
+    if para.type == Ver4Diag
         if isnothing(extK)
             extK = [DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)]
         end
         return vertex4(para, extK, [PHr, PHEr, PPr, Alli], subdiagram)
-    elseif para.diagType == SigmaDiag
+    elseif para.type == SigmaDiag
         if isnothing(extK)
             extK = DiagTree.getK(para.totalLoopNum, 1)
         end
         return sigma(para, extK, subdiagram)
-    elseif para.diagType == PolarDiag
+    elseif para.type == PolarDiag
         if isnothing(extK)
             extK = DiagTree.getK(para.totalLoopNum, 1)
         end
         return polarization(para, extK, subdiagram)
-    elseif para.diagType == Ver3Diag
+    elseif para.type == Ver3Diag
         if isnothing(extK)
             extK = [DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2)]
         end
@@ -100,7 +102,7 @@ struct ParquetBlocks
     phi::Vector{TwoBodyChannel}
     ppi::Vector{TwoBodyChannel}
     Γ4::Vector{TwoBodyChannel}
-    function ParquetBlocks(; phi = [Alli, PHEr, PPr], ppi = [Alli, PHr, PHEr], Γ4 = union(phi, ppi))
+    function ParquetBlocks(; phi=[Alli, PHEr, PPr], ppi=[Alli, PHr, PHEr], Γ4=union(phi, ppi))
         return new(phi, ppi, Γ4)
     end
 end
@@ -114,7 +116,7 @@ function Base.isequal(a::ParquetBlocks, b::ParquetBlocks)
 end
 Base.:(==)(a::ParquetBlocks, b::ParquetBlocks) = Base.isequal(a, b)
 
-function orderedPartition(_total, n, lowerbound = 1)
+function orderedPartition(_total, n, lowerbound=1)
     @assert lowerbound >= 0
     total = _total - n * (lowerbound - 1)
     @assert total >= n
@@ -138,22 +140,22 @@ function findFirstLoopIdx(partition, firstidx::Int)
     # partition = [1, 1, 2, 1], then the loop partition = [1][2][34][5], thus firstTauIdx = [1, 2, 3, 5]
     # partition = [1, 0, 2, 0], then the loop partition = [1][][23][], thus firstTauIdx = [1, 2, 2, 4]
     # @assert length(partition) == length(isG)
-    accumulated = accumulate(+, partition; init = firstidx) #  idx[i] = firstidx + p[1]+p[2]+...+p[i]
+    accumulated = accumulate(+, partition; init=firstidx) #  idx[i] = firstidx + p[1]+p[2]+...+p[i]
     firstLoopIdx = [firstidx,]
     append!(firstLoopIdx, accumulated[1:end-1])
     maxLoopIdx = accumulated[end] - 1
     return firstLoopIdx, maxLoopIdx
 end
 
-function findFirstTauIdx(partition::Vector{Int}, diagType::Vector{DiagramType}, firstidx::Int, _tauNum::Int)
-    ## example: diagType =[Vertex4, GreenDiagram, Vertex4, GreenDiagram], firstidx = 1
+function findFirstTauIdx(partition::Vector{Int}, type::Vector{DiagramType}, firstidx::Int, _tauNum::Int)
+    ## example: type =[Vertex4, GreenDiagram, Vertex4, GreenDiagram], firstidx = 1
     # n-loop G has n*_tauNum DOF, while n-loop ver4 has (n+1)*_tauNum DOF
     # partition = [1, 1, 2, 1], then the tau partition = [12][3][456][7], thus firstTauIdx = [1, 3, 4, 7]
     # partition = [1, 0, 2, 0], then the tau partition = [12][][345][], thus firstTauIdx = [1, 3, 3, 6]
-    @assert length(partition) == length(diagType)
+    @assert length(partition) == length(type)
     @assert _tauNum >= 0
-    taupartition = [innerTauNum(diagType[i], p, _tauNum) for (i, p) in enumerate(partition)]
-    accumulated = accumulate(+, taupartition; init = firstidx) #  idx[i] = firstidx + p[1]+p[2]+...+p[i]
+    taupartition = [innerTauNum(type[i], p, _tauNum) for (i, p) in enumerate(partition)]
+    accumulated = accumulate(+, taupartition; init=firstidx) #  idx[i] = firstidx + p[1]+p[2]+...+p[i]
     firstTauidx = [firstidx,]
     append!(firstTauidx, accumulated[1:end-1])
     maxTauIdx = accumulated[end] - 1

@@ -70,7 +70,7 @@ struct Bubble{_Ver4} # template Bubble to avoid mutually recursive struct
         lLpidxOffset = ver4.loopidxOffset + 1
         rLpidxOffset = lLpidxOffset + oL
         LTidx = ver4.TidxOffset  # the first τ index of the left vertex
-        TauNum = ver4.para.interactionTauNum # maximum tau number for each bare interaction
+        TauNum = interactionTauNum(ver4.para) # maximum tau number for each bare interaction
         RTidx = LTidx + (oL + 1) * TauNum   # the first τ index of the right sub-vertex
 
         if chan == T || chan == U
@@ -86,12 +86,12 @@ struct Bubble{_Ver4} # template Bubble to avoid mutually recursive struct
         # println("left ver chan: ", LsubVer, ", loop=", oL)
         # W = eltype(ver4.weight)
         Lver = _Ver4(ver4.para, LverChan, ver4.F, ver4.V, ver4.All;
-            loopNum = oL, loopidxOffset = lLpidxOffset, tidxOffset = LTidx,
-            level = level + 1, id = _id)
+            loopNum=oL, loopidxOffset=lLpidxOffset, tidxOffset=LTidx,
+            level=level + 1, id=_id)
 
         Rver = _Ver4(ver4.para, RverChan, ver4.F, ver4.V, ver4.All;
-            loopNum = oR, loopidxOffset = rLpidxOffset, tidxOffset = RTidx,
-            level = level + 1, id = _id)
+            loopNum=oR, loopidxOffset=rLpidxOffset, tidxOffset=RTidx,
+            level=level + 1, id=_id)
 
         @assert Lver.TidxOffset == ver4.TidxOffset "Lver Tidx must be equal to vertex4 Tidx! LoopNum: $(ver4.loopNum), LverLoopNum: $(Lver.loopNum), chan: $chan"
 
@@ -196,13 +196,13 @@ struct Ver4{W}
     child::Vector{Vector{IdxMap{Ver4{W}}}}
     weight::Vector{W}
 
-    function Ver4{W}(para, chan, F = [I, U, S], V = [I, T, U], All = union(F, V);
-        loopNum = para.innerLoopNum, loopidxOffset = 0, tidxOffset = 0,
-        Fouter = F, Vouter = V, Allouter = All,
-        level = 1, id = [1,]
+    function Ver4{W}(para, chan, F=[I, U, S], V=[I, T, U], All=union(F, V);
+        loopNum=para.innerLoopNum, loopidxOffset=0, tidxOffset=0,
+        Fouter=F, Vouter=V, Allouter=All,
+        level=1, id=[1,]
     ) where {W}
 
-        @assert para.totalTauNum >= (loopNum + 1) * para.interactionTauNum "$para"
+        @assert para.totalTauNum >= (loopNum + 1) * interactionTauNum(para) "$para"
 
         if level > 1
             @assert Set(F) == Set(Fouter)
@@ -224,16 +224,16 @@ struct Ver4{W}
         if loopNum == 0
             tidx = tidxOffset
             # bare interaction may have one, two or four independent tau variables
-            if para.interactionTauNum == 1  # instantaneous interaction
+            if interactionTauNum(para) == 1  # instantaneous interaction
                 addTidx(ver4, (tidx, tidx, tidx, tidx)) #direct instant intearction
                 addTidx(ver4, (tidx, tidx, tidx, tidx)) #exchange instant interaction
             end
-            if para.interactionTauNum == 2  # interaction with incoming and outing τ varibales
+            if interactionTauNum(para) == 2  # interaction with incoming and outing τ varibales
                 addTidx(ver4, (tidx, tidx, tidx, tidx))  # direct and exchange instant interaction
                 addTidx(ver4, (tidx, tidx, tidx + 1, tidx + 1))  # direct dynamic interaction
                 addTidx(ver4, (tidx, tidx + 1, tidx + 1, tidx))  # exchange dynamic interaction
             end
-            if para.interactionTauNum == 4  # interaction with incoming and outing τ varibales
+            if interactionTauNum(para) == 4  # interaction with incoming and outing τ varibales
                 error("Not implemented!")
                 # addTidx(ver4, (tidx, tidx + 1, tidx + 2, tidx + 3))  # direct dynamic interaction
                 # addTidx(ver4, (tidx, tidx + 3, tidx + 2, tidx + 1))  # exchange dynamic interaction

@@ -55,6 +55,10 @@ mutable struct ExpressionTree{V,PARA,F,W}
     loopBasis::V
     node::CachedPool{Node{PARA,F},W}
     root::Vector{Int}
+    function ExpressionTree{W,PARA}(; loopBasis::V, name=:none) where {V,W,PARA}
+        nodePool = CachedPool(:node, Node{PARA,W}, W)
+        return new{V,PARA,W,W}(name, loopBasis, nodePool, [])
+    end
     function ExpressionTree(; loopBasis::V, weight::DataType, factor::DataType=weight, nodePara::DataType=Nothing, name=:none) where {V}
         nodePool = CachedPool(:node, Node{nodePara,factor}, weight)
         return new{V,nodePara,factor,weight}(name, loopBasis, nodePool, [])

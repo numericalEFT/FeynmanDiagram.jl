@@ -7,9 +7,12 @@ using AbstractTrees
 #     DocMeta.setdocmeta!(FeynmanDiagram, :DocTestSetup, :(using FeynmanDiagram); recursive = true)
 #     doctest(FeynmanDiagram)
 # end
-
-include("common.jl")
-include("diagram_tree.jl")
-include("expression_tree.jl")
-include("parquet_builder.jl")
+if isempty(ARGS)
+    include("common.jl")
+    include("diagram_tree.jl")
+    include("expression_tree.jl")
+    include("parquet_builder.jl")
+else
+    include(ARGS[1])
+end
 

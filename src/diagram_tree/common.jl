@@ -33,7 +33,7 @@ import ..short
 
 import ..Interaction
 
-import ..GenericPara
+import ..DiagPara
 
 import ..innerTauNum
 
@@ -46,17 +46,18 @@ import ..innerTauNum
 #         return z
 #     end
 # end
-_counter = 0
+const _counter = [0,]
+
 function uid()
-    global _counter += 1
-    return _counter
+    _counter[1] += 1
+    return _counter[1]
 end
 
 function uidreset()
-    global _counter = 0
+    _counter[1] = 0
 end
 
-function getK(loopNum, loopIdx)
+function getK(loopNum::Int, loopIdx::Int)
     k = zeros(loopNum)
     k[loopIdx] = 1.0
     return k

@@ -122,7 +122,7 @@ mutable struct LoopPool{T}
     basis::Matrix{T}
     current::Matrix{T}
 
-    function LoopPool(name::Symbol, dim::Int, N::Int, type::DataType = Float64)
+    function LoopPool(name::Symbol, dim::Int, N::Int, type::DataType=Float64)
         basis = Matrix{type}(undef, N, 0) # Nx0 matrix
         current = Matrix{type}(undef, dim, 0) # dimx0 matrix
         return new{type}(name, dim, N, basis, current)
@@ -157,7 +157,7 @@ function Base.iterate(pool::LoopPool, state)
     end
 end
 
-function update(pool::LoopPool, variable = rand(eltype(pool.current), pool.dim, pool.N))
+function update(pool::LoopPool, variable=rand(eltype(pool.current), pool.dim, pool.N))
     loopNum = size(pool.basis)[1]
     pool.current = view(variable, :, 1:loopNum) * pool.basis
     # B = view(pool.basis, 1:loopNum, :)
@@ -169,6 +169,8 @@ end
 
 # current(pool::LoopPool, idx) = pool.current[:, idx]
 current(pool::LoopPool, idx) = view(pool.current, :, idx)
+
+hasloop(pool::LoopPool) = (pool.dim > 0) && (pool.N > 0)
 
 function append(pool::LoopPool, basis::AbstractVector)
     for bi in 1:length(pool)
