@@ -88,7 +88,7 @@ function vertex3(para::DiagPara{WW},
             #transform extT coloum into extT for Vertex4 and the extT for Gin and Gout
             df = transform(ver4, :extT => ByRow(x -> [(t0, x[INL], x[OUTL]), (t0, x[INR]), (x[OUTR], t0)]) => [:extT, :GinT, :GoutT])
 
-            groups = mergeby(df, [:response, :GinT, :GoutT, :extT], operator=Sum())
+            groups = mergeby(WW, df, [:response, :GinT, :GoutT, :extT], operator=Sum())
 
             for v4 in eachrow(groups)
                 response = v4.response
@@ -109,7 +109,7 @@ function vertex3(para::DiagPara{WW},
     if isempty(vertex3) == false
         # Factor = 1 / (2π)^para.loopDim
         Factor = 1.0
-        vertex3 = mergeby(vertex3, [:response, :extT]; name=name, factor=Factor,
+        vertex3 = mergeby(WW, vertex3, [:response, :extT]; name=name, factor=Factor,
             getid=g -> Ver3Id(para, g[1, :response], k=extK, t=g[1, :extT])
         )
     end

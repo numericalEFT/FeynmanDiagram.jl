@@ -109,7 +109,7 @@ function sigma(para::DiagPara{W}, extK=DiagTree.getK(para.totalLoopNum, 1), subd
             # plot_tree(ver4)
             df = transform(ver4, :extT => ByRow(x -> [(x[INL], x[OUTR]), (x[OUTL], x[INR])]) => [:extT, :GT])
 
-            groups = mergeby(df, [:response, :type, :GT, :extT], operator=Sum())
+            groups = mergeby(W, df, [:response, :type, :GT, :extT], operator=Sum())
             for mergedVer4 in eachrow(groups)
                 push!(compositeSigma, GWwithGivenExTtoΣ(mergedVer4, oW, paraG))
             end
@@ -124,7 +124,7 @@ function sigma(para::DiagPara{W}, extK=DiagTree.getK(para.totalLoopNum, 1), subd
         Factor = 1.0
         # sigmaid(g) = SigmaId(para, g[1, :type], k=extK, t=g[1, :extT])
         # sigmadf = mergeby(compositeSigma, [:type, :extT], name=name, factor=Factor, getid=sigmaid)
-        sigmadf = mergeby(compositeSigma, [:type, :extT], name=name, factor=Factor,
+        sigmadf = mergeby(W, compositeSigma, [:type, :extT], name=name, factor=Factor,
             getid=g -> SigmaId(para, g[1, :type], k=extK, t=g[1, :extT]))
 
         all(x -> x[1] == para.firstTauIdx, sigmadf.extT) || error("all sigma should share the same in Tidx\n$sigmadf")
