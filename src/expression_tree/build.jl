@@ -33,8 +33,7 @@ function _build(diags::Vector{Diagram{W}}, hasLoop=true; verbose::Int=0) where {
         end
     end
 
-    tree.root = [nodes[d.hash] for d in diags]
-
+    setroot!(tree, collect([nodes[d.hash] for d in diags]))
     initialize!(tree.node)
     return tree
 end

@@ -65,6 +65,9 @@ end
 
 
 function append(pool::CachedPool, object)
+    #ExprTree should not take care of the optimization problem
+    # that's why we comment out the following lines
+
     # @assert para isa eltype(pool.pool)
     # for (oi, o) in enumerate(pool.object)
     #     if o == object
@@ -91,10 +94,6 @@ function initialize!(pool::CachedPool{O,T}) where {O,T}
 
     resize!(pool.excited, N)
     fill!(pool.excited, zero(T))
-
-    # pool.new = zeros(T, N)
-    # pool.version = ones(T, N)
-    # pool.excited = Vector{Bool}(zeros(Int, N))
 end
 
 function updateAll(pool::CachedPool, ignoreCache::Bool, eval::Function; kwargs...)

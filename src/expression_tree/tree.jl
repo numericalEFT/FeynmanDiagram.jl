@@ -51,7 +51,8 @@ Base.:(==)(a::Node{P}, b::Node{P}) where {P} = Base.isequal(a, b)
 - node::CachedPool{Node{PARA,F},W} : Pool of the nodes in the diagram tree
 - root::Vector{Int}                : indices of the cached nodes that are the root(s) of the diagram tree. Each element corresponds to one root.
 """
-mutable struct ExpressionTree{V,PARA,F,W}
+# mutable struct ExpressionTree{V,PARA,F,W}
+struct ExpressionTree{V,PARA,F,W}
     name::Symbol
     loopBasis::V
     node::CachedPool{Node{PARA,F},W}
@@ -63,6 +64,13 @@ mutable struct ExpressionTree{V,PARA,F,W}
     function ExpressionTree(; loopBasis::V, weight::DataType, factor::DataType=weight, nodePara::DataType=Nothing, name=:none) where {V}
         nodePool = CachedPool(:node, Node{nodePara,factor}, weight)
         return new{V,nodePara,factor,weight}(name, loopBasis, nodePool, [])
+    end
+end
+
+function setroot!(tree::ExpressionTree, root::AbstractVector)
+    resize!(tree.root, length(root))
+    for (ri, r) in enumerate(root)
+        tree.root[ri] = r
     end
 end
 
