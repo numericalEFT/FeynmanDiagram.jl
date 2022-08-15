@@ -17,7 +17,16 @@ function benchmark(tree, N, varK, varT)
     end
 end
 
-# DiagTree.eval(id::DiagramId, K, extT, varT) = println("not implemented!")
+# normalize the momentum by assuming mirror symmetry
+function normalize!(id::DiagramId)
+    if id isa BareGreenId || id isa BareInteractionId
+        idx = findfirst(x -> (x ≈ 0.0) == false, id.extK)
+        sig = sign(id.extK[idx])
+        id.extK ./= sig
+    else
+        error("$id is not expected!")
+    end
+end
 
 @inbounds function DiagTree.eval(id::BareGreenId, K, extT, varT)
     # function green(id::BareGreenId, K, extT, varT)
@@ -72,7 +81,8 @@ const extT = [diags[o].extT for o in 1:Order]                        #external t
 
 println("Building tree")
 start = time()
-const tree = [ExprTree.build(mergeby(diags[o].diagram), verbose=1) for o in 1:Order]     #experssion tree representation of diagrams 
+# const tree = [ExprTree.build(mergeby(diags[o].diagram); verbose=1, normalize=normalize!) for o in 1:Order]     #experssion tree representation of diagrams 
+const tree = [ExprTree.build(mergeby(diags[o].diagram); verbose=1) for o in 1:Order]     #experssion tree representation of diagrams 
 println("Done.")
 # const tree = [ExprTree.build(DiagTree.optimize(mergeby(diags[o]).diagram[1])) for o in 1:Order]     #experssion tree representation of diagrams 
 println("Build ExprTree takes ", time() - start, " seconds")

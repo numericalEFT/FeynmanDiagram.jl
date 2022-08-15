@@ -1,10 +1,10 @@
-function optimize!(diag::Union{Tuple,AbstractVector}, optlevel=1; verbose=0, kwargs...)
+function optimize!(diag::Union{Tuple,AbstractVector}, optlevel=1; verbose=0, normalize=nothing)
     if isempty(diag)
         return diag
     else
         diag = collect(diag)
         removeOneChildParent!(diag, verbose=verbose)
-        removeDuplicatedLeaves!(diag, verbose=verbose)
+        removeDuplicatedLeaves!(diag, verbose=verbose, normalize=normalize)
         return diag
     end
 end
@@ -35,7 +35,7 @@ end
 
     remove duplicated nodes such as:  ---> ver4 ---> InteractionId. Leaf will not be touched!
 """
-function removeDuplicatedLeaves!(diags::Vector{Diagram{W}}; verbose=0) where {W}
+function removeDuplicatedLeaves!(diags::Vector{Diagram{W}}; verbose=0, normalize=nothing, kwargs...) where {W}
     verbose > 0 && println("remove duplicated leaves.")
     leaves = Vector{Diagram{W}}()
     for diag in diags
@@ -43,6 +43,12 @@ function removeDuplicatedLeaves!(diags::Vector{Diagram{W}}; verbose=0) where {W}
         append!(leaves, collect(Leaves(diag)))
     end
     # println([d.hash for d in leaves])
+    if isnothing(normalize) == false
+        @assert normalize isa Function "a function call is expected for normalize"
+        for leaf in leaves
+            normalize(leaf.id)
+        end
+    end
     sort!(leaves, by=x -> x.hash) #sort the hash of the leaves in an asscend order
     unique!(x -> x.hash, leaves) #filter out the leaves with the same hash number
 
