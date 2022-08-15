@@ -16,6 +16,8 @@ function _build(diags::Vector{Diagram{W}}, hasLoop=true; verbose::Int=0) where {
 
     tree = newExprTree(diags[1].id.para::DiagPara{W}, :none, hasLoop)
 
+    # nodepool = CachedPool(:node, Node{DiagramId,W}, W)
+
     verbose > 0 && println("Constructing expression tree...")
     nodes = Dict{Int,Any}()
     for diag in diags

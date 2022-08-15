@@ -129,14 +129,23 @@ end
 mutable struct LoopPool{T}
     name::Symbol
     dim::Int #dimension
-    N::Int #number of basis
-    basis::Matrix{T}
-    current::Matrix{T}
+    loopNum::Int #number of independent loops
+    # N::Int #number of basis
+    basis::Matrix{T} # loopNum x N
+    current::Matrix{T} # dim x loopNum
 
-    function LoopPool(name::Symbol, dim::Int, N::Int, type::DataType=Float64)
-        basis = Matrix{type}(undef, N, 0) # Nx0 matrix
+    function LoopPool(name::Symbol, dim::Int, loopNum::Int, type::DataType=Float64)
+        basis = Matrix{type}(undef, loopNum, 0) # Nx0 matrix
         current = Matrix{type}(undef, dim, 0) # dimx0 matrix
-        return new{type}(name, dim, N, basis, current)
+        return new{type}(name, dim, loopNum, basis, current)
+    end
+    function LoopPool(name::Symbol, dim::Int, basis::AbstractVector{Vector{T}}) where {T}
+        @assert isempty(basis) == false
+        loopNum = length(basis[1])
+        N = length(basis) #number of basis
+        @assert all(x -> length(x) == loopNum, basis)
+        current = rands(T, (dim, N))
+        return new{T}(name, dim, loopNum, basis, current)
     end
 end
 
@@ -168,9 +177,10 @@ function Base.iterate(pool::LoopPool, state)
     end
 end
 
-function update(pool::LoopPool, variable=rand(eltype(pool.current), pool.dim, pool.N))
+function update(pool::LoopPool, variable=rand(eltype(pool.current), pool.dim, pool.loopNum))
     @assert size(variable)[1] == pool.dim
-    loopNum = size(pool.basis)[1]
+    # loopNum = size(pool.basis)[1]
+    loopNum = pool.loopNum
 
     ############ naive implementation, one allocation for each call ################
     # pool.current = view(variable, :, 1:loopNum) * pool.basis
@@ -203,7 +213,7 @@ end
 # current(pool::LoopPool, idx) = pool.current[:, idx]
 current(pool::LoopPool, idx) = view(pool.current, :, idx)
 
-hasloop(pool::LoopPool) = (pool.dim > 0) && (pool.N > 0)
+hasloop(pool::LoopPool) = (pool.dim > 0) && (pool.loopNum > 0)
 
 function append(pool::LoopPool, basis::AbstractVector)
     for bi in 1:length(pool)
