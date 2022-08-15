@@ -60,4 +60,5 @@ function newExprTree(para::DiagPara{W}, name::Symbol=:none, hasLoop=true) where 
         Kpool = LoopPool(:K, 0, para.totalLoopNum, Float64)
     end
     return ExpressionTree{W,DiagramId}(loopBasis=Kpool, name=name)
+    # return ExpressionTree{W,Any}(loopBasis=Kpool, name=name)
 end

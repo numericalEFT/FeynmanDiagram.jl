@@ -12,7 +12,8 @@
 - version::Int128 : the current version
 - excited::Bool   : if set to excited, then the current status needs to be replaced with the new status
 """
-mutable struct CachedPool{O,T}
+# mutable struct CachedPool{O,T}
+struct CachedPool{O,T}
     name::Symbol
     object::Vector{O}
     current::Vector{T}
@@ -79,10 +80,21 @@ end
 
 function initialize!(pool::CachedPool{O,T}) where {O,T}
     N = length(pool)
-    pool.current = zeros(T, N)
-    pool.new = zeros(T, N)
-    pool.version = ones(T, N)
-    pool.excited = Vector{Bool}(zeros(Int, N))
+    resize!(pool.current, N)
+    fill!(pool.current, zero(T))
+
+    resize!(pool.new, N)
+    fill!(pool.new, zero(T))
+
+    resize!(pool.version, N)
+    fill!(pool.version, one(T))
+
+    resize!(pool.excited, N)
+    fill!(pool.excited, zero(T))
+
+    # pool.new = zeros(T, N)
+    # pool.version = ones(T, N)
+    # pool.excited = Vector{Bool}(zeros(Int, N))
 end
 
 function updateAll(pool::CachedPool, ignoreCache::Bool, eval::Function; kwargs...)
@@ -158,8 +170,30 @@ function Base.iterate(pool::LoopPool, state)
 end
 
 function update(pool::LoopPool, variable=rand(eltype(pool.current), pool.dim, pool.N))
+    @assert size(variable)[1] == pool.dim
     loopNum = size(pool.basis)[1]
-    pool.current = view(variable, :, 1:loopNum) * pool.basis
+
+    ############ naive implementation, one allocation for each call ################
+    # pool.current = view(variable, :, 1:loopNum) * pool.basis
+
+    ############# BLAS call, no allocation, but takes ~1.6μs ########################
+    #varK : M x (1:loopNum)
+    #basis : loopNum x N
+    #pool.current : M x N
+    # M, N = size(variable)[1], size(pool.basis)[2]
+    # ccall(("dgemm"), Cvoid,
+    #     (Ref{UInt8}, Ref{UInt8}, Ref{BlasInt}, Ref{BlasInt},
+    #         Ref{BlasInt}, Ref{Float64}, Ptr{Float64}, Ref{BlasInt},
+    #         Ptr{Float64}, Ref{BlasInt}, Ref{Float64}, Ptr{Float64},
+    #         Ref{BlasInt}),
+    #     'N', 'N', M, N, loopNum, 1.0, variable, M, pool.basis, loopNum, 0.0, pool.current, M)
+
+    ############### higher level BLAS call, no allocation, takes ~0.8μs ################
+    # BLAS.gemm!('N', 'N', 1.0, view(variable, :, 1:loopNum), pool.basis, 0.0, pool.current)
+
+    ############### higher level LinearAlgebra call, no allocation, takes ~0.8μs ################
+    mul!(pool.current, view(variable, :, 1:loopNum), pool.basis) #use view will use less memory than variable[:, 1:loopNum]
+
     # B = view(pool.basis, 1:loopNum, :)
     # B = view(pool.basis, 1:loopNum, :)
     # C = pool.current[:, 1:length(pool)]
@@ -175,6 +209,7 @@ hasloop(pool::LoopPool) = (pool.dim > 0) && (pool.N > 0)
 function append(pool::LoopPool, basis::AbstractVector)
     for bi in 1:length(pool)
         if pool.basis[:, bi] ≈ basis
+            # if (pool.basis[:, bi] ≈ basis) || (pool.basis[:, bi] ≈ -basis)
             return bi
         end
     end

@@ -19,9 +19,10 @@ struct Node{PARA,F}
     loopidx::Int
     siteidx::Vector{Int}
     children::Vector{Int}
+    isleaf::Bool
     function Node{P,F}(name::Symbol, para; loopidx=0, siteidx=[], operator=ADD, children=[], factor=1.0) where {F,P}
         # @assert typeof(para) == P
-        return new{P,F}(name, para, operator, F(factor), loopidx, siteidx, children)
+        return new{P,F}(name, para, operator, F(factor), loopidx, siteidx, children, isempty(children))
     end
 end
 
