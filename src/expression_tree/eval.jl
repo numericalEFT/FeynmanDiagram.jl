@@ -32,6 +32,13 @@ end
             if hasloop(loopPool) && (isnothing(siteVar) == false)
                 if isnothing(additional)
                     @inbounds tweight[ni] = eval(idpara, current(loopPool, node.loopidx), node.siteidx, siteVar)
+                    # if idpara isa BareGreenId
+                    #     @inbounds tweight[ni] = eval(idpara::BareGreenId, current(loopPool, node.loopidx), node.siteidx, siteVar)
+                    # elseif idpara isa BareInteractionId
+                    #     @inbounds tweight[ni] = eval(idpara::BareInteractionId, current(loopPool, node.loopidx), node.siteidx, siteVar)
+                    # else
+                    #     error("not implemented")
+                    # end
                 else
                     @inbounds tweight[ni] = eval(idpara, current(loopPool, node.loopidx), node.siteidx, siteVar, additional)
                 end
