@@ -59,6 +59,10 @@ export Wirreducible, Girreducible, NoBubble, NoHatree, NoFock, Proper
 export Response, ChargeCharge, SpinSpin, UpUp, UpDown
 export AnalyticProperty, Instant, Dynamic, D_Instant, D_Dynamic
 
+include("./AbstractTrees/AbstractTrees.jl")
+using .AbstractTrees
+# using AbstractTrees
+
 include("common.jl")
 export DiagPara, DiagParaF64
 export Interaction, interactionTauNum, innerTauNum

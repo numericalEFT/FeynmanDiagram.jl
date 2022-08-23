@@ -1,7 +1,8 @@
 using FeynmanDiagram
 using Lehmann
 using Test, LinearAlgebra, Random, StaticArrays, Printf, Parameters, Documenter
-using AbstractTrees
+# using AbstractTrees
+import FeynmanDiagram.AbstractTrees:AbstractTrees
 
 # @testset "doctest" begin
 #     DocMeta.setdocmeta!(FeynmanDiagram, :DocTestSetup, :(using FeynmanDiagram); recursive = true)

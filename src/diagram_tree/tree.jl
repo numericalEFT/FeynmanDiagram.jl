@@ -217,7 +217,7 @@ end
 
 
 #####################  interface to AbstractTrees ########################### 
-function AbstractTrees.children(diag::Diagram)
+function AbstractTrees.children(diag::Diagram{W}) where {W}
     return diag.subdiagram
 end
 
@@ -227,8 +227,10 @@ AbstractTrees.printnode(io::IO, diag::Diagram) = print(io, "\u001b[32m$(diag.has
 
 ######### define the following for the type stability #########################
 # AbstractTrees.childrentype(diag::Diagram{W}) where {W} = Vector{Diagram{W}}
+AbstractTrees.childtype(::Type{Diagram{W}}) where {W} = Diagram{W}
+AbstractTrees.childrentype(::Type{Diagram{W}}) where {W} = Vector{Diagram{W}}
 
-# AbstractTrees.NodeType(::Diagram{W}) where {W} = HasNodeType()
+AbstractTrees.NodeType(::Diagram{W}) where {W} = HasNodeType()
 AbstractTrees.nodetype(::Diagram{W}) where {W} = Diagram{W}
 
 ## Optional enhancements
@@ -236,3 +238,9 @@ AbstractTrees.nodetype(::Diagram{W}) where {W} = Diagram{W}
 # (They are not sufficient to solve all internal inference issues, however.)
 Base.eltype(::Type{<:TreeIterator{Diagram{W}}}) where {W} = Diagram{W}
 Base.IteratorEltype(::Type{<:TreeIterator{Diagram{W}}}) where {W} = Base.HasEltype()
+
+# AbstractTrees.ChildIndexing(::Type{Diagram{W}}) where {W} = AbstractTrees.IndexedChildren()
+
+# AbstractTrees.SiblingLinks(::Type{Diagram{W}}) where {W} = StoredSiblings()
+
+# function AbstractTrees.nextsibling()

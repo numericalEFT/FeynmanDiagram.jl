@@ -17,7 +17,7 @@
     l = Diagram{W}(ID(1), Sum(), [ll,])
     r = Diagram{W}(ID(2))
     root = Diagram{W}(ID(0), Sum(), [l, r])
-    print_tree(root)
+    AbstractTrees.print_tree(root)
     """
     4 : 0=0=⨁ (2, 3)
     ├─ 2 : 1=0=⨁ (1)
@@ -25,15 +25,15 @@
     └─ 3 : 2=0
     """
 
-    collect(PostOrderDFS(root))
-    @test [node.id.uid for node in PostOrderDFS(root)] == [3, 1, 2, 0]
-    @test [node.id.uid for node in PreOrderDFS(root)] == [0, 1, 3, 2]
-    @test [node.id.uid for node in Leaves(root)] == [3, 2]
+    collect(AbstractTrees.PostOrderDFS(root))
+    @test [node.id.uid for node in AbstractTrees.PostOrderDFS(root)] == [3, 1, 2, 0]
+    @test [node.id.uid for node in AbstractTrees.PreOrderDFS(root)] == [0, 1, 3, 2]
+    @test [node.id.uid for node in AbstractTrees.Leaves(root)] == [3, 2]
 
     # eval(d::ID, vargs...) = d.uid
-    @test DiagTree.eval!(root; eval=(d -> d.uid)) == sum(node.id.uid for node in Leaves(root))
+    @test DiagTree.eval!(root; eval=(d -> d.uid)) == sum(node.id.uid for node in AbstractTrees.Leaves(root))
 
-    print_tree(root)
+    AbstractTrees.print_tree(root)
     # DiagTreeNew.plot_tree(root)
 
     println(toDataFrame([root,]))
@@ -195,7 +195,7 @@ end
 
     root, gK, gT, vdK, veK = getdiagram(spin, D, Nk, Nt)
     diags = root.subdiagram
-    diags = collect(Leaves(root))
+    diags = collect(AbstractTrees.Leaves(root))
     df1 = DiagTree.toDataFrame(diags)
     df2 = DiagTree.toDataFrame(diags, :extT)
     s1 = size(df1)

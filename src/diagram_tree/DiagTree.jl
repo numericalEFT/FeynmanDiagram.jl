@@ -4,7 +4,8 @@ module DiagTree
 #     @eval Base.Experimental.@optlevel 1
 # end
 
-using AbstractTrees
+using ..AbstractTrees
+
 using Printf, PyCall, DataFrames
 
 @enum TwoBodyChannel Alli = 1 PHr PHEr PPr AnyChan

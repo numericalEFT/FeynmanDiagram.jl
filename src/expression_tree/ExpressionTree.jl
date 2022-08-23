@@ -1,5 +1,6 @@
 module ExprTree
-using AbstractTrees, LinearAlgebra, StaticArrays
+using ..AbstractTrees
+using LinearAlgebra, StaticArrays
 import LinearAlgebra: BlasInt
 using ..DiagTree
 # using Unrolled
