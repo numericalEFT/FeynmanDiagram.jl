@@ -18,7 +18,7 @@ function Base.iterate(r::DiagramType, ::Nothing) end
 @enum Filter begin
     Wirreducible  #remove all polarization subdiagrams
     Girreducible  #remove all self-energy inseration
-    NoHatree
+    NoHartree
     NoFock
     NoBubble  # true to remove all bubble subdiagram
     Proper  #ver4, ver3, and polarization diagrams may require to be irreducible along the transfer momentum/frequency
@@ -55,7 +55,7 @@ function Base.iterate(r::AnalyticProperty, ::Nothing) end
 
 export SigmaDiag, PolarDiag, Ver3Diag, Ver4Diag, GreenDiag
 export VacuumDiag, GnDiag, GcDiag
-export Wirreducible, Girreducible, NoBubble, NoHatree, NoFock, Proper
+export Wirreducible, Girreducible, NoBubble, NoHartree, NoFock, Proper
 export Response, ChargeCharge, SpinSpin, UpUp, UpDown
 export AnalyticProperty, Instant, Dynamic, D_Instant, D_Dynamic
 
@@ -118,10 +118,10 @@ if ccall(:jl_generating_output, Cint, ()) == 1   # if we're precompiling the pac
         # Parquet.vertex3(para)  # this will force precompilation
         Parquet.build(para)  # this will force precompilation
 
-        DiagTree.removeHatreeFock!(ver4.diagram)
+        DiagTree.removeHartreeFock!(ver4.diagram)
         DiagTree.derivative(ver4.diagram, BareGreenId)
         DiagTree.derivative(ver4.diagram, BareInteractionId)
-        # DiagTree.removeHatreeFock!(ver4.diagram)
+        # DiagTree.removeHartreeFock!(ver4.diagram)
         ExprTree.build(ver4.diagram)
     end
 end
