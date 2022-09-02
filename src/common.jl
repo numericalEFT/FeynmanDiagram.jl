@@ -71,7 +71,7 @@ end
     totalTauNum::Int = firstTauIdx + innerTauNum(type, innerLoopNum, interactionTauNum(hasTau, interaction)) - 1
     #if there is no imaginary-time at all, then set this number to zero!
     ########################################################################
-    filter::Vector{Filter} = [NoHatree,] #usually, the Hatree subdiagram should be removed
+    filter::Vector{Filter} = [NoHartree,] #usually, the Hartree subdiagram should be removed
     transferLoop::Vector{Float64} = [] #Set it to be the transfer momentum/frequency if you want to check the diagrams are proper or not
     extra::Any = Nothing
 end

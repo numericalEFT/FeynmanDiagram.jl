@@ -114,20 +114,20 @@ function derivative(diags::Union{Tuple,AbstractVector}, ::Type{ID}, order::Int; 
 end
 
 """
-    function removeHatreeFock!(diag::Diagram{W}) where {W}
-    function removeHatreeFock!(diags::Union{Tuple,AbstractVector})
+    function removeHartreeFock!(diag::Diagram{W}) where {W}
+    function removeHartreeFock!(diags::Union{Tuple,AbstractVector})
     
-    Remove the Hatree-Fock insertions that without any derivatives on the propagator and the interaction. 
+    Remove the Hartree-Fock insertions that without any derivatives on the propagator and the interaction. 
 
 # Arguments
 - diags      : diagrams to remove the Fock insertion
 
 # Remarks
-- The operations removeHatreeFock! and taking derivatives doesn't commute with each other! 
-- If the input diagram is a Hatree-Fock diagram, then the overall weight will become zero! 
+- The operations removeHartreeFock! and taking derivatives doesn't commute with each other! 
+- If the input diagram is a Hartree-Fock diagram, then the overall weight will become zero! 
 - The return value is always nothing
 """
-function removeHatreeFock!(diag::Diagram{W}) where {W}
+function removeHartreeFock!(diag::Diagram{W}) where {W}
     for d in PreOrderDFS(diag)
         # for subdiag in d.subdiagram
         if d.id isa SigmaId
@@ -140,8 +140,8 @@ function removeHatreeFock!(diag::Diagram{W}) where {W}
         end
     end
 end
-function removeHatreeFock!(diags::Union{Tuple,AbstractVector})
+function removeHartreeFock!(diags::Union{Tuple,AbstractVector})
     for diag in diags
-        removeHatreeFock!(diag)
+        removeHartreeFock!(diag)
     end
 end
