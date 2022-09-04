@@ -29,8 +29,8 @@ end
 
 # check if G exist without creating objects in the pool
 function isValidG(filter, innerLoopNum::Int)
-    #one-loop diagram could be either Fock or Hatree. If both are filtered, then nothing left
-    if ((NoFock in filter) && (NoHatree in filter)) && (innerLoopNum == 1)
+    #one-loop diagram could be either Fock or Hartree. If both are filtered, then nothing left
+    if ((NoFock in filter) && (NoHartree in filter)) && (innerLoopNum == 1)
         return false
     end
 
@@ -55,8 +55,8 @@ function isValidSigma(filter, innerLoopNum::Int, subdiagram::Bool)
         return false
     end
 
-    #one-loop diagram could be either Fock or Hatree. If both are filtered, then nothing left
-    if subdiagram && ((NoFock in filter) && (NoHatree in filter)) && innerLoopNum == 1
+    #one-loop diagram could be either Fock or Hartree. If both are filtered, then nothing left
+    if subdiagram && ((NoFock in filter) && (NoHartree in filter)) && innerLoopNum == 1
         return false
     end
 
