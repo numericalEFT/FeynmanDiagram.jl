@@ -428,6 +428,9 @@ end
         return para, diag, varK, varT
     end
 
+    # Test polarization Parquet builder when filter 'Proper' is specified explicitly
+    getPolar(1, filter=[Proper, NoHartree, NoFock,])
+
     ##################  G^2*v expansion #########################################
     for l = 1:4
         para, diag, varK, varT = getPolar(l, isFermi=false, filter=[NoHartree, Girreducible,])
