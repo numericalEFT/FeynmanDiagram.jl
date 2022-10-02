@@ -36,7 +36,6 @@ using FeynmanDiagram
 
 # Define a parameter structure for the 4-vertex diagram with one-loop, in the momentum and the imaginary-time representation. Require the diagrams to be green's function irreducible.
 para = DiagParaF64(type = Ver4Diag, innerLoopNum = 1,hasTau = true, filter=[NoHartree, Girreducible,])
-para = DiagParaF64(type = Ver4Diag, innerLoopNum = 1,hasTau = true, filter=[NoHartree, Girreducible,])
 
 ver4=Parquet.build(para) #build the diagram tree with the parquet algorithm.
 
