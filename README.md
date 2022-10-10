@@ -5,21 +5,21 @@
 [![Build Status](https://github.com/numericalEFT/FeynmanDiagram.jl/workflows/CI/badge.svg)](https://github.com/numericalEFT/FeynmanDiagram.jl/actions)
 [![Coverage](https://codecov.io/gh/numericalEFT/FeynmanDiagram.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/numericalEFT/FeynmanDiagram.jl)
 
-This package implements a mini-compiler that compiles generic Feynman diagrams into expression tree representations for fast computation. 
+This package implements a mini-compiler that compiles generic Feynman diagrams into computational-graph representations for fast computation. 
 
 ## Infrastructure
 
-In general, Feynman diagrams represents high-order integral. The integrand are propagators/interactions composed by the basis arithmetic operations (multiplication, addition). The sequence of calculating the integrand by combining the propagators/interactions with the arithmetic operatos can be represented as an algebraic expression tree. In this sense, the expression tree provides an intermediate representation (IR) for Feynman diagrams that completely independent of the diagram type. 
+In general, Feynman diagrams represents high-order integral. The integrand are propagators/interactions composed by the basis arithmetic operations (multiplication, addition). The sequence of calculating the integrand by combining the propagators/interactions with the arithmetic operatos can be represented as an algebraic computational graph. In this sense, the computational graph provides an intermediate representation (IR) for Feynman diagrams that completely independent of the diagram type. 
 
-![infrastructure](assets/diagram_compiler.jpeg?raw=true "Compiler Infrastructure")
+![infrastructure](assets/diagram_compiler.svg?raw=true "Compiler Infrastructure")
 
-Base on this observation, we develop a package to compile the integrand of Feynman diagrams into machine code so that one can evaluate the it efficiently. The infrastructure of this package is similar to the modern compiler LLVM for generic programming language. There are three layers: a front-end translates a source code into an IR as an expression tree, then a mid-end optimizes and transforms the IR, and a back-end to compiles the IR to machine code. 
+Base on this observation, we develop a package to compile the integrand of Feynman diagrams into machine code so that one can evaluate the it efficiently. The infrastructure of this package is similar to the modern compiler LLVM for generic programming language. There are three layers: a front-end translates a source code into an IR as a computational graph, then a mid-end optimizes and transforms the IR, and a back-end to compiles the IR to machine code. 
 
 - The front-end supports Feynman diagrams from weak coupling expansion or strong coupling expansion. The user can incorprate new types of diagrams by writing their own front-end.
 
-- The mid-end performs universal optimizations and transformations of one expression tree to another. The possible optimizations of the expression tree includes: remove common nodes/leaves, remove zero-valued nodes/leaves, merge small nodes into a large one. The possible transformations include automatic differentiation (which can be useful to derive the diagrams for the specific heat, RG flow equation, etc.), renormalization of the propagators and the interactions, and analytic Matsubara-frequency integration (work in progress).
+- The mid-end performs universal optimizations and transformations of one computational graph to another. The possible optimizations of the computational graph includes: remove common nodes/leaves, remove zero-valued nodes/leaves, merge small nodes into a large one. The possible transformations include automatic differentiation (which can be useful to derive the diagrams for the specific heat, RG flow equation, etc.), renormalization of the propagators and the interactions, and analytic Matsubara-frequency integration (work in progress).
 
-- The back-end provides a universal subroutine to evalue the expression tree efficiently. 
+- The back-end provides a universal subroutine to evalue the computational graph efficiently. 
 
 ## Supported Front-end
 
@@ -29,7 +29,7 @@ This algorithm generates the Feynman diagrams of weak coupling expansion. It sup
 
 The main idea of the algorithm is to use the parquet equation to build high-order-vertex-function diagrams from the lower order sub-diagrams. 
 
-The following code is a simple example to generate the one-loop 4-point vertex function diagrams, then visualize the expression tree.
+The following code is a simple example to generate the one-loop 4-point vertex function diagrams, then visualize the computational graph (namely, an experssion tree).
 
 ```julia
 using FeynmanDiagram
@@ -51,7 +51,7 @@ The generated diagram tree is as shown in the following figure. The leaves of th
 ### 2. Generic Strong Coupling Expansion (work in progress)
 ### 3. Hand-drawing Feynman diagrams (work in progress)
 
-## Expression Tree visualization
+## Computational Graph visualization
 To visualize the diagram tree, you need to install the ete3 python3 package (http://etetoolkit.org/).
 
 Note that we rely on "PyCall.jl" to call the ete3 python functions from julia. Therefore, you have to install ete3 python package use the python distribution associated with PyCall. According to the tutorial of PyCall (https://github.com/JuliaPy/PyCall.jl), "by default on Mac and Windows systems, Pkg.add("PyCall") or Pkg.build("PyCall") will use the Conda.jl package to install a minimal Python distribution (via Miniconda) that is private to Julia (not in your PATH). You can use the Conda Julia package to install more Python packages, and import Conda to print the Conda.PYTHONDIR directory where python was installed. On GNU/Linux systems, PyCall will default to using the python3 program (if any, otherwise python) in your PATH."
