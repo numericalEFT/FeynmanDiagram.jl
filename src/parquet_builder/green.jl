@@ -99,6 +99,17 @@ function green(para::DiagPara{W}, extK=DiagTree.getK(para.totalLoopNum, 1), extT
     # println(ΣGpairs)
     # println(operator)
     ΣGmerged = mergeby(ΣGpairs; operator=Sum(), name=:gΣG)[1]
-    compositeG = Diagram{W}(GreenId(para, k=extK, t=extT), Prod(), [g0, ΣGmerged], name=:G)
+
+    # ORIGINAL:
+    # compositeG = Diagram{W}(GreenId(para, k=extK, t=extT), Prod(), [g0, ΣGmerged], name=:G)
+
+    # PROPOSITION 1: Allow the user's custom name to persist after unwrapping with Parquet.green
+    compositeG = Diagram{W}(GreenId(para, k=extK, t=extT), Prod(), [g0, ΣGmerged], name=name)
+
+    # PROPOSITION 2: Allow the user's custom name to persist after unwrapping with Parquet.green
+    #                if the string representation contains "G" (e.g., :G₁ and :Gdashed are allowed)
+    # validname = contains(string(name), "G") ? name : (:G)
+    # compositeG = Diagram{W}(GreenId(para, k=extK, t=extT), Prod(), [g0, ΣGmerged], name=validname)
+
     return compositeG
 end
