@@ -30,3 +30,13 @@ g(i\omega_n, \epsilon_k) = -\frac{1}{i\omega_n-\epsilon_k},
 ```math
 G^{-1} = g^{-1} + \Sigma
 ```
+
+# Perturbative Expansion of the Green's Function
+
+# Feynman Rule of the Self-energy
+
+# Feynman Rule of the 3-point Vertex Function
+
+# Feynman Rule of the 4-point Vertex Function
+
+# Feynman Rule of the Polarization
