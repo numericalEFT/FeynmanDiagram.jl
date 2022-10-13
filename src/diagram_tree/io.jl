@@ -196,9 +196,9 @@ function plot_tree(diag::Diagram; verbose=0, maxdepth=6)
     end
 
     t = treeview(diag, 1)
-    # style = ete.NodeStyle()
-    # style["bgcolor"] = "Khaki"
-    # t.set_style(style)
+    style = ete.NodeStyle()
+    style["bgcolor"] = "Khaki"
+    t.set_style(style)
 
 
     ts = ete.TreeStyle()

@@ -16,6 +16,7 @@ makedocs(;
     pages=[
         "Home" => "index.md",
         "Manual" => [
+            "manual/feynman_rule.md",
             "manual/interaction.md",
             "manual/hubbard_atom.md"
         ],
