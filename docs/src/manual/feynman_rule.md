@@ -13,6 +13,9 @@ G(i\omega_n) = \int_0^\beta G(\tau) \text{e}^{i\omega_n \tau} d\tau
 ```
 
 ## Action and Partition Sum
+```math
+S = \
+```
 
 ## Bare Propagator
 
@@ -36,11 +39,15 @@ G^{-1} = g^{-1} + \Sigma
 
 ## Perturbative Expansion of the Green's Function
 
-![Green's function](../../../assets/figures/green.png)
+```math
+G = g_{12} + (-1)(-1) g_{13} g_{32} g_{44} v_{44} + (+1) g_{13} g_{34} g_{42} v_{34} + 
+```
+
+![Green's function](../assets/green.png)
 
 ## Feynman Rules for the Self-energy
 
-![Self-energy](../../../assets/figures/sigma.png)
+![Self-energy](../assets/sigma.png)
 
 ## Feynman Rules for the 3-point Vertex Function
 
