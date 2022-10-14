@@ -36,11 +36,11 @@ G^{-1} = g^{-1} + \Sigma
 
 ## Perturbative Expansion of the Green's Function
 
-![Green's function](../../../assets/figures/green.png)
+![Green's function](../assets/diagrams/green.svg#green)
 
 ## Feynman Rules for the Self-energy
 
-![Self-energy](../../../assets/figures/sigma.png)
+![Self-energy](../assets/diagrams/sigma.svg#sigma)
 
 ## Feynman Rules for the 3-point Vertex Function
 

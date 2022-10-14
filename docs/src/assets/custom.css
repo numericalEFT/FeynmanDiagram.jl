@@ -1,0 +1,12 @@
+article#documenter-page img {
+    background-color: white;
+    /* Center doc images by default */
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+article#documenter-page img[src*="#sigma"] {
+    /* Scale #sigma to same max height as #green */
+    max-width: 63%;
+}
