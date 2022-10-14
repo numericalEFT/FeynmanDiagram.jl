@@ -38,12 +38,12 @@ G^{-1} = g^{-1} + \Sigma
 
 ![Green's function](../../../assets/figures/green.png)
 
-## Feynman Rule of the Self-energy
+## Feynman Rules for the Self-energy
 
 ![Self-energy](../../../assets/figures/sigma.png)
 
-## Feynman Rule of the 3-point Vertex Function
+## Feynman Rules for the 3-point Vertex Function
 
-## Feynman Rule of the 4-point Vertex Function
+## Feynman Rules for the 4-point Vertex Function
 
-## Feynman Rule of the Polarization
+## Feynman Rules for the Polarization
