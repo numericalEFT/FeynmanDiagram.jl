@@ -28,6 +28,7 @@ Manifest.toml
 .ipynb*
 *.data
 *.pdf
+*.tex
 .gz
 *.jld2
 
