@@ -1,0 +1,26 @@
+% standalone document border convention: {left bottom right top}
+\documentclass[varwidth,border={6pt 16pt 6pt 15pt}]{standalone}
+\usepackage[force]{feynmp-auto}
+
+\begin{document}
+\begin{fmffile}{green2a_diag}
+	\begin{fmfgraph*}(125,40)
+		\fmfstraight
+		\fmftop{d1,v2,v4,d2}
+		\fmfbottom{l,v1,v3,r}
+		\fmf{phantom}{v1,v2,v3,v4,v1}
+		\fmffreeze
+		\fmf{fermion}{l,v1,v3,r}
+		\fmf{fermion,left=0.45}{v2,v4,v2}
+		\fmfdot{v2,v3,v1,v4,l,r}
+		\fmf{boson}{v1,v2}
+		\fmf{boson}{v3,v4}
+		\fmfv{d.sh=circle, d.fi=full, d.si=2thick, l.a=-90, label=$1$}{l}
+		\fmfv{d.sh=circle, d.fi=full, d.si=2thick, l.a=-90, label=$3$}{v1}
+		\fmfv{d.sh=circle, d.fi=full, d.si=2thick, l.a=180, label=$4$}{v2}
+		\fmfv{d.sh=circle, d.fi=full, d.si=2thick, l.a=-90, label=$5$}{v3}
+		\fmfv{d.sh=circle, d.fi=full, d.si=2thick, l.a=0, label=$6$}{v4}
+		\fmfv{d.sh=circle, d.fi=full, d.si=2thick, l.a=-90, label=$2$}{r}
+	\end{fmfgraph*}
+\end{fmffile}
+\end{document}

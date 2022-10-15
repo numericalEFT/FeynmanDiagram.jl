@@ -1,0 +1,19 @@
+% standalone document border convention: {left bottom right top}
+\documentclass[varwidth,border={6pt 16pt 6pt 15pt}]{standalone}
+\usepackage[force]{feynmp-auto}
+
+\begin{document}
+\begin{fmffile}{sigma1b_diag}
+	\begin{fmfgraph*}(42,40)
+		\fmfstraight
+		\fmfbottom{v1,v2}
+		\fmf{phantom}{v1,v2}
+		\fmffreeze
+		\fmf{fermion}{v1,v2}
+		\fmfdot{v2,v1}
+		\fmf{boson,left}{v1,v2}
+		\fmfv{d.sh=circle, d.fi=full, d.si=2thick, l.a=-90, label=$1$}{v1}
+		\fmfv{d.sh=circle, d.fi=full, d.si=2thick, l.a=-90, label=$2$}{v2}
+	\end{fmfgraph*}
+\end{fmffile}
+\end{document}
