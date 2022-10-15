@@ -47,11 +47,13 @@ G &= g_{12} + (-1)^{1+1} g_{13} g_{32} g_{44} v_{44} +(-1)^{1+0} g_{13} g_{34} g
 \end{align}
 ```
 
-![Green's function](../assets/green.png)
+![Sign rule for the Wick contractions.](../assets/diagrams/grassman/green0.svg#green0)
+
+![Diagrammatic expansion of the Green's function.](../assets/diagrams/grassman/green.svg#green)
 
 ## Feynman Rules for the Self-energy
 
-![Self-energy](../assets/sigma.png)
+![Diagrammatic expansion of the self-energy.](../assets/diagrams/grassman/sigma.svg#sigma)
 
 ## Feynman Rules for the 3-point Vertex Function
 

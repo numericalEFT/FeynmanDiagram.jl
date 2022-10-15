@@ -1,4 +1,21 @@
 article#documenter-page img {
-    max-height: 150px;
     background-color: white;
+    /* Center doc images by default */
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+article#documenter-page img[src*="#green"] {
+    width: 100%;
+}
+
+article#documenter-page img[src*="#green0"] {
+    /* Scales #green0 to similar font size to #green */
+    width: 47%;
+}
+
+article#documenter-page img[src*="#sigma"] {
+    /* Scales #sigma to similar font size to #green */
+    width: 90%;
 }
