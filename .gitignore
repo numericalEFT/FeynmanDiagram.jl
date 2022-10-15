@@ -23,13 +23,16 @@ deps/src/
 # environment.
 Manifest.toml
 
+# Ignore intermediate latex files
+*.aux
+*.fdb_latexmk
+*.fls
 *.log
+*.gz
+
 *.pyc
 .ipynb*
 *.data
-*.pdf
-*.tex
-.gz
 *.jld2
 
 *.jl.cov

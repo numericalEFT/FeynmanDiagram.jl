@@ -1,0 +1,50 @@
+% standalone document border convention: {left bottom right top}
+\documentclass[varwidth=425pt,border={0pt, 0pt, 0pt, 0pt}]{standalone}
+\usepackage[force]{feynmp-auto}		    
+\usepackage{amsmath}
+\usepackage{graphicx}
+
+\graphicspath{{/home/daniel/latex/hfm_paper/7_diagrams/FeynmanDiagram.jl/diagrams/}}
+
+\begin{document}
+\begin{equation*}
+	\Sigma_{12} \hspace*{0.5ex}=\hspace*{0.5ex}
+	\delta_{12} \hspace*{-0.5ex}
+	\raisebox{1.75ex}{
+		\scalebox{0.75}{$
+				\left(
+				\begin{gathered}
+					\includegraphics{sigma/sigma1a.pdf}
+				\end{gathered}
+				\right)
+			$}
+	}
+	+
+	\raisebox{1.75ex}{
+		\scalebox{0.75}{$
+				\begin{gathered}
+					\includegraphics{sigma/sigma1b.pdf}
+				\end{gathered}
+			$}
+	}
+	+
+	\hspace*{-1.25ex}
+	\raisebox{1.75ex}{
+		\scalebox{0.75}{$
+				\begin{gathered}
+					\includegraphics{sigma/sigma2a.pdf}
+				\end{gathered}
+			$}
+	}
+	\hspace*{-1.25ex}
+	+
+	\raisebox{1.75ex}{
+		\scalebox{0.75}{$
+				\begin{gathered}
+					\includegraphics{sigma/sigma2b.pdf}
+				\end{gathered}
+			$}
+	}
+	+ \hspace*{1ex} \cdots
+\end{equation*}
+\end{document}
