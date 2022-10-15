@@ -22,7 +22,7 @@ S = \
 - Imaginary time
 
 ```math
-g(\tau, \epsilon_k) = \left< \bar{\psi}(k, \tau) \psi(k, 0) \right> \frac{e^{-\epsilon_k \tau}}{1+e^{-\epsilon_k \beta}}
+g(\tau, \epsilon_k) = \left<\mathcal{T} \psi(k, \tau) \psi^\dag(k, 0) \right>_0= \frac{e^{-\epsilon_k \tau}}{1+e^{-\epsilon_k \beta}}
 ```
 
 - Matusbara frequency
@@ -40,7 +40,11 @@ G^{-1} = g^{-1} + \Sigma
 ## Perturbative Expansion of the Green's Function
 
 ```math
-G = g_{12} + (-1)(-1) g_{13} g_{32} g_{44} v_{44} + (+1) g_{13} g_{34} g_{42} v_{34} + 
+\begin{align}
+G &= g_{12} + (-1)^{1+1} g_{13} g_{32} g_{44} v_{44} +(-1)^{1+0} g_{13} g_{34} g_{42} v_{34} \\
+&+ (-1)^{2+1} g_{13}g_{35}g_{52}g_{46}g_{64}v_{34}v_{56} \\
+&+ (-1)^{2+0} g_{13}g_{35}g_{54}g_{46}g_{62}v_{34}v_{56} + ...
+\end{align}
 ```
 
 ![Green's function](../assets/green.png)
