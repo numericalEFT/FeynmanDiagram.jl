@@ -36,11 +36,13 @@ G^{-1} = g^{-1} + \Sigma
 
 ## Perturbative Expansion of the Green's Function
 
-![Green's function](../assets/diagrams/green.svg#green)
+![Sign rule for the Wick contractions.](../assets/diagrams/grassman/green0.svg#green0)
+
+![Diagrammatic expansion of the Green's function.](../assets/diagrams/grassman/green.svg#green)
 
 ## Feynman Rules for the Self-energy
 
-![Self-energy](../assets/diagrams/sigma.svg#sigma)
+![Diagrammatic expansion of the self-energy.](../assets/diagrams/grassman/sigma.svg#sigma)
 
 ## Feynman Rules for the 3-point Vertex Function
 

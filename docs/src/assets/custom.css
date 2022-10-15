@@ -6,7 +6,16 @@ article#documenter-page img {
     margin-right: auto;
 }
 
+article#documenter-page img[src*="#green"] {
+    width: 100%;
+}
+
+article#documenter-page img[src*="#green0"] {
+    /* Scales #green0 to similar font size to #green */
+    width: 47%;
+}
+
 article#documenter-page img[src*="#sigma"] {
-    /* Scale #sigma to same max height as #green */
-    max-width: 63%;
+    /* Scales #sigma to similar font size to #green */
+    width: 90%;
 }
