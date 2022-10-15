@@ -34,8 +34,9 @@ S = \bar{\psi}_1\left(-i\omega_n +\epsilon_k \right)\psi_1 + V_{1234}\bar{\psi}_
 - Imaginary time
 
 ```math
-g(\tau, k) = \left<\mathcal{T} \psi(k, \tau) \bar{\psi}(k, 0) \right>_0= \frac{e^{-\epsilon_k \tau}}{1+e^{-\epsilon_k \beta}}\theta(\tau)+\xi \frac{e^{-\epsilon_k (\beta+\tau)}}{1+e^{-\epsilon_k \beta}}\theta(-\tau)
+g(\tau, k) = \left<\mathcal{T} \psi(k, \tau) \bar{\psi}(k, 0) \right>_0= \frac{e^{-\epsilon_k \tau}}{1+e^{-\epsilon_k \beta}}\theta(\tau)+\xi \frac{e^{-\epsilon_k (\beta+\tau)}}{1+e^{-\epsilon_k \beta}}\theta(-\tau),
 ```
+where ``\xi`` is ``+1`` for boson and ``-1`` for fermion.
 
 - Matusbara frequency
 
@@ -75,10 +76,26 @@ The sign of a Green's function diagram is given by ``(-1)^{n_v} \xi^{n_F}``, whe
 
 ## Feynman Rules for the Self-energy
 
+From the Green's function diagrams, one can derive the __negative__ self-energy diagram,
+
 ![Diagrammatic expansion of the self-energy.](../assets/diagrams/grassman/sigma.svg#sigma)
+
+The sign of a __negative__ self-energy ``-\Sigma`` diagram is given by ``(-1)^{n_v} \xi^{n_F}``, where
+1. ``n_v`` is the number of interactions.
+2. ``n_F`` is the number of the fermionic loops.
 
 ## Feynman Rules for the 3-point Vertex Function
 
+The self-energy is related to the 3-point vertex function through an equation,
+```math
+\Sigma = G\dot W \dot \Gamma_3,
+```
+
 ## Feynman Rules for the 4-point Vertex Function
+
+The 4-point vertex function is related to the 3-point vertex function through an equation,
+```math
+\Gamma_3 = G\dot G\dot \Gamma_4,
+```
 
 ## Feynman Rules for the Polarization
