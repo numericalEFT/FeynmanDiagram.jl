@@ -19,7 +19,7 @@ where the Matsubara-frequency ``\omega_n=2\pi n/\beta`` for boson and ``\omega_n
 The partition sum associates with a generic action,
 
 ```math
-Z = \int \mathcal{D}\bar{\psi}\psi \exp\left(-S\right),
+Z = \int \mathcal{D}\bar{\psi}\mathcal{D}\psi \exp\left(-S\right),
 ```
 
 where the action takes a generic form,
