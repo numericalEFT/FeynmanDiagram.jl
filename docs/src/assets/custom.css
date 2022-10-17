@@ -19,3 +19,13 @@ article#documenter-page img[src*="#sigma"] {
     /* Scales #sigma to similar font size to #green */
     width: 90%;
 }
+
+article#documenter-page img[src*="#gamma3"] {
+    /* Scales #gamma3 to similar font size to #green */
+    width: 74%;
+}
+
+article#documenter-page img[src*="#gamma4"] {
+    /* Scales #gamma4 to similar font size to #green */
+    width: 95%;
+}
