@@ -1,0 +1,25 @@
+% standalone document border convention: {left bottom right top}
+\documentclass[varwidth,border={1pt 1pt -11pt 1pt}]{standalone}
+\usepackage[force]{feynmp-auto}		    
+\usepackage{amsmath}
+
+\begin{document}
+	\begin{fmffile}{gamma3_2b_diag}
+		\begin{fmfgraph*}(120,80)
+			\fmfleft{l}\fmfright{rb,rt}
+			\fmf{boson,tension=3.25}{l,a}
+			\fmf{fermion,tension=1.57}{rb,b}
+			\fmf{fermion,tension=1.57}{b,rt}
+			\fmf{fermion,left=0.6}{a,c,a}
+			\fmf{boson,tension=2.8}{c,d}
+			\fmf{fermion,left=0.6}{d,e,d}
+			\fmf{boson,tension=2.8}{e,b}
+			\fmffreeze
+			\fmfv{d.sh=circle, d.fi=full, d.si=2thick, l.a=-100, l.d=4.5, label=$1$}{a}
+			\fmfv{d.sh=circle, d.fi=full, d.si=2thick, l.a=0, l.d=4.5, label=$2$}{b}
+			\fmfv{d.sh=circle, d.fi=full, d.si=2thick, l.a=-80, l.d=4.5, label=$4$}{c}
+			\fmfv{d.sh=circle, d.fi=full, d.si=2thick, l.a=-80, l.d=4.5, label=$6$}{e}
+			\fmfv{d.sh=circle, d.fi=full, d.si=2thick, l.a=-100, l.d=4.5, label=$5$}{d}
+		\end{fmfgraph*}
+	\end{fmffile}
+\end{document}

@@ -1,0 +1,21 @@
+% standalone document border convention: {left bottom right top}
+\documentclass[varwidth,border={1pt 3pt 1pt 3pt}]{standalone}
+\usepackage[force]{feynmp-auto}
+\usepackage{rotating}
+
+\begin{document}
+\begin{fmffile}{poln1a_diag}
+	\begin{fmfgraph*}(90,35)
+		\fmfleft{a}
+        \fmfright{b}
+        \fmf{boson,tension=7}{a,i}
+        \fmf{boson,tension=7}{j,b}
+		\fmf{fermion,left=0.61}{i,j}
+		\fmf{fermion,left=0.61}{j,i}
+		\fmfdot{i,j}
+		\fmfv{label=$1$,l.a=110}{i}
+		\fmfv{label=$2$,l.a=70}{j}
+	\end{fmfgraph*}
+\end{fmffile}
+\end{document}
+

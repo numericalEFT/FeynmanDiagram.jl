@@ -1,0 +1,32 @@
+% standalone document border convention: {left bottom right top}
+\documentclass[varwidth,border={1pt 12pt 1pt 12pt}]{standalone}
+\usepackage[force]{feynmp-auto}
+\usepackage{rotating}
+
+\begin{document}
+\begin{fmffile}{poln2b_diag}
+	\begin{fmfgraph*}(126,55)
+		\fmfleft{l}
+        \fmfright{r}
+		\fmftop{n}
+		\fmfbottom{s}
+        \fmf{boson,tension=11}{l,a}
+        \fmf{boson,tension=11}{b,r}
+		\fmf{phantom,left=0.6}{a,b}
+		\fmf{phantom,left=0.6}{b,a}
+		\fmf{boson,tension=2.5}{n,c}
+		\fmf{fermion,left=0.6}{c,d,c}
+		\fmf{boson,tension=2.5}{d,s}
+		\fmffreeze
+		\fmf{fermion,left=0.265}{a,n,b}
+		\fmf{fermion,left=0.265}{b,s,a}
+		\fmfdot{a,b,c,d,n,s}
+		\fmfv{label=$1$,l.a=110}{a}
+		\fmfv{label=$2$,l.a=70}{b}
+		\fmfv{label=$3$,l.a=90,l.d=4.5}{n}
+		\fmfv{label=$4$,l.a=-90,l.d=4.5}{s}
+		\fmfv{label=$5$,l.a=20,l.d=4.5}{c}
+		\fmfv{label=$6$,l.a=-20,l.d=4.5}{d}
+	\end{fmfgraph*}
+\end{fmffile}
+\end{document}
