@@ -6,26 +6,28 @@ article#documenter-page img {
     margin-right: auto;
 }
 
+/* Approximately scale images to inline latex font size */
+
 article#documenter-page img[src*="#green"] {
-    width: 100%;
-}
-
-article#documenter-page img[src*="#green0"] {
-    /* Scales #green0 to similar font size to #green */
-    width: 47%;
-}
-
-article#documenter-page img[src*="#sigma"] {
-    /* Scales #sigma to similar font size to #green */
     width: 90%;
 }
 
+article#documenter-page img[src*="#green0"] {
+    width: 45%;
+}
+
+article#documenter-page img[src*="#sigma"] {
+    width: 80%;
+}
+
 article#documenter-page img[src*="#gamma3"] {
-    /* Scales #gamma3 to similar font size to #green */
-    width: 74%;
+    width: 68%;
 }
 
 article#documenter-page img[src*="#gamma4"] {
-    /* Scales #gamma4 to similar font size to #green */
-    width: 95%;
+    width: 62%;
+}
+
+article#documenter-page img[src*="#polarization"] {
+    width: 80%;
 }

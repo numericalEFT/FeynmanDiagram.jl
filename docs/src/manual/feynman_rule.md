@@ -128,3 +128,5 @@ The 4-point vertex function is related to the 3-point vertex function through an
 ![Diagrammatic expansion of the 4-point vertex function.](../assets/diagrams/gamma4.svg#gamma4)
 
 ## Feynman Rules for the Polarization
+
+![Diagrammatic expansion of the polarization.](../assets/diagrams/polarization.svg#polarization)
