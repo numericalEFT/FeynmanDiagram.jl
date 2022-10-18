@@ -108,6 +108,8 @@ The self-energy is related to the 3-point vertex function through an equation,
 \Sigma = G\dot W \dot \Gamma_3,
 ```
 
+![Diagrammatic expansion of the 3-point vertex function.](../assets/diagrams/gamma3.svg#gamma3)
+
 ## Feynman Rules for the 4-point Vertex Function
 
 The 4-point vertex function is related to the 3-point vertex function through an equation,
@@ -115,5 +117,7 @@ The 4-point vertex function is related to the 3-point vertex function through an
 ```math
 \Gamma_3 = G\dot G\dot \Gamma_4,
 ```
+
+![Diagrammatic expansion of the 4-point vertex function.](../assets/diagrams/gamma4.svg#gamma4)
 
 ## Feynman Rules for the Polarization
