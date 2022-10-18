@@ -19,7 +19,7 @@ where the Matsubara-frequency ``\omega_n=2\pi n/\beta`` for boson and ``\omega_n
 The partition sum associates with a generic action,
 
 ```math
-Z = \int \mathcal{D}\bar{\psi}\psi \exp\left(-S\right),
+Z = \int \mathcal{D}\bar{\psi}\mathcal{D}\psi \exp\left(-S\right),
 ```
 
 where the action takes a generic form,
@@ -95,6 +95,13 @@ From the Green's function diagrams, one can derive the __negative__ self-energy 
 
 ![Diagrammatic expansion of the self-energy.](../assets/diagrams/sigma.svg#sigma)
 
+```math
+\begin{aligned}
+-\Sigma_{12} = & (-1) \xi V_{34} g_{44}+(-1) V_{34} g_{34} \\
++&(-1)^2 \xi V_{34} V_{56} g_{46} g_{64} g_{43}+(-1)^2 V_{34} V_{56} g_{35} g_{54} g_{42}+\cdots
+\end{aligned}
+```
+
 The sign of a __negative__ self-energy ``-\Sigma`` diagram is given by ``(-1)^{n_v} \xi^{n_F}``, where
 
 1. ``n_v`` is the number of interactions.
@@ -105,7 +112,7 @@ The sign of a __negative__ self-energy ``-\Sigma`` diagram is given by ``(-1)^{n
 The self-energy is related to the 3-point vertex function through an equation,
 
 ```math
-\Sigma = G\dot W \dot \Gamma_3,
+\Sigma = G \cdot W \cdot \Gamma_3,
 ```
 
 ![Diagrammatic expansion of the 3-point vertex function.](../assets/diagrams/gamma3.svg#gamma3)
@@ -115,7 +122,7 @@ The self-energy is related to the 3-point vertex function through an equation,
 The 4-point vertex function is related to the 3-point vertex function through an equation,
 
 ```math
-\Gamma_3 = G\dot G\dot \Gamma_4,
+\Gamma_3 = G \cdot G \cdot \Gamma_4,
 ```
 
 ![Diagrammatic expansion of the 4-point vertex function.](../assets/diagrams/gamma4.svg#gamma4)
