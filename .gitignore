@@ -55,7 +55,7 @@ deps/build.log
 .DS_Store
 *~
 
-# runtime files
+# Runtime files
 run/*
 *.dat
 *.txt
@@ -64,6 +64,10 @@ __pycache__
 *.pyc
 
 *.vscode
+
+# Temporarily unignore vscode settings
+!.vscode/
+
 *.DS_Store
 *.pb.gz
 
