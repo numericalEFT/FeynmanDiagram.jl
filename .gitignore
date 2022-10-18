@@ -29,6 +29,10 @@ Manifest.toml
 *.fls
 *.log
 *.gz
+*.mp
+*.t1
+*.1
+*.dvi
 
 *.pyc
 .ipynb*
