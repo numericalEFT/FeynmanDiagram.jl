@@ -97,7 +97,7 @@ From the Green's function diagrams, one can derive the __negative__ self-energy 
 
 ```math
 \begin{aligned}
--\Sigma_{12} = & (-1) \xi V_{34} g_{44}+(-1) V_{34} g_{34} \\
+-\Sigma = & (-1) \xi V_{34} g_{44}+(-1) V_{34} g_{34} \\
 +&(-1)^2 \xi V_{34} V_{56} g_{46} g_{64} g_{43}+(-1)^2 V_{34} V_{56} g_{35} g_{54} g_{42}+\cdots
 \end{aligned}
 ```
@@ -112,21 +112,65 @@ The sign of a __negative__ self-energy ``-\Sigma`` diagram is given by ``(-1)^{n
 The self-energy is related to the 3-point vertex function through an equation,
 
 ```math
-\Sigma = G \cdot W \cdot \Gamma_3,
+-\left(\Sigma_{3, x} -\Sigma^{Hatree}_{3, x}\right) = G_{3,y} \cdot \left(-V_{3, 4}\right) \cdot \Gamma^3_{4,y,x},
+```
+
+where the indices $x, y$ could be different from diagrams to diagrams, and $\Gamma_3$ is the inproper three-vertex function. Eliminate the additional sign, one derives,
+
+```math
+\Sigma_{3, x} -\Sigma^{Hatree}_{3, x} = G_{3,y} \cdot V_{3, 4} \cdot \Gamma^3_{4,y,x},
 ```
 
 ![Diagrammatic expansion of the 3-point vertex function.](../assets/diagrams/gamma3.svg#gamma3)
+
+The diagram weights are given by,
+
+```math
+\begin{aligned}
+\Gamma^{(3)}= & 1 + (-1) \xi V_{56} g_{46} g_{64} + (-1) V_{56} g_{54} g_{46}\\
++&(-1)^2 \xi^2 V_{56} V_{78} g_{46} g_{64} g_{58} g_{85}+(-1)^2\xi V_{56} V_{78} g_{74} g_{46}+\cdots
+\end{aligned}
+```
+
+The sign of ``\Gamma^{(3)}`` diagram is given by ``(-1)^{n_v} \xi^{n_F}``.
 
 ## Feynman Rules for the 4-point Vertex Function
 
 The 4-point vertex function is related to the 3-point vertex function through an equation,
 
 ```math
-\Gamma_3 = G \cdot G \cdot \Gamma_4,
+\Gamma^{(3)}_{4,y,x} = \xi \cdot G_{4,s} \cdot G_{t, 4} \cdot \Gamma^{(4)}_{s, t, y, x},
 ```
+
+where the indices $x, y, s, t$ could be different from diagrams to diagrams.
 
 ![Diagrammatic expansion of the 4-point vertex function.](../assets/diagrams/gamma4.svg#gamma4)
 
-## Feynman Rules for the Polarization
+The diagram weights are given by,
 
-![Diagrammatic expansion of the polarization.](../assets/diagrams/polarization.svg#polarization)
+```math
+\begin{aligned}
+\Gamma^{(4)}= & (-1) V_{56}^{\text{direct}} + (-1)\xi V_{56}^{exchange}\\
++&(-1)^2 \xi V_{56} V_{78} g_{58} g_{85}+(-1)^2 V_{56} V_{78}+\cdots,
+\end{aligned}
+```
+
+where we used the identity ``\xi^2 = 1``.
+
+The sign of ``\Gamma^{(4)}`` diagram is given by ``(-1)^{n_v} \xi^{n_F}`` multiplied with a sign from the permutation of the external legs.
+
+## Feynman Rules for the Susceptibility
+
+The susceptibility can be derived from ``\Gamma^{(4)}``.
+
+```math
+\chi_{1,2} \equiv \xi \left<\mathcal{T} n_1 n_2\right>_{\text{connected}} = \xi G_{1,2} G_{2, 1} + \xi G_{1,s} G_{t, 1} \Gamma^{(4)}_{s, t, y, x} G_{2,y} G_{x, 2}
+```
+
+![Diagrammatic expansion of the susceptibility.](../assets/diagrams/susceptibility.svg#susceptibility)
+
+We define the polarization ``P`` as the one-interaction irreducible (or proper) vertex function,
+
+```math
+\chi^{-1} = P^{-1} + V,
+```
