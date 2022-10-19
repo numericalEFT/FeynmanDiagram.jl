@@ -4,25 +4,24 @@
 \usepackage{rotating}
 
 \begin{document}
-\begin{fmffile}{poln1c_diag}
+\begin{fmffile}{chi1d_diag}
 	\begin{fmfgraph*}(90,35)
 		\fmfleft{l}
         \fmfright{r}
 		\fmftop{t}
         \fmf{boson,tension=7}{l,a}
         \fmf{boson,tension=7}{b,r}
-		\fmf{fermion,left=0.6}{a,b}
+		\fmf{phantom,left=0.6}{a,b}
 		\fmf{phantom,left=0.6}{b,a}
 		\fmffreeze
-		\fmfforce{vloc(__t) shifted (-12,-32.5)}{c}
-		\fmfforce{vloc(__t) shifted (12,-32.5)}{d}
-        \fmf{boson,left}{c,d}
-		\fmf{fermion,left=0.18}{b,d,c,a}
+		\fmf{fermion,left=0.6}{a,c,a}
+        \fmf{boson,tension=2}{c,d}
+		\fmf{fermion,left=0.6}{b,d,b}
 		\fmfdot{a,b,c,d}
-		\fmfv{label=$1$,l.a=110}{a}
-		\fmfv{label=$2$,l.a=70}{b}
-		\fmfv{label=$3$,l.a=-110,l.d=4.5}{c}
-		\fmfv{label=$4$,l.a=-70,l.d=4.5}{d}
+		\fmfv{label=$1$,l.a=-110,l.d=4.5}{a}
+		\fmfv{label=$2$,l.a=-70,l.d=4.5}{b}
+		\fmfv{label=$3$,l.a=-70,l.d=4.5}{c}
+		\fmfv{label=$4$,l.a=-110,l.d=4.5}{d}
 	\end{fmfgraph*}
 \end{fmffile}
 \end{document}

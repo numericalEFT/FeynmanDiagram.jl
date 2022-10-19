@@ -114,7 +114,9 @@ The self-energy is related to the 3-point vertex function through an equation,
 ```math
 -\left(\Sigma_{3, x} -\Sigma^{Hatree}_{3, x}\right) = G_{3,y} \cdot \left(-V_{3, 4}\right) \cdot \Gamma^3_{4,y,x},
 ```
-where the indices $x, y$ could be different from diagrams to diagrams, and $\Gamma_3$ is the inproper three-vertex function. Eliminate the additional sign, one derives, 
+
+where the indices $x, y$ could be different from diagrams to diagrams, and $\Gamma_3$ is the inproper three-vertex function. Eliminate the additional sign, one derives,
+
 ```math
 \Sigma_{3, x} -\Sigma^{Hatree}_{3, x} = G_{3,y} \cdot V_{3, 4} \cdot \Gamma^3_{4,y,x},
 ```
@@ -122,6 +124,7 @@ where the indices $x, y$ could be different from diagrams to diagrams, and $\Gam
 ![Diagrammatic expansion of the 3-point vertex function.](../assets/diagrams/gamma3.svg#gamma3)
 
 The diagram weights are given by,
+
 ```math
 \begin{aligned}
 \Gamma^{(3)}= & 1 + (-1) \xi V_{56} g_{46} g_{64} + (-1) V_{56} g_{54} g_{46}\\
@@ -138,17 +141,20 @@ The 4-point vertex function is related to the 3-point vertex function through an
 ```math
 \Gamma^{(3)}_{4,y,x} = \xi \cdot G_{4,s} \cdot G_{t, 4} \cdot \Gamma^{(4)}_{s, t, y, x},
 ```
+
 where the indices $x, y, s, t$ could be different from diagrams to diagrams.
 
 ![Diagrammatic expansion of the 4-point vertex function.](../assets/diagrams/gamma4.svg#gamma4)
 
 The diagram weights are given by,
+
 ```math
 \begin{aligned}
 \Gamma^{(4)}= & (-1) V_{56}^{\text{direct}} + (-1)\xi V_{56}^{exchange}\\
 +&(-1)^2 \xi V_{56} V_{78} g_{58} g_{85}+(-1)^2 V_{56} V_{78}+\cdots,
 \end{aligned}
 ```
+
 where we used the identity ``\xi^2 = 1``.
 
 The sign of ``\Gamma^{(4)}`` diagram is given by ``(-1)^{n_v} \xi^{n_F}`` multiplied with a sign from the permutation of the external legs.
@@ -158,7 +164,13 @@ The sign of ``\Gamma^{(4)}`` diagram is given by ``(-1)^{n_v} \xi^{n_F}`` multip
 The susceptibility can be derived from ``\Gamma^{(4)}``.
 
 ```math
-\chi_{1,2} \equiv \left<\mathcal{T} n_1 n_2\right>_{\text{connected}} = G_{1,2} G_{2, 1} + G_{1,s} G_{t, 1} \Gamma^{(4)}_{s, t, y, x} G_{2,y} G_{x, 2}
+\chi_{1,2} \equiv \xi \left<\mathcal{T} n_1 n_2\right>_{\text{connected}} = \xi G_{1,2} G_{2, 1} + \xi G_{1,s} G_{t, 1} \Gamma^{(4)}_{s, t, y, x} G_{2,y} G_{x, 2}
 ```
 
-![Diagrammatic expansion of the polarization.](../assets/diagrams/polarization.svg#polarization)
+![Diagrammatic expansion of the susceptibility.](../assets/diagrams/susceptibility.svg#susceptibility)
+
+We define the polarization ``P`` as the one-interaction irreducible (or proper) vertex function,
+
+```math
+\chi^{-1} = P^{-1} + V,
+```
