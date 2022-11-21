@@ -85,11 +85,12 @@ struct GenericGreen{P,W}
     type::Vector{DiagType}
     subdiagram::Vector{GenericGreen{P}}
 
+    operator::Operator
     factor::W
     weight::W
-    function GenericGreen{P}(para::P, legs=[], subdiagram=[]; name=:none, type=[],
-        factor=W(1), weight=W(0)) where {P,W}
-        return new{P}(uid(), name, para, legs, type, subdiagram, factor, weight)
+    function GenericGreen{P,W}(para::P, legs=[], subdiagram=[]; name=:none, type=[],
+        operator::Operator=Sum(), factor=W(1), weight=W(0)) where {P,W}
+        return new{P,W}(uid(), name, para, legs, type, subdiagram, factor, weight, operator)
     end
     #para::DiagPara
     #point::Vector{Int}
@@ -139,42 +140,47 @@ end
 ##struct Ver4Id <: VertexId end
 #struct VerNId <: VertexId end
 
-function FermiPropagator{P,W}(para::P, legs, subdiagram=[]; name=:none, extratype=[], factor::W, weight::W) where {P,W}
+function FermiPropagator{P,W}(para::P, legs, subdiagram=[]; name=:none, extratype=[],
+    factor::W, weight::W, operator::Operator) where {P,W}
     @assert length(legs) == 2 && legs[1].isFermi && legs[2].isFermi && ((legs[1].isCreation && !legs[2].isCreation)
                                                                         ||
                                                                         (!legs[1].isCreation && legs[2].isCreation)) "Error: input parameters do not support FermiPropagator."
     type = union([Connected, OneFermiIrreducible], extratype)
-    return GenericGreen{P,W}(para, legs, subdiagram; name, type, factor, weight)
+    return GenericGreen{P,W}(para, legs, subdiagram; name, type, factor, weight, operator)
 end
 
-function BosePropagator{P,W}(para::P, legs, subdiagram=[]; name=:none, extratype=[], factor::W, weight::W) where {P,W}
+function BosePropagator{P,W}(para::P, legs, subdiagram=[]; name=:none, extratype=[],
+    factor::W, weight::W, operator::Operator) where {P,W}
     @assert length(legs) == 2 && !legs[1].isFermi && !legs[2].isFermi && ((legs[1].isCreation && !legs[2].isCreation)
                                                                           ||
                                                                           (!legs[1].isCreation && legs[2].isCreation)) "Error: input parameters do not support BosePropagator."
     type = union([Connected, OneBoseIrreducible], extratype)
-    return GenericGreen{P,W}(para, legs, subdiagram; name, type, factor, weight)
+    return GenericGreen{P,W}(para, legs, subdiagram; name, type, factor, weight, operator)
 end
 
-function FermiSelfEnergy{P,W}(para::P, legs, subdiagram=[]; name=:none, extratype=[], factor::W, weight::W) where {P,W}
+function FermiSelfEnergy{P,W}(para::P, legs, subdiagram=[]; name=:none, extratype=[],
+    factor::W, weight::W, operator::Operator) where {P,W}
     @assert length(legs) == 2 && legs[1].isFermi && legs[2].isFermi && Amputated in legs[1].type &&
             Amputated in legs[2].type "Error: input parameters do not support FermiSelfEnergy."
     type = union([Connected, Amputated, OneFermiIrreducible], extratype)
-    return GenericGreen{P,W}(para, legs, subdiagram; name, type, factor, weight)
+    return GenericGreen{P,W}(para, legs, subdiagram; name, type, factor, weight, operator)
 end
 
-function BoseSelfEnergy{P,W}(para::P, legs, subdiagram=[]; name=:none, extratype=[], factor::W, weight::W) where {P,W}
+function BoseSelfEnergy{P,W}(para::P, legs, subdiagram=[]; name=:none, extratype=[],
+    factor::W, weight::W, operator::Operator) where {P,W}
     @assert length(legs) == 2 && !legs[1].isFermi && !legs[2].isFermi && Amputated in legs[1].type &&
             Amputated in legs[2].type "Error: input parameters do not support BoseSelfEnergy (Polarization)."
     type = union([Connected, Amputated, OneBoseIrreducible], extratype)
-    return GenericGreen{P,W}(para, legs, subdiagram; name, type, factor, weight)
+    return GenericGreen{P,W}(para, legs, subdiagram; name, type, factor, weight, operator)
 end
 
 
-function Vertex{P,W}(para::P, N::Int, legs, subdiagram=[]; name=:none, extratype=[], factor::W, weight::W) where {P,W}
+function Vertex{P,W}(para::P, N::Int, legs, subdiagram=[]; name=:none, extratype=[],
+    factor::W, weight::W, operator::Operator) where {P,W}
     @assert length(legs) == N && Amputated in legs[1].type "Error: input parameters do not support Vertex."
     # or (!legs[1].isCreation && legs[2].isCreation)) "Error: input parameters do not support FermiPropagator."
     type = union([Connected, Amputated, OneFermiIrreducible], extratype)
-    return GenericGreen{P,W}(para, legs, subdiagram; name, type, factor, weight)
+    return GenericGreen{P,W}(para, legs, subdiagram; name, type, factor, weight, operator)
 end
 
 
@@ -183,14 +189,10 @@ function Base.isequal(a::GenericGreen, b::GenericGreen)
         return false
     end
     for field in fieldnames(typeof(a))
-        if field == :extK
-            if (getproperty(a, :extK) ≈ getproperty(b, :extK)) == false
-                return false
-            end
+        if field == :weight
+            (getproperty(a, :weight) ≈ getproperty(b, :weight)) == false && return false
         end
-        if getproperty(a, field) != getproperty(b, field)
-            return false
-        end
+        getproperty(a, field) != getproperty(b, field) && return false
     end
     return true
 end

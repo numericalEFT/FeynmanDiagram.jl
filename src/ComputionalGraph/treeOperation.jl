@@ -7,7 +7,7 @@
 #     push!(parent.subdiagram, deepcopy(child))
 # end
 
-# function addSubDiagram!(parent::Diagram, child::Vector{Diagram{W}}) where {W}
+# function addSubDiagram!(parent::Diagram, child::Vector{GenericGreen{P,W}}) where {W}
 #     for d in child
 #         addSubDiagram!(parent, d)
 #     end
@@ -15,44 +15,44 @@
 
 # _diagram(df, index) = df[index, :Diagram]
 
-function _combinegroups(groups, getid, factor, operator, name)
+function _combinegroups(groups, factor, operator, name)
     # combine diagrams in a group into one composite diagram
     gdf = combine(groups) do group # for each group in groups
         # check the documentation of ``combine" for details https://dataframes.juliadata.org/stable/man/split_apply_combine/
         # id = isnothing(getid) ? GenericId(group.diagram[1].id.para, Tuple(group[1, fields])) : getid(group)
-        id = getid(group)
 
         if nrow(group) == 1
             # if there is only one diagram in df, and the new id is either GenericId or the id of the existing diagram, 
             # then simply return the current df without creating a new diagram
             # ! the new factor will be multiplied to the factor of the exisiting diagram!
-            if id isa GenericId || typeof(id) == typeof(group.diagram[1].id)
+            if group isa GenericGreen
                 # diag = deepcopy(group[1, :diagram])
-                diag = group.diagram[1]
+                diag = group[1]
                 diag.factor *= factor
                 return (diagram=diag, hash=diag.hash)
             end
         end
-        W = typeof(group.diagram[1].weight)
-        diag = Diagram{W}(id, operator, group.diagram, name=name, factor=factor)
+        P, W = typeof(group[1].para), typeof(group[1].weight)
+        # generate new para, legs and type.
+        diag = GenericGreen{P,W}(newpara, newlegs, groups; operator=operator, name=name, factor=factor)
         return (diagram=diag, hash=diag.hash)
     end
     return gdf
 end
 
-function _mergediag(::Type{W}, group, factor, id, operator, name) where {W}
+function _mergediag(::Type{W}, group, factor, operator, name) where {W}
     if nrow(group) == 1
         # if there is only one diagram in df, and the new id is either GenericId or the id of the existing diagram, 
         # then simply return the current df without creating a new diagram
         # ! the new factor will be multiplied to the factor of the exisiting diagram!
-        if id isa GenericId || typeof(id) == typeof(group.diagram[1].id)
-            # diag = deepcopy(group[1, :diagram])
-            diag::Diagram{W} = group.diagram[1]
-            diag.factor *= factor
-            return diag
-        end
+        # if id isa GenericId || typeof(id) == typeof(group.diagram[1].id)
+        # diag = deepcopy(group[1, :diagram])
+        diag = group[1]
+        diag.factor *= factor
+        return diag
+        # end
     end
-    return Diagram{W}(id, operator, group.diagram, name=name, factor=factor)
+    # return GenericGreen(group[1].para, group[1].legs, group.subdiagram; operator=operator, name=name, factor=factor)
 end
 
 function _combine(::Type{W}, groups, factor, getid, operator, name) where {W}
@@ -72,7 +72,7 @@ function _combine(::Type{W}, groups, factor, getid, operator, name) where {W}
     for col in groupcols(groups)
         d[col] = [key[col] for key in _keys]
     end
-    d[:diagram] = [_mergediag(W, groups[key], factor, getid(groups[key]), operator, name) for key in _keys]
+    d[:diagram] = [_mergediag(W, groups[key], factor, operator, name) for key in _keys]
     d[:hash] = [diag.hash for diag in d[:diagram]]
     return DataFrame(d, copycols=false)
 end
@@ -129,17 +129,17 @@ function mergeby(diags::Union{Diagram,Tuple,AbstractVector}, fields=nothing; idk
 end
 
 # function mergeby(diags::AbstractVector, fields=[]; idkey::Vector{Symbol}=[], kwargs...)
-function mergeby(diags::Vector{Diagram{W}}, fields; idkey=Vector{Symbol}(), kwargs...) where {W}
+function mergeby(diags::Vector{GenericGreen{P,W}}, fields; idkey=Vector{Symbol}(), kwargs...) where {W}
     if isempty(diags)
         return diags
     else
         df = toDataFrame(diags, idkey)
         mergedf = mergeby(df, fields; kwargs...)
-        return Vector{Diagram{W}}(mergedf.diagram)
+        return Vector{GenericGreen{P,W}}(mergedf.diagram)
     end
 end
 
-function mergeby(diags::Vector{Diagram{W}};
+function mergeby(diags::Vector{GenericGreen{P,W}};
     operator=Sum(), name::Symbol=:none, factor=1.0,
     getid::Function=d -> GenericId(d[1].id.para::DiagPara{W})
 ) where {W}
@@ -154,12 +154,12 @@ function mergeby(diags::Vector{Diagram{W}};
             diags[1].factor *= factor
             return diags
         end
-        diag = Diagram{W}(id, operator, diags, name=name, factor=factor)
+        diag = GenericGreen{P,W}(id, operator, diags, name=name, factor=factor)
         return [diag,]
     end
 end
 # mergeby(df::DataFrame; kwargs...) = mergeby(df, []; kwargs...)
-# mergeby(diags::Vector{Diagram{W}}; kwargs...) where {W} = mergeby(diags, []; kwargs...)
+# mergeby(diags::Vector{GenericGreen{P,W}}; kwargs...) where {W} = mergeby(diags, []; kwargs...)
 
 
 
@@ -173,13 +173,13 @@ AbstractTrees.printnode(io::IO, diag::Diagram) = print(io, "\u001b[32m$(diag.has
 # AbstractTrees.printnode(io::IO, diag::Diagram) = print(io, "$(diag)")
 
 ######### define the following for the type stability #########################
-# AbstractTrees.childrentype(diag::Diagram{W}) where {W} = Vector{Diagram{W}}
+# AbstractTrees.childrentype(diag::GenericGreen{P,W}) where {W} = Vector{GenericGreen{P,W}}
 
-# AbstractTrees.NodeType(::Diagram{W}) where {W} = HasNodeType()
-AbstractTrees.nodetype(::Diagram{W}) where {W} = Diagram{W}
+# AbstractTrees.NodeType(::GenericGreen{P,W}) where {W} = HasNodeType()
+AbstractTrees.nodetype(::GenericGreen{P,W}) where {W} = GenericGreen{P,W}
 
 ## Optional enhancements
 # These next two definitions allow inference of the item type in iteration.
 # (They are not sufficient to solve all internal inference issues, however.)
-Base.eltype(::Type{<:TreeIterator{Diagram{W}}}) where {W} = Diagram{W}
-Base.IteratorEltype(::Type{<:TreeIterator{Diagram{W}}}) where {W} = Base.HasEltype()
+Base.eltype(::Type{<:TreeIterator{GenericGreen{P,W}}}) where {W} = GenericGreen{P,W}
+Base.IteratorEltype(::Type{<:TreeIterator{GenericGreen{P,W}}}) where {W} = Base.HasEltype()
