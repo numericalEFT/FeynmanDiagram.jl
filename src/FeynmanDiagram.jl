@@ -15,6 +15,17 @@ Base.length(r::DiagramType) = 1
 Base.iterate(r::DiagramType) = (r, nothing)
 function Base.iterate(r::DiagramType, ::Nothing) end
 
+abstract type DiagType end
+abstract type Vacuum <: DiagType end
+abstract type Tadpole <: DiagType end
+abstract type FermiPropagator <: DiagType end
+abstract type BosePropagator <: DiagType end
+abstract type FermiSelfEnergy <: DiagType end
+abstract type BoseSelfEnergy <: DiagType end
+abstract type VertexDiag <: DiagType end
+abstract type GncDiag <: DiagType end
+abstract type GndDiag <: DiagType end
+
 @enum Filter begin
     Wirreducible  #remove all polarization subdiagrams
     Girreducible  #remove all self-energy inseration
@@ -59,9 +70,29 @@ export Wirreducible, Girreducible, NoBubble, NoHartree, NoFock, Proper
 export Response, ChargeCharge, SpinSpin, UpUp, UpDown
 export AnalyticProperty, Instant, Dynamic, D_Instant, D_Dynamic
 
+export DiagType
+export FermiPropagator, BosePropagator, FermiSelfEnergy, BoseSelfEnergy, VertexDiag
+export Vacuum, Tadpole, GncDiag, GndDiag
+
 include("common.jl")
 export DiagPara, DiagParaF64
 export Interaction, interactionTauNum, innerTauNum
+
+include("common_new.jl")
+export DiagramPara, DiagramParaF64
+# export Interaction, interactionTauNum, innerTauNum
+
+include("computational_graph/ComputationalGraph.jl")
+using .ComputationalGraph
+export ComputationalGraph
+# export TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
+# export Permutation, Di, Ex, DiEx
+export GreenDiagram, ExternalVertice
+export OneFermiIrreducible, OneBoseIrreducible, ParticleHoleIrreducible, ParticleParticleIrreducible
+export reducibility
+# export addSubDiagram!, evalDiagNode!, evalDiagTree!, evalDiagTreeKT!
+# export Operator, Sum, Prod
+# export uidreset, toDataFrame, mergeby, plot_tree
 
 include("diagram_tree/DiagTree.jl")
 using .DiagTree
