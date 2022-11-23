@@ -63,22 +63,28 @@ end
     struct of a Feynman diagram. A diagram of a sum or produce of various subdiagrams.
 
 # Members
-- hash::Int          : the unique hash number to identify the diagram
-- name::Symbol       : name of the diagram
-- para::DiagramPara     : internal parameters of the diagram
+- hash::Int           : the unique hash number to identify the diagram
+- name::Symbol        : name of the diagram
+- para::DiagramPara   : internal parameters of the diagram
+- orders::Vector{Int} : orders of the diagram, loop order, derivative order, etc.
+- points::Vector{Int} : external and internal points in the diagram
+- currents::Vector{Float64} : independent currents in the diagram
 - extVertices::Vector{ExternalVertice}    : external vertices of the diagram
-- isConnected::Bool  : connected or disconnected Green's function
-- isAmputated::Bool  : amputated Green's function or not
+- isConnected::Bool   : connected or disconnected Green's function
+- isAmputated::Bool   : amputated Green's function or not
 - subdiagram::Vector{GreenDiagram{W}}   : vector of sub-diagrams 
-- operator::Operator : operation, support Sum() and Prod()
-- factor::W          : additional factor of the diagram
-- weight::W          : weight of the diagram
+- operator::Operator  : operation, support Sum() and Prod()
+- factor::W           : additional factor of the diagram
+- weight::W           : weight of the diagram
 """
 mutable struct GreenDiagram{W} # GreenDiagram
     hash::Int
     name::Symbol
     type::DataType
     para::DiagramPara
+    orders::Vector{Int}
+    points::Vector{Int}
+    currents::Vector{Float64}
 
     extVertices::Vector{ExternalVertice}
     isConnected::Bool
@@ -93,7 +99,8 @@ mutable struct GreenDiagram{W} # GreenDiagram
     function GreenDiagram{W}(para::DiagramPara, isConnected, isAmputated, extV=[], subdiagram=[];
         type=para.type, reducibility=[], name=:GreenDiagram, operator::Operator=Sum(), factor=W(1), weight=W(0)) where {W}
         @assert type <: DiagType "$type is not implemented in DiagType."
-        g = new{W}(uid(), name, type, para, extV, isConnected, isAmputated, reducibility, subdiagram, operator, factor, weight)
+        orders = zeros(Int, 16)
+        g = new{W}(uid(), name, type, para, orders, [], [], extV, isConnected, isAmputated, reducibility, subdiagram, operator, factor, weight)
         reducibility!(g)
         return g
     end
