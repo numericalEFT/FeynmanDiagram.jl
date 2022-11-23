@@ -93,7 +93,7 @@ function sigma(para::DiagPara{W}, extK=DiagTree.getK(para.totalLoopNum, 1), subd
         if isValidG(paraG)
             # println(paraW)
             if oW == 0 # Fock-type Σ
-                if NoHatree in paraW.filter
+                if NoHartree in paraW.filter
                     paraW0 = reconstruct(paraW, filter=union(paraW.filter, Proper), transferLoop=zero(K))
                     ver4 = vertex4(paraW0, legK, [], true)
                 else

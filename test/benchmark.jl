@@ -49,7 +49,7 @@ end
 diagPara(order) = DiagParaF64(type=type, innerLoopNum=order, hasTau=true,
     interaction=[FeynmanDiagram.Interaction(ChargeCharge, Instant),],  #instant charge-charge interaction
     # filter = [NoFock,])
-    filter=[NoHatree, Girreducible,])
+    filter=[NoHartree, Girreducible,])
 
 println("Build the diagrams into an experssion tree ...")
 const para = [diagPara(o) for o in 1:Order]

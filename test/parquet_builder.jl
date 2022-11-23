@@ -44,9 +44,9 @@ end
     # for Fock irreducible diagrams, only 0-loop or 2, 3, 4...-loop G is allowed
     @test Parquet.isValidG([NoFock,], 0) == true
     @test Parquet.isValidG([NoFock,], 1) == true
-    #one-loop G diagram becomes invalid only if both Hatree and Fock are filtered
-    @test Parquet.isValidG([NoFock, NoHatree], 1) == false
-    @test Parquet.isValidG([NoFock, NoHatree], 2) == true
+    #one-loop G diagram becomes invalid only if both Hartree and Fock are filtered
+    @test Parquet.isValidG([NoFock, NoHartree], 1) == false
+    @test Parquet.isValidG([NoFock, NoHartree], 2) == true
 
     # for G irreducible diagrams, no sigma subdiagram is allowed
     @test Parquet.isValidSigma([Girreducible,], 0, true) == false
@@ -59,15 +59,15 @@ end
 
     # for Fock irreducible diagrams, no Fock sigma subdiagram is allowed
     @test Parquet.isValidSigma([NoFock,], 0, true) == false
-    #one-loop sigma diagram can be either Hatree or Fock diagram
-    #one-loop sigma sub-diagram becomes invalid only if both Hatree and Fock are filtered
+    #one-loop sigma diagram can be either Hartree or Fock diagram
+    #one-loop sigma sub-diagram becomes invalid only if both Hartree and Fock are filtered
     @test Parquet.isValidSigma([NoFock,], 1, true) == true
-    @test Parquet.isValidSigma([NoFock, NoHatree], 1, true) == false
-    @test Parquet.isValidSigma([NoFock, NoHatree], 2, true) == true
+    @test Parquet.isValidSigma([NoFock, NoHartree], 1, true) == false
+    @test Parquet.isValidSigma([NoFock, NoHartree], 2, true) == true
 
     @test Parquet.isValidSigma([NoFock,], 0, false) == false
     @test Parquet.isValidSigma([NoFock,], 1, false) == true
-    @test Parquet.isValidSigma([NoFock, NoHatree], 1, false) == true
+    @test Parquet.isValidSigma([NoFock, NoHartree], 1, false) == true
     @test Parquet.isValidSigma([NoFock,], 2, false) == true
 end
 
@@ -113,7 +113,7 @@ evalFakePropagator(id::PropagatorId, K, extT, varT) = 1.0
         end
     end
 
-    function testVertex4(loopNum, chan, type::Symbol; filter=[NoHatree,], timing=false, toeval=true)
+    function testVertex4(loopNum, chan, type::Symbol; filter=[NoHartree,], timing=false, toeval=true)
         println("$(Int.(chan)) Channel Test")
         Kdim, spin = 3, 2
         interactionTauNum = 1
@@ -244,7 +244,7 @@ evalFakePropagator(id::PropagatorId, K, extT, varT) = 1.0
 end
 
 @testset "Parquet Sigma" begin
-    function getSigma(loopNum; Kdim=3, spin=2, interactionTauNum=1, filter=[NoHatree,], isFermi=true, subdiagram=false)
+    function getSigma(loopNum; Kdim=3, spin=2, interactionTauNum=1, filter=[NoHartree,], isFermi=true, subdiagram=false)
         println("LoopNum =$loopNum Sigma Test")
 
         para = DiagParaF64(
@@ -293,7 +293,7 @@ end
     for l = 1:4
         # ret = getSigma(l, spin = 1, isFermi = false, filter = [Builder.Girreducible,])
         # testDiagramNumber(ret...)
-        ret = getSigma(l, spin=2, isFermi=false, filter=[NoHatree, Girreducible,])
+        ret = getSigma(l, spin=2, isFermi=false, filter=[NoHartree, Girreducible,])
         testDiagramNumber(ret...)
     end
 
@@ -303,7 +303,7 @@ end
 end
 
 @testset "Green" begin
-    function buildG(loopNum, extT; Kdim=3, spin=2, interactionTauNum=1, filter=[NoHatree,], isFermi=true)
+    function buildG(loopNum, extT; Kdim=3, spin=2, interactionTauNum=1, filter=[NoHartree,], isFermi=true)
         para = DiagParaF64(
             type=GreenDiag,
             loopDim=Kdim,
@@ -327,26 +327,26 @@ end
     # DiagTree.showTree(diag, Gidx)
 
     # If G is irreducible, then only loop-0 G exist for main diagram, and no G exist for subdiagram
-    G = buildG(0, [1, 2]; filter=[NoHatree, Girreducible,])
+    G = buildG(0, [1, 2]; filter=[NoHartree, Girreducible,])
     @test G isa Diagram
-    G = buildG(1, [1, 2]; filter=[NoHatree, Girreducible,])
+    G = buildG(1, [1, 2]; filter=[NoHartree, Girreducible,])
     @test isnothing(G)
-    G = buildG(2, [1, 2]; filter=[NoHatree, Girreducible,])
+    G = buildG(2, [1, 2]; filter=[NoHartree, Girreducible,])
     @test isnothing(G)
 
     # If Fock diagram is not allowed, then one-loop G diagram should not be exist for subdiagram
-    G = buildG(0, [1, 2]; filter=[NoHatree, NoFock,])
+    G = buildG(0, [1, 2]; filter=[NoHartree, NoFock,])
     @test G isa Diagram
-    G = buildG(1, [1, 2]; filter=[NoHatree, NoFock,])
+    G = buildG(1, [1, 2]; filter=[NoHartree, NoFock,])
     @test isnothing(G)
-    G = buildG(2, [1, 2]; filter=[NoHatree, NoFock,]) #high order subdiagram is allowed
+    G = buildG(2, [1, 2]; filter=[NoHartree, NoFock,]) #high order subdiagram is allowed
     @test G isa Diagram
 
 end
 
 
 @testset "Parquet Vertex3" begin
-    function getGamma3(loopNum; Kdim=3, spin=2, interactionTauNum=1, filter=[NoHatree, Girreducible, Proper,], isFermi=true, subdiagram=false)
+    function getGamma3(loopNum; Kdim=3, spin=2, interactionTauNum=1, filter=[NoHartree, Girreducible, Proper,], isFermi=true, subdiagram=false)
         println("LoopNum =$loopNum Vertex3 Test")
 
         para = DiagParaF64(
@@ -392,7 +392,7 @@ end
     for l = 1:3
         # ret = getSigma(l, spin = 1, isFermi = false, filter = [Builder.Girreducible,])
         # testDiagramNumber(ret...)
-        ret = getGamma3(l, isFermi=false, filter=[NoHatree, Girreducible, Proper])
+        ret = getGamma3(l, isFermi=false, filter=[NoHartree, Girreducible, Proper])
         testDiagramNumber(ret...)
     end
 
@@ -403,7 +403,7 @@ end
 
 
 @testset "Parquet Polarization" begin
-    function getPolar(loopNum; Kdim=3, spin=2, interactionTauNum=1, filter=[NoHatree, Girreducible,], isFermi=true, subdiagram=false)
+    function getPolar(loopNum; Kdim=3, spin=2, interactionTauNum=1, filter=[NoHartree, Girreducible,], isFermi=true, subdiagram=false)
         println("LoopNum =$loopNum Polarization Test")
 
         para = DiagParaF64(
@@ -428,9 +428,12 @@ end
         return para, diag, varK, varT
     end
 
+    # Test polarization Parquet builder when filter 'Proper' is specified explicitly
+    getPolar(1, filter=[Proper, NoHartree, NoFock,])
+
     ##################  G^2*v expansion #########################################
     for l = 1:4
-        para, diag, varK, varT = getPolar(l, isFermi=false, filter=[NoHatree, Girreducible,])
+        para, diag, varK, varT = getPolar(l, isFermi=false, filter=[NoHartree, Girreducible,])
         diag = mergeby(diag).diagram[1]
         w = DiagTree.evalKT!(diag, varK, varT; eval=evalFakePropagator)
         # factor = (1 / (2π)^para.loopDim)^para.innerLoopNum
@@ -442,7 +445,7 @@ end
 
     ##################  g^2*v expansion #########################################
     for l = 1:4
-        para, diag, varK, varT = getPolar(l, isFermi=false, filter=[NoHatree, NoFock,])
+        para, diag, varK, varT = getPolar(l, isFermi=false, filter=[NoHartree, NoFock,])
         diag = mergeby(diag).diagram[1]
         w = DiagTree.evalKT!(diag, varK, varT, eval=evalFakePropagator)
         # factor = (1 / (2π)^para.loopDim)^para.innerLoopNum
@@ -454,7 +457,7 @@ end
 
     ##################  g^2*v expansion for the upup polarization #########################################
     for l = 1:4
-        para, diag, varK, varT = getPolar(l, isFermi=false, filter=[NoHatree, NoFock,])
+        para, diag, varK, varT = getPolar(l, isFermi=false, filter=[NoHartree, NoFock,])
         w = DiagTree.evalKT!(diag.diagram[1], varK, varT, eval=evalFakePropagator)
         # factor = (1 / (2π)^para.loopDim)^para.innerLoopNum
         factor = 1.0
