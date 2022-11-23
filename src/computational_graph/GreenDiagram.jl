@@ -52,7 +52,7 @@ end
 
 struct ExternalVertice
     point::Int
-    current::Vector{Float64}
+    current::Int
     isCreation::Bool
     isFermi::Bool
 end
