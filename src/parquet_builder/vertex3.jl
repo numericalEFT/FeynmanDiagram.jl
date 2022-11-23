@@ -9,7 +9,7 @@
 
 #Arguments
 - `para`            : parameters. It should provide internalLoopNum, interactionTauNum, firstTauIdx
-- `extK`            : basis of external loops as a vector [bosonic leg, fermionic in, fermionic out]. 
+- `extK`            : basis of external loops as a vector [bosonic leg (out), fermionic in, fermionic out], extK[1] = extK[2] - extK[3]. 
 - `subdiagram`      : a sub-vertex or not
 - `name`            : name of the vertex
 - `chan`            : vector of channels of the current 4-vertex. 
