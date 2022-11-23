@@ -1,4 +1,4 @@
-# function toDict(diag::Diagram; maxdepth::Int)
+# function toDict(diag::GreenDiagram; maxdepth::Int)
 #     @assert maxdepth == 1 "deep convert has not yet been implemented!"
 
 #     d = Dict{Symbol,Any}()
@@ -19,10 +19,9 @@ function _addkey!(dict, key, val)
     dict[key] = val
 end
 
-function _DiagtoDict!(dict::Dict{Symbol,Any}, diagVec::Vector{Diagram{W}}; maxdepth::Int) where {W}
+function _DiagtoDict!(dict::Dict{Symbol,Any}, diagVec::Vector{GreenDiagram{W}}; maxdepth::Int) where {W}
     @assert maxdepth == 1 "deep convert has not yet been implemented!"
     _addkey!(dict, :hash, [diag.hash for diag in diagVec])
-    _addkey!(dict, :id, [diag.id for diag in diagVec])
     _addkey!(dict, :name, [diag.name for diag in diagVec])
     _addkey!(dict, :diagram, diagVec)
     _addkey!(dict, :subdiagram, [Tuple(d.hash for d in diag.subdiagram) for diag in diagVec])
@@ -32,7 +31,7 @@ function _DiagtoDict!(dict::Dict{Symbol,Any}, diagVec::Vector{Diagram{W}}; maxde
     return dict
 end
 
-# function toDict(v::DiagramId)
+# function toDict(v::GreenDiagramId)
 #     d = Dict{Symbol,Any}()
 #     for field in fieldnames(typeof(v))
 #         data = getproperty(v, field)
@@ -46,7 +45,7 @@ function _vec2tup(data)
     return data isa AbstractVector ? Tuple(data) : data
 end
 
-function _IdstoDict!(dict::Dict{Symbol,Any}, diagVec::Vector{Diagram{W}}, idkey::Symbol) where {W}
+function _IdstoDict!(dict::Dict{Symbol,Any}, diagVec::Vector{GreenDiagram{W}}, idkey::Symbol) where {W}
     sameId = all(x -> (typeof(x.id) == typeof(diagVec[1].id)), diagVec)
     if sameId
         data = [_vec2tup(getproperty(diagVec[1].id, idkey)),]
@@ -123,7 +122,7 @@ end
 #     return df
 # end
 
-function _summary(diag::Diagram{W}, color=true) where {W}
+function _summary(diag::GreenDiagram{W}, color=true) where {W}
 
     function short(factor, ignore=nothing)
         if isnothing(ignore) == false && applicable(isapprox, factor, ignore) && factor ≈ ignore
@@ -152,7 +151,7 @@ function _summary(diag::Diagram{W}, color=true) where {W}
     end
 end
 
-function Base.show(io::IO, diag::Diagram)
+function Base.show(io::IO, diag::GreenDiagram)
     if length(diag.subdiagram) == 0
         typestr = ""
     else
@@ -164,16 +163,16 @@ function Base.show(io::IO, diag::Diagram)
 end
 
 """
-    function plot_tree(diag::Diagram; verbose = 0, maxdepth = 6)
+    function plot_tree(diag::GreenDiagram; verbose = 0, maxdepth = 6)
 
     Visualize the diagram tree using ete3 python package
 
 #Arguments
-- `diag`        : the Diagram struct to visualize
+- `diag`        : the GreenDiagram struct to visualize
 - `verbose=0`   : the amount of information to show
 - `maxdepth=6`  : deepest level of the diagram tree to show
 """
-function plot_tree(diag::Diagram; verbose=0, maxdepth=6)
+function plot_tree(diag::GreenDiagram; verbose=0, maxdepth=6)
 
     # pushfirst!(PyVector(pyimport("sys")."path"), @__DIR__) #comment this line if no need to load local python module
     ete = PyCall.pyimport("ete3")
@@ -217,7 +216,7 @@ function plot_tree(diag::Diagram; verbose=0, maxdepth=6)
     # t.write(outfile="/home/kun/test.txt", format=8)
     t.show(tree_style=ts)
 end
-function plot_tree(diags::Vector{Diagram{W}}; kwargs...) where {W}
+function plot_tree(diags::Vector{GreenDiagram{W}}; kwargs...) where {W}
     for diag in diags
         plot_tree(diag; kwargs...)
     end

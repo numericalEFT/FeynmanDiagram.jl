@@ -53,20 +53,24 @@ function symbol(name::Response, type::AnalyticProperty, addition=nothing)
 
 end
 
-@with_kw struct DiagPara{W}
+@with_kw struct DiagPara{W}#,T<:DiagramType}
+    type::DataType
+    # type::T
     innerLoopNum::Int
+    extNum::Int = 2
 
+    isFermi::Bool = true
     spin::Int = 2
     loopDim::Int = 3
-    # interaction::Vector{Interaction} = [Interaction(ChargeCharge, [Instant,]),] # :ChargeCharge, :SpinSpin, ...
+    interaction::Vector{Interaction} = [Interaction(ChargeCharge, [Instant,]),] # :ChargeCharge, :SpinSpin, ...
 
-    firstLoopIdx::Int = firstLoopIdx(type)
+    firstLoopIdx::Int = firstLoopIdx(type, extNum)
     totalLoopNum::Int = firstLoopIdx + innerLoopNum - 1
 
     #### turn the following parameters on if there is tau variables ########
     hasTau::Bool = false
-    firstTauIdx::Int = firstTauIdx(type)
-    totalTauNum::Int = firstTauIdx + innerTauNum(type, innerLoopNum, interactionTauNum(hasTau, interaction)) - 1
+    firstTauIdx::Int = firstTauIdx(type, extNum)
+    totalTauNum::Int = firstTauIdx + innerTauNum(type, innerLoopNum, interactionTauNum(hasTau, interaction), extNum) - 1
     #if there is no imaginary-time at all, then set this number to zero!
     ########################################################################
     filter::Vector{Filter} = [NoHartree,] #usually, the Hartree subdiagram should be removed
@@ -88,12 +92,14 @@ function Parameters.reconstruct(::Type{DiagPara{W}}, p::DiagPara{W}, di) where {
     di = !isa(di, AbstractDict) ? Dict(di) : copy(di)
     get(p, di, key) = pop!(di, key, getproperty(p, key))
     return DiagPara{W}(
-        # type=get(p, di, :type),
+        # type = pop!(di, :type, p.type),
+        type=get(p, di, :type),
         innerLoopNum=get(p, di, :innerLoopNum),
-        # isFermi=get(p, di, :isFermi),
+        extNum=get(p, di, :extNum),
+        isFermi=get(p, di, :isFermi),
         spin=get(p, di, :spin),
         loopDim=get(p, di, :loopDim),
-        # interaction=get(p, di, :interaction),
+        interaction=get(p, di, :interaction),
         firstLoopIdx=get(p, di, :firstLoopIdx),
         totalLoopNum=get(p, di, :totalLoopNum),
         hasTau=get(p, di, :hasTau),
@@ -110,12 +116,14 @@ function derivepara(p::DiagPara{W}; kwargs...) where {W}
     di = !isa(kwargs, AbstractDict) ? Dict(kwargs) : copy(kwargs)
     get(p, di, key) = pop!(di, key, getproperty(p, key))
     return DiagPara{W}(
-        # type=get(p, di, :type),
+        # type = pop!(di, :type, p.type),
+        type=get(p, di, :type),
         innerLoopNum=get(p, di, :innerLoopNum),
-        # isFermi=get(p, di, :isFermi),
+        extNum=get(p, di, :extNum),
+        isFermi=get(p, di, :isFermi),
         spin=get(p, di, :spin),
         loopDim=get(p, di, :loopDim),
-        # interaction=get(p, di, :interaction),
+        interaction=get(p, di, :interaction),
         firstLoopIdx=get(p, di, :firstLoopIdx),
         totalLoopNum=get(p, di, :totalLoopNum),
         hasTau=get(p, di, :hasTau),
@@ -158,23 +166,23 @@ end
 Base.:(==)(a::DiagPara{W}, b::DiagPara{W}) where {W} = Base.isequal(a, b)
 
 """
-    function innerTauNum(type::DiagramType, innerLoopNum, interactionTauNum)
+    function innerTauNum(type<:DiagramType, innerLoopNum, interactionTauNum)
     
     internal imaginary-time degrees of freedom for a given diagram type and internal loop number.
     For the vertex functions (self-energy, polarization, vertex3, and vertex4), innerTauNum is equivalent to tauNum.
     For the Green function, tauNum = innerTauNum + external tauNum 
 """
-function innerTauNum(type::DiagramType, innerLoopNum, interactionTauNum)
-    if type == Ver4Diag
+function innerTauNum(type, innerLoopNum, interactionTauNum, extN)
+    if type == VertexDiag && extN == 4
         return (innerLoopNum + 1) * interactionTauNum
-    elseif type == SigmaDiag
+    elseif type == FermiSelfEnergy
         return innerLoopNum * interactionTauNum
-    elseif type == GreenDiag
+    elseif type == FermiPropagator
         return innerLoopNum * interactionTauNum
-    elseif type == PolarDiag
-        return 1 + innerTauNum(Ver3Diag, innerLoopNum - 1, interactionTauNum)
-    elseif type == Ver3Diag
-        return 1 + innerTauNum(Ver4Diag, innerLoopNum - 1, interactionTauNum)
+    elseif type == BoseSelfEnergy
+        return 1 + innerTauNum(VertexDiag, innerLoopNum - 1, interactionTauNum, extN)
+    elseif type == VertexDiag && extN == 3
+        return 1 + innerTauNum(VertexDiag, innerLoopNum - 1, interactionTauNum, extN)
     else
         error("not implemented!")
     end
@@ -192,40 +200,40 @@ function interactionTauNum(hasTau::Bool, interactionSet)
     return 1
 end
 
-function firstTauIdx(type::DiagramType, offset::Int=0)
-    if type == GreenDiag
+function firstTauIdx(type, extN::Int, offset::Int=0)
+    if type == FermiPropagator
         return 3 + offset
-    elseif type == Ver3Diag
+    elseif type == VertexDiag && extN == 3
         return 1 + offset
-    elseif type == PolarDiag
+    elseif type == BosePropagator
         return 1 + offset
     else
         return 1 + offset
     end
 end
 
-function firstLoopIdx(type::DiagramType, offset::Int=0)
-    if type == Ver4Diag #three extK
+function firstLoopIdx(type, extN::Int, offset::Int=0)
+    if type == VertexDiag && extN == 4 #three extK
         return 4 + offset
-    elseif type == SigmaDiag #one extK
+    elseif type == FermiSelfEnergy #one extK
         return 2 + offset
-    elseif type == GreenDiag #one extK
+    elseif type == FermiPropagator #one extK
         return 2 + offset
-    elseif type == PolarDiag #one extK
+    elseif type == BosePropagator #one extK
         return 2 + offset
-    elseif type == Ver3Diag #two extK
+    elseif type == VertexDiag && extN == 3 #two extK
         return 3 + offset
     else
         error("not implemented!")
     end
 end
 
-function totalTauNum(type::DiagramType, innerLoopNum, interactionTauNum, offset::Int=0)
-    return firstTauIdx(type, offset) + innerTauNum(type, innerLoopNum, interactionTauNum) - 1
+function totalTauNum(type, innerLoopNum, interactionTauNum, extNum::Int, offset::Int=0)
+    return firstTauIdx(type, extNum, offset) + innerTauNum(type, innerLoopNum, interactionTauNum, extNum) - 1
 end
 
-function totalLoopNum(type::DiagramType, innerLoopNum, offset::Int=0)
-    return firstLoopIdx(type, offset) + innerLoopNum - 1
+function totalLoopNum(type, innerLoopNum, extNum::Int, offset::Int=0)
+    return firstLoopIdx(type, extNum, offset) + innerLoopNum - 1
 end
 
 function totalTauNum(para, type::Symbol=:none)

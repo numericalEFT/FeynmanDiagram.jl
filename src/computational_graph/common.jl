@@ -7,13 +7,15 @@ import ..NoBubble  # true to remove all bubble subdiagram
 import ..Proper  #ver4, ver3, and polarization diagrams may require to be irreducible along the transfer momentum/frequency
 
 import ..DiagramType
-# import ..GreenDiag
-# import ..SigmaDiag
-# import ..PolarDiag
-# import ..Ver3Diag
-# import ..Ver4Diag
-# import ..GnDiag
-# import ..GcDiag
+import ..VacuumDiag
+import ..TadpoleDiag
+import ..FermiPropagator
+import ..BosePropagator
+import ..FermiSelfEnergy
+import ..BoseSelfEnergy
+import ..VertexDiag
+import ..GncDiag
+import ..GnDiag
 
 import ..Composite
 import ..ChargeCharge
@@ -62,3 +64,4 @@ function getK(loopNum::Int, loopIdx::Int)
     k[loopIdx] = 1.0
     return k
 end
+
