@@ -23,12 +23,20 @@ deps/src/
 # environment.
 Manifest.toml
 
+# Ignore intermediate latex files
+*.aux
+*.fdb_latexmk
+*.fls
 *.log
+*.gz
+*.mp
+*.t1
+*.1
+*.dvi
+
 *.pyc
 .ipynb*
 *.data
-*.pdf
-.gz
 *.jld2
 
 *.jl.cov
@@ -51,7 +59,7 @@ deps/build.log
 .DS_Store
 *~
 
-# runtime files
+# Runtime files
 run/*
 *.dat
 *.txt
@@ -60,6 +68,10 @@ __pycache__
 *.pyc
 
 *.vscode
+
+# Temporarily unignore vscode settings
+!.vscode/
+
 *.DS_Store
 *.pb.gz
 

@@ -196,10 +196,12 @@ function plot_tree(diag::Diagram; verbose=0, maxdepth=6)
     end
 
     t = treeview(diag, 1)
-    # style = ete.NodeStyle()
-    # style["bgcolor"] = "Khaki"
-    # t.set_style(style)
 
+    # NOTE: t.set_style does not update the original PyObject as expected, i.e.,
+    #       `t.set_style(ete.NodeStyle(bgcolor="Khaki"))` does not modify t.
+    #
+    # The low-level approach circumvents this by directly updating the original PyObject `t."img_style"`
+    PyCall.set!(t."img_style", "bgcolor", "Khaki")
 
     ts = ete.TreeStyle()
     ts.show_leaf_name = true
