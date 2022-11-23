@@ -67,7 +67,7 @@ end
 - name::Symbol        : name of the diagram
 - para::DiagramPara   : internal parameters of the diagram
 - orders::Vector{Int} : orders of the diagram, loop order, derivative order, etc.
-- points::Vector{Int} : external and internal points in the diagram
+- internal_points::Vector{Int} : internal points in the diagram
 - currents::Vector{Float64} : independent currents in the diagram
 - extVertices::Vector{ExternalVertice}    : external vertices of the diagram
 - isConnected::Bool   : connected or disconnected Green's function
@@ -83,7 +83,7 @@ mutable struct GreenDiagram{W} # GreenDiagram
     type::DataType
     para::DiagramPara
     orders::Vector{Int}
-    points::Vector{Int}
+    internal_points::Vector{Int}
     currents::Vector{Float64}
 
     extVertices::Vector{ExternalVertice}
