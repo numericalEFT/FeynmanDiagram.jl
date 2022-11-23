@@ -87,12 +87,13 @@ using .ComputationalGraph
 export ComputationalGraph
 # export TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
 # export Permutation, Di, Ex, DiEx
-export GreenDiagram, ExternalVertice
+export Diagram, ExternalVertice
 export OneFermiIrreducible, OneBoseIrreducible, ParticleHoleIrreducible, ParticleParticleIrreducible
 export reducibility
 # export addSubDiagram!, evalDiagNode!, evalDiagTree!, evalDiagTreeKT!
 # export Operator, Sum, Prod
 # export uidreset, toDataFrame, mergeby, plot_tree
+export 𝐺ᶠ, 𝐺ᵇ, 𝑊
 
 include("diagram_tree/DiagTree.jl")
 using .DiagTree
