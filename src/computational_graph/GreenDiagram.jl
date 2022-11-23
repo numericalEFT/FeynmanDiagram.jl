@@ -83,8 +83,6 @@ mutable struct GreenDiagram{W} # GreenDiagram
     type::DataType
     para::DiagramPara
     orders::Vector{Int}
-    internal_points::Vector{Int}
-    currents::Vector{Float64}
 
     extVertices::Vector{ExternalVertice}
     isConnected::Bool
@@ -100,7 +98,7 @@ mutable struct GreenDiagram{W} # GreenDiagram
         type=para.type, reducibility=[], name=:GreenDiagram, operator::Operator=Sum(), factor=W(1), weight=W(0)) where {W}
         @assert type <: DiagType "$type is not implemented in DiagType."
         orders = zeros(Int, 16)
-        g = new{W}(uid(), name, type, para, orders, [], [], extV, isConnected, isAmputated, reducibility, subdiagram, operator, factor, weight)
+        g = new{W}(uid(), name, type, para, orders, extV, isConnected, isAmputated, reducibility, subdiagram, operator, factor, weight)
         reducibility!(g)
         return g
     end
