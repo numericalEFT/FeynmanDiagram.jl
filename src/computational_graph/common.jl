@@ -6,16 +6,16 @@ import ..NoFock
 import ..NoBubble  # true to remove all bubble subdiagram
 import ..Proper  #ver4, ver3, and polarization diagrams may require to be irreducible along the transfer momentum/frequency
 
-import ..DiagramType
-import ..VacuumDiag
-import ..TadpoleDiag
+import ..DiagType
+import ..Vacuum
+import ..Tadpole
 import ..FermiPropagator
 import ..BosePropagator
 import ..FermiSelfEnergy
 import ..BoseSelfEnergy
 import ..VertexDiag
 import ..GncDiag
-import ..GnDiag
+import ..GndDiag
 
 import ..Composite
 import ..ChargeCharge
@@ -35,7 +35,7 @@ import ..short
 
 import ..Interaction
 
-import ..DiagPara
+import ..DiagramPara
 
 import ..innerTauNum
 

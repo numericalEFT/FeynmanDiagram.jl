@@ -65,7 +65,7 @@ end
 # Members
 - hash::Int          : the unique hash number to identify the diagram
 - name::Symbol       : name of the diagram
-- para::DiagPara     : internal parameters of the diagram
+- para::DiagramPara     : internal parameters of the diagram
 - extVertices::Vector{ExternalVertice}    : external vertices of the diagram
 - isConnected::Bool  : connected or disconnected Green's function
 - isAmputated::Bool  : amputated Green's function or not
@@ -78,7 +78,7 @@ mutable struct GreenDiagram{W} # GreenDiagram
     hash::Int
     name::Symbol
     type::DataType
-    para::DiagPara
+    para::DiagramPara
 
     extVertices::Vector{ExternalVertice}
     isConnected::Bool
@@ -90,9 +90,9 @@ mutable struct GreenDiagram{W} # GreenDiagram
     factor::W
     weight::W
 
-    function GreenDiagram{W}(para::DiagPara, isConnected, isAmputated, extV=[], subdiagram=[];
+    function GreenDiagram{W}(para::DiagramPara, isConnected, isAmputated, extV=[], subdiagram=[];
         type=para.type, reducibility=[], name=:GreenDiagram, operator::Operator=Sum(), factor=W(1), weight=W(0)) where {W}
-        @assert type <: DiagramType "$type is not implemented in DiagramType."
+        @assert type <: DiagType "$type is not implemented in DiagType."
         g = new{W}(uid(), name, type, para, extV, isConnected, isAmputated, reducibility, subdiagram, operator, factor, weight)
         reducibility!(g)
         return g
@@ -147,23 +147,23 @@ end
 
 # graph = g*w+ver4*0.5
 
-function GreenDiagram{W}(::Type{VacuumDiag}, para::DiagPara; isConnected=false, isAmputated=true, extV=[],
+function GreenDiagram{W}(::Type{Vacuum}, para::DiagramPara; isConnected=false, isAmputated=true, extV=[],
     subdiagram=[], reducibility=[], name=:VacuumDiagram, operator::Operator=Sum(), factor=W(1), weight=W(0)) where {W}
-    @assert para.type == VacuumDiag "types from input and para are inconsistent."
+    @assert para.type == Vacuum "types from input and para are inconsistent."
     @assert length(extV) == 0 "input parameters do not support Vacuum diagram."
     return GreenDiagram{W}(para, isConnected, isAmputated, [], subdiagram, reducibility=reducibility,
         name=name, operator=operator, factor=factor, weight=weight)
 end
 
-function GreenDiagram{W}(::Type{TadpoleDiag}, para::DiagPara; isConnected=true, isAmputated=false, extV=[],
+function GreenDiagram{W}(::Type{Tadpole}, para::DiagramPara; isConnected=true, isAmputated=false, extV=[],
     subdiagram=[], reducibility=[], name=:TadpoleDiagram, operator::Operator=Sum(), factor=W(1), weight=W(0)) where {W}
-    @assert para.type == TadpoleDiag "types from input and para are inconsistent."
+    @assert para.type == Tadpole "types from input and para are inconsistent."
     @assert length(extV) == 1 "input parameters do not support Tadpole diagram."
     return GreenDiagram{W}(para, isConnected, isAmputated, extV, subdiagram, reducibility=reducibility,
         name=name, operator=operator, factor=factor, weight=weight)
 end
 
-function GreenDiagram{W}(::Type{FermiPropagator}, para::DiagPara; isConnected=true, isAmputated=false, extV=[],
+function GreenDiagram{W}(::Type{FermiPropagator}, para::DiagramPara; isConnected=true, isAmputated=false, extV=[],
     subdiagram=[], reducibility=[OneFermiIrreducible,], name=:FermiPropagator, operator::Operator=Sum(), factor=W(1), weight=W(0)) where {W}
     @assert para.type == FermiPropagator "types from input and para are inconsistent."
     @assert length(extV) == 2 && extV[1].isFermi && extV[2].isFermi &&
@@ -172,7 +172,7 @@ function GreenDiagram{W}(::Type{FermiPropagator}, para::DiagPara; isConnected=tr
         name=name, operator=operator, factor=factor, weight=weight)
 end
 
-function GreenDiagram{W}(::Type{BosePropagator}, para::DiagPara; isConnected=true, isAmputated=false, extV=[],
+function GreenDiagram{W}(::Type{BosePropagator}, para::DiagramPara; isConnected=true, isAmputated=false, extV=[],
     subdiagram=[], reducibility=[OneBoseIrreducible,], name=:BosePropagator, operator::Operator=Sum(), factor=W(1), weight=W(0)) where {W}
     @assert para.type == BosePropagator "types from input and para are inconsistent."
     @assert length(extV) == 2 && !extV[1].isFermi && !extV[2].isFermi &&
@@ -181,7 +181,7 @@ function GreenDiagram{W}(::Type{BosePropagator}, para::DiagPara; isConnected=tru
         name=name, operator=operator, factor=factor, weight=weight)
 end
 
-function GreenDiagram{W}(::Type{FermiSelfEnergy}, para::DiagPara; isConnected=true, isAmputated=true, extV=[],
+function GreenDiagram{W}(::Type{FermiSelfEnergy}, para::DiagramPara; isConnected=true, isAmputated=true, extV=[],
     subdiagram=[], reducibility=[OneFermiIrreducible,], name=:FermiSelfEnergy, operator::Operator=Sum(), factor=W(1), weight=W(0)) where {W}
     @assert para.type == FermiSelfEnergy "types from input and para are inconsistent."
     @assert length(extV) == 2 && extV[1].isFermi && extV[2].isFermi "input parameters do not support FermiSelfEnergy."
@@ -189,7 +189,7 @@ function GreenDiagram{W}(::Type{FermiSelfEnergy}, para::DiagPara; isConnected=tr
         name=name, operator=operator, factor=factor, weight=weight)
 end
 
-function GreenDiagram{W}(::Type{BoseSelfEnergy}, para::DiagPara; isConnected=true, isAmputated=true, extV=[],
+function GreenDiagram{W}(::Type{BoseSelfEnergy}, para::DiagramPara; isConnected=true, isAmputated=true, extV=[],
     subdiagram=[], reducibility=[OneFermiIrreducible,], name=:BoseSelfEnergy, operator::Operator=Sum(), factor=W(1), weight=W(0)) where {W}
     @assert para.type == BoseSelfEnergy "types from input and para are inconsistent."
     @assert length(extV) == 2 && !extV[1].isFermi && !extV[2].isFermi "input parameters do not support BoseSelfEnergy."
@@ -197,7 +197,7 @@ function GreenDiagram{W}(::Type{BoseSelfEnergy}, para::DiagPara; isConnected=tru
         name=name, operator=operator, factor=factor, weight=weight)
 end
 
-function GreenDiagram{W}(::Type{VertexDiag}, para::DiagPara; Nf=2, Nb=1, isConnected=true, isAmputated=true, extV=[],
+function GreenDiagram{W}(::Type{VertexDiag}, para::DiagramPara; Nf=2, Nb=1, isConnected=true, isAmputated=true, extV=[],
     subdiagram=[], reducibility=[OneFermiIrreducible, OneBoseirreducible], name=:VertexDiagram, operator::Operator=Sum(), factor=W(1), weight=W(0)) where {W}
     @assert para.type == VertexDiag "types from input and para are inconsistent."
     @assert length(extV) > 2 && length(extV) == Nf + Nb "input parameters do not support Vertex diagram."
@@ -205,7 +205,7 @@ function GreenDiagram{W}(::Type{VertexDiag}, para::DiagPara; Nf=2, Nb=1, isConne
         name=name, operator=operator, factor=factor, weight=weight)
 end
 
-function GreenDiagram{W}(::Type{GncDiag}, para::DiagPara; N=4, isConnected=true, isAmputated=false, extV=[],
+function GreenDiagram{W}(::Type{GncDiag}, para::DiagramPara; N=4, isConnected=true, isAmputated=false, extV=[],
     subdiagram=[], reducibility=[], name=:ConnectedNDiagram, operator::Operator=Sum(), factor=W(1), weight=W(0)) where {W}
     @assert para.type == GncDiag "types from input and para are inconsistent."
     @assert length(extV) > 2 && length(extV) == N "input parameters do not support Connected N-point diagram."
@@ -213,9 +213,9 @@ function GreenDiagram{W}(::Type{GncDiag}, para::DiagPara; N=4, isConnected=true,
         name=name, operator=operator, factor=factor, weight=weight)
 end
 
-function GreenDiagram{W}(::Type{GnDiag}, para::DiagPara; N=4, isConnected=false, isAmputated=false, extV=[],
+function GreenDiagram{W}(::Type{GndDiag}, para::DiagramPara; N=4, isConnected=false, isAmputated=false, extV=[],
     subdiagram=[], reducibility=[], name=:DisconnectedNDiagram, operator::Operator=Sum(), factor=W(1), weight=W(0)) where {W}
-    @assert para.type == GnDiag "types from input and para are inconsistent."
+    @assert para.type == GndDiag "types from input and para are inconsistent."
     @assert length(extV) > 2 && length(extV) == N "input parameters do not support Disconnected N-point diagram."
     return GreenDiagram{W}(para, isConnected, isAmputated, extV, subdiagram, reducibility=reducibility,
         name=name, operator=operator, factor=factor, weight=weight)

@@ -1,59 +1,58 @@
-struct Interaction
-    response::Response
-    type::Set{AnalyticProperty}
-    function Interaction(response, type)
-        return new(response, Set(type))
-    end
-    function Interaction(response, type::AnalyticProperty)
-        return new(response, Set([type,]))
-    end
-end
+# struct Interaction
+#     response::Response
+#     type::Set{AnalyticProperty}
+#     function Interaction(response, type)
+#         return new(response, Set(type))
+#     end
+#     function Interaction(response, type::AnalyticProperty)
+#         return new(response, Set([type,]))
+#     end
+# end
 
-Base.isequal(a::Interaction, b::Interaction) = (a.response == b.response) && issetequal(a.type, b.type)
-Base.:(==)(a::Interaction, b::Interaction) = Base.isequal(a, b)
+# Base.isequal(a::Interaction, b::Interaction) = (a.response == b.response) && issetequal(a.type, b.type)
+# Base.:(==)(a::Interaction, b::Interaction) = Base.isequal(a, b)
 
-function short(inter::Interaction)
-    return "$(short(inter.response))_$(reduce(*, [short(t) for t in inter.type]))"
-end
+# function short(inter::Interaction)
+#     return "$(short(inter.response))_$(reduce(*, [short(t) for t in inter.type]))"
+# end
 
-function short(name::Response)
-    if name == ChargeCharge
-        return "cc"
-    elseif name == SpinSpin
-        return "σσ"
-    elseif name == UpUp
-        return "↑↑"
-    elseif name == UpDown
-        return "↑↓"
-    else
-        @error("$name is not implemented!")
-    end
-end
+# function short(name::Response)
+#     if name == ChargeCharge
+#         return "cc"
+#     elseif name == SpinSpin
+#         return "σσ"
+#     elseif name == UpUp
+#         return "↑↑"
+#     elseif name == UpDown
+#         return "↑↓"
+#     else
+#         @error("$name is not implemented!")
+#     end
+# end
 
-function short(type::AnalyticProperty)
-    if type == Instant
-        return "Ins"
-    elseif type == Dynamic
-        return "Dyn"
-    elseif type == D_Instant
-        return "dIns"
-    elseif type == D_Dynamic
-        return "dDyn"
-    else
-        @error("$type is not implemented!")
-    end
-end
+# function short(type::AnalyticProperty)
+#     if type == Instant
+#         return "Ins"
+#     elseif type == Dynamic
+#         return "Dyn"
+#     elseif type == D_Instant
+#         return "dIns"
+#     elseif type == D_Dynamic
+#         return "dDyn"
+#     else
+#         @error("$type is not implemented!")
+#     end
+# end
 
-function symbol(name::Response, type::AnalyticProperty, addition=nothing)
-    if isnothing(addition)
-        return Symbol("$(short(name))$(short(type))")
-    else
-        return Symbol("$(short(name))$(short(type))$(addition)")
-    end
+# function symbol(name::Response, type::AnalyticProperty, addition=nothing)
+#     if isnothing(addition)
+#         return Symbol("$(short(name))$(short(type))")
+#     else
+#         return Symbol("$(short(name))$(short(type))$(addition)")
+#     end
+# end
 
-end
-
-@with_kw struct DiagPara{W}#,T<:DiagramType}
+@with_kw struct DiagramPara{W}#,T<:DiagType}
     type::DataType
     # type::T
     innerLoopNum::Int
@@ -78,20 +77,20 @@ end
     extra::Any = Nothing
 end
 
-const DiagParaF64 = DiagPara{Float64}
+const DiagramParaF64 = DiagramPara{Float64}
 
-@inline interactionTauNum(para::DiagPara) = interactionTauNum(para.hasTau, para.interaction)
-@inline innerTauNum(para::DiagPara) = innerTauNum(para.type, para.innerLoopNum, para.interactionTauNum)
+@inline interactionTauNum(para::DiagramPara) = interactionTauNum(para.hasTau, para.interaction)
+@inline innerTauNum(para::DiagramPara) = innerTauNum(para.type, para.innerLoopNum, para.interactionTauNum)
 
 """
-    Parameters.reconstruct(p::DiagPara; kws...)
+    Parameters.reconstruct(p::DiagramPara; kws...)
 
     Type-stable version of the Parameters.reconstruct
 """
-function Parameters.reconstruct(::Type{DiagPara{W}}, p::DiagPara{W}, di) where {W}
+function Parameters.reconstruct(::Type{DiagramPara{W}}, p::DiagramPara{W}, di) where {W}
     di = !isa(di, AbstractDict) ? Dict(di) : copy(di)
     get(p, di, key) = pop!(di, key, getproperty(p, key))
-    return DiagPara{W}(
+    return DiagramPara{W}(
         # type = pop!(di, :type, p.type),
         type=get(p, di, :type),
         innerLoopNum=get(p, di, :innerLoopNum),
@@ -112,10 +111,10 @@ function Parameters.reconstruct(::Type{DiagPara{W}}, p::DiagPara{W}, di) where {
     length(di) != 0 && error("Fields $(keys(di)) not in type $T")
 end
 
-function derivepara(p::DiagPara{W}; kwargs...) where {W}
+function derivepara(p::DiagramPara{W}; kwargs...) where {W}
     di = !isa(kwargs, AbstractDict) ? Dict(kwargs) : copy(kwargs)
     get(p, di, key) = pop!(di, key, getproperty(p, key))
-    return DiagPara{W}(
+    return DiagramPara{W}(
         # type = pop!(di, :type, p.type),
         type=get(p, di, :type),
         innerLoopNum=get(p, di, :innerLoopNum),
@@ -136,7 +135,7 @@ function derivepara(p::DiagPara{W}; kwargs...) where {W}
     length(di) != 0 && error("Fields $(keys(di)) not in type $T")
 end
 
-function Base.isequal(p::DiagPara{W}, q::DiagPara{W}) where {W}
+function Base.isequal(p::DiagramPara{W}, q::DiagramPara{W}) where {W}
     for field in fieldnames(typeof(p)) #fieldnames doesn't include user-defined entries in Base.getproperty
         if field == :filter
             if Set(p.filter) != Set(q.filter)
@@ -163,10 +162,10 @@ function Base.isequal(p::DiagPara{W}, q::DiagPara{W}) where {W}
     return true
 end
 
-Base.:(==)(a::DiagPara{W}, b::DiagPara{W}) where {W} = Base.isequal(a, b)
+Base.:(==)(a::DiagramPara{W}, b::DiagramPara{W}) where {W} = Base.isequal(a, b)
 
 """
-    function innerTauNum(type<:DiagramType, innerLoopNum, interactionTauNum)
+    function innerTauNum(type, innerLoopNum, interactionTauNum)
     
     internal imaginary-time degrees of freedom for a given diagram type and internal loop number.
     For the vertex functions (self-energy, polarization, vertex3, and vertex4), innerTauNum is equivalent to tauNum.
@@ -188,17 +187,17 @@ function innerTauNum(type, innerLoopNum, interactionTauNum, extN)
     end
 end
 
-function interactionTauNum(hasTau::Bool, interactionSet)
-    if hasTau == false
-        return 0
-    end
-    for interaction in interactionSet
-        if Dynamic in interaction.type || D_Dynamic in interaction.type
-            return 2
-        end
-    end
-    return 1
-end
+# function interactionTauNum(hasTau::Bool, interactionSet)
+#     if hasTau == false
+#         return 0
+#     end
+#     for interaction in interactionSet
+#         if Dynamic in interaction.type || D_Dynamic in interaction.type
+#             return 2
+#         end
+#     end
+#     return 1
+# end
 
 function firstTauIdx(type, extN::Int, offset::Int=0)
     if type == FermiPropagator
@@ -236,16 +235,16 @@ function totalLoopNum(type, innerLoopNum, extNum::Int, offset::Int=0)
     return firstLoopIdx(type, extNum, offset) + innerLoopNum - 1
 end
 
-function totalTauNum(para, type::Symbol=:none)
-    return para.totalTauNum
-    # if type == :Ver4
-    #     return (para.internalLoopNum + 1) * para.interactionTauNum
-    # else
-    #     error("not implemented!")
-    # end
-end
+# function totalTauNum(para, type::Symbol=:none)
+#     return para.totalTauNum
+#     # if type == :Ver4
+#     #     return (para.internalLoopNum + 1) * para.interactionTauNum
+#     # else
+#     #     error("not implemented!")
+#     # end
+# end
 
-function totalLoopNum(para, type::Symbol=:none)
-    return para.totalLoopNum
-end
+# function totalLoopNum(para, type::Symbol=:none)
+#     return para.totalLoopNum
+# end
 

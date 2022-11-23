@@ -5,8 +5,8 @@ using Printf, PyCall, DataFrames, Parameters
 @enum TwoBodyChannel Alli = 1 PHr PHEr PPr AnyChan
 @enum Permutation Di = 1 Ex DiEx
 
-export TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
-export Permutation, Di, Ex, DiEx
+# export TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
+# export Permutation, Di, Ex, DiEx
 
 Base.length(r::TwoBodyChannel) = 1
 Base.iterate(r::TwoBodyChannel) = (r, nothing)
@@ -31,8 +31,8 @@ export GreenDiagram, ExternalVertice
 # export addSubDiagram!
 # export evalDiagTree!
 # export evalDiagTreeKT!
-export Operator, Sum, Prod
-export uidreset
+# export Operator, Sum, Prod
+# export uidreset
 # export toDataFrame, mergeby, plot_tree
 
 end
