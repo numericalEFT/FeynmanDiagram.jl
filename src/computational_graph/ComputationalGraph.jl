@@ -1,4 +1,5 @@
 module ComputationalGraph
+
 using AbstractTrees
 using Printf, PyCall, DataFrames, Parameters
 
@@ -17,17 +18,18 @@ Base.iterate(r::Permutation) = (r, nothing)
 function Base.iterate(r::Permutation, ::Permutation) end
 
 include("common.jl")
-include("GreenDiagram.jl")
+include("diagram.jl")
 # include("tree.jl")
 # include("operation.jl")
-# include("io.jl")
+include("io.jl")
 # include("eval.jl")
 # include("optimize.jl")
 
 
 const INL, OUTL, INR, OUTR = 1, 2, 3, 4
 
-export GreenDiagram, ExternalVertice
+export ExternalVertice
+export 𝐺ᶠ, 𝐺ᵇ, 𝑊
 # export addSubDiagram!
 # export evalDiagTree!
 # export evalDiagTreeKT!
