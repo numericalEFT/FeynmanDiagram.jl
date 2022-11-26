@@ -138,8 +138,8 @@ function _summary(diag::Diagram{W}, color=true) where {W}
         end
     end
 
-    namestr = diag.name == :none ? "" : "$(diag.name) "
-    idstr = "$namestr$(diag.hash)"
+    namestr = isempty(diag.name) ? "" : "$(diag.name) "
+    idstr = "$namestr$(diag.id)"
     fstr = short(diag.factor, one(diag.factor))
     wstr = short(diag.weight)
     # =$(node.weight*(2π)^(3*node.id.para.innerLoopNum))
@@ -181,7 +181,7 @@ function plot_tree(diag::Diagram; verbose=0, maxdepth=6)
         if level > maxdepth
             return
         end
-        nt = t.add_child(name="$(node.hash): $(_summary(node, false))")
+        nt = t.add_child(name="$(node.id): $(_summary(node, false))")
 
         if length(node.subdiagram) > 0
             name_face = ete.TextFace(nt.name, fgcolor="black", fsize=10)

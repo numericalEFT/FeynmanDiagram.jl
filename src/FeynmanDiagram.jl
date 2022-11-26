@@ -87,7 +87,7 @@ using .ComputationalGraph
 export ComputationalGraph
 # export TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
 # export Permutation, Di, Ex, DiEx
-export Diagram, ExternalVertice
+export Diagram, ExternalVertex
 export OneFermiIrreducible, OneBoseIrreducible, ParticleHoleIrreducible, ParticleParticleIrreducible
 export reducibility
 # export addSubDiagram!, evalDiagNode!, evalDiagTree!, evalDiagTreeKT!

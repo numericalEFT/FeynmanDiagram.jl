@@ -28,7 +28,7 @@ include("io.jl")
 
 const INL, OUTL, INR, OUTR = 1, 2, 3, 4
 
-export ExternalVertice
+export ExternalVertex
 export 𝐺ᶠ, 𝐺ᵇ, 𝑊
 # export addSubDiagram!
 # export evalDiagTree!
