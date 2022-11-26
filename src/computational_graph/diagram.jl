@@ -61,11 +61,16 @@ end
 struct ExternalVertex
     point::Int
     current::Int
-    isCreation::Bool
-    isFermi::Bool
+    operators::Vector{Symbol} # list of the composite operators,
+    # :f for fermionic real field (Majorana fermion)
+    # :b for bosonic real field
+    # :phi for classical real field (it can be paired with f⁺f⁻, b⁺b⁻, or other classical fields)
+    # :f⁺, :f⁻ for complex fermionic field
+    # :b⁺, :b⁻ for complex bosonic field
+    flavors::Vector{Int} # flavor of each operator, it allows the field to be scalar, vector or even tensor
 end
 
-Base.isequal(a::ExternalVertex, b::ExternalVertex) = ((a.point == b.point) && (a.current == b.current) && (a.isCreation == b.isCreation) && (a.isFermi == b.isFermi))
+Base.isequal(a::ExternalVertex, b::ExternalVertex) = ((a.point == b.point) && (a.current == b.current) && (a.operators == b.operators) && (a.flavors == b.flavors))
 Base.:(==)(a::ExternalVertex, b::ExternalVertex) = Base.isequal(a, b)
 
 """
@@ -80,7 +85,7 @@ Base.:(==)(a::ExternalVertex, b::ExternalVertex) = Base.isequal(a, b)
 - orders::Vector{Int} : orders of the diagram, loop order, derivative order, etc.
 - internal_points::Vector{Int} : internal points in the diagram
 - currents::Vector{Float64} : independent currents in the diagram
-- external_vertex::Vector{ExternalVertex}    : external vertices of the diagram
+- external_vertices::Vector{ExternalVertex}    : external vertices of the diagram
 - isConnected::Bool   : connected or disconnected Green's function
 - isAmputated::Bool   : amputated Green's function or not
 - subdiagram::Vector{Diagram{W}}   : vector of sub-diagrams 
@@ -95,7 +100,7 @@ mutable struct Diagram{F,W} # Diagram
     orders::Vector{Int}
     flavors::Vector{Int}
 
-    external_vertex::Vector{ExternalVertex}
+    external_vertices::Vector{ExternalVertex}
     is_connected::Bool
     subdiagram::Vector{Diagram{W}}
 
@@ -140,21 +145,21 @@ end
 
 function Base.:*(g1::Diagram{F,W}, g2::Diagram{F,W}) where {F,W}
     type = :generic
-    ext1_ind = [v.point for v in g1.external_vertex]
-    ext2_ind = [v.point for v in g2.external_vertex]
+    ext1_ind = [v.point for v in g1.external_vertices]
+    ext2_ind = [v.point for v in g2.external_vertices]
     common = intersect(ext1_ind, ext2_ind)
-    total = union(g1.external_vertex, g2.external_vertex)
+    total = union(g1.external_vertices, g2.external_vertices)
     ext = [v for v in total if v.point ∉ common]
     #TODO: add external vertices creation/annihilation check
     return Diagram{F,W}(ext; type=type, is_connected=g1.is_connected && g2.is_connected, subdiagram=[g1, g2], operator=Prod())
 end
 
 function Base.:*(g1::Diagram{F,W}, c2::Number) where {F,W}
-    return Diagram{F,W}(g1.external_vertex; type=g1.type, is_connected=g1.is_connected, subdiagram=[g1,], operator=Prod(), factor=c2)
+    return Diagram{F,W}(g1.external_vertices; type=g1.type, is_connected=g1.is_connected, subdiagram=[g1,], operator=Prod(), factor=c2)
 end
 
 function Base.:*(c1::Number, g2::Diagram{F,W}) where {F,W}
-    return Diagram{F,W}(g2.external_vertex; type=g2.type, is_connected=g2.is_connected, subdiagram=[g2,], operator=Prod(), factor=c1)
+    return Diagram{F,W}(g2.external_vertices; type=g2.type, is_connected=g2.is_connected, subdiagram=[g2,], operator=Prod(), factor=c1)
 end
 
 function Base.:+(g1::Diagram{F,W}, g2::Diagram{F,W}) where {F,W}
@@ -162,9 +167,9 @@ function Base.:+(g1::Diagram{F,W}, g2::Diagram{F,W}) where {F,W}
     # @assert g1.isAmputated == g2.isAmputated "g1 and g2 are not of the same amputated status."
     # TODO: more check
     type = g1.type
-    @assert Set(g1.external_vertex) == Set(g2.external_vertex)
+    @assert Set(g1.external_vertices) == Set(g2.external_vertices)
     #TODO: add external vertices creation/annihilation check
-    return Diagram{F,W}(g1.external_vertex; type=type, is_connected=g1.is_connected && g2.is_connected, subdiagram=[g1, g2], operator=Sum())
+    return Diagram{F,W}(g1.external_vertices; type=type, is_connected=g1.is_connected && g2.is_connected, subdiagram=[g1, g2], operator=Sum())
 end
 
 function Base.:-(g1::Diagram{F,W}, g2::Diagram{F,W}) where {F,W}
@@ -187,8 +192,8 @@ end
 function Green2(point_in::Int, point_out::Int, current::Int=0;
     isFermi=true,
     dtype=Float64, factor=zero(dtype), weight=zero(dtype), name="G2", subdiagram=[], operator=Sum())
-    ext_in = ExternalVertex(point_in, current, true, isFermi)
-    ext_out = ExternalVertex(point_out, current, false, isFermi)
+    ext_in = ExternalVertex(point_in, current, [:f⁺,], [1,])
+    ext_out = ExternalVertex(point_out, current, [:f⁻,], [1,])
     if isnothing(subdiagram)
         diagtype = :propagator
     else
@@ -202,8 +207,8 @@ const 𝑊 = Interaction
 
 function Interaction(point_in::Int, point_out::Int, current::Int=0;
     dtype=Float64, factor=zero(dtype), weight=zero(dtype), name="W")
-    ext_in = ExternalVertex(point_in, current, true, false)
-    ext_out = ExternalVertex(point_out, current, false, false)
+    ext_in = ExternalVertex(point_in, current, [:phi,], [1,])
+    ext_out = ExternalVertex(point_out, current, [:phi,], [1,])
     diagtype = :interaction2
     return Diagram{dtype,dtype}([ext_in, ext_out], type=diagtype, is_connected=true,
         name=name, factor=factor, weight=weight)

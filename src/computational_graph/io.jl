@@ -151,16 +151,16 @@ function _summary(diag::Diagram{W}, color=true) where {W}
     end
 end
 
-function Base.show(io::IO, diag::Diagram)
-    if length(diag.subdiagram) == 0
-        typestr = ""
-    else
-        subdiag = prod(["$(d.hash), " for d in diag.subdiagram[1:end-1]])
-        subdiag *= "$(diag.subdiagram[end].hash)"
-        typestr = "($subdiag)"
-    end
-    print(io, "$(diag.hash):$(_summary(diag, true))$typestr")
-end
+# function Base.show(io::IO, diag::Diagram)
+#     if length(diag.subdiagram) == 0
+#         typestr = ""
+#     else
+#         subdiag = prod(["$(d.hash), " for d in diag.subdiagram[1:end-1]])
+#         subdiag *= "$(diag.subdiagram[end].hash)"
+#         typestr = "($subdiag)"
+#     end
+#     print(io, "$(diag.hash):$(_summary(diag, true))$typestr")
+# end
 
 """
     function plot_tree(diag::Diagram; verbose = 0, maxdepth = 6)
