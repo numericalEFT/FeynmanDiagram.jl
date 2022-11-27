@@ -58,7 +58,9 @@ end
 #     ParticleParticleIrreducible
 # end
 
-struct ExternalVertex
+abstract type Vertex end
+
+struct ExternalVertex <: Vertex
     point::Int
     current::Int
     operators::Vector{Symbol} # list of the composite operators,
@@ -68,6 +70,11 @@ struct ExternalVertex
     # :f⁺, :f⁻ for complex fermionic field
     # :b⁺, :b⁻ for complex bosonic field
     flavors::Vector{Int} # flavor of each operator, it allows the field to be scalar, vector or even tensor
+end
+
+struct InternalVertex <: Vertex
+    point::Int
+    current::Int
 end
 
 Base.isequal(a::ExternalVertex, b::ExternalVertex) = ((a.point == b.point) && (a.current == b.current) && (a.operators == b.operators) && (a.flavors == b.flavors))
@@ -101,6 +108,7 @@ mutable struct Diagram{F,W} # Diagram
     flavors::Vector{Int}
 
     external_vertices::Vector{ExternalVertex}
+    # internal_vertices::Vector{InternalVertex}
     is_connected::Bool
     subdiagram::Vector{Diagram{W}}
 
@@ -108,10 +116,12 @@ mutable struct Diagram{F,W} # Diagram
     factor::F
     weight::W
 
+    # function Diagram{F,W}(extV=[], intV=[]; is_connected=true, subdiagram=[],
     function Diagram{F,W}(extV=[]; is_connected=true, subdiagram=[],
         name="", type=:generic, operator::Operator=Sum(), factor=F(1), weight=W(0)) where {F,W}
         orders = zeros(Int, 16)
         return new{F,W}(uid(), name, type, orders, [], extV, is_connected, subdiagram, operator, factor, weight)
+        # return new{F,W}(uid(), name, type, orders, [], extV, intV, is_connected, subdiagram, operator, factor, weight)
     end
 end
 
@@ -190,10 +200,15 @@ function 𝐺ᵇ(point_in::Int, point_out::Int, current::Int=0; kwargs...)
 end
 
 function Green2(point_in::Int, point_out::Int, current::Int=0;
-    isFermi=true,
+    isFermi=true, flavor::Int=1,
     dtype=Float64, factor=zero(dtype), weight=zero(dtype), name="G2", subdiagram=[], operator=Sum())
-    ext_in = ExternalVertex(point_in, current, [:f⁺,], [1,])
-    ext_out = ExternalVertex(point_out, current, [:f⁻,], [1,])
+    if isFermi
+        opin, opout = :f⁺, :f⁻
+    else
+        opin, opout = :b⁺, :b⁻
+    end
+    ext_in = ExternalVertex(point_in, current, [opin,], [flavor,])
+    ext_out = ExternalVertex(point_out, current, [opout,], [flavor,])
     if isnothing(subdiagram)
         diagtype = :propagator
     else
@@ -206,12 +221,20 @@ end
 const 𝑊 = Interaction
 
 function Interaction(point_in::Int, point_out::Int, current::Int=0;
-    dtype=Float64, factor=zero(dtype), weight=zero(dtype), name="W")
-    ext_in = ExternalVertex(point_in, current, [:phi,], [1,])
-    ext_out = ExternalVertex(point_out, current, [:phi,], [1,])
+    flavor::Int=1, dtype=Float64, factor=zero(dtype), weight=zero(dtype), name="W")
+    ext_in = ExternalVertex(point_in, current, [:phi,], [flavor,])
+    ext_out = ExternalVertex(point_out, current, [:phi,], [flavor,])
     diagtype = :interaction2
     return Diagram{dtype,dtype}([ext_in, ext_out], type=diagtype, is_connected=true,
         name=name, factor=factor, weight=weight)
+end
+
+function Interaction(point::Int, operators::Vector{Symbol}, current::Int=0;
+    flavors=ones(Int, length(operators)), dtype=Float64, factor=zero(dtype), weight=zero(dtype), name="W")
+    extV = ExternalVertex(point, current, operators, flavors)
+    # diagtype = Symbol("bareVertex$(length(operators))"...)
+    diagtype = :interaction
+    return Diagram{dtype,dtype}([extV,], type=diagtype, is_connected=true, name=name, factor=factor, weight=weight)
 end
 
 # function Diagram{W}(::Type{Vacuum}; isConnected=false, isAmputated=true, extV=[],
