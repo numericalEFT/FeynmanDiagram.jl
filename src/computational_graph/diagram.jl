@@ -60,11 +60,12 @@ end
 
 struct QuantumOperator
     operator::Symbol
-    flavor::Int32
+    flavor::Int
 end
 Base.isequal(a::QuantumOperator, b::QuantumOperator) = ((a.operator == b.operator) && (a.flavor == b.flavor))
 Base.:(==)(a::QuantumOperator, b::QuantumOperator) = Base.isequal(a, b)
 
+const CompositeOperator = Vector{QuantumOperator}
 const f = QuantumOperator(:f⁻, 1)    #fermionic annihilation
 const fdag = QuantumOperator(:f⁺, 1) #fermionic creation
 const fr = QuantumOperator(:f, 1)    #fermionic real field (Majorana fermion)
@@ -86,10 +87,10 @@ end
 
     struct of all the vertex couplings in the Feynman rule. 
 # Members
-- operators::Vector{Vector{QuantumOperator}}     : each Vector{QuantumOperator} element stores the quantum operators inclued in one kind of vertex coupling 
+- operators::Vector{CompositeOperator}     : each CompositeOperator element stores the quantum operators inclued in one kind of vertex coupling 
 """
 struct Couplings
-    operators::Vector{Vector{QuantumOperator}}
+    operators::Vector{CompositeOperator}
     # TODO: function to testify the legality of the operators
 end
 const simp_coups = Couplings([[f, fdag, phi],])
@@ -99,7 +100,7 @@ abstract type Vertex end
 struct ExternalVertex <: Vertex
     point::Int
     current::Int
-    operators::Vector{QuantumOperator}
+    operator::CompositeOperator
     # operators::Vector{Symbol} # list of the composite operators,
     # :f for fermionic real field (Majorana fermion)
     # :b for bosonic real field
@@ -115,7 +116,7 @@ struct InternalVertex <: Vertex
 end
 
 # Base.isequal(a::ExternalVertex, b::ExternalVertex) = ((a.point == b.point) && (a.current == b.current) && (a.operators == b.operators) && (a.flavors == b.flavors))
-Base.isequal(a::ExternalVertex, b::ExternalVertex) = ((a.point == b.point) && (a.current == b.current) && (a.operators == b.operators))
+Base.isequal(a::ExternalVertex, b::ExternalVertex) = ((a.point == b.point) && (a.current == b.current) && (a.operator == b.operator))
 Base.:(==)(a::ExternalVertex, b::ExternalVertex) = Base.isequal(a, b)
 
 
@@ -202,7 +203,7 @@ function Base.:*(g1::Diagram{F,W}, g2::Diagram{F,W}) where {F,W}
     has_common = !isempty(intersect(ext1_ind, ext2_ind))
     # total = union(g1.external_vertices, g2.external_vertices)
     # ext = [v for v in total if v.point ∉ common]
-    ext = ExternalVertices(g1.external_vertices, g2.external_vertices, g1.couplings)
+    ext = getExternalVertices(g1.external_vertices, g2.external_vertices, g1.couplings)
     #TODO: improve external vertices creation/annihilation check
     return Diagram{F,W}(ext; type=type, is_connected=g1.is_connected && g2.is_connected && has_common, couplings=g1.couplings, subdiagram=[g1, g2], operator=Prod())
 end
@@ -230,7 +231,7 @@ function Base.:-(g1::Diagram{F,W}, g2::Diagram{F,W}) where {F,W}
 end
 
 """
-    function ExternalVertices(V1::Vector{ExternalVertex}, V2::Vector{ExternalVertex}, couplings::Couplings)
+    function getExternalVertices(V1::Vector{ExternalVertex}, V2::Vector{ExternalVertex}, couplings::Couplings)
 
     Give external vertices when two diagrams combine.
     
@@ -239,7 +240,7 @@ end
     - V2::Vector{ExternalVertex}     : External vertices of diagram II.
     - couplings::Couplings           : all the vertex couplings in the Feynman rule. 
 """
-function ExternalVertices(V1::Vector{ExternalVertex}, V2::Vector{ExternalVertex}, couplings::Couplings)
+function getExternalVertices(V1::Vector{ExternalVertex}, V2::Vector{ExternalVertex}, couplings::Couplings)
     V1_ind = [v.point for v in V1]
     V2_ind = [v.point for v in V2]
     common = intersect(V1_ind, V2_ind)
@@ -249,7 +250,7 @@ function ExternalVertices(V1::Vector{ExternalVertex}, V2::Vector{ExternalVertex}
         ifinternal, ifexternal = false, false
         i1 = findfirst(isequal(point), V1_ind)
         i2 = findfirst(isequal(point), V2_ind)
-        point_ops = [V1[i1].operators..., V2[i2].operators...]
+        point_ops = [V1[i1].operator; V2[i2].operator]
         for ops in couplings.operators
             num_pops, num_ops = counter(point_ops), counter(ops)
             if num_pops == num_ops
@@ -322,10 +323,10 @@ function Interaction(point_in::Int, point_out::Int, current::Int=0;
         name=name, factor=factor, weight=weight)
 end
 
-function Interaction(point::Int, operators::Vector{QuantumOperator}, current::Int=0;
+function Interaction(point::Int, operator::CompositeOperator, current::Int=0;
     couplings=simp_coups, dtype=Float64, factor=zero(dtype), weight=zero(dtype), name="W")
-    extV = ExternalVertex(point, current, operators)
-    # diagtype = Symbol("bareVertex$(length(operators))"...)
+    extV = ExternalVertex(point, current, operator)
+    # diagtype = Symbol("bareVertex$(length(operator))"...)
     diagtype = :interaction
     return Diagram{dtype,dtype}([extV,], type=diagtype, is_connected=true, couplings=couplings, name=name, factor=factor, weight=weight)
 end
