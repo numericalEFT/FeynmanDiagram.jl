@@ -29,7 +29,9 @@ include("io.jl")
 const INL, OUTL, INR, OUTR = 1, 2, 3, 4
 
 export ExternalVertex
-export 𝐺ᶠ, 𝐺ᵇ, 𝑊
+export 𝐺ᶠ, 𝐺ᵇ, 𝑊, Green2, Interaction
+export QuantumOperator, f, fdag, fr, b, bdag, br, phi
+export Couplings
 # export addSubDiagram!
 # export evalDiagTree!
 # export evalDiagTreeKT!

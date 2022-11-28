@@ -93,7 +93,9 @@ export reducibility
 # export addSubDiagram!, evalDiagNode!, evalDiagTree!, evalDiagTreeKT!
 # export Operator, Sum, Prod
 # export uidreset, toDataFrame, mergeby, plot_tree
-export 𝐺ᶠ, 𝐺ᵇ, 𝑊
+export 𝐺ᶠ, 𝐺ᵇ, 𝑊, Green2, Interaction
+export QuantumOperator, f, fdag, fr, b, bdag, br, phi
+export Couplings
 
 include("diagram_tree/DiagTree.jl")
 using .DiagTree
