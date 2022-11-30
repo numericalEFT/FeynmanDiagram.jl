@@ -13,14 +13,6 @@ Base.show(io::IO, o::Prod) = print(io, "Ⓧ")
 # Base.show(io::IO, o::Diff) = print(io, "d")
 # Base.show(io::IO, o::Integral) = print(io, "∫")
 
-# abstract type DiagType end
-# struct PropagatorDig <: DiagType end
-# struct InteractionDiag <: DiagType end
-# struct SigmaDiag <: DiagType end
-# struct GreenDiag <: DiagType end
-# # TODO: more
-# struct OtherDiag <: DiagType end
-
 function vstr(r, c)
     N = length(r)
     # cstr(x) = x ? "⁺" : "⁻"
@@ -58,23 +50,38 @@ end
 #     ParticleParticleIrreducible
 # end
 
-struct QuantumOperator
+struct QuantumOperator#{T} <: AbstractVector{T}
     operator::Symbol
     flavor::Int
 end
 Base.isequal(a::QuantumOperator, b::QuantumOperator) = ((a.operator == b.operator) && (a.flavor == b.flavor))
 Base.:(==)(a::QuantumOperator, b::QuantumOperator) = Base.isequal(a, b)
 
-const CompositeOperator = Vector{QuantumOperator}
-const f = QuantumOperator(:f⁻, 1)    #fermionic annihilation
-const fdag = QuantumOperator(:f⁺, 1) #fermionic creation
-const fr = QuantumOperator(:f, 1)    #fermionic real field (Majorana fermion)
-const b = QuantumOperator(:b⁻, 1)    #bosonic annihilation
-const bdag = QuantumOperator(:b⁺, 1) #bosonic creation
-const br = QuantumOperator(:b, 1)    #bosonic real field
-const phi = QuantumOperator(:phi, 1) #classical real field (it can be paired with f⁺f⁻, b⁺b⁻, or other classical fields)
+# const CompositeOperator = Vector{QuantumOperator}
+const 𝑓 = QuantumOperator(:f⁻, 1)    #fermionic annihilation
+const 𝑓dag = QuantumOperator(:f⁺, 1) #fermionic creation
+const γ = QuantumOperator(:f, 1)    #fermionic real field (Majorana fermion)
+const 𝑏 = QuantumOperator(:b⁻, 1)    #bosonic annihilation
+const 𝑏dag = QuantumOperator(:b⁺, 1) #bosonic creation
+const ϕ = QuantumOperator(:phi, 1) #classical real field (it can be paired with f⁺f⁻, b⁺b⁻, or other classical fields):w
 
-function counter(it)
+# f = [QuantumOperator(:f⁻, i) for i in 1:3]
+# f = fermionic_ann() # f is a function
+# f(1), f(2), f(3)
+fermionic_annihilation(flavor) = QuantumOperator(:f⁻, flavor)
+fermionic_annihilation() = flavor -> QuantumOperator(:f⁻, flavor)
+fermionic_creation(flavor) = QuantumOperator(:f⁺, flavor)
+fermionic_creation() = flavor -> QuantumOperator(:f⁺, flavor)
+majorana(flavor) = QuantumOperator(:f⁺, flavor)
+majorana() = flavor -> QuantumOperator(:f⁺, flavor)
+bosonic_annihilation(flavor) = QuantumOperator(:b⁻, flavor)
+bosonic_annihilation() = flavor -> QuantumOperator(:b⁻, flavor)
+bosonic_creation(flavor) = QuantumOperator(:b⁺, flavor)
+bosonic_creation() = flavor -> QuantumOperator(:b⁺, flavor)
+real_scalar(flavor) = QuantumOperator(:phi, flavor)
+real_scalar() = flavor -> QuantumOperator(:phi, flavor)
+
+function _countervector(it)
     y = Dict{eltype(it),Int}()
     for i in it
         y[i] = get(y, i, 0) + 1
@@ -82,18 +89,28 @@ function counter(it)
     return y
 end
 
-"""
-    struct Couplings
-
-    struct of all the vertex couplings in the Feynman rule. 
-# Members
-- operators::Vector{CompositeOperator}     : each CompositeOperator element stores the quantum operators inclued in one kind of vertex coupling 
-"""
-struct Couplings
-    operators::Vector{CompositeOperator}
-    # TODO: function to testify the legality of the operators
+struct CompositeOperator
+    operators::Vector{QuantumOperator}
 end
-const simp_coups = Couplings([[f, fdag, phi],])
+Base.isequal(a::CompositeOperator, b::CompositeOperator) = (_countervector(a.operators) == _countervector(b.operators))
+Base.:(==)(a::CompositeOperator, b::CompositeOperator) = Base.isequal(a, b)
+const Coupling_yukawa = CompositeOperator([𝑓, 𝑓dag, ϕ])
+const Coupling_phi3 = CompositeOperator([ϕ, ϕ, ϕ])
+const Coupling_phi4 = CompositeOperator([ϕ, ϕ, ϕ, ϕ])
+const Coupling_phi6 = CompositeOperator([ϕ, ϕ, ϕ, ϕ, ϕ, ϕ])
+
+# """
+#     struct Couplings
+
+#     struct of all the vertex couplings in the Feynman rule. 
+# # Members
+# - operators::Vector{CompositeOperator}     : each CompositeOperator element stores the quantum operators inclued in one kind of vertex coupling 
+# """
+# struct Couplings
+#     operators::Vector{CompositeOperator}
+#     # TODO: function to testify the legality of the operators
+# end
+# const simp_coups = Couplings([[f, fdag, phi],])
 
 abstract type Vertex end
 
@@ -109,15 +126,16 @@ struct ExternalVertex <: Vertex
     # :b⁺, :b⁻ for complex bosonic field
     # flavors::Vector{Int} # flavor of each operator, it allows the field to be scalar, vector or even tensor
 end
+Base.isequal(a::ExternalVertex, b::ExternalVertex) = ((a.point == b.point) && (a.current == b.current) && (a.operator == b.operator))
+Base.:(==)(a::ExternalVertex, b::ExternalVertex) = Base.isequal(a, b)
 
 struct InternalVertex <: Vertex
     point::Int
     current::Int
+    operator::CompositeOperator
 end
-
-# Base.isequal(a::ExternalVertex, b::ExternalVertex) = ((a.point == b.point) && (a.current == b.current) && (a.operators == b.operators) && (a.flavors == b.flavors))
-Base.isequal(a::ExternalVertex, b::ExternalVertex) = ((a.point == b.point) && (a.current == b.current) && (a.operator == b.operator))
-Base.:(==)(a::ExternalVertex, b::ExternalVertex) = Base.isequal(a, b)
+Base.isequal(a::InternalVertex, b::InternalVertex) = ((a.point == b.point) && (a.current == b.current) && (a.operator == b.operator))
+Base.:(==)(a::InternalVertex, b::InternalVertex) = Base.isequal(a, b)
 
 
 """
@@ -130,11 +148,12 @@ Base.:(==)(a::ExternalVertex, b::ExternalVertex) = Base.isequal(a, b)
 - name::Symbol         : name of the diagram
 - para::DiagramPara    : internal parameters of the diagram
 - orders::Vector{Int}  : orders of the diagram, loop order, derivative order, etc.
-- couplings::Couplings : all the vertex couplings in the Feynman rule. 
+# - couplings::Couplings : all the vertex couplings in the Feynman rule. 
 # - internal_points::Vector{Int} : internal points in the diagram
 # - currents::Vector{Float64} : independent currents in the diagram
 - external_vertices::Vector{ExternalVertex}    : external vertices of the diagram
-- isConnected::Bool    : connected or disconnected Green's function
+- internal_vertices::Vector{InternalVertex}    : internal vertices of the diagram
+# - isConnected::Bool    : connected or disconnected Green's function
 # - isAmputated::Bool    : amputated Green's function or not
 - subdiagram::Vector{Diagram{W}}   : vector of sub-diagrams 
 - operator::Operator   : operation, support Sum() and Prod()
@@ -146,34 +165,31 @@ mutable struct Diagram{F,W} # Diagram
     name::String # "" by default
     type::Symbol # :propagator, :interaction, :sigma, :green, :generic
     orders::Vector{Int}
-    # flavors::Vector{Int}
-    couplings::Couplings
+    couplings::Vector{CompositeOperator}
 
     external_vertices::Vector{ExternalVertex}
-    # internal_vertices::Vector{InternalVertex}
-    is_connected::Bool
+    internal_vertices::Vector{InternalVertex}
+    # is_connected::Bool
     subdiagram::Vector{Diagram{W}}
 
     operator::Operator
     factor::F
     weight::W
 
-    # function Diagram{F,W}(extV=[], intV=[]; is_connected=true, subdiagram=[],
-    function Diagram{F,W}(extV=[]; is_connected=true, couplings=simp_coups,
-        subdiagram=[], name="", type=:generic, operator::Operator=Sum(), factor=F(1), weight=W(0)) where {F,W}
+    function Diagram{F,W}(extV=[], intV=[]; subdiagram=[], couplings=[],
+        name="", type=:generic, operator::Operator=Sum(), factor=F(1), weight=W(0)) where {F,W}
         orders = zeros(Int, 16)
-        return new{F,W}(uid(), name, type, orders, couplings, extV, is_connected, subdiagram, operator, factor, weight)
-        # return new{F,W}(uid(), name, type, orders, [], extV, intV, is_connected, subdiagram, operator, factor, weight)
+        return new{F,W}(uid(), name, type, orders, couplings, extV, intV, subdiagram, operator, factor, weight)
     end
 end
 
+#TODO: improve a text representation of Diagram to the output stream.
 function Base.show(io::IO, g::Diagram)
-    strc = g.is_connected ? "connected " : "disconnected "
+    # strc = g.is_connected ? "connected " : "disconnected "
     # stra = g.isAmputated ? "amputated " : " "
-    print(io, "id $(g.id): " * strc * "Green's function $(g.name)")
+    print(io, "id $(g.id): Green's function $(g.name)")
 end
 
-Base.:(==)(a::Diagram, b::Diagram) = Base.isequal(a, b)
 function Base.isequal(a::Diagram, b::Diagram)
     typeof(a) != typeof(b) && return false
     for field in fieldnames(typeof(a))
@@ -184,36 +200,45 @@ function Base.isequal(a::Diagram, b::Diagram)
     end
     return true
 end
+Base.:(==)(a::Diagram, b::Diagram) = Base.isequal(a, b)
 # isbare(diag::Diagram) = isempty(diag.subdiagram)
 
-# function reducibility(g::Diagram{W}) where {W}
-#     return ()
-# end
+#TODO: add function return reducibility of Diagram. 
+function reducibility(g::Diagram)
+    return (OneFermiIrreducible,)
+end
 
-# function reducibility!(g::Diagram{W}) where {W}
-#     # @assert g.reducibility ⊆ reducibility(g) "wrong reducibility in g (hash: $g.hash)."
-#     g.reducibility = union(reducibility(g), g.reducibility)
-# end
+#TODO: add function for connected diagram check. 
+function connectivity(g::Diagram)
+    isempty(g.subdiagram) && return true
+end
+function connectivity!(g::Diagram)
+    g.isConnected = connectivity(g)
+end
 
 function Base.:*(g1::Diagram{F,W}, g2::Diagram{F,W}) where {F,W}
     type = :generic
-    ext1_ind = [v.point for v in g1.external_vertices]
-    ext2_ind = [v.point for v in g2.external_vertices]
-    #TODO: add complete connected diagram check. 
-    has_common = !isempty(intersect(ext1_ind, ext2_ind))
+    for v1 in g1.internal_vertices
+        for v2 in g2.internal_vertices
+            @assert v1.point != v2.point "g1 and g2 have the same internal vertex point."
+        end
+    end
+    # ext1_ind = [v.point for v in g1.external_vertices]
+    # ext2_ind = [v.point for v in g2.external_vertices]
+    # has_common = !isempty(intersect(ext1_ind, ext2_ind))
     # total = union(g1.external_vertices, g2.external_vertices)
     # ext = [v for v in total if v.point ∉ common]
-    ext = getExternalVertices(g1.external_vertices, g2.external_vertices, g1.couplings)
-    #TODO: improve external vertices creation/annihilation check
-    return Diagram{F,W}(ext; type=type, is_connected=g1.is_connected && g2.is_connected && has_common, couplings=g1.couplings, subdiagram=[g1, g2], operator=Prod())
+    couplings = union(g1.couplings, g2.couplings)
+    extV, intV = _getVertices(g1.external_vertices, g2.external_vertices, couplings)
+    return Diagram{F,W}(extV, [g1.internal_vertices; g2.internal_vertices; intV]; type=type, couplings=couplings, subdiagram=[g1, g2], operator=Prod())
 end
 
 function Base.:*(g1::Diagram{F,W}, c2::Number) where {F,W}
-    return Diagram{F,W}(g1.external_vertices; type=g1.type, is_connected=g1.is_connected, couplings=g1.couplings, subdiagram=[g1,], operator=Prod(), factor=c2)
+    return Diagram{F,W}(g1.external_vertices, g1.internal_vertices; type=g1.type, couplings=g1.couplings, subdiagram=[g1,], operator=Prod(), factor=c2)
 end
 
 function Base.:*(c1::Number, g2::Diagram{F,W}) where {F,W}
-    return Diagram{F,W}(g2.external_vertices; type=g2.type, is_connected=g2.is_connected, couplings=g2.couplings, subdiagram=[g2,], operator=Prod(), factor=c1)
+    return Diagram{F,W}(g2.external_vertices, g2.internal_vertices; type=g2.type, couplings=g2.couplings, subdiagram=[g2,], operator=Prod(), factor=c1)
 end
 
 function Base.:+(g1::Diagram{F,W}, g2::Diagram{F,W}) where {F,W}
@@ -221,69 +246,82 @@ function Base.:+(g1::Diagram{F,W}, g2::Diagram{F,W}) where {F,W}
     # @assert g1.isAmputated == g2.isAmputated "g1 and g2 are not of the same amputated status."
     # TODO: more check
     type = g1.type
-    @assert Set(g1.external_vertices) == Set(g2.external_vertices)
+    @assert Set(g1.external_vertices) == Set(g2.external_vertices) "g1 and g2 have different external vertices."
+    @assert Set(g1.internal_vertices) == Set(g2.internal_vertices) "g1 and g2 have different internal vertices."
     #TODO: add external vertices creation/annihilation check
-    return Diagram{F,W}(g1.external_vertices; type=type, is_connected=g1.is_connected && g2.is_connected, couplings=g1.couplings, subdiagram=[g1, g2], operator=Sum())
+    return Diagram{F,W}(g1.external_vertices, g1.internal_vertices; type=type, couplings=g1.couplings, subdiagram=[g1, g2], operator=Sum())
 end
 
 function Base.:-(g1::Diagram{F,W}, g2::Diagram{F,W}) where {F,W}
     return g1 + (-1) * g2
 end
 
-"""
-    function getExternalVertices(V1::Vector{ExternalVertex}, V2::Vector{ExternalVertex}, couplings::Couplings)
+function checkVertices(g::Diagram{F,W}) where {F,W}
+    @assert !isempty(g.couplings) "Diagram.couplings must be defined to check the legality of vertices"
+    for v in g.internal_vertices
+        @assert v.operator in g.couplings "internal vertex point $(v.point) is illegal."
+    end
+    for v in g.external_vertices
+        is_legal = false
+        for ops in g.couplings
+            @assert v.operator != ops "external vertex point $(v.point) is illegal."
+            num_pops, num_ops = _countervector(v.operator.operators), _countervector(ops.operators)
+            all([num_ops[op] >= num_pops[op] for op in v.operator.operators]) && (is_legal = true)
+        end
+        @assert is_legal "external vertex point $(v.point) is illegal."
+    end
+    return true
+end
 
-    Give external vertices when two diagrams combine.
-    
-    # Arguments
-    - V1::Vector{ExternalVertex}     : External vertices of diagram I.
-    - V2::Vector{ExternalVertex}     : External vertices of diagram II.
-    - couplings::Couplings           : all the vertex couplings in the Feynman rule. 
 """
-function getExternalVertices(V1::Vector{ExternalVertex}, V2::Vector{ExternalVertex}, couplings::Couplings)
+    function _getVertices(V1::Vector{ExternalVertex}, V2::Vector{ExternalVertex}, couplings::Couplings)
+
+    Give internal and external vertices when two diagrams combine.
+  
+    # Arguments
+    - V1::Vector{ExternalVertex}            : External vertices of diagram I.
+    - V2::Vector{ExternalVertex}            : External vertices of diagram II.
+    - couplings::Vector{CompositeOperator}  : all the vertex couplings in the Feynman rule. 
+"""
+function _getVertices(V1::Vector{ExternalVertex}, V2::Vector{ExternalVertex}, couplings::Vector{CompositeOperator})
     V1_ind = [v.point for v in V1]
     V2_ind = [v.point for v in V2]
     common = intersect(V1_ind, V2_ind)
     total = union(V1, V2)
+    intV = []
     extV = [v for v in total if v.point ∉ common]
     for point in common
-        ifinternal, ifexternal = false, false
+        # ifinternal, ifexternal = false, false
         i1 = findfirst(isequal(point), V1_ind)
         i2 = findfirst(isequal(point), V2_ind)
-        point_ops = [V1[i1].operator; V2[i2].operator]
-        for ops in couplings.operators
-            num_pops, num_ops = counter(point_ops), counter(ops)
-            if num_pops == num_ops
-                ifinternal = true
-                break
-            end
-            if point_ops ⊆ ops
-                if all([num_ops[op] >= num_pops[op] for op in point_ops])
+        point_ops = CompositeOperator([V1[i1].operator.operators; V2[i2].operator.operators])
+        if isempty(couplings)
+            append!(extV, [ExternalVertex(point, V1[i1].current, point_ops)])
+        else
+            for ops in couplings
+                if point_ops == ops
+                    append!(intV, [InternalVertex(point, V1[i1].current, point_ops)])
+                else
                     append!(extV, [ExternalVertex(point, V1[i1].current, point_ops)])
-                    ifexternal = true
-                    break
                 end
-                # extnum_pops = [num_ops[op] - num_pops[op] for op in point_ops]
-                # if all(extnum_pops .>= 0)
-                #     extops = vcat(fill.(point_ops, extnum_pops)...)
-                #     extraops = setdiff(ops, point_ops)
-                #     if !isempty(extraops)
-                #         append!(extops, vcat(fill.(extraops, [num_ops[op] for op in extraops])...))
+                # num_pops, num_ops = _countervector(point_ops), _countervector(ops.operators)
+                # if num_pops == num_ops
+                #     ifinternal = true
+                #     break
+                # end
+                # if point_ops ⊆ ops.operators
+                #     if all([num_ops[op] >= num_pops[op] for op in point_ops])
+                #         append!(extV, [ExternalVertex(point, V1[i1].current, CompositeOperator(point_ops))])
+                #         # ifexternal = true
+                #         break
                 #     end
-                #     append!(extV, [ExternalVertex(point, V1[i1].current, extops)])
-                #     ifexternal = true
                 # end
             end
         end
-        @assert ifinternal || ifexternal "point $point is illegal."
+        # @assert ifinternal || ifexternal "point $point is illegal."
     end
-    return extV
+    return extV, intV
 end
-# g = Sigma(...)
-# w = W(...)
-# ver4 = Vertex4(...)
-
-# graph = g*w+ver4*0.5
 
 function 𝐺ᶠ(point_in::Int, point_out::Int, current::Int=0; kwargs...)
     return Green2(point_in, point_out, current; isFermi=true, kwargs...)
@@ -293,42 +331,54 @@ function 𝐺ᵇ(point_in::Int, point_out::Int, current::Int=0; kwargs...)
     return Green2(point_in, point_out, current; isFermi=false, kwargs...)
 end
 
+function 𝐺ᵠ(point_in::Int, point_out::Int, current::Int=0; kwargs...)
+    return Green2(point_in, point_out, current; isFermi=false, isComplex=false, kwargs...)
+end
+
 function Green2(point_in::Int, point_out::Int, current::Int=0;
-    isFermi=true, flavor::Int=1, couplings=simp_coups,
-    dtype=Float64, factor=zero(dtype), weight=zero(dtype), name="G2", subdiagram=[], operator=Sum())
-    if isFermi
-        opin, opout = QuantumOperator(:f⁺, flavor), QuantumOperator(:f⁻, flavor)
+    isFermi=true, isComplex=true, flavor::Int=1, couplings=[], dtype=Float64,
+    factor=zero(dtype), weight=zero(dtype), name="G2", subdiagram=[], operator=Sum())
+    if isFermi && isComplex
+        opin, opout = fermionic_creation(flavor), fermionic_annihilation(flavor)
+    elseif isFermi && !isComplex
+        opin, opout = majorana(flavor), majorana(flavor)
+    elseif !isFermi && isComplex
+        opin, opout = bosonic_creation(flavor), bosonic_annihilation(flavor)
     else
-        opin, opout = QuantumOperator(:b⁺, flavor), QuantumOperator(:b⁻, flavor)
+        opin, opout = real_scalar(flavor), real_scalar(flavor)
     end
-    ext_in = ExternalVertex(point_in, current, [opin,])
-    ext_out = ExternalVertex(point_out, current, [opout,])
+    if point_in == point_out
+        extV = [ExternalVertex(point_in, current, CompositeOperator([opin, opout]))]
+    else
+        extV = [ExternalVertex(point_in, current, CompositeOperator([opin])),
+            ExternalVertex(point_out, current, CompositeOperator([opout]))]
+    end
     if isnothing(subdiagram)
         diagtype = :propagator
     else
         diagtype = :green2
     end
-    return Diagram{dtype,dtype}([ext_in, ext_out], type=diagtype, is_connected=true, couplings=couplings, subdiagram=subdiagram,
+    return Diagram{dtype,dtype}(extV, type=diagtype, couplings=couplings, subdiagram=subdiagram,
         name=name, operator=operator, factor=factor, weight=weight)
 end
 
 const 𝑊 = Interaction
 
-function Interaction(point_in::Int, point_out::Int, current::Int=0;
-    flavor::Int=1, couplings=simp_coups, dtype=Float64, factor=zero(dtype), weight=zero(dtype), name="W")
-    ext_in = ExternalVertex(point_in, current, [QuantumOperator(:phi, flavor),])
-    ext_out = ExternalVertex(point_out, current, [QuantumOperator(:phi, flavor),])
+function Interaction(point_in::Int, point_out::Int, current::Int=0; flavor::Int=1,
+    couplings=[Coupling_yukawa,], dtype=Float64, factor=zero(dtype), weight=zero(dtype), name="W")
+    ext_in = ExternalVertex(point_in, current, CompositeOperator([real_scalar(flavor),]))
+    ext_out = ExternalVertex(point_out, current, CompositeOperator([real_scalar(flavor),]))
     diagtype = :interaction2
-    return Diagram{dtype,dtype}([ext_in, ext_out], type=diagtype, is_connected=true, couplings=couplings,
+    return Diagram{dtype,dtype}([ext_in, ext_out], type=diagtype, couplings=couplings,
         name=name, factor=factor, weight=weight)
 end
 
-function Interaction(point::Int, operator::CompositeOperator, current::Int=0;
-    couplings=simp_coups, dtype=Float64, factor=zero(dtype), weight=zero(dtype), name="W")
-    extV = ExternalVertex(point, current, operator)
+function Interaction(point::Int, coupling::CompositeOperator, current::Int=0;
+    dtype=Float64, factor=zero(dtype), weight=zero(dtype), name="W", operators=[])
+    extV = ExternalVertex(point, current, CompositeOperator(operators))
     # diagtype = Symbol("bareVertex$(length(operator))"...)
     diagtype = :interaction
-    return Diagram{dtype,dtype}([extV,], type=diagtype, is_connected=true, couplings=couplings, name=name, factor=factor, weight=weight)
+    return Diagram{dtype,dtype}([extV,], type=diagtype, couplings=[coupling,], name=name, factor=factor, weight=weight)
 end
 
 # function Diagram{W}(::Type{Vacuum}; isConnected=false, isAmputated=true, extV=[],
