@@ -28,10 +28,11 @@ include("io.jl")
 
 const INL, OUTL, INR, OUTR = 1, 2, 3, 4
 
-export ExternalVertex
-export 𝐺ᶠ, 𝐺ᵇ, 𝑊, Green2, Interaction
-export QuantumOperator, f, fdag, fr, b, bdag, br, phi
-export Couplings
+export ExternalVertex, InternalVertex, checkVertices
+export 𝐺ᶠ, 𝐺ᵇ, 𝐺ᵠ, 𝑊, Green2, Interaction
+export QuantumOperator, 𝑓, 𝑓dag, γ, 𝑏, 𝑏dag, ϕ
+export CompositeOperator
+export Coupling_yukawa, Coupling_phi3, Coupling_phi4, Coupling_phi6
 # export addSubDiagram!
 # export evalDiagTree!
 # export evalDiagTreeKT!
