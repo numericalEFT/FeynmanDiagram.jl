@@ -59,6 +59,17 @@ function uidreset()
     _counter[1] = 0
 end
 
+const _labelcounter = [0,]
+
+function label()
+    _labelcounter[1] += 1
+    return _labelcounter[1]
+end
+
+function labelreset()
+    _labelcounter[1] = 0
+end
+
 function getK(loopNum::Int, loopIdx::Int)
     k = zeros(loopNum)
     k[loopIdx] = 1.0
