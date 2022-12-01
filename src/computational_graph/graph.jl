@@ -279,11 +279,11 @@ end
 #     return Graph{F,W}(extV, [g1.internal_vertices; g2.internal_vertices; intV]; type=type, couplings=couplings, subgraph=[g1, g2], operator=Prod())
 # end
 
-function Base.:*(g1::Graph{F,W}, c2::Number) where {F,W}
+function Base.:*(g1::Graph{F,W}, c2::C) where {F,W,C<:F}
     return Graph{F,W}(g1.external_vertices, g1.internal_vertices; type=g1.type, subgraph=[g1,], operator=Prod(), factor=c2)
 end
 
-function Base.:*(c1::Number, g2::Graph{F,W}) where {F,W}
+function Base.:*(c1::C, g2::Graph{F,W}) where {F,W,C<:F}
     return Graph{F,W}(g2.external_vertices, g2.internal_vertices; type=g2.type, subgraph=[g2,], operator=Prod(), factor=c1)
 end
 
