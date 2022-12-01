@@ -50,6 +50,18 @@ import ..innerTauNum
 # end
 const _counter = [0,]
 
+mutable struct DType
+    factor::DataType
+    weight::DataType
+end
+
+const _dtype = DType(Float64, Float64)
+
+function set_datatype(; factor=Float64, weight=Float64)
+    _dtype.factor = factor
+    _dtype.weight = weight
+end
+
 function uid()
     _counter[1] += 1
     return _counter[1]
