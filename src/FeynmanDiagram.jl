@@ -99,7 +99,7 @@ export QuantumOperator, CompositeOperator
 export 𝑓⁻, 𝑓⁺, 𝑓, 𝑏⁻, 𝑏⁺, 𝜙
 export fermionic_annihilation, fermionic_creation, majorana
 export bosonic_annihilation, bosonic_creation, real_classic
-export feynman_diagram, contractions_to_edgelist, propagator, labelreset
+export feynman_diagram, contractions_to_edges, propagator, labelreset
 # export Coupling_yukawa, Coupling_phi3, Coupling_phi4, Coupling_phi6
 
 
