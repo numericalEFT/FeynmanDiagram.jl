@@ -83,21 +83,23 @@ export DiagramPara, DiagramParaF64
 # export Interaction, interactionTauNum, innerTauNum
 
 include("computational_graph/ComputationalGraph.jl")
-using .ComputationalGraph
-export ComputationalGraph
+using .ComputationalGraphs
+export ComputationalGraphs
 # export TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
 # export Permutation, Di, Ex, DiEx
-export Diagram, ExternalVertex, InternalVertex, checkVertices
-export build_graph, add_edge!, labelreset
+export Graph, ExternalVertex, InternalVertex
 # export OneFermiIrreducible, OneBoseIrreducible, ParticleHoleIrreducible, ParticleParticleIrreducible
 export reducibility, connectivity
 # export addSubDiagram!, evalDiagNode!, evalDiagTree!, evalDiagTreeKT!
 # export Operator, Sum, Prod
 # export uidreset, toDataFrame, mergeby, plot_tree
 # export 𝐺ᶠ, 𝐺ᵇ, 𝐺ᵠ, 𝑊, Green2, Interaction
-export QuantumOperator
+export QuantumOperator, CompositeOperator
 # export 𝑓, 𝑓dag, γ, 𝑏, 𝑏dag, ϕ
-# export CompositeOperator
+export 𝑓⁻, 𝑓⁺, 𝑓, 𝑏⁻, 𝑏⁺, 𝜙
+export fermionic_annihilation, fermionic_creation, majorana
+export bosonic_annihilation, bosonic_creation, real_classic
+export feynman_diagram, contractions_to_edgelist, propagator, labelreset
 # export Coupling_yukawa, Coupling_phi3, Coupling_phi4, Coupling_phi6
 
 
