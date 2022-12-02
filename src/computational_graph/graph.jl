@@ -54,9 +54,6 @@ struct QuantumOperator#{T} <: AbstractVector{T}
     operator::Symbol
     label::Int
     # flavor::Int
-    function QuantumOperator(operator::Symbol, label)
-        return new(operator, label)
-    end
 end
 Base.isequal(a::QuantumOperator, b::QuantumOperator) = ((a.operator == b.operator) && (a.label == b.label))
 Base.:(==)(a::QuantumOperator, b::QuantumOperator) = Base.isequal(a, b)
@@ -109,24 +106,44 @@ function Base.:*(o1::QuantumOperator, o2::QuantumOperator)
 end
 
 function Base.:*(o1::CompositeOperator, o2::QuantumOperator)
-    return CompositeOperator([o1.operators..., o2])
+    return CompositeOperator([o1.operators; o2])
 end
 
 function Base.:*(o1::QuantumOperator, o2::CompositeOperator)
-    return CompositeOperator([o1, o2.operators...])
+    return CompositeOperator([o1; o2.operators])
 end
 
 function Base.:*(o1::CompositeOperator, o2::CompositeOperator)
-    return CompositeOperator([o1.operators..., o2.operators...])
+    return CompositeOperator([o1.operators; o2.operators])
 end
 
-function _countervector(it)
-    y = Dict{eltype(it),Int}()
-    for i in it
-        y[i] = get(y, i, 0) + 1
-    end
-    return y
+"""
+    Converts a CompositeOperator to normal-ordered form in place and returns the associated statistical sign.
+"""
+function normal_order!(operator::CompositeOperator)
+    sign = 1
+    @todo
+    return sign
 end
+
+"""
+    Computes the permutation required to convert a CompositeOperator to normal-ordered form. 
+    Returns the associated statistical sign and permutation.
+"""
+function normal_order(operator::CompositeOperator)
+    sign = 1
+    permutation = collect(eachindex(operator.operators))
+    @todo
+    return sign, permutation
+end
+
+# function _countervector(it)
+#     y = Dict{eltype(it),Int}()
+#     for i in it
+#         y[i] = get(y, i, 0) + 1
+#     end
+#     return y
+# end
 
 # struct CompositeOperator
 #     operators::Vector{QuantumOperator}
@@ -150,6 +167,9 @@ end
 #     # TODO: function to testify the legality of the operators
 # end
 # const simp_coups = Couplings([[f, fdag, phi],])
+
+"""Type alias for a directed graph edge e = (a₁⁺, a₂⁻) from e[1] to e[2]."""
+const EdgeType = Tuple{Int,Int}
 
 abstract type Vertex end
 
@@ -256,11 +276,13 @@ Base.:(==)(a::Graph, b::Graph) = Base.isequal(a, b)
 
 #TODO: add function return reducibility of Graph. 
 function reducibility(g::Graph)
+    @todo
     return (OneFermiIrreducible,)
 end
 
 #TODO: add function for connected diagram check. 
 function connectivity(g::Graph)
+    @todo
     isempty(g.subgraph) && return true
 end
 function connectivity!(g::Graph)
@@ -325,7 +347,7 @@ function feynman_diagram(extV::Vector{ExternalVertex}, intV::Vector{InternalVert
                     #TODO: check the legality of the contraction
                     if ui == vi
                         if loc_v != loc_u
-                            v1 = ExternalVertex([v.operator[loc_v]..., v.operator[loc_u]...], current=v.current)
+                            v1 = ExternalVertex([v.operator[loc_v]; v.operator[loc_u]], current=v.current)
                             append!(g.subgraph, [propagtor(v1, v1; ftype=F, wtype=W)])
                         end
                     else
@@ -341,6 +363,43 @@ function feynman_diagram(extV::Vector{ExternalVertex}, intV::Vector{InternalVert
     end
 
     return g
+end
+
+"""
+    Converts an ordered list of Wick contractions associated with an unspecified normal-ordered `CompositeOperator` to a set of edges.
+    For a list of N Wick contractions, the first N entries of `contractions` should be: `1, 2, 3, ..., N`.
+
+    Example: [1, 2, 3, 4, 1, 3, 4, 2] => Set((1, 5), (2, 8), (3, 6), (4, 7))
+
+"""
+function contractions_to_edgelist(operator::CompositeOperator, contractions::Vector{Int})
+    # Filter illegal contractions
+    is_invalid =
+        isodd(length(contractions)) ||
+        isodd(length(unique(contractions))) ||
+        length(operator.operators) != length(contractions)
+    if is_invalid
+        throw(
+            ArgumentError(
+                "Input $contractions does not specify a legal set of Wick contractions",
+            ),
+        )
+    end
+    N = length(contractions) ÷ 2
+    if contractions[1:N] != collect(1:N)
+        throw(ArgumentError("Input $contractions is not normal-ordered"))
+    end
+    edges = Set{EdgeType}()
+    # Loop over annihilation operators (N < j ≤ 2N) and pair
+    for (js, i) in enumerate(contractions[(N+1):end])
+        j = js + N
+        @debug "Wick contraction #$i, adding edge: ($i, $j)"
+        push!(edges, (i, j))
+    end
+    contraction_sign = 1
+    # TODO: Deduce the statistical sign associated with this normal-ordered contraction.
+    #       We need to track the sign as we put the annihilation operators in anti-sorted
+    return edges, contraction_sign
 end
 
 # function add_edge!(g::Graph{F,W}, contraction::Dict{Int,Vector{Int}}) where {F,W}
@@ -375,7 +434,7 @@ end
 #     end
 # end
 
-function propagtor(v1::Vertex, v2::Vertex; name="propagator", diagtype=:propagtor,
+function propagator(v1::Vertex, v2::Vertex; name="propagator", diagtype=:propagtor,
     ftype=Float64, wtype=Float64, factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
     if v1 == v2
         extV = [v1]

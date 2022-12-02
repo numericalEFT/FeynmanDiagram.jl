@@ -25,18 +25,21 @@ include("io.jl")
 # include("eval.jl")
 # include("optimize.jl")
 
+macro todo()
+    return :(error("Not yet implemented!"))
+end
 
 const INL, OUTL, INR, OUTR = 1, 2, 3, 4
 
 export Graph
-export ExternalVertex, InternalVertex, checkVertices
-export build_graph, add_edge!, labelreset
+export ExternalVertex, InternalVertex
+export labelreset
 export fermionic_annihilation, fermionic_creation, majorana
 export bosonic_annihilation, bosonic_creation, real_scalar
 # export 𝐺ᶠ, 𝐺ᵇ, 𝐺ᵠ, 𝑊, Green2, Interaction
-export QuantumOperator
-export 𝑓⁻, 𝑓⁺, 𝑏⁻, 𝑏⁺, ϕ
-# export CompositeOperator
+export QuantumOperator, CompositeOperator
+export 𝑓⁻, 𝑓⁺, 𝑓, 𝑏⁻, 𝑏⁺, 𝜙
+export feynman_diagram, contractions_to_edgelist, propagator, labelreset
 # export Coupling_yukawa, Coupling_phi3, Coupling_phi4, Coupling_phi6
 
 # export addSubDiagram!
