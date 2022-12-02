@@ -362,10 +362,10 @@ function feynman_diagram(extV::Vector{ExternalVertex}, intV::Vector{InternalVert
 end
 
 """
-    Converts an ordered list of Wick contractions associated with an unspecified normal-ordered `CompositeOperator` to a set of edges.
+    Converts an ordered list of Wick contractions associated with an unspecified normal-ordered `CompositeOperator` to a list of edges.
     For a list of N Wick contractions, the first N entries of `contractions` should be: `1, 2, 3, ..., N`.
 
-    Example: [1, 2, 3, 4, 1, 3, 4, 2] => Set((1, 5), (2, 8), (3, 6), (4, 7))
+    Example: [1, 2, 3, 4, 1, 3, 4, 2] => [(1, 5), (2, 8), (3, 6), (4, 7)]
 
 """
 function contractions_to_edgelist(operator::CompositeOperator, contractions::Vector{Int})
@@ -385,7 +385,7 @@ function contractions_to_edgelist(operator::CompositeOperator, contractions::Vec
     if contractions[1:N] != collect(1:N)
         throw(ArgumentError("Input $contractions is not normal-ordered"))
     end
-    edges = Set{EdgeType}()
+    edges = Vector{EdgeType}()
     # Loop over annihilation operators (N < j ≤ 2N) and pair
     for (js, i) in enumerate(contractions[(N+1):end])
         j = js + N
