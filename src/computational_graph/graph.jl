@@ -65,6 +65,8 @@ function Base.show(io::IO, o::QuantumOperator)
     print(io, "$(String(o.operator))($(o.label))")
 end
 
+Base.show(io::IO, ::MIME"text/plain", o::QuantumOperator) = Base.show(io, o)
+
 fermionic_annihilation(i) = QuantumOperator(:f⁻, i)
 fermionic_creation(i) = QuantumOperator(:f⁺, i)
 majorana(i) = QuantumOperator(:f, i)
@@ -101,6 +103,7 @@ Base.length(o::CompositeOperator) = length(o.operators)
 Base.size(o::CompositeOperator) = size(o.operators)
 
 Base.show(io::IO, o::CompositeOperator) = print(io, reduce(*, ["$o" for o in o.operators]))
+Base.show(io::IO, ::MIME"text/plain", o::CompositeOperator) = Base.show(io, o)
 
 function Base.:*(o1::QuantumOperator, o2::QuantumOperator)
     return CompositeOperator([o1, o2])
@@ -200,6 +203,8 @@ function Base.show(io::IO, g::Graph)
         print(io, "$(g.id), $(g.name): $(g.type) graph from $(g.vertices)")
     end
 end
+
+Base.show(io::IO, ::MIME"text/plain", g::Graph) = Base.show(io, g)
 
 function Base.isequal(a::Graph, b::Graph)
     typeof(a) != typeof(b) && return false
