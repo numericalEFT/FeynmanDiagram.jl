@@ -9,10 +9,10 @@ using AbstractTrees
 # end
 if isempty(ARGS)
     include("common.jl")
+    include("ComputationalGraph.jl")
     include("diagram_tree.jl")
     include("expression_tree.jl")
     include("parquet_builder.jl")
-    include("ComputationalGraph.jl")
 else
     include(ARGS[1])
 end

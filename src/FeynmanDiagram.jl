@@ -85,6 +85,7 @@ export DiagramPara, DiagramParaF64
 include("computational_graph/ComputationalGraph.jl")
 using .ComputationalGraphs
 export ComputationalGraphs
+export labelreset, parity, parity_old
 export QuantumOperator, CompositeOperator
 export 𝑓⁻, 𝑓⁺, 𝑓, 𝑏⁻, 𝑏⁺, 𝜙
 export fermionic_annihilation, fermionic_creation, majorana

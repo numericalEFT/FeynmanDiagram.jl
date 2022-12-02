@@ -81,6 +81,10 @@ const 𝑏⁻ = bosonic_annihilation
 const 𝑏⁺ = bosonic_creation
 const 𝜙 = real_classic
 
+function isfermionic(operator::QuantumOperator)
+    operator.operator in [:f⁺, :f⁻, :f]
+end
+
 struct CompositeOperator <: AbstractVector{QuantumOperator}
     operators::Vector{QuantumOperator}
     function CompositeOperator(operators::Vector{QuantumOperator})
@@ -348,8 +352,22 @@ function contractions_to_edges(vertices::Vector{CompositeOperator}; contractions
             end
         end
     end
-    # TODO: Deduce the parity of the contraction
-    sign = 1
+    # Deduce the parity of the contraction; it is the
+    # same as the parity of all fermionic operators.
+    flat_fermionic_edges = Int[]
+    for (e1, e2) in edges
+        op1, op2 = operators[e1], operators[e2]
+        if isfermionic(op1) || isfermionic(op2)
+            append!(flat_fermionic_edges, [e1, e2])
+        end
+    end
+    if isempty(flat_fermionic_edges)
+        sign = 1
+    else
+        # Get the permutation parity for the flattened list of fermionic edges, e.g.,
+        # flat_fermionic_edges = [1, 5, 4, 8, 7, 6] => P = (1 3 2 6 5 4) => sign = +1
+        sign = parity(sortperm(flat_fermionic_edges))
+    end
     return edges, sign
 end
 
