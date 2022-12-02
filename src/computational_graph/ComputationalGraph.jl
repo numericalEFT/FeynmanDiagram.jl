@@ -25,10 +25,6 @@ include("io.jl")
 # include("eval.jl")
 # include("optimize.jl")
 
-macro todo()
-    return :(error("Not yet implemented!"))
-end
-
 const INL, OUTL, INR, OUTR = 1, 2, 3, 4
 
 export Graph

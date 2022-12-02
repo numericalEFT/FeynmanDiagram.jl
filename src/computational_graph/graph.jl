@@ -122,7 +122,6 @@ end
 """
 function normal_order!(operator::CompositeOperator)
     sign = 1
-    @todo
     return sign
 end
 
@@ -133,7 +132,6 @@ end
 function normal_order(operator::CompositeOperator)
     sign = 1
     permutation = collect(eachindex(operator.operators))
-    @todo
     return sign, permutation
 end
 
@@ -276,13 +274,11 @@ Base.:(==)(a::Graph, b::Graph) = Base.isequal(a, b)
 
 #TODO: add function return reducibility of Graph. 
 function reducibility(g::Graph)
-    @todo
     return (OneFermiIrreducible,)
 end
 
 #TODO: add function for connected diagram check. 
 function connectivity(g::Graph)
-    @todo
     isempty(g.subgraph) && return true
 end
 function connectivity!(g::Graph)
