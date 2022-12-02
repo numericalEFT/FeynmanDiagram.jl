@@ -54,12 +54,12 @@
 
     # Test 2: Bosons with Wick crossings, sign = +1
     vertices2 = [
-        CompositeOperator([𝑏⁺(1), 𝑏⁺(2), 𝑏⁺(3)]),
-        CompositeOperator([𝑏⁺(4), 𝑏⁻(5)]),
-        CompositeOperator([𝑏⁻(6), 𝑏⁻(7), 𝑏⁻(8)]),
+        CompositeOperator([𝑏⁺(1), 𝑏⁺(2), 𝑏⁻(3)]),
+        CompositeOperator([𝑏⁻(4), 𝑏⁺(5)]),
+        CompositeOperator([𝑏⁻(6), 𝑏⁺(7), 𝑏⁻(8)]),
     ]
     edges2, sign2 = contractions_to_edges(vertices2; contractions=[1, 2, 3, 4, 3, 1, 4, 2])
-    @test Set(edges2) == Set([(1, 6), (2, 8), (3, 5), (4, 7)])
+    @test Set(edges2) == Set([(1, 6), (2, 8), (5, 3), (7, 4)])
     @test sign2 == 1
 
     # Test 3: Indistinguishable Majoranas with no Wick crossings, sign = +1
