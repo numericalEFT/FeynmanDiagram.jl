@@ -323,7 +323,6 @@ function contractions_to_edges(vertices::Vector{CompositeOperator}; contractions
         )
     end
     # Loop over operators and pair
-    sign = 1
     next_pairing = 1
     edges = Vector{EdgeType}()
     for (i, wick_i) in enumerate(contractions)
@@ -339,8 +338,6 @@ function contractions_to_edges(vertices::Vector{CompositeOperator}; contractions
                 @debug "Found Wick contraction #$wick_i, adding edge between operators $i and $j"
                 if operators[j].operator == :f⁺
                     push!(edges, (j, i))
-                    # Extra minus sign when a Fermionic contraction is out of order
-                    sign *= -1
                 elseif operators[j].operator == :b⁺
                     push!(edges, (j, i))
                 else
@@ -351,7 +348,8 @@ function contractions_to_edges(vertices::Vector{CompositeOperator}; contractions
             end
         end
     end
-    # TODO: Deduce the remaining statistical sign associated with this normal-ordered contraction.
+    # TODO: Deduce the parity of the contraction
+    sign = 1
     return edges, sign
 end
 
