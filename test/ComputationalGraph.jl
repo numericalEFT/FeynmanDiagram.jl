@@ -44,25 +44,25 @@
 @testset "Contractions" begin
     # Test 1: Scalar fields with Wick crossings, sign = +1
     op1 = CompositeOperator([𝜙(1), 𝜙(1), 𝜙(1), 𝜙(1), 𝜙(1), 𝜙(1), 𝜙(1), 𝜙(1)])
-    edges1, sign1 = contractions_to_edgelist(op1, [1, 2, 3, 4, 1, 3, 4, 2])
+    edges1, sign1 = contractions_to_edges(op1, [1, 2, 3, 4, 1, 3, 4, 2])
     @test Set(edges1) == Set([(1, 5), (2, 8), (3, 6), (4, 7)])
     @test sign1 == 1
 
     # Test 2: Identical bosons with Wick crossings, sign = +1
     op2 = CompositeOperator([𝑏⁺(1), 𝑏⁺(1), 𝑏⁺(1), 𝑏⁺(1), 𝑏⁻(1), 𝑏⁻(1), 𝑏⁻(1), 𝑏⁻(1)])
-    edges2, sign2 = contractions_to_edgelist(op2, [1, 2, 3, 4, 3, 1, 4, 2])
+    edges2, sign2 = contractions_to_edges(op2, [1, 2, 3, 4, 3, 1, 4, 2])
     @test Set(edges2) == Set([(1, 6), (2, 8), (3, 5), (4, 7)])
     @test sign2 == 1
 
     # Test 3: Majoranas with no Wick crossings, sign = +1
     op3 = CompositeOperator([𝑓(1), 𝑓(1), 𝑓(1), 𝑓(1), 𝑓(1), 𝑓(1), 𝑓(1), 𝑓(1)])
-    edges3, sign3 = contractions_to_edgelist(op3, [1, 2, 3, 4, 4, 3, 2, 1])
+    edges3, sign3 = contractions_to_edges(op3, [1, 2, 3, 4, 4, 3, 2, 1])
     @test Set(edges3) == Set([(1, 8), (2, 7), (3, 6), (4, 5)])
     @test sign3 == 1
 
     # Test 4: Identical fermions with no Wick crossings, sign = +1
     op4 = CompositeOperator([𝑓⁺(1), 𝑓⁺(1), 𝑓⁺(1), 𝑓⁺(1), 𝑓⁻(1), 𝑓⁻(1), 𝑓⁻(1), 𝑓⁻(1)])
-    edges4, sign4 = contractions_to_edgelist(op4, [1, 2, 3, 4, 4, 3, 2, 1])
+    edges4, sign4 = contractions_to_edges(op4, [1, 2, 3, 4, 4, 3, 2, 1])
     @test Set(edges4) == Set([(1, 8), (2, 7), (3, 6), (4, 5)])
     @test sign4 == 1
 

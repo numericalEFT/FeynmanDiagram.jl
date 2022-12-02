@@ -50,19 +50,22 @@ end
 #     ParticleParticleIrreducible
 # end
 
-struct QuantumOperator#{T} <: AbstractVector{T}
+struct QuantumOperator
     operator::Symbol
     label::Int
-    # flavor::Int
+    function QuantumOperator(operator::Symbol, label::Int)
+        @assert label > 0
+        return new(operator, label)
+    end
 end
 Base.isequal(a::QuantumOperator, b::QuantumOperator) = ((a.operator == b.operator) && (a.label == b.label))
 Base.:(==)(a::QuantumOperator, b::QuantumOperator) = Base.isequal(a, b)
 
 function Base.show(io::IO, o::QuantumOperator)
-    # strc = g.is_connected ? "connected " : "disconnected "
-    # stra = g.isAmputated ? "amputated " : " "
     print(io, "$(String(o.operator))($(o.label))")
 end
+
+Base.show(io::IO, ::MIME"text/plain", o::QuantumOperator) = Base.show(io, o)
 
 fermionic_annihilation(i) = QuantumOperator(:f⁻, i)
 fermionic_creation(i) = QuantumOperator(:f⁺, i)
@@ -100,6 +103,7 @@ Base.length(o::CompositeOperator) = length(o.operators)
 Base.size(o::CompositeOperator) = size(o.operators)
 
 Base.show(io::IO, o::CompositeOperator) = print(io, reduce(*, ["$o" for o in o.operators]))
+Base.show(io::IO, ::MIME"text/plain", o::CompositeOperator) = Base.show(io, o)
 
 function Base.:*(o1::QuantumOperator, o2::QuantumOperator)
     return CompositeOperator([o1, o2])
@@ -135,77 +139,8 @@ function normal_order(operator::CompositeOperator)
     return sign, permutation
 end
 
-# function _countervector(it)
-#     y = Dict{eltype(it),Int}()
-#     for i in it
-#         y[i] = get(y, i, 0) + 1
-#     end
-#     return y
-# end
-
-# struct CompositeOperator
-#     operators::Vector{QuantumOperator}
-# end
-# Base.isequal(a::CompositeOperator, b::CompositeOperator) = (_countervector(a.operators) == _countervector(b.operators))
-# Base.:(==)(a::CompositeOperator, b::CompositeOperator) = Base.isequal(a, b)
-# const Coupling_yukawa = CompositeOperator([𝑓, 𝑓dag, ϕ])
-# const Coupling_phi3 = CompositeOperator([ϕ, ϕ, ϕ])
-# const Coupling_phi4 = CompositeOperator([ϕ, ϕ, ϕ, ϕ])
-# const Coupling_phi6 = CompositeOperator([ϕ, ϕ, ϕ, ϕ, ϕ, ϕ])
-
-# """
-#     struct Couplings
-
-#     struct of all the vertex couplings in the Feynman rule. 
-# # Members
-# - operators::Vector{CompositeOperator}     : each CompositeOperator element stores the quantum operators inclued in one kind of vertex coupling 
-# """
-# struct Couplings
-#     operators::Vector{CompositeOperator}
-#     # TODO: function to testify the legality of the operators
-# end
-# const simp_coups = Couplings([[f, fdag, phi],])
-
 """Type alias for a directed graph edge e = (a₁⁺, a₂⁻) from e[1] to e[2]."""
 const EdgeType = Tuple{Int,Int}
-
-abstract type Vertex end
-
-struct ExternalVertex <: Vertex
-    # point::Int
-    current::Int
-    operator::CompositeOperator
-    # operators::Vector{Symbol} # list of the composite operators,
-    # :f for fermionic real field (Majorana fermion)
-    # :b for bosonic real field
-    # :phi for classical real field (it can be paired with f⁺f⁻, b⁺b⁻, or other classical fields)
-    # :f⁺, :f⁻ for complex fermionic field
-    # :b⁺, :b⁻ for complex bosonic field
-    # flavors::Vector{Int} # flavor of each operator, it allows the field to be scalar, vector or even tensor
-    # function ExternalVertex(operators::AbstractVector{QuantumOperator}; current::Int=0)
-    #     return new(current, CompositeOperator(operators))
-    # end
-    function ExternalVertex(operators; current::Int=0)
-        return new(current, CompositeOperator(operators))
-    end
-end
-Base.isequal(a::ExternalVertex, b::ExternalVertex) = ((a.current == b.current) && (a.operator == b.operator))
-Base.:(==)(a::ExternalVertex, b::ExternalVertex) = Base.isequal(a, b)
-
-struct InternalVertex <: Vertex
-    # point::Int
-    current::Int
-    operator::CompositeOperator
-    # function InternalVertex(operators::AbstractVector{QuantumOperator}; current::Int=0)
-    #     return new(current, CompositeOperator(operators))
-    # end
-    function InternalVertex(operators; current::Int=0)
-        return new(current, CompositeOperator(operators))
-    end
-end
-Base.isequal(a::InternalVertex, b::InternalVertex) = ((a.current == b.current) && (a.operator == b.operator))
-Base.:(==)(a::InternalVertex, b::InternalVertex) = Base.isequal(a, b)
-
 
 """
     mutable struct Graph{F,W}
@@ -234,30 +169,42 @@ mutable struct Graph{F,W} # Graph
     name::String # "" by default
     type::Symbol # :propagator, :interaction, :sigma, :green, :generic
     orders::Vector{Int}
-    # couplings::Vector{CompositeOperator}
 
-    external_vertices::Vector{ExternalVertex}
-    internal_vertices::Vector{InternalVertex}
-    # is_connected::Bool
+    external::Vector{Int} # index of external vertices
+    vertices::Vector{CompositeOperator} # vertices of the diagram
+
     subgraph::Vector{Graph{F,W}}
 
     operator::Operator
     factor::F
     weight::W
 
-    function Graph{F,W}(extV, intV; subgraph=[],
-        name="", type=:generic, operator::Operator=Sum(), factor=F(1), weight=W(0)) where {F,W}
-        orders = zeros(Int, 16)
-        return new{F,W}(uid(), name, type, orders, extV, intV, subgraph, operator, factor, weight)
+    function Graph(extV::Vector{CompositeOperator}, intV::Vector{CompositeOperator}; subgraph=[],
+        name="", type=:generic, operator::Operator=Sum(), orders=zeros(Int, 16),
+        ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype)
+    )
+        vertices = [extV..., intV...]
+        ext = collect(1:length(extV))
+        return new{ftype,wtype}(uid(), name, type, orders, ext, int, vertices, subgraph, operator, factor, weight)
+    end
+    function Graph(vertices::Vector{CompositeOperator}; external::Vector{Int}=[], subgraph=[],
+        name="", type=:generic, operator::Operator=Sum(), orders=zeros(Int, 16),
+        ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype)
+    )
+        return new{ftype,wtype}(uid(), name, type, orders, external, vertices, subgraph, operator, factor, weight)
     end
 end
 
 #TODO: improve a text representation of Graph to the output stream.
 function Base.show(io::IO, g::Graph)
-    # strc = g.is_connected ? "connected " : "disconnected "
-    # stra = g.isAmputated ? "amputated " : " "
-    print(io, "id $(g.id): Green's function $(g.name)")
+    if isempty(g.name)
+        print(io, "$(g.id): $(g.type) graph from $(g.vertices)")
+    else
+        print(io, "$(g.id), $(g.name): $(g.type) graph from $(g.vertices)")
+    end
 end
+
+Base.show(io::IO, ::MIME"text/plain", g::Graph) = Base.show(io, g)
 
 function Base.isequal(a::Graph, b::Graph)
     typeof(a) != typeof(b) && return false
@@ -271,6 +218,12 @@ function Base.isequal(a::Graph, b::Graph)
 end
 Base.:(==)(a::Graph, b::Graph) = Base.isequal(a, b)
 # isbare(diag::Graph) = isempty(diag.subgraph)
+
+is_external(g::Graph, i::Int) = i in g.external
+is_internal(g::Graph, i::Int) = (i in g.external) == false
+external_vertices(g::Graph) = g.vertices[g.external]
+internal_vertices(g::Graph) = g.vertices[setdiff(1:length(g.vertices), g.external)]
+vertices(g::Graph) = g.vertices
 
 #TODO: add function return reducibility of Graph. 
 function reducibility(g::Graph)
@@ -307,13 +260,12 @@ end
 
 function Base.:+(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
     @assert g1.type == g2.type "g1 and g2 are not of the same type."
-    # @assert g1.isAmputated == g2.isAmputated "g1 and g2 are not of the same amputated status."
     # TODO: more check
     type = g1.type
-    @assert g1.external_vertices == g2.external_vertices "g1 and g2 have different external vertices."
-    @assert g1.internal_vertices == g2.internal_vertices "g1 and g2 have different internal vertices."
+    @assert Set(vertices(g1)) == Set(vertices(g2)) "g1 and g2 have different external vertices."
+    @assert Set(external_vertices(g1)) == Set(external_vertices(g2)) "g1 and g2 have different internal vertices."
     @assert g1.orders == g2.orders "g1 and g2 have different orders."
-    #TODO: add external vertices creation/annihilation check
+
     return Graph{F,W}(g1.external_vertices, g1.internal_vertices; type=type, subgraph=[g1, g2], operator=Sum())
 end
 
@@ -321,44 +273,27 @@ function Base.:-(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
     return g1 + (-1) * g2
 end
 
-function feynman_diagram(extV::Vector{ExternalVertex}, intV::Vector{InternalVertex},
-    contraction::Dict{Int,Vector{Int}};
+function feynman_diagram(vertices::Vector{CompositeOperator}, contractions::Vector{Int};
+    external::Vector{Int}=[],
     factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic)
-    F = _dtype.factor
-    W = _dtype.weight
-    g = Graph{F,W}(extV, intV; name=name, type=type, operator=Prod(), factor=factor, weight=weight)
 
-    for vi in keys(contraction)
-        if vi <= length(g.external_vertices)
-            v = g.external_vertices[vi]
-        else
-            v = g.internal_vertices[vi-length(g.external_vertices)]
-        end
-        @assert length(v.operator) == length(contraction[vi])
-        for (loc_v, contr) in enumerate(contraction[vi])
-            contr == -1 && continue
-            for (ui, contrs) in contraction
-                if contr in contrs
-                    loc_u = findlast(isequal(contr), contrs)
-                    #TODO: check the legality of the contraction
-                    if ui == vi
-                        if loc_v != loc_u
-                            v1 = ExternalVertex([v.operator[loc_v]; v.operator[loc_u]], current=v.current)
-                            append!(g.subgraph, [propagtor(v1, v1; ftype=F, wtype=W)])
-                        end
-                    else
-                        u = ui <= length(g.external_vertices) ? g.external_vertices[ui] : g.internal_vertices[ui-length(g.external_vertices)]
-                        v1 = ExternalVertex(v.operator[loc_v], current=v.current)
-                        v2 = ExternalVertex(u.operator[loc_u], current=u.current)
-                        append!(g.subgraph, [propagtor(v1, v2; ftype=F, wtype=W)])
-                    end
-                    contraction[vi][loc_v], contraction[ui][loc_u] = -1, -1
-                end
-            end
-        end
+    operators = [vertices[i].operator for i in 1:length(extV)]
+    comp_op = reduce(*, operators)
+    sign_normal, permutation = normal_order(comp_op)
+    edges, contraction_sign = contraction_to_edges(comp_op, contractions)
+
+    return feynman_diagram(vertices, edges; external=external, factor=factor .* contraction_sign, weight=weight, name=name, type=type)
+end
+
+function feynman_diagram(vertices::Vector{CompositeOperator}, edges::Vector{Tuple{Int,Int}};
+    external::Vector{Int}=[],
+    factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic)
+
+    g = Graph(vertices; external=external, name=name, type=type, operator=Prod(), factor=factor, weight=weight)
+
+    for edge in edges
+        append!(g.subgraph, [])  # problem: how to determine vertices in the propagator? 
     end
-
-    return g
 end
 
 """
@@ -368,7 +303,7 @@ end
     Example: [1, 2, 3, 4, 1, 3, 4, 2] => [(1, 5), (2, 8), (3, 6), (4, 7)]
 
 """
-function contractions_to_edgelist(operator::CompositeOperator, contractions::Vector{Int})
+function contractions_to_edges(operator::CompositeOperator, contractions::Vector{Int})
     # Filter illegal contractions
     is_invalid =
         isodd(length(contractions)) ||
@@ -430,14 +365,14 @@ end
 #     end
 # end
 
-function propagator(v1::Vertex, v2::Vertex; name="propagator", diagtype=:propagtor,
-    ftype=Float64, wtype=Float64, factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
+function propagator(v1::QuantumOperator, v2::QuantumOperator; name="propagator", diagtype=:propagtor,
+    factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
     if v1 == v2
-        extV = [v1]
+        extV = [v1] # Hatree bubble
     else
         extV = [v1, v2]
     end
-    return Graph{ftype,wtype}(extV, [], type=diagtype, name=name, operator=operator, factor=factor, weight=weight)
+    return Graph(extV, [], type=diagtype, name=name, operator=operator, factor=factor, weight=weight)
 end
 
 # function checkVertices(g::Graph{F,W}) where {F,W}
