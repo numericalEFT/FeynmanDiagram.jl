@@ -297,18 +297,24 @@ function feynman_diagram(vertices::Vector{CompositeOperator}, edges::Vector{Tupl
 end
 
 """
-    Converts an ordered list of Wick contractions associated with an unspecified normal-ordered `CompositeOperator` to a list of edges.
-    For a list of N Wick contractions, the first N entries of `contractions` should be: `1, 2, 3, ..., N`.
+Converts a list of Wick contractions associated with a list of vertices
+to a list of edges e = (i, j) directed from `operators[i]` to `operators[j]`, where
+`operators` is a flattened list of operators associated with the specified `vertices`.
 
-    Example: [1, 2, 3, 4, 1, 3, 4, 2] => [(1, 5), (2, 8), (3, 6), (4, 7)]
-
+Example: 
+- vertices: [CompositeOperator([a1⁺, a2]), CompositeOperator([a5⁺, a6⁺, a7, a8]), CompositeOperator([a3⁺, a4])]
+- contractions: [1, 2, 2, 3, 1, 4, 4, 3] 
+- edges: [(1, 5), (3, 2), (4, 8), (7, 6)]
+- sign: (-1)² * ...
 """
-function contractions_to_edges(operator::CompositeOperator, contractions::Vector{Int})
-    # Filter illegal contractions
+function contractions_to_edges(vertices::Vector{CompositeOperator}; contractions::Vector{Int})
+    # Obtain the flattened list of non-composite operators
+    operators = [o for v in vertices for o in v.operators]
+    # Filter some illegal contractions
     is_invalid =
         isodd(length(contractions)) ||
         isodd(length(unique(contractions))) ||
-        length(operator.operators) != length(contractions)
+        length(operators) != length(contractions)
     if is_invalid
         throw(
             ArgumentError(
@@ -316,21 +322,37 @@ function contractions_to_edges(operator::CompositeOperator, contractions::Vector
             ),
         )
     end
-    N = length(contractions) ÷ 2
-    if contractions[1:N] != collect(1:N)
-        throw(ArgumentError("Input $contractions is not normal-ordered"))
-    end
+    # Loop over operators and pair
+    sign = 1
+    next_pairing = 1
     edges = Vector{EdgeType}()
-    # Loop over annihilation operators (N < j ≤ 2N) and pair
-    for (js, i) in enumerate(contractions[(N+1):end])
-        j = js + N
-        @debug "Wick contraction #$i, adding edge: ($i, $j)"
-        push!(edges, (i, j))
+    for (i, wick_i) in enumerate(contractions)
+        if i < next_pairing
+            continue  # Operator already paired
+        end
+        for (js, wick_j) in enumerate(contractions[(i+1):end])
+            j = i + js  # Iterating for (j > i)
+            if j < next_pairing
+                continue  # Operator already paired
+            end
+            if wick_i == wick_j
+                @debug "Found Wick contraction #$wick_i, adding edge between operators $i and $j"
+                if operators[j].operator == :f⁺
+                    push!(edges, (j, i))
+                    # Extra minus sign when a Fermionic contraction is out of order
+                    sign *= -1
+                elseif operators[j].operator == :b⁺
+                    push!(edges, (j, i))
+                else
+                    push!(edges, (i, j))
+                end
+                # Move on to next pair
+                next_pairing += 1
+            end
+        end
     end
-    contraction_sign = 1
-    # TODO: Deduce the statistical sign associated with this normal-ordered contraction.
-    #       We need to track the sign as we put the annihilation operators in anti-sorted
-    return edges, contraction_sign
+    # TODO: Deduce the remaining statistical sign associated with this normal-ordered contraction.
+    return edges, sign
 end
 
 # function add_edge!(g::Graph{F,W}, contraction::Dict{Int,Vector{Int}}) where {F,W}
