@@ -50,13 +50,13 @@ end
 #     ParticleParticleIrreducible
 # end
 
-struct QuantumOperator#{T} <: AbstractVector{T}
-    operator::Symbol
-    label::Int
-    # flavor::Int
-end
-Base.isequal(a::QuantumOperator, b::QuantumOperator) = ((a.operator == b.operator) && (a.label == b.label))
-Base.:(==)(a::QuantumOperator, b::QuantumOperator) = Base.isequal(a, b)
+# struct QuantumOperator#{T} <: AbstractVector{T}
+#     operator::Symbol
+#     label::Int
+#     # flavor::Int
+# end
+# Base.isequal(a::QuantumOperator, b::QuantumOperator) = ((a.operator == b.operator) && (a.label == b.label))
+# Base.:(==)(a::QuantumOperator, b::QuantumOperator) = Base.isequal(a, b)
 
 function Base.show(io::IO, o::QuantumOperator)
     # strc = g.is_connected ? "connected " : "disconnected "
@@ -64,12 +64,47 @@ function Base.show(io::IO, o::QuantumOperator)
     print(io, "$(String(o.operator))($(o.label))")
 end
 
-fermionic_annihilation(i) = QuantumOperator(:f⁻, i)
-fermionic_creation(i) = QuantumOperator(:f⁺, i)
-majorana(i) = QuantumOperator(:f, i)
-bosonic_annihilation(i) = QuantumOperator(:b⁻, i)
-bosonic_creation(i) = QuantumOperator(:b⁺, i)
-real_classic(i) = QuantumOperator(:phi, i)
+# fermionic_annihilation(i) = QuantumOperator(:f⁻, i)
+# fermionic_creation(i) = QuantumOperator(:f⁺, i)
+# majorana(i) = QuantumOperator(:f, i)
+# bosonic_annihilation(i) = QuantumOperator(:b⁻, i)
+# bosonic_creation(i) = QuantumOperator(:b⁺, i)
+# real_classic(i) = QuantumOperator(:phi, i)
+
+# const 𝑓⁻ = fermionic_annihilation
+# const 𝑓⁺ = fermionic_creation
+# const 𝑓 = majorana
+# const 𝑏⁻ = bosonic_annihilation
+# const 𝑏⁺ = bosonic_creation
+# const 𝜙 = real_classic
+
+# struct CompositeOperator <: AbstractVector{QuantumOperator}
+#     operators::Vector{QuantumOperator}
+#     function CompositeOperator(operators::Vector{QuantumOperator})
+#         return new(operators)
+#     end
+#     function CompositeOperator(operator::QuantumOperator)
+#         return new([operator,])
+#     end
+#     function CompositeOperator(operators::CompositeOperator)
+#         return new([operators...,])
+#     end
+# end
+
+struct QuantumOperator
+    operator::Symbol
+    label::Int
+    current::Int
+end
+Base.isequal(a::QuantumOperator, b::QuantumOperator) = ((a.operator == b.operator) && (a.label == b.label) && (a.current == b.current))
+Base.:(==)(a::QuantumOperator, b::QuantumOperator) = Base.isequal(a, b)
+
+fermionic_annihilation(i, j) = QuantumOperator(:f⁻, i, j)
+fermionic_creation(i, j) = QuantumOperator(:f⁺, i, j)
+majorana(i, j) = QuantumOperator(:f, i, j)
+bosonic_annihilation(i, j) = QuantumOperator(:b⁻, i, j)
+bosonic_creation(i, j) = QuantumOperator(:b⁺, i, j)
+real_classic(i, j) = QuantumOperator(:phi, i, j)
 
 const 𝑓⁻ = fermionic_annihilation
 const 𝑓⁺ = fermionic_creation
@@ -79,18 +114,18 @@ const 𝑏⁺ = bosonic_creation
 const 𝜙 = real_classic
 
 struct CompositeOperator <: AbstractVector{QuantumOperator}
+    point::Int
     operators::Vector{QuantumOperator}
-    function CompositeOperator(operators::Vector{QuantumOperator})
-        return new(operators)
+    function CompositeOperator(point::Int, operators::Vector{QuantumOperator})
+        return new(point, operators)
     end
-    function CompositeOperator(operator::QuantumOperator)
-        return new([operator,])
+    function CompositeOperator(point::Int, operator::QuantumOperator)
+        return new(point, [operator,])
     end
-    function CompositeOperator(operators::CompositeOperator)
-        return new([operators...,])
+    function CompositeOperator(point::Int, operators::CompositeOperator)
+        return new(point, [operators...,])
     end
 end
-
 #TODO: make compositeoperator norm ordered when it is created
 
 Base.eltype(::Type{CompositeOperator}) = QuantumOperator
@@ -99,22 +134,25 @@ Base.setindex!(o::CompositeOperator, v::QuantumOperator, i::Int) = o.operators[i
 Base.length(o::CompositeOperator) = length(o.operators)
 Base.size(o::CompositeOperator) = size(o.operators)
 
-Base.show(io::IO, o::CompositeOperator) = print(io, reduce(*, ["$o" for o in o.operators]))
+Base.show(io::IO, o::CompositeOperator) = print(io, "point $(o.point): " * reduce(*, ["$o " for o in o.operators]))
+Base.isequal(a::CompositeOperator, b::CompositeOperator) = ((a.point == b.point) && (a.operators == b.operators))
+Base.:(==)(a::CompositeOperator, b::CompositeOperator) = Base.isequal(a, b)
 
-function Base.:*(o1::QuantumOperator, o2::QuantumOperator)
-    return CompositeOperator([o1, o2])
-end
+# function Base.:*(o1::QuantumOperator, o2::QuantumOperator)
+#     return CompositeOperator([o1, o2])
+# end
 
 function Base.:*(o1::CompositeOperator, o2::QuantumOperator)
-    return CompositeOperator([o1.operators; o2])
+    return CompositeOperator(o1.point, [o1.operators; o2])
 end
 
 function Base.:*(o1::QuantumOperator, o2::CompositeOperator)
-    return CompositeOperator([o1; o2.operators])
+    return CompositeOperator(o2.point, [o1; o2.operators])
 end
 
 function Base.:*(o1::CompositeOperator, o2::CompositeOperator)
-    return CompositeOperator([o1.operators; o2.operators])
+    @assert o1.point == o2.point
+    return CompositeOperator(o1.point, [o1.operators; o2.operators])
 end
 
 """
@@ -129,10 +167,16 @@ end
     Computes the permutation required to convert a CompositeOperator to normal-ordered form. 
     Returns the associated statistical sign and permutation.
 """
+function normal_order(ops::Vector{QuantumOperator})
+end
+
 function normal_order(operator::CompositeOperator)
     sign = 1
     permutation = collect(eachindex(operator.operators))
     return sign, permutation
+end
+
+function normal_order(ops::Vector{CompositeOperator})
 end
 
 # function _countervector(it)
@@ -169,42 +213,42 @@ end
 """Type alias for a directed graph edge e = (a₁⁺, a₂⁻) from e[1] to e[2]."""
 const EdgeType = Tuple{Int,Int}
 
-abstract type Vertex end
+# abstract type Vertex end
 
-struct ExternalVertex <: Vertex
-    # point::Int
-    current::Int
-    operator::CompositeOperator
-    # operators::Vector{Symbol} # list of the composite operators,
-    # :f for fermionic real field (Majorana fermion)
-    # :b for bosonic real field
-    # :phi for classical real field (it can be paired with f⁺f⁻, b⁺b⁻, or other classical fields)
-    # :f⁺, :f⁻ for complex fermionic field
-    # :b⁺, :b⁻ for complex bosonic field
-    # flavors::Vector{Int} # flavor of each operator, it allows the field to be scalar, vector or even tensor
-    # function ExternalVertex(operators::AbstractVector{QuantumOperator}; current::Int=0)
-    #     return new(current, CompositeOperator(operators))
-    # end
-    function ExternalVertex(operators; current::Int=0)
-        return new(current, CompositeOperator(operators))
-    end
-end
-Base.isequal(a::ExternalVertex, b::ExternalVertex) = ((a.current == b.current) && (a.operator == b.operator))
-Base.:(==)(a::ExternalVertex, b::ExternalVertex) = Base.isequal(a, b)
+# struct ExternalVertex <: Vertex
+#     # point::Int
+#     current::Int
+#     operator::CompositeOperator
+#     # operators::Vector{Symbol} # list of the composite operators,
+#     # :f for fermionic real field (Majorana fermion)
+#     # :b for bosonic real field
+#     # :phi for classical real field (it can be paired with f⁺f⁻, b⁺b⁻, or other classical fields)
+#     # :f⁺, :f⁻ for complex fermionic field
+#     # :b⁺, :b⁻ for complex bosonic field
+#     # flavors::Vector{Int} # flavor of each operator, it allows the field to be scalar, vector or even tensor
+#     # function ExternalVertex(operators::AbstractVector{QuantumOperator}; current::Int=0)
+#     #     return new(current, CompositeOperator(operators))
+#     # end
+#     function ExternalVertex(operators; current::Int=0)
+#         return new(current, CompositeOperator(operators))
+#     end
+# end
+# Base.isequal(a::ExternalVertex, b::ExternalVertex) = ((a.current == b.current) && (a.operator == b.operator))
+# Base.:(==)(a::ExternalVertex, b::ExternalVertex) = Base.isequal(a, b)
 
-struct InternalVertex <: Vertex
-    # point::Int
-    current::Int
-    operator::CompositeOperator
-    # function InternalVertex(operators::AbstractVector{QuantumOperator}; current::Int=0)
-    #     return new(current, CompositeOperator(operators))
-    # end
-    function InternalVertex(operators; current::Int=0)
-        return new(current, CompositeOperator(operators))
-    end
-end
-Base.isequal(a::InternalVertex, b::InternalVertex) = ((a.current == b.current) && (a.operator == b.operator))
-Base.:(==)(a::InternalVertex, b::InternalVertex) = Base.isequal(a, b)
+# struct InternalVertex <: Vertex
+#     # point::Int
+#     current::Int
+#     operator::CompositeOperator
+#     # function InternalVertex(operators::AbstractVector{QuantumOperator}; current::Int=0)
+#     #     return new(current, CompositeOperator(operators))
+#     # end
+#     function InternalVertex(operators; current::Int=0)
+#         return new(current, CompositeOperator(operators))
+#     end
+# end
+# Base.isequal(a::InternalVertex, b::InternalVertex) = ((a.current == b.current) && (a.operator == b.operator))
+# Base.:(==)(a::InternalVertex, b::InternalVertex) = Base.isequal(a, b)
 
 
 """
@@ -236,8 +280,12 @@ mutable struct Graph{F,W} # Graph
     orders::Vector{Int}
     # couplings::Vector{CompositeOperator}
 
-    external_vertices::Vector{ExternalVertex}
-    internal_vertices::Vector{InternalVertex}
+    # external_vertices::Vector{ExternalVertex}
+    # internal_vertices::Vector{InternalVertex}
+    external_vertices::Vector{Int}
+    internal_vertices::Vector{Int}
+    operators::Vector{CompositeOperator}
+
     # is_connected::Bool
     subgraph::Vector{Graph{F,W}}
 
@@ -245,10 +293,11 @@ mutable struct Graph{F,W} # Graph
     factor::F
     weight::W
 
-    function Graph{F,W}(extV, intV; subgraph=[],
+    function Graph{F,W}(ops::Vector{CompositeOperator}, extV, intV=[]; subgraph=[],
         name="", type=:generic, operator::Operator=Sum(), factor=F(1), weight=W(0)) where {F,W}
+        @assert length(ops) == length(extV) + length(intV)
         orders = zeros(Int, 16)
-        return new{F,W}(uid(), name, type, orders, extV, intV, subgraph, operator, factor, weight)
+        return new{F,W}(uid(), name, type, orders, extV, intV, ops, subgraph, operator, factor, weight)
     end
 end
 
@@ -361,21 +410,8 @@ function feynman_diagram(extV::Vector{ExternalVertex}, intV::Vector{InternalVert
     return g
 end
 
-function feynman_diagram(extV::Vector{ExternalVertex}, intV::Vector{InternalVertex},
-    contractions::Vector{Int}; factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic)
-    F = _dtype.factor
-    W = _dtype.weight
-    g = Graph{F,W}(extV, intV; name=name, type=type, operator=Prod(), factor=factor, weight=weight)
+function feynman_diagram(comp_ops::Vector{CompositeOperator}, extV::Vector{Int}, intV::Vector{Int}, contractions)
 
-    operators = [extV[i].operator for i in 1:length(extV)]
-    append!(operators, [intV[i].operator for i in 1:length(intV)])
-    comp_op = reduce(*, operators)
-    sign_normal, permutation = normal_order(comp_op)
-
-    edges, contraction_sign = contraction_to_edges(comp_op, contractions)
-    for edge in edges
-        append!(g.subgraph, [])  # problem: how to determine vertices in the propagator? 
-    end
 end
 
 """
