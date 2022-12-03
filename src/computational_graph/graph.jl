@@ -364,12 +364,12 @@ function contractions_to_edges(vertices::Vector{CompositeOperator}; contractions
     return edges, sign
 end
 
-function propagator(v1::QuantumOperator, v2::QuantumOperator; name="", diagtype=:propagtor,
+function propagator(vin::QuantumOperator, vout::QuantumOperator; name="", diagtype=:propagtor,
     factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
-    if v1 == v2
-        extV = [CompositeOperator(v1),] # Hatree bubble
+    if vin == vout
+        extV = [CompositeOperator(vin),] # Hatree bubble
     else
-        extV = [CompositeOperator(v1), CompositeOperator(v2)]
+        extV = [CompositeOperator(vin), CompositeOperator(vout)]
     end
     return Graph(extV, []; type=diagtype, name=name, operator=operator, factor=factor, weight=weight)
 end
