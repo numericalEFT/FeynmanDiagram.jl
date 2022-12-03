@@ -310,6 +310,7 @@ Example:
 - sign: (-1)² * ...
 """
 function contractions_to_edges(vertices::Vector{CompositeOperator}; contractions::Vector{Int})
+    #TODO: only works for weak-coupling expansion with Wick's theorem for now.
     # Obtain the flattened list of non-composite operators
     operators = [o for v in vertices for o in v.operators]
     # Filter some illegal contractions
@@ -327,7 +328,7 @@ function contractions_to_edges(vertices::Vector{CompositeOperator}; contractions
     # Loop over operators and pair
     next_pairing = 1
     edges = Vector{EdgeType}()
-    permutation = Int[] # permutation of the operators after the contraction
+    permutation = Int[]
 
     for (i, wick_i) in enumerate(contractions)
         if i < next_pairing
@@ -340,13 +341,14 @@ function contractions_to_edges(vertices::Vector{CompositeOperator}; contractions
             end
             if wick_i == wick_j
                 @debug "Found Wick contraction #$wick_i, adding edge between operators $i and $j"
-                if operators[j].operator == :f⁺
+                if operators[j].operator == :f⁺ || operators[j].operator == :b⁺
                     push!(edges, (operators[j], operators[i]))
-                    append!(permutation, [j, i]) # only need to keep track of the permutation of the fermionic operators
-                elseif operators[j].operator == :b⁺
-                    push!(edges, (operators[j], operators[i]))
+                    isfermionic(operators[j]) && push!(permutation, j)
+                    isfermionic(operators[i]) && push!(permutation, i)
                 else
                     push!(edges, (operators[i], operators[j]))
+                    isfermionic(operators[i]) && push!(permutation, i)
+                    isfermionic(operators[j]) && push!(permutation, j)
                 end
                 # Move on to next pair
                 next_pairing += 1
@@ -354,13 +356,10 @@ function contractions_to_edges(vertices::Vector{CompositeOperator}; contractions
         end
     end
     # Deduce the parity of the contraction
-    if isempty(permutation)
-        sign = 1
-    else
-        # Get the permutation parity for the flattened list of fermionic edges, e.g.,
-        # flat_fermionic_edges = [1, 5, 4, 8, 7, 6] => P = (1 3 2 6 5 4) => sign = +1
-        sign = parity(sortperm(permutation))
-    end
+    # Get the permutation parity for the flattened list of fermionic edges, e.g.,
+    # permutation = [1, 5, 4, 8, 7, 6] => P = (1 3 2 6 5 4) => sign = +1
+    sign = isempty(permutation) ? 1 : parity(sortperm(permutation))
+
     return edges, sign
 end
 
