@@ -76,7 +76,7 @@ real_classic(i) = QuantumOperator(:phi, i)
 
 const 𝑓⁻ = fermionic_annihilation
 const 𝑓⁺ = fermionic_creation
-# const 𝑓 = majorana
+const 𝑓 = majorana
 const 𝑏⁻ = bosonic_annihilation
 const 𝑏⁺ = bosonic_creation
 const 𝜙 = real_classic

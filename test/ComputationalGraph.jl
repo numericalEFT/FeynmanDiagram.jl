@@ -69,7 +69,8 @@ end
         CompositeOperator([𝜙(7), 𝜙(8)]),
     ]
     edges1, parity1 = contractions_to_edges(vertices1; contractions=[1, 2, 3, 4, 1, 3, 4, 2])
-    @test Set(edges1) == Set([(1, 5), (2, 8), (3, 6), (4, 7)])
+    ops = reduce(*, vertices1)
+    @test Set(edges1) == Set([(ops[1], ops[5]), (ops[2], ops[8]), (ops[3], ops[6]), (ops[4], ops[7])])
     @test parity1 == 1
 
     # Test 2: Bosons with Wick crossings, parity = +1
@@ -79,13 +80,15 @@ end
         CompositeOperator([𝑏⁻(6), 𝑏⁺(7), 𝑏⁻(8)]),
     ]
     edges2, parity2 = contractions_to_edges(vertices2; contractions=[1, 2, 3, 4, 3, 1, 4, 2])
-    @test Set(edges2) == Set([(1, 6), (2, 8), (5, 3), (7, 4)])
+    ops = reduce(*, vertices2)
+    @test Set(edges2) == Set([(ops[1], ops[6]), (ops[2], ops[8]), (ops[5], ops[3]), (ops[7], ops[4])])
     @test parity2 == 1
 
     # Test 3: Indistinguishable Majoranas with no Wick crossings, parity = +1
     vertices3 = [CompositeOperator([𝑓(1), 𝑓(1), 𝑓(1), 𝑓(1), 𝑓(1), 𝑓(1), 𝑓(1), 𝑓(1)])]
     edges3, parity3 = contractions_to_edges(vertices3; contractions=[1, 2, 3, 4, 4, 3, 2, 1])
-    @test Set(edges3) == Set([(1, 8), (2, 7), (3, 6), (4, 5)])
+    ops = reduce(*, vertices3)
+    @test Set(edges3) == Set([(ops[1], ops[8]), (ops[2], ops[7]), (ops[3], ops[6]), (ops[4], ops[5])])
     # P = (1 8 2 7 3 6 4 5) = (1)(5 3 2 8)(4 7)(6) => parity = +1
     @test parity3 == 1
 
@@ -96,7 +99,8 @@ end
         CompositeOperator([𝑓⁺(3), 𝑓⁻(4)]),
     ]
     edges4, parity4 = contractions_to_edges(vertices4; contractions=[1, 2, 2, 3, 1, 4, 4, 3])
-    @test Set(edges4) == Set([(1, 5), (3, 2), (4, 8), (7, 6)])
+    ops = reduce(*, vertices4)
+    @test Set(edges4) == Set([(ops[1], ops[5]), (ops[3], ops[2]), (ops[4], ops[8]), (ops[7], ops[6])])
     # P = (1 5 3 2 4 8 7 6) = (1)(2 5 4)(3)(6 8)(7) => parity = -1
     @test parity4 == -1
 
@@ -106,8 +110,9 @@ end
         CompositeOperator([𝑓⁻(4), 𝑓⁻(5)]),
         CompositeOperator([𝑏⁻(6), 𝑓⁺(7), 𝜙(8)]),
     ]
+    ops = reduce(*, vertices5)
     edges5, parity5 = contractions_to_edges(vertices5; contractions=[1, 2, 3, 2, 4, 1, 4, 3])
-    @test Set(edges5) == Set([(1, 6), (2, 4), (3, 8), (7, 5)])
+    @test Set(edges5) == Set([(ops[1], ops[6]), (ops[2], ops[4]), (ops[3], ops[8]), (ops[7], ops[5])])
     # Flattened fermionic edges: [2, 4, 7, 5]
     # => P = (1 2 4 3) = (1)(2)(4 3) => parity = -1
     @test parity5 == -1
