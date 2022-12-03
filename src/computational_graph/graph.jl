@@ -292,6 +292,7 @@ function feynman_diagram(vertices::Vector{CompositeOperator}, contractions::Vect
     g = Graph(vertices; external=external, name=name, type=type, operator=Prod(), factor=factor, weight=weight)
 
     edges, contraction_sign = contractions_to_edges(vertices; contractions)
+    g.factor *= contraction_sign
 
     for edge in edges
         ifbubble = false
@@ -301,7 +302,7 @@ function feynman_diagram(vertices::Vector{CompositeOperator}, contractions::Vect
                 break
             end
         end
-        p = propagator(edge[1], edge[2]; ifbubble=ifbubble, factor=factor * contraction_sign)
+        p = propagator(edge[1], edge[2]; ifbubble=ifbubble)
         push!(g.subgraph, p)  # problem: how to determine vertices in the propagator? 
     end
 
@@ -352,15 +353,10 @@ function contractions_to_edges(vertices::Vector{CompositeOperator}; contractions
             if wick_i == wick_j
                 @debug "Found Wick contraction #$wick_i, adding edge between operators $i and $j"
                 if isfermionic(operators[j])
-                    if operators[j].operator == :f⁺
-                        @assert operators[i].operator == :f⁻
-                        append!(permutation, [j, i])
-                    elseif operators[j].operator == :f⁻
-                        @assert operators[i].operator == :f⁺
-                        append!(permutation, [i, j])
-                    else
-                        append!(permutation, [i, j])
-                    end
+                    operators[j].operator == :f⁺ && @assert operators[i].operator == :f⁻
+                    operators[j].operator == :f⁻ && @assert operators[i].operator == :f⁺
+                    operators[j].operator == :f && @assert operators[i].operator == :f
+                    append!(permutation, [i, j])
                 end
                 push!(edges, (operators[i], operators[j]))
                 # if operators[j].operator == :f⁺ || operators[j].operator == :b⁺
@@ -387,8 +383,10 @@ end
 
 function propagator(v1::QuantumOperator, v2::QuantumOperator; ifbubble=false, name="", diagtype=:propagtor,
     factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
+    sign = 1
     if iscreation(v2)
         vin, vout = v2, v1
+        sign = -1
     else
         vin, vout = v1, v2
     end
@@ -397,7 +395,7 @@ function propagator(v1::QuantumOperator, v2::QuantumOperator; ifbubble=false, na
     else
         extV = [CompositeOperator(vin), CompositeOperator(vout)]
     end
-    return Graph(extV, []; type=diagtype, name=name, operator=operator, factor=factor, weight=weight)
+    return Graph(extV, []; type=diagtype, name=name, operator=operator, factor=factor * sign, weight=weight)
 end
 
 # function checkVertices(g::Graph{F,W}) where {F,W}

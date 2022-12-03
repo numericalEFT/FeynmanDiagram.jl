@@ -103,7 +103,7 @@ end
     ops = reduce(*, vertices4)
     # @test Set(edges4) == Set([(ops[1], ops[5]), (ops[3], ops[2]), (ops[4], ops[8]), (ops[7], ops[6])])
     @test Set(edges4) == Set([(ops[1], ops[5]), (ops[2], ops[3]), (ops[4], ops[8]), (ops[6], ops[7])])
-    # P = (1 5 3 2 4 8 7 6) = (1)(2 5 4)(3)(6 8)(7) => parity = -1
+    # P = (1 5 2 3 4 8 6 7) = (1)(2 5 4)(3)(6 8)(7) => parity = -1
     @test parity4 == -1
 
     # Test 5: Mixed bosonic/classical/fermionic operators, parity = -1
@@ -116,9 +116,9 @@ end
     edges5, parity5 = contractions_to_edges(vertices5; contractions=[1, 2, 3, 2, 4, 1, 4, 3])
     # @test Set(edges5) == Set([(ops[1], ops[6]), (ops[2], ops[4]), (ops[3], ops[8]), (ops[7], ops[5])])
     @test Set(edges5) == Set([(ops[1], ops[6]), (ops[2], ops[4]), (ops[3], ops[8]), (ops[5], ops[7])])
-    # Flattened fermionic edges: [2, 4, 7, 5]
-    # => P = (1 2 4 3) = (1)(2)(4 3) => parity = -1
-    @test parity5 == -1
+    # Flattened fermionic edges: [2, 4, 5, 7]
+    # => P = (1 2 3 4) = (1)(2)(3 4) => parity = 1
+    @test parity5 == 1
 end
 
 @testset "feynman_diagram" begin
@@ -144,6 +144,9 @@ end
     @test isempty(external_vertices(g3))
     @test internal_vertices(g3) == V3
     # @test g3.subgraph[1] == propagator(𝑓⁺(1), 𝑓⁻(5))  #isequal except for id 
+    @test g3.subgraph[1].factor == 1
+    @test g3.subgraph[2].factor == -1
+    @test g3.subgraph[3].factor == 1
 
     V4 = [CompositeOperator([𝑓⁺(1), 𝑓⁻(2)]), CompositeOperator([𝑓⁺(3), 𝑓⁻(4)]),
         CompositeOperator([𝑓⁺(5), 𝑓⁻(6), 𝜙(7)]), CompositeOperator([𝑓⁺(8), 𝑓⁻(9), 𝜙(10)])]
