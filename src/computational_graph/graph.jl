@@ -388,11 +388,11 @@ end
 function propagator(v1::QuantumOperator, v2::QuantumOperator; ifbubble=false, name="", diagtype=:propagtor,
     factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
     sign = 1
-    if iscreation(v2)
-        vin, vout = v2, v1
+    if iscreation(v1)
+        vin, vout = v1, v2
         sign = -1
     else
-        vin, vout = v1, v2
+        vin, vout = v2, v1
     end
     if ifbubble
         extV = [CompositeOperator([vout, vin])] # Hatree bubble

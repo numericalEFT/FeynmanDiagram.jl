@@ -144,8 +144,8 @@ end
     @test isempty(external_vertices(g3))
     @test internal_vertices(g3) == V3
     # @test g3.subgraph[1] == propagator(𝑓⁺(1), 𝑓⁻(5))  #isequal except for id 
-    @test g3.subgraph[1].factor == 1
-    @test g3.subgraph[2].factor == -1
+    @test g3.subgraph[1].factor == -1
+    @test g3.subgraph[2].factor == 1
     @test g3.subgraph[3].factor == 1
 
     V4 = [CompositeOperator([𝑓⁺(1), 𝑓⁻(2)]), CompositeOperator([𝑓⁺(3), 𝑓⁻(4)]),
@@ -161,7 +161,7 @@ end
     @test vertices(g5) == V5
     @test external_vertices(g5) == V5
     @test isempty(internal_vertices(g5))
-    @test g5.subgraph[1].factor == -1
+    @test g5.subgraph[1].factor == 1
     @test g5.subgraph[2].factor == 1
-    @test g5.subgraph[3].factor == -1
+    @test g5.subgraph[3].factor == 1
 end
