@@ -85,6 +85,10 @@ function isfermionic(operator::QuantumOperator)
     operator.operator in [:f⁺, :f⁻, :f]
 end
 
+function iscreation(operator::QuantumOperator)
+    operator.operator in [:f⁺, :b⁺]
+end
+
 struct CompositeOperator <: AbstractVector{QuantumOperator}
     operators::Vector{QuantumOperator}
     function CompositeOperator(operators::Vector{QuantumOperator})
@@ -183,19 +187,19 @@ mutable struct Graph{F,W} # Graph
     factor::F
     weight::W
 
-    function Graph(extV::AbstractVector, intV::AbstractVector; subgraph=[],
-        name="", type=:generic, operator::Operator=Sum(), orders=zeros(Int, 16),
-        ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype)
-    )
-        vertices = [extV..., intV...]
-        ext = collect(1:length(extV))
-        return new{ftype,wtype}(uid(), name, type, orders, ext, vertices, subgraph, operator, factor, weight)
-    end
-    function Graph(vertices::AbstractVector; external::Vector{Int}=[], subgraph=[],
+    function Graph(vertices::Vector{CompositeOperator}; external=[], subgraph=[],
         name="", type=:generic, operator::Operator=Sum(), orders=zeros(Int, 16),
         ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype)
     )
         return new{ftype,wtype}(uid(), name, type, orders, external, vertices, subgraph, operator, factor, weight)
+    end
+    function Graph(extV::AbstractVector, intV::AbstractVector; subgraph=[],
+        name="", type=:generic, operator::Operator=Sum(), orders=zeros(Int, 16),
+        ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype)
+    )
+        vertices = [extV; intV]
+        ext = collect(1:length(extV))
+        return new{ftype,wtype}(uid(), name, type, orders, ext, vertices, subgraph, operator, factor, weight)
     end
 end
 
@@ -283,15 +287,21 @@ function Base.:-(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
 end
 
 function feynman_diagram(vertices::Vector{CompositeOperator}, contractions::Vector{Int};
-    external::Vector{Int}=[],
-    factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic)
+    external=[], factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic)
 
     g = Graph(vertices; external=external, name=name, type=type, operator=Prod(), factor=factor, weight=weight)
 
     edges, contraction_sign = contractions_to_edges(vertices; contractions)
 
     for edge in edges
-        p = propagator(edge[1], edge[2])
+        ifbubble = false
+        for cop in vertices
+            if edge[1] in cop.operators && edge[2] in cop.operators
+                ifbubble = true
+                break
+            end
+        end
+        p = propagator(edge[1], edge[2]; ifbubble=ifbubble, factor=factor * contraction_sign)
         push!(g.subgraph, p)  # problem: how to determine vertices in the propagator? 
     end
 
@@ -316,7 +326,7 @@ function contractions_to_edges(vertices::Vector{CompositeOperator}; contractions
     # Filter some illegal contractions
     is_invalid =
         isodd(length(contractions)) ||
-        isodd(length(unique(contractions))) ||
+        # isodd(length(unique(contractions))) ||
         length(operators) != length(contractions)
     if is_invalid
         throw(
@@ -341,15 +351,27 @@ function contractions_to_edges(vertices::Vector{CompositeOperator}; contractions
             end
             if wick_i == wick_j
                 @debug "Found Wick contraction #$wick_i, adding edge between operators $i and $j"
-                if operators[j].operator == :f⁺ || operators[j].operator == :b⁺
-                    push!(edges, (operators[j], operators[i]))
-                    isfermionic(operators[j]) && push!(permutation, j)
-                    isfermionic(operators[i]) && push!(permutation, i)
-                else
-                    push!(edges, (operators[i], operators[j]))
-                    isfermionic(operators[i]) && push!(permutation, i)
-                    isfermionic(operators[j]) && push!(permutation, j)
+                if isfermionic(operators[j])
+                    if operators[j].operator == :f⁺
+                        @assert operators[i].operator == :f⁻
+                        append!(permutation, [j, i])
+                    elseif operators[j].operator == :f⁻
+                        @assert operators[i].operator == :f⁺
+                        append!(permutation, [i, j])
+                    else
+                        append!(permutation, [i, j])
+                    end
                 end
+                push!(edges, (operators[i], operators[j]))
+                # if operators[j].operator == :f⁺ || operators[j].operator == :b⁺
+                #     push!(edges, (operators[j], operators[i]))
+                #     isfermionic(operators[j]) && push!(permutation, j)
+                #     isfermionic(operators[i]) && push!(permutation, i)
+                # else
+                #     push!(edges, (operators[i], operators[j]))
+                #     isfermionic(operators[i]) && push!(permutation, i)
+                #     isfermionic(operators[j]) && push!(permutation, j)
+                # end
                 # Move on to next pair
                 next_pairing += 1
             end
@@ -363,10 +385,15 @@ function contractions_to_edges(vertices::Vector{CompositeOperator}; contractions
     return edges, sign
 end
 
-function propagator(vin::QuantumOperator, vout::QuantumOperator; name="", diagtype=:propagtor,
+function propagator(v1::QuantumOperator, v2::QuantumOperator; ifbubble=false, name="", diagtype=:propagtor,
     factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
-    if vin == vout
-        extV = [CompositeOperator(vin),] # Hatree bubble
+    if iscreation(v2)
+        vin, vout = v2, v1
+    else
+        vin, vout = v1, v2
+    end
+    if ifbubble
+        extV = [CompositeOperator([vout, vin])] # Hatree bubble
     else
         extV = [CompositeOperator(vin), CompositeOperator(vout)]
     end
