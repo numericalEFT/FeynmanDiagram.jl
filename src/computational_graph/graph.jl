@@ -357,6 +357,10 @@ function contractions_to_edges(vertices::Vector{CompositeOperator}; contractions
                     operators[j].operator == :f⁻ && @assert operators[i].operator == :f⁺
                     operators[j].operator == :f && @assert operators[i].operator == :f
                     append!(permutation, [i, j])
+                else
+                    operators[j].operator == :b⁺ && @assert operators[i].operator == :b⁻
+                    operators[j].operator == :b⁻ && @assert operators[i].operator == :b⁺
+                    operators[j].operator == :phi && @assert operators[i].operator == :phi
                 end
                 push!(edges, (operators[i], operators[j]))
                 # if operators[j].operator == :f⁺ || operators[j].operator == :b⁺

@@ -131,7 +131,7 @@ end
 
     #complex scalar field
     V2 = [CompositeOperator(𝑏⁺(1)), CompositeOperator([𝑏⁺(2), 𝑏⁺(3), 𝑏⁻(4), 𝑏⁻(5)]),
-        CompositeOperator([𝑏⁺(6), 𝑏⁺(7), 𝑏⁻(8), 𝑏⁻(9)]), CompositeOperator(𝑏⁺(10))]
+        CompositeOperator([𝑏⁺(6), 𝑏⁺(7), 𝑏⁻(8), 𝑏⁻(9)]), CompositeOperator(𝑏⁻(10))]
     g2 = feynman_diagram(V2, [1, 2, 3, 4, 1, 4, 5, 2, 3, 5]; external=[1, 4])
     @test vertices(g2) == V2
     @test external_vertices(g2) == [V2[1], V2[4]]
@@ -161,4 +161,7 @@ end
     @test vertices(g5) == V5
     @test external_vertices(g5) == V5
     @test isempty(internal_vertices(g5))
+    @test g5.subgraph[1].factor == -1
+    @test g5.subgraph[2].factor == 1
+    @test g5.subgraph[3].factor == -1
 end
