@@ -89,31 +89,20 @@ function getK(loopNum::Int, loopIdx::Int)
 end
 
 """
-The parity of a permutation P of length n is even if P has an even number of even-length cycles, 
-and odd otherwise, where a cycle's parity is -1 if it is even in length. 
-
-The total parity of P is then given by: sgn(P) = (-1)^(n - n_cycles)
+The parity of a permutation P is +1 if the number of 2-cycles (swaps) in an n-cycle
+decomposition with n ≤ 2 is even, and -1 if the number of 2-cycles is odd.
 """
 function parity(p::W) where {W<:AbstractVector{Int}}
-    n = length(p)
-    visited = Set{Int}()
-    unvisited = Set{Int}(1:n)
-    # Continue searching until we visit every item
-    n_cycles = 0
-    while isempty(unvisited) == false
-        cycle = Int[]
-        x = pop!(unvisited)
-        # Continue until we complete the cycle
-        while in(x, visited) == false
-            push!(cycle, x)
-            push!(visited, x)
-            x = p[x]
-            pop!(unvisited, x, 0)
+    count = 0
+    p_swap = copy(p)
+    for i in eachindex(p)
+        while p_swap[i] != i
+            count += 1
+            j = p_swap[i]  # NOTE: we cannot swap in place with nested access in Julia
+            p_swap[i], p_swap[j] = p_swap[j], p_swap[i]
         end
-        # Found a cycle
-        n_cycles += 1
     end
-    return (-1)^(n - n_cycles)
+    return 2 * iseven(count) - 1
 end
 
 """
