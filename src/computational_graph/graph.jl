@@ -76,7 +76,7 @@ real_classic(i) = QuantumOperator(:phi, i)
 
 const 𝑓⁻ = fermionic_annihilation
 const 𝑓⁺ = fermionic_creation
-const 𝑓 = majorana
+# const 𝑓 = majorana
 const 𝑏⁻ = bosonic_annihilation
 const 𝑏⁺ = bosonic_creation
 const 𝜙 = real_classic
@@ -144,7 +144,7 @@ function normal_order(operator::CompositeOperator)
 end
 
 """Type alias for a directed graph edge e = (a₁⁺, a₂⁻) from e[1] to e[2]."""
-const EdgeType = Tuple{Int,Int}
+const EdgeType = Tuple{QuantumOperator,QuantumOperator}
 
 """
     mutable struct Graph{F,W}
@@ -183,15 +183,15 @@ mutable struct Graph{F,W} # Graph
     factor::F
     weight::W
 
-    function Graph(extV::Vector{CompositeOperator}, intV::Vector{CompositeOperator}; subgraph=[],
+    function Graph(extV::AbstractVector, intV::AbstractVector; subgraph=[],
         name="", type=:generic, operator::Operator=Sum(), orders=zeros(Int, 16),
         ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype)
     )
         vertices = [extV..., intV...]
         ext = collect(1:length(extV))
-        return new{ftype,wtype}(uid(), name, type, orders, ext, int, vertices, subgraph, operator, factor, weight)
+        return new{ftype,wtype}(uid(), name, type, orders, ext, vertices, subgraph, operator, factor, weight)
     end
-    function Graph(vertices::Vector{CompositeOperator}; external::Vector{Int}=[], subgraph=[],
+    function Graph(vertices::AbstractVector; external::Vector{Int}=[], subgraph=[],
         name="", type=:generic, operator::Operator=Sum(), orders=zeros(Int, 16),
         ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype)
     )
@@ -199,12 +199,17 @@ mutable struct Graph{F,W} # Graph
     end
 end
 
+function _ops_to_str(ops::Vector{CompositeOperator})
+    strs = ["$(o)" for o in ops]
+    return join(strs, "|")
+end
+
 #TODO: improve a text representation of Graph to the output stream.
 function Base.show(io::IO, g::Graph)
     if isempty(g.name)
-        print(io, "$(g.id): $(g.type) graph from $(g.vertices)")
+        print(io, "$(g.id): $(g.type) graph from $(_ops_to_str(g.vertices))")
     else
-        print(io, "$(g.id), $(g.name): $(g.type) graph from $(g.vertices)")
+        print(io, "$(g.id), $(g.name): $(g.type) graph from $(_ops_to_str(g.vertices))")
     end
 end
 
@@ -281,23 +286,16 @@ function feynman_diagram(vertices::Vector{CompositeOperator}, contractions::Vect
     external::Vector{Int}=[],
     factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic)
 
-    operators = [vertices[i].operator for i in 1:length(extV)]
-    comp_op = reduce(*, operators)
-    sign_normal, permutation = normal_order(comp_op)
-    edges, contraction_sign = contraction_to_edges(comp_op, contractions)
-
-    return feynman_diagram(vertices, edges; external=external, factor=factor .* contraction_sign, weight=weight, name=name, type=type)
-end
-
-function feynman_diagram(vertices::Vector{CompositeOperator}, edges::Vector{Tuple{Int,Int}};
-    external::Vector{Int}=[],
-    factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic)
-
     g = Graph(vertices; external=external, name=name, type=type, operator=Prod(), factor=factor, weight=weight)
 
+    edges, contraction_sign = contractions_to_edges(vertices; contractions)
+
     for edge in edges
-        append!(g.subgraph, [])  # problem: how to determine vertices in the propagator? 
+        p = propagator(edge[1], edge[2])
+        push!(g.subgraph, p)  # problem: how to determine vertices in the propagator? 
     end
+
+    return g
 end
 
 """
@@ -329,6 +327,8 @@ function contractions_to_edges(vertices::Vector{CompositeOperator}; contractions
     # Loop over operators and pair
     next_pairing = 1
     edges = Vector{EdgeType}()
+    permutation = Int[] # permutation of the operators after the contraction
+
     for (i, wick_i) in enumerate(contractions)
         if i < next_pairing
             continue  # Operator already paired
@@ -341,76 +341,37 @@ function contractions_to_edges(vertices::Vector{CompositeOperator}; contractions
             if wick_i == wick_j
                 @debug "Found Wick contraction #$wick_i, adding edge between operators $i and $j"
                 if operators[j].operator == :f⁺
-                    push!(edges, (j, i))
+                    push!(edges, (operators[j], operators[i]))
+                    append!(permutation, [j, i]) # only need to keep track of the permutation of the fermionic operators
                 elseif operators[j].operator == :b⁺
-                    push!(edges, (j, i))
+                    push!(edges, (operators[j], operators[i]))
                 else
-                    push!(edges, (i, j))
+                    push!(edges, (operators[i], operators[j]))
                 end
                 # Move on to next pair
                 next_pairing += 1
             end
         end
     end
-    # Deduce the parity of the contraction; it is the
-    # same as the parity of all fermionic operators.
-    flat_fermionic_edges = Int[]
-    for (e1, e2) in edges
-        op1, op2 = operators[e1], operators[e2]
-        if isfermionic(op1) || isfermionic(op2)
-            append!(flat_fermionic_edges, [e1, e2])
-        end
-    end
-    if isempty(flat_fermionic_edges)
+    # Deduce the parity of the contraction
+    if isempty(permutation)
         sign = 1
     else
         # Get the permutation parity for the flattened list of fermionic edges, e.g.,
         # flat_fermionic_edges = [1, 5, 4, 8, 7, 6] => P = (1 3 2 6 5 4) => sign = +1
-        sign = parity(sortperm(flat_fermionic_edges))
+        sign = parity(sortperm(permutation))
     end
     return edges, sign
 end
 
-# function add_edge!(g::Graph{F,W}, contraction::Dict{Int,Vector{Int}}) where {F,W}
-#     for vi in keys(contraction)
-#         if vi <= length(g.external_vertices)
-#             v = g.external_vertices[vi]
-#         else
-#             v = g.internal_vertices[vi-length(g.external_vertices)]
-#         end
-#         @assert length(v.operator) == length(contraction[vi])
-#         for (loc_v, contr) in enumerate(contraction[vi])
-#             contr == -1 && continue
-#             for (ui, contrs) in contraction
-#                 if contr in contrs
-#                     loc_u = findlast(isequal(contr), contrs)
-#                     #TODO: check the legality of the contraction
-#                     if ui == vi
-#                         if loc_v != loc_u
-#                             v1 = ExternalVertex(v.current, [v.operator[loc_v], v.operator[loc_u]])
-#                             append!(g.subgraph, [propagtor(v1, v1; ftype=F, wtype=W)])
-#                         end
-#                     else
-#                         u = ui <= length(g.external_vertices) ? g.external_vertices[ui] : g.internal_vertices[ui-length(g.external_vertices)]
-#                         v1 = ExternalVertex(v.current, [v.operator[loc_v]])
-#                         v2 = ExternalVertex(u.current, [u.operator[loc_u]])
-#                         append!(g.subgraph, [propagtor(v1, v2; ftype=F, wtype=W)])
-#                     end
-#                     contraction[vi][loc_v], contraction[ui][loc_u] = -1, -1
-#                 end
-#             end
-#         end
-#     end
-# end
-
-function propagator(v1::QuantumOperator, v2::QuantumOperator; name="propagator", diagtype=:propagtor,
+function propagator(v1::QuantumOperator, v2::QuantumOperator; name="", diagtype=:propagtor,
     factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
     if v1 == v2
-        extV = [v1] # Hatree bubble
+        extV = [CompositeOperator(v1),] # Hatree bubble
     else
-        extV = [v1, v2]
+        extV = [CompositeOperator(v1), CompositeOperator(v2)]
     end
-    return Graph(extV, [], type=diagtype, name=name, operator=operator, factor=factor, weight=weight)
+    return Graph(extV, []; type=diagtype, name=name, operator=operator, factor=factor, weight=weight)
 end
 
 # function checkVertices(g::Graph{F,W}) where {F,W}
