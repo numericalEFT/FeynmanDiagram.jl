@@ -19,14 +19,12 @@ function Base.iterate(r::Permutation, ::Permutation) end
 
 const INL, OUTL, INR, OUTR = 1, 2, 3, 4
 
+import ..QuantumOperators: QuantumOperator, QuantumExpr, 𝑓⁻, 𝑓⁺, 𝑓, 𝑏⁻, 𝑏⁺, 𝜙, iscreation, isfermionic
+
 include("common.jl")
 export labelreset, parity, parity_old
 
 include("graph.jl")
-export QuantumOperator, CompositeOperator
-export 𝑓⁻, 𝑓⁺, 𝑓, 𝑏⁻, 𝑏⁺, 𝜙
-export fermionic_annihilation, fermionic_creation, majorana
-export bosonic_annihilation, bosonic_creation, real_classic
 export Graph
 export feynman_diagram, contractions_to_edges, propagator
 export is_external, is_internal, external_vertices, internal_vertices, vertices

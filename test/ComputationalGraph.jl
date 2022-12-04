@@ -63,22 +63,14 @@ end
 
 @testset "Contractions" begin
     # Test 1: Scalar fields with Wick crossings, parity = +1
-    vertices1 = [
-        CompositeOperator([𝜙(1), 𝜙(2)]),
-        CompositeOperator([𝜙(3), 𝜙(4), 𝜙(5), 𝜙(6)]),
-        CompositeOperator([𝜙(7), 𝜙(8)]),
-    ]
+    vertices1 = [𝜙(1)𝜙(2), 𝜙(3)𝜙(4)𝜙(5)𝜙(6), 𝜙(7)𝜙(8)]
     edges1, parity1 = contractions_to_edges(vertices1; contractions=[1, 2, 3, 4, 1, 3, 4, 2])
     ops = reduce(*, vertices1)
     @test Set(edges1) == Set([(ops[1], ops[5]), (ops[2], ops[8]), (ops[3], ops[6]), (ops[4], ops[7])])
     @test parity1 == 1
 
     # Test 2: Bosons with Wick crossings, parity = +1
-    vertices2 = [
-        CompositeOperator([𝑏⁺(1), 𝑏⁺(2), 𝑏⁻(3)]),
-        CompositeOperator([𝑏⁻(4), 𝑏⁺(5)]),
-        CompositeOperator([𝑏⁻(6), 𝑏⁺(7), 𝑏⁻(8)]),
-    ]
+    vertices2 = [𝑏⁺(1)𝑏⁺(2)𝑏⁻(3), 𝑏⁻(4)𝑏⁺(5), 𝑏⁻(6)𝑏⁺(7)𝑏⁻(8)]
     edges2, parity2 = contractions_to_edges(vertices2; contractions=[1, 2, 3, 4, 3, 1, 4, 2])
     ops = reduce(*, vertices2)
     # @test Set(edges2) == Set([(ops[1], ops[6]), (ops[2], ops[8]), (ops[5], ops[3]), (ops[7], ops[4])])
@@ -86,7 +78,7 @@ end
     @test parity2 == 1
 
     # Test 3: Indistinguishable Majoranas with no Wick crossings, parity = +1
-    vertices3 = [CompositeOperator([𝑓(1), 𝑓(1), 𝑓(1), 𝑓(1), 𝑓(1), 𝑓(1), 𝑓(1), 𝑓(1)])]
+    vertices3 = [𝑓(1)𝑓(1)𝑓(1)𝑓(1)𝑓(1)𝑓(1)𝑓(1)𝑓(1),]
     edges3, parity3 = contractions_to_edges(vertices3; contractions=[1, 2, 3, 4, 4, 3, 2, 1])
     ops = reduce(*, vertices3)
     @test Set(edges3) == Set([(ops[1], ops[8]), (ops[2], ops[7]), (ops[3], ops[6]), (ops[4], ops[5])])
@@ -94,11 +86,7 @@ end
     @test parity3 == 1
 
     # Test 4: Fermions with Wick crossings, parity = -1
-    vertices4 = [
-        CompositeOperator([𝑓⁺(1), 𝑓⁻(2)]),
-        CompositeOperator([𝑓⁺(5), 𝑓⁺(6), 𝑓⁻(7), 𝑓⁻(8)]),
-        CompositeOperator([𝑓⁺(3), 𝑓⁻(4)]),
-    ]
+    vertices4 = [𝑓⁺(1)𝑓⁻(2), 𝑓⁺(5)𝑓⁺(6)𝑓⁻(7)𝑓⁻(8), 𝑓⁺(3)𝑓⁻(4),]
     edges4, parity4 = contractions_to_edges(vertices4; contractions=[1, 2, 2, 3, 1, 4, 4, 3])
     ops = reduce(*, vertices4)
     # @test Set(edges4) == Set([(ops[1], ops[5]), (ops[3], ops[2]), (ops[4], ops[8]), (ops[7], ops[6])])
@@ -107,11 +95,7 @@ end
     @test parity4 == -1
 
     # Test 5: Mixed bosonic/classical/fermionic operators, parity = -1
-    vertices5 = [
-        CompositeOperator([𝑏⁺(1), 𝑓⁺(2), 𝜙(3)]),
-        CompositeOperator([𝑓⁻(4), 𝑓⁻(5)]),
-        CompositeOperator([𝑏⁻(6), 𝑓⁺(7), 𝜙(8)]),
-    ]
+    vertices5 = [𝑏⁺(1)𝑓⁺(2)𝜙(3), 𝑓⁻(4)𝑓⁻(5), 𝑏⁻(6)𝑓⁺(7)𝜙(8)]
     ops = reduce(*, vertices5)
     edges5, parity5 = contractions_to_edges(vertices5; contractions=[1, 2, 3, 2, 4, 1, 4, 3])
     # @test Set(edges5) == Set([(ops[1], ops[6]), (ops[2], ops[4]), (ops[3], ops[8]), (ops[7], ops[5])])
@@ -130,7 +114,7 @@ end
     @test internal_vertices(g1) == V1
 
     #complex scalar field
-    V2 = [CompositeOperator(𝑏⁺(1)), 𝑏⁺(2)𝑏⁺(3)𝑏⁻(4)𝑏⁻(5), 𝑏⁺(6)𝑏⁺(7)𝑏⁻(8)𝑏⁻(9), CompositeOperator(𝑏⁻(10))]
+    V2 = [𝑏⁺(1), 𝑏⁺(2)𝑏⁺(3)𝑏⁻(4)𝑏⁻(5), 𝑏⁺(6)𝑏⁺(7)𝑏⁻(8)𝑏⁻(9), 𝑏⁻(10)]
     g2 = feynman_diagram(V2, [1, 2, 3, 4, 1, 4, 5, 2, 3, 5]; external=[1, 4])
     @test vertices(g2) == V2
     @test external_vertices(g2) == [V2[1], V2[4]]
