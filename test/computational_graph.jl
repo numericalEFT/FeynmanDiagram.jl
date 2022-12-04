@@ -1,66 +1,3 @@
-# @testset "Diagram" begin
-#     # electron gas
-#     g1 = 𝐺ᶠ(1, 2) * 𝑊(1, 2) * 𝐺ᶠ(2, 1)          # vaccum diagram
-#     @test g1.couplings[1] == Coupling_yukawa
-#     @test isempty(g1.external_vertices)
-#     @test g1.internal_vertices[1] == InternalVertex(1, 0, Coupling_yukawa)
-#     @test g1.internal_vertices[2] == InternalVertex(2, 0, Coupling_yukawa)
-#     @test checkVertices(g1)
-
-#     g2 = 𝐺ᶠ(1, 1) * 𝑊(1, 2) * 𝐺ᶠ(2, 2)
-#     @test g2.couplings[1] == Coupling_yukawa
-#     @test isempty(g2.external_vertices)
-#     @test g2.internal_vertices[1] == InternalVertex(1, 0, Coupling_yukawa)
-#     @test g2.internal_vertices[2] == InternalVertex(2, 0, Coupling_yukawa)
-#     @test checkVertices(g2)
-
-#     g3 = 𝐺ᶠ(1, 2) * 𝐺ᶠ(2, 3) * 𝑊(2, 3) * 𝐺ᶠ(3, 4)
-#     @test g3.couplings[1] == Coupling_yukawa
-#     @test g3.external_vertices[1] == ExternalVertex(1, 0, CompositeOperator([𝑓dag]))
-#     @test g3.external_vertices[2] == ExternalVertex(4, 0, CompositeOperator([𝑓]))
-#     @test g3.internal_vertices[1] == InternalVertex(2, 0, Coupling_yukawa)
-#     @test g3.internal_vertices[2] == InternalVertex(3, 0, Coupling_yukawa)
-#     @test checkVertices(g3)
-
-#     # phi4 theory
-#     g4 = 𝐺ᵠ(1, 1) * 𝐺ᵠ(1, 1) * 𝑊(1, Coupling_phi4)
-#     @test g4.couplings[1] == Coupling_phi4
-#     @test isempty(g4.external_vertices)
-#     @test g4.internal_vertices[1] == InternalVertex(1, 0, Coupling_phi4)
-#     @test checkVertices(g4)
-#     # @test !checkVertices(𝐺ᵠ(1, 1) * 𝐺ᵠ(1, 1) * 𝐺ᵠ(1, 1) * 𝑊(1, Coupling_phi4))
-
-#     g5 = 𝐺ᵠ(1, 2) * 𝑊(2, Coupling_phi4) * 𝐺ᵠ(2, 3) * 𝐺ᵠ(2, 3) * 𝐺ᵠ(2, 3) * 𝑊(3, Coupling_phi4) * 𝐺ᵠ(3, 4)
-#     @test g5.couplings[1] == Coupling_phi4
-#     @test g5.external_vertices[1] == ExternalVertex(1, 0, CompositeOperator([ϕ]))
-#     @test g5.external_vertices[2] == ExternalVertex(4, 0, CompositeOperator([ϕ]))
-#     @test g5.internal_vertices[1] == InternalVertex(2, 0, Coupling_phi4)
-#     @test g5.internal_vertices[2] == InternalVertex(3, 0, Coupling_phi4)
-#     @test checkVertices(g5)
-# end
-
-@testset "Parity" begin
-    # P = (1) => sgn(P) = 1
-    p1 = [1]
-    @test QuantumOperators.parity(p1) == 1
-    @test QuantumOperators.parity_old(p1) == 1
-
-    # P = (2 3 1 5 6 4) = (1 2 3) (4 5 6) => sgn(P) = 1
-    p2 = [2, 3, 1, 5, 6, 4]
-    @test QuantumOperators.parity(p2) == 1
-    @test QuantumOperators.parity_old(p2) == 1
-
-    # P = (3 4 1 2) = (1 3) (2 4) => sgn(P) = 1
-    p3 = [3, 4, 1, 2]
-    @test QuantumOperators.parity(p3) == 1
-    @test QuantumOperators.parity_old(p3) == 1
-
-    # P = (3 5 1 2 4 6 7) = (1 3) (2 5 4) (6) (7) => sgn(P) = -1
-    p4 = [3, 5, 1, 2, 4, 6, 7]
-    @test QuantumOperators.parity(p4) == -1
-    @test QuantumOperators.parity_old(p4) == -1
-end
-
 @testset "Contractions" begin
     # Test 1: Scalar fields with Wick crossings, parity = +1
     vertices1 = [𝜙(1)𝜙(2), 𝜙(3)𝜙(4)𝜙(5)𝜙(6), 𝜙(7)𝜙(8)]
@@ -136,6 +73,11 @@ end
     @test vertices(g4) == V4
     @test external_vertices(g4) == V4[1:2]
     @test internal_vertices(g4) == V4[3:4]
+    @test g4.subgraph[1].factor == -1
+    @test g4.subgraph[2].factor == 1
+    @test g4.subgraph[3].factor == -1
+    @test g4.subgraph[4].factor == 1
+    @test g4.subgraph[5].factor == 1
 
     V5 = [𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5), 𝑓⁺(6)𝜙(7)]
     g5 = feynman_diagram(V5, [1, 2, 1, 3, 3, 2], external=[1, 2, 3])
