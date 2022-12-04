@@ -15,6 +15,20 @@ end
 
 Base.show(io::IO, ::MIME"text/plain", o::QuantumOperator) = Base.show(io, o)
 
+function Base.adjoint(operator::QuantumOperator)
+    if operator.operator in [:f, :ϕ]
+        return operator
+    elseif operator.operator == :f⁺
+        return QuantumOperator(:f⁻, operator.label)
+    elseif operator.operator == :f⁻
+        return QuantumOperator(:f⁺, operator.label)
+    elseif operator.operator == :b⁺
+        return QuantumOperator(:b⁻, operator.label)
+    elseif operator.operator == :b⁻
+        return QuantumOperator(:b⁺, operator.label)
+    end
+end
+
 function isfermionic(operator::QuantumOperator)
     operator.operator in [:f⁺, :f⁻, :f]
 end

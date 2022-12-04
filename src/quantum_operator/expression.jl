@@ -54,6 +54,19 @@ function Base.:*(o1::QuantumExpr, o2::QuantumExpr)
     return QuantumExpr([o1.operators; o2.operators])
 end
 
+function Base.adjoint(o::QuantumExpr)
+    return QuantumExpr([op' for op in reverse(o)])
+end
+
+function isfermionic(o::QuantumExpr)
+    numf = 0
+    for op in o
+        isfermionic(op) && (numf += 1)
+    end
+    isodd(numf) && return true
+    return false
+end
+
 """
     Converts a QuantumExpr to normal-ordered form in place and returns the associated statistical sign.
 """

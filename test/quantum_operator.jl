@@ -1,23 +1,28 @@
 @testset "QuantumExpr" begin
     @test 𝑓(1) == QuantumExpr(QuantumOperator(:f, 1))
-    @test QuantumOperators.isfermionic(𝑓(1)[1])
-    @test QuantumOperators.isfermionic(𝑓⁺(1)[1])
-    @test QuantumOperators.isfermionic(𝑓⁻(1)[1])
+    @test isfermionic(𝑓(1)[1])
+    @test isfermionic(𝑓⁺(1)[1])
+    @test isfermionic(𝑓⁻(1)[1])
     @test QuantumOperators.iscreation(𝑓⁺(1)[1])
     @test QuantumOperators.iscreation(𝑏⁺(1)[1])
+    @test (𝑓⁻(1)[1])' == 𝑓⁺(1)[1]
 
     qe1 = QuantumExpr([QuantumOperator(:f⁺, 1), QuantumOperator(:f⁻, 2), QuantumOperator(:ϕ, 3)])
     qe2 = QuantumExpr([QuantumOperator(:f⁺, 1), QuantumOperator(:f⁻, 2),
-        QuantumOperator(:ϕ, 3), QuantumOperator(:b⁻, 4)])
+        QuantumOperator(:ϕ, 3), QuantumOperator(:f⁻, 4)])
     qe3 = QuantumExpr([QuantumOperator(:b⁻, 4), QuantumOperator(:f⁺, 1), QuantumOperator(:f⁻, 2),
         QuantumOperator(:ϕ, 3)])
     @test QuantumOperator(:f⁺, 1) * QuantumOperator(:f⁻, 2) * QuantumOperator(:ϕ, 3) == qe1
     @test 𝑓⁺(1)𝑓⁻(2)𝜙(3) == qe1
-    @test qe1 * 𝑏⁻(4) == qe2
-    @test qe1 * QuantumOperator(:b⁻, 4) == qe2
+    @test qe1 * 𝑓⁻(4) == qe2
+    @test qe1 * QuantumOperator(:f⁻, 4) == qe2
     @test QuantumOperator(:b⁻, 4) * qe1 == qe3
     @test QuantumExpr(qe1) == qe1.operators
-
+    @test !isfermionic(qe1)
+    @test isfermionic(qe2)
+    @test !isfermionic(qe3)
+    @test qe1' == 𝜙(3)𝑓⁺(2)𝑓⁻(1)
+    @test qe3' == 𝜙(3)𝑓⁺(2)𝑓⁻(1)𝑏⁺(4)
 end
 
 @testset "Parity" begin
