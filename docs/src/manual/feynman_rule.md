@@ -80,9 +80,9 @@ G = g - g\Sigma g + g\Sigma g \Sigma g - ...
 
 ## Perturbative Expansion of the Green's Function
 
-![Sign rule for the Wick contractions.](../assets/diagrams/green0.svg#green0)
+![Sign rule for the Wick contractions.](assets/diagrams/green0.svg#green0)
 
-![Diagrammatic expansion of the Green's function.](../assets/diagrams/green.svg#green)
+![Diagrammatic expansion of the Green's function.](assets/diagrams/green.svg#green)
 
 The sign of a Green's function diagram is given by ``(-1)^{n_v} \xi^{n_F}``, where
 
@@ -93,7 +93,7 @@ The sign of a Green's function diagram is given by ``(-1)^{n_v} \xi^{n_F}``, whe
 
 From the Green's function diagrams, one can derive the __negative__ self-energy diagram,
 
-![Diagrammatic expansion of the self-energy.](../assets/diagrams/sigma.svg#sigma)
+![Diagrammatic expansion of the self-energy.](assets/diagrams/sigma.svg#sigma)
 
 ```math
 \begin{aligned}
@@ -121,7 +121,7 @@ where the indices $x, y$ could be different from diagrams to diagrams, and $\Gam
 \Sigma_{3, x} -\Sigma^{Hartree}_{3, x} = G_{3,y} \cdot V_{3, 4} \cdot \Gamma^3_{4,y,x},
 ```
 
-![Diagrammatic expansion of the 3-point vertex function.](../assets/diagrams/gamma3.svg#gamma3)
+![Diagrammatic expansion of the 3-point vertex function.](assets/diagrams/gamma3.svg#gamma3)
 
 The diagram weights are given by,
 
@@ -144,7 +144,7 @@ The 4-point vertex function is related to the 3-point vertex function through an
 
 where the indices $x, y, s, t$ could be different from diagrams to diagrams.
 
-![Diagrammatic expansion of the 4-point vertex function.](../assets/diagrams/gamma4.svg#gamma4)
+![Diagrammatic expansion of the 4-point vertex function.](assets/diagrams/gamma4.svg#gamma4)
 
 The diagram weights are given by,
 
@@ -167,7 +167,7 @@ The susceptibility can be derived from ``\Gamma^{(4)}``.
 \chi_{1,2} \equiv \left<\mathcal{T} n_1 n_2\right>_{\text{connected}} = \xi G_{1,2} G_{2, 1} + \xi G_{1,s} G_{t, 1} \Gamma^{(4)}_{s, t, y, x} G_{2,y} G_{x, 2}
 ```
 
-![Diagrammatic expansion of the susceptibility.](../assets/diagrams/susceptibility.svg#susceptibility)
+![Diagrammatic expansion of the susceptibility.](assets/diagrams/susceptibility.svg#susceptibility)
 
 We define the polarization ``P`` as the one-interaction irreducible (or proper) vertex function,
 
