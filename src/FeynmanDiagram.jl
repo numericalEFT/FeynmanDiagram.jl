@@ -85,6 +85,7 @@ export DiagramPara, DiagramParaF64
 include("quantum_operator/QuantumOperators.jl")
 
 using .QuantumOperators
+export QuantumOperators
 export QuantumOperator, QuantumExpr
 export 𝑓⁻, 𝑓⁺, 𝑓, 𝑏⁻, 𝑏⁺, 𝜙
 export fermionic_annihilation, fermionic_creation, majorana

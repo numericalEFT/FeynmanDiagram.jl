@@ -42,23 +42,23 @@
 @testset "Parity" begin
     # P = (1) => sgn(P) = 1
     p1 = [1]
-    @test parity(p1) == 1
-    @test parity_old(p1) == 1
+    @test QuantumOperators.parity(p1) == 1
+    @test QuantumOperators.parity_old(p1) == 1
 
     # P = (2 3 1 5 6 4) = (1 2 3) (4 5 6) => sgn(P) = 1
     p2 = [2, 3, 1, 5, 6, 4]
-    @test parity(p2) == 1
-    @test parity_old(p2) == 1
+    @test QuantumOperators.parity(p2) == 1
+    @test QuantumOperators.parity_old(p2) == 1
 
     # P = (3 4 1 2) = (1 3) (2 4) => sgn(P) = 1
     p3 = [3, 4, 1, 2]
-    @test parity(p3) == 1
-    @test parity_old(p3) == 1
+    @test QuantumOperators.parity(p3) == 1
+    @test QuantumOperators.parity_old(p3) == 1
 
     # P = (3 5 1 2 4 6 7) = (1 3) (2 5 4) (6) (7) => sgn(P) = -1
     p4 = [3, 5, 1, 2, 4, 6, 7]
-    @test parity(p4) == -1
-    @test parity_old(p4) == -1
+    @test QuantumOperators.parity(p4) == -1
+    @test QuantumOperators.parity_old(p4) == -1
 end
 
 @testset "Contractions" begin
