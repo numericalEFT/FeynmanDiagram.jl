@@ -198,14 +198,15 @@ function feynman_diagram(vertices::Vector{QuantumExpr}, contractions::Vector{Int
     g.factor *= contraction_sign
 
     for edge in edges
-        ifbubble = false
+        v1, v2 = edge[1], edge[2]
         for cop in vertices
             if edge[1] in cop.operators && edge[2] in cop.operators
-                ifbubble = true
+                v1 = edge[1] * edge[2]
+                v2 = v1
                 break
             end
         end
-        p = propagator(edge[1], edge[2]; ifbubble=ifbubble)
+        p = propagator(v1, v2)
         push!(g.subgraph, p)  # problem: how to determine vertices in the propagator? 
     end
 
@@ -255,26 +256,9 @@ function contractions_to_edges(vertices::Vector{QuantumExpr}; contractions::Vect
             end
             if wick_i == wick_j
                 @debug "Found Wick contraction #$wick_i, adding edge between operators $i and $j"
-                if isfermionic(operators[j])
-                    operators[j].operator == :f⁺ && @assert operators[i].operator == :f⁻
-                    operators[j].operator == :f⁻ && @assert operators[i].operator == :f⁺
-                    operators[j].operator == :f && @assert operators[i].operator == :f
-                    append!(permutation, [i, j])
-                else
-                    operators[j].operator == :b⁺ && @assert operators[i].operator == :b⁻
-                    operators[j].operator == :b⁻ && @assert operators[i].operator == :b⁺
-                    operators[j].operator == :phi && @assert operators[i].operator == :phi
-                end
+                @assert operators[j]'.operator == operators[i].operator
+                isfermionic(operators[j]) && append!(permutation, [i, j])
                 push!(edges, (operators[i], operators[j]))
-                # if operators[j].operator == :f⁺ || operators[j].operator == :b⁺
-                #     push!(edges, (operators[j], operators[i]))
-                #     isfermionic(operators[j]) && push!(permutation, j)
-                #     isfermionic(operators[i]) && push!(permutation, i)
-                # else
-                #     push!(edges, (operators[i], operators[j]))
-                #     isfermionic(operators[i]) && push!(permutation, i)
-                #     isfermionic(operators[j]) && push!(permutation, j)
-                # end
                 # Move on to next pair
                 next_pairing += 1
             end
@@ -289,19 +273,30 @@ function contractions_to_edges(vertices::Vector{QuantumExpr}; contractions::Vect
 end
 
 function propagator(v1::Union{QuantumExpr,QuantumOperator}, v2::Union{QuantumExpr,QuantumOperator};
-    ifbubble=false, name="", diagtype=:propagtor,
-    factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
-    sign = 1
-    if iscreation(v1)
-        vin, vout = v1, v2
+    name="", diagtype=:propagtor, factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
+    if v1 == v2
+        return propagator(v1; name=name, diagtype=diagtype, factor=factor, weight=weight, operator=operator)
+    end
+    if (v1 isa QuantumExpr && iscreation(v1[1])) || iscreation(v1)
+        vin, vout = QuantumExpr(v1), QuantumExpr(v2)
         sign = -1
     else
-        vin, vout = v2, v1
+        vin, vout = QuantumExpr(v2), QuantumExpr(v1)
+        sign = 1
     end
-    if ifbubble
-        extV = [QuantumExpr([vout, vin])] # Hatree bubble
+    return Graph([vin, vout], []; type=diagtype, name=name, operator=operator, factor=factor * sign, weight=weight)
+end
+
+function propagator(v::QuantumExpr; name="", diagtype=:propagtor,
+    factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
+    #TODO: support multi-leg propagator in strong coupling expansion
+    @assert iseven(length(v))
+    if iscreation(v[1])
+        extV = [QuantumExpr([v[2], v[1]])]
+        sign = -1
     else
-        extV = [QuantumExpr(vin), QuantumExpr(vout)]
+        extV = [QuantumExpr([v[1], v[2]])]
+        sign = 1
     end
     return Graph(extV, []; type=diagtype, name=name, operator=operator, factor=factor * sign, weight=weight)
 end

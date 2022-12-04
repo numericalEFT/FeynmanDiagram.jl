@@ -42,6 +42,18 @@
     @test parity5 == 1
 end
 
+@testset "propagator" begin
+    g1 = propagator(𝑓⁺(1)𝑓⁻(2))
+    @test g1.factor == -1
+    @test g1.external == [1]
+    @test vertices(g1) == [𝑓⁻(2)𝑓⁺(1)]
+
+    g2 = propagator(𝑓⁺(1), 𝑓⁻(2))
+    @test g2.factor == -1
+    @test g2.external == [1, 2]
+    @test vertices(g2) == [𝑓⁺(1), 𝑓⁻(2)]
+end
+
 @testset "feynman_diagram" begin
     # phi theory 
     V1 = [𝜙(1)𝜙(2)𝜙(3)𝜙(4),]

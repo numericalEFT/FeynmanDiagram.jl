@@ -36,3 +36,7 @@ end
 function iscreation(operator::QuantumOperator)
     operator.operator in [:f⁺, :b⁺]
 end
+
+function isannihilation(operator::QuantumOperator)
+    operator.operator in [:f⁻, :b⁻]
+end
