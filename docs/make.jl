@@ -11,11 +11,12 @@ makedocs(;
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
         canonical="https://numericaleft.github.io/FeynmanDiagram.jl",
-        assets=String[]
+        assets=["assets/custom.css"]
     ),
     pages=[
         "Home" => "index.md",
         "Manual" => [
+            "manual/feynman_rule.md",
             "manual/interaction.md",
             "manual/hubbard_atom.md"
         ],
