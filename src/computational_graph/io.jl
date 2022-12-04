@@ -1,4 +1,4 @@
-# function toDict(diag::Diagram; maxdepth::Int)
+# function toDict(diag::Graph; maxdepth::Int)
 #     @assert maxdepth == 1 "deep convert has not yet been implemented!"
 
 #     d = Dict{Symbol,Any}()
@@ -6,7 +6,7 @@
 #     d[:id] = diag.id
 #     d[:name] = diag.name
 #     d[:diagram] = diag
-#     d[:subdiagram] = Tuple(d.hash for d in diag.subdiagram)
+#     d[:subgraph] = Tuple(d.hash for d in diag.subgraph)
 #     d[:operator] = diag.operator
 #     d[:factor] = diag.factor
 #     d[:weight] = diag.weight
@@ -19,19 +19,19 @@ function _addkey!(dict, key, val)
     dict[key] = val
 end
 
-function _DiagtoDict!(dict::Dict{Symbol,Any}, diagVec::Vector{Diagram{W}}; maxdepth::Int) where {W}
+function _DiagtoDict!(dict::Dict{Symbol,Any}, diagVec::Vector{Graph{W}}; maxdepth::Int) where {W}
     @assert maxdepth == 1 "deep convert has not yet been implemented!"
     _addkey!(dict, :hash, [diag.hash for diag in diagVec])
     _addkey!(dict, :name, [diag.name for diag in diagVec])
-    _addkey!(dict, :diagram, diagVec)
-    _addkey!(dict, :subdiagram, [Tuple(d.hash for d in diag.subdiagram) for diag in diagVec])
+    _addkey!(dict, :graph, diagVec)
+    _addkey!(dict, :subgraph, [Tuple(d.hash for d in diag.subgraph) for diag in diagVec])
     _addkey!(dict, :operator, [diag.operator for diag in diagVec])
     _addkey!(dict, :factor, [diag.factor for diag in diagVec])
     _addkey!(dict, :weight, [diag.weight for diag in diagVec])
     return dict
 end
 
-# function toDict(v::DiagramId)
+# function toDict(v::GraphId)
 #     d = Dict{Symbol,Any}()
 #     for field in fieldnames(typeof(v))
 #         data = getproperty(v, field)
@@ -45,7 +45,7 @@ function _vec2tup(data)
     return data isa AbstractVector ? Tuple(data) : data
 end
 
-function _IdstoDict!(dict::Dict{Symbol,Any}, diagVec::Vector{Diagram{W}}, idkey::Symbol) where {W}
+function _IdstoDict!(dict::Dict{Symbol,Any}, diagVec::Vector{Graph{W}}, idkey::Symbol) where {W}
     sameId = all(x -> (typeof(x.id) == typeof(diagVec[1].id)), diagVec)
     if sameId
         data = [_vec2tup(getproperty(diagVec[1].id, idkey)),]
@@ -122,7 +122,7 @@ end
 #     return df
 # end
 
-function _summary(diag::Diagram{W}, color=true) where {W}
+function _summary(diag::Graph{W}, color=true) where {W}
 
     function short(factor, ignore=nothing)
         if isnothing(ignore) == false && applicable(isapprox, factor, ignore) && factor ≈ ignore
@@ -139,40 +139,40 @@ function _summary(diag::Diagram{W}, color=true) where {W}
     end
 
     namestr = isempty(diag.name) ? "" : "$(diag.name) "
-    idstr = "$namestr$(diag.id)"
+    idstr = "$namestr$(diag.id):$(_ops_to_str(diag.vertices))"
     fstr = short(diag.factor, one(diag.factor))
     wstr = short(diag.weight)
     # =$(node.weight*(2π)^(3*node.id.para.innerLoopNum))
 
-    if length(diag.subdiagram) == 0
+    if length(diag.subgraph) == 0
         return isempty(fstr) ? "$idstr=$wstr" : "$(idstr)⋅$(fstr)=$wstr"
     else
         return "$idstr=$wstr=$fstr$(diag.operator) "
     end
 end
 
-# function Base.show(io::IO, diag::Diagram)
-#     if length(diag.subdiagram) == 0
+# function Base.show(io::IO, diag::Graph)
+#     if length(diag.subgraph) == 0
 #         typestr = ""
 #     else
-#         subdiag = prod(["$(d.hash), " for d in diag.subdiagram[1:end-1]])
-#         subdiag *= "$(diag.subdiagram[end].hash)"
+#         subdiag = prod(["$(d.hash), " for d in diag.subgraph[1:end-1]])
+#         subdiag *= "$(diag.subgraph[end].hash)"
 #         typestr = "($subdiag)"
 #     end
 #     print(io, "$(diag.hash):$(_summary(diag, true))$typestr")
 # end
 
 """
-    function plot_tree(diag::Diagram; verbose = 0, maxdepth = 6)
+    function plot_tree(diag::Graph; verbose = 0, maxdepth = 6)
 
     Visualize the diagram tree using ete3 python package
 
 #Arguments
-- `diag`        : the Diagram struct to visualize
+- `diag`        : the Graph struct to visualize
 - `verbose=0`   : the amount of information to show
 - `maxdepth=6`  : deepest level of the diagram tree to show
 """
-function plot_tree(diag::Diagram; verbose=0, maxdepth=6)
+function plot_tree(diag::Graph; verbose=0, maxdepth=6)
 
     # pushfirst!(PyVector(pyimport("sys")."path"), @__DIR__) #comment this line if no need to load local python module
     ete = PyCall.pyimport("ete3")
@@ -181,12 +181,12 @@ function plot_tree(diag::Diagram; verbose=0, maxdepth=6)
         if level > maxdepth
             return
         end
-        nt = t.add_child(name="$(node.id): $(_summary(node, false))")
+        nt = t.add_child(name="$(_summary(node, false))")
 
-        if length(node.subdiagram) > 0
+        if length(node.subgraph) > 0
             name_face = ete.TextFace(nt.name, fgcolor="black", fsize=10)
             nt.add_face(name_face, column=0, position="branch-top")
-            for child in node.subdiagram
+            for child in node.subgraph
                 treeview(child, level + 1, nt)
             end
         end
@@ -216,7 +216,7 @@ function plot_tree(diag::Diagram; verbose=0, maxdepth=6)
     # t.write(outfile="/home/kun/test.txt", format=8)
     t.show(tree_style=ts)
 end
-function plot_tree(diags::Vector{Diagram{W}}; kwargs...) where {W}
+function plot_tree(diags::Vector{Graph{W}}; kwargs...) where {W}
     for diag in diags
         plot_tree(diag; kwargs...)
     end

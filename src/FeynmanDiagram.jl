@@ -82,24 +82,32 @@ include("common_new.jl")
 export DiagramPara, DiagramParaF64
 # export Interaction, interactionTauNum, innerTauNum
 
+include("quantum_operator/QuantumOperators.jl")
+
+using .QuantumOperators
+export QuantumOperators
+export QuantumOperator, QuantumExpr, isfermionic
+export 𝑓⁻, 𝑓⁺, 𝑓, 𝑏⁻, 𝑏⁺, 𝜙
+export fermionic_annihilation, fermionic_creation, majorana
+export bosonic_annihilation, bosonic_creation, real_classic
+
 include("computational_graph/ComputationalGraph.jl")
-using .ComputationalGraph
-export ComputationalGraph
+using .ComputationalGraphs
+export ComputationalGraphs
+export labelreset, parity, parity_old
+export Graph
+export feynman_diagram, contractions_to_edges, propagator
+export is_external, is_internal, external_vertices, internal_vertices, vertices
+# export reducibility, connectivity
+# export 𝐺ᶠ, 𝐺ᵇ, 𝐺ᵠ, 𝑊, Green2, Interaction
+# export Coupling_yukawa, Coupling_phi3, Coupling_phi4, Coupling_phi6
+
 # export TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
 # export Permutation, Di, Ex, DiEx
-export Diagram, ExternalVertex, InternalVertex, checkVertices
-export build_graph, add_edge!, labelreset
 # export OneFermiIrreducible, OneBoseIrreducible, ParticleHoleIrreducible, ParticleParticleIrreducible
-export reducibility, connectivity
 # export addSubDiagram!, evalDiagNode!, evalDiagTree!, evalDiagTreeKT!
 # export Operator, Sum, Prod
 # export uidreset, toDataFrame, mergeby, plot_tree
-# export 𝐺ᶠ, 𝐺ᵇ, 𝐺ᵠ, 𝑊, Green2, Interaction
-export QuantumOperator
-# export 𝑓, 𝑓dag, γ, 𝑏, 𝑏dag, ϕ
-# export CompositeOperator
-# export Coupling_yukawa, Coupling_phi3, Coupling_phi4, Coupling_phi6
-
 
 include("diagram_tree/DiagTree.jl")
 using .DiagTree
