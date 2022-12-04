@@ -82,14 +82,19 @@ include("common_new.jl")
 export DiagramPara, DiagramParaF64
 # export Interaction, interactionTauNum, innerTauNum
 
+include("quantum_operator/QuantumOperators.jl")
+
+using .QuantumOperators
+export QuantumOperators
+export QuantumOperator, QuantumExpr
+export 𝑓⁻, 𝑓⁺, 𝑓, 𝑏⁻, 𝑏⁺, 𝜙
+export fermionic_annihilation, fermionic_creation, majorana
+export bosonic_annihilation, bosonic_creation, real_classic
+
 include("computational_graph/ComputationalGraph.jl")
 using .ComputationalGraphs
 export ComputationalGraphs
 export labelreset, parity, parity_old
-export QuantumOperator, CompositeOperator
-export 𝑓⁻, 𝑓⁺, 𝑓, 𝑏⁻, 𝑏⁺, 𝜙
-export fermionic_annihilation, fermionic_creation, majorana
-export bosonic_annihilation, bosonic_creation, real_classic
 export Graph
 export feynman_diagram, contractions_to_edges, propagator
 export is_external, is_internal, external_vertices, internal_vertices, vertices

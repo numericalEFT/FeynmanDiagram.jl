@@ -50,103 +50,6 @@ end
 #     ParticleParticleIrreducible
 # end
 
-struct QuantumOperator
-    operator::Symbol
-    label::Int
-    function QuantumOperator(operator::Symbol, label::Int)
-        @assert label > 0
-        return new(operator, label)
-    end
-end
-Base.isequal(a::QuantumOperator, b::QuantumOperator) = ((a.operator == b.operator) && (a.label == b.label))
-Base.:(==)(a::QuantumOperator, b::QuantumOperator) = Base.isequal(a, b)
-
-function Base.show(io::IO, o::QuantumOperator)
-    print(io, "$(String(o.operator))($(o.label))")
-end
-
-Base.show(io::IO, ::MIME"text/plain", o::QuantumOperator) = Base.show(io, o)
-
-fermionic_annihilation(i) = QuantumOperator(:f⁻, i)
-fermionic_creation(i) = QuantumOperator(:f⁺, i)
-majorana(i) = QuantumOperator(:f, i)
-bosonic_annihilation(i) = QuantumOperator(:b⁻, i)
-bosonic_creation(i) = QuantumOperator(:b⁺, i)
-real_classic(i) = QuantumOperator(:phi, i)
-
-const 𝑓⁻ = fermionic_annihilation
-const 𝑓⁺ = fermionic_creation
-const 𝑓 = majorana
-const 𝑏⁻ = bosonic_annihilation
-const 𝑏⁺ = bosonic_creation
-const 𝜙 = real_classic
-
-function isfermionic(operator::QuantumOperator)
-    operator.operator in [:f⁺, :f⁻, :f]
-end
-
-function iscreation(operator::QuantumOperator)
-    operator.operator in [:f⁺, :b⁺]
-end
-
-struct CompositeOperator <: AbstractVector{QuantumOperator}
-    operators::Vector{QuantumOperator}
-    function CompositeOperator(operators::Vector{QuantumOperator})
-        return new(operators)
-    end
-    function CompositeOperator(operator::QuantumOperator)
-        return new([operator,])
-    end
-    function CompositeOperator(operators::CompositeOperator)
-        return new([operators...,])
-    end
-end
-
-#TODO: make compositeoperator norm ordered when it is created
-
-Base.eltype(::Type{CompositeOperator}) = QuantumOperator
-Base.getindex(o::CompositeOperator, i::Int) = o.operators[i]
-Base.setindex!(o::CompositeOperator, v::QuantumOperator, i::Int) = o.operators[i] = v
-Base.length(o::CompositeOperator) = length(o.operators)
-Base.size(o::CompositeOperator) = size(o.operators)
-
-Base.show(io::IO, o::CompositeOperator) = print(io, reduce(*, ["$o" for o in o.operators]))
-Base.show(io::IO, ::MIME"text/plain", o::CompositeOperator) = Base.show(io, o)
-
-function Base.:*(o1::QuantumOperator, o2::QuantumOperator)
-    return CompositeOperator([o1, o2])
-end
-
-function Base.:*(o1::CompositeOperator, o2::QuantumOperator)
-    return CompositeOperator([o1.operators; o2])
-end
-
-function Base.:*(o1::QuantumOperator, o2::CompositeOperator)
-    return CompositeOperator([o1; o2.operators])
-end
-
-function Base.:*(o1::CompositeOperator, o2::CompositeOperator)
-    return CompositeOperator([o1.operators; o2.operators])
-end
-
-"""
-    Converts a CompositeOperator to normal-ordered form in place and returns the associated statistical sign.
-"""
-function normal_order!(operator::CompositeOperator)
-    sign = 1
-    return sign
-end
-
-"""
-    Computes the permutation required to convert a CompositeOperator to normal-ordered form. 
-    Returns the associated statistical sign and permutation.
-"""
-function normal_order(operator::CompositeOperator)
-    sign = 1
-    permutation = collect(eachindex(operator.operators))
-    return sign, permutation
-end
-
 """Type alias for a directed graph edge e = (a₁⁺, a₂⁻) from e[1] to e[2]."""
 const EdgeType = Tuple{QuantumOperator,QuantumOperator}
 
@@ -179,7 +82,7 @@ mutable struct Graph{F,W} # Graph
     orders::Vector{Int}
 
     external::Vector{Int} # index of external vertices
-    vertices::Vector{CompositeOperator} # vertices of the diagram
+    vertices::Vector{QuantumExpr} # vertices of the diagram
 
     subgraph::Vector{Graph{F,W}}
 
@@ -187,7 +90,7 @@ mutable struct Graph{F,W} # Graph
     factor::F
     weight::W
 
-    function Graph(vertices::Vector{CompositeOperator}; external=[], subgraph=[],
+    function Graph(vertices::Vector{QuantumExpr}; external=[], subgraph=[],
         name="", type=:generic, operator::Operator=Sum(), orders=zeros(Int, 16),
         ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype)
     )
@@ -203,7 +106,7 @@ mutable struct Graph{F,W} # Graph
     end
 end
 
-function _ops_to_str(ops::Vector{CompositeOperator})
+function _ops_to_str(ops::Vector{QuantumExpr})
     strs = ["$(o)" for o in ops]
     return join(strs, "|")
 end
@@ -286,7 +189,7 @@ function Base.:-(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
     return g1 + (-1) * g2
 end
 
-function feynman_diagram(vertices::Vector{CompositeOperator}, contractions::Vector{Int};
+function feynman_diagram(vertices::Vector{QuantumExpr}, contractions::Vector{Int};
     external=[], factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic)
 
     g = Graph(vertices; external=external, name=name, type=type, operator=Prod(), factor=factor, weight=weight)
@@ -315,12 +218,12 @@ to a list of edges e = (i, j) directed from `operators[i]` to `operators[j]`, wh
 `operators` is a flattened list of operators associated with the specified `vertices`.
 
 Example: 
-- vertices: [CompositeOperator([a1⁺, a2]), CompositeOperator([a5⁺, a6⁺, a7, a8]), CompositeOperator([a3⁺, a4])]
+- vertices: [QuantumExpr([a1⁺, a2]), QuantumExpr([a5⁺, a6⁺, a7, a8]), QuantumExpr([a3⁺, a4])]
 - contractions: [1, 2, 2, 3, 1, 4, 4, 3] 
 - edges: [(1, 5), (3, 2), (4, 8), (7, 6)]
 - sign: (-1)² * ...
 """
-function contractions_to_edges(vertices::Vector{CompositeOperator}; contractions::Vector{Int})
+function contractions_to_edges(vertices::Vector{QuantumExpr}; contractions::Vector{Int})
     #TODO: only works for weak-coupling expansion with Wick's theorem for now.
     # Obtain the flattened list of non-composite operators
     operators = [o for v in vertices for o in v.operators]
@@ -385,7 +288,8 @@ function contractions_to_edges(vertices::Vector{CompositeOperator}; contractions
     return edges, sign
 end
 
-function propagator(v1::QuantumOperator, v2::QuantumOperator; ifbubble=false, name="", diagtype=:propagtor,
+function propagator(v1::Union{QuantumExpr,QuantumOperator}, v2::Union{QuantumExpr,QuantumOperator};
+    ifbubble=false, name="", diagtype=:propagtor,
     factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
     sign = 1
     if iscreation(v1)
@@ -395,9 +299,9 @@ function propagator(v1::QuantumOperator, v2::QuantumOperator; ifbubble=false, na
         vin, vout = v2, v1
     end
     if ifbubble
-        extV = [CompositeOperator([vout, vin])] # Hatree bubble
+        extV = [QuantumExpr([vout, vin])] # Hatree bubble
     else
-        extV = [CompositeOperator(vin), CompositeOperator(vout)]
+        extV = [QuantumExpr(vin), QuantumExpr(vout)]
     end
     return Graph(extV, []; type=diagtype, name=name, operator=operator, factor=factor * sign, weight=weight)
 end
@@ -427,9 +331,9 @@ end
     # Arguments
     - V1::Vector{ExternalVertex}            : External vertices of diagram I.
     - V2::Vector{ExternalVertex}            : External vertices of diagram II.
-    - couplings::Vector{CompositeOperator}  : all the vertex couplings in the Feynman rule. 
+    - couplings::Vector{QuantumExpr}  : all the vertex couplings in the Feynman rule. 
 """
-# function _getVertices(V1::Vector{ExternalVertex}, V2::Vector{ExternalVertex}, couplings::Vector{CompositeOperator})
+# function _getVertices(V1::Vector{ExternalVertex}, V2::Vector{ExternalVertex}, couplings::Vector{QuantumExpr})
 #     V1_ind = [v.point for v in V1]
 #     V2_ind = [v.point for v in V2]
 #     common = intersect(V1_ind, V2_ind)
@@ -440,7 +344,7 @@ end
 #         # ifinternal, ifexternal = false, false
 #         i1 = findfirst(isequal(point), V1_ind)
 #         i2 = findfirst(isequal(point), V2_ind)
-#         point_ops = CompositeOperator([V1[i1].operator.operators; V2[i2].operator.operators])
+#         point_ops = QuantumExpr([V1[i1].operator.operators; V2[i2].operator.operators])
 #         if isempty(couplings)
 #             append!(extV, [ExternalVertex(point, V1[i1].current, point_ops)])
 #         else
@@ -482,10 +386,10 @@ end
 #         opin, opout = real_scalar(flavor), real_scalar(flavor)
 #     end
 #     if point_in == point_out
-#         extV = [ExternalVertex(point_in, current, CompositeOperator([opin, opout]))]
+#         extV = [ExternalVertex(point_in, current, QuantumExpr([opin, opout]))]
 #     else
-#         extV = [ExternalVertex(point_in, current, CompositeOperator([opin])),
-#             ExternalVertex(point_out, current, CompositeOperator([opout]))]
+#         extV = [ExternalVertex(point_in, current, QuantumExpr([opin])),
+#             ExternalVertex(point_out, current, QuantumExpr([opout]))]
 #     end
 #     if isnothing(subgraph)
 #         diagtype = :propagator
@@ -500,16 +404,16 @@ end
 
 # function Interaction(point_in::Int, point_out::Int, current::Int=0; flavor::Int=1,
 #     couplings=[Coupling_yukawa,], dtype=Float64, factor=zero(dtype), weight=zero(dtype), name="W")
-#     ext_in = ExternalVertex(point_in, current, CompositeOperator([real_scalar(flavor),]))
-#     ext_out = ExternalVertex(point_out, current, CompositeOperator([real_scalar(flavor),]))
+#     ext_in = ExternalVertex(point_in, current, QuantumExpr([real_scalar(flavor),]))
+#     ext_out = ExternalVertex(point_out, current, QuantumExpr([real_scalar(flavor),]))
 #     diagtype = :interaction2
 #     return Graph{dtype,dtype}([ext_in, ext_out], type=diagtype, couplings=couplings,
 #         name=name, factor=factor, weight=weight)
 # end
 
-# function Interaction(point::Int, coupling::CompositeOperator, current::Int=0;
+# function Interaction(point::Int, coupling::QuantumExpr, current::Int=0;
 #     dtype=Float64, factor=zero(dtype), weight=zero(dtype), name="W", operators=[])
-#     extV = ExternalVertex(point, current, CompositeOperator(operators))
+#     extV = ExternalVertex(point, current, QuantumExpr(operators))
 #     # diagtype = Symbol("bareVertex$(length(operator))"...)
 #     diagtype = :interaction
 #     return Graph{dtype,dtype}([extV,], type=diagtype, couplings=[coupling,], name=name, factor=factor, weight=weight)
