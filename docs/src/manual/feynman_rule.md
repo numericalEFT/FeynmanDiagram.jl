@@ -80,6 +80,7 @@ G = g - g\Sigma g + g\Sigma g \Sigma g - ...
 
 ## Perturbative Expansion of the Green's Function
 
+
 ![Sign rule for the Wick contractions.](../../assets/diagrams/green0.svg#green0)
 
 ![Diagrammatic expansion of the Green's function.](../../assets/diagrams/green.svg#green)
@@ -92,6 +93,7 @@ The sign of a Green's function diagram is given by ``(-1)^{n_v} \xi^{n_F}``, whe
 ## Feynman Rules for the Self-energy
 
 From the Green's function diagrams, one can derive the __negative__ self-energy diagram,
+
 
 ![Diagrammatic expansion of the self-energy.](../../assets/diagrams/sigma.svg#sigma)
 
