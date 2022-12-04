@@ -123,22 +123,21 @@ end
 
 @testset "feynman_diagram" begin
     # phi theory 
-    V1 = [CompositeOperator([𝜙(1), 𝜙(2), 𝜙(3), 𝜙(4)])]
+    V1 = [𝜙(1)𝜙(2)𝜙(3)𝜙(4),]
     g1 = feynman_diagram(V1, [1, 1, 2, 2])
     @test vertices(g1) == V1
     @test isempty(external_vertices(g1))
     @test internal_vertices(g1) == V1
 
     #complex scalar field
-    V2 = [CompositeOperator(𝑏⁺(1)), CompositeOperator([𝑏⁺(2), 𝑏⁺(3), 𝑏⁻(4), 𝑏⁻(5)]),
-        CompositeOperator([𝑏⁺(6), 𝑏⁺(7), 𝑏⁻(8), 𝑏⁻(9)]), CompositeOperator(𝑏⁻(10))]
+    V2 = [CompositeOperator(𝑏⁺(1)), 𝑏⁺(2)𝑏⁺(3)𝑏⁻(4)𝑏⁻(5), 𝑏⁺(6)𝑏⁺(7)𝑏⁻(8)𝑏⁻(9), CompositeOperator(𝑏⁻(10))]
     g2 = feynman_diagram(V2, [1, 2, 3, 4, 1, 4, 5, 2, 3, 5]; external=[1, 4])
     @test vertices(g2) == V2
     @test external_vertices(g2) == [V2[1], V2[4]]
     @test internal_vertices(g2) == V2[2:3]
 
     # Yukawa 
-    V3 = [CompositeOperator([𝑓⁺(1), 𝑓⁻(2), 𝜙(3)]), CompositeOperator([𝑓⁺(4), 𝑓⁻(5), 𝜙(6)])]
+    V3 = [𝑓⁺(1)𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5)𝜙(6)]
     g3 = feynman_diagram(V3, [1, 2, 3, 2, 1, 3])
     @test vertices(g3) == V3
     @test isempty(external_vertices(g3))
@@ -148,15 +147,13 @@ end
     @test g3.subgraph[2].factor == 1
     @test g3.subgraph[3].factor == 1
 
-    V4 = [CompositeOperator([𝑓⁺(1), 𝑓⁻(2)]), CompositeOperator([𝑓⁺(3), 𝑓⁻(4)]),
-        CompositeOperator([𝑓⁺(5), 𝑓⁻(6), 𝜙(7)]), CompositeOperator([𝑓⁺(8), 𝑓⁻(9), 𝜙(10)])]
+    V4 = [𝑓⁺(1)𝑓⁻(2), 𝑓⁺(3)𝑓⁻(4), 𝑓⁺(5)𝑓⁻(6)𝜙(7), 𝑓⁺(8)𝑓⁻(9)𝜙(10)]
     g4 = feynman_diagram(V4, [1, 2, 3, 4, 4, 1, 5, 2, 3, 5], external=[1, 2])
     @test vertices(g4) == V4
     @test external_vertices(g4) == V4[1:2]
     @test internal_vertices(g4) == V4[3:4]
 
-    V5 = [CompositeOperator([𝑓⁻(2), 𝜙(3)]), CompositeOperator([𝑓⁺(4), 𝑓⁻(5)]),
-        CompositeOperator([𝑓⁺(6), 𝜙(7)])]
+    V5 = [𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5), 𝑓⁺(6)𝜙(7)]
     g5 = feynman_diagram(V5, [1, 2, 1, 3, 3, 2], external=[1, 2, 3])
     @test vertices(g5) == V5
     @test external_vertices(g5) == V5
