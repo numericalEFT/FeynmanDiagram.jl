@@ -100,7 +100,7 @@ function correlator_order(operator::QuantumExpr)
             ind_pair += 1
             push!(ordering, !iscreation(op) ? ind_pair : num + 1 - ind_pair)
         elseif op' in operator[1:i-1]
-            push!(ordering, num + 1 - ordering[findlast(isequal(op'), operator)])
+            push!(ordering, num + 1 - ordering[findlast(isequal(op'), operator[1:i-1])])
         else
             push!(ordering, !iscreation(op) ? ind_unpair : -ind_unpair)
         end

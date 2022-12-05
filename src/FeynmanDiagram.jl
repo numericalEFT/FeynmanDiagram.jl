@@ -97,7 +97,7 @@ using .ComputationalGraphs
 export ComputationalGraphs
 export labelreset, parity, parity_old
 export Graph
-export feynman_diagram, contractions_to_edges, propagator
+export feynman_diagram, contractions_to_edges, propagator, standardize_order!
 export is_external, is_internal, external_vertices, internal_vertices, vertices
 # export reducibility, connectivity
 # export 𝐺ᶠ, 𝐺ᵇ, 𝐺ᵠ, 𝑊, Green2, Interaction
