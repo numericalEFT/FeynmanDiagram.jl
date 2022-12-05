@@ -90,13 +90,14 @@ export QuantumOperator, QuantumExpr, isfermionic
 export 𝑓⁻, 𝑓⁺, 𝑓, 𝑏⁻, 𝑏⁺, 𝜙
 export fermionic_annihilation, fermionic_creation, majorana
 export bosonic_annihilation, bosonic_creation, real_classic
+export correlator_order
 
 include("computational_graph/ComputationalGraph.jl")
 using .ComputationalGraphs
 export ComputationalGraphs
 export labelreset, parity, parity_old
 export Graph
-export feynman_diagram, contractions_to_edges, propagator
+export feynman_diagram, contractions_to_edges, propagator, standardize_order!
 export is_external, is_internal, external_vertices, internal_vertices, vertices
 # export reducibility, connectivity
 # export 𝐺ᶠ, 𝐺ᵇ, 𝐺ᵠ, 𝑊, Green2, Interaction

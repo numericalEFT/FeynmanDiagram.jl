@@ -198,16 +198,15 @@ function feynman_diagram(vertices::Vector{QuantumExpr}, contractions::Vector{Int
     g.factor *= contraction_sign
 
     for edge in edges
-        v1, v2 = edge[1], edge[2]
-        for cop in vertices
-            if edge[1] in cop.operators && edge[2] in cop.operators
-                v1 = edge[1] * edge[2]
-                v2 = v1
-                break
-            end
-        end
-        p = propagator(v1, v2)
-        push!(g.subgraph, p)  # problem: how to determine vertices in the propagator? 
+        # ops = [QuantumExpr(edge[1]), QuantumExpr(edge[2])]
+        # for cop in vertices
+        #     if edge[1] in cop.operators && edge[2] in cop.operators
+        #         ops = [edge[1] * edge[2]]
+        #         break
+        #     end
+        # end
+        # p = propagator(ops)
+        push!(g.subgraph, propagator(edge[1] * edge[2]))
     end
 
     return g
@@ -261,6 +260,7 @@ function contractions_to_edges(vertices::Vector{QuantumExpr}; contractions::Vect
                 push!(edges, (operators[i], operators[j]))
                 # Move on to next pair
                 next_pairing += 1
+                break
             end
         end
     end
@@ -272,34 +272,35 @@ function contractions_to_edges(vertices::Vector{QuantumExpr}; contractions::Vect
     return edges, sign
 end
 
-function propagator(v1::Union{QuantumExpr,QuantumOperator}, v2::Union{QuantumExpr,QuantumOperator};
+function propagator(ops::QuantumExpr;
     name="", diagtype=:propagtor, factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
-    if v1 == v2
-        return propagator(v1; name=name, diagtype=diagtype, factor=factor, weight=weight, operator=operator)
-    end
-    if (v1 isa QuantumExpr && iscreation(v1[1])) || iscreation(v1)
-        vin, vout = QuantumExpr(v1), QuantumExpr(v2)
-        sign = -1
-    else
-        vin, vout = QuantumExpr(v2), QuantumExpr(v1)
-        sign = 1
-    end
-    return Graph([vin, vout], []; type=diagtype, name=name, operator=operator, factor=factor * sign, weight=weight)
+    return Graph([ops], []; type=diagtype, name=name, operator=operator, factor=factor, weight=weight)
 end
 
-function propagator(v::QuantumExpr; name="", diagtype=:propagtor,
-    factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
-    #TODO: support multi-leg propagator in strong coupling expansion
-    @assert iseven(length(v))
-    if iscreation(v[1])
-        extV = [QuantumExpr([v[2], v[1]])]
-        sign = -1
-    else
-        extV = [QuantumExpr([v[1], v[2]])]
-        sign = 1
+function standardize_order!(g::Graph)
+    for leaf in Leaves(g)
+        for (i, vertex) in enumerate(leaf.vertices)
+            sign, newvertex = correlator_order(vertex)
+            leaf.vertices[i] = QuantumExpr(newvertex)
+            leaf.factor *= sign
+        end
     end
-    return Graph(extV, []; type=diagtype, name=name, operator=operator, factor=factor * sign, weight=weight)
 end
+
+#####################  interface to AbstractTrees ########################### 
+function AbstractTrees.children(diag::Graph)
+    return diag.subgraph
+end
+
+## Things that make printing prettier
+AbstractTrees.printnode(io::IO, diag::Graph) = print(io, "\u001b[32m$(diag.id)\u001b[0m : $diag")
+AbstractTrees.nodetype(::Graph{F,W}) where {F,W} = Graph{F,W}
+
+## Optional enhancements
+# These next two definitions allow inference of the item type in iteration.
+# (They are not sufficient to solve all internal inference issues, however.)
+Base.IteratorEltype(::Type{<:TreeIterator{Graph{F,W}}}) where {F,W} = Base.HasEltype()
+Base.eltype(::Type{<:TreeIterator{Graph{F,W}}}) where {F,W} = Graph{F,W}
 
 # function checkVertices(g::Graph{F,W}) where {F,W}
 #     @assert !isempty(g.couplings) "Graph.couplings must be defined to check the legality of vertices"

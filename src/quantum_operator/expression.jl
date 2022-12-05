@@ -67,13 +67,13 @@ function isfermionic(o::QuantumExpr)
     return false
 end
 
-"""
-    Converts a QuantumExpr to normal-ordered form in place and returns the associated statistical sign.
-"""
-function normal_order!(operator::QuantumExpr)
-    sign = 1
-    return sign
-end
+# """
+#     Converts a QuantumExpr to normal-ordered form in place and returns the associated statistical sign.
+# """
+# function normal_order!(operator::QuantumExpr)
+#     sign = 1
+#     return sign
+# end
 
 """
     Computes the permutation required to convert a QuantumExpr to normal-ordered form. 
@@ -83,6 +83,43 @@ function normal_order(operator::QuantumExpr)
     sign = 1
     permutation = collect(eachindex(operator.operators))
     return sign, permutation
+end
+
+# function correlator_order!(operator::QuantumExpr)
+#     sign, ordering = correlator_order(operator)
+#     operator.operators = operator[sortperm(ordering)]
+#     return sign
+# end
+
+function correlator_order(operator::QuantumExpr)
+    num = length(operator)
+    ind_pair, ind_unpair = 0, num + 1
+    ordering = Int[]
+    for (i, op) in enumerate(operator)
+        if op' in operator[i+1:end]
+            ind_pair += 1
+            push!(ordering, !iscreation(op) ? ind_pair : num + 1 - ind_pair)
+        elseif op' in operator[1:i-1]
+            push!(ordering, num + 1 - ordering[findlast(isequal(op'), operator[1:i-1])])
+        else
+            push!(ordering, !iscreation(op) ? ind_unpair : -ind_unpair)
+        end
+    end
+    ind_ann, ind_cre = 0, 0
+    for (i, value) in enumerate(ordering)
+        if value == ind_unpair
+            ind_ann += 1
+            ordering[i] = ind_pair + ind_ann
+        elseif value == -ind_unpair
+            ind_cre += 1
+            ordering[i] = num + 1 - ind_pair - ind_cre
+        end
+    end
+
+    permutation = ordering[isfermionic.(operator)]
+    sign = isempty(permutation) ? 1 : parity(sortperm(permutation))
+
+    return sign, operator[sortperm(ordering)]
 end
 
 """

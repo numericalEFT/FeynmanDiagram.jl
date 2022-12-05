@@ -44,19 +44,23 @@ end
 
 @testset "propagator" begin
     g1 = propagator(𝑓⁺(1)𝑓⁻(2))
-    @test g1.factor == -1
+    @test g1.factor == 1
     @test g1.external == [1]
+    @test vertices(g1) == [𝑓⁺(1)𝑓⁻(2)]
+    standardize_order!(g1)
+    @test g1.factor == -1
     @test vertices(g1) == [𝑓⁻(2)𝑓⁺(1)]
 
-    g2 = propagator(𝑓⁺(1), 𝑓⁻(2))
+    g2 = propagator(𝑓⁺(1)𝑓⁻(2)𝑏⁺(1)𝜙(1)𝑓⁺(3)𝑓⁻(1)𝑓(1)𝑏⁻(1)𝜙(1))
+    @test vertices(g2) == [𝑓⁺(1)𝑓⁻(2)𝑏⁺(1)𝜙(1)𝑓⁺(3)𝑓⁻(1)𝑓(1)𝑏⁻(1)𝜙(1)]
+    standardize_order!(g2)
     @test g2.factor == -1
-    @test g2.external == [1, 2]
-    @test vertices(g2) == [𝑓⁺(1), 𝑓⁻(2)]
+    @test vertices(g2) == [𝑓⁻(1)𝑏⁻(1)𝜙(1)𝑓⁻(2)𝑓(1)𝑓⁺(3)𝜙(1)𝑏⁺(1)𝑓⁺(1)]
 end
 
 @testset "feynman_diagram" begin
     # phi theory 
-    V1 = [𝜙(1)𝜙(2)𝜙(3)𝜙(4),]
+    V1 = [𝜙(1)𝜙(1)𝜙(2)𝜙(2),]
     g1 = feynman_diagram(V1, [1, 1, 2, 2])
     @test vertices(g1) == V1
     @test isempty(external_vertices(g1))
@@ -75,28 +79,25 @@ end
     @test vertices(g3) == V3
     @test isempty(external_vertices(g3))
     @test internal_vertices(g3) == V3
-    # @test g3.subgraph[1] == propagator(𝑓⁺(1), 𝑓⁻(5))  #isequal except for id 
+    @test g3.subgraph[1].factor == 1
+    @test g3.subgraph[1].vertices == [𝑓⁺(1)𝑓⁻(5)]
+    standardize_order!(g3)
     @test g3.subgraph[1].factor == -1
-    @test g3.subgraph[2].factor == 1
-    @test g3.subgraph[3].factor == 1
+    @test g3.subgraph[1].vertices == [𝑓⁻(5)𝑓⁺(1)]
 
     V4 = [𝑓⁺(1)𝑓⁻(2), 𝑓⁺(3)𝑓⁻(4), 𝑓⁺(5)𝑓⁻(6)𝜙(7), 𝑓⁺(8)𝑓⁻(9)𝜙(10)]
     g4 = feynman_diagram(V4, [1, 2, 3, 4, 4, 1, 5, 2, 3, 5], external=[1, 2])
     @test vertices(g4) == V4
     @test external_vertices(g4) == V4[1:2]
     @test internal_vertices(g4) == V4[3:4]
-    @test g4.subgraph[1].factor == -1
-    @test g4.subgraph[2].factor == 1
-    @test g4.subgraph[3].factor == -1
-    @test g4.subgraph[4].factor == 1
-    @test g4.subgraph[5].factor == 1
 
     V5 = [𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5), 𝑓⁺(6)𝜙(7)]
     g5 = feynman_diagram(V5, [1, 2, 1, 3, 3, 2], external=[1, 2, 3])
     @test vertices(g5) == V5
     @test external_vertices(g5) == V5
     @test isempty(internal_vertices(g5))
-    @test g5.subgraph[1].factor == 1
-    @test g5.subgraph[2].factor == 1
-    @test g5.subgraph[3].factor == 1
+    g5s = deepcopy(g5)
+    standardize_order!(g5)
+    @test g5s == g5
+
 end
