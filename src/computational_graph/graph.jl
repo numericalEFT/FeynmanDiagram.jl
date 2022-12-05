@@ -261,6 +261,7 @@ function contractions_to_edges(vertices::Vector{QuantumExpr}; contractions::Vect
                 push!(edges, (operators[i], operators[j]))
                 # Move on to next pair
                 next_pairing += 1
+                break
             end
         end
     end
@@ -271,6 +272,14 @@ function contractions_to_edges(vertices::Vector{QuantumExpr}; contractions::Vect
 
     return edges, sign
 end
+
+function propagator(ops::Vector{Union{QuantumExpr,QuantumOperator}};
+    name="", diagtype=:propagtor, factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
+    return Graph([QuantumExpr.(ops...)], []; type=diagtype, name=name, operator=operator, factor=factor, weight=weight)
+end
+
+#ops = [f1, f2+, f3, f4+] ==> [f1, f2+, f3, f4+]
+#ops = [f1, f1+, f3, f4+, phi_5, phi_5] ==> [f1f1+, f3, f4+, phi_5*phi_5]
 
 function propagator(v1::Union{QuantumExpr,QuantumOperator}, v2::Union{QuantumExpr,QuantumOperator};
     name="", diagtype=:propagtor, factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
@@ -300,6 +309,29 @@ function propagator(v::QuantumExpr; name="", diagtype=:propagtor,
     end
     return Graph(extV, []; type=diagtype, name=name, operator=operator, factor=factor * sign, weight=weight)
 end
+
+function standandize_order(g::Graph)
+    diags = collect(Leaves(g))
+    for leaf in diags
+
+    end
+
+end
+
+#####################  interface to AbstractTrees ########################### 
+function AbstractTrees.children(diag::Graph)
+    return diag.subdiagram
+end
+
+## Things that make printing prettier
+AbstractTrees.printnode(io::IO, diag::Graph) = print(io, "\u001b[32m$(diag.id)\u001b[0m : $diag")
+AbstractTrees.nodetype(::Graph{F,W}) where {F,W} = Graph{F,W}
+
+## Optional enhancements
+# These next two definitions allow inference of the item type in iteration.
+# (They are not sufficient to solve all internal inference issues, however.)
+Base.IteratorEltype(::Type{<:TreeIterator{Graph{F,W}}}) where {F,W} = Base.HasEltype()
+Base.eltype(::Type{<:TreeIterator{Graph{F,W}}}) where {F,W} = Graph{F,W}
 
 # function checkVertices(g::Graph{F,W}) where {F,W}
 #     @assert !isempty(g.couplings) "Graph.couplings must be defined to check the legality of vertices"
