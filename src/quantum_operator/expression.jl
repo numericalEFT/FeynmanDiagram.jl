@@ -1,4 +1,4 @@
-mutable struct QuantumExpr <: AbstractVector{QuantumOperator}
+struct QuantumExpr <: AbstractVector{QuantumOperator}
     operators::Vector{QuantumOperator}
     function QuantumExpr(operators::Vector{QuantumOperator})
         return new(operators)
@@ -67,13 +67,13 @@ function isfermionic(o::QuantumExpr)
     return false
 end
 
-"""
-    Converts a QuantumExpr to normal-ordered form in place and returns the associated statistical sign.
-"""
-function normal_order!(operator::QuantumExpr)
-    sign = 1
-    return sign
-end
+# """
+#     Converts a QuantumExpr to normal-ordered form in place and returns the associated statistical sign.
+# """
+# function normal_order!(operator::QuantumExpr)
+#     sign = 1
+#     return sign
+# end
 
 """
     Computes the permutation required to convert a QuantumExpr to normal-ordered form. 
@@ -85,11 +85,11 @@ function normal_order(operator::QuantumExpr)
     return sign, permutation
 end
 
-function correlator_order!(operator::QuantumExpr)
-    sign, ordering = correlator_order(operator)
-    operator.operators = operator[sortperm(ordering)]
-    return sign
-end
+# function correlator_order!(operator::QuantumExpr)
+#     sign, ordering = correlator_order(operator)
+#     operator.operators = operator[sortperm(ordering)]
+#     return sign
+# end
 
 function correlator_order(operator::QuantumExpr)
     num = length(operator)
@@ -119,7 +119,7 @@ function correlator_order(operator::QuantumExpr)
     permutation = ordering[isfermionic.(operator)]
     sign = isempty(permutation) ? 1 : parity(sortperm(permutation))
 
-    return sign, ordering
+    return sign, operator[sortperm(ordering)]
 end
 
 """

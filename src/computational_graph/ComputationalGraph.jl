@@ -19,7 +19,7 @@ function Base.iterate(r::Permutation, ::Permutation) end
 
 const INL, OUTL, INR, OUTR = 1, 2, 3, 4
 
-import ..QuantumOperators: QuantumOperator, QuantumExpr, 𝑓⁻, 𝑓⁺, 𝑓, 𝑏⁻, 𝑏⁺, 𝜙, iscreation, isfermionic, parity, correlator_order, correlator_order!
+import ..QuantumOperators: QuantumOperator, QuantumExpr, 𝑓⁻, 𝑓⁺, 𝑓, 𝑏⁻, 𝑏⁺, 𝜙, iscreation, isfermionic, parity, correlator_order
 
 include("common.jl")
 export labelreset, parity, parity_old

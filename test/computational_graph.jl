@@ -60,7 +60,7 @@ end
 
 @testset "feynman_diagram" begin
     # phi theory 
-    V1 = [𝜙(1)𝜙(2)𝜙(3)𝜙(4),]
+    V1 = [𝜙(1)𝜙(1)𝜙(2)𝜙(2),]
     g1 = feynman_diagram(V1, [1, 1, 2, 2])
     @test vertices(g1) == V1
     @test isempty(external_vertices(g1))

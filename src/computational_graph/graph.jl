@@ -279,8 +279,9 @@ end
 
 function standardize_order!(g::Graph)
     for leaf in Leaves(g)
-        for vertex in leaf.vertices
-            sign = correlator_order!(vertex)
+        for (i, vertex) in enumerate(leaf.vertices)
+            sign, newvertex = correlator_order(vertex)
+            leaf.vertices[i] = QuantumExpr(newvertex)
             leaf.factor *= sign
         end
     end

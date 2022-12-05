@@ -27,17 +27,17 @@ end
 
 @testset "correlator order" begin
     o1 = 𝑓⁺(1)𝑓⁻(2)𝑓⁺(5)𝑓⁺(6)𝑓⁻(1)𝑓⁻(5)
-    sign = correlator_order!(o1)
+    sign, o1 = correlator_order(o1)
     @test sign == 1
     @test o1 == 𝑓⁻(1)𝑓⁻(5)𝑓⁻(2)𝑓⁺(6)𝑓⁺(5)𝑓⁺(1)
 
     o2 = 𝑓⁺(1)𝑓⁻(2)𝑏⁺(1)𝜙(1)𝑓⁺(6)𝑓⁺(5)𝑓⁻(1)𝑓⁻(5)𝑏⁻(1)
-    sign = correlator_order!(o2)
+    sign, o2 = correlator_order(o2)
     @test sign == -1
     @test o2 == 𝑓⁻(1)𝑏⁻(1)𝑓⁻(5)𝑓⁻(2)𝜙(1)𝑓⁺(6)𝑓⁺(5)𝑏⁺(1)𝑓⁺(1)
 
     o3 = 𝑓⁺(1)𝑓⁻(2)𝑏⁺(1)𝜙(1)𝑓⁺(3)𝑓⁻(1)𝑓(1)𝑏⁻(1)𝜙(1)
-    sign = correlator_order!(o3)
+    sign, o3 = correlator_order(o3)
     @test sign == -1
     @test o3 == 𝑓⁻(1)𝑏⁻(1)𝜙(1)𝑓⁻(2)𝑓(1)𝑓⁺(3)𝜙(1)𝑏⁺(1)𝑓⁺(1)
 end
