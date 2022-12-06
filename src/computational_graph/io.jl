@@ -122,6 +122,11 @@ end
 #     return df
 # end
 
+function _ops_to_str(ops::Vector{OperatorProduct})
+    strs = ["$(o)" for o in ops]
+    return join(strs, "|")
+end
+
 function _summary(diag::Graph{W}, color=true) where {W}
 
     function short(factor, ignore=nothing)
@@ -138,8 +143,8 @@ function _summary(diag::Graph{W}, color=true) where {W}
         end
     end
 
-    namestr = isempty(diag.name) ? "" : "$(diag.name) "
-    idstr = "$namestr$(diag.id):$(_ops_to_str(diag.vertices))"
+    namestr = isempty(diag.name) ? "" : "-$(diag.name)"
+    idstr = "$(diag.id)$namestr:$(_ops_to_str(diag.vertices))"
     fstr = short(diag.factor, one(diag.factor))
     wstr = short(diag.weight)
     # =$(node.weight*(2π)^(3*node.id.para.innerLoopNum))
@@ -151,16 +156,31 @@ function _summary(diag::Graph{W}, color=true) where {W}
     end
 end
 
-# function Base.show(io::IO, diag::Graph)
-#     if length(diag.subgraph) == 0
-#         typestr = ""
+"""
+    show(io::IO, g::Graph)
+
+    Write a text representation of `Graph` to the output stream `io`.
+"""
+function Base.show(io::IO, diag::Graph)
+    if length(diag.subgraph) == 0
+        typestr = ""
+    else
+        typestr = join(["$(d.id)" for d in diag.subgraph], ",")
+        typestr = "($typestr)"
+    end
+    print(io, "$(_summary(diag, true))$typestr")
+end
+
+# function Base.show(io::IO, g::Graph)
+#     #TODO: improve a text representation of Graph to the output stream.
+#     if isempty(g.name)
+#         print(io, "$(g.id): $(g.type) graph from $(_ops_to_str(g.vertices))")
 #     else
-#         subdiag = prod(["$(d.hash), " for d in diag.subgraph[1:end-1]])
-#         subdiag *= "$(diag.subgraph[end].hash)"
-#         typestr = "($subdiag)"
+#         print(io, "$(g.id), $(g.name): $(g.type) graph from $(_ops_to_str(g.vertices))")
 #     end
-#     print(io, "$(diag.hash):$(_summary(diag, true))$typestr")
 # end
+Base.show(io::IO, ::MIME"text/plain", g::Graph) = Base.show(io, g)
+
 
 """
     function plot_tree(diag::Graph; verbose = 0, maxdepth = 6)

@@ -9,50 +9,13 @@ Base.show(io::IO, o::Operator) = print(io, typeof(o))
 Base.show(io::IO, o::Sum) = print(io, "⨁")
 Base.show(io::IO, o::Prod) = print(io, "Ⓧ")
 
-# function vstr(r, c)
-#     N = length(r)
-#     # cstr(x) = x ? "⁺" : "⁻"
-#     s = ""
-#     for i = 1:N-1
-#         s *= "$(r[i])$c"
-#     end
-#     s *= "$(r[end])$c"
-#     return s
-# end
-
-# function vcstr(r, creation)
-#     N = length(r)
-#     # cstr(x) = x ? "⁺" : "⁻"
-#     s = ""
-#     for i = 1:N-1
-#         if creation[i]
-#             s *= "$(r[i])⁺"
-#         else
-#             s *= "$(r[i])⁻"
-#         end
-#     end
-#     if creation[end]
-#         s *= "$(r[end])⁺"
-#     else
-#         s *= "$(r[end])⁻"
-#     end
-#     return s
-# end
-
-# @enum Reducibility begin
-#     OneFermiIrreducible
-#     OneBoseIrreducible
-#     ParticleHoleIrreducible
-#     ParticleParticleIrreducible
-# end
-
 """Type alias for a directed graph edge e = (a₁⁺, a₂⁻) from e[1] to e[2]."""
 const EdgeType = Tuple{QuantumOperator,QuantumOperator}
 
 """
     mutable struct Graph{F,W}
     
-    mutable struct of a Feynman diagram. A diagram of a sum or produce of various subgraphs.
+    Computational Graph representation of a collection of Feynman diagrams. All Feynman diagrams should share the same set of external and internal vertices.
 
 # Members:
 - `id::Int`  the unique hash id to identify the diagram
@@ -149,26 +112,6 @@ mutable struct Graph{F,W} # Graph
     end
 end
 
-function _ops_to_str(ops::Vector{OperatorProduct})
-    strs = ["$(o)" for o in ops]
-    return join(strs, "|")
-end
-
-"""
-    show(io::IO, g::Graph)
-
-    Write a text representation of `Graph` to the output stream `io`.
-"""
-function Base.show(io::IO, g::Graph)
-    #TODO: improve a text representation of Graph to the output stream.
-    if isempty(g.name)
-        print(io, "$(g.id): $(g.type) graph from $(_ops_to_str(g.vertices))")
-    else
-        print(io, "$(g.id), $(g.name): $(g.type) graph from $(_ops_to_str(g.vertices))")
-    end
-end
-Base.show(io::IO, ::MIME"text/plain", g::Graph) = Base.show(io, g)
-
 function Base.isequal(a::Graph, b::Graph)
     typeof(a) != typeof(b) && return false
     for field in fieldnames(typeof(a))
@@ -227,21 +170,7 @@ function connectivity(g::Graph)
     isempty(g.subgraph) && return true
 end
 
-# function Base.:*(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
-#     type = :generic
-#     for v1 in g1.internal_vertices
-#         for v2 in g2.internal_vertices
-#             @assert v1.point != v2.point "g1 and g2 have the same internal vertex point."
-#         end
-#     end
-#     couplings = union(g1.couplings, g2.couplings)
-#     extV, intV = _getVertices(g1.external_vertices, g2.external_vertices, couplings)
-#     return Graph{F,W}(extV, [g1.internal_vertices; g2.internal_vertices; intV]; type=type, couplings=couplings, subgraph=[g1, g2], operator=Prod())
-# end
-
 function Base.:*(g1::Graph{F,W}, c2::C) where {F,W,C}
-    # factor = F(1) * c2
-    # ftype = typeof(factor)
     return Graph(g1.vertices; external=g1.external, type=g1.type, subgraph=[g1,], operator=Prod(), ftype=F, wtype=W, factor=F(c2))
 end
 
@@ -266,6 +195,8 @@ end
 """
     function feynman_diagram(vertices::Vector{OperatorProduct}, contractions::Vector{Int};
         external=[], factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic)
+    function feynman_diagram(graphs::Vector{Graph{F,W}}, contractions::Vector{Int};
+        external=[], factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic) where {F,W}
     
     Create a Graph representing feynman diagram from all vertices and Wick contractions.
 
@@ -295,12 +226,18 @@ function feynman_diagram(vertices::Vector{OperatorProduct}, contractions::Vector
 
     g = Graph(vertices; external=external, name=name, type=type, operator=Prod(), factor=factor, weight=weight)
     edges, contraction_sign = contractions_to_edges(vertices, contractions)
-    g.factor *= contraction_sign
+    g.factor = factor * contraction_sign
     for edge in edges
         push!(g.subgraph, propagator(edge[1] * edge[2]))
     end
 
     return g
+end
+function feynman_diagram(graphs::Vector{Graph{F,W}}, contractions::Vector{Int};
+    external=[], factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic) where {F,W}
+
+    vertices = [v for g in graphs for v in external_vertices(g)]
+    return feynman_diagram(vertices, contractions; external=external, factor=factor, weight=weight, name=name, type=type)
 end
 
 """
@@ -420,116 +357,3 @@ AbstractTrees.nodetype(::Graph{F,W}) where {F,W} = Graph{F,W}
 # (They are not sufficient to solve all internal inference issues, however.)
 Base.IteratorEltype(::Type{<:TreeIterator{Graph{F,W}}}) where {F,W} = Base.HasEltype()
 Base.eltype(::Type{<:TreeIterator{Graph{F,W}}}) where {F,W} = Graph{F,W}
-
-# function checkVertices(g::Graph{F,W}) where {F,W}
-#     @assert !isempty(g.couplings) "Graph.couplings must be defined to check the legality of vertices"
-#     for v in g.internal_vertices
-#         @assert v.operator in g.couplings "internal vertex point $(v.point) is illegal."
-#     end
-#     for v in g.external_vertices
-#         is_legal = false
-#         for ops in g.couplings
-#             @assert v.operator != ops "external vertex point $(v.point) is illegal."
-#             num_pops, num_ops = _countervector(v.operator.operators), _countervector(ops.operators)
-#             all([num_ops[op] >= num_pops[op] for op in v.operator.operators]) && (is_legal = true)
-#         end
-#         @assert is_legal "external vertex point $(v.point) is illegal."
-#     end
-#     return true
-# end
-
-# """
-#     function _getVertices(V1::Vector{ExternalVertex}, V2::Vector{ExternalVertex}, couplings::Couplings)
-
-#     Give internal and external vertices when two diagrams combine.
-
-#     # Arguments
-#     - V1::Vector{ExternalVertex}            : External vertices of diagram I.
-#     - V2::Vector{ExternalVertex}            : External vertices of diagram II.
-#     - couplings::Vector{OperatorProduct}  : all the vertex couplings in the Feynman rule. 
-# """
-# function _getVertices(V1::Vector{ExternalVertex}, V2::Vector{ExternalVertex}, couplings::Vector{OperatorProduct})
-#     V1_ind = [v.point for v in V1]
-#     V2_ind = [v.point for v in V2]
-#     common = intersect(V1_ind, V2_ind)
-#     total = union(V1, V2)
-#     intV = []
-#     extV = [v for v in total if v.point ∉ common]
-#     for point in common
-#         # ifinternal, ifexternal = false, false
-#         i1 = findfirst(isequal(point), V1_ind)
-#         i2 = findfirst(isequal(point), V2_ind)
-#         point_ops = OperatorProduct([V1[i1].operator.operators; V2[i2].operator.operators])
-#         if isempty(couplings)
-#             append!(extV, [ExternalVertex(point, V1[i1].current, point_ops)])
-#         else
-#             for ops in couplings
-#                 if point_ops == ops
-#                     append!(intV, [InternalVertex(point, V1[i1].current, point_ops)])
-#                 else
-#                     append!(extV, [ExternalVertex(point, V1[i1].current, point_ops)])
-#                 end
-#             end
-#         end
-#         # @assert ifinternal || ifexternal "point $point is illegal."
-#     end
-#     return extV, intV
-# end
-
-# function 𝐺ᶠ(point_in::Int, point_out::Int, current::Int=0; kwargs...)
-#     return Green2(point_in, point_out, current; isFermi=true, kwargs...)
-# end
-
-# function 𝐺ᵇ(point_in::Int, point_out::Int, current::Int=0; kwargs...)
-#     return Green2(point_in, point_out, current; isFermi=false, kwargs...)
-# end
-
-# function 𝐺ᵠ(point_in::Int, point_out::Int, current::Int=0; kwargs...)
-#     return Green2(point_in, point_out, current; isFermi=false, isComplex=false, kwargs...)
-# end
-
-# function Green2(point_in::Int, point_out::Int, current::Int=0;
-#     isFermi=true, isComplex=true, flavor::Int=1, couplings=[], dtype=Float64,
-#     factor=zero(dtype), weight=zero(dtype), name="G2", subgraph=[], operator=Sum())
-#     if isFermi && isComplex
-#         opin, opout = fermionic_creation(flavor), fermionic_annihilation(flavor)
-#     elseif isFermi && !isComplex
-#         opin, opout = majorana(flavor), majorana(flavor)
-#     elseif !isFermi && isComplex
-#         opin, opout = bosonic_creation(flavor), bosonic_annihilation(flavor)
-#     else
-#         opin, opout = real_scalar(flavor), real_scalar(flavor)
-#     end
-#     if point_in == point_out
-#         extV = [ExternalVertex(point_in, current, OperatorProduct([opin, opout]))]
-#     else
-#         extV = [ExternalVertex(point_in, current, OperatorProduct([opin])),
-#             ExternalVertex(point_out, current, OperatorProduct([opout]))]
-#     end
-#     if isnothing(subgraph)
-#         diagtype = :propagator
-#     else
-#         diagtype = :green
-#     end
-#     return Graph{dtype,dtype}(extV, type=diagtype, couplings=couplings, subgraph=subgraph,
-#         name=name, operator=operator, factor=factor, weight=weight)
-# end
-
-# const 𝑊 = Interaction
-
-# function Interaction(point_in::Int, point_out::Int, current::Int=0; flavor::Int=1,
-#     couplings=[Coupling_yukawa,], dtype=Float64, factor=zero(dtype), weight=zero(dtype), name="W")
-#     ext_in = ExternalVertex(point_in, current, OperatorProduct([real_scalar(flavor),]))
-#     ext_out = ExternalVertex(point_out, current, OperatorProduct([real_scalar(flavor),]))
-#     diagtype = :interaction2
-#     return Graph{dtype,dtype}([ext_in, ext_out], type=diagtype, couplings=couplings,
-#         name=name, factor=factor, weight=weight)
-# end
-
-# function Interaction(point::Int, coupling::OperatorProduct, current::Int=0;
-#     dtype=Float64, factor=zero(dtype), weight=zero(dtype), name="W", operators=[])
-#     extV = ExternalVertex(point, current, OperatorProduct(operators))
-#     # diagtype = Symbol("bareVertex$(length(operator))"...)
-#     diagtype = :interaction
-#     return Graph{dtype,dtype}([extV,], type=diagtype, couplings=[coupling,], name=name, factor=factor, weight=weight)
-# end
