@@ -5,21 +5,21 @@
     @test vertices(g2) == vertices(g1)
     @test external_vertices(g2) == external_vertices(g1)
     @test g2.factor == 2
-    @test g2.operator == FeynmanDiagram.ComputationalGraphs.Prod()
+    @test g2.operator == FeynmanDiagram.ComputationalGraphs.Prod
     g2 = 2g1
     @test vertices(g2) == vertices(g1)
     @test external_vertices(g2) == external_vertices(g1)
     @test g2.factor == 2
-    @test g2.operator == FeynmanDiagram.ComputationalGraphs.Prod()
+    @test g2.operator == FeynmanDiagram.ComputationalGraphs.Prod
     g3 = g1 + g2
     @test vertices(g3) == vertices(g1)
     @test external_vertices(g3) == external_vertices(g1)
-    @test g3.operator == FeynmanDiagram.ComputationalGraphs.Sum()
+    @test g3.operator == FeynmanDiagram.ComputationalGraphs.Sum
     @test g3.subgraph == [g1, g2]
     g4 = g1 - g2
     @test vertices(g4) == vertices(g1)
     @test external_vertices(g4) == external_vertices(g1)
-    @test g4.operator == FeynmanDiagram.ComputationalGraphs.Sum()
+    @test g4.operator == FeynmanDiagram.ComputationalGraphs.Sum
     @test g4.subgraph[2].factor == -1
 end
 
@@ -150,4 +150,12 @@ end
     @test g6.subgraph[1].vertices == [𝑓⁻(2)𝑏⁻(8)𝑏⁺(3)𝑓⁺(1)]
     @test g6.subgraph[2].factor == -1
     @test g6.subgraph[2].vertices == [𝜙(4)𝑓⁻(6)𝜙(9)𝑓⁺(5)]
+
+    # construct Feynman diagram from Graphs
+    g1 = ComputationalGraphs.propagator(𝑓⁺(1)𝑓⁻(2),)
+    g2 = ComputationalGraphs.propagator(𝑓⁺(2)𝑓⁻(1),)
+    g = feynman_diagram([g1, g2], [1, 2, 2, 1]; external=[1, 2]) #build Feynman diagram from Graphs
+    @test external_vertices(g) == [external_vertices(g1)..., external_vertices(g2)...]
+    @test isempty(internal_vertices(g))
+
 end
