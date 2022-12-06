@@ -1,11 +1,11 @@
-abstract type Operator end
-struct Sum <: Operator end
-struct Prod <: Operator end
-Base.isequal(a::Operator, b::Operator) = (typeof(a) == typeof(b))
-Base.:(==)(a::Operator, b::Operator) = Base.isequal(a, b)
-apply(o::Operator, diags) = error("not implemented!")
+abstract type AbstractOperator end
+struct Sum <: AbstractOperator end
+struct Prod <: AbstractOperator end
+Base.isequal(a::AbstractOperator, b::AbstractOperator) = (typeof(a) == typeof(b))
+Base.:(==)(a::AbstractOperator, b::AbstractOperator) = Base.isequal(a, b)
+apply(o::AbstractOperator, diags) = error("not implemented!")
 
-Base.show(io::IO, o::Operator) = print(io, typeof(o))
+Base.show(io::IO, o::AbstractOperator) = print(io, typeof(o))
 Base.show(io::IO, ::Type{Sum}) = print(io, "⨁")
 Base.show(io::IO, ::Type{Prod}) = print(io, "Ⓧ")
 
@@ -26,7 +26,7 @@ const EdgeType = Tuple{QuantumOperator,QuantumOperator}
 - `vertices::Vector{OperatorProduct}`  vertices of the diagram. Each index is composited by the product of quantum operators.
 - `topology::Vector{Vector{Int}}` topology of the diagram. Each Vector{Int} stores vertices' index connected with each other (as a propagator). 
 - `subgraph::Vector{Graph{F,W}}`  vector of sub-diagrams 
-- `operator::Operator`  node operation, support Sum() and Prod()
+- `operator::DataType`  node operation, support Sum and Prod
 - `factor::F`  additional factor of the diagram
 - `weight::W`  weight of the diagram
 
@@ -59,7 +59,7 @@ mutable struct Graph{F,W} # Graph
 
     """
         function Graph(vertices::Vector{OperatorProduct}; external=[], subgraph=[],
-            name="", type=:generic, operator::Operator=Sum(), orders=zeros(Int, 16),
+            name="", type=:generic, operator::AbstractOperator=Sum(), orders=zeros(Int, 16),
             ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype))
         
         Create a Graph struct from vertices and external indices.
@@ -71,7 +71,7 @@ mutable struct Graph{F,W} # Graph
     - `subgraph`  vector of sub-diagrams 
     - `name`  name of the diagram
     - `type`  type of the diagram
-    - `operator::Operator`  node operation
+    - `operator::DataType`  node operation, Sum, Prod, etc.
     - `orders`  orders of the diagram
     - `ftype`  typeof(factor)
     - `wtype`  typeof(weight)
@@ -79,7 +79,7 @@ mutable struct Graph{F,W} # Graph
     - `weight`  weight of the diagram
     """
     function Graph(vertices::AbstractVector; external=collect(1:length(vertices)), subgraph=[], topology=[],
-        name="", type=:generic, operator::Operator=Sum(), orders=zeros(Int, 16),
+        name="", type=:generic, operator::AbstractOperator=Sum(), orders=zeros(Int, 16),
         ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype)
     )
         vertices = [OperatorProduct(v) for v in vertices]
@@ -88,7 +88,7 @@ mutable struct Graph{F,W} # Graph
 
     """
         function Graph(extV::AbstractVector, intV::AbstractVector; subgraph=[],
-            name="", type=:generic, operator::Operator=Sum(), orders=zeros(Int, 16),
+            name="", type=:generic, operator::AbstractOperator=Sum(), orders=zeros(Int, 16),
             ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype))
         
         Create a Graph struct from external and internal vertices.
@@ -108,7 +108,7 @@ mutable struct Graph{F,W} # Graph
     - `weight`  weight of the diagram
     """
     function Graph(extV::AbstractVector, intV::AbstractVector; topology=[], subgraph=[],
-        name="", type=:generic, operator::Operator=Sum(), orders=zeros(Int, 16),
+        name="", type=:generic, operator::AbstractOperator=Sum(), orders=zeros(Int, 16),
         ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype)
     )
         vertices = [extV..., intV...]
