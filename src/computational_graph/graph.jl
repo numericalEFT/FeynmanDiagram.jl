@@ -1,8 +1,6 @@
 abstract type Operator end
 struct Sum <: Operator end
 struct Prod <: Operator end
-# struct Diff <: Operator end
-# struct Integral <: Operator end
 Base.isequal(a::Operator, b::Operator) = (typeof(a) == typeof(b))
 Base.:(==)(a::Operator, b::Operator) = Base.isequal(a, b)
 apply(o::Operator, diags) = error("not implemented!")
@@ -10,38 +8,36 @@ apply(o::Operator, diags) = error("not implemented!")
 Base.show(io::IO, o::Operator) = print(io, typeof(o))
 Base.show(io::IO, o::Sum) = print(io, "⨁")
 Base.show(io::IO, o::Prod) = print(io, "Ⓧ")
-# Base.show(io::IO, o::Diff) = print(io, "d")
-# Base.show(io::IO, o::Integral) = print(io, "∫")
 
-function vstr(r, c)
-    N = length(r)
-    # cstr(x) = x ? "⁺" : "⁻"
-    s = ""
-    for i = 1:N-1
-        s *= "$(r[i])$c"
-    end
-    s *= "$(r[end])$c"
-    return s
-end
+# function vstr(r, c)
+#     N = length(r)
+#     # cstr(x) = x ? "⁺" : "⁻"
+#     s = ""
+#     for i = 1:N-1
+#         s *= "$(r[i])$c"
+#     end
+#     s *= "$(r[end])$c"
+#     return s
+# end
 
-function vcstr(r, creation)
-    N = length(r)
-    # cstr(x) = x ? "⁺" : "⁻"
-    s = ""
-    for i = 1:N-1
-        if creation[i]
-            s *= "$(r[i])⁺"
-        else
-            s *= "$(r[i])⁻"
-        end
-    end
-    if creation[end]
-        s *= "$(r[end])⁺"
-    else
-        s *= "$(r[end])⁻"
-    end
-    return s
-end
+# function vcstr(r, creation)
+#     N = length(r)
+#     # cstr(x) = x ? "⁺" : "⁻"
+#     s = ""
+#     for i = 1:N-1
+#         if creation[i]
+#             s *= "$(r[i])⁺"
+#         else
+#             s *= "$(r[i])⁻"
+#         end
+#     end
+#     if creation[end]
+#         s *= "$(r[end])⁺"
+#     else
+#         s *= "$(r[end])⁻"
+#     end
+#     return s
+# end
 
 # @enum Reducibility begin
 #     OneFermiIrreducible
@@ -56,24 +52,30 @@ const EdgeType = Tuple{QuantumOperator,QuantumOperator}
 """
     mutable struct Graph{F,W}
     
-    struct of a Feynman diagram. A diagram of a sum or produce of various subgraphs.
+    mutable struct of a Feynman diagram. A diagram of a sum or produce of various subgraphs.
 
-# Members
-- hash::Int            : the unique hash number to identify the diagram
-- name::Symbol         : name of the diagram
-- para::GraphPara    : internal parameters of the diagram
-- orders::Vector{Int}  : orders of the diagram, loop order, derivative order, etc.
-# - couplings::Couplings : all the vertex couplings in the Feynman rule. 
-# - internal_points::Vector{Int} : internal points in the diagram
-# - currents::Vector{Float64} : independent currents in the diagram
-- external_vertices::Vector{ExternalVertex}    : external vertices of the diagram
-- internal_vertices::Vector{InternalVertex}    : internal vertices of the diagram
-# - isConnected::Bool    : connected or disconnected Green's function
-# - isAmputated::Bool    : amputated Green's function or not
-- subgraph::Vector{Graph{W}}   : vector of sub-diagrams 
-- operator::Operator   : operation, support Sum() and Prod()
-- factor::F            : additional factor of the diagram
-- weight::W            : weight of the diagram
+# Members:
+- `id::Int`  the unique hash id to identify the diagram
+- `name::Symbol`  name of the diagram
+- `type::Symbol`  type of the diagram, support :propagator, :interaction, :sigma, :green, :generic
+- `orders::Vector{Int}`  orders of the diagram, e.g. loop order, derivative order, etc.
+- `external::Vector{Int}`  index of external vertices
+- `vertices::Vector{OperatorProduct}`  vertices of the diagram. Each index is composited by the product of quantum operators.
+- `subgraph::Vector{Graph{F,W}}`  vector of sub-diagrams 
+- `operator::Operator`  node operation, support Sum() and Prod()
+- `factor::F`  additional factor of the diagram
+- `weight::W`  weight of the diagram
+
+# Example:
+```julia-repl
+julia> g = Graph([𝑓⁺(1)𝑓⁻(2), 𝑓⁺(3)𝑓⁻(4)], external=[1, 2], subgraph=[Graph([𝑓⁺(1)𝑓⁻(4)], []), Graph([𝑓⁻(2)𝑓⁺(3)], [])])
+3: generic graph from f⁺(1)f⁻(2)|f⁺(3)f⁻(4)
+
+julia> g.subgraph
+2-element Vector{Graph{Float64, Float64}}:
+ 1: generic graph from f⁺(1)f⁻(4)
+ 2: generic graph from f⁻(2)f⁺(3)
+```
 """
 mutable struct Graph{F,W} # Graph
     id::Int
@@ -82,7 +84,7 @@ mutable struct Graph{F,W} # Graph
     orders::Vector{Int}
 
     external::Vector{Int} # index of external vertices
-    vertices::Vector{QuantumExpr} # vertices of the diagram
+    vertices::Vector{OperatorProduct} # vertices of the diagram
 
     subgraph::Vector{Graph{F,W}}
 
@@ -90,12 +92,53 @@ mutable struct Graph{F,W} # Graph
     factor::F
     weight::W
 
-    function Graph(vertices::Vector{QuantumExpr}; external=[], subgraph=[],
+    """
+        function Graph(vertices::Vector{OperatorProduct}; external=[], subgraph=[],
+            name="", type=:generic, operator::Operator=Sum(), orders=zeros(Int, 16),
+            ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype))
+        
+        Create a Graph struct from vertices and external indices.
+
+    # Arguments:
+    - `vertices::Vector{OperatorProduct}`  vertices of the diagram
+    - `external`  index of external vertices
+    - `subgraph`  vector of sub-diagrams 
+    - `name`  name of the diagram
+    - `type`  type of the diagram
+    - `operator::Operator`  node operation
+    - `orders`  orders of the diagram
+    - `ftype`  typeof(factor)
+    - `wtype`  typeof(weight)
+    - `factor`  additional factor of the diagram
+    - `weight`  weight of the diagram
+    """
+    function Graph(vertices::Vector{OperatorProduct}; external=[], subgraph=[],
         name="", type=:generic, operator::Operator=Sum(), orders=zeros(Int, 16),
         ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype)
     )
         return new{ftype,wtype}(uid(), name, type, orders, external, vertices, subgraph, operator, factor, weight)
     end
+
+    """
+        function Graph(extV::AbstractVector, intV::AbstractVector; subgraph=[],
+            name="", type=:generic, operator::Operator=Sum(), orders=zeros(Int, 16),
+            ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype))
+        
+        Create a Graph struct from external and internal vertices.
+
+    # Arguments:
+    - `extV::AbstractVector`  external vertices of the diagram
+    - `intV::AbstractVector`  internal vertices of the diagram
+    - `subgraph`  vector of sub-diagrams 
+    - `name`  name of the diagram
+    - `type`  type of the diagram
+    - `operator::Operator`  node operation
+    - `orders`  orders of the diagram
+    - `ftype`  typeof(factor)
+    - `wtype`  typeof(weight)
+    - `factor`  additional factor of the diagram
+    - `weight`  weight of the diagram
+    """
     function Graph(extV::AbstractVector, intV::AbstractVector; subgraph=[],
         name="", type=:generic, operator::Operator=Sum(), orders=zeros(Int, 16),
         ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype)
@@ -106,20 +149,24 @@ mutable struct Graph{F,W} # Graph
     end
 end
 
-function _ops_to_str(ops::Vector{QuantumExpr})
+function _ops_to_str(ops::Vector{OperatorProduct})
     strs = ["$(o)" for o in ops]
     return join(strs, "|")
 end
 
-#TODO: improve a text representation of Graph to the output stream.
+"""
+    show(io::IO, g::Graph)
+
+    Write a text representation of `Graph` to the output stream `io`.
+"""
 function Base.show(io::IO, g::Graph)
+    #TODO: improve a text representation of Graph to the output stream.
     if isempty(g.name)
         print(io, "$(g.id): $(g.type) graph from $(_ops_to_str(g.vertices))")
     else
         print(io, "$(g.id), $(g.name): $(g.type) graph from $(_ops_to_str(g.vertices))")
     end
 end
-
 Base.show(io::IO, ::MIME"text/plain", g::Graph) = Base.show(io, g)
 
 function Base.isequal(a::Graph, b::Graph)
@@ -135,10 +182,39 @@ end
 Base.:(==)(a::Graph, b::Graph) = Base.isequal(a, b)
 # isbare(diag::Graph) = isempty(diag.subgraph)
 
+"""
+    function is_external(g::Graph, i::Int) 
+
+    Check if `i::Int` in the external indices of Graph `g`.
+"""
 is_external(g::Graph, i::Int) = i in g.external
+
+"""
+    function is_internal(g::Graph, i::Int) 
+
+    Check if `i::Int` in the internal indices of Graph `g`.
+"""
 is_internal(g::Graph, i::Int) = (i in g.external) == false
+
+"""
+    function external_vertices(g::Graph)
+
+    Return all external vertices (::Vector{OperatorProduct}) of Graph `g`.
+"""
 external_vertices(g::Graph) = g.vertices[g.external]
+
+"""
+    function internal_vertices(g::Graph)
+
+    Return all internal vertices (::Vector{OperatorProduct}) of Graph `g`.
+"""
 internal_vertices(g::Graph) = g.vertices[setdiff(1:length(g.vertices), g.external)]
+
+"""
+    function vertices(g::Graph)
+
+    Return all vertices (::Vector{OperatorProduct}) of Graph `g`.
+"""
 vertices(g::Graph) = g.vertices
 
 #TODO: add function return reducibility of Graph. 
@@ -149,9 +225,6 @@ end
 #TODO: add function for connected diagram check. 
 function connectivity(g::Graph)
     isempty(g.subgraph) && return true
-end
-function connectivity!(g::Graph)
-    g.isConnected = connectivity(g)
 end
 
 # function Base.:*(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
@@ -166,46 +239,64 @@ end
 #     return Graph{F,W}(extV, [g1.internal_vertices; g2.internal_vertices; intV]; type=type, couplings=couplings, subgraph=[g1, g2], operator=Prod())
 # end
 
-function Base.:*(g1::Graph{F,W}, c2::C) where {F,W,C<:F}
-    return Graph{F,W}(g1.external_vertices, g1.internal_vertices; type=g1.type, subgraph=[g1,], operator=Prod(), factor=c2)
+function Base.:*(g1::Graph{F,W}, c2::C) where {F,W,C}
+    # factor = F(1) * c2
+    # ftype = typeof(factor)
+    return Graph(g1.vertices; external=g1.external, type=g1.type, subgraph=[g1,], operator=Prod(), ftype=F, wtype=W, factor=F(c2))
 end
 
-function Base.:*(c1::C, g2::Graph{F,W}) where {F,W,C<:F}
-    return Graph{F,W}(g2.external_vertices, g2.internal_vertices; type=g2.type, subgraph=[g2,], operator=Prod(), factor=c1)
+function Base.:*(c1::C, g2::Graph{F,W}) where {F,W,C}
+    return Graph(g2.vertices; external=g2.external, type=g2.type, subgraph=[g2,], operator=Prod(), ftype=F, wtype=W, factor=F(c1))
 end
 
 function Base.:+(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
     @assert g1.type == g2.type "g1 and g2 are not of the same type."
     # TODO: more check
-    type = g1.type
-    @assert Set(vertices(g1)) == Set(vertices(g2)) "g1 and g2 have different external vertices."
-    @assert Set(external_vertices(g1)) == Set(external_vertices(g2)) "g1 and g2 have different internal vertices."
+    @assert Set(vertices(g1)) == Set(vertices(g2)) "g1 and g2 have different vertices."
+    @assert Set(external_vertices(g1)) == Set(external_vertices(g2)) "g1 and g2 have different external vertices."
     @assert g1.orders == g2.orders "g1 and g2 have different orders."
 
-    return Graph{F,W}(g1.external_vertices, g1.internal_vertices; type=type, subgraph=[g1, g2], operator=Sum())
+    return Graph(g1.vertices; external=g1.external, type=g1.type, subgraph=[g1, g2], operator=Sum(), ftype=F, wtype=W)
 end
 
 function Base.:-(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
-    return g1 + (-1) * g2
+    return g1 + (-F(1)) * g2
 end
 
-function feynman_diagram(vertices::Vector{QuantumExpr}, contractions::Vector{Int};
+"""
+    function feynman_diagram(vertices::Vector{OperatorProduct}, contractions::Vector{Int};
+        external=[], factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic)
+    
+    Create a Graph representing feynman diagram from all vertices and Wick contractions.
+
+# Arguments:
+- `vertices::Vector{OperatorProduct}`  vertices of the diagram
+- `contractions::Vector{Int}`  contraction-index vector respresnting Wick contractions
+- `external`  index of external vertices
+- `factor`  additional factor of the diagram
+- `weight`  weight of the diagram
+- `name`  name of the diagram
+- `type`  type of the diagram
+
+# Example:
+```julia-repl
+julia> g = feynman_diagram([𝑓⁺(1)𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5)𝜙(6)], [1, 2, 3, 2, 1, 3])
+1: generic graph from f⁺(1)f⁻(2)ϕ(3)|f⁺(4)f⁻(5)ϕ(6)
+
+julia> g.subgraph
+3-element Vector{Graph{Float64, Float64}}:
+ 2: propagtor graph from f⁺(1)f⁻(5)
+ 3: propagtor graph from f⁻(2)f⁺(4)
+ 4: propagtor graph from ϕ(3)ϕ(6)
+```
+"""
+function feynman_diagram(vertices::Vector{OperatorProduct}, contractions::Vector{Int};
     external=[], factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic)
 
     g = Graph(vertices; external=external, name=name, type=type, operator=Prod(), factor=factor, weight=weight)
-
-    edges, contraction_sign = contractions_to_edges(vertices; contractions)
+    edges, contraction_sign = contractions_to_edges(vertices, contractions)
     g.factor *= contraction_sign
-
     for edge in edges
-        # ops = [QuantumExpr(edge[1]), QuantumExpr(edge[2])]
-        # for cop in vertices
-        #     if edge[1] in cop.operators && edge[2] in cop.operators
-        #         ops = [edge[1] * edge[2]]
-        #         break
-        #     end
-        # end
-        # p = propagator(ops)
         push!(g.subgraph, propagator(edge[1] * edge[2]))
     end
 
@@ -213,17 +304,23 @@ function feynman_diagram(vertices::Vector{QuantumExpr}, contractions::Vector{Int
 end
 
 """
-Converts a list of Wick contractions associated with a list of vertices
-to a list of edges e = (i, j) directed from `operators[i]` to `operators[j]`, where
-`operators` is a flattened list of operators associated with the specified `vertices`.
+    function contractions_to_edges(vertices::Vector{OperatorProduct}, contractions::Vector{Int})
 
-Example: 
-- vertices: [QuantumExpr([a1⁺, a2]), QuantumExpr([a5⁺, a6⁺, a7, a8]), QuantumExpr([a3⁺, a4])]
-- contractions: [1, 2, 2, 3, 1, 4, 4, 3] 
-- edges: [(1, 5), (3, 2), (4, 8), (7, 6)]
-- sign: (-1)² * ...
+    Converts a list of Wick contractions associated with a list of vertices
+    to a list of edges e = (i, j) directed from `operators[i]` to `operators[j]`, where
+    `operators` is a flattened list of operators associated with the specified `vertices`.
+
+# Example: 
+```julia-repl
+julia> vertices = [𝑏⁺(1)𝑓⁺(2)𝜙(3), 𝑓⁻(4)𝑓⁻(5), 𝑏⁻(6)𝑓⁺(7)𝜙(8)];
+
+julia> edges, sign = contractions_to_edges(vertices, [1, 2, 3, 2, 4, 1, 4, 3])
+(Tuple{QuantumOperator, QuantumOperator}[(b⁺(1), b⁻(6)), (f⁺(2), f⁻(4)), (ϕ(3), ϕ(8)), (f⁻(5), f⁺(7))], 1)
+```
+- flattened fermionic edges: [2, 4, 5, 7]
+- sign = parity([1, 2, 3, 4]) = 1
 """
-function contractions_to_edges(vertices::Vector{QuantumExpr}; contractions::Vector{Int})
+function contractions_to_edges(vertices::Vector{OperatorProduct}, contractions::Vector{Int})
     #TODO: only works for weak-coupling expansion with Wick's theorem for now.
     # Obtain the flattened list of non-composite operators
     operators = [o for v in vertices for o in v.operators]
@@ -272,16 +369,38 @@ function contractions_to_edges(vertices::Vector{QuantumExpr}; contractions::Vect
     return edges, sign
 end
 
-function propagator(ops::QuantumExpr;
+"""
+    function propagator(ops::OperatorProduct;
+        name="", diagtype=:propagtor, factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
+
+    Create a propagator-type Graph from given OperatorProduct `ops`.
+"""
+function propagator(ops::OperatorProduct;
     name="", diagtype=:propagtor, factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
     return Graph([ops], []; type=diagtype, name=name, operator=operator, factor=factor, weight=weight)
 end
 
+"""
+    function standardize_order!(g::Graph)
+
+    Standardize the order of all leaves (propagators) of Graph by correlator ordering.
+
+# Example: 
+```julia-repl
+julia> g = propagator(𝑓⁺(1)𝑏⁺(2)𝜙(3)𝑓⁻(1)𝑏⁻(2))
+1: propagtor graph from f⁺(1)b⁺(2)ϕ(3)f⁻(1)b⁻(2)
+
+julia> standardize_order!(g)
+
+julia> g, g.factor
+(1: propagtor graph from f⁻(1)b⁻(2)ϕ(3)b⁺(2)f⁺(1), -1.0)
+```
+"""
 function standardize_order!(g::Graph)
     for leaf in Leaves(g)
         for (i, vertex) in enumerate(leaf.vertices)
             sign, newvertex = correlator_order(vertex)
-            leaf.vertices[i] = QuantumExpr(newvertex)
+            leaf.vertices[i] = OperatorProduct(newvertex)
             leaf.factor *= sign
         end
     end
@@ -319,17 +438,17 @@ Base.eltype(::Type{<:TreeIterator{Graph{F,W}}}) where {F,W} = Graph{F,W}
 #     return true
 # end
 
-"""
-    function _getVertices(V1::Vector{ExternalVertex}, V2::Vector{ExternalVertex}, couplings::Couplings)
+# """
+#     function _getVertices(V1::Vector{ExternalVertex}, V2::Vector{ExternalVertex}, couplings::Couplings)
 
-    Give internal and external vertices when two diagrams combine.
-  
-    # Arguments
-    - V1::Vector{ExternalVertex}            : External vertices of diagram I.
-    - V2::Vector{ExternalVertex}            : External vertices of diagram II.
-    - couplings::Vector{QuantumExpr}  : all the vertex couplings in the Feynman rule. 
-"""
-# function _getVertices(V1::Vector{ExternalVertex}, V2::Vector{ExternalVertex}, couplings::Vector{QuantumExpr})
+#     Give internal and external vertices when two diagrams combine.
+
+#     # Arguments
+#     - V1::Vector{ExternalVertex}            : External vertices of diagram I.
+#     - V2::Vector{ExternalVertex}            : External vertices of diagram II.
+#     - couplings::Vector{OperatorProduct}  : all the vertex couplings in the Feynman rule. 
+# """
+# function _getVertices(V1::Vector{ExternalVertex}, V2::Vector{ExternalVertex}, couplings::Vector{OperatorProduct})
 #     V1_ind = [v.point for v in V1]
 #     V2_ind = [v.point for v in V2]
 #     common = intersect(V1_ind, V2_ind)
@@ -340,7 +459,7 @@ Base.eltype(::Type{<:TreeIterator{Graph{F,W}}}) where {F,W} = Graph{F,W}
 #         # ifinternal, ifexternal = false, false
 #         i1 = findfirst(isequal(point), V1_ind)
 #         i2 = findfirst(isequal(point), V2_ind)
-#         point_ops = QuantumExpr([V1[i1].operator.operators; V2[i2].operator.operators])
+#         point_ops = OperatorProduct([V1[i1].operator.operators; V2[i2].operator.operators])
 #         if isempty(couplings)
 #             append!(extV, [ExternalVertex(point, V1[i1].current, point_ops)])
 #         else
@@ -382,10 +501,10 @@ Base.eltype(::Type{<:TreeIterator{Graph{F,W}}}) where {F,W} = Graph{F,W}
 #         opin, opout = real_scalar(flavor), real_scalar(flavor)
 #     end
 #     if point_in == point_out
-#         extV = [ExternalVertex(point_in, current, QuantumExpr([opin, opout]))]
+#         extV = [ExternalVertex(point_in, current, OperatorProduct([opin, opout]))]
 #     else
-#         extV = [ExternalVertex(point_in, current, QuantumExpr([opin])),
-#             ExternalVertex(point_out, current, QuantumExpr([opout]))]
+#         extV = [ExternalVertex(point_in, current, OperatorProduct([opin])),
+#             ExternalVertex(point_out, current, OperatorProduct([opout]))]
 #     end
 #     if isnothing(subgraph)
 #         diagtype = :propagator
@@ -400,16 +519,16 @@ Base.eltype(::Type{<:TreeIterator{Graph{F,W}}}) where {F,W} = Graph{F,W}
 
 # function Interaction(point_in::Int, point_out::Int, current::Int=0; flavor::Int=1,
 #     couplings=[Coupling_yukawa,], dtype=Float64, factor=zero(dtype), weight=zero(dtype), name="W")
-#     ext_in = ExternalVertex(point_in, current, QuantumExpr([real_scalar(flavor),]))
-#     ext_out = ExternalVertex(point_out, current, QuantumExpr([real_scalar(flavor),]))
+#     ext_in = ExternalVertex(point_in, current, OperatorProduct([real_scalar(flavor),]))
+#     ext_out = ExternalVertex(point_out, current, OperatorProduct([real_scalar(flavor),]))
 #     diagtype = :interaction2
 #     return Graph{dtype,dtype}([ext_in, ext_out], type=diagtype, couplings=couplings,
 #         name=name, factor=factor, weight=weight)
 # end
 
-# function Interaction(point::Int, coupling::QuantumExpr, current::Int=0;
+# function Interaction(point::Int, coupling::OperatorProduct, current::Int=0;
 #     dtype=Float64, factor=zero(dtype), weight=zero(dtype), name="W", operators=[])
-#     extV = ExternalVertex(point, current, QuantumExpr(operators))
+#     extV = ExternalVertex(point, current, OperatorProduct(operators))
 #     # diagtype = Symbol("bareVertex$(length(operator))"...)
 #     diagtype = :interaction
 #     return Graph{dtype,dtype}([extV,], type=diagtype, couplings=[coupling,], name=name, factor=factor, weight=weight)

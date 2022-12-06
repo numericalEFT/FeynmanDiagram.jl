@@ -1,3 +1,12 @@
+"""
+    struct QuantumOperator
+
+    struct of a quantum operator.
+
+# Members:
+- `operator::Symbol`  symbol of quantum operator, supports :f⁺, :f⁻, :f, :b⁺, :b⁻, :ϕ
+- `label::Int`  label of the operator indices. It could represent spacetime, spin, momentum, flavor, etc.
+"""
 struct QuantumOperator
     operator::Symbol
     label::Int
@@ -15,6 +24,11 @@ end
 
 Base.show(io::IO, ::MIME"text/plain", o::QuantumOperator) = Base.show(io, o)
 
+"""
+    Base.adjoint(operator::QuantumOperator)
+
+    Return the conjuated quantum operator of `operator`.
+"""
 function Base.adjoint(operator::QuantumOperator)
     if operator.operator in [:f, :ϕ]
         return operator
@@ -29,6 +43,11 @@ function Base.adjoint(operator::QuantumOperator)
     end
 end
 
+"""
+    function isfermionic(operator::QuantumOperator)
+
+    Check if `operator` is a fermionic operator.
+"""
 function isfermionic(operator::QuantumOperator)
     operator.operator in [:f⁺, :f⁻, :f]
 end
