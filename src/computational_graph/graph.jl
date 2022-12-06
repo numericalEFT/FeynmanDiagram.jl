@@ -100,7 +100,7 @@ mutable struct Graph{F,W} # Graph
     - `subgraph`  vector of sub-diagrams 
     - `name`  name of the diagram
     - `type`  type of the diagram
-    - `operator::Operator`  node operation
+    - `operator::Datatype`  node operation, Sum, Prod, etc.
     - `orders`  orders of the diagram
     - `ftype`  typeof(factor)
     - `wtype`  typeof(weight)
