@@ -1,5 +1,5 @@
-@testset "QuantumExpr" begin
-    @test 𝑓(1) == QuantumExpr(QuantumOperator(:f, 1))
+@testset "OperatorProduct" begin
+    @test 𝑓(1) == OperatorProduct(QuantumOperator(:f, 1))
     @test isfermionic(𝑓(1)[1])
     @test isfermionic(𝑓⁺(1)[1])
     @test isfermionic(𝑓⁻(1)[1])
@@ -7,17 +7,17 @@
     @test QuantumOperators.iscreation(𝑏⁺(1)[1])
     @test (𝑓⁻(1)[1])' == 𝑓⁺(1)[1]
 
-    qe1 = QuantumExpr([QuantumOperator(:f⁺, 1), QuantumOperator(:f⁻, 2), QuantumOperator(:ϕ, 3)])
-    qe2 = QuantumExpr([QuantumOperator(:f⁺, 1), QuantumOperator(:f⁻, 2),
+    qe1 = OperatorProduct([QuantumOperator(:f⁺, 1), QuantumOperator(:f⁻, 2), QuantumOperator(:ϕ, 3)])
+    qe2 = OperatorProduct([QuantumOperator(:f⁺, 1), QuantumOperator(:f⁻, 2),
         QuantumOperator(:ϕ, 3), QuantumOperator(:f⁻, 4)])
-    qe3 = QuantumExpr([QuantumOperator(:b⁻, 4), QuantumOperator(:f⁺, 1), QuantumOperator(:f⁻, 2),
+    qe3 = OperatorProduct([QuantumOperator(:b⁻, 4), QuantumOperator(:f⁺, 1), QuantumOperator(:f⁻, 2),
         QuantumOperator(:ϕ, 3)])
     @test QuantumOperator(:f⁺, 1) * QuantumOperator(:f⁻, 2) * QuantumOperator(:ϕ, 3) == qe1
     @test 𝑓⁺(1)𝑓⁻(2)𝜙(3) == qe1
     @test qe1 * 𝑓⁻(4) == qe2
     @test qe1 * QuantumOperator(:f⁻, 4) == qe2
     @test QuantumOperator(:b⁻, 4) * qe1 == qe3
-    @test QuantumExpr(qe1) == qe1.operators
+    @test OperatorProduct(qe1) == qe1.operators
     @test !isfermionic(qe1)
     @test isfermionic(qe2)
     @test !isfermionic(qe3)

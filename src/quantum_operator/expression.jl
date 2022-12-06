@@ -1,24 +1,45 @@
-struct QuantumExpr <: AbstractVector{QuantumOperator}
+"""
+    struct OperatorProduct <: AbstractVector{QuantumOperator}
+
+    struct of a quantum-operator product. It is a subtype of `AbstractVector` and
+    inherits a large set of Vector behaviors including iteration and indexing. 
+
+# Members:
+- `operators::Vector{QuantumOperator}`  vector of quantum operators
+"""
+struct OperatorProduct <: AbstractVector{QuantumOperator}
     operators::Vector{QuantumOperator}
-    function QuantumExpr(operators::Vector{QuantumOperator})
+    function OperatorProduct(operators::Vector{QuantumOperator})
         return new(operators)
     end
-    function QuantumExpr(operator::QuantumOperator)
+    function OperatorProduct(operator::QuantumOperator)
         return new([operator,])
     end
-    function QuantumExpr(operators::QuantumExpr)
+    function OperatorProduct(operators::OperatorProduct)
         # return new([operators...,])
         return operators
     end
 end
 
-fermionic_annihilation(i) = QuantumExpr(QuantumOperator(:f⁻, i))
-fermionic_creation(i) = QuantumExpr(QuantumOperator(:f⁺, i))
-majorana(i) = QuantumExpr(QuantumOperator(:f, i))
-bosonic_annihilation(i) = QuantumExpr(QuantumOperator(:b⁻, i))
-bosonic_creation(i) = QuantumExpr(QuantumOperator(:b⁺, i))
-real_classic(i) = QuantumExpr(QuantumOperator(:ϕ, i))
+"""
+    Create a OperatorProduct with one quantum operator from given label `i`.
+    It supports the following abbreviated function form:
 
+'''
+const 𝑓⁻ = fermionic_annihilation
+const 𝑓⁺ = fermionic_creation
+const 𝑓 = majorana
+const 𝑏⁻ = bosonic_annihilation
+const 𝑏⁺ = bosonic_creation
+const 𝜙 = real_classic
+'''
+"""
+fermionic_annihilation(i) = OperatorProduct(QuantumOperator(:f⁻, i))
+fermionic_creation(i) = OperatorProduct(QuantumOperator(:f⁺, i))
+majorana(i) = OperatorProduct(QuantumOperator(:f, i))
+bosonic_annihilation(i) = OperatorProduct(QuantumOperator(:b⁻, i))
+bosonic_creation(i) = OperatorProduct(QuantumOperator(:b⁺, i))
+real_classic(i) = OperatorProduct(QuantumOperator(:ϕ, i))
 const 𝑓⁻ = fermionic_annihilation
 const 𝑓⁺ = fermionic_creation
 const 𝑓 = majorana
@@ -26,39 +47,51 @@ const 𝑏⁻ = bosonic_annihilation
 const 𝑏⁺ = bosonic_creation
 const 𝜙 = real_classic
 
+Base.eltype(::Type{OperatorProduct}) = QuantumOperator
+Base.getindex(o::OperatorProduct, i::Int) = o.operators[i]
+Base.setindex!(o::OperatorProduct, v::QuantumOperator, i::Int) = o.operators[i] = v
+Base.length(o::OperatorProduct) = length(o.operators)
+Base.size(o::OperatorProduct) = size(o.operators)
 
-#TODO: make compositeoperator norm ordered when it is created
+Base.show(io::IO, o::OperatorProduct) = print(io, reduce(*, ["$o" for o in o.operators]))
+Base.show(io::IO, ::MIME"text/plain", o::OperatorProduct) = Base.show(io, o)
 
-Base.eltype(::Type{QuantumExpr}) = QuantumOperator
-Base.getindex(o::QuantumExpr, i::Int) = o.operators[i]
-Base.setindex!(o::QuantumExpr, v::QuantumOperator, i::Int) = o.operators[i] = v
-Base.length(o::QuantumExpr) = length(o.operators)
-Base.size(o::QuantumExpr) = size(o.operators)
+"""
+    Base.:*(o1::Union{QuantumOperator, OperatorProduct}, o2::Union{QuantumOperator, OperatorProduct})
 
-Base.show(io::IO, o::QuantumExpr) = print(io, reduce(*, ["$o" for o in o.operators]))
-Base.show(io::IO, ::MIME"text/plain", o::QuantumExpr) = Base.show(io, o)
-
+    `o1 * o2` returns the quantum operator product of `o1` and `o2`
+"""
 function Base.:*(o1::QuantumOperator, o2::QuantumOperator)
-    return QuantumExpr([o1, o2])
+    return OperatorProduct([o1, o2])
 end
 
-function Base.:*(o1::QuantumExpr, o2::QuantumOperator)
-    return QuantumExpr([o1.operators; o2])
+function Base.:*(o1::OperatorProduct, o2::QuantumOperator)
+    return OperatorProduct([o1.operators; o2])
 end
 
-function Base.:*(o1::QuantumOperator, o2::QuantumExpr)
-    return QuantumExpr([o1; o2.operators])
+function Base.:*(o1::QuantumOperator, o2::OperatorProduct)
+    return OperatorProduct([o1; o2.operators])
 end
 
-function Base.:*(o1::QuantumExpr, o2::QuantumExpr)
-    return QuantumExpr([o1.operators; o2.operators])
+function Base.:*(o1::OperatorProduct, o2::OperatorProduct)
+    return OperatorProduct([o1.operators; o2.operators])
 end
 
-function Base.adjoint(o::QuantumExpr)
-    return QuantumExpr([op' for op in reverse(o)])
+"""
+    Base.adjoint(o::OperatorProduct)
+
+    Return the conjuated composite operator of `o`.
+"""
+function Base.adjoint(o::OperatorProduct)
+    return OperatorProduct([op' for op in reverse(o)])
 end
 
-function isfermionic(o::QuantumExpr)
+"""
+    function isfermionic(o::OperatorProduct)
+
+    Check if `o` is a fermionic composite operator.
+"""
+function isfermionic(o::OperatorProduct)
     numf = 0
     for op in o
         isfermionic(op) && (numf += 1)
@@ -67,31 +100,25 @@ function isfermionic(o::QuantumExpr)
     return false
 end
 
-# """
-#     Converts a QuantumExpr to normal-ordered form in place and returns the associated statistical sign.
-# """
-# function normal_order!(operator::QuantumExpr)
-#     sign = 1
-#     return sign
-# end
-
 """
-    Computes the permutation required to convert a QuantumExpr to normal-ordered form. 
+    function normal_order(operator::OperatorProduct)
+
+    Computes the permutation required to convert a OperatorProduct to normal-ordered form. 
     Returns the associated statistical sign and permutation.
 """
-function normal_order(operator::QuantumExpr)
+function normal_order(operator::OperatorProduct)
     sign = 1
     permutation = collect(eachindex(operator.operators))
     return sign, permutation
 end
 
-# function correlator_order!(operator::QuantumExpr)
-#     sign, ordering = correlator_order(operator)
-#     operator.operators = operator[sortperm(ordering)]
-#     return sign
-# end
+"""
+    function normal_order(operator::OperatorProduct)
 
-function correlator_order(operator::QuantumExpr)
+    Convert a OperatorProduct to correlator-ordered form. 
+    Returns the associated statistical sign and ordered OperatorProduct.
+"""
+function correlator_order(operator::OperatorProduct)
     num = length(operator)
     ind_pair, ind_unpair = 0, num + 1
     ordering = Int[]
