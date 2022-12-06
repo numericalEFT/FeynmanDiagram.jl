@@ -6,8 +6,8 @@ Base.:(==)(a::Operator, b::Operator) = Base.isequal(a, b)
 apply(o::Operator, diags) = error("not implemented!")
 
 Base.show(io::IO, o::Operator) = print(io, typeof(o))
-Base.show(io::IO, o::Sum) = print(io, "⨁")
-Base.show(io::IO, o::Prod) = print(io, "Ⓧ")
+Base.show(io::IO, ::Type{Sum}) = print(io, "⨁")
+Base.show(io::IO, ::Type{Prod}) = print(io, "Ⓧ")
 
 """Type alias for a directed graph edge e = (a₁⁺, a₂⁻) from e[1] to e[2]."""
 const EdgeType = Tuple{QuantumOperator,QuantumOperator}
@@ -51,7 +51,7 @@ mutable struct Graph{F,W} # Graph
 
     subgraph::Vector{Graph{F,W}}
 
-    operator::Operator
+    operator::DataType
     factor::F
     weight::W
 
@@ -80,7 +80,7 @@ mutable struct Graph{F,W} # Graph
         ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype)
     )
         vertices = [OperatorProduct(v) for v in vertices]
-        return new{ftype,wtype}(uid(), name, type, orders, external, vertices, subgraph, operator, factor, weight)
+        return new{ftype,wtype}(uid(), name, type, orders, external, vertices, subgraph, typeof(operator), factor, weight)
     end
 
     """
@@ -109,7 +109,7 @@ mutable struct Graph{F,W} # Graph
     )
         vertices = [extV..., intV...]
         ext = collect(1:length(extV))
-        return new{ftype,wtype}(uid(), name, type, orders, ext, vertices, subgraph, operator, factor, weight)
+        return new{ftype,wtype}(uid(), name, type, orders, ext, vertices, subgraph, typeof(operator), factor, weight)
     end
 end
 

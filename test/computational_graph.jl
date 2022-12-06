@@ -5,21 +5,21 @@
     @test vertices(g2) == vertices(g1)
     @test external_vertices(g2) == external_vertices(g1)
     @test g2.factor == 2
-    @test g2.operator == FeynmanDiagram.ComputationalGraphs.Prod()
+    @test g2.operator == FeynmanDiagram.ComputationalGraphs.Prod
     g2 = 2g1
     @test vertices(g2) == vertices(g1)
     @test external_vertices(g2) == external_vertices(g1)
     @test g2.factor == 2
-    @test g2.operator == FeynmanDiagram.ComputationalGraphs.Prod()
+    @test g2.operator == FeynmanDiagram.ComputationalGraphs.Prod
     g3 = g1 + g2
     @test vertices(g3) == vertices(g1)
     @test external_vertices(g3) == external_vertices(g1)
-    @test g3.operator == FeynmanDiagram.ComputationalGraphs.Sum()
+    @test g3.operator == FeynmanDiagram.ComputationalGraphs.Sum
     @test g3.subgraph == [g1, g2]
     g4 = g1 - g2
     @test vertices(g4) == vertices(g1)
     @test external_vertices(g4) == external_vertices(g1)
-    @test g4.operator == FeynmanDiagram.ComputationalGraphs.Sum()
+    @test g4.operator == FeynmanDiagram.ComputationalGraphs.Sum
     @test g4.subgraph[2].factor == -1
 end
 
