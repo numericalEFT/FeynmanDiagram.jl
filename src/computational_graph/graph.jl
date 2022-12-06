@@ -78,12 +78,12 @@ mutable struct Graph{F,W} # Graph
     - `factor`  additional factor of the diagram
     - `weight`  weight of the diagram
     """
-    function Graph(vertices::AbstractVector; external=collect(1:length(vertices)), subgraph=[],
+    function Graph(vertices::AbstractVector; external=collect(1:length(vertices)), subgraph=[], topology=[],
         name="", type=:generic, operator::Operator=Sum(), orders=zeros(Int, 16),
         ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype)
     )
         vertices = [OperatorProduct(v) for v in vertices]
-        return new{ftype,wtype}(uid(), name, type, orders, external, vertices, subgraph, typeof(operator), factor, weight)
+        return new{ftype,wtype}(uid(), name, type, orders, external, vertices, topology, subgraph, typeof(operator), factor, weight)
     end
 
     """
@@ -113,7 +113,7 @@ mutable struct Graph{F,W} # Graph
     )
         vertices = [extV..., intV...]
         ext = collect(1:length(extV))
-        return new{ftype,wtype}(uid(), name, type, orders, ext, vertices, subgraph, typeof(operator), factor, weight)
+        return new{ftype,wtype}(uid(), name, type, orders, ext, vertices, topology, subgraph, typeof(operator), factor, weight)
     end
 end
 
