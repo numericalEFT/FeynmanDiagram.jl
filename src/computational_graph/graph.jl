@@ -24,6 +24,7 @@ const EdgeType = Tuple{QuantumOperator,QuantumOperator}
 - `orders::Vector{Int}`  orders of the diagram, e.g. loop order, derivative order, etc.
 - `external::Vector{Int}`  index of external vertices
 - `vertices::Vector{OperatorProduct}`  vertices of the diagram. Each index is composited by the product of quantum operators.
+- `topology::Vector{Vector{Int}}` topology of the diagram. Each Vector{Int} stores vertices' index connected with each other (as a propagator). 
 - `subgraph::Vector{Graph{F,W}}`  vector of sub-diagrams 
 - `operator::Operator`  node operation, support Sum() and Prod()
 - `factor::F`  additional factor of the diagram
@@ -48,6 +49,7 @@ mutable struct Graph{F,W} # Graph
 
     external::Vector{Int} # index of external vertices
     vertices::Vector{OperatorProduct} # vertices of the diagram
+    topology::Vector{Vector{Int}}
 
     subgraph::Vector{Graph{F,W}}
 
@@ -65,6 +67,7 @@ mutable struct Graph{F,W} # Graph
     # Arguments:
     - `vertices::Vector{OperatorProduct}`  vertices of the diagram
     - `external`  index of external vertices, by default, all vertices are external
+    - `topology` topology of the diagram
     - `subgraph`  vector of sub-diagrams 
     - `name`  name of the diagram
     - `type`  type of the diagram
@@ -75,12 +78,12 @@ mutable struct Graph{F,W} # Graph
     - `factor`  additional factor of the diagram
     - `weight`  weight of the diagram
     """
-    function Graph(vertices::AbstractVector; external=collect(1:length(vertices)), subgraph=[],
+    function Graph(vertices::AbstractVector; external=collect(1:length(vertices)), subgraph=[], topology=[],
         name="", type=:generic, operator::Operator=Sum(), orders=zeros(Int, 16),
         ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype)
     )
         vertices = [OperatorProduct(v) for v in vertices]
-        return new{ftype,wtype}(uid(), name, type, orders, external, vertices, subgraph, typeof(operator), factor, weight)
+        return new{ftype,wtype}(uid(), name, type, orders, external, vertices, topology, subgraph, typeof(operator), factor, weight)
     end
 
     """
@@ -93,6 +96,7 @@ mutable struct Graph{F,W} # Graph
     # Arguments:
     - `extV::AbstractVector`  external vertices of the diagram
     - `intV::AbstractVector`  internal vertices of the diagram
+    - `topology` topology of the diagram
     - `subgraph`  vector of sub-diagrams 
     - `name`  name of the diagram
     - `type`  type of the diagram
@@ -103,13 +107,13 @@ mutable struct Graph{F,W} # Graph
     - `factor`  additional factor of the diagram
     - `weight`  weight of the diagram
     """
-    function Graph(extV::AbstractVector, intV::AbstractVector; subgraph=[],
+    function Graph(extV::AbstractVector, intV::AbstractVector; topology=[], subgraph=[],
         name="", type=:generic, operator::Operator=Sum(), orders=zeros(Int, 16),
         ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype)
     )
         vertices = [extV..., intV...]
         ext = collect(1:length(extV))
-        return new{ftype,wtype}(uid(), name, type, orders, ext, vertices, subgraph, typeof(operator), factor, weight)
+        return new{ftype,wtype}(uid(), name, type, orders, ext, vertices, topology, subgraph, typeof(operator), factor, weight)
     end
 end
 
@@ -118,13 +122,34 @@ function Base.isequal(a::Graph, b::Graph)
     for field in fieldnames(typeof(a))
         if field == :weight
             (getproperty(a, :weight) ≈ getproperty(b, :weight)) == false && return false
+        else
+            getproperty(a, field) != getproperty(b, field) && return false
         end
-        getproperty(a, field) != getproperty(b, field) && return false
     end
     return true
 end
 Base.:(==)(a::Graph, b::Graph) = Base.isequal(a, b)
 # isbare(diag::Graph) = isempty(diag.subgraph)
+
+"""
+    function isequiv(a::Graph, b::Graph, args...)
+
+    Determine whether `a` is equivalent to `b` without considering fields in `args`.
+"""
+function isequiv(a::Graph, b::Graph, args...)
+    typeof(a) != typeof(b) && return false
+    for field in fieldnames(typeof(a))
+        field in [args...] && continue
+        if field == :weight
+            (getproperty(a, :weight) ≈ getproperty(b, :weight)) == false && return false
+        elseif field == :subgraph
+            !all(isequiv.(getproperty(a, field), getproperty(b, field), args...)) && return false
+        else
+            getproperty(a, field) != getproperty(b, field) && return false
+        end
+    end
+    return true
+end
 
 """
     function is_external(g::Graph, i::Int) 
@@ -172,11 +197,11 @@ function connectivity(g::Graph)
 end
 
 function Base.:*(g1::Graph{F,W}, c2::C) where {F,W,C}
-    return Graph(g1.vertices; external=g1.external, type=g1.type, subgraph=[g1,], operator=Prod(), ftype=F, wtype=W, factor=F(c2))
+    return Graph(g1.vertices; external=g1.external, type=g1.type, topology=g1.topology, subgraph=[g1,], operator=Prod(), ftype=F, wtype=W, factor=F(c2))
 end
 
 function Base.:*(c1::C, g2::Graph{F,W}) where {F,W,C}
-    return Graph(g2.vertices; external=g2.external, type=g2.type, subgraph=[g2,], operator=Prod(), ftype=F, wtype=W, factor=F(c1))
+    return Graph(g2.vertices; external=g2.external, type=g2.type, topology=g2.topology, subgraph=[g2,], operator=Prod(), ftype=F, wtype=W, factor=F(c1))
 end
 
 function Base.:+(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
@@ -225,13 +250,55 @@ julia> g.subgraph
 function feynman_diagram(vertices::Vector{OperatorProduct}, contractions::Vector{Int};
     external=[], factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic)
 
-    g = Graph(vertices; external=external, name=name, type=type, operator=Prod(), factor=factor, weight=weight)
-    edges, contraction_sign = contractions_to_edges(vertices, contractions)
-    g.factor = factor * contraction_sign
+    contraction_sign, topology, edges = contractions_to_edges(vertices, contractions)
+    g = Graph(vertices; external=external, topology=topology, name=name, type=type, operator=Prod(),
+        factor=factor * contraction_sign, weight=weight)
     for edge in edges
-        push!(g.subgraph, propagator(edge[1] * edge[2]))
+        push!(g.subgraph, propagator(reduce(*, edge)))
     end
+    return g
+end
 
+"""
+    function feynman_diagram(vertices::Vector{OperatorProduct}, topology::Vector{Vector{Int}};
+        external=[], factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic)
+    
+    Create a Graph representing feynman diagram from all vertices and topology (connections between vertices).
+
+# Arguments:
+- `vertices::Vector{OperatorProduct}`  vertices of the diagram
+- `topology::Vector{Vector{Int}}` topology of the diagram. Each Vector{Int} stores vertices' index connected with each other (as a propagator). 
+- `external`  index of external vertices
+- `factor`  additional factor of the diagram
+- `weight`  weight of the diagram
+- `name`  name of the diagram
+- `type`  type of the diagram
+
+# Example:
+```julia-repl
+julia> g = feynman_diagram([𝑓⁺(1)𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5)𝜙(6)], [[5, 1], [2, 4], [3, 6]])
+1: generic graph from f⁺(1)f⁻(2)ϕ(3)|f⁺(4)f⁻(5)ϕ(6)
+
+julia> g.subgraph
+3-element Vector{Graph{Float64, Float64}}:
+ 2: propagtor graph from f⁻(5)f⁺(1)
+ 3: propagtor graph from f⁻(2)f⁺(4)
+ 4: propagtor graph from ϕ(3)ϕ(6)
+```
+"""
+function feynman_diagram(vertices::Vector{OperatorProduct}, topology::Vector{Vector{Int}};
+    external=[], factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic)
+
+    operators = [o for v in vertices for o in v.operators]
+    permutation = collect(Iterators.flatten(topology))
+    filter!(p -> p ∉ findall(x -> !x, isfermionic.(operators)), permutation)
+    sign = isempty(permutation) ? 1 : parity(sortperm(permutation))
+
+    g = Graph(vertices; external=external, topology=topology, name=name, type=type, operator=Prod(),
+        factor=factor * sign, weight=weight)
+    for connection in topology
+        push!(g.subgraph, propagator(reduce(*, operators[connection])))
+    end
     return g
 end
 function feynman_diagram(graphs::Vector{Graph{F,W}}, contractions::Vector{Int};
@@ -277,6 +344,7 @@ function contractions_to_edges(vertices::Vector{OperatorProduct}, contractions::
     # Loop over operators and pair
     next_pairing = 1
     edges = Vector{EdgeType}()
+    topology = Vector{Int}[]
     permutation = Int[]
 
     for (i, wick_i) in enumerate(contractions)
@@ -293,6 +361,7 @@ function contractions_to_edges(vertices::Vector{OperatorProduct}, contractions::
                 @assert operators[j]'.operator == operators[i].operator
                 isfermionic(operators[j]) && append!(permutation, [i, j])
                 push!(edges, (operators[i], operators[j]))
+                push!(topology, [i, j])
                 # Move on to next pair
                 next_pairing += 1
                 break
@@ -304,7 +373,7 @@ function contractions_to_edges(vertices::Vector{OperatorProduct}, contractions::
     # permutation = [1, 5, 4, 8, 7, 6] => P = (1 3 2 6 5 4) => sign = +1
     sign = isempty(permutation) ? 1 : parity(sortperm(permutation))
 
-    return edges, sign
+    return sign, topology, edges
 end
 
 """
