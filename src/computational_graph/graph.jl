@@ -32,12 +32,12 @@ const EdgeType = Tuple{QuantumOperator,QuantumOperator}
 # Example:
 ```julia-repl
 julia> g = Graph([𝑓⁺(1)𝑓⁻(2), 𝑓⁺(3)𝑓⁻(4)], external=[1, 2], subgraph=[Graph([𝑓⁺(1)𝑓⁻(4)], []), Graph([𝑓⁻(2)𝑓⁺(3)], [])])
-3: generic graph from f⁺(1)f⁻(2)|f⁺(3)f⁻(4)
+3:f⁺(1)f⁻(2)|f⁺(3)f⁻(4)=0.0=⨁ (1,2)
 
 julia> g.subgraph
 2-element Vector{Graph{Float64, Float64}}:
- 1: generic graph from f⁺(1)f⁻(4)
- 2: generic graph from f⁻(2)f⁺(3)
+ 1:f⁺(1)f⁻(4)=0.0
+ 2:f⁻(2)f⁺(3)=0.0
 ```
 """
 mutable struct Graph{F,W} # Graph
@@ -64,7 +64,7 @@ mutable struct Graph{F,W} # Graph
 
     # Arguments:
     - `vertices::Vector{OperatorProduct}`  vertices of the diagram
-    - `external`  index of external vertices
+    - `external`  index of external vertices, by default, all vertices are external
     - `subgraph`  vector of sub-diagrams 
     - `name`  name of the diagram
     - `type`  type of the diagram
@@ -75,10 +75,11 @@ mutable struct Graph{F,W} # Graph
     - `factor`  additional factor of the diagram
     - `weight`  weight of the diagram
     """
-    function Graph(vertices::Vector{OperatorProduct}; external=[], subgraph=[],
+    function Graph(vertices::AbstractVector; external=collect(1:length(vertices)), subgraph=[],
         name="", type=:generic, operator::Operator=Sum(), orders=zeros(Int, 16),
         ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype)
     )
+        vertices = [OperatorProduct(v) for v in vertices]
         return new{ftype,wtype}(uid(), name, type, orders, external, vertices, subgraph, operator, factor, weight)
     end
 
@@ -106,7 +107,7 @@ mutable struct Graph{F,W} # Graph
         name="", type=:generic, operator::Operator=Sum(), orders=zeros(Int, 16),
         ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype)
     )
-        vertices = [extV; intV]
+        vertices = [extV..., intV...]
         ext = collect(1:length(extV))
         return new{ftype,wtype}(uid(), name, type, orders, ext, vertices, subgraph, operator, factor, weight)
     end

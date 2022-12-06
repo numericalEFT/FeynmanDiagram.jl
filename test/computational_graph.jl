@@ -125,4 +125,9 @@ end
     standardize_order!(g5)
     @test g5s == g5
 
+    g1 = ComputationalGraphs.propagator(𝑓⁺(1)𝑓⁻(2),)
+    g2 = ComputationalGraphs.propagator(𝑓⁺(2)𝑓⁻(1),)
+    g = feynman_diagram([g1, g2], [1, 2, 2, 1]; external=[1, 2]) #build Feynman diagram from Graphs
+    @test external_vertices(g) == [external_vertices(g1)..., external_vertices(g2)...]
+    @test isempty(internal_vertices(g))
 end
