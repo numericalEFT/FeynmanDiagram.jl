@@ -221,8 +221,6 @@ end
 """
     function feynman_diagram(vertices::Vector{OperatorProduct}, contractions::Vector{Int};
         external=[], factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic)
-    function feynman_diagram(graphs::Vector{Graph{F,W}}, contractions::Vector{Int};
-        external=[], factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic) where {F,W}
     
     Create a Graph representing feynman diagram from all vertices and Wick contractions.
 
@@ -258,6 +256,12 @@ function feynman_diagram(vertices::Vector{OperatorProduct}, contractions::Vector
     end
     return g
 end
+# function feynman_diagram(graphs::Vector{Graph{F,W}}, contractions::Vector{Int};
+#     external=[], factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic) where {F,W}
+
+#     vertices = [v for g in graphs for v in external_vertices(g)]
+#     return feynman_diagram(vertices, contractions; external=external, factor=factor, weight=weight, name=name, type=type)
+# end
 
 """
     function feynman_diagram(vertices::Vector{OperatorProduct}, topology::Vector{Vector{Int}};
@@ -301,12 +305,12 @@ function feynman_diagram(vertices::Vector{OperatorProduct}, topology::Vector{Vec
     end
     return g
 end
-function feynman_diagram(graphs::Vector{Graph{F,W}}, contractions::Vector{Int};
-    external=[], factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic) where {F,W}
+# function feynman_diagram(graphs::Vector{Graph{F,W}}, topology::Vector{Vector{Int}};
+#     external=[], factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic) where {F,W}
 
-    vertices = [v for g in graphs for v in external_vertices(g)]
-    return feynman_diagram(vertices, contractions; external=external, factor=factor, weight=weight, name=name, type=type)
-end
+#     vertices = reduce(*, [v for g in graphs for v in external_vertices(g)])
+#     return feynman_diagram(vertices, topology; external=external, factor=factor, weight=weight, name=name, type=type)
+# end
 
 """
     function contractions_to_edges(vertices::Vector{OperatorProduct}, contractions::Vector{Int})

@@ -152,10 +152,13 @@ end
     @test g6.subgraph[2].vertices == [𝜙(4)𝑓⁻(6)𝜙(9)𝑓⁺(5)]
 
     # construct Feynman diagram from Graphs
-    g1 = ComputationalGraphs.propagator(𝑓⁺(1)𝑓⁻(2),)
-    g2 = ComputationalGraphs.propagator(𝑓⁺(2)𝑓⁻(1),)
-    g = feynman_diagram([g1, g2], [1, 2, 2, 1]; external=[1, 2]) #build Feynman diagram from Graphs
-    @test external_vertices(g) == [external_vertices(g1)..., external_vertices(g2)...]
-    @test isempty(internal_vertices(g))
+    # g1 = ComputationalGraphs.propagator(𝑓⁺(1)𝑓⁻(2),)
+    # g2 = ComputationalGraphs.propagator(𝑓⁺(2)𝑓⁻(1),)
+    # g = feynman_diagram([g1, g2], [1, 2, 2, 1]; external=[1, 2]) #build Feynman diagram from Graphs with Wick's contractions
+    # @test external_vertices(g) == [external_vertices(g1)..., external_vertices(g2)...]
+    # @test isempty(internal_vertices(g))
 
+    # g = feynman_diagram([g1, g2], [1, 2, 2, 1]; external=[1, 2]) #build Feynman diagram from Graphs with topology
+    # @test external_vertices(g) == [external_vertices(g1)..., external_vertices(g2)...]
+    # @test isempty(internal_vertices(g))
 end
