@@ -27,7 +27,7 @@ julia> g = Graph([𝑓⁺(1)𝑓⁻(2), 𝑓⁺(3)𝑓⁻(4)], external=[1, 2], 
 julia> gs = Compilers.static_graph([g, ])
 "function eval_graph!(root::AbstractVector, leaf::AbstractVector)\n     g1 = leaf[1]\n     g2 = leaf[2]\n     root[1] = (g1 + g2)*1.0\n end"
 
-julia> eval(Meta.parse(gs)) #compile the string into a callabel function `eval_graph!(root, leaf)`
+julia> eval(Meta.parse(gs)) #compile the string into a callable function `eval_graph!(root, leaf)`
 eval_graph! (generic function with 1 method)
 
 julia> leaf = [1.0, 2.0]; root = [0.0,];
