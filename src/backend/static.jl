@@ -29,6 +29,11 @@ julia> gs = Compilers.static_graph([g, ])
 
 julia> eval(Meta.parse(gs)) #compile the string into a callabel function `eval_graph!(root, leaf)`
 eval_graph! (generic function with 1 method)
+
+julia> leaf = [1.0, 2.0]; root = [0.0,];
+
+julia> eval_graph!(root, leaf)
+3.0
 """
 function static_graph(graphs::AbstractVector; root::AbstractVector{Int}=[g.id for g in graphs], name::String="eval_graph!")
     head = "function $name(root::AbstractVector, leaf::AbstractVector)\n "
