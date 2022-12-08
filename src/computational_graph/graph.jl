@@ -166,11 +166,11 @@ is_external(g::Graph, i::Int) = i in g.external
 is_internal(g::Graph, i::Int) = (i in g.external) == false
 
 """
-    function external_vertices(g::Graph)
+    function external(g::Graph)
 
-    Return all external vertices (::Vector{OperatorProduct}) of Graph `g`.
+    Return all external vertices (::Vector{QuantumOperators}) of Graph `g`.
 """
-external_vertices(g::Graph) = OperatorProduct(g.vertices)[g.external]
+external(g::Graph) = OperatorProduct(g.vertices)[g.external]
 
 # """
 #     function internal_vertices(g::Graph)
@@ -208,7 +208,7 @@ function Base.:+(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
     @assert g1.type == g2.type "g1 and g2 are not of the same type."
     # TODO: more check
     @assert Set(vertices(g1)) == Set(vertices(g2)) "g1 and g2 have different vertices."
-    @assert Set(external_vertices(g1)) == Set(external_vertices(g2)) "g1 and g2 have different external vertices."
+    @assert Set(external(g1)) == Set(external(g2)) "g1 and g2 have different external vertices."
     @assert g1.orders == g2.orders "g1 and g2 have different orders."
 
     return Graph(g1.vertices; external=g1.external, type=g1.type, subgraph=[g1, g2], operator=Sum(), ftype=F, wtype=W)
@@ -291,15 +291,27 @@ julia> g.subgraph
 ```
 """
 function feynman_diagram(vertices::Vector{OperatorProduct}, topology::Vector{Vector{Int}};
-    external=[], factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic)
+    external::Union{Nothing,AbstractVector}=nothing, factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic)
 
     operators = [o for v in vertices for o in v.operators]
     permutation = collect(Iterators.flatten(topology))
-    filter!(p -> p ∉ findall(x -> !x, isfermionic.(operators)), permutation)
+    if isnothing(external)
+        external = [i for i in eachindex(operators) if i ∉ permutation]
+    end
+    @assert length(unique(permutation)) == length(permutation) # no repeated index
+    @assert length(unique(external)) == length(external) # no repeated index
+    @assert Set(union(external, permutation)) == Set(eachindex(operators)) # external + permutation must exhaust all operators
+
+    fermionic_operators = isfermionic.(operators)
+    filter!(p -> fermionic_operators[p], permutation)
     sign = isempty(permutation) ? 1 : parity(sortperm(permutation))
 
+    _external = filter(p -> fermionic_operators[p], external)
+    ext_sign = isempty(_external) ? 1 : parity(sortperm(_external))
+    # println(_external, ", ", ext_sign)
+
     g = Graph(vertices; external=external, topology=topology, name=name, type=type, operator=Prod(),
-        factor=factor * sign, weight=weight)
+        factor=factor * sign * ext_sign, weight=weight)
     for connection in topology
         push!(g.subgraph, propagator(reduce(*, operators[connection])))
     end
