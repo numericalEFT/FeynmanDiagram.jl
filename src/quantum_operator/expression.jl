@@ -9,6 +9,9 @@
 """
 struct OperatorProduct <: AbstractVector{QuantumOperator}
     operators::Vector{QuantumOperator}
+    function OperatorProduct(products::Vector{OperatorProduct})
+        return new(union(products...))
+    end
     function OperatorProduct(operators::Vector{QuantumOperator})
         return new(operators)
     end
