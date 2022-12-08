@@ -78,13 +78,15 @@ end
     @test vertices(g1) == [𝑓⁺(1)𝑓⁻(2)]
     standardize_order!(g1)
     @test g1.factor == -1
-    @test vertices(g1) == [𝑓⁻(2)𝑓⁺(1)]
+    @test g1.external == [2, 1]
+    @test OperatorProduct(external(g1)) == 𝑓⁻(2)𝑓⁺(1)
+    # @test vertices(g1) == [𝑓⁻(2)𝑓⁺(1)]
 
     g2 = propagator(𝑓⁺(1)𝑓⁻(2)𝑏⁺(1)𝜙(1)𝑓⁺(3)𝑓⁻(1)𝑓(1)𝑏⁻(1)𝜙(1))
     @test vertices(g2) == [𝑓⁺(1)𝑓⁻(2)𝑏⁺(1)𝜙(1)𝑓⁺(3)𝑓⁻(1)𝑓(1)𝑏⁻(1)𝜙(1)]
     standardize_order!(g2)
     @test g2.factor == -1
-    @test vertices(g2) == [𝑓⁻(1)𝑏⁻(1)𝜙(1)𝑓⁻(2)𝑓(1)𝑓⁺(3)𝜙(1)𝑏⁺(1)𝑓⁺(1)]
+    @test OperatorProduct(external(g2)) == 𝑓⁻(1)𝑏⁻(1)𝜙(1)𝑓⁻(2)𝑓(1)𝑓⁺(3)𝜙(1)𝑏⁺(1)𝑓⁺(1)
 end
 
 @testset "feynman_diagram" begin
@@ -115,15 +117,15 @@ end
     @test isempty(external(g3))
     # @test internal_vertices(g3) == V3
     @test g3.subgraph[1].factor == 1
-    @test g3.subgraph[1].vertices == [𝑓⁺(1)𝑓⁻(5)]
+    @test OperatorProduct(external(g3.subgraph[1])) == 𝑓⁺(1)𝑓⁻(5)
     standardize_order!(g3)
     @test g3.subgraph[1].factor == -1
-    @test g3.subgraph[1].vertices == [𝑓⁻(5)𝑓⁺(1)]
+    @test OperatorProduct(external(g3.subgraph[1])) == 𝑓⁻(5)𝑓⁺(1)
     # @test gg3.subgraph[1].factor == 1
     # @test !isequiv(g3, gg3, :id)
 
     V4 = [𝑓⁺(1)𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5)𝜙(6), 𝑓⁺(7)𝑓⁻(8)𝜙(9), 𝑓⁺(10)𝑓⁻(11)𝜙(12)]
-    gg4 = feynman_diagram(V4, [[1, 8], [2, 10], [4, 11], [5, 7], [9, 12]], external=[3, 6])
+    gg4 = feynman_diagram(V4, [[1, 8], [2, 10], [4, 11], [5, 7], [9, 12]])
     @test vertices(gg4) == V4
     @test external(gg4) == OperatorProduct(V4)[[3, 6]]
     # @test internal_vertices(g4) == V4[3:4]
@@ -150,13 +152,13 @@ end
     V6 = [𝑓⁺(1)𝑓⁻(2)𝑏⁺(3), 𝜙(4)𝑓⁺(5)𝑓⁻(6), 𝑓(7)𝑏⁻(8)𝜙(9)]
     g6 = feynman_diagram(V6, [[1, 2, 3, 8], [4, 5, 6, 9]])
     @test vertices(g6) == V6
-    @test g6.subgraph[1].vertices == [𝑓⁺(1)𝑓⁻(2)𝑏⁺(3)𝑏⁻(8)]
-    @test g6.subgraph[2].vertices == [𝜙(4)𝑓⁺(5)𝑓⁻(6)𝜙(9)]
+    @test OperatorProduct(external(g6.subgraph[1])) == 𝑓⁺(1)𝑓⁻(2)𝑏⁺(3)𝑏⁻(8)
+    @test OperatorProduct(external(g6.subgraph[2])) == 𝜙(4)𝑓⁺(5)𝑓⁻(6)𝜙(9)
     standardize_order!(g6)
     @test g6.subgraph[1].factor == -1
-    @test g6.subgraph[1].vertices == [𝑓⁻(2)𝑏⁻(8)𝑏⁺(3)𝑓⁺(1)]
+    @test OperatorProduct(external(g6.subgraph[1])) == 𝑓⁻(2)𝑏⁻(8)𝑏⁺(3)𝑓⁺(1)
     @test g6.subgraph[2].factor == -1
-    @test g6.subgraph[2].vertices == [𝜙(4)𝑓⁻(6)𝜙(9)𝑓⁺(5)]
+    @test OperatorProduct(external(g6.subgraph[2])) == 𝜙(4)𝑓⁻(6)𝜙(9)𝑓⁺(5)
 
     gg6 = deepcopy(g6)
     gg6.id = 1000

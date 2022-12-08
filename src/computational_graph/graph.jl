@@ -210,9 +210,9 @@ end
 
 # julia> g.subgraph
 # 3-element Vector{Graph{Float64, Float64}}:
-#  2: propagtor graph from f⁺(1)f⁻(5)
-#  3: propagtor graph from f⁻(2)f⁺(4)
-#  4: propagtor graph from ϕ(3)ϕ(6)
+#  2: propagator graph from f⁺(1)f⁻(5)
+#  3: propagator graph from f⁻(2)f⁺(4)
+#  4: propagator graph from ϕ(3)ϕ(6)
 # ```
 # """
 # function feynman_diagram(vertices::Vector{OperatorProduct}, contractions::Vector{Int};
@@ -255,9 +255,9 @@ julia> g = feynman_diagram([𝑓⁺(1)𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5)�
 
 julia> g.subgraph
 3-element Vector{Graph{Float64, Float64}}:
- 2: propagtor graph from f⁻(5)f⁺(1)
- 3: propagtor graph from f⁻(2)f⁺(4)
- 4: propagtor graph from ϕ(3)ϕ(6)
+ 2: propagator graph from f⁻(5)f⁺(1)
+ 3: propagator graph from f⁻(2)f⁺(4)
+ 4: propagator graph from ϕ(3)ϕ(6)
 ```
 """
 function feynman_diagram(vertices::Vector{OperatorProduct}, topology::Vector{Vector{Int}};
@@ -364,12 +364,12 @@ end
 
 """
     function propagator(ops::OperatorProduct;
-        name="", diagtype=:propagtor, factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
+        name="", diagtype=:propagator, factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
 
     Create a propagator-type Graph from given OperatorProduct `ops`.
 """
 function propagator(ops::OperatorProduct;
-    name="", diagtype=:propagtor, factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
+    name="", diagtype=:propagator, factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
     return Graph([ops,]; external=collect(eachindex(ops)), type=diagtype, name=name, operator=operator, factor=factor, weight=weight)
 end
 
@@ -381,22 +381,31 @@ end
 # Example: 
 ```julia-repl
 julia> g = propagator(𝑓⁺(1)𝑏⁺(2)𝜙(3)𝑓⁻(1)𝑏⁻(2))
-1: propagtor graph from f⁺(1)b⁺(2)ϕ(3)f⁻(1)b⁻(2)
+1: propagator graph from f⁺(1)b⁺(2)ϕ(3)f⁻(1)b⁻(2)
 
 julia> standardize_order!(g)
 
 julia> g, g.factor
-(1: propagtor graph from f⁻(1)b⁻(2)ϕ(3)b⁺(2)f⁺(1), -1.0)
+(1: propagator graph from f⁻(1)b⁻(2)ϕ(3)b⁺(2)f⁺(1), -1.0)
 ```
 """
 function standardize_order!(g::Graph)
-    for leaf in Leaves(g)
-        for (i, vertex) in enumerate(leaf.vertices)
-            sign, newvertex = correlator_order(vertex)
-            leaf.vertices[i] = OperatorProduct(newvertex)
-            leaf.factor *= sign
+    for node in PreOrderDFS(g)
+        if node.type in [:interaction, :sigma]
+            sign, node.external = normal_order(reduce(*, external(node)))
+            node.factor *= sign
+        elseif node.type in [:green, :propagator]
+            sign, node.external = correlator_order(reduce(*, external(node)))
+            node.factor *= sign
         end
     end
+    # for leaf in Leaves(g)
+    #     for (i, vertex) in enumerate(leaf.vertices)
+    #         sign, newvertex = correlator_order(vertex)
+    #         leaf.vertices[i] = OperatorProduct(newvertex)
+    #         leaf.factor *= sign
+    #     end
+    # end
 end
 
 #####################  interface to AbstractTrees ########################### 
