@@ -392,10 +392,12 @@ julia> g, g.factor
 function standardize_order!(g::Graph)
     for node in PreOrderDFS(g)
         if node.type in [:interaction, :sigma]
-            sign, node.external = normal_order(reduce(*, external(node)))
+            sign, perm = normal_order(reduce(*, external(node)))
+            node.external = node.external[perm]
             node.factor *= sign
         elseif node.type in [:green, :propagator]
-            sign, node.external = correlator_order(reduce(*, external(node)))
+            sign, perm = correlator_order(reduce(*, external(node)))
+            node.external = node.external[perm]
             node.factor *= sign
         end
     end

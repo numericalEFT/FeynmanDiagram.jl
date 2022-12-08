@@ -92,7 +92,7 @@ end
 @testset "feynman_diagram" begin
     # phi theory 
     V1 = [𝜙(1)𝜙(1)𝜙(2)𝜙(2),]
-    g1 = feynman_diagram(V1, [[1, 2], [3, 4]])
+    g1 = feynman_diagram(V1, [[1, 2], [3, 4]])    #vacuum diagram
     # g1 = feynman_diagram(V1, [1, 1, 2, 2])
     @test vertices(g1) == V1
     @test isempty(external(g1))
@@ -103,16 +103,18 @@ end
     #complex scalar field
     V2 = [𝑏⁺(1), 𝑏⁺(2)𝑏⁺(3)𝑏⁻(4)𝑏⁻(5), 𝑏⁺(6)𝑏⁺(7)𝑏⁻(8)𝑏⁻(9), 𝑏⁻(10)]
     # g2 = feynman_diagram(V2, [1, 2, 3, 4, 1, 4, 5, 2, 3, 5]; external=[1, 10])
-    g2 = feynman_diagram(V2, [[1, 5], [2, 8], [3, 9], [4, 6], [7, 10]]; external=[1, 10])
+    g2 = feynman_diagram(V2, [[1, 5], [2, 8], [3, 9], [4, 6], [7, 10]]; external=[1, 10], type=:green)    # Green2
     @test vertices(g2) == V2
     @test external(g2) == OperatorProduct(V2)[[1, 10]]
+    standardize_order!(g2)
+    @test external(g2) == OperatorProduct(V2)[[10, 1]]
     # @test internal_vertices(g2) == V2[2:3]
     # @test isequiv(g2, gg2, :id)
 
     # Yukawa 
     V3 = [𝑓⁺(1)𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5)𝜙(6)]
     # g3 = feynman_diagram(V3, [1, 2, 3, 2, 1, 3])
-    g3 = feynman_diagram(V3, [[1, 5], [2, 4], [3, 6]])
+    g3 = feynman_diagram(V3, [[1, 5], [2, 4], [3, 6]])  #vacuum diagram
     @test vertices(g3) == V3
     @test isempty(external(g3))
     # @test internal_vertices(g3) == V3
@@ -125,28 +127,34 @@ end
     # @test !isequiv(g3, gg3, :id)
 
     V4 = [𝑓⁺(1)𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5)𝜙(6), 𝑓⁺(7)𝑓⁻(8)𝜙(9), 𝑓⁺(10)𝑓⁻(11)𝜙(12)]
-    gg4 = feynman_diagram(V4, [[1, 8], [2, 10], [4, 11], [5, 7], [9, 12]])
+    gg4 = feynman_diagram(V4, [[1, 8], [2, 10], [4, 11], [5, 7], [9, 12]], type=:sigma) # self energy
     @test vertices(gg4) == V4
+    @test external(gg4) == OperatorProduct(V4)[[3, 6]]
+    standardize_order!(gg4)
     @test external(gg4) == OperatorProduct(V4)[[3, 6]]
     # @test internal_vertices(g4) == V4[3:4]
     # g4 = feynman_diagram(V4, [1, 2, 0, 3, 4, 0, 4, 1, 5, 2, 3, 5], external=[3, 6])
     # @test isequiv(g4, gg4, :id)
 
     V5 = [𝑓⁺(1)𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5)𝜙(6), 𝑓⁺(7)𝑓⁻(8)𝜙(9)]
-    g5 = feynman_diagram(V5, [[2, 4], [3, 9], [5, 7]], external=[1, 6, 8])
+    g5 = feynman_diagram(V5, [[2, 4], [3, 9], [5, 7]], external=[1, 6, 8], type=:interaction)  # vertex function
     @test vertices(g5) == V5
     @test external(g5) == OperatorProduct(V5)[[1, 6, 8]]
     # @test isempty(internal_vertices(g5))
     g5s = deepcopy(g5)
     standardize_order!(g5)
+    @test external(g5) == OperatorProduct(V5)[[1, 6, 8]]
     @test g5s == g5
 
-    gg5 = feynman_diagram(V5, [[2, 4], [3, 9], [5, 7]], external=[8, 6, 1])
+    gg5 = feynman_diagram(V5, [[2, 4], [3, 9], [5, 7]], external=[8, 6, 1], type=:interaction)
     @test g5.factor ≈ gg5.factor * (-1)
+    standardize_order!(gg5)
+    @test external(gg5) == OperatorProduct(V5)[[6, 1, 8]]
+    @test gg5.factor ≈ g5.factor
     # gg5 = feynman_diagram(V5, [1, 2, 1, 3, 3, 2], external=[1, 2, 3])
 
     ggg5 = feynman_diagram(V5, [[2, 4], [3, 9], [5, 7]])
-    @test isequiv(g5, ggg5, :id)
+    @test isequiv(g5, ggg5, :id, :type)
 
     # multi-oeprators (>2) contractions
     V6 = [𝑓⁺(1)𝑓⁻(2)𝑏⁺(3), 𝜙(4)𝑓⁺(5)𝑓⁻(6), 𝑓(7)𝑏⁻(8)𝜙(9)]

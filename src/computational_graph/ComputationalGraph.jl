@@ -3,7 +3,7 @@ module ComputationalGraphs
 using AbstractTrees
 using Printf, PyCall, DataFrames
 
-import ..QuantumOperators: QuantumOperator, OperatorProduct, 𝑓⁻, 𝑓⁺, 𝑓, 𝑏⁻, 𝑏⁺, 𝜙, iscreation, isfermionic, parity, correlator_order
+import ..QuantumOperators: QuantumOperator, OperatorProduct, 𝑓⁻, 𝑓⁺, 𝑓, 𝑏⁻, 𝑏⁺, 𝜙, iscreation, isfermionic, parity, normal_order, correlator_order
 
 include("common.jl")
 export labelreset
