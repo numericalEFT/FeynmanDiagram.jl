@@ -1,4 +1,4 @@
-^abstract type AbstractOperator end
+abstract type AbstractOperator end
 struct Sum <: AbstractOperator end
 struct Prod <: AbstractOperator end
 Base.isequal(a::AbstractOperator, b::AbstractOperator) = (typeof(a) == typeof(b))
@@ -245,7 +245,7 @@ julia> g.subgraph
  4: propagtor graph from ϕ(3)ϕ(6)
 ```
 """
-function feynman_diagram(vertices::Vector{OperatorProgduct}, contractions::Vector{Int};
+function feynman_diagram(vertices::Vector{OperatorProduct}, contractions::Vector{Int};
     external=[], factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic)
 
     contraction_sign, topology, edges = contractions_to_edges(vertices, contractions)
@@ -417,9 +417,10 @@ function standardize_order!(g::Graph)
     end
 end
 
-function merge_prefactors(g::Graph{F,W}) 
-    if g.subgraph[1].subgraph==g.subgraph[2].subgraph
-        return Graph(g.subgraph[1].vertices;external=g.subgraph[1].external,type=g.subgraph[1].type,topology=g.subgraph[1].topology,ftype=F, wtype=W,factor=F(g.subgraph[1].factor+g.subgraph[2].factor))
+function merge_prefactors(g::Graph{F,W}) where {F,W}
+    if (isequiv(g.subgraph[1],g.subgraph[2], :factor, :id))
+        return Graph(g.subgraph[1].vertices;external=g.subgraph[1].external,type=g.subgraph[1].type,topology=g.subgraph[1].topology,subgraph=g.subgraph[1].subgraph, 
+        ftype=F, wtype=W,factor=F(g.subgraph[1].factor+g.subgraph[2].factor))
     else
         return g
     end
