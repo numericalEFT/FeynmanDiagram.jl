@@ -7,22 +7,29 @@
     println(external(g1))
     @test external(g2) == external(g1)
     @test g2.factor == 2
+    @test g2.subgraph_factors == [1]
     @test g2.operator == FeynmanDiagram.ComputationalGraphs.Prod
     g2 = 2g1
     @test vertices(g2) == vertices(g1)
     @test external(g2) == external(g1)
     @test g2.factor == 2
+    @test g2.subgraph_factors == [1]
     @test g2.operator == FeynmanDiagram.ComputationalGraphs.Prod
     g3 = g1 + g2
     @test vertices(g3) == vertices(g1)
     @test external(g3) == external(g1)
+    @test g3.factor == 1
+    @test g3.subgraph_factors == [1, 2]
+    @test g3.subgraphs == [g1, g2]
     @test g3.operator == FeynmanDiagram.ComputationalGraphs.Sum
-    @test g3.subgraph == [g1, g2]
     g4 = g1 - g2
     @test vertices(g4) == vertices(g1)
     @test external(g4) == external(g1)
+    @test g4.factor == 1
+    @test g4.subgraph_factors == [1, -2]
+    @test g4.subgraphs[2].factor == -2
+    @test g4.subgraphs[2].subgraphs[1].factor == 2
     @test g4.operator == FeynmanDiagram.ComputationalGraphs.Sum
-    @test g4.subgraph[2].factor == -1
 end
 
 # @testset "Contractions" begin
@@ -118,12 +125,14 @@ end
     @test vertices(g3) == V3
     @test isempty(external(g3))
     # @test internal_vertices(g3) == V3
-    @test g3.subgraph[1].factor == 1
-    @test OperatorProduct(external(g3.subgraph[1])) == 𝑓⁺(1)𝑓⁻(5)
+    @test g3.subgraphs[1].factor == 1
+    @test g3.subgraphs[1].vertices == [𝑓⁺(1)𝑓⁻(5)]
+    @test g3.subgraphs[1].factor == 1
+    @test OperatorProduct(external(g3.subgraphs[1])) == 𝑓⁺(1)𝑓⁻(5)
     standardize_order!(g3)
-    @test g3.subgraph[1].factor == -1
-    @test OperatorProduct(external(g3.subgraph[1])) == 𝑓⁻(5)𝑓⁺(1)
-    # @test gg3.subgraph[1].factor == 1
+    @test g3.subgraphs[1].factor == -1
+    @test OperatorProduct(external(g3.subgraphs[1])) == 𝑓⁻(5)𝑓⁺(1)
+    # @test gg3.subgraphs[1].factor == 1
     # @test !isequiv(g3, gg3, :id)
 
     V4 = [𝑓⁺(1)𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5)𝜙(6), 𝑓⁺(7)𝑓⁻(8)𝜙(9), 𝑓⁺(10)𝑓⁻(11)𝜙(12)]
@@ -160,13 +169,15 @@ end
     V6 = [𝑓⁺(1)𝑓⁻(2)𝑏⁺(3), 𝜙(4)𝑓⁺(5)𝑓⁻(6), 𝑓(7)𝑏⁻(8)𝜙(9)]
     g6 = feynman_diagram(V6, [[1, 2, 3, 8], [4, 5, 6, 9]])
     @test vertices(g6) == V6
-    @test OperatorProduct(external(g6.subgraph[1])) == 𝑓⁺(1)𝑓⁻(2)𝑏⁺(3)𝑏⁻(8)
-    @test OperatorProduct(external(g6.subgraph[2])) == 𝜙(4)𝑓⁺(5)𝑓⁻(6)𝜙(9)
+    @test g6.subgraphs[1].vertices == [𝑓⁺(1)𝑓⁻(2)𝑏⁺(3)𝑏⁻(8)]
+    @test g6.subgraphs[2].vertices == [𝜙(4)𝑓⁺(5)𝑓⁻(6)𝜙(9)]
+    @test OperatorProduct(external(g6.subgraphs[1])) == 𝑓⁺(1)𝑓⁻(2)𝑏⁺(3)𝑏⁻(8)
+    @test OperatorProduct(external(g6.subgraphs[2])) == 𝜙(4)𝑓⁺(5)𝑓⁻(6)𝜙(9)
     standardize_order!(g6)
-    @test g6.subgraph[1].factor == -1
-    @test OperatorProduct(external(g6.subgraph[1])) == 𝑓⁻(2)𝑏⁻(8)𝑏⁺(3)𝑓⁺(1)
-    @test g6.subgraph[2].factor == -1
-    @test OperatorProduct(external(g6.subgraph[2])) == 𝜙(4)𝑓⁻(6)𝜙(9)𝑓⁺(5)
+    @test g6.subgraphs[1].factor == -1
+    @test OperatorProduct(external(g6.subgraphs[1])) == 𝑓⁻(2)𝑏⁻(8)𝑏⁺(3)𝑓⁺(1)
+    @test g6.subgraphs[2].factor == -1
+    @test OperatorProduct(external(g6.subgraphs[2])) == 𝜙(4)𝑓⁻(6)𝜙(9)𝑓⁺(5)
 
     gg6 = deepcopy(g6)
     gg6.id = 1000
@@ -176,10 +187,10 @@ end
     # g1 = ComputationalGraphs.propagator(𝑓⁺(1)𝑓⁻(2),)
     # g2 = ComputationalGraphs.propagator(𝑓⁺(2)𝑓⁻(1),)
     # g = feynman_diagram([g1, g2], [1, 2, 2, 1]; external=[1, 2]) #build Feynman diagram from Graphs with Wick's contractions
-    # @test external(g) == [external(g1)..., external(g2)...]
+    # @test external(g) == [external(g1); external(g2)]
     # @test isempty(internal_vertices(g))
 
     # g = feynman_diagram([g1, g2], [1, 2, 2, 1]; external=[1, 2]) #build Feynman diagram from Graphs with topology
-    # @test external(g) == [external(g1)..., external(g2)...]
+    # @test external(g) == [external(g1); external(g2)]
     # @test isempty(internal_vertices(g))
 end
