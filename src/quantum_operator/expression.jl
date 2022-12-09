@@ -116,9 +116,9 @@ function normal_order(operator::OperatorProduct)
 end
 
 """
-    function normal_order(operator::OperatorProduct)
+    function correlator_order(operator::OperatorProduct)
 
-    Convert a OperatorProduct to correlator-ordered form. 
+    Convert an OperatorProduct to correlator-ordered form. 
     Returns the associated statistical sign and ordered OperatorProduct.
 """
 function correlator_order(operator::OperatorProduct)
