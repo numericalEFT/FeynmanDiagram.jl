@@ -124,6 +124,7 @@ end
     g3 = feynman_diagram(V3, [[1, 5], [2, 4], [3, 6]])  #vacuum diagram
     @test vertices(g3) == V3
     @test isempty(external(g3))
+    @test g3.factor == 1
     # @test internal_vertices(g3) == V3
     @test g3.subgraphs[1].factor == 1
     @test g3.subgraphs[1].vertices == [𝑓⁺(1)𝑓⁻(5)]
@@ -136,7 +137,8 @@ end
     # @test !isequiv(g3, gg3, :id)
 
     V4 = [𝑓⁺(1)𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5)𝜙(6), 𝑓⁺(7)𝑓⁻(8)𝜙(9), 𝑓⁺(10)𝑓⁻(11)𝜙(12)]
-    gg4 = feynman_diagram(V4, [[1, 8], [2, 10], [4, 11], [5, 7], [9, 12]], type=:sigma) # self energy
+    gg4 = feynman_diagram(V4, [[1, 8], [2, 10], [4, 11], [5, 7], [9, 12]], type=:sigma) # polarization diagram
+    @test gg4.factor == -1
     @test vertices(gg4) == V4
     @test external(gg4) == OperatorProduct(V4)[[3, 6]]
     standardize_order!(gg4)
@@ -147,6 +149,7 @@ end
 
     V5 = [𝑓⁺(1)𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5)𝜙(6), 𝑓⁺(7)𝑓⁻(8)𝜙(9)]
     g5 = feynman_diagram(V5, [[2, 4], [3, 9], [5, 7]], external=[1, 6, 8], type=:interaction)  # vertex function
+    @test g5.factor == 1
     @test vertices(g5) == V5
     @test external(g5) == OperatorProduct(V5)[[1, 6, 8]]
     # @test isempty(internal_vertices(g5))
@@ -161,27 +164,48 @@ end
     @test external(gg5) == OperatorProduct(V5)[[6, 1, 8]]
     @test gg5.factor ≈ g5.factor
     # gg5 = feynman_diagram(V5, [1, 2, 1, 3, 3, 2], external=[1, 2, 3])
-
     ggg5 = feynman_diagram(V5, [[2, 4], [3, 9], [5, 7]])
     @test isequiv(g5, ggg5, :id, :type)
 
-    # multi-oeprators (>2) contractions
-    V6 = [𝑓⁺(1)𝑓⁻(2)𝑏⁺(3), 𝜙(4)𝑓⁺(5)𝑓⁻(6), 𝑓(7)𝑏⁻(8)𝜙(9)]
-    g6 = feynman_diagram(V6, [[1, 2, 3, 8], [4, 5, 6, 9]])
-    @test vertices(g6) == V6
-    @test g6.subgraphs[1].vertices == [𝑓⁺(1)𝑓⁻(2)𝑏⁺(3)𝑏⁻(8)]
-    @test g6.subgraphs[2].vertices == [𝜙(4)𝑓⁺(5)𝑓⁻(6)𝜙(9)]
-    @test OperatorProduct(external(g6.subgraphs[1])) == 𝑓⁺(1)𝑓⁻(2)𝑏⁺(3)𝑏⁻(8)
-    @test OperatorProduct(external(g6.subgraphs[2])) == 𝜙(4)𝑓⁺(5)𝑓⁻(6)𝜙(9)
-    standardize_order!(g6)
-    @test g6.subgraphs[1].factor == -1
-    @test OperatorProduct(external(g6.subgraphs[1])) == 𝑓⁻(2)𝑏⁻(8)𝑏⁺(3)𝑓⁺(1)
-    @test g6.subgraphs[2].factor == -1
-    @test OperatorProduct(external(g6.subgraphs[2])) == 𝜙(4)𝑓⁻(6)𝜙(9)𝑓⁺(5)
 
-    gg6 = deepcopy(g6)
-    gg6.id = 1000
-    @test isequiv(g6, gg6, :id)
+    V6 = [𝑓⁺(1), 𝑓⁺(2)𝑓⁻(3)𝜙(4), 𝑓⁺(5)𝑓⁻(6)𝜙(7), 𝑓⁻(8)]
+    g6 = feynman_diagram(V6, [[1, 3], [2, 6], [4, 7], [5, 8]], external=[1, 8], type=:green)    # fermionic Green2
+    @test g6.factor == 1
+    @test external(g6) == OperatorProduct(V6)[[1, 8]]
+    standardize_order!(g6)
+    @test g6.factor == -1
+    gg6 = feynman_diagram(V6, [[1, 3], [2, 6], [4, 7], [5, 8]], external=[8, 1], type=:green)
+    @test gg6.factor ≈ g6.factor
+
+    V7 = [𝑓⁺(1)𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5)𝜙(6), 𝑓⁻(7)]
+    g7 = feynman_diagram(V7, [[1, 5], [3, 6], [4, 7]], external=[2, 7])     # sigma*G
+    @test g7.factor == 1
+
+    V8 = [𝑓⁺(1), 𝑓⁺(2)𝑓⁻(3)𝜙(4), 𝑓⁺(5)𝑓⁻(6)𝜙(7), 𝑓⁺(8)𝑓⁻(9)𝜙(10), 𝑓⁻(11), 𝑓⁺(12)𝑓⁻(13)𝜙(14)]
+    g8 = feynman_diagram(V8, [[1, 3], [2, 6], [4, 14], [5, 13], [7, 10], [8, 11]], external=[1, 9, 11, 12])
+    @test g8.factor == -1
+    gg8 = feynman_diagram(V8, [[1, 3], [2, 6], [4, 14], [5, 13], [7, 10], [8, 11]], external=[9, 1, 11, 12])
+    @test gg8.factor == -1
+
+
+    # multi-oeprators (>2) contractions
+    Vm = [𝑓⁺(1)𝑓⁻(2)𝑏⁺(3), 𝜙(4)𝑓⁺(5)𝑓⁻(6), 𝑓(7)𝑏⁻(8)𝜙(9)]
+    gm = feynman_diagram(Vm, [[1, 2, 3, 8], [4, 5, 6, 9]])
+    @test vertices(gm) == Vm
+    @test gm.subgraphs[1].vertices == [𝑓⁺(1)𝑓⁻(2)𝑏⁺(3)𝑏⁻(8)]
+    @test gm.subgraphs[2].vertices == [𝜙(4)𝑓⁺(5)𝑓⁻(6)𝜙(9)]
+    @test OperatorProduct(external(gm.subgraphs[1])) == 𝑓⁺(1)𝑓⁻(2)𝑏⁺(3)𝑏⁻(8)
+    @test OperatorProduct(external(gm.subgraphs[2])) == 𝜙(4)𝑓⁺(5)𝑓⁻(6)𝜙(9)
+    standardize_order!(gm)
+    @test gm.subgraphs[1].factor == -1
+    @test OperatorProduct(external(gm.subgraphs[1])) == 𝑓⁻(2)𝑏⁻(8)𝑏⁺(3)𝑓⁺(1)
+    @test gm.subgraphs[2].factor == -1
+    @test OperatorProduct(external(gm.subgraphs[2])) == 𝜙(4)𝑓⁻(6)𝜙(9)𝑓⁺(5)
+
+    ggm = deepcopy(gm)
+    ggm.id = 1000
+    @test isequiv(gm, ggm, :id)
+
 
     # construct Feynman diagram from Graphs
     # g1 = ComputationalGraphs.propagator(𝑓⁺(1)𝑓⁻(2),)

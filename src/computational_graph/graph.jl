@@ -269,19 +269,22 @@ function feynman_diagram(vertices::Vector{OperatorProduct}, topology::Vector{Vec
     external::Union{Nothing,AbstractVector}=nothing, factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic)
 
     operators = [o for v in vertices for o in v.operators]
-    permutation = collect(Iterators.flatten(topology))
+    contraction = collect(Iterators.flatten(topology))
     if isnothing(external)
-        external = [i for i in eachindex(operators) if i ∉ permutation]
+        external = [i for i in eachindex(operators) if i ∉ contraction]
     end
-    @assert length(unique(permutation)) == length(permutation) # no repeated index
+    @assert length(unique(contraction)) == length(contraction) # no repeated index
     @assert length(unique(external)) == length(external) # no repeated index
-    @assert Set(union(external, permutation)) == Set(eachindex(operators)) # external + permutation must exhaust all operators
+    @assert Set(union(external, contraction)) == Set(eachindex(operators)) # external + permutation must exhaust all operators
+
+    permutation = union(contraction, external)
+    _external = intersect(external, contraction)
 
     fermionic_operators = isfermionic.(operators)
     filter!(p -> fermionic_operators[p], permutation)
     sign = isempty(permutation) ? 1 : parity(sortperm(permutation))
 
-    _external = filter(p -> fermionic_operators[p], external)
+    filter!(p -> fermionic_operators[p], _external)
     ext_sign = isempty(_external) ? 1 : parity(sortperm(_external))
     # println(_external, ", ", ext_sign)
 
