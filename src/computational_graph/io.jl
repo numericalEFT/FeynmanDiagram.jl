@@ -6,7 +6,7 @@
 #     d[:id] = diag.id
 #     d[:name] = diag.name
 #     d[:diagram] = diag
-#     d[:subgraph] = Tuple(d.hash for d in diag.subgraph)
+#     d[:subgraphs] = Tuple(d.hash for d in diag.subgraphs)
 #     d[:operator] = diag.operator
 #     d[:factor] = diag.factor
 #     d[:weight] = diag.weight
