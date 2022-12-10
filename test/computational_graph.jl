@@ -172,4 +172,29 @@ end
     # g = feynman_diagram([g1, g2], [1, 2, 2, 1]; external=[1, 2]) #build Feynman diagram from Graphs with topology
     # @test external(g) == [external(g1)..., external(g2)...]
     # @test isempty(internal_vertices(g))
+
+
+end
+
+@testset "Graph Operations" begin
+    V2 = [𝑏⁺(1), 𝑏⁺(2)𝑏⁻(3), 𝑏⁺(4)𝑏⁻(5), 𝑏⁺(6)𝑏⁻(7), 𝑏⁺(8)𝑏⁻(9), 𝑏⁻(10)]
+    # g2 = feynman_diagram(V2, [1, 2, 3, 4, 1, 4, 5, 2, 3, 5]; external=[1, 10])
+    g2 = feynman_diagram(V2, [[1, 3], [2, 5], [4, 7], [6, 9], [8, 10]]; external=[1, 10])
+    print("$(g2.subgraph), $(g2.factor), $(g2.operator) \n")
+    g3 = feynman_diagram(V2, [[1, 3], [2, 7], [6, 5], [4, 9], [8, 10]]; external=[1, 10])
+    print("$(g3.subgraph), $(g3.factor), $(g3.operator) \n")
+    g4 = feynman_diagram(V2, [[1, 5], [4, 3], [2, 7], [6, 9], [8, 10]]; external=[1, 10])
+    gsum = Graph(V2, external=[1, 10], subgraph=[g2,g3,g4],operator=ComputationalGraphs.Sum())
+    print("$(gsum.subgraph), $(gsum.factor), $(gsum.operator) \n\n")
+    for v in gsum.subgraph
+        print("$(v.subgraph), $(v.factor), $(v.operator) \n\n")
+    end
+
+    gfactor=ComputationalGraphs.factorize(gsum)
+    print("$(gfactor.subgraph), $(gfactor.factor), $(gfactor.operator) \n\n")
+    for v in gfactor.subgraph
+        for vv in v.subgraph
+            print("$(v.subgraph), $(v.factor), $(v.operator) \n\n")
+        end
+    end
 end

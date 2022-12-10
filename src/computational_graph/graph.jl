@@ -399,6 +399,57 @@ function standardize_order!(g::Graph)
     end
 end
 
+function remove_graph(parent::Graph{F,W}, children::Graph{F,W}) where{F,W}
+    # Remove children from parent subgraph. Currently only applies for Prod() node.
+    #TODO: vertices, external, topology, factor should be changed accordingly
+    return  Graph(parent.vertices;external=parent.external,type=parent.type,topology=parent.topology,subgraph=[v for v in parent.subgraph if !isequiv(v,children, :factor, :id)], operator = Prod(), ftype=F, wtype=W, factor=parent.factor)
+end
+function factorize(g::Graph{F,W}) where{F,W}
+    #@assert g.operator==Sum() "factorize requires the operator to be Sum()"
+    lv2pool=[] # The union of all level 2 subgraphs
+    lv2_in_which=[] # For each unique level 2 subgraph, record the index of level 1 subgraphs that contains it 
+    lv2_factor=[]  # Record the different factors of identical level 2 subgraphs in each level 1 subgraph that contains it 
+    for (i,vi) in enumerate(g.subgraph)
+        #@assert vi.operator == Prod() "factorize requires the operator of all subgraphs to be Prod()"
+        for (j,vvj) in enumerate(vi.subgraph)
+            idx = findfirst([isequiv(vvj, v, :factor, :id) for v in lv2pool])
+            if isnothing(idx)
+                push!(lv2pool,vvj)
+                push!(lv2_in_which, [i,])
+                push!(lv2_factor, [vvj.factor,])
+            else
+                push!(lv2_in_which[idx], i)
+                push!(lv2_factor[idx], vvj.factor)                
+            end
+        end
+    end
+    # The level 2 subgraph that we factorize is the one shared by largest number of level 1 subgraph
+    commonidx=findmax([length(lv2_in_which[i]) for i in 1:length(lv2_in_which)])[2]
+    commongraph = lv2pool[commonidx]
+    uncommonlist = [] # The union of all level 2 subgraphs, except for commongraph, from level 1 subgraphs that shares commongraph.  
+
+    for i in lv2_in_which[commonidx]
+        #TODO: when adding level 2 subgraphs, merge the identical ones with merge_factor
+        #The different factors of the commongraph can not be factored out, and should go into the rest of the graphs 
+        push!(uncommonlist, remove_graph(g.subgraph[i], commongraph))
+    end
+    #TODO: how factor and topology propagates here still need some thinking
+    uncommongraph = Graph(uncommonlist[1].vertices;external=uncommonlist[1].external,type=uncommonlist[1].type,topology=uncommonlist[1].topology,subgraph=uncommonlist,operator = Sum(), 
+                          ftype=F, wtype=W) # All subgraphs that are summed should have the same set of vertices
+    refactoered_graph = Graph(g.vertices;external=g.external,type=g.type,topology=g.topology,subgraph=[commongraph, uncommongraph], operator = Prod(), 
+                              ftype=F, wtype=W,factor=1)
+    # The refactorized graph should have the same set of vertices as original one
+    if(length(lv2_in_which[commonidx])==length(g.subgraph))
+        # When the common factor is shared by all level 1 subgraph,
+        # the node should be merged in to a product
+        refactoered_graph.factor = g.factor 
+        return refactoered_graph
+    else
+        return  Graph(g.vertices;external=g.external,type=g.type,topology=g.topology,subgraph=vcat([refactoered_graph], [g.subgraph[i] for i in 1:length(g.subgraph) if i∉lv2_in_which[commonidx]]), operator = Sum(), ftype=F, wtype=W,factor=g.factor)
+    end    
+end
+
+
 #####################  interface to AbstractTrees ########################### 
 function AbstractTrees.children(diag::Graph)
     return diag.subgraph
