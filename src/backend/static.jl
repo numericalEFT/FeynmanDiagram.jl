@@ -21,7 +21,7 @@ Compile a list of graphs into a string for a julia static function. The function
 
 # Example:
 ```julia-repl
-julia> g = Graph([𝑓⁺(1)𝑓⁻(2), 𝑓⁺(3)𝑓⁻(4)], external=[1, 2], subgraph=[Graph([𝑓⁺(1)𝑓⁻(4)]), Graph([𝑓⁻(2)𝑓⁺(3)])])
+julia> g = Graph([𝑓⁺(1)𝑓⁻(2), 𝑓⁺(3)𝑓⁻(4)], external=[1, 2], subgraphs=[Graph([𝑓⁺(1)𝑓⁻(4)]), Graph([𝑓⁻(2)𝑓⁺(3)])])
 3:f⁺(1)f⁻(2)|f⁺(3)f⁻(4)=0.0=⨁ (1,2)
 
 julia> gs = Compilers.static_graph([g, ])
@@ -47,11 +47,11 @@ function static_graph(graphs::AbstractVector; root::AbstractVector{Int}=[g.id fo
             else
                 target = "g$(g.id)"
             end
-            if isempty(g.subgraph) #leaf
+            if isempty(g.subgraphs) #leaf
                 body *= "    $target = leaf[$leafidx]\n "
                 leafidx += 1
             else
-                body *= "    $target = $(_to_static(g.operator, g.subgraph))*$(g.factor)\n "
+                body *= "    $target = $(_to_static(g.operator, g.subgraphs))*$(g.factor)\n "
             end
         end
     end

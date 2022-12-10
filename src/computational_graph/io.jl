@@ -24,7 +24,7 @@ function _DiagtoDict!(dict::Dict{Symbol,Any}, diagVec::Vector{Graph{W}}; maxdept
     _addkey!(dict, :hash, [diag.hash for diag in diagVec])
     _addkey!(dict, :name, [diag.name for diag in diagVec])
     _addkey!(dict, :graph, diagVec)
-    _addkey!(dict, :subgraph, [Tuple(d.hash for d in diag.subgraph) for diag in diagVec])
+    _addkey!(dict, :subgraphs, [Tuple(d.hash for d in diag.subgraphs) for diag in diagVec])
     _addkey!(dict, :operator, [diag.operator for diag in diagVec])
     _addkey!(dict, :factor, [diag.factor for diag in diagVec])
     _addkey!(dict, :weight, [diag.weight for diag in diagVec])
@@ -149,7 +149,7 @@ function _summary(diag::Graph{W}, color=true) where {W}
     wstr = short(diag.weight)
     # =$(node.weight*(2π)^(3*node.id.para.innerLoopNum))
 
-    if length(diag.subgraph) == 0
+    if length(diag.subgraphs) == 0
         return isempty(fstr) ? "$idstr=$wstr" : "$(idstr)⋅$(fstr)=$wstr"
     else
         return "$idstr=$wstr=$fstr$(diag.operator) "
@@ -162,10 +162,10 @@ end
     Write a text representation of `Graph` to the output stream `io`.
 """
 function Base.show(io::IO, diag::Graph)
-    if length(diag.subgraph) == 0
+    if length(diag.subgraphs) == 0
         typestr = ""
     else
-        typestr = join(["$(d.id)" for d in diag.subgraph], ",")
+        typestr = join(["$(d.id)" for d in diag.subgraphs], ",")
         typestr = "($typestr)"
     end
     print(io, "$(_summary(diag, true))$typestr")
@@ -203,10 +203,10 @@ function plot_tree(diag::Graph; verbose=0, maxdepth=6)
         end
         nt = t.add_child(name="$(_summary(node, false))")
 
-        if length(node.subgraph) > 0
+        if length(node.subgraphs) > 0
             name_face = ete.TextFace(nt.name, fgcolor="black", fsize=10)
             nt.add_face(name_face, column=0, position="branch-top")
-            for child in node.subgraph
+            for child in node.subgraphs
                 treeview(child, level + 1, nt)
             end
         end
