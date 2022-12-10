@@ -90,7 +90,7 @@ export QuantumOperator, OperatorProduct, isfermionic
 export 𝑓⁻, 𝑓⁺, 𝑓, 𝑏⁻, 𝑏⁺, 𝜙
 export fermionic_annihilation, fermionic_creation, majorana
 export bosonic_annihilation, bosonic_creation, real_classic
-export correlator_order
+export correlator_order, normal_order
 
 include("computational_graph/ComputationalGraph.jl")
 using .ComputationalGraphs

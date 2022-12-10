@@ -247,28 +247,31 @@ julia> g = feynman_diagram([𝑓⁺(1)𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5)�
 
 julia> g.subgraphs
 3-element Vector{Graph{Float64, Float64}}:
- 2: propagtor graph from f⁻(5)f⁺(1)
- 3: propagtor graph from f⁻(2)f⁺(4)
- 4: propagtor graph from ϕ(3)ϕ(6)
+ 2: propagator graph from f⁻(5)f⁺(1)
+ 3: propagator graph from f⁻(2)f⁺(4)
+ 4: propagator graph from ϕ(3)ϕ(6)
 ```
 """
 function feynman_diagram(vertices::Vector{OperatorProduct}, topology::Vector{Vector{Int}};
     external::Union{Nothing,AbstractVector}=nothing, factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic)
 
     operators = [o for v in vertices for o in v.operators]
-    permutation = collect(Iterators.flatten(topology))
+    contraction = collect(Iterators.flatten(topology))
     if isnothing(external)
-        external = [i for i in eachindex(operators) if i ∉ permutation]
+        external = [i for i in eachindex(operators) if i ∉ contraction]
     end
-    @assert length(unique(permutation)) == length(permutation) # no repeated index
+    @assert length(unique(contraction)) == length(contraction) # no repeated index
     @assert length(unique(external)) == length(external) # no repeated index
-    @assert Set(union(external, permutation)) == Set(eachindex(operators)) # external + permutation must exhaust all operators
+    @assert Set(union(external, contraction)) == Set(eachindex(operators)) # external + permutation must exhaust all operators
+
+    permutation = union(contraction, external)
+    _external = intersect(external, contraction)
 
     fermionic_operators = isfermionic.(operators)
     filter!(p -> fermionic_operators[p], permutation)
     sign = isempty(permutation) ? 1 : parity(sortperm(permutation))
 
-    _external = filter(p -> fermionic_operators[p], external)
+    filter!(p -> fermionic_operators[p], _external)
     ext_sign = isempty(_external) ? 1 : parity(sortperm(_external))
     # println(_external, ", ", ext_sign)
 
@@ -282,12 +285,12 @@ end
 
 """
     function propagator(ops::OperatorProduct;
-        name="", diagtype=:propagtor, factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
+        name="", diagtype=:propagator, factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
 
     Create a propagator-type Graph from given OperatorProduct `ops`.
 """
 function propagator(ops::OperatorProduct;
-    name="", diagtype=:propagtor, factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
+    name="", diagtype=:propagator, factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
     return Graph([ops,]; external=collect(eachindex(ops)), type=diagtype, name=name, operator=operator, factor=factor, weight=weight)
 end
 
@@ -299,20 +302,24 @@ end
 # Example: 
 ```julia-repl
 julia> g = propagator(𝑓⁺(1)𝑏⁺(2)𝜙(3)𝑓⁻(1)𝑏⁻(2))
-1: propagtor graph from f⁺(1)b⁺(2)ϕ(3)f⁻(1)b⁻(2)
+1: propagator graph from f⁺(1)b⁺(2)ϕ(3)f⁻(1)b⁻(2)
 
 julia> standardize_order!(g)
 
 julia> g, g.factor
-(1: propagtor graph from f⁻(1)b⁻(2)ϕ(3)b⁺(2)f⁺(1), -1.0)
+(1: propagator graph from f⁻(1)b⁻(2)ϕ(3)b⁺(2)f⁺(1), -1.0)
 ```
 """
 function standardize_order!(g::Graph)
-    for leaf in Leaves(g)
-        for (i, vertex) in enumerate(leaf.vertices)
-            sign, newvertex = correlator_order(vertex)
-            leaf.vertices[i] = OperatorProduct(newvertex)
-            leaf.factor *= sign
+    for node in PreOrderDFS(g)
+        if isempty(node.subgraphs)
+            sign, perm = correlator_order(OperatorProduct(external(node)))
+            node.external = node.external[perm]
+            node.factor *= sign
+        else
+            sign, perm = normal_order(OperatorProduct(external(node)))
+            node.external = node.external[perm]
+            node.factor *= sign
         end
     end
 end
