@@ -9,8 +9,8 @@ Base.show(io::IO, o::AbstractOperator) = print(io, typeof(o))
 Base.show(io::IO, ::Type{Sum}) = print(io, "⨁")
 Base.show(io::IO, ::Type{Prod}) = print(io, "Ⓧ")
 
-"""Type alias for a directed graph edge e = (a₁⁺, a₂⁻) from e[1] to e[2]."""
-const EdgeType = Tuple{QuantumOperator,QuantumOperator}
+# """Type alias for a directed graph edge e = (a₁⁺, a₂⁻) from e[1] to e[2]."""
+# const EdgeType = Tuple{QuantumOperator,QuantumOperator}
 
 """
     mutable struct Graph{F,W}
@@ -25,17 +25,18 @@ const EdgeType = Tuple{QuantumOperator,QuantumOperator}
 - `external::Vector{Int}`  index of external vertices (as QuantumOperators)
 - `vertices::Vector{OperatorProduct}`  vertices of the diagram. Each index is composited by the product of quantum operators.
 - `topology::Vector{Vector{Int}}` topology of the diagram. Each Vector{Int} stores vertices' index connected with each other (as a propagator). 
-- `subgraph::Vector{Graph{F,W}}`  vector of sub-diagrams 
+- `subgraphs::Vector{Graph{F,W}}`  vector of sub-diagrams 
+- `subgraph_factors::Vector{F}`  scalar multiplicative factors for each subdiagram
 - `operator::DataType`  node operation, support Sum and Prod
-- `factor::F`  additional factor of the diagram
+- `factor::F`  total scalar multiplicative factor for the diagram
 - `weight::W`  weight of the diagram
 
 # Example:
 ```julia-repl
-julia> g = Graph([𝑓⁺(1)𝑓⁻(2), 𝑓⁺(3)𝑓⁻(4)], external=[1, 2], subgraph=[Graph([𝑓⁺(1)𝑓⁻(4)], []), Graph([𝑓⁻(2)𝑓⁺(3)], [])])
+julia> g = Graph([𝑓⁺(1)𝑓⁻(2), 𝑓⁺(3)𝑓⁻(4)], external=[1, 2], subgraphs=[Graph([𝑓⁺(1)𝑓⁻(4)], []), Graph([𝑓⁻(2)𝑓⁺(3)], [])])
 3:f⁺(1)f⁻(2)|f⁺(3)f⁻(4)=0.0=⨁ (1,2)
 
-julia> g.subgraph
+julia> g.subgraphs
 2-element Vector{Graph{Float64, Float64}}:
  1:f⁺(1)f⁻(4)=0.0
  2:f⁻(2)f⁺(3)=0.0
@@ -51,14 +52,15 @@ mutable struct Graph{F,W} # Graph
     vertices::Vector{OperatorProduct} # vertices of the diagram
     topology::Vector{Vector{Int}}
 
-    subgraph::Vector{Graph{F,W}}
+    subgraphs::Vector{Graph{F,W}}
+    subgraph_factors::Vector{F}
 
     operator::DataType
     factor::F
     weight::W
 
     """
-        function Graph(vertices::Vector{OperatorProduct}; external=[], subgraph=[],
+        function Graph(vertices::Vector{OperatorProduct}; external=[], subgraphs=[],
             name="", type=:generic, operator::AbstractOperator=Sum(), orders=zeros(Int, 16),
             ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype))
         
@@ -68,22 +70,23 @@ mutable struct Graph{F,W} # Graph
     - `vertices::Vector{OperatorProduct}`  vertices of the diagram
     - `external`  index of external vertices in terms of QuantumOperators, empty by default
     - `topology` topology of the diagram
-    - `subgraph`  vector of sub-diagrams 
+    - `subgraphs`  vector of sub-diagrams 
+    - `subgraph_factors::Vector{F}`  scalar multiplicative factors for each subdiagram
     - `name`  name of the diagram
     - `type`  type of the diagram
     - `operator::DataType`  node operation, Sum, Prod, etc.
     - `orders`  orders of the diagram
     - `ftype`  typeof(factor)
     - `wtype`  typeof(weight)
-    - `factor`  additional factor of the diagram
+    - `factor::F`  total scalar multiplicative factor for the diagram
     - `weight`  weight of the diagram
     """
-    function Graph(vertices::AbstractVector; external=[], subgraph=[], topology=[],
-        name="", type=:generic, operator::AbstractOperator=Sum(), orders=zeros(Int, 16),
+    function Graph(vertices::AbstractVector; external=[], subgraphs=[], subgraph_factors=getproperty.(subgraphs, :factor),
+        topology=[], name="", type=:generic, operator::AbstractOperator=Sum(), orders=zeros(Int, 16),
         ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype)
     )
         vertices = [OperatorProduct(v) for v in vertices]
-        return new{ftype,wtype}(uid(), name, type, orders, external, vertices, topology, subgraph, typeof(operator), factor, weight)
+        return new{ftype,wtype}(uid(), name, type, orders, external, vertices, topology, subgraphs, subgraph_factors, typeof(operator), factor, weight)
     end
 end
 
@@ -99,7 +102,7 @@ function Base.isequal(a::Graph, b::Graph)
     return true
 end
 Base.:(==)(a::Graph, b::Graph) = Base.isequal(a, b)
-# isbare(diag::Graph) = isempty(diag.subgraph)
+# isbare(diag::Graph) = isempty(diag.subgraphs)
 
 """
     function isequiv(a::Graph, b::Graph, args...)
@@ -112,7 +115,7 @@ function isequiv(a::Graph, b::Graph, args...)
         field in [args...] && continue
         if field == :weight
             (getproperty(a, :weight) ≈ getproperty(b, :weight)) == false && return false
-        elseif field == :subgraph
+        elseif field == :subgraphs
             !all(isequiv.(getproperty(a, field), getproperty(b, field), args...)) && return false
         else
             getproperty(a, field) != getproperty(b, field) && return false
@@ -147,7 +150,7 @@ external(g::Graph) = OperatorProduct(g.vertices)[g.external]
 
 #     Return all internal vertices (::Vector{OperatorProduct}) of Graph `g`.
 # """
-# internal_vertices(g::Graph) = g.vertices[setdiff(1:length(g.vertices), g.external)]
+# internal_vertices(g::Graph) = g.vertices[setdiff(eachindex(g.vertices), g.external)]
 
 """
     function vertices(g::Graph)
@@ -163,15 +166,17 @@ end
 
 #TODO: add function for connected diagram check. 
 function connectivity(g::Graph)
-    isempty(g.subgraph) && return true
+    isempty(g.subgraphs) && return true
 end
 
 function Base.:*(g1::Graph{F,W}, c2::C) where {F,W,C}
-    return Graph(g1.vertices; external=g1.external, type=g1.type, topology=g1.topology, subgraph=[g1,], operator=Prod(), ftype=F, wtype=W, factor=F(c2))
+    return Graph(g1.vertices; external=g1.external, type=g1.type, topology=g1.topology,
+        subgraphs=[g1,], operator=Prod(), ftype=F, wtype=W, factor=F(c2) * g1.factor)
 end
 
 function Base.:*(c1::C, g2::Graph{F,W}) where {F,W,C}
-    return Graph(g2.vertices; external=g2.external, type=g2.type, topology=g2.topology, subgraph=[g2,], operator=Prod(), ftype=F, wtype=W, factor=F(c1))
+    return Graph(g2.vertices; external=g2.external, type=g2.type, topology=g2.topology,
+        subgraphs=[g2,], operator=Prod(), ftype=F, wtype=W, factor=F(c1) * g2.factor)
 end
 
 function Base.:+(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
@@ -181,7 +186,7 @@ function Base.:+(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
     @assert Set(external(g1)) == Set(external(g2)) "g1 and g2 have different external vertices."
     @assert g1.orders == g2.orders "g1 and g2 have different orders."
 
-    return Graph(g1.vertices; external=g1.external, type=g1.type, subgraph=[g1, g2], operator=Sum(), ftype=F, wtype=W)
+    return Graph(g1.vertices; external=g1.external, type=g1.type, subgraphs=[g1, g2], operator=Sum(), ftype=F, wtype=W)
 end
 
 function Base.:-(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
@@ -198,7 +203,7 @@ end
 # - `vertices::Vector{OperatorProduct}`  vertices of the diagram
 # - `contractions::Vector{Int}`  contraction-index vector respresnting Wick contractions
 # - `external`  index of external vertices
-# - `factor`  additional factor of the diagram
+# - `factor`  scalar multiplicative factor for the diagram
 # - `weight`  weight of the diagram
 # - `name`  name of the diagram
 # - `type`  type of the diagram
@@ -208,7 +213,7 @@ end
 # julia> g = feynman_diagram([𝑓⁺(1)𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5)𝜙(6)], [1, 2, 3, 2, 1, 3])
 # 1: generic graph from f⁺(1)f⁻(2)ϕ(3)|f⁺(4)f⁻(5)ϕ(6)
 
-# julia> g.subgraph
+# julia> g.subgraphs
 # 3-element Vector{Graph{Float64, Float64}}:
 #  2: propagtor graph from f⁺(1)f⁻(5)
 #  3: propagtor graph from f⁻(2)f⁺(4)
@@ -222,7 +227,7 @@ end
 #     g = Graph(vertices; external=external, topology=topology, name=name, type=type, operator=Prod(),
 #         factor=factor * contraction_sign, weight=weight)
 #     for edge in edges
-#         push!(g.subgraph, propagator(reduce(*, edge)))
+#         push!(g.subgraphs, propagator(reduce(*, edge)))
 #     end
 #     return g
 # end
@@ -243,7 +248,7 @@ end
 - `vertices::Vector{OperatorProduct}`  vertices of the diagram
 - `topology::Vector{Vector{Int}}` topology of the diagram. Each Vector{Int} stores vertices' index connected with each other (as a propagator). 
 - `external`  index of external vertices
-- `factor`  additional factor of the diagram
+- `factor`  scalar multiplicative factor for the diagram
 - `weight`  weight of the diagram
 - `name`  name of the diagram
 - `type`  type of the diagram
@@ -253,7 +258,7 @@ end
 julia> g = feynman_diagram([𝑓⁺(1)𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5)𝜙(6)], [[5, 1], [2, 4], [3, 6]])
 1: generic graph from f⁺(1)f⁻(2)ϕ(3)|f⁺(4)f⁻(5)ϕ(6)
 
-julia> g.subgraph
+julia> g.subgraphs
 3-element Vector{Graph{Float64, Float64}}:
  2: propagtor graph from f⁻(5)f⁺(1)
  3: propagtor graph from f⁻(2)f⁺(4)
@@ -283,7 +288,7 @@ function feynman_diagram(vertices::Vector{OperatorProduct}, topology::Vector{Vec
     g = Graph(vertices; external=external, topology=topology, name=name, type=type, operator=Prod(),
         factor=factor * sign * ext_sign, weight=weight)
     for connection in topology
-        push!(g.subgraph, propagator(reduce(*, operators[connection])))
+        push!(g.subgraphs, propagator(reduce(*, operators[connection])))
     end
     return g
 end
@@ -452,7 +457,7 @@ end
 
 #####################  interface to AbstractTrees ########################### 
 function AbstractTrees.children(diag::Graph)
-    return diag.subgraph
+    return diag.subgraphs
 end
 
 ## Things that make printing prettier
