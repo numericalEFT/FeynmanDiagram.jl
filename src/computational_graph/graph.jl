@@ -399,23 +399,16 @@ julia> g, g.factor
 """
 function standardize_order!(g::Graph)
     for node in PreOrderDFS(g)
-        if node.type in [:interaction, :sigma]
-            sign, perm = normal_order(reduce(*, external(node)))
+        if isempty(node.subgraphs)
+            sign, perm = correlator_order(OperatorProduct(external(node)))
             node.external = node.external[perm]
             node.factor *= sign
-        elseif node.type in [:green, :propagator]
-            sign, perm = correlator_order(reduce(*, external(node)))
+        else
+            sign, perm = normal_order(OperatorProduct(external(node)))
             node.external = node.external[perm]
             node.factor *= sign
         end
     end
-    # for leaf in Leaves(g)
-    #     for (i, vertex) in enumerate(leaf.vertices)
-    #         sign, newvertex = correlator_order(vertex)
-    #         leaf.vertices[i] = OperatorProduct(newvertex)
-    #         leaf.factor *= sign
-    #     end
-    # end
 end
 
 #####################  interface to AbstractTrees ########################### 
