@@ -14,30 +14,6 @@ Base.show(io::IO, ::Type{BosonCreation}) = print(io, "b⁺")
 Base.show(io::IO, ::Type{BosonAnnihilation}) = print(io, "b⁻")
 Base.show(io::IO, ::Type{Classic}) = print(io, "ϕ")
 
-isfermionic(::Type{AbstractQuantumOperator}) = error("not implemented!")
-isfermionic(::Type{FermiCreation}) = true
-isfermionic(::Type{FermiAnnihilation}) = true
-isfermionic(::Type{Majorana}) = true
-isfermionic(::Type{BosonCreation}) = false
-isfermionic(::Type{BosonAnnihilation}) = false
-isfermionic(::Type{Classic}) = false
-
-iscreation(::Type{AbstractQuantumOperator}) = error("not implemented!")
-iscreation(::Type{FermiCreation}) = true
-iscreation(::Type{FermiAnnihilation}) = false
-iscreation(::Type{Majorana}) = false
-iscreation(::Type{BosonCreation}) = true
-iscreation(::Type{BosonAnnihilation}) = false
-iscreation(::Type{Classic}) = false
-
-isannihilation(::Type{AbstractQuantumOperator}) = error("not implemented!")
-isannihilation(::Type{FermiCreation}) = false
-isannihilation(::Type{FermiAnnihilation}) = true
-isannihilation(::Type{Majorana}) = false
-isannihilation(::Type{BosonCreation}) = false
-isannihilation(::Type{BosonAnnihilation}) = true
-isannihilation(::Type{Classic}) = false
-
 Base.adjoint(::Type{AbstractQuantumOperator}) = error("not implemented!")
 Base.adjoint(::Type{FermiCreation}) = FermiAnnihilation
 Base.adjoint(::Type{FermiAnnihilation}) = FermiCreation
@@ -45,6 +21,18 @@ Base.adjoint(::Type{Majorana}) = Majorana
 Base.adjoint(::Type{BosonCreation}) = BosonAnnihilation
 Base.adjoint(::Type{BosonAnnihilation}) = BosonCreation
 Base.adjoint(::Type{Classic}) = Classic
+
+isfermionic(::Type{AbstractQuantumOperator}) = error("not implemented!")
+isfermionic(::Type{F}) where {F<:Union{FermiCreation,FermiAnnihilation,Majorana}} = true
+isfermionic(::Type{B}) where {B<:Union{BosonCreation,BosonAnnihilation,Classic}} = false
+
+iscreation(::Type{AbstractQuantumOperator}) = error("not implemented!")
+iscreation(::Type{C}) where {C<:Union{FermiCreation,BosonCreation}} = true
+iscreation(::Type{A}) where {A<:Union{FermiAnnihilation,BosonAnnihilation,Majorana,Classic}} = false
+
+isannihilation(::Type{AbstractQuantumOperator}) = error("not implemented!")
+isannihilation(::Type{A}) where {A<:Union{FermiAnnihilation,BosonAnnihilation}} = true
+isannihilation(::Type{C}) where {C<:Union{FermiCreation,BosonCreation,Majorana,Classic}} = false
 
 
 """
