@@ -275,11 +275,9 @@ function feynman_diagram(vertices::Vector{OperatorProduct}, topology::Vector{Vec
     ext_sign = isempty(_external) ? 1 : parity(sortperm(_external))
     # println(_external, ", ", ext_sign)
 
-    g = Graph(vertices; external=external, topology=topology, name=name, type=type, operator=Prod(),
-        factor=factor * sign * ext_sign, weight=weight)
-    for connection in topology
-        push!(g.subgraphs, propagator(reduce(*, operators[connection])))
-    end
+    subgraphs = [propagator(reduce(*, operators[connection])) for connection in topology]
+    g = Graph(vertices; external=external, subgraphs=subgraphs, topology=topology, name=name,
+        type=type, operator=Prod(), factor=factor * sign * ext_sign, weight=weight)
     return g
 end
 
