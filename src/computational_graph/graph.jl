@@ -322,6 +322,36 @@ function standardize_order!(g::Graph)
     end
 end
 
+prune_unary(g::Graph)=((length(g.subgraph)==1 && g.subgraph_factors[1]==1 && g.factor == 1) ? g.subgraph[1] : g)
+
+function inplace_prod(g1::Graph{F,W}) where {F,W}
+    if (length(g1.subgraphs)==1 && (g1.operator == Prod))
+        g0 = g1.subgraphs[1]
+        g = Graph(g0.vertices; external=g0.external, type=g0.type, topology=g0.topology,
+        subgraphs=g0.subgraphs, factor = g1.subgraph_factors[1]*g1.factor*g0.factor, operator= g0.operator(), ftype=F, wtype=W)
+        return g
+    else
+        return g1
+    end
+end
+
+# function merge_prefactors(g0::Graph{F,W}) where {F,W}
+#     if (g1.operator==Sum && length(g1.subgraphs)==2 && isequiv(g1.subgraphs[1], g1.subgraphs[2], :factor, :id, :subgraph_factors))
+#         g1 = g0.subgraph[1]
+#         g2 = g0.subgraph[2]
+#         g_subg = Graph(g1.vertices; external=g1.external, type=g1.type, topology=g1.topology,
+#         subgraphs=g1.subgraphs, operator=g1.operator(), ftype=F, wtype=W)
+#         g = Graph(g1.vertices; external=g1.external, type=g1.type, topology=g1.topology,
+#         subgraphs=[g_subg,], operator=Prod(), ftype=F, wtype=W)
+#         g.subgraph_factors[1] = (g1.subgraph_factors[1]*g1.factor+g1.subgraph_factors[2]*g1.subgraphs[2].factor) * g0.factor
+#         return g
+#     else
+#         return g1
+#     end
+# end
+
+# 
+
 #####################  interface to AbstractTrees ########################### 
 function AbstractTrees.children(diag::Graph)
     return diag.subgraphs
