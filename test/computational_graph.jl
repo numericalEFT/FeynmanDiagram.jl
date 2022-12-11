@@ -91,6 +91,7 @@ end
         # g1 = feynman_diagram(V1, [1, 1, 2, 2])
         @test vertices(g1) == V1
         @test isempty(external(g1))
+        @test g1.subgraph_factors == [1, 1]
         # @test internal_vertices(g1) == V1
         # @test isequiv(g1, gg1, :id)
     end
@@ -101,6 +102,7 @@ end
         g2 = feynman_diagram(V2, [[1, 5], [2, 8], [3, 9], [4, 6], [7, 10]]; external=[1, 10])    # Green2
         @test vertices(g2) == V2
         @test external(g2) == OperatorProduct(V2)[[1, 10]]
+        @test g2.subgraph_factors == [1, 1, 1, 1, 1]
         # @test internal_vertices(g2) == V2[2:3]
         # @test isequiv(g2, gg2, :id)
     end
@@ -112,6 +114,7 @@ end
         @test vertices(g3) == V3
         @test isempty(external(g3))
         @test g3.factor == 1
+        @test g3.subgraph_factors == [1, 1, 1]
         # @test internal_vertices(g3) == V3
         @test g3.subgraphs[1].factor == 1
         @test g3.subgraphs[1].vertices == [𝑓⁺(1)𝑓⁻(5)]
@@ -126,6 +129,7 @@ end
         V4 = [𝑓⁺(1)𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5)𝜙(6), 𝑓⁺(7)𝑓⁻(8)𝜙(9), 𝑓⁺(10)𝑓⁻(11)𝜙(12)]
         gg4 = feynman_diagram(V4, [[1, 8], [2, 10], [4, 11], [5, 7], [9, 12]]) # polarization diagram
         @test gg4.factor == -1
+        @test gg4.subgraph_factors == [1, 1, 1, 1, 1]
         @test vertices(gg4) == V4
         @test external(gg4) == OperatorProduct(V4)[[3, 6]]
         standardize_order!(gg4)
@@ -137,6 +141,7 @@ end
         V5 = [𝑓⁺(1)𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5)𝜙(6), 𝑓⁺(7)𝑓⁻(8)𝜙(9)]
         g5 = feynman_diagram(V5, [[2, 4], [3, 9], [5, 7]], external=[1, 6, 8])  # vertex function
         @test g5.factor == 1
+        @test g5.subgraph_factors == [1, 1, 1]
         @test vertices(g5) == V5
         @test external(g5) == OperatorProduct(V5)[[1, 6, 8]]
         # @test isempty(internal_vertices(g5))
@@ -147,6 +152,7 @@ end
 
         gg5 = feynman_diagram(V5, [[2, 4], [3, 9], [5, 7]], external=[8, 6, 1])
         @test g5.factor ≈ gg5.factor * (-1)
+        @test gg5.subgraph_factors == [1, 1, 1]
         standardize_order!(gg5)
         @test external(gg5) == OperatorProduct(V5)[[6, 1, 8]]
         @test gg5.factor ≈ g5.factor
@@ -157,6 +163,7 @@ end
         V6 = [𝑓⁺(1), 𝑓⁺(2)𝑓⁻(3)𝜙(4), 𝑓⁺(5)𝑓⁻(6)𝜙(7), 𝑓⁻(8)]
         g6 = feynman_diagram(V6, [[1, 3], [2, 6], [4, 7], [5, 8]], external=[8, 1])    # fermionic Green2
         @test g6.factor == -1
+        @test g6.subgraph_factors == [1, 1, 1, 1]
         @test external(g6) == OperatorProduct(V6)[[8, 1]]
         standardize_order!(g6)
         @test g6.factor == 1
@@ -177,6 +184,7 @@ end
         Vm = [𝑓⁺(1)𝑓⁻(2)𝑏⁺(3), 𝜙(4)𝑓⁺(5)𝑓⁻(6), 𝑓(7)𝑏⁻(8)𝜙(9)]
         gm = feynman_diagram(Vm, [[1, 2, 3, 8], [4, 5, 6, 9]])
         @test vertices(gm) == Vm
+        @test gm.subgraph_factors == [1, 1]
         @test gm.subgraphs[1].vertices == [𝑓⁺(1)𝑓⁻(2)𝑏⁺(3)𝑏⁻(8)]
         @test gm.subgraphs[2].vertices == [𝜙(4)𝑓⁺(5)𝑓⁻(6)𝜙(9)]
         @test OperatorProduct(external(gm.subgraphs[1])) == 𝑓⁺(1)𝑓⁻(2)𝑏⁺(3)𝑏⁻(8)
