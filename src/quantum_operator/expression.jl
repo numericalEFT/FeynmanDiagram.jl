@@ -38,12 +38,12 @@ const 𝑏⁺ = bosonic_creation
 const 𝜙 = real_classic
 '''
 """
-fermionic_annihilation(i) = OperatorProduct(QuantumOperator(:f⁻, i))
-fermionic_creation(i) = OperatorProduct(QuantumOperator(:f⁺, i))
-majorana(i) = OperatorProduct(QuantumOperator(:f, i))
-bosonic_annihilation(i) = OperatorProduct(QuantumOperator(:b⁻, i))
-bosonic_creation(i) = OperatorProduct(QuantumOperator(:b⁺, i))
-real_classic(i) = OperatorProduct(QuantumOperator(:ϕ, i))
+fermionic_annihilation(i, isghost=false) = OperatorProduct(QuantumOperator(FermiAnnihilation(), i, isghost))
+fermionic_creation(i, isghost=false) = OperatorProduct(QuantumOperator(FermiCreation(), i, isghost))
+majorana(i, isghost=false) = OperatorProduct(QuantumOperator(Majorana(), i, isghost))
+bosonic_annihilation(i, isghost=false) = OperatorProduct(QuantumOperator(BosonAnnihilation(), i, isghost))
+bosonic_creation(i, isghost=false) = OperatorProduct(QuantumOperator(BosonCreation(), i, isghost))
+real_classic(i, isghost=false) = OperatorProduct(QuantumOperator(Classic(), i, isghost))
 const 𝑓⁻ = fermionic_annihilation
 const 𝑓⁺ = fermionic_creation
 const 𝑓 = majorana

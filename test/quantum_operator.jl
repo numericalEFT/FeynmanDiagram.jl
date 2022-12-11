@@ -1,5 +1,6 @@
 @testset "OperatorProduct" begin
-    @test 𝑓(1) == OperatorProduct(QuantumOperator(:f, 1))
+    Ops = QuantumOperators
+    @test 𝑓(1) == OperatorProduct(QuantumOperator(Ops.Majorana(), 1))
     @test isfermionic(𝑓(1)[1])
     @test isfermionic(𝑓⁺(1)[1])
     @test isfermionic(𝑓⁻(1)[1])
@@ -7,16 +8,17 @@
     @test QuantumOperators.iscreation(𝑏⁺(1)[1])
     @test (𝑓⁻(1)[1])' == 𝑓⁺(1)[1]
 
-    qe1 = OperatorProduct([QuantumOperator(:f⁺, 1), QuantumOperator(:f⁻, 2), QuantumOperator(:ϕ, 3)])
-    qe2 = OperatorProduct([QuantumOperator(:f⁺, 1), QuantumOperator(:f⁻, 2),
-        QuantumOperator(:ϕ, 3), QuantumOperator(:f⁻, 4)])
-    qe3 = OperatorProduct([QuantumOperator(:b⁻, 4), QuantumOperator(:f⁺, 1), QuantumOperator(:f⁻, 2),
-        QuantumOperator(:ϕ, 3)])
-    @test QuantumOperator(:f⁺, 1) * QuantumOperator(:f⁻, 2) * QuantumOperator(:ϕ, 3) == qe1
+    qe1 = OperatorProduct([QuantumOperator(Ops.FermiCreation, 1), QuantumOperator(Ops.FermiAnnihilation, 2), QuantumOperator(Ops.Classic, 3)])
+    qe2 = OperatorProduct([QuantumOperator(Ops.FermiCreation, 1), QuantumOperator(Ops.FermiAnnihilation, 2),
+        QuantumOperator(Ops.Classic, 3), QuantumOperator(Ops.FermiAnnihilation, 4)])
+    qe3 = OperatorProduct([QuantumOperator(Ops.BosonAnnihilation, 4), QuantumOperator(Ops.FermiCreation, 1),
+        QuantumOperator(Ops.FermiAnnihilation, 2),
+        QuantumOperator(Ops.Classic, 3)])
+    @test 𝑓⁺(1) * 𝑓⁻(2) * 𝜙(3) == qe1
     @test 𝑓⁺(1)𝑓⁻(2)𝜙(3) == qe1
     @test qe1 * 𝑓⁻(4) == qe2
-    @test qe1 * QuantumOperator(:f⁻, 4) == qe2
-    @test QuantumOperator(:b⁻, 4) * qe1 == qe3
+    @test qe1 * QuantumOperator(Ops.FermiAnnihilation, 4) == qe2
+    @test QuantumOperator(Ops.BosonAnnihilation, 4) * qe1 == qe3
     @test OperatorProduct(qe1) == qe1.operators
     @test !isfermionic(qe1)
     @test isfermionic(qe2)

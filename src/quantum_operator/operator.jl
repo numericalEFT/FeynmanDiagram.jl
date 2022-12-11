@@ -1,25 +1,84 @@
+abstract type AbstractQuantumOperator end
+
+struct FermiCreation <: AbstractQuantumOperator end
+struct FermiAnnihilation <: AbstractQuantumOperator end
+struct Majorana <: AbstractQuantumOperator end
+struct BosonCreation <: AbstractQuantumOperator end
+struct BosonAnnihilation <: AbstractQuantumOperator end
+struct Classic <: AbstractQuantumOperator end
+
+Base.show(io::IO, ::Type{FermiCreation}) = print(io, "f⁺")
+Base.show(io::IO, ::Type{FermiAnnihilation}) = print(io, "f⁻")
+Base.show(io::IO, ::Type{Majorana}) = print(io, "f")
+Base.show(io::IO, ::Type{BosonCreation}) = print(io, "b⁺")
+Base.show(io::IO, ::Type{BosonAnnihilation}) = print(io, "b⁻")
+Base.show(io::IO, ::Type{Classic}) = print(io, "ϕ")
+
+isfermionic(::Type{AbstractQuantumOperator}) = error("not implemented!")
+isfermionic(::Type{FermiCreation}) = true
+isfermionic(::Type{FermiAnnihilation}) = true
+isfermionic(::Type{Majorana}) = true
+isfermionic(::Type{BosonCreation}) = false
+isfermionic(::Type{BosonAnnihilation}) = false
+isfermionic(::Type{Classic}) = false
+
+iscreation(::Type{AbstractQuantumOperator}) = error("not implemented!")
+iscreation(::Type{FermiCreation}) = true
+iscreation(::Type{FermiAnnihilation}) = false
+iscreation(::Type{Majorana}) = false
+iscreation(::Type{BosonCreation}) = true
+iscreation(::Type{BosonAnnihilation}) = false
+iscreation(::Type{Classic}) = false
+
+isannihilation(::Type{AbstractQuantumOperator}) = error("not implemented!")
+isannihilation(::Type{FermiCreation}) = false
+isannihilation(::Type{FermiAnnihilation}) = true
+isannihilation(::Type{Majorana}) = false
+isannihilation(::Type{BosonCreation}) = false
+isannihilation(::Type{BosonAnnihilation}) = true
+isannihilation(::Type{Classic}) = false
+
+Base.adjoint(::Type{AbstractQuantumOperator}) = error("not implemented!")
+Base.adjoint(::Type{FermiCreation}) = FermiAnnihilation
+Base.adjoint(::Type{FermiAnnihilation}) = FermiCreation
+Base.adjoint(::Type{Majorana}) = Majorana
+Base.adjoint(::Type{BosonCreation}) = BosonAnnihilation
+Base.adjoint(::Type{BosonAnnihilation}) = BosonCreation
+Base.adjoint(::Type{Classic}) = Classic
+
+
 """
     struct QuantumOperator
 
     struct of a quantum operator.
 
 # Members:
-- `operator::Symbol`  symbol of quantum operator, supports :f⁺, :f⁻, :f, :b⁺, :b⁻, :ϕ
-- `label::Int`  label of the operator indices. It could represent spacetime, spin, momentum, flavor, etc.
+- `operator::Datatype`: type of quantum operator, supports :f⁺, :f⁻, :f, :b⁺, :b⁻, :ϕ
+- `label::Int`:  label of the operator indices. It could represent spacetime, spin, momentum, flavor, etc.
+- `is_ghost::Bool`: whether the operator is a ghost operator or not.
 """
 struct QuantumOperator
-    operator::Symbol
+    operator::DataType
     label::Int
-    function QuantumOperator(operator::Symbol, label::Int)
+    is_ghost::Bool
+    function QuantumOperator(operator::AbstractQuantumOperator, label::Int, is_ghost=false)
         @assert label > 0
-        return new(operator, label)
+        return new(typeof(operator), label, is_ghost)
+    end
+    function QuantumOperator(::Type{operator}, label::Int, is_ghost=false) where {operator<:AbstractQuantumOperator}
+        @assert label > 0
+        return new(operator, label, is_ghost)
     end
 end
-Base.isequal(a::QuantumOperator, b::QuantumOperator) = ((a.operator == b.operator) && (a.label == b.label))
+Base.isequal(a::QuantumOperator, b::QuantumOperator) = ((a.operator == b.operator) && (a.label == b.label) && (a.is_ghost == b.is_ghost))
 Base.:(==)(a::QuantumOperator, b::QuantumOperator) = Base.isequal(a, b)
 
 function Base.show(io::IO, o::QuantumOperator)
-    print(io, "$(String(o.operator))($(o.label))")
+    if o.is_ghost
+        print(io, "$(o.operator)ₑ($(o.label))")
+    else
+        print(io, "$(o.operator)($(o.label))")
+    end
 end
 
 Base.show(io::IO, ::MIME"text/plain", o::QuantumOperator) = Base.show(io, o)
@@ -29,33 +88,32 @@ Base.show(io::IO, ::MIME"text/plain", o::QuantumOperator) = Base.show(io, o)
 
     Return the conjuated quantum operator of `operator`.
 """
-function Base.adjoint(operator::QuantumOperator)
-    if operator.operator in [:f, :ϕ]
-        return operator
-    elseif operator.operator == :f⁺
-        return QuantumOperator(:f⁻, operator.label)
-    elseif operator.operator == :f⁻
-        return QuantumOperator(:f⁺, operator.label)
-    elseif operator.operator == :b⁺
-        return QuantumOperator(:b⁻, operator.label)
-    elseif operator.operator == :b⁻
-        return QuantumOperator(:b⁺, operator.label)
-    end
-end
+Base.adjoint(operator::QuantumOperator) = QuantumOperator(adjoint(operator.operator)(), operator.label, operator.is_ghost)
 
 """
     function isfermionic(operator::QuantumOperator)
 
     Check if `operator` is a fermionic operator.
 """
-function isfermionic(operator::QuantumOperator)
-    operator.operator in [:f⁺, :f⁻, :f]
-end
+isfermionic(operator::QuantumOperator) = isfermionic(operator.operator)
 
-function iscreation(operator::QuantumOperator)
-    operator.operator in [:f⁺, :b⁺]
-end
+"""
+    function iscreation(operator::QuantumOperator)
 
-function isannihilation(operator::QuantumOperator)
-    operator.operator in [:f⁻, :b⁻]
-end
+    Check if `operator` is a creation operator.
+"""
+iscreation(operator::QuantumOperator) = iscreation(operator.operator)
+
+"""
+    function isannihilation(operator::QuantumOperator)
+
+    Check if `operator` is an annihilation operator.
+"""
+isannihilation(operator::QuantumOperator) = isannihilation(operator.operator)
+
+"""
+    function isghost(operator::QuantumOperator)
+
+    Check if `operator` is a ghost operator.
+"""
+isghost(operator::QuantumOperator) = operator.is_ghost
