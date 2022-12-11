@@ -1,3 +1,9 @@
+# abstract type Statistics end
+# struct Bose <: Statistics end
+# struct Fermi <: Statistics end
+# Statistics(::Type{FermiCreation}) = Fermi()
+# isfermionic(::Type{T}) where {T} = Statistics(T) isa Fermi
+
 abstract type AbstractQuantumOperator end
 
 struct FermiCreation <: AbstractQuantumOperator end
