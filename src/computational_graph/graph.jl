@@ -137,6 +137,13 @@ is_external(g::Graph, i::Int) = i in g.external
 is_internal(g::Graph, i::Int) = (i in g.external) == false
 
 """
+    function is_ghost(g::Graph, i::Int) 
+
+    Check if `i::Int` in the ghost operator's indices of Graph `g`.
+"""
+is_ghost(g::Graph, i::Int) = isghost(OperatorProduct(g.vertices)[i])
+
+"""
     function external(g::Graph)
 
     Return all external vertices (::Vector{QuantumOperators}) of Graph `g`.
@@ -149,6 +156,48 @@ external(g::Graph) = OperatorProduct(g.vertices)[g.external]
     Return all vertices (::Vector{OperatorProduct}) of Graph `g`.
 """
 vertices(g::Graph) = g.vertices
+
+"""
+    function real_legs(g::Graph)
+
+    Return all the external operators with real legs and their indices (::Vector{OperatorProduct}, ::Vector{Int}).
+"""
+function real_legs(g::Graph)
+    operators = [o for v in g.vertices for o in v.operators]
+    # ind_ghost = filter(p -> isghost(operators[p]), collect(eachindex(operators)))
+    ind_reallegs = Int[]
+    for ext in g.external
+        for connection in g.topology
+            if ext in connection && !any(isghost.(operators[setdiff(connection, ext)]))
+                push!(ind_reallegs, ext)
+            end
+        end
+    end
+    # for connection in g.topology
+    #     if isempty(intersect(connection, ind_ghost))
+    #         append!(ind_reallegs, intersect(connection, g.external))
+    #     end
+    # end
+    return operators[ind_reallegs], ind_reallegs
+end
+
+"""
+    function fake_legs(g::Graph)
+
+    Return all the external operators with fake legs and their indices (::Vector{OperatorProduct}, ::Vector{Int}).
+"""
+function fake_legs(g::Graph)
+    operators = [o for v in g.vertices for o in v.operators]
+    ind_fakelegs = Int[]
+    for ext in g.external
+        for connection in g.topology
+            if ext in connection && any(isghost.(operators[setdiff(connection, ext)]))
+                push!(ind_fakelegs, ext)
+            end
+        end
+    end
+    return operators[ind_fakelegs], ind_fakelegs
+end
 
 #TODO: add function return reducibility of Graph. 
 function reducibility(g::Graph)
@@ -252,30 +301,77 @@ julia> g.subgraphs
  4: propagator graph from ϕ(3)ϕ(6)
 ```
 """
+# function feynman_diagram(vertices::Vector{OperatorProduct}, topology::Vector{Vector{Int}};
+#     external::Union{Nothing,AbstractVector}=nothing, factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic)
+
+#     operators = [o for v in vertices for o in v.operators]
+#     contraction = collect(Iterators.flatten(topology))
+#     if isnothing(external)
+#         external = [i for i in eachindex(operators) if i ∉ contraction]
+#     end
+#     @assert length(unique(contraction)) == length(contraction) # no repeated index
+#     @assert length(unique(external)) == length(external) # no repeated index
+#     @assert Set(union(external, contraction)) == Set(eachindex(operators)) # external + permutation must exhaust all operators
+
+#     permutation = union(contraction, external)
+#     _external = intersect(external, contraction)
+
+#     fermionic_operators = isfermionic.(operators)
+#     filter!(p -> fermionic_operators[p], permutation)
+#     sign = isempty(permutation) ? 1 : parity(sortperm(permutation))
+
+#     filter!(p -> fermionic_operators[p], _external)
+#     ext_sign = isempty(_external) ? 1 : parity(sortperm(_external))
+#     # println(_external, ", ", ext_sign)
+
+#     subgraphs = [propagator(reduce(*, operators[connection])) for connection in topology]
+#     g = Graph(vertices; external=external, subgraphs=subgraphs, topology=topology, name=name,
+#         type=type, operator=Prod(), factor=factor * sign * ext_sign, weight=weight)
+#     return g
+# end
+
 function feynman_diagram(vertices::Vector{OperatorProduct}, topology::Vector{Vector{Int}};
-    external::Union{Nothing,AbstractVector}=nothing, factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic)
+    external=[], factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic)
 
     operators = [o for v in vertices for o in v.operators]
-    contraction = collect(Iterators.flatten(topology))
-    if isnothing(external)
-        external = [i for i in eachindex(operators) if i ∉ contraction]
-    end
-    @assert length(unique(contraction)) == length(contraction) # no repeated index
-    @assert length(unique(external)) == length(external) # no repeated index
-    @assert Set(union(external, contraction)) == Set(eachindex(operators)) # external + permutation must exhaust all operators
+    ind_ops = collect(eachindex(operators))
+    num_ops = length(ind_ops)
+    permutation = collect(Iterators.flatten(topology))
 
-    permutation = union(contraction, external)
-    _external = intersect(external, contraction)
+    @assert length(unique(permutation)) == length(permutation) # no repeated index
+    @assert length(unique(external)) == length(external) # no repeated index
+    @assert Set(permutation) == Set(ind_ops) # permutation must exhaust all operators
+    ind_ghost = filter(p -> isghost(operators[p]), ind_ops)
+    ind_ghostAnn = ind_ghost[ind_ghost.<num_ops/2]
+    ind_ghostCre = ind_ghost[ind_ghost.>num_ops/2]
+    @assert ind_ghostAnn == collect(eachindex(ind_ghostAnn)) &&
+            ind_ghostCre == collect(num_ops-length(ind_ghostCre)+1:num_ops) "ghost operators must be placed at the beginning or end of vertices."
+    @assert !any(iscreation.(operators[ind_ghostAnn])) "ghost non-creation operators must be placed at the beginning of vertices."
+    @assert !any(isannihilation.(operators[ind_ghostCre])) "ghost non-annihilation operators must be placed at the end of vertices."
+
+    ind_fakeleg = Int[]
+    subgraphs = Graph[]
+    for connection in topology
+        if isempty(intersect(connection, ind_ghost))
+            push!(subgraphs, propagator(reduce(*, operators[connection])))
+        else
+            ind_fop = setdiff(connection, ind_ghost)
+            append!(ind_fakeleg, ind_fop)
+        end
+    end
+    # ind_fakeleg = [iseven(i) ? permutation[i-1] : permutation[i+1] for (i, ind) in enumerate(permutation) if ind in ind_ghost]
+    @assert ind_fakeleg ⊆ external "external operators are not consistent with ghost operators in vertices."
 
     fermionic_operators = isfermionic.(operators)
     filter!(p -> fermionic_operators[p], permutation)
     sign = isempty(permutation) ? 1 : parity(sortperm(permutation))
 
-    filter!(p -> fermionic_operators[p], _external)
-    ext_sign = isempty(_external) ? 1 : parity(sortperm(_external))
+    external_legs = setdiff(external, ind_fakeleg)
+    filter!(p -> fermionic_operators[p], external_legs)
+    ext_sign = isempty(external_legs) ? 1 : parity(sortperm(external_legs))
     # println(_external, ", ", ext_sign)
 
-    subgraphs = [propagator(reduce(*, operators[connection])) for connection in topology]
+    # subgraphs = [propagator(reduce(*, operators[connection])) for connection in topology if isempty(intersect(connection, ind_ghost))]
     g = Graph(vertices; external=external, subgraphs=subgraphs, topology=topology, name=name,
         type=type, operator=Prod(), factor=factor * sign * ext_sign, weight=weight)
     return g
@@ -315,8 +411,9 @@ function standardize_order!(g::Graph)
             node.external = node.external[perm]
             node.factor *= sign
         else
-            sign, perm = normal_order(OperatorProduct(external(node)))
-            node.external = node.external[perm]
+            realLegs, inds = real_legs(node)
+            sign, perm = normal_order(OperatorProduct(realLegs))
+            node.external = union(inds[perm], setdiff(node.external, inds))
             node.factor *= sign
         end
     end

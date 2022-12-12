@@ -126,39 +126,37 @@ end
         # @test gg3.subgraphs[1].factor == 1
         # @test !isequiv(g3, gg3, :id)
 
-        V4 = [𝑓⁺(1)𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5)𝜙(6), 𝑓⁺(7)𝑓⁻(8)𝜙(9), 𝑓⁺(10)𝑓⁻(11)𝜙(12)]
-        gg4 = feynman_diagram(V4, [[1, 8], [2, 10], [4, 11], [5, 7], [9, 12]]) # polarization diagram
-        @test gg4.factor == -1
-        @test gg4.subgraph_factors == [1, 1, 1, 1, 1]
-        @test vertices(gg4) == V4
-        @test external(gg4) == OperatorProduct(V4)[[3, 6]]
-        standardize_order!(gg4)
-        @test external(gg4) == OperatorProduct(V4)[[3, 6]]
+        V4 = [𝑓⁺(1)𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5)𝜙(6), 𝑓⁺(7)𝑓⁻(8)𝜙(9), 𝑓⁺(10)𝑓⁻(11)𝜙(12), 𝜙(13, true), 𝜙(14, true)]
+        g4 = feynman_diagram(V4, [[1, 8], [2, 10], [4, 11], [5, 7], [9, 12], [3, 13], [6, 14]], external=[3, 6]) # polarization diagram
+        @test g4.factor == -1
+        @test g4.subgraph_factors == [1, 1, 1, 1, 1]
+        @test vertices(g4) == V4
+        @test external(g4) == OperatorProduct(V4)[[3, 6]]
+        @test isempty(real_legs(g4)[1])
+        @test fake_legs(g4)[1] == OperatorProduct(V4)[[3, 6]]
+        standardize_order!(g4)
+        @test external(g4) == OperatorProduct(V4)[[3, 6]]
         # @test internal_vertices(g4) == V4[3:4]
-        # g4 = feynman_diagram(V4, [1, 2, 0, 3, 4, 0, 4, 1, 5, 2, 3, 5], external=[3, 6])
-        # @test isequiv(g4, gg4, :id)
 
-        V5 = [𝑓⁺(1)𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5)𝜙(6), 𝑓⁺(7)𝑓⁻(8)𝜙(9)]
-        g5 = feynman_diagram(V5, [[2, 4], [3, 9], [5, 7]], external=[1, 6, 8])  # vertex function
+        V5 = [𝑓⁻(1, true), 𝑓⁺(2)𝑓⁻(3)𝜙(4), 𝑓⁺(5)𝑓⁻(6)𝜙(7), 𝑓⁺(8)𝑓⁻(9)𝜙(10), 𝑓⁺(11, true), 𝜙(12, true)]
+        g5 = feynman_diagram(V5, [[3, 5], [4, 10], [6, 8], [1, 2], [7, 12], [9, 11]], external=[2, 7, 9])  # vertex function
         @test g5.factor == 1
         @test g5.subgraph_factors == [1, 1, 1]
         @test vertices(g5) == V5
-        @test external(g5) == OperatorProduct(V5)[[1, 6, 8]]
+        @test external(g5) == OperatorProduct(V5)[[2, 7, 9]]
+        @test fake_legs(g5)[1] == OperatorProduct(V5)[[2, 7, 9]]
         # @test isempty(internal_vertices(g5))
         g5s = deepcopy(g5)
         standardize_order!(g5)
-        @test external(g5) == OperatorProduct(V5)[[1, 6, 8]]
+        @test external(g5) == OperatorProduct(V5)[[2, 7, 9]]
         @test g5s == g5
 
-        gg5 = feynman_diagram(V5, [[2, 4], [3, 9], [5, 7]], external=[8, 6, 1])
-        @test g5.factor ≈ gg5.factor * (-1)
+        gg5 = feynman_diagram(V5, [[3, 5], [4, 10], [6, 8], [1, 2], [7, 12], [9, 11]], external=[9, 7, 2])
+        @test g5.factor ≈ gg5.factor    # reorder of external fake legs will not change the sign.
         @test gg5.subgraph_factors == [1, 1, 1]
         standardize_order!(gg5)
-        @test external(gg5) == OperatorProduct(V5)[[6, 1, 8]]
+        @test external(gg5) == OperatorProduct(V5)[[9, 7, 2]]   # don't standardize the order of fake legs.
         @test gg5.factor ≈ g5.factor
-        # gg5 = feynman_diagram(V5, [1, 2, 1, 3, 3, 2], external=[1, 2, 3])
-        ggg5 = feynman_diagram(V5, [[2, 4], [3, 9], [5, 7]])
-        @test isequiv(g5, ggg5, :id, :type)
 
         V6 = [𝑓⁺(1), 𝑓⁺(2)𝑓⁻(3)𝜙(4), 𝑓⁺(5)𝑓⁻(6)𝜙(7), 𝑓⁻(8)]
         g6 = feynman_diagram(V6, [[1, 3], [2, 6], [4, 7], [5, 8]], external=[8, 1])    # fermionic Green2
@@ -169,20 +167,41 @@ end
         @test g6.factor == 1
         @test external(g6) == OperatorProduct(V6)[[1, 8]]
 
-        V7 = [𝑓⁺(1)𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5)𝜙(6), 𝑓⁻(7)]
-        g7 = feynman_diagram(V7, [[1, 5], [3, 6], [4, 7]], external=[2, 7])     # sigma*G
+        V7 = [𝑓⁺(1)𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5)𝜙(6), 𝑓⁻(7), 𝑓⁺(8, true)]
+        g7 = feynman_diagram(V7, [[1, 5], [3, 6], [4, 7], [2, 8]], external=[2, 7])     # sigma*G
         @test g7.factor == 1
+        @test real_legs(g7)[1] == OperatorProduct(V7)[[7]]
+        @test fake_legs(g7)[1] == OperatorProduct(V7)[[2]]
 
-        V8 = [𝑓⁺(1), 𝑓⁺(2)𝑓⁻(3)𝜙(4), 𝑓⁺(5)𝑓⁻(6)𝜙(7), 𝑓⁺(8)𝑓⁻(9)𝜙(10), 𝑓⁻(11), 𝑓⁺(12)𝑓⁻(13)𝜙(14)]
-        g8 = feynman_diagram(V8, [[1, 3], [2, 6], [4, 14], [5, 13], [7, 10], [8, 11]], external=[1, 9, 11, 12])
+        V8 = [𝑓⁻(1, true), 𝑓⁺(2), 𝑓⁺(3)𝑓⁻(4)𝜙(5), 𝑓⁺(6)𝑓⁻(7)𝜙(8), 𝑓⁺(9)𝑓⁻(10)𝜙(11), 𝑓⁻(12), 𝑓⁺(13)𝑓⁻(14)𝜙(15), 𝑓⁺(16, true)]
+        g8 = feynman_diagram(V8, [[2, 4], [3, 7], [5, 15], [6, 14], [8, 11], [9, 12], [10, 16], [13, 1]], external=[2, 10, 12, 13])
         @test g8.factor == -1
-        gg8 = feynman_diagram(V8, [[1, 3], [2, 6], [4, 14], [5, 13], [7, 10], [8, 11]], external=[9, 1, 11, 12])
-        @test gg8.factor == -1
+        @test real_legs(g8)[1] == OperatorProduct(V8)[[2, 12]]
+        @test fake_legs(g8)[1] == OperatorProduct(V8)[[10, 13]]
+        g8p = feynman_diagram(V8, [[2, 4], [3, 7], [5, 15], [6, 14], [8, 11], [9, 12], [10, 16], [13, 1]], external=[10, 2, 12, 13])
+        @test g8p.factor == -1
+        g8p1 = feynman_diagram(V8, [[2, 4], [3, 7], [5, 15], [6, 14], [8, 11], [9, 12], [10, 16], [13, 1]], external=[10, 12, 2, 13])
+        @test g8p1.factor == 1
+    end
+    @testset "f+f+f-f- interaction" begin
+        V1 = [𝑓⁻(1, true), 𝑓⁻(2, true), 𝑓⁺(3), 𝑓⁺(4), 𝑓⁺(5)𝑓⁺(6)𝑓⁻(7)𝑓⁻(8), 𝑓⁺(9)𝑓⁺(10)𝑓⁻(11)𝑓⁻(12)]
+        g1 = feynman_diagram(V1, [[1, 5], [2, 10], [3, 8], [4, 11], [6, 12], [7, 9]], external=[3, 4, 5, 10])
+        g1p = feynman_diagram(V1, [[1, 10], [2, 5], [3, 8], [4, 11], [6, 12], [7, 9]], external=[3, 4, 5, 10])
+        @test g1p.factor ≈ -g1.factor
+        @test real_legs(g1)[1] == OperatorProduct(V1)[[3, 4]]
+        @test fake_legs(g1)[1] == OperatorProduct(V1)[[5, 10]]
+
+        V2 = [𝑓⁻(1, true), 𝑓⁺(2), 𝑓⁻(3), 𝑓⁺(4)𝑓⁺(5)𝑓⁻(6)𝑓⁻(7), 𝑓⁺(8)𝑓⁺(9)𝑓⁻(10)𝑓⁻(11), 𝑓⁺(12, true)]
+        g2 = feynman_diagram(V2, [[1, 8], [2, 7], [3, 4], [5, 11], [6, 9], [10, 12]], external=[2, 3, 8, 10])
+        g2p = feynman_diagram(V2, [[1, 8], [2, 7], [3, 4], [5, 11], [6, 9], [10, 12]], external=[3, 8, 2, 10])
+        @test g2p.factor ≈ -g2.factor
+        @test real_legs(g2)[1] == OperatorProduct(V2)[[2, 3]]
+        @test fake_legs(g2)[1] == OperatorProduct(V2)[[8, 10]]
     end
     @testset "Multi-operator contractions" begin
         # multi-operator (>2) contractions
-        Vm = [𝑓⁺(1)𝑓⁻(2)𝑏⁺(3), 𝜙(4)𝑓⁺(5)𝑓⁻(6), 𝑓(7)𝑏⁻(8)𝜙(9)]
-        gm = feynman_diagram(Vm, [[1, 2, 3, 8], [4, 5, 6, 9]])
+        Vm = [𝑓⁺(1)𝑓⁻(2)𝑏⁺(3), 𝜙(4)𝑓⁺(5)𝑓⁻(6), 𝑓(7)𝑏⁻(8)𝜙(9), 𝑓(10, true)]
+        gm = feynman_diagram(Vm, [[1, 2, 3, 8], [4, 5, 6, 9], [7, 10]], external=[7])
         @test vertices(gm) == Vm
         @test gm.subgraph_factors == [1, 1]
         @test gm.subgraphs[1].vertices == [𝑓⁺(1)𝑓⁻(2)𝑏⁺(3)𝑏⁻(8)]
