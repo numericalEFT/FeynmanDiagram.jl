@@ -59,10 +59,10 @@ struct QuantumOperator
         @assert label > 0
         return new(typeof(operator), label, is_ghost)
     end
-    function QuantumOperator(::Type{operator}, label::Int, is_ghost=false) where {operator<:AbstractQuantumOperator}
-        @assert label > 0
-        return new(operator, label, is_ghost)
-    end
+    # function QuantumOperator(::Type{operator}, label::Int, is_ghost=false) where {operator<:AbstractQuantumOperator}
+    #     @assert label > 0
+    #     return new(operator, label, is_ghost)
+    # end
 end
 Base.isequal(a::QuantumOperator, b::QuantumOperator) = ((a.operator == b.operator) && (a.label == b.label) && (a.is_ghost == b.is_ghost))
 Base.:(==)(a::QuantumOperator, b::QuantumOperator) = Base.isequal(a, b)
