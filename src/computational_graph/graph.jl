@@ -271,7 +271,7 @@ end
 # Arguments:
 - `vertices::Vector{OperatorProduct}`  vertices of the diagram
 - `topology::Vector{Vector{Int}}` topology of the diagram. Each Vector{Int} stores vertices' index connected with each other (as a propagator). 
-- `external`  index of external vertices
+- `external`  index of external vertices. They are the actual external quantum operators, not the ghost operators.
 - `factor::F`  overall scalar multiplicative factor for this diagram (e.g., permutation sign)
 - `weight`  weight of the diagram
 - `name`  name of the diagram
