@@ -137,25 +137,11 @@ is_external(g::Graph, i::Int) = i in g.external
 is_internal(g::Graph, i::Int) = (i in g.external) == false
 
 """
-    function is_ghost(g::Graph, i::Int) 
+    function isghost(g::Graph, i::Int) 
 
     Check if `i::Int` in the ghost operator's indices of Graph `g`.
 """
-is_ghost(g::Graph, i::Int) = isghost(OperatorProduct(g.vertices)[i])
-
-"""
-    function external(g::Graph)
-
-    Return all external vertices (::Vector{QuantumOperators}) of Graph `g`.
-"""
-external(g::Graph) = OperatorProduct(g.vertices)[g.external]
-
-"""
-    function external_legs(g::Graph)
-
-    Return all the external legs, including real and ghost external vertices (::Vector{OperatorProduct}).
-"""
-external_legs(g::Graph) = OperatorProduct(g.vertices)[eachindex(g.external)]
+isghost(g::Graph, i::Int) = isghost(OperatorProduct(g.vertices)[i])
 
 """
     function vertices(g::Graph)
@@ -165,27 +151,18 @@ external_legs(g::Graph) = OperatorProduct(g.vertices)[eachindex(g.external)]
 vertices(g::Graph) = g.vertices
 
 """
-    function real_extV(g::Graph)
+    function external(g::Graph)
 
-    Return all the external operators with real legs (::Vector{OperatorProduct}).
+    Return all physical external vertices (::Vector{OperatorProduct}) of Graph `g`.
 """
-real_extV(g::Graph) = filter(!isghost, external_legs(g))
+external(g::Graph) = OperatorProduct.(OperatorProduct(g.vertices)[g.external])
 
 """
-    function fake_extV(g::Graph)
+    function external_with_ghost(g::Graph)
 
-    Return all the external operators with fake legs (::Vector{OperatorProduct}).
+    Return all the external vertices (::Vector{OperatorProduct}), including real legs and ghost.
 """
-function fake_extV(g::Graph)
-    operators = [o for v in g.vertices for o in v.operators]
-    ind_fakelegs = Int[]
-    for connection in g.topology
-        if any(isghost.(operators[connection]))
-            append!(ind_fakelegs, [p for p in connection if !isghost(operators[p])])
-        end
-    end
-    return operators[ind_fakelegs]
-end
+external_with_ghost(g::Graph) = OperatorProduct.(OperatorProduct(g.vertices)[eachindex(g.external)])
 
 #TODO: add function return reducibility of Graph. 
 function reducibility(g::Graph)
@@ -373,28 +350,30 @@ end
 """
     function standardize_order!(g::Graph)
 
-    Standardize the order of all leaves (propagators) of Graph by correlator ordering.
+    Standardize the external operators' order of Graph. 
+    Reorder all leaves (propagators) of Graph by correlator ordering. 
+    Reorder all non-leaves of Graph by normal ordering.
 
 # Example: 
 ```julia-repl
-julia> g = propagator(𝑓⁺(1)𝑏⁺(2)𝜙(3)𝑓⁻(1)𝑏⁻(2))
-1: propagator graph from f⁺(1)b⁺(2)ϕ(3)f⁻(1)b⁻(2)
+julia> g = propagator([𝑓⁺(1), 𝑏⁺(2), 𝜙(3), 𝑓⁻(1), 𝑏⁻(2)])
+1:f⁺(1)|b⁺(2)|ϕ(3)|f⁻(1)|b⁻(2)=0.0
 
 julia> standardize_order!(g)
 
-julia> g, g.factor
-(1: propagator graph from f⁻(1)b⁻(2)ϕ(3)b⁺(2)f⁺(1), -1.0)
+julia> g
+11:f⁻(1)|b⁻(2)|ϕ(3)|b⁺(2)|f⁺(1)⋅-1.0=0.0
 ```
 """
 function standardize_order!(g::Graph)
     for node in PreOrderDFS(g)
-        extL = external_legs(node)
+        extL = external_with_ghost(node)
         if isempty(node.subgraphs)
             sign, perm = correlator_order(OperatorProduct(extL))
             # node.external = node.external[perm]
         else
             sign, perm = normal_order(OperatorProduct(extL))
-            inds_real = [i for (i, op) in enumerate(extL) if !isghost(op)]
+            inds_real = [i for (i, op) in enumerate(extL) if !isghost(op[1])]
             node.external = union(sortperm(perm)[inds_real], setdiff(node.external, perm))
             for connection in node.topology
                 for (i, ind) in enumerate(connection)
