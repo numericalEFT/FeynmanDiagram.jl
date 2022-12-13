@@ -308,6 +308,7 @@ function feynman_diagram(vertices::Vector{OperatorProduct}, topology::Vector{Vec
         if isempty(intersect(connection, ind_ghost))
             push!(subgraphs, propagator(operators[connection]))
         else
+            @assert length(connection) == 2 "Ghost external operator can only be connected to a single internal operator"
             ind_fop = setdiff(connection, ind_ghost)
             append!(ind_fakeleg, ind_fop)
         end
