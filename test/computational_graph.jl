@@ -165,7 +165,7 @@ end
         @test external(g6) == OperatorProduct(V6)[1:2]
         standardize_order!(g6)
         @test g6.factor == 1
-        @test external(g6) == OperatorProduct(V6)[[2, 1]]
+        @test external(g6) == OperatorProduct(V6)[1:2]
 
         V7 = [𝑓⁻(7), 𝑓⁺(8, true), 𝑓⁺(1)𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5)𝜙(6)]
         g7 = feynman_diagram(V7, [[3, 7], [5, 8], [6, 1], [4, 2]], external=[1, 4])     # sigma*G
@@ -178,6 +178,11 @@ end
         @test g8.factor == -1
         @test real_extV(g8) == OperatorProduct(V8)[[2, 3]]
         @test fake_extV(g8) == OperatorProduct(V8)[[12, 14]]
+        @test external_legs(g8) == OperatorProduct(V8)[1:4]
+        standardize_order!(g8)
+        @test external_legs(g8) == OperatorProduct(V8)[[2, 4, 3, 1]]
+        @test Set(external(g8)) == Set(OperatorProduct(V8)[[2, 12, 3, 14]])
+
         V8p = [𝑓⁺(2), 𝑓⁻(1, true), 𝑓⁻(12), 𝑓⁺(16, true), 𝑓⁺(3)𝑓⁻(4)𝜙(5), 𝑓⁺(6)𝑓⁻(7)𝜙(8), 𝑓⁺(9)𝑓⁻(10)𝜙(11), 𝑓⁺(13)𝑓⁻(14)𝜙(15)]
         g8p = feynman_diagram(V8p, [[1, 6], [5, 9], [7, 16], [8, 15], [10, 13], [11, 3], [12, 4], [14, 2]], external=[12, 1, 3, 14])
         @test g8p.factor == 1
@@ -193,10 +198,12 @@ end
         V2 = [𝑓⁻(1, true), 𝑓⁺(12, true), 𝑓⁺(2), 𝑓⁻(3), 𝑓⁺(4)𝑓⁺(5)𝑓⁻(6)𝑓⁻(7), 𝑓⁺(8)𝑓⁺(9)𝑓⁻(10)𝑓⁻(11)]
         g2 = feynman_diagram(V2, [[1, 9], [3, 8], [4, 5], [6, 12], [7, 10], [11, 2]], external=[3, 4, 9, 11])
         @test g2.factor == -1
+        @test external(g2) == OperatorProduct(V2)[[3, 4, 9, 11]]
         @test external_legs(g2) == OperatorProduct(V2)[1:4]
         @test real_extV(g2) == OperatorProduct(V2)[[3, 4]]
         @test fake_extV(g2) == OperatorProduct(V2)[[9, 11]]
         standardize_order!(g2)
+        @test Set(external(g2)) == Set(OperatorProduct(V2)[[3, 4, 9, 11]])
         @test external_legs(g2) == OperatorProduct(V2)[[2, 3, 4, 1]]
     end
     @testset "Multi-operator contractions" begin

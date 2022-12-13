@@ -179,13 +179,6 @@ real_extV(g::Graph) = filter(!isghost, external_legs(g))
 function fake_extV(g::Graph)
     operators = [o for v in g.vertices for o in v.operators]
     ind_fakelegs = Int[]
-    # for ext in g.external
-    #     for connection in g.topology
-    #         if ext in connection && any(isghost.(operators[setdiff(connection, ext)]))
-    #             push!(ind_fakelegs, ext)
-    #         end
-    #     end
-    # end
     for connection in g.topology
         if any(isghost.(operators[connection]))
             append!(ind_fakelegs, [p for p in connection if !isghost(operators[p])])
@@ -394,13 +387,14 @@ julia> g, g.factor
 """
 function standardize_order!(g::Graph)
     for node in PreOrderDFS(g)
+        extL = external_legs(node)
         if isempty(node.subgraphs)
-            sign, perm = correlator_order(OperatorProduct(external_legs(node)))
+            sign, perm = correlator_order(OperatorProduct(extL))
             # node.external = node.external[perm]
         else
-            # realLegs, inds = real_extV(node)
-            sign, perm = normal_order(OperatorProduct(external_legs(node)))
-            # node.external = union(inds[perm], setdiff(node.external, inds))
+            sign, perm = normal_order(OperatorProduct(extL))
+            inds_real = [i for (i, op) in enumerate(extL) if !isghost(op)]
+            node.external = union(sortperm(perm)[inds_real], setdiff(node.external, perm))
             for connection in node.topology
                 for (i, ind) in enumerate(connection)
                     ind in perm && (connection[i] = perm[ind])
