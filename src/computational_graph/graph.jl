@@ -158,11 +158,25 @@ vertices(g::Graph) = g.vertices
 external(g::Graph) = OperatorProduct.(OperatorProduct(g.vertices)[g.external])
 
 """
+    function external_labels(g::Graph)
+
+    Return the labels of all physical external vertices of Graph `g`.
+"""
+external_labels(g::Graph) = [o[1].label for o in external(g)]
+
+"""
     function external_with_ghost(g::Graph)
 
-    Return all the external vertices (::Vector{OperatorProduct}), including real legs and ghost.
+    Return all the external vertices (::Vector{OperatorProduct}), including real legs and ghost legs.
 """
 external_with_ghost(g::Graph) = OperatorProduct.(OperatorProduct(g.vertices)[eachindex(g.external)])
+
+"""
+    function external_with_ghost_labels(g::Graph)
+
+    Return the labels of all external vertices, including both real legs and ghost legs.
+"""
+external_with_ghost_labels(g::Graph) = [o[1].label for o in external_with_ghost(g)]
 
 #TODO: add function return reducibility of Graph. 
 function reducibility(g::Graph)

@@ -164,51 +164,54 @@ end
         @test vertices(g6)[1:2] == [𝑓⁺(1), 𝑓⁻(8)]
         @test Set(external(g6)) == Set([𝑓⁺(1), 𝑓⁻(8)])
 
-        V7 = [𝑓⁻(7), 𝑓⁺(8, true), 𝑓⁺(1)𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5)𝜙(6)]
+        V7 = [𝑓⁻(7), 𝑓⁺ₑ(8), 𝑓⁺(1)𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5)𝜙(6)]
         g7 = feynman_diagram(V7, [[3, 7], [5, 8], [6, 1], [4, 2]], external=[1, 4])     # sigma*G
         @test g7.factor == 1
         @test external(g7) == [𝑓⁻(7), 𝑓⁻(2)]
-        @test external_with_ghost(g7) == [𝑓⁻(7), 𝑓⁺(8, true)]
+        @test external_with_ghost(g7) == [𝑓⁻(7), 𝑓⁺ₑ(8)]
 
-        V8 = [𝑓⁻(1, true), 𝑓⁺(2), 𝑓⁻(12), 𝑓⁺(16, true), 𝑓⁺(3)𝑓⁻(4)𝜙(5), 𝑓⁺(6)𝑓⁻(7)𝜙(8), 𝑓⁺(9)𝑓⁻(10)𝜙(11), 𝑓⁺(13)𝑓⁻(14)𝜙(15)]
+        V8 = [𝑓⁻ₑ(1), 𝑓⁺(2), 𝑓⁻(12), 𝑓⁺ₑ(16), 𝑓⁺(3)𝑓⁻(4)𝜙(5), 𝑓⁺(6)𝑓⁻(7)𝜙(8), 𝑓⁺(9)𝑓⁻(10)𝜙(11), 𝑓⁺(13)𝑓⁻(14)𝜙(15)]
         g8 = feynman_diagram(V8, [[2, 6], [5, 9], [7, 16], [8, 15], [10, 13], [11, 3], [12, 4], [14, 1]], external=[2, 12, 3, 14])
         @test g8.factor == -1
         @test external(g8) == [𝑓⁺(2), 𝑓⁻(10), 𝑓⁻(12), 𝑓⁺(13)]
-        @test external_with_ghost(g8) == [𝑓⁻(1, true), 𝑓⁺(2), 𝑓⁻(12), 𝑓⁺(16, true)]
+        @test external_with_ghost(g8) == [𝑓⁻ₑ(1), 𝑓⁺(2), 𝑓⁻(12), 𝑓⁺ₑ(16)]
         standardize_order!(g8)
-        @test external_with_ghost(g8) == [𝑓⁺(2), 𝑓⁺(16, true), 𝑓⁻(12), 𝑓⁻(1, true)]
+        @test external_with_ghost(g8) == [𝑓⁺(2), 𝑓⁺ₑ(16), 𝑓⁻(12), 𝑓⁻ₑ(1)]
         @test Set(external(g8)) == Set([𝑓⁺(2), 𝑓⁻(10), 𝑓⁻(12), 𝑓⁺(13)])
 
-        V8p = [𝑓⁺(2), 𝑓⁻(1, true), 𝑓⁻(12), 𝑓⁺(16, true), 𝑓⁺(3)𝑓⁻(4)𝜙(5), 𝑓⁺(6)𝑓⁻(7)𝜙(8), 𝑓⁺(9)𝑓⁻(10)𝜙(11), 𝑓⁺(13)𝑓⁻(14)𝜙(15)]
+        V8p = [𝑓⁺(2), 𝑓⁻ₑ(1), 𝑓⁻(12), 𝑓⁺ₑ(16), 𝑓⁺(3)𝑓⁻(4)𝜙(5), 𝑓⁺(6)𝑓⁻(7)𝜙(8), 𝑓⁺(9)𝑓⁻(10)𝜙(11), 𝑓⁺(13)𝑓⁻(14)𝜙(15)]
         g8p = feynman_diagram(V8p, [[1, 6], [5, 9], [7, 16], [8, 15], [10, 13], [11, 3], [12, 4], [14, 2]], external=[12, 1, 3, 14])
         @test g8p.factor == 1
     end
     @testset "f+f+f-f- interaction" begin
-        V1 = [𝑓⁻(1, true), 𝑓⁻(2, true), 𝑓⁺(3), 𝑓⁺(4), 𝑓⁺(5)𝑓⁺(6)𝑓⁻(7)𝑓⁻(8), 𝑓⁺(9)𝑓⁺(10)𝑓⁻(11)𝑓⁻(12)]
+        V1 = [𝑓⁻ₑ(1), 𝑓⁻ₑ(2), 𝑓⁺(3), 𝑓⁺(4), 𝑓⁺(5)𝑓⁺(6)𝑓⁻(7)𝑓⁻(8), 𝑓⁺(9)𝑓⁺(10)𝑓⁻(11)𝑓⁻(12)]
         g1 = feynman_diagram(V1, [[1, 5], [2, 10], [3, 8], [4, 11], [6, 12], [7, 9]], external=[3, 4, 5, 10])
         g1p = feynman_diagram(V1, [[1, 10], [2, 5], [3, 8], [4, 11], [6, 12], [7, 9]], external=[3, 4, 5, 10])
         @test g1p.factor ≈ -g1.factor
         @test external(g1) == external(g1p)
         @test external_with_ghost(g1) == external_with_ghost(g1p)
 
-        V2 = [𝑓⁻(1, true), 𝑓⁺(12, true), 𝑓⁺(2), 𝑓⁻(3), 𝑓⁺(4)𝑓⁺(5)𝑓⁻(6)𝑓⁻(7), 𝑓⁺(8)𝑓⁺(9)𝑓⁻(10)𝑓⁻(11)]
+        V2 = [𝑓⁻ₑ(1), 𝑓⁺ₑ(12), 𝑓⁺(2), 𝑓⁻(3), 𝑓⁺(4)𝑓⁺(5)𝑓⁻(6)𝑓⁻(7), 𝑓⁺(8)𝑓⁺(9)𝑓⁻(10)𝑓⁻(11)]
         g2 = feynman_diagram(V2, [[1, 9], [3, 8], [4, 5], [6, 12], [7, 10], [11, 2]], external=[3, 4, 9, 11])
         @test g2.factor == -1
         @test external(g2) == [𝑓⁺(2), 𝑓⁻(3), 𝑓⁺(8), 𝑓⁻(10)]
-        @test external_with_ghost(g2) == [𝑓⁻(1, true), 𝑓⁺(12, true), 𝑓⁺(2), 𝑓⁻(3)]
+        @test external_with_ghost(g2) == [𝑓⁻ₑ(1), 𝑓⁺ₑ(12), 𝑓⁺(2), 𝑓⁻(3)]
+        @test external_labels(g2) == [2, 3, 8, 10] # labels of external vertices
+        @test external_with_ghost_labels(g2) == [1, 12, 2, 3] # labels of external vertices with ghost
         standardize_order!(g2)
         @test Set(external(g2)) == Set([𝑓⁺(2), 𝑓⁻(3), 𝑓⁺(8), 𝑓⁻(10)])
-        @test external_with_ghost(g2) == [𝑓⁺(12, true), 𝑓⁺(2), 𝑓⁻(3), 𝑓⁻(1, true)]
+        @test external_with_ghost(g2) == [𝑓⁺ₑ(12), 𝑓⁺(2), 𝑓⁻(3), 𝑓⁻ₑ(1)]
+        @test external_with_ghost_labels(g2) == [12, 2, 3, 1]
     end
     @testset "Multi-operator contractions" begin
         # multi-operator (>2) contractions
-        Vm = [𝑓(1, true), 𝑓⁺(2)𝑓⁻(3)𝑏⁺(4), 𝜙(5)𝑓⁺(6)𝑓⁻(7), 𝑓(8)𝑏⁻(9)𝜙(10)]
+        Vm = [𝑓ₑ(1), 𝑓⁺(2)𝑓⁻(3)𝑏⁺(4), 𝜙(5)𝑓⁺(6)𝑓⁻(7), 𝑓(8)𝑏⁻(9)𝜙(10)]
         gm = feynman_diagram(Vm, [[2, 3, 4, 9], [5, 6, 7, 10], [8, 1]], external=[8])
         @test vertices(gm) == Vm
         @test gm.subgraph_factors == [1, 1]
         @test gm.subgraphs[1].vertices == external(gm.subgraphs[1]) == [𝑓⁺(2), 𝑓⁻(3), 𝑏⁺(4), 𝑏⁻(9)]
         @test gm.subgraphs[2].vertices == external(gm.subgraphs[2]) == [𝜙(5), 𝑓⁺(6), 𝑓⁻(7), 𝜙(10)]
-        @test external_with_ghost(gm) == [𝑓(1, true)]
+        @test external_with_ghost(gm) == [𝑓ₑ(1)]
         @test external(gm) == [𝑓(8)]
         standardize_order!(gm)
         @test gm.subgraphs[1].factor == -1

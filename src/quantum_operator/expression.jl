@@ -51,6 +51,13 @@ const 𝑏⁻ = bosonic_annihilation
 const 𝑏⁺ = bosonic_creation
 const 𝜙 = real_classic
 
+const 𝑓⁻ₑ = i -> fermionic_annihilation(i, true)
+const 𝑓⁺ₑ = i -> fermionic_creation(i, true)
+const 𝑓ₑ = i -> majorana(i, true)
+const 𝑏⁻ₑ = i -> bosonic_annihilation(i, true)
+const 𝑏⁺ₑ = i -> bosonic_creation(i, true)
+const 𝜙ₑ = i -> real_classic(i, true)
+
 Base.eltype(::Type{OperatorProduct}) = QuantumOperator
 Base.getindex(o::OperatorProduct, i::Int) = o.operators[i]
 Base.setindex!(o::OperatorProduct, v::QuantumOperator, i::Int) = o.operators[i] = v
