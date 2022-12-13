@@ -98,7 +98,7 @@ export ComputationalGraphs
 export labelreset, parity, parity_old
 export Graph, isequiv
 export feynman_diagram, contractions_to_edges, propagator, standardize_order!
-export is_external, is_internal, external, vertices, real_legs, fake_legs
+export is_external, is_internal, external, vertices, external_legs, real_extV, fake_extV
 # export reducibility, connectivity
 # export 𝐺ᶠ, 𝐺ᵇ, 𝐺ᵠ, 𝑊, Green2, Interaction
 # export Coupling_yukawa, Coupling_phi3, Coupling_phi4, Coupling_phi6
