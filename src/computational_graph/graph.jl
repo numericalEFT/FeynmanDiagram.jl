@@ -137,11 +137,11 @@ is_external(g::Graph, i::Int) = i in g.external
 is_internal(g::Graph, i::Int) = (i in g.external) == false
 
 """
-    function external(g::Graph)
+    function isghost(g::Graph, i::Int) 
 
-    Return all external vertices (::Vector{QuantumOperators}) of Graph `g`.
+    Check if `i::Int` in the ghost operator's indices of Graph `g`.
 """
-external(g::Graph) = OperatorProduct(g.vertices)[g.external]
+isghost(g::Graph, i::Int) = isghost(OperatorProduct(g.vertices)[i])
 
 """
     function vertices(g::Graph)
@@ -149,6 +149,20 @@ external(g::Graph) = OperatorProduct(g.vertices)[g.external]
     Return all vertices (::Vector{OperatorProduct}) of Graph `g`.
 """
 vertices(g::Graph) = g.vertices
+
+"""
+    function external(g::Graph)
+
+    Return all physical external vertices (::Vector{OperatorProduct}) of Graph `g`.
+"""
+external(g::Graph) = OperatorProduct.(OperatorProduct(g.vertices)[g.external])
+
+"""
+    function external_with_ghost(g::Graph)
+
+    Return all the external vertices (::Vector{OperatorProduct}), including real legs and ghost.
+"""
+external_with_ghost(g::Graph) = OperatorProduct.(OperatorProduct(g.vertices)[eachindex(g.external)])
 
 #TODO: add function return reducibility of Graph. 
 function reducibility(g::Graph)
@@ -234,7 +248,7 @@ end
 # Arguments:
 - `vertices::Vector{OperatorProduct}`  vertices of the diagram
 - `topology::Vector{Vector{Int}}` topology of the diagram. Each Vector{Int} stores vertices' index connected with each other (as a propagator). 
-- `external`  index of external vertices
+- `external`  index of external vertices. They are the actual external quantum operators, not the ghost operators.
 - `factor::F`  overall scalar multiplicative factor for this diagram (e.g., permutation sign)
 - `weight`  weight of the diagram
 - `name`  name of the diagram
@@ -243,82 +257,132 @@ end
 # Example:
 ```julia-repl
 julia> g = feynman_diagram([𝑓⁺(1)𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5)𝜙(6)], [[5, 1], [2, 4], [3, 6]])
-1: generic graph from f⁺(1)f⁻(2)ϕ(3)|f⁺(4)f⁻(5)ϕ(6)
+4:f⁺(1)f⁻(2)ϕ(3)|f⁺(4)f⁻(5)ϕ(6)=0.0=-1.0Ⓧ (1,2,3)
 
 julia> g.subgraphs
 3-element Vector{Graph{Float64, Float64}}:
- 2: propagator graph from f⁻(5)f⁺(1)
- 3: propagator graph from f⁻(2)f⁺(4)
- 4: propagator graph from ϕ(3)ϕ(6)
+1:f⁻(5)|f⁺(1)=0.0
+2:f⁻(2)|f⁺(4)=0.0
+3:ϕ(3)|ϕ(6)=0.0
 ```
 """
 function feynman_diagram(vertices::Vector{OperatorProduct}, topology::Vector{Vector{Int}};
-    external::Union{Nothing,AbstractVector}=nothing, factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic)
+    external=[], factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic)
 
     operators = [o for v in vertices for o in v.operators]
-    contraction = collect(Iterators.flatten(topology))
-    if isnothing(external)
-        external = [i for i in eachindex(operators) if i ∉ contraction]
-    end
-    @assert length(unique(contraction)) == length(contraction) # no repeated index
-    @assert length(unique(external)) == length(external) # no repeated index
-    @assert Set(union(external, contraction)) == Set(eachindex(operators)) # external + permutation must exhaust all operators
+    permutation = collect(Iterators.flatten(topology))
+    ind_ops = collect(eachindex(operators))
 
-    permutation = union(contraction, external)
-    _external = intersect(external, contraction)
+    @assert length(unique(permutation)) == length(permutation) # no repeated index
+    @assert length(unique(external)) == length(external) # no repeated index
+    @assert Set(permutation) == Set(ind_ops) # permutation must exhaust all operators
+    ind_ghost = filter(p -> isghost(operators[p]), ind_ops)
+    @assert all(ind_ghost .<= length(external)) # external real/fake legs must be placed at the beginning of vertices.
+
+    ind_fakeleg = Int[]
+    subgraphs = Graph[]
+    for connection in topology
+        if isempty(intersect(connection, ind_ghost))
+            push!(subgraphs, propagator(operators[connection]))
+        else
+            @assert length(connection) == 2 "Ghost external operator can only be connected to a single internal operator"
+            ind_fop = setdiff(connection, ind_ghost)
+            append!(ind_fakeleg, ind_fop)
+        end
+    end
+    @assert ind_fakeleg ⊆ external "external operators are not consistent with ghost operators in vertices."
 
     fermionic_operators = isfermionic.(operators)
     filter!(p -> fermionic_operators[p], permutation)
     sign = isempty(permutation) ? 1 : parity(sortperm(permutation))
 
-    filter!(p -> fermionic_operators[p], _external)
-    ext_sign = isempty(_external) ? 1 : parity(sortperm(_external))
-    # println(_external, ", ", ext_sign)
-
-    subgraphs = [propagator(reduce(*, operators[connection])) for connection in topology]
     g = Graph(vertices; external=external, subgraphs=subgraphs, topology=topology, name=name,
-        type=type, operator=Prod(), factor=factor * sign * ext_sign, weight=weight)
+        type=type, operator=Prod(), factor=factor * sign, weight=weight)
     return g
 end
 
+# function feynman_diagram(vertices::Vector{OperatorProduct}, topology::Vector{Vector{Int}};
+#     external::Union{Nothing,AbstractVector}=nothing, factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic)
+
+#     operators = [o for v in vertices for o in v.operators]
+#     contraction = collect(Iterators.flatten(topology))
+#     if isnothing(external)
+#         external = [i for i in eachindex(operators) if i ∉ contraction]
+#     end
+#     @assert length(unique(contraction)) == length(contraction) # no repeated index
+#     @assert length(unique(external)) == length(external) # no repeated index
+#     @assert Set(union(external, contraction)) == Set(eachindex(operators)) # external + permutation must exhaust all operators
+
+#     permutation = union(contraction, external)
+#     _external = intersect(external, contraction)
+
+#     fermionic_operators = isfermionic.(operators)
+#     filter!(p -> fermionic_operators[p], permutation)
+#     sign = isempty(permutation) ? 1 : parity(sortperm(permutation))
+
+#     filter!(p -> fermionic_operators[p], _external)
+#     ext_sign = isempty(_external) ? 1 : parity(sortperm(_external))
+#     # println(_external, ", ", ext_sign)
+
+#     subgraphs = [propagator(reduce(*, operators[connection])) for connection in topology]
+#     g = Graph(vertices; external=external, subgraphs=subgraphs, topology=topology, name=name,
+#         type=type, operator=Prod(), factor=factor * sign * ext_sign, weight=weight)
+#     return g
+# end
+
+
 """
-    function propagator(ops::OperatorProduct;
+    function propagator(ops::Vector{OperatorProduct};
         name="", diagtype=:propagator, factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
 
-    Create a propagator-type Graph from given OperatorProduct `ops`.
+    Create a propagator-type Graph from given Vector{OperatorProduct} `ops`, where each OperatorProduct includes one quantum operators of a vertex.
 """
-function propagator(ops::OperatorProduct;
+function propagator(ops::Union{Vector{OperatorProduct},Vector{QuantumOperator}};
     name="", diagtype=:propagator, factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
-    return Graph([ops,]; external=collect(eachindex(ops)), type=diagtype, name=name, operator=operator, factor=factor, weight=weight)
+    return Graph(ops; external=collect(eachindex(ops)), type=diagtype, name=name, operator=operator, factor=factor, weight=weight)
 end
+
+# function propagator(ops::OperatorProduct;
+#     name="", diagtype=:propagator, factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
+#     return Graph([ops,]; external=collect(eachindex(ops)), type=diagtype, name=name, operator=operator, factor=factor, weight=weight)
+# end
 
 """
     function standardize_order!(g::Graph)
 
-    Standardize the order of all leaves (propagators) of Graph by correlator ordering.
+    Standardize the external operators' order of Graph. 
+    Reorder all leaves (propagators) of Graph by correlator ordering. 
+    Reorder all non-leaves of Graph by normal ordering.
 
 # Example: 
 ```julia-repl
-julia> g = propagator(𝑓⁺(1)𝑏⁺(2)𝜙(3)𝑓⁻(1)𝑏⁻(2))
-1: propagator graph from f⁺(1)b⁺(2)ϕ(3)f⁻(1)b⁻(2)
+julia> g = propagator([𝑓⁺(1), 𝑏⁺(2), 𝜙(3), 𝑓⁻(1), 𝑏⁻(2)])
+1:f⁺(1)|b⁺(2)|ϕ(3)|f⁻(1)|b⁻(2)=0.0
 
 julia> standardize_order!(g)
 
-julia> g, g.factor
-(1: propagator graph from f⁻(1)b⁻(2)ϕ(3)b⁺(2)f⁺(1), -1.0)
+julia> g
+11:f⁻(1)|b⁻(2)|ϕ(3)|b⁺(2)|f⁺(1)⋅-1.0=0.0
 ```
 """
 function standardize_order!(g::Graph)
     for node in PreOrderDFS(g)
+        extL = external_with_ghost(node)
         if isempty(node.subgraphs)
-            sign, perm = correlator_order(OperatorProduct(external(node)))
-            node.external = node.external[perm]
-            node.factor *= sign
+            sign, perm = correlator_order(OperatorProduct(extL))
+            # node.external = node.external[perm]
         else
-            sign, perm = normal_order(OperatorProduct(external(node)))
-            node.external = node.external[perm]
-            node.factor *= sign
+            sign, perm = normal_order(OperatorProduct(extL))
+            inds_real = [i for (i, op) in enumerate(extL) if !isghost(op[1])]
+            node.external = union(sortperm(perm)[inds_real], setdiff(node.external, perm))
+            for connection in node.topology
+                for (i, ind) in enumerate(connection)
+                    ind in perm && (connection[i] = perm[ind])
+                end
+            end
         end
+        node.vertices[eachindex(node.external)] = node.vertices[perm]
+        node.factor *= sign
     end
 end
 
