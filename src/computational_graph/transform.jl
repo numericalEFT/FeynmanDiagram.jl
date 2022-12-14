@@ -17,9 +17,9 @@ The graph g is modified.
 """
 function relabel!(g::Graph, map::Dict{Int,Int})
 
-    for i in 1:length(g.vertices)
+    for i in eachindex(g.vertices)
         op = g.vertices[i]
-        for j in 1:length(op.operators)
+        for j in eachindex(op.operators)
             qo = op.operators[j]
             if haskey(map, qo.label)
                 op.operators[j] = QuantumOperator(qo, map[qo.label])
@@ -27,7 +27,7 @@ function relabel!(g::Graph, map::Dict{Int,Int})
         end
     end
 
-    for i in 1:length(g.subgraphs)
+    for i in eachindex(g.subgraphs)
         relabel!(g.subgraphs[i], map)
     end
 
@@ -54,9 +54,9 @@ Return sorted unique labels of graph g.
 """
 function collect_labels(g::Graph)
     labels = Vector{Int}([])
-    for i in 1:length(g.vertices)
+    for i in eachindex(g.vertices)
         op = g.vertices[i]
-        for j in 1:length(op.operators)
+        for j in eachindex(op.operators)
             qo = op.operators[j]
             if !(qo.label in labels)
                 push!(labels, qo.label)
@@ -78,7 +78,7 @@ function standardize_labels!(g::Graph)
     #TBD
     uniqlabels = collect_labels(g)
     map = Dict{Int,Int}()
-    for i in 1:length(uniqlabels)
+    for i in eachindex(uniqlabels)
         push!(map, uniqlabels[i] => i)
     end
     return relabel!(g, map)
