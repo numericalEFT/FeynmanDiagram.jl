@@ -4,13 +4,18 @@
 QuantumOperator(qo::QuantumOperator, label::Int) = QuantumOperator(qo.operator(), label, qo.is_ghost)
 # relabel constructor for OperatorProduct
 
-function relabel!(g::Graph, map::Dict{Int,Int})
+"""
+    function relabel!(g::Graph, map::Dict{Int,Int})
 
-    for i in 1:length(g.external)
-        if haskey(map, g.external[i])
-            g.external[i] = map[g.external[i]]
-        end
-    end
+    This function maps the labels of the quantum operators in g and its subgraphs to other labels. 
+For example, map = {1=>2, 3=>2} will find all quantum operators with labels 1 and 3, and then map them to 2.
+The graph g is modified.
+
+# Arguments:
+- `g::Graph`: graph to be modified
+- `map`: mapping from old labels to the new ones
+"""
+function relabel!(g::Graph, map::Dict{Int,Int})
 
     for i in 1:length(g.vertices)
         op = g.vertices[i]
@@ -29,8 +34,24 @@ function relabel!(g::Graph, map::Dict{Int,Int})
     return g
 end
 
+"""
+    function relabel(g::Graph, map::Dict{Int,Int})
+
+    This function maps the labels of the quantum operators in g and its subgraphs to other labels. 
+For example, map = {1=>2, 3=>2} will find all quantum operators with labels 1 and 3, and then map them to 2.
+Return a new copy of modified g.
+
+# Arguments:
+- `g::Graph`: graph to be modified
+- `map`: mapping from old labels to the new ones
+"""
 relabel(g::Graph, map::Dict{Int,Int}) = relabel!(deepcopy(g), map)
 
+"""
+    function collect_labels(g::Graph)
+
+Return sorted unique labels of graph g.
+"""
 function collect_labels(g::Graph)
     labels = Vector{Int}([])
     for i in 1:length(g.vertices)
@@ -46,6 +67,13 @@ function collect_labels(g::Graph)
     uniqlables = sort(unique(labels))
 end
 
+"""
+    function standardize_labels!(g::Graph)
+
+This function first finds all labels involved in g and its subgraphs (for example, 1, 4, 5, 7, ...), 
+then relabel them in the order 1, 2, 3, 4, ....
+The graph g is modified.
+"""
 function standardize_labels!(g::Graph)
     #TBD
     uniqlabels = collect_labels(g)
@@ -56,6 +84,13 @@ function standardize_labels!(g::Graph)
     return relabel!(g, map)
 end
 
+"""
+    function standardize_labels!(g::Graph)
+
+This function first finds all labels involved in g and its subgraphs (for example, 1, 4, 5, 7, ...), 
+then relabel them in the order 1, 2, 3, 4, ....
+Return a copy of stantardized g.
+"""
 standardize_labels(g::Graph) = standardize_labels!(deepcopy(g))
 
 ############LEGACY BELOW################
