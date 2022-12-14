@@ -92,31 +92,31 @@ end
 
     @testset "relabel" begin
         # construct a graph
-        V = [𝑓⁺(1)𝑓⁻(2), 𝑓⁺(5)𝑓⁺(6)𝑓⁻(7)𝑓⁻(8), 𝑓⁺(3)𝑓⁻(4)]
-        g1 = Graph(V, external=[1, 3])
+        V = [𝑓ₑ(1), 𝑓⁺(2)𝑓⁻(3)𝑏⁺(4), 𝜙(5)𝑓⁺(6)𝑓⁻(7), 𝑓(8)𝑏⁻(9)𝜙(10)]
+        g1 = feynman_diagram(V, [[2, 3, 4, 9], [5, 6, 7, 10], [8, 1]], external=[8])
 
-        map = Dict(1 => 2, 3 => 2)
+        map = Dict(4 => 1, 6 => 1, 8 => 1, 9 => 1, 10 => 1)
         g2 = relabel(g1, map)
-        println(g2)
+        uniqlabels = IRTransform.collect_labels(g2)
+        @test uniqlabels == [1, 2, 3, 5, 7]
+
+        map = Dict([i => 1 for i in 2:10])
+        g3 = relabel(g1, map)
+        uniqlabels = IRTransform.collect_labels(g3)
+        @test uniqlabels == [1,]
     end
 
     @testset "standardize_labels" begin
-        V = [𝑓⁺(1)𝑓⁻(2), 𝑓⁺(5)𝑓⁺(6)𝑓⁻(7)𝑓⁻(8), 𝑓⁺(3)𝑓⁻(4)]
-        g1 = Graph(V, external=[1, 3])
-        map = Dict(1 => 2, 3 => 2)
+        V = [𝑓ₑ(1), 𝑓⁺(2)𝑓⁻(3)𝑏⁺(4), 𝜙(5)𝑓⁺(6)𝑓⁻(7), 𝑓(8)𝑏⁻(9)𝜙(10)]
+        g1 = feynman_diagram(V, [[2, 3, 4, 9], [5, 6, 7, 10], [8, 1]], external=[8])
+
+        map = Dict([i => (11 - i) for i in 1:5])
         g2 = relabel(g1, map)
-        uniqlabels = IRTransform.collect_labels(g2)
-        println(uniqlabels)
 
         g3 = standardize_labels(g2)
-        println(g3)
-
+        uniqlabels = IRTransform.collect_labels(g3)
+        @test uniqlabels == [1, 2, 3, 4, 5]
     end
 
-    @testset "more tests" begin
-        Vm = [𝑓ₑ(1), 𝑓⁺(2)𝑓⁻(3)𝑏⁺(4), 𝜙(5)𝑓⁺(6)𝑓⁻(7), 𝑓(8)𝑏⁻(9)𝜙(10)]
-        gm = feynman_diagram(Vm, [[2, 3, 4, 9], [5, 6, 7, 10], [8, 1]], external=[8])
-
-    end
 
 end
