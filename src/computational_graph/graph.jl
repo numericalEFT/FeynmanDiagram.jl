@@ -9,6 +9,10 @@ Base.show(io::IO, o::AbstractOperator) = print(io, typeof(o))
 Base.show(io::IO, ::Type{Sum}) = print(io, "⨁")
 Base.show(io::IO, ::Type{Prod}) = print(io, "Ⓧ")
 
+# Is the unary operation trivial (𝓞g = g)?
+unary_is_trivial(::Type{AbstractOperator}) = false
+unary_is_trivial(::Type{O}) where {O<:Union{Sum,Prod}} = true  # (+g) ≡ g and (*g) ≡ g
+
 """
     mutable struct Graph{F,W}
     
@@ -100,7 +104,7 @@ function Base.isequal(a::Graph, b::Graph)
     return true
 end
 Base.:(==)(a::Graph, b::Graph) = Base.isequal(a, b)
-# isbare(diag::Graph) = isempty(diag.subgraphs)
+# isbare(g::Graph) = isempty(g.subgraphs)
 
 """
     function isequiv(a::Graph, b::Graph, args...)
@@ -400,23 +404,105 @@ function standardize_order!(g::Graph)
     end
 end
 
-prune_unary(g::Graph) = ((length(g.subgraph) == 1 && g.subgraph_factors[1] == 1 && g.factor == 1) ? g.subgraph[1] : g)
-
-function inplace_prod(g1::Graph{F,W}) where {F,W}
-    if (length(g1.subgraphs) == 1 && (g1.operator == Prod))
-        g0 = g1.subgraphs[1]
-        g = Graph(g0.vertices; external=g0.external, type=g0.type, topology=g0.topology,
-            subgraphs=g0.subgraphs, factor=g1.subgraph_factors[1] * g1.factor * g0.factor, operator=g0.operator(), ftype=F, wtype=W)
+"""
+Simplifies a graph g if it represents a trivial unary operation. Otherwise, returns the original graph.
+"""
+function prune_trivial_unary(g::Graph)
+    # No-op; g is not a link (depth-1, one-child tree)
+    if islink(g) == false
         return g
+    end
+    # Prune trivial unary operations
+    if unary_is_trivial(g.operator) && isfactorless(g)
+        return eldest(g)
     else
-        return g1
+        return g
     end
 end
 
+"""
+Simplifies subgraph factors for a graph g representing a
+multiplicative chain by shifting them up to root level.
+"""
+function simplify_subfactors(g::Graph)
+    # No-op for non-multiplicative node operations, links/leaves, and non-chain graphs
+    if g.operator != Prod || g.depth ≤ 1 || onechild(g) == false
+        return g
+    end
+    # Shift multiplicative subfactors to root level
+    gs = deepcopy(g)
+    child_gs = eldest(g)
+    while onechild(g)
+        gs.subgraph_factors[1] *= child_gs.subgraph_factors[1]
+        child_gs.subgraph_factors[1] = 1
+        g = child_gs
+    end
+    # 
+end
+
+"""Simplifies a graph g with a unary operator chain as its root."""
+function merge_chain(g::Graph)
+    if g.depth == 0
+        return g
+    elseif g.depth == 1
+        # A single link is mergeable iff the unary operation is trivial
+        return prune_trivial_unary(g)
+    end
+    # First, simplify subgraph factors for multiplicative chains
+    gs = g.operator == Prod ? simplify_subfactors(g) : deepcopy(g)
+    # Then, merge operator chains of length > 1
+    while onechild(gs)
+        # Break case: last link found
+        if node.depth == 1
+            # A single link is mergeable iff the unary operation is trivial
+            return prune_trivial_unary(g)
+        else
+            # If the link is not factorless, propagate the subgraph factor up the chain
+        end
+
+        isunary = length(gs) == 1
+        isprunable = g.subgraph_factors[1] == 1 && g.factor == 1 && g.operator in [Prod, Sum]
+        if isunary && isprunable
+            return gs[1]
+        else
+            return g
+        end
+    end
+    return error("Encountered an unexpected error.")
+end
+
+# """Converts a unary Prod chain to in-place form by propagating subgraph_factors up the chain."""
+# function inplace_prod(g::Graph{F,W}) where {F,W}
+#     # Find unary Prod chain subgraphs of g
+#     gt = deepcopy(g)
+#     for sg in gt
+
+#     end
+
+#     if g.operator == Prod && length(g.subgraphs) == 1
+#         gs = g.subgraphs[1]
+#         return Graph(gs.vertices; external=gs.external, type=gs.type, topology=gs.topology, subgraphs=gs.subgraphs,
+#             factor=g.subgraph_factors[1] * g.factor * gs.factor, operator=gs.operator, ftype=F, wtype=W)
+#     else
+#         return g
+#     end
+# end
+
+# """Converts a unary Prod node to in-place form by merging factors and subgraph_factors."""
+# function inplace_prod(g::Graph{F,W}) where {F,W}
+#     if g.operator == Prod && length(g.subgraphs) == 1
+#         gs = g.subgraphs[1]
+#         return Graph(gs.vertices; external=gs.external, type=gs.type, topology=gs.topology, subgraphs=gs.subgraphs,
+#             factor=g.subgraph_factors[1] * g.factor * gs.factor, operator=gs.operator, ftype=F, wtype=W)
+#     else
+#         return g
+#     end
+# end
+
 # function merge_prefactors(g0::Graph{F,W}) where {F,W}
 #     if (g1.operator==Sum && length(g1.subgraphs)==2 && isequiv(g1.subgraphs[1], g1.subgraphs[2], :factor, :id, :subgraph_factors))
-#         g1 = g0.subgraph[1]
-#         g2 = g0.subgraph[2]
+#         g1 = g0.subgraphs[1]
+#         g2 = g0.subgraphs[2]
 #         g_subg = Graph(g1.vertices; external=g1.external, type=g1.type, topology=g1.topology,
 #         subgraphs=g1.subgraphs, operator=g1.operator(), ftype=F, wtype=W)
 #         g = Graph(g1.vertices; external=g1.external, type=g1.type, topology=g1.topology,
@@ -431,16 +517,57 @@ end
 # 
 
 #####################  interface to AbstractTrees ########################### 
-function AbstractTrees.children(diag::Graph)
-    return diag.subgraphs
+function AbstractTrees.children(g::Graph)
+    return g.subgraphs
 end
 
+# Does the graph have any children?
+haschildren(g::Graph) = isempty(g.subgraphs) == false
+
+# Is the graph a leaf?
+isleaf(g::Graph) = haschildren(g) == false
+
+# Does the graph have only one child?
+onechild(g::Graph) = length(children(g)) == 1
+
+# Is the graph a single link (depth-1 and one-child)?
+islink(g::Graph) = onechild(g) && isleaf(eldest(g))
+
+# Is the graph a chain?
+# ischain(g::Graph) = all(onechild(c) || isleaf(c) for c in descendleft(g)) && onechild(g)
+
+# Get the first child of a graph
+function eldest(g::Graph)
+    @assert haschildren(g) "Graph has no children!"
+    return children(g)[1]
+end
+
+# Is the graph factorless?
+function isfactorless(g::Graph)
+    if isleaf(g)
+        return g.factor == 1
+    elseif onechild(g)
+        return g.factor == g.subgraph_factors[1] == 1
+    else
+        return all(isone.([g.factor; g.subgraph_factors]))
+    end
+end
+
+# # Get the first subfactor of a graph
+# function first_subfactor(g::Graph)
+#     @assert haschildren(g) "Graph has no children!"
+#     return g.subgraph_factors[1]
+# end
+
 ## Things that make printing prettier
-AbstractTrees.printnode(io::IO, diag::Graph) = print(io, "\u001b[32m$(diag.id)\u001b[0m : $diag")
+AbstractTrees.printnode(io::IO, g::Graph) = print(io, "\u001b[32m$(g.id)\u001b[0m : $g")
+
+## Guarantee type-stable tree iteration for Graphs
+AbstractTrees.NodeType(::Graph) = HasNodeType()
 AbstractTrees.nodetype(::Graph{F,W}) where {F,W} = Graph{F,W}
 
 ## Optional enhancements
 # These next two definitions allow inference of the item type in iteration.
 # (They are not sufficient to solve all internal inference issues, however.)
-Base.IteratorEltype(::Type{<:TreeIterator{Graph{F,W}}}) where {F,W} = Base.HasEltype()
-Base.eltype(::Type{<:TreeIterator{Graph{F,W}}}) where {F,W} = Graph{F,W}
+# Base.IteratorEltype(::Type{<:TreeIterator{Graph{F,W}}}) where {F,W} = Base.HasEltype()
+# Base.eltype(::Type{<:TreeIterator{Graph{F,W}}}) where {F,W} = Graph{F,W}

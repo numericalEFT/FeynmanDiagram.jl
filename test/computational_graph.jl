@@ -46,8 +46,9 @@
         @test [g.subgraph_factors[1] for g in g5.subgraphs] == [3, 10]
         @test g5lc.subgraphs == [g1, g2]
         @test g5lc.subgraph_factors == [3, 5]
-        # Requires optimization merge_prefactors on g5
-        @test_broken isequiv(g5, g5lc, :id)
+        # Requires graph optimization inplace_prod on g5
+        @test isequiv(simplify_subfactors(g5), g5lc, :id)
+        # @test_broken isequiv(g5, g5lc, :id)
         # Vector form
         g6lc = ComputationalGraphs.linear_combination([g1, g2, g5, g2, g1], [3, 5, 7, 9, 11])
         @test g6lc.subgraphs == [g1, g2, g5, g2, g1]
