@@ -224,3 +224,37 @@ end
         @test isequiv(gm, ggm, :id)
     end
 end
+
+@testset "relabel and standardize_labels" begin
+    using FeynmanDiagram.ComputationalGraphs
+
+    @testset "relabel" begin
+        # construct a graph
+        V = [𝑓ₑ(1), 𝑓⁺(2)𝑓⁻(3)𝑏⁺(4), 𝜙(5)𝑓⁺(6)𝑓⁻(7), 𝑓(8)𝑏⁻(9)𝜙(10)]
+        g1 = feynman_diagram(V, [[2, 3, 4, 9], [5, 6, 7, 10], [8, 1]], external=[8])
+
+        map = Dict(4 => 1, 6 => 1, 8 => 1, 9 => 1, 10 => 1)
+        g2 = relabel(g1, map)
+        uniqlabels = ComputationalGraphs.collect_labels(g2)
+        @test uniqlabels == [1, 2, 3, 5, 7]
+
+        map = Dict([i => 1 for i in 2:10])
+        g3 = relabel(g1, map)
+        uniqlabels = ComputationalGraphs.collect_labels(g3)
+        @test uniqlabels == [1,]
+    end
+
+    @testset "standardize_labels" begin
+        V = [𝑓ₑ(1), 𝑓⁺(2)𝑓⁻(3)𝑏⁺(4), 𝜙(5)𝑓⁺(6)𝑓⁻(7), 𝑓(8)𝑏⁻(9)𝜙(10)]
+        g1 = feynman_diagram(V, [[2, 3, 4, 9], [5, 6, 7, 10], [8, 1]], external=[8])
+
+        map = Dict([i => (11 - i) for i in 1:5])
+        g2 = relabel(g1, map)
+
+        g3 = standardize_labels(g2)
+        uniqlabels = ComputationalGraphs.collect_labels(g3)
+        @test uniqlabels == [1, 2, 3, 4, 5]
+    end
+
+
+end
