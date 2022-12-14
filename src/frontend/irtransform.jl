@@ -36,15 +36,6 @@ function relabel!(g::Graph, map::Dict{Int,Int})
         end
     end
 
-    for i in 1:length(g.topology)
-        for j in 1:length(g.topology[i])
-            if haskey(map, g.topology[i][j])
-                g.topology[i][j] = map[g.topology[i][j]]
-            end
-        end
-        g.topology[i] = unique(g.topology[i])
-    end
-
     for i in 1:length(g.subgraphs)
         relabel!(g.subgraphs[i], map)
     end
