@@ -56,7 +56,7 @@ struct QuantumOperator
     label::Int
     is_ghost::Bool
     function QuantumOperator(operator::AbstractQuantumOperator, label::Int, is_ghost=false)
-        @assert label > 0
+        @assert label >= 0
         return new(typeof(operator), label, is_ghost)
     end
     # function QuantumOperator(::Type{operator}, label::Int, is_ghost=false) where {operator<:AbstractQuantumOperator}

@@ -8,6 +8,8 @@ import ..QuantumOperators: 𝑓⁻ₑ, 𝑓⁺ₑ, 𝑓ₑ, 𝑏⁻ₑ, 𝑏⁺�
 
 include("common.jl")
 export labelreset
+export _dtype
+export set_datatype
 
 include("graph.jl")
 export Graph, isequiv
