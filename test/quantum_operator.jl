@@ -1,5 +1,6 @@
 @testset "OperatorProduct" begin
-    @test 𝑓(1) == OperatorProduct(QuantumOperator(:f, 1))
+    Ops = QuantumOperators
+    @test 𝑓(1) == OperatorProduct(QuantumOperator(Ops.Majorana(), 1))
     @test isfermionic(𝑓(1)[1])
     @test isfermionic(𝑓⁺(1)[1])
     @test isfermionic(𝑓⁻(1)[1])
@@ -7,16 +8,17 @@
     @test QuantumOperators.iscreation(𝑏⁺(1)[1])
     @test (𝑓⁻(1)[1])' == 𝑓⁺(1)[1]
 
-    qe1 = OperatorProduct([QuantumOperator(:f⁺, 1), QuantumOperator(:f⁻, 2), QuantumOperator(:ϕ, 3)])
-    qe2 = OperatorProduct([QuantumOperator(:f⁺, 1), QuantumOperator(:f⁻, 2),
-        QuantumOperator(:ϕ, 3), QuantumOperator(:f⁻, 4)])
-    qe3 = OperatorProduct([QuantumOperator(:b⁻, 4), QuantumOperator(:f⁺, 1), QuantumOperator(:f⁻, 2),
-        QuantumOperator(:ϕ, 3)])
-    @test QuantumOperator(:f⁺, 1) * QuantumOperator(:f⁻, 2) * QuantumOperator(:ϕ, 3) == qe1
+    qe1 = OperatorProduct([QuantumOperator(Ops.FermiCreation(), 1), QuantumOperator(Ops.FermiAnnihilation(), 2), QuantumOperator(Ops.Classic(), 3)])
+    qe2 = OperatorProduct([QuantumOperator(Ops.FermiCreation(), 1), QuantumOperator(Ops.FermiAnnihilation(), 2),
+        QuantumOperator(Ops.Classic(), 3), QuantumOperator(Ops.FermiAnnihilation(), 4)])
+    qe3 = OperatorProduct([QuantumOperator(Ops.BosonAnnihilation(), 4), QuantumOperator(Ops.FermiCreation(), 1),
+        QuantumOperator(Ops.FermiAnnihilation(), 2),
+        QuantumOperator(Ops.Classic(), 3)])
+    @test 𝑓⁺(1) * 𝑓⁻(2) * 𝜙(3) == qe1
     @test 𝑓⁺(1)𝑓⁻(2)𝜙(3) == qe1
     @test qe1 * 𝑓⁻(4) == qe2
-    @test qe1 * QuantumOperator(:f⁻, 4) == qe2
-    @test QuantumOperator(:b⁻, 4) * qe1 == qe3
+    @test qe1 * QuantumOperator(Ops.FermiAnnihilation(), 4) == qe2
+    @test QuantumOperator(Ops.BosonAnnihilation(), 4) * qe1 == qe3
     @test OperatorProduct(qe1) == qe1.operators
     @test !isfermionic(qe1)
     @test isfermionic(qe2)
@@ -27,19 +29,28 @@ end
 
 @testset "correlator order" begin
     o1 = 𝑓⁺(1)𝑓⁻(2)𝑓⁺(5)𝑓⁺(6)𝑓⁻(1)𝑓⁻(5)
-    sign, o1 = correlator_order(o1)
+    sign, perm = correlator_order(o1)
     @test sign == 1
-    @test o1 == 𝑓⁻(1)𝑓⁻(5)𝑓⁻(2)𝑓⁺(6)𝑓⁺(5)𝑓⁺(1)
+    @test o1[perm] == 𝑓⁻(1)𝑓⁻(5)𝑓⁻(2)𝑓⁺(6)𝑓⁺(5)𝑓⁺(1)
+    sign, perm = normal_order(o1)
+    @test sign == -1
+    @test o1[perm] == 𝑓⁺(1)𝑓⁺(5)𝑓⁺(6)𝑓⁻(2)𝑓⁻(5)𝑓⁻(1)
 
     o2 = 𝑓⁺(1)𝑓⁻(2)𝑏⁺(1)𝜙(1)𝑓⁺(6)𝑓⁺(5)𝑓⁻(1)𝑓⁻(5)𝑏⁻(1)
-    sign, o2 = correlator_order(o2)
+    sign, perm = correlator_order(o2)
     @test sign == -1
-    @test o2 == 𝑓⁻(1)𝑏⁻(1)𝑓⁻(5)𝑓⁻(2)𝜙(1)𝑓⁺(6)𝑓⁺(5)𝑏⁺(1)𝑓⁺(1)
+    @test o2[perm] == 𝑓⁻(1)𝑏⁻(1)𝑓⁻(5)𝑓⁻(2)𝜙(1)𝑓⁺(6)𝑓⁺(5)𝑏⁺(1)𝑓⁺(1)
+    sign, perm = normal_order(o2)
+    @test sign == 1
+    @test o2[perm] == 𝑓⁺(1)𝑏⁺(1)𝑓⁺(5)𝜙(1)𝑓⁺(6)𝑓⁻(2)𝑓⁻(5)𝑏⁻(1)𝑓⁻(1)
 
     o3 = 𝑓⁺(1)𝑓⁻(2)𝑏⁺(1)𝜙(1)𝑓⁺(3)𝑓⁻(1)𝑓(1)𝑏⁻(1)𝜙(1)
-    sign, o3 = correlator_order(o3)
+    sign, perm = correlator_order(o3)
     @test sign == -1
-    @test o3 == 𝑓⁻(1)𝑏⁻(1)𝜙(1)𝑓⁻(2)𝑓(1)𝑓⁺(3)𝜙(1)𝑏⁺(1)𝑓⁺(1)
+    @test o3[perm] == 𝑓⁻(1)𝑏⁻(1)𝜙(1)𝑓⁻(2)𝑓(1)𝑓⁺(3)𝜙(1)𝑏⁺(1)𝑓⁺(1)
+    sign, perm = normal_order(o3)
+    @test sign == -1
+    @test o3[perm] == 𝑓⁺(1)𝑏⁺(1)𝜙(1)𝑓⁺(3)𝑓(1)𝑓⁻(2)𝜙(1)𝑏⁻(1)𝑓⁻(1)
 end
 
 @testset "Parity" begin

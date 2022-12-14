@@ -6,7 +6,7 @@
 #     d[:id] = diag.id
 #     d[:name] = diag.name
 #     d[:diagram] = diag
-#     d[:subgraph] = Tuple(d.hash for d in diag.subgraph)
+#     d[:subgraphs] = Tuple(d.hash for d in diag.subgraphs)
 #     d[:operator] = diag.operator
 #     d[:factor] = diag.factor
 #     d[:weight] = diag.weight
@@ -24,7 +24,7 @@ function _DiagtoDict!(dict::Dict{Symbol,Any}, diagVec::Vector{Graph{W}}; maxdept
     _addkey!(dict, :hash, [diag.hash for diag in diagVec])
     _addkey!(dict, :name, [diag.name for diag in diagVec])
     _addkey!(dict, :graph, diagVec)
-    _addkey!(dict, :subgraph, [Tuple(d.hash for d in diag.subgraph) for diag in diagVec])
+    _addkey!(dict, :subgraphs, [Tuple(d.hash for d in diag.subgraphs) for diag in diagVec])
     _addkey!(dict, :operator, [diag.operator for diag in diagVec])
     _addkey!(dict, :factor, [diag.factor for diag in diagVec])
     _addkey!(dict, :weight, [diag.weight for diag in diagVec])
