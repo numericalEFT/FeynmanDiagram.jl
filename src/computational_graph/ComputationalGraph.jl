@@ -25,4 +25,8 @@ include("io.jl")
 # include("eval.jl")
 # include("optimize.jl")
 
+include("transform.jl")
+export relabel!, standardize_labels!
+export relabel, standardize_labels
+
 end
