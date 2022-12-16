@@ -264,7 +264,7 @@ end
     p2 = Graphs.propagator([𝑓⁺(1), 𝑓⁻(3)])
     p3 = Graphs.propagator([𝑓⁺(2), 𝑓⁻(3)])
 
-    gv = Graphs.GraphVector([p1, p2, p3])
+    gv = [p1, p2, p3]
 
     g1 = Graphs.group(gv, [1,])
     @test Set(g1[[𝑓⁺(1),]]) == Set([p1, p2])
