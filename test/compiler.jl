@@ -25,11 +25,19 @@
         @test evalf(root, leaf) ≈ (leaf[1] + leaf[2]) * factor
         # eval_graph! is defined here!
         @test eval_graph!(root, leaf) ≈ (leaf[1] + leaf[2]) * factor
+
         # what if we call compiler again with conflicting name?
-        evalf2 = graph_compile(g; name="evalf")
+        # change evalf
+        evalf1 = (root, leaf) -> (leaf[1] - leaf[2]) * 1.0
+        @test evalf1(root, leaf) ≈ (leaf[1] - leaf[2]) * 1.0
+        evalf2 = graph_compile(g; name="evalf1")
+        # evalf not overided!
+        @test evalf1(root, leaf) ≈ (leaf[1] - leaf[2]) * 1.0
+
         evalf2 = graph_compile(g; name="asdf")
-        @test evalf2(root, leaf) ≈ (leaf[1] + leaf[2]) * factor
+        # if asdf not defined, it is assigned
         @test asdf(root, leaf) ≈ (leaf[1] + leaf[2]) * factor
+        @test evalf2(root, leaf) ≈ (leaf[1] + leaf[2]) * factor
 
         @time asdf(root, leaf)
         @time asdf(root, leaf)
