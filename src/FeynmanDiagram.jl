@@ -97,7 +97,7 @@ include("computational_graph/ComputationalGraph.jl")
 using .ComputationalGraphs
 export ComputationalGraphs
 export labelreset, parity, parity_old
-export Graph, isequiv, GraphVector
+export Graph, isequiv
 export feynman_diagram, contractions_to_edges, propagator, standardize_order!
 export is_external, is_internal, vertices, external, external_with_ghost
 export external_labels, external_with_ghost_labels

@@ -21,7 +21,7 @@ export external_labels, external_with_ghost_labels
 # include("tree.jl")
 # include("operation.jl")
 include("graphvector.jl")
-export GraphVector
+# export GraphVector
 
 include("io.jl")
 # plot_tree
