@@ -304,7 +304,7 @@ function feynman_diagram(vertices::Vector{OperatorProduct}, topology::Vector{Vec
             append!(ind_fakeleg, ind_fop)
         end
     end
-    @assert ind_fakeleg ⊆ external "external operators are not consistent with ghost operators in vertices."
+    @assert ind_fakeleg ⊆ external "external operators are not consistent with ghost operators in vertices. Ghost leg indices: $ind_fakeleg not in external: $external"
 
     fermionic_operators = isfermionic.(operators)
     filter!(p -> fermionic_operators[p], permutation)

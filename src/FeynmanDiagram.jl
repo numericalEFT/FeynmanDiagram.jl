@@ -109,6 +109,10 @@ include("backend/compiler.jl")
 using .Compilers
 export Compilers
 
+include("frontend/frontends.jl")
+using .FrontEnds
+export FrontEnds
+
 include("diagram_tree/DiagTree.jl")
 using .DiagTree
 export DiagTree
