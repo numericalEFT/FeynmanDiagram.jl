@@ -28,6 +28,15 @@
         # eval_graph! is defined here!
         @test eval_graph!(root, leaf) ≈ (leaf[1] + leaf[2]) * factor
 
+
+        ###################################
+        # the name passed into function graph_compile can leak out 
+        # when it's not defined in global scope
+        # while remains local(inside function graph_compile) 
+        # when something with the same name already defined in global
+        # see example below
+        ####################################
+
         # what if we call compiler with existing name?
         # define evalf1
         evalf1 = (root, leaf) -> (leaf[1] - leaf[2]) * 1.0
