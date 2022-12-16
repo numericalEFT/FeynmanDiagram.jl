@@ -42,6 +42,7 @@ function gen_expr(ct::CalcTree, n_para_init::Int=1)
 end
 
 function gen_func(ct::CalcTree)
+    # generate a function
     ex, n_para = gen_expr(ct)
     fex = :(function f(para::SVector{$n_para,Int})
         return $ex
@@ -52,6 +53,7 @@ end
 end
 
 using Test
+using Random
 
 @testset "TreeParser" begin
     using .TreeParser: CalcTree, parse_tree, gen_expr, gen_func
@@ -60,7 +62,7 @@ using Test
     ct = CalcTree(:*, 0, [ct1, ct2])
 
     println(parse_tree(ct), "=", eval(parse_tree(ct)))
-
+    @test (1 + 2) * (3 - 4) == eval(parse_tree(ct))
     println(gen_expr(ct))
 
     f = gen_func(ct)
@@ -69,4 +71,9 @@ using Test
 
     @time f([1, 2, 3, 4])
     @time f([1, 2, 3, 4])
+
+    for i in 1:10
+        x = rand(Int, 4)
+        @test f(x) == (x[1] + x[2]) * (x[3] - x[4])
+    end
 end
