@@ -44,7 +44,7 @@ end
 function gen_func(ct::CalcTree)
     # generate a function
     ex, n_para = gen_expr(ct)
-    fex = :(function f(para::SVector{$n_para,Int})
+    fex = :(function younameit(para::SVector{$n_para,Int})
         return $ex
     end)
     return @RuntimeGeneratedFunction(fex)
@@ -66,6 +66,7 @@ using Random
     println(gen_expr(ct))
 
     f = gen_func(ct)
+    f1, f2 = gen_func(ct1), gen_func(ct2)
     println(f)
     println(f([1, 2, 3, 4]))
 
@@ -75,5 +76,10 @@ using Random
     for i in 1:10
         x = rand(Int, 4)
         @test f(x) == (x[1] + x[2]) * (x[3] - x[4])
+        @test f(x) == f1(x[1:2]) * f2(x[3:4])
     end
+
+    @test @isdefined f
+    # younameit will not leak out
+    @test !(@isdefined younameit)
 end
