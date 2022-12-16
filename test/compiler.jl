@@ -12,6 +12,8 @@
 
     @testset "Compile in func" begin
         function graph_compile(g; name="eval_graph!")
+            # the name is not contained inside this function
+            # it can leak out to the global scope if the name is not defined outside
             gs = Compilers.static_graph([g,], name=name)
             gexpr = Meta.parse(gs) # parse string to julia expression
             eval(gexpr) #create the function eval_graph!
@@ -26,16 +28,17 @@
         # eval_graph! is defined here!
         @test eval_graph!(root, leaf) ≈ (leaf[1] + leaf[2]) * factor
 
-        # what if we call compiler again with conflicting name?
-        # change evalf
+        # what if we call compiler with existing name?
+        # define evalf1
         evalf1 = (root, leaf) -> (leaf[1] - leaf[2]) * 1.0
         @test evalf1(root, leaf) ≈ (leaf[1] - leaf[2]) * 1.0
         evalf2 = graph_compile(g; name="evalf1")
-        # evalf not overided!
+        # evalf1 not overided! still returning the previous result
         @test evalf1(root, leaf) ≈ (leaf[1] - leaf[2]) * 1.0
 
+        # if the name is not defined:
         evalf2 = graph_compile(g; name="asdf")
-        # if asdf not defined, it is assigned
+        # asdf is not defined, thus it is assigned with the function
         @test asdf(root, leaf) ≈ (leaf[1] + leaf[2]) * factor
         @test evalf2(root, leaf) ≈ (leaf[1] + leaf[2]) * factor
 
