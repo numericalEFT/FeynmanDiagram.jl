@@ -1,15 +1,20 @@
 """
     struct GraphVector{F,W} <: AbstractVector{Graph{F,W}}
 
-A vector of graphs. Support two constructors:
+A vector of graphs. All graphs must have the same number of external legs, but can have different external labels.
 
+Support two constructors:
     GraphVector(graphs::AbstractVector) # construct from a vector of Graph,  use the default factor and weight types
     GraphVector{F,W}(graphs::AbstractVector) # construct from a vector of Graph,  use the specified factor and weight types `F` and `W`
 """
 struct GraphVector{F,W} <: AbstractVector{Graph{F,W}}
     graphs::Vector{Graph{F,W}}
-    GraphVector(graphs::AbstractVector) = new{_dtype.factor,_dtype.weight}(graphs)
-    GraphVector{F,W}(graphs::AbstractVector) where {F,W} = new{F,W}(graphs)
+    function GraphVector{F,W}(graphs::AbstractVector) where {F,W}
+        l = length(graphs[1].external)
+        @assert all(x -> length(x.external) == l, graphs)
+        return new{F,W}(graphs)
+    end
+    GraphVector(graphs::AbstractVector) = GraphVector{_dtype.factor,_dtype.weight}(graphs)
 end
 
 ########## iterator interface  ##########
