@@ -50,6 +50,11 @@ function gen_func(ct::CalcTree)
     return @RuntimeGeneratedFunction(fex)
 end
 
+function check_define(name)
+    # check inside module
+    return isdefined(TreeParser, name)
+end
+
 end
 
 using Test
@@ -82,4 +87,6 @@ using Random
     @test @isdefined f
     # younameit will not leak out
     @test !(@isdefined younameit)
+    # not even inside the module
+    @test !TreeParser.check_define(:younameit)
 end
