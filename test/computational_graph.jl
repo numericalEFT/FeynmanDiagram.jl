@@ -255,6 +255,27 @@ end
         uniqlabels = ComputationalGraphs.collect_labels(g3)
         @test uniqlabels == [1, 2, 3, 4, 5]
     end
+end
 
+@testset "graph vector" begin
+    import FeynmanDiagram.ComputationalGraphs as Graphs
 
+    p1 = Graphs.propagator([𝑓⁺(1), 𝑓⁻(2)])
+    p2 = Graphs.propagator([𝑓⁺(1), 𝑓⁻(3)])
+    p3 = Graphs.propagator([𝑓⁺(2), 𝑓⁻(3)])
+
+    gv = [p1, p2, p3]
+
+    g1 = Graphs.group(gv, [1,])
+    @test Set(g1[[𝑓⁺(1),]]) == Set([p1, p2])
+    @test Set(g1[[𝑓⁺(2),]]) == Set([p3,])
+
+    g2 = Graphs.group(gv, [2,])
+    @test Set(g2[[𝑓⁻(2),]]) == Set([p1,])
+    @test Set(g2[[𝑓⁻(3),]]) == Set([p2, p3])
+
+    g3 = Graphs.group(gv, [1, 2])
+    @test Set(g3[[𝑓⁺(1), 𝑓⁻(2)]]) == Set([p1,])
+    @test Set(g3[[𝑓⁺(1), 𝑓⁻(3)]]) == Set([p2,])
+    @test Set(g3[[𝑓⁺(2), 𝑓⁻(3)]]) == Set([p3,])
 end
