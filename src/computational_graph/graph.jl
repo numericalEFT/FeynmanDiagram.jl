@@ -10,8 +10,15 @@ Base.show(io::IO, ::Type{Sum}) = print(io, "⨁")
 Base.show(io::IO, ::Type{Prod}) = print(io, "Ⓧ")
 
 # Is the unary operation trivial (𝓞g = g)?
-unary_is_trivial(::Type{AbstractOperator}) = false
-unary_is_trivial(::Type{O}) where {O<:Union{Sum,Prod}} = true  # (+g) ≡ g and (*g) ≡ g
+unary_istrivial(::Type{AbstractOperator}) = false
+unary_istrivial(::Type{O}) where {O<:Union{Sum,Prod}} = true  # (+g) ≡ g and (*g) ≡ g
+
+# Is the operation associative: a 𝓞 (b 𝓞 c) = (a 𝓞 b) 𝓞 c = a 𝓞 b 𝓞 c?
+isassociative(::Type{AbstractOperator}) = false
+isassociative(::Type{Sum}) = true
+# NOTE: Associativity of Prod (graph composition)
+#       requires Base.*(g1, g2) and Base./(g1, g2)
+# isassociative(::Type{Prod}) = true
 
 """
     mutable struct Graph{F,W}
@@ -221,8 +228,9 @@ function linear_combination(g1::Graph{F,W}, g2::Graph{F,W}, c1::C, c2::C) where 
     @assert g1.orders == g2.orders "g1 and g2 have different orders."
     @assert Set(vertices(g1)) == Set(vertices(g2)) "g1 and g2 have different vertices."
     @assert Set(external(g1)) == Set(external(g2)) "g1 and g2 have different external vertices."
-    return Graph(g1.vertices; external=g1.external, type=g1.type, subgraphs=[g1, g2],
+    g = Graph(g1.vertices; external=g1.external, type=g1.type, subgraphs=[g1, g2],
         subgraph_factors=[F(c1), F(c2)], operator=Sum(), ftype=F, wtype=W)
+    return simplify_products(g)
 end
 
 """
@@ -237,8 +245,9 @@ function linear_combination(graphs::Vector{Graph{F,W}}, constants::Vector{C}) wh
     @assert allequal(Set.(vertices.(graphs))) "Graphs do not share the same set of vertices."
     @assert allequal(Set.(external.(graphs))) "Graphs do not share the same set of external vertices."
     g1 = graphs[1]
-    return Graph(g1.vertices; external=g1.external, type=g1.type, subgraphs=graphs,
+    g = Graph(g1.vertices; external=g1.external, type=g1.type, subgraphs=graphs,
         subgraph_factors=constants, operator=Sum(), ftype=F, wtype=W)
+    return simplify_products(g)
 end
 
 function Base.:+(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
@@ -404,118 +413,6 @@ function standardize_order!(g::Graph)
     end
 end
 
-"""
-Simplifies a graph g if it represents a trivial unary operation. Otherwise, returns the original graph.
-"""
-function prune_trivial_unary(g::Graph)
-    # No-op; g is not a link (depth-1, one-child tree)
-    if islink(g) == false
-        return g
-    end
-    # Prune trivial unary operations
-    if unary_is_trivial(g.operator) && isfactorless(g)
-        return eldest(g)
-    else
-        return g
-    end
-end
-
-"""
-Simplifies subgraph factors for a graph g representing a
-multiplicative chain by shifting them up to root level.
-"""
-function simplify_subfactors(g::Graph)
-    # No-op for non-multiplicative node operations, links/leaves, and non-chain graphs
-    if g.operator != Prod || g.depth ≤ 1 || onechild(g) == false
-        return g
-    end
-    # Shift multiplicative subfactors to root level
-    gs = deepcopy(g)
-    child_gs = eldest(g)
-    while onechild(g)
-        gs.subgraph_factors[1] *= child_gs.subgraph_factors[1]
-        child_gs.subgraph_factors[1] = 1
-        g = child_gs
-    end
-    # 
-end
-
-"""Simplifies a graph g with a unary operator chain as its root."""
-function merge_chain(g::Graph)
-    if g.depth == 0
-        return g
-    elseif g.depth == 1
-        # A single link is mergeable iff the unary operation is trivial
-        return prune_trivial_unary(g)
-    end
-    # First, simplify subgraph factors for multiplicative chains
-    gs = g.operator == Prod ? simplify_subfactors(g) : deepcopy(g)
-    # Then, merge operator chains of length > 1
-    while onechild(gs)
-        # Break case: last link found
-        if node.depth == 1
-            # A single link is mergeable iff the unary operation is trivial
-            return prune_trivial_unary(g)
-        else
-            # If the link is not factorless, propagate the subgraph factor up the chain
-        end
-
-        isunary = length(gs) == 1
-        isprunable = g.subgraph_factors[1] == 1 && g.factor == 1 && g.operator in [Prod, Sum]
-        if isunary && isprunable
-            return gs[1]
-        else
-            return g
-        end
-    end
-    return error("Encountered an unexpected error.")
-end
-
-# """Converts a unary Prod chain to in-place form by propagating subgraph_factors up the chain."""
-# function inplace_prod(g::Graph{F,W}) where {F,W}
-#     # Find unary Prod chain subgraphs of g
-#     gt = deepcopy(g)
-#     for sg in gt
-
-#     end
-
-#     if g.operator == Prod && length(g.subgraphs) == 1
-#         gs = g.subgraphs[1]
-#         return Graph(gs.vertices; external=gs.external, type=gs.type, topology=gs.topology, subgraphs=gs.subgraphs,
-#             factor=g.subgraph_factors[1] * g.factor * gs.factor, operator=gs.operator, ftype=F, wtype=W)
-#     else
-#         return g
-#     end
-# end
-
-# """Converts a unary Prod node to in-place form by merging factors and subgraph_factors."""
-# function inplace_prod(g::Graph{F,W}) where {F,W}
-#     if g.operator == Prod && length(g.subgraphs) == 1
-#         gs = g.subgraphs[1]
-#         return Graph(gs.vertices; external=gs.external, type=gs.type, topology=gs.topology, subgraphs=gs.subgraphs,
-#             factor=g.subgraph_factors[1] * g.factor * gs.factor, operator=gs.operator, ftype=F, wtype=W)
-#     else
-#         return g
-#     end
-# end
-
-# function merge_prefactors(g0::Graph{F,W}) where {F,W}
-#     if (g1.operator==Sum && length(g1.subgraphs)==2 && isequiv(g1.subgraphs[1], g1.subgraphs[2], :factor, :id, :subgraph_factors))
-#         g1 = g0.subgraphs[1]
-#         g2 = g0.subgraphs[2]
-#         g_subg = Graph(g1.vertices; external=g1.external, type=g1.type, topology=g1.topology,
-#         subgraphs=g1.subgraphs, operator=g1.operator(), ftype=F, wtype=W)
-#         g = Graph(g1.vertices; external=g1.external, type=g1.type, topology=g1.topology,
-#         subgraphs=[g_subg,], operator=Prod(), ftype=F, wtype=W)
-#         g.subgraph_factors[1] = (g1.subgraph_factors[1]*g1.factor+g1.subgraph_factors[2]*g1.subgraphs[2].factor) * g0.factor
-#         return g
-#     else
-#         return g1
-#     end
-# end
-
-# 
-
 #####################  interface to AbstractTrees ########################### 
 function AbstractTrees.children(g::Graph)
     return g.subgraphs
@@ -530,11 +427,8 @@ isleaf(g::Graph) = haschildren(g) == false
 # Does the graph have only one child?
 onechild(g::Graph) = length(children(g)) == 1
 
-# Is the graph a single link (depth-1 and one-child)?
-islink(g::Graph) = onechild(g) && isleaf(eldest(g))
-
-# Is the graph a chain?
-# ischain(g::Graph) = all(onechild(c) || isleaf(c) for c in descendleft(g)) && onechild(g)
+# Is the graph a branch (depth-1 and one-child)?
+isbranch(g::Graph) = onechild(g) && isleaf(eldest(g))
 
 # Get the first child of a graph
 function eldest(g::Graph)
@@ -542,12 +436,23 @@ function eldest(g::Graph)
     return children(g)[1]
 end
 
-# Is the graph factorless?
-function isfactorless(g::Graph)
+# Is the graph a chain?
+function ischain(g::Graph)
     if isleaf(g)
-        return g.factor == 1
+        return true
+    elseif onechild(g) == false
+        return false
+    else
+        return ischain(eldest(g))
+    end
+end
+
+# Is the graph factorless?
+function isfactorless(g::Graph{F,W}) where {F,W}
+    if isleaf(g)
+        return g.factor ≈ one(F)
     elseif onechild(g)
-        return g.factor == g.subgraph_factors[1] == 1
+        return g.factor ≈ g.subgraph_factors[1] ≈ one(F)
     else
         return all(isone.([g.factor; g.subgraph_factors]))
     end
