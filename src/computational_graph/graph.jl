@@ -400,55 +400,48 @@ function standardize_order!(g::Graph)
     end
 end
 
-function remove_graph(parent::Graph{F,W}, children::Graph{F,W}) where{F,W}
-    # Remove children from parent subgraphs. Currently only applies for Prod() node.
-    #TODO: vertices, external, topology, factor should be changed accordingly
-    return  Graph(parent.vertices;external=parent.external,type=parent.type,topology=parent.topology,subgraphs=[v for v in parent.subgraphs if !isequiv(v,children, :factor, :id)], operator = Prod(), ftype=F, wtype=W, factor=parent.factor)
-end
-function factorize(g::Graph{F,W}) where{F,W}
-    #@assert g.operator==Sum() "factorize requires the operator to be Sum()"
-    lv2pool=[] # The union of all level 2 subgraphs
-    lv2_in_which=[] # For each unique level 2 subgraph, record the index of level 1 subgraphs that contains it 
-    lv2_factor=[]  # Record the different factors of identical level 2 subgraphs in each level 1 subgraph that contains it 
-    for (i,vi) in enumerate(g.subgraphs)
-        #@assert vi.operator == Prod() "factorize requires the operator of all subgraphs to be Prod()"
-        for (j,vvj) in enumerate(vi.subgraphs)
-            idx = findfirst([isequiv(vvj, v, :factor, :id) for v in lv2pool])
-            if isnothing(idx)
-                push!(lv2pool,vvj)
-                push!(lv2_in_which, [i,])
-                push!(lv2_factor, [vvj.factor,])
-            else
-                push!(lv2_in_which[idx], i)
-                push!(lv2_factor[idx], vvj.factor)                
-            end
-        end
-    end
-    # The level 2 subgraph that we factorize is the one shared by largest number of level 1 subgraph
-    commonidx=findmax([length(lv2_in_which[i]) for i in 1:length(lv2_in_which)])[2]
-    commongraph = lv2pool[commonidx]
-    uncommonlist = [] # The union of all level 2 subgraphs, except for commongraph, from level 1 subgraphs that shares commongraph.  
+"""
+    function replace_subgraph!(g::Graph, w::Graph, m::graph)
 
-    for i in lv2_in_which[commonidx]
-        #TODO: when adding level 2 subgraphs, merge the identical ones with merge_factor
-        #The different factors of the commongraph can not be factored out, and should go into the rest of the graphs 
-        push!(uncommonlist, remove_graph(g.subgraphs[i], commongraph))
+    In place function that replaces the children graph w in graph g with a new graph m.
+    Graph w and m should have the same internal and external vertices, and topology
+"""
+function replace_subgraph!(g::Graph, w::Graph, m::Graph)
+    #@assert w.topology==m.topology "Old and new subgraph should have the same topology"
+    #TODO: Should we even require same topology for general replacement?
+    @assert w.vertices==m.vertices "Old and new subgraph should have the same vertices"
+    @assert w.external==m.external "Old and new subgraph should have the same external vertices"
+    #TODO: Are there certain permutation that are allowed within these data arrays that gives the same graph?
+    # if yes we need specialized functions to check same_topology(w,m) etc.
+    for i in 1:length(g.subgraphs)
+        if isequiv(g.subgraphs[i], w ,:id)
+            g.subgraphs[i] = m
+        end
+        #TODO: Should we consider the situation when multiple w exists? What would be the expected behavior? 
     end
-    #TODO: how factor and topology propagates here still need some thinking
-    uncommongraph = Graph(uncommonlist[1].vertices;external=uncommonlist[1].external,type=uncommonlist[1].type,topology=uncommonlist[1].topology,subgraphs=uncommonlist,operator = Sum(), 
-                          ftype=F, wtype=W) # All subgraphs that are summed should have the same set of vertices
-    refactoered_graph = Graph(g.vertices;external=g.external,type=g.type,topology=g.topology,subgraphs=[commongraph, uncommongraph], operator = Prod(), 
-                              ftype=F, wtype=W,factor=1)
-    # The refactorized graph should have the same set of vertices as original one
-    if(length(lv2_in_which[commonidx])==length(g.subgraphs))
-        # When the common factor is shared by all level 1 subgraph,
-        # the node should be merged in to a product
-        refactoered_graph.factor = g.factor 
-        return refactoered_graph
-    else
-        return  Graph(g.vertices;external=g.external,type=g.type,topology=g.topology,subgraphs=vcat([refactoered_graph], [g.subgraphs[i] for i in 1:length(g.subgraphs) if i∉lv2_in_which[commonidx]]), operator = Sum(), ftype=F, wtype=W,factor=g.factor)
-    end    
 end
+
+"""
+    function replace_subgraph(g::Graph, w::Graph, m::graph)
+
+    Generate a copy of graph g, with the children graph w replaced by a new graph m.
+    Graph w and m should have the same internal and external vertices, and topology
+"""
+function replace_subgraph(g::Graph, w::Graph, m::Graph)
+    #@assert w.topology==m.topology "Old and new subgraph should have the same topology"
+    
+    @assert w.vertices==m.vertices "Old and new subgraph should have the same vertices"
+    @assert w.external==m.external "Old and new subgraph should have the same external vertices"
+    g0 = deepcopy(g)
+    for i in 1:length(g0.subgraphs)
+        if isequiv(g0.subgraphs[i], w ,:id)
+            g0.subgraphs[i] = m
+        end 
+    end
+    return g0
+end
+
+
 
 prune_unary(g::Graph) = ((length(g.subgraph) == 1 && g.subgraph_factors[1] == 1 && g.factor == 1) ? g.subgraph[1] : g)
 
