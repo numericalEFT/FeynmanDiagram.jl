@@ -224,17 +224,17 @@ end
         @test isequiv(gm, ggm, :id)
     end
     @testset "Construct feynman diagram from sub-diagrams" begin
-        V1 = [𝜙(5)𝜙(6)𝜙(7)𝜙(8),]
+        V1 = [𝜙(5), 𝜙(6), 𝜙(7), 𝜙(8)]
         g1 = feynman_diagram(V1, [[1, 2, 3, 4],], external=[1, 2, 3, 4])    #vacuum diagram
-        V2 = [𝜙(9)𝜙(10)𝜙(11)𝜙(12),]
+        V2 = [𝜙(9), 𝜙(10), 𝜙(11), 𝜙(12)]
         g2 = feynman_diagram(V2, [[1, 2, 3, 4],], external=[1, 2, 3, 4])    #vacuum diagram
 
         g = feynman_diagram([𝜙(1), 𝜙(2), 𝜙(3), 𝜙(4)], [g1, g2], [[1, 5], [2, 6], [7, 9], [8, 10], [3, 11], [4, 12]])
 
         @test g.vertices[1:4] == [𝜙(1), 𝜙(2), 𝜙(3), 𝜙(4)]
         @test external(g) == [𝜙(1), 𝜙(2), 𝜙(3), 𝜙(4)]
-        @test g.vertices[5] == V1[1]
-        @test g.vertices[6] == V2[1]
+        @test g.vertices[5] == 𝜙(5)𝜙(6)𝜙(7)𝜙(8)
+        @test g.vertices[6] == 𝜙(9)𝜙(10)𝜙(11)𝜙(12)
 
     end
 

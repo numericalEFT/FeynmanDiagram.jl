@@ -19,8 +19,8 @@ Base.show(io::IO, ::Type{Prod}) = print(io, "Ⓧ")
 - `name::Symbol`  name of the diagram
 - `type::Symbol`  type of the diagram, support :propagator, :interaction, :sigma, :green, :generic
 - `orders::Vector{Int}`  orders of the diagram, e.g. loop order, derivative order, etc.
-- `external::Vector{Int}`  index of external vertices (as QuantumOperators)
-- `vertices::Vector{OperatorProduct}`  vertices of the diagram. Each index is composited by the product of quantum operators.
+- `external::Vector{Int}`  index of ACTUAL external vertices (as QuantumOperators)
+- `vertices::Vector{OperatorProduct}`  vertices of the diagram. Each index is composited by the product of quantum operators. FORMAL external operators are list at the beginning.
 - `topology::Vector{Vector{Int}}` topology of the diagram. Each Vector{Int} stores vertices' index connected with each other (as a propagator). 
 - `subgraphs::Vector{Graph{F,W}}`  vector of sub-diagrams 
 - `subgraph_factors::Vector{F}`  scalar multiplicative factors associated with each subdiagram
@@ -318,10 +318,12 @@ end
 
 """
 function feynman_diagram(external_operators::AbstractArray{OperatorProduct}, vertices::AbstractArray{T}, topology::Vector{Vector{Int}};
-    external=[], factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic) where T
+    external=[], factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic) where {T}
 
 Create a Graph representing feynman diagram from all vertices and topology (connections between vertices),
-where external vertices are given in `external_operators`, while internal vertices are constructed with external legs of graphs in `vertices`.
+where external vertices are given in `external_operators`, while internal vertices are constructed with external legs of graphs in `vertices`, or given in a vertor of OperatorProduct.
+Note that `external_operators` contains `formal` external operators, actual or fake ones,
+while `external` gives indices of ACTUAL external operators.  
 
 # Arguments:
 - `external_operators::AbstractArray{OperatorProduct}`  external vertices of the diagram, will be listed at the beginning of the generated g.vertices
