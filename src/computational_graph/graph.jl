@@ -280,10 +280,10 @@ julia> g.subgraphs
 3:ϕ(3)|ϕ(6)=0.0
 ```
 """
-function feynman_diagram(vertices::Vector{OperatorProduct}, topology::Vector{Vector{Int}};
-    external=[], factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic)
-
-    operators = [o for v in vertices for o in v.operators]
+function feynman_diagram(vertices::AbstractArray{T}, topology::Vector{Vector{Int}};
+    external=[], factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic) where {T<:Union{OperatorProduct,Graph}}
+    evertices = _extract_vertices(T, vertices)
+    operators = [o for v in evertices for o in v.operators]
     permutation = collect(Iterators.flatten(topology))
     ind_ops = collect(eachindex(operators))
 
@@ -310,9 +310,17 @@ function feynman_diagram(vertices::Vector{OperatorProduct}, topology::Vector{Vec
     filter!(p -> fermionic_operators[p], permutation)
     sign = isempty(permutation) ? 1 : parity(sortperm(permutation))
 
-    g = Graph(vertices; external=external, subgraphs=subgraphs, topology=topology, name=name,
+    g = Graph(evertices; external=external, subgraphs=subgraphs, topology=topology, name=name,
         type=type, operator=Prod(), factor=factor * sign, weight=weight)
     return g
+end
+
+# do nothing
+_extract_vertices(::Type{<:OperatorProduct}, vertices) = vertices
+
+function _extract_vertices(::Type{<:Graph}, vertices)
+    # extract vertices from graph
+    return [OperatorProduct(external(g)) for g in vertices]
 end
 
 # function feynman_diagram(vertices::Vector{OperatorProduct}, topology::Vector{Vector{Int}};

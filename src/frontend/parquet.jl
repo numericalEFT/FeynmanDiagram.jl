@@ -10,7 +10,8 @@ import ..Op
 𝑎⁺(isFermi, i) = isFermi ? Op.𝑓⁺(i) : Op.𝑏⁺(i)
 𝑎⁻(isFermi, i) = isFermi ? Op.𝑓⁺(i) : Op.𝑏⁺(i)
 
-function _bubble(; left_label=[1, 2, 3, 4], right_label=[5, 6, 7, 8], external_indices=[1, 2, 7, 8], topology=[], isFermi=true, factor=_dtype.factor(1))
+function _bubble(; left_label=[1, 2, 3, 4], right_label=[5, 6, 7, 8], external_indices=[1, 2, 7, 8], topology=Vector{Vector{Int}}([]), isFermi=true, factor=_dtype.factor(1))
+    # default topology type should be given, otherwise feynman_diagram report error
     if isFermi
         a⁺, a⁻ = Op.𝑓⁺, Op.𝑓⁻
         ea⁺, ea⁻ = Op.𝑓⁺ₑ, Op.𝑓⁻ₑ
