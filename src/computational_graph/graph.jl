@@ -254,7 +254,7 @@ end
 # end
 
 """
-    function feynman_diagram(vertices::AbstractArray{OperatorProduct}, topology::Vector{Vector{Int}};
+    function feynman_diagram(vertices::AbstractVector{OperatorProduct}, topology::Vector{Vector{Int}};
         external=[], factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic)
     
     Create a Graph representing feynman diagram from all vertices and topology (connections between vertices).
@@ -280,7 +280,7 @@ julia> g.subgraphs
 3:ϕ(3)|ϕ(6)=0.0
 ```
 """
-function feynman_diagram(vertices::AbstractArray{OperatorProduct}, topology::Vector{Vector{Int}};
+function feynman_diagram(vertices::AbstractVector{OperatorProduct}, topology::Vector{Vector{Int}};
     external=[], factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic)
     evertices = [v for v in vertices]
     operators = [o for v in evertices for o in v.operators]
@@ -317,17 +317,15 @@ end
 
 
 """
-function feynman_diagram(external_operators::AbstractArray{OperatorProduct}, vertices::AbstractArray{T}, topology::Vector{Vector{Int}};
+function feynman_diagram(vertices::AbstractVector, topology::Vector{Vector{Int}};
     external=[], factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic) where {T}
 
 Create a Graph representing feynman diagram from all vertices and topology (connections between vertices),
-where external vertices are given in `external_operators`, while internal vertices are constructed with external legs of graphs in `vertices`, or given in a vertor of OperatorProduct.
-Note that `external_operators` contains `formal` external operators, actual or fake ones,
-while `external` gives indices of ACTUAL external operators.  
+where external vertices are given at the beginning of `vertices`, 
+while internal vertices are constructed with external legs of graphs in `vertices`, or simply OperatorProduct in `vertices`.
 
 # Arguments:
-- `external_operators::AbstractArray{OperatorProduct}`  external vertices of the diagram, will be listed at the beginning of the generated g.vertices
-- `vertices::AbstractArray{T}` when T==Graph, sub-diagrams whose external legs become internal vertices of the diagram, when T==OperatorProduct, internal vertices. These are all internal vertices
+- `vertices::AbstractVector` all vertices of the diagram. Formal external operators at the beginning, internal vertices given from Graph or OperatorProduct.
 - `topology::Vector{Vector{Int}}` topology of the diagram. Each Vector{Int} stores vertices' index connected with each other (as a propagator). 
 - `external`  index of external vertices. They are the actual external quantum operators, not the ghost operators.
 - `factor::F`  overall scalar multiplicative factor for this diagram (e.g., permutation sign)
@@ -335,11 +333,10 @@ while `external` gives indices of ACTUAL external operators.
 - `name`  name of the diagram
 - `type`  type of the diagram
 """
-function feynman_diagram(external_operators::AbstractArray{OperatorProduct}, vertices::AbstractArray{T}, topology::Vector{Vector{Int}}; kwargs...) where {T}
-    exop = [op for op in external_operators]
-    evertices = append!(external_operators, [_extract_vertex(T, g) for g in vertices])
-    ext = Vector(1:length(exop))
-    return feynman_diagram(evertices, topology; external=ext, kwargs...)
+function feynman_diagram(vertices::AbstractVector, topology::Vector{Vector{Int}}; kwargs...)
+    # convert all Graphs to vertices by grouping all its external legs as a vertex
+    converted_vertices = [_extract_vertex(typeof(v), v) for v in vertices]
+    return feynman_diagram(converted_vertices, topology; kwargs...)
 end
 
 
