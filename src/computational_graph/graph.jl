@@ -114,6 +114,7 @@ function isequiv(a::Graph, b::Graph, args...)
         if field == :weight
             (getproperty(a, :weight) ≈ getproperty(b, :weight)) == false && return false
         elseif field == :subgraphs
+            length(a.subgraphs) != length(b.subgraphs) && return false
             !all(isequiv.(getproperty(a, field), getproperty(b, field), args...)) && return false
         else
             getproperty(a, field) != getproperty(b, field) && return false

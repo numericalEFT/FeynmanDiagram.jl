@@ -2,6 +2,19 @@
     V = [𝑓⁺(1)𝑓⁻(2), 𝑓⁺(5)𝑓⁺(6)𝑓⁻(7)𝑓⁻(8), 𝑓⁺(3)𝑓⁻(4)]
     g1 = Graph(V, external=[1, 3])
     g2 = g1 * 2
+    @testset "Graph equivalence" begin
+        g1p = Graph(V, external=[1, 3])
+        g2p = Graph(V, external=[1, 3], factor=2)
+        # Test equivalence modulo fields id/factor
+        @test isequiv(g1, g1p) == false
+        @test isequiv(g1, g2p, :id) == false
+        @test isequiv(g1, g2p, :factor) == false
+        @test isequiv(g1, g1p, :id)
+        @test isequiv(g1, g2p, :id, :factor)
+        # Test inequivalence when subgraph lengths are different
+        t = g1 + g1
+        @test isequiv(t, g1, :id) == false
+    end
     @testset "Scalar multiplication" begin
         @test vertices(g2) == vertices(g1)
         println(external(g2))
