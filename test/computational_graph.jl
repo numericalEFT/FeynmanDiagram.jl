@@ -235,6 +235,8 @@ end
         @test external(g) == [𝜙(1), 𝜙(2), 𝜙(3), 𝜙(4)]
         @test g.vertices[5] == 𝜙(5)𝜙(6)𝜙(7)𝜙(8)
         @test g.vertices[6] == 𝜙(9)𝜙(10)𝜙(11)𝜙(12)
+        @test g.subgraphs[end-1] == g1
+        @test g.subgraphs[end] == g2
 
     end
 

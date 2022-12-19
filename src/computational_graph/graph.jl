@@ -254,13 +254,15 @@ end
 # end
 
 """
-    function feynman_diagram(vertices::AbstractVector{OperatorProduct}, topology::Vector{Vector{Int}};
+    function feynman_diagram(vertices::AbstractVector, topology::Vector{Vector{Int}};
         external=[], factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic)
     
-    Create a Graph representing feynman diagram from all vertices and topology (connections between vertices).
-
+    Create a Graph representing feynman diagram from all vertices and topology (connections between vertices),
+    where external vertices are given at the beginning of `vertices`, 
+    while internal vertices are constructed with external legs of graphs in `vertices`, or simply OperatorProduct in `vertices`.
+    
 # Arguments:
-- `vertices::AbstractArray{OperatorProduct}`  vertices of the diagram, external operators(could be fake ones) list at the beginning.
+- `vertices::AbstractVector` all vertices of the diagram. Formal external operators at the beginning, internal vertices given from Graph or OperatorProduct.
 - `topology::Vector{Vector{Int}}` topology of the diagram. Each Vector{Int} stores vertices' index connected with each other (as a propagator). 
 - `external`  index of external vertices. They are the actual external quantum operators, not the ghost operators.
 - `factor::F`  overall scalar multiplicative factor for this diagram (e.g., permutation sign)
@@ -280,12 +282,21 @@ julia> g.subgraphs
 3:ϕ(3)|ϕ(6)=0.0
 ```
 """
-function feynman_diagram(vertices::AbstractVector{OperatorProduct}, topology::Vector{Vector{Int}};
-    external=[], factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic)
-    evertices = [v for v in vertices]
-    operators = [o for v in evertices for o in v.operators]
+function feynman_diagram(vertices::AbstractVector,
+    topology::Vector{Vector{Int}};
+    external=[], factor=one(_dtype.factor),
+    weight=zero(_dtype.weight),
+    name="", type=:generic)
+
+    # convert all Graphs to vertices by grouping all its external legs as a vertex
+    converted_vertices = [_extract_vertex(typeof(v), v) for v in vertices]
+    # collect graphs in vertices as subdiagrams
+    subdiagrams = [v for v in vertices if isa(v, Graph)]
+
+    operators = [o for v in converted_vertices for o in v.operators]
     permutation = collect(Iterators.flatten(topology))
     ind_ops = collect(eachindex(operators))
+
 
     @assert length(unique(permutation)) == length(permutation) # no repeated index
     @assert length(unique(external)) == length(external) # no repeated index
@@ -310,35 +321,12 @@ function feynman_diagram(vertices::AbstractVector{OperatorProduct}, topology::Ve
     filter!(p -> fermionic_operators[p], permutation)
     sign = isempty(permutation) ? 1 : parity(sortperm(permutation))
 
-    g = Graph(evertices; external=external, subgraphs=subgraphs, topology=topology, name=name,
+    append!(subgraphs, subdiagrams)
+
+    g = Graph(converted_vertices; external=external, subgraphs=subgraphs, topology=topology, name=name,
         type=type, operator=Prod(), factor=factor * sign, weight=weight)
     return g
 end
-
-
-"""
-function feynman_diagram(vertices::AbstractVector, topology::Vector{Vector{Int}};
-    external=[], factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic) where {T}
-
-Create a Graph representing feynman diagram from all vertices and topology (connections between vertices),
-where external vertices are given at the beginning of `vertices`, 
-while internal vertices are constructed with external legs of graphs in `vertices`, or simply OperatorProduct in `vertices`.
-
-# Arguments:
-- `vertices::AbstractVector` all vertices of the diagram. Formal external operators at the beginning, internal vertices given from Graph or OperatorProduct.
-- `topology::Vector{Vector{Int}}` topology of the diagram. Each Vector{Int} stores vertices' index connected with each other (as a propagator). 
-- `external`  index of external vertices. They are the actual external quantum operators, not the ghost operators.
-- `factor::F`  overall scalar multiplicative factor for this diagram (e.g., permutation sign)
-- `weight`  weight of the diagram
-- `name`  name of the diagram
-- `type`  type of the diagram
-"""
-function feynman_diagram(vertices::AbstractVector, topology::Vector{Vector{Int}}; kwargs...)
-    # convert all Graphs to vertices by grouping all its external legs as a vertex
-    converted_vertices = [_extract_vertex(typeof(v), v) for v in vertices]
-    return feynman_diagram(converted_vertices, topology; kwargs...)
-end
-
 
 # do nothing when already a OperatorProduct; 
 _extract_vertex(::Type{<:OperatorProduct}, g) = g
