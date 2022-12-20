@@ -21,6 +21,8 @@ makedocs(;
             "manual/hubbard_atom.md"
         ],
         "API reference" => Any[
+            "lib/operator.md",
+            "lib/computgraph.md",
             "lib/parquet.md",
             "lib/diagtree.md",
             "lib/exprtree.md",
