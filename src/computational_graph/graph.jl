@@ -300,7 +300,7 @@ function feynman_diagram(vertices::AbstractVector,
 
     @assert length(unique(permutation)) == length(permutation) # no repeated index
     @assert length(unique(external)) == length(external) # no repeated index
-    @assert Set(permutation) == Set(ind_ops) # permutation must exhaust all operators
+    # @assert Set(permutation) == Set(ind_ops) # permutation must exhaust all operators
     ind_ghost = filter(p -> isghost(operators[p]), ind_ops)
     @assert all(ind_ghost .<= length(external)) # external real/fake legs must be placed at the beginning of vertices.
 
