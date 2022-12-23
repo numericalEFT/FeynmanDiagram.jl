@@ -407,17 +407,17 @@ end
     Graph w and m should have the same internal and external vertices, and topology
 """
 function replace_subgraph!(g::Graph, w::Graph, m::Graph)
-    #@assert w.topology==m.topology "Old and new subgraph should have the same topology"
-    #TODO: Should we even require same topology for general replacement?
+    #@assert !isleaf(g) "Target parent graph can not be a leaf"
     @assert w.vertices==m.vertices "Old and new subgraph should have the same vertices"
     @assert w.external==m.external "Old and new subgraph should have the same external vertices"
-    #TODO: Are there certain permutation that are allowed within these data arrays that gives the same graph?
-    # if yes we need specialized functions to check same_topology(w,m) etc.
-    for i in 1:length(g.subgraphs)
-        if isequiv(g.subgraphs[i], w ,:id)
-            g.subgraphs[i] = m
+    #print("isleaf $(isleaf(g))\n")
+    for node in PreOrderDFS(g)
+        for (i, child) in enumerate(children(node))
+            if isequiv(child, w ,:id)
+                node.subgraphs[i] = m
+                return
+            end
         end
-        #TODO: Should we consider the situation when multiple w exists? What would be the expected behavior? 
     end
 end
 
@@ -428,15 +428,21 @@ end
     Graph w and m should have the same internal and external vertices, and topology
 """
 function replace_subgraph(g::Graph, w::Graph, m::Graph)
-    #@assert w.topology==m.topology "Old and new subgraph should have the same topology"
-    
     @assert w.vertices==m.vertices "Old and new subgraph should have the same vertices"
     @assert w.external==m.external "Old and new subgraph should have the same external vertices"
     g0 = deepcopy(g)
-    for i in 1:length(g0.subgraphs)
-        if isequiv(g0.subgraphs[i], w ,:id)
-            g0.subgraphs[i] = m
-        end 
+    # for i in eachindex(g0.subgraphs)
+    #     if isequiv(g0.subgraphs[i], w ,:id)
+    #         g0.subgraphs[i] = m
+    #     end 
+    # end
+    for node in PreOrderDFS(g0)
+        for (i, child) in enumerate(children(node))
+            if isequiv(child, w ,:id)
+                node.subgraphs[i] = m
+                break
+            end
+        end
     end
     return g0
 end

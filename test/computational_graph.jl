@@ -87,22 +87,35 @@ end
 
 @testset "Graph Operations" begin
     V2 = [𝑏⁺(1), 𝑏⁺(2)𝑏⁻(2), 𝑏⁻(3)]
+    g1 =  feynman_diagram(V2, [[1, 2], [3, 4]]; external=[1, 4])
     g2 = feynman_diagram(V2, [[1, 3], [2, 4]]; external=[1, 4])
     # print("$(g2.subgraphs), $(g2.operator) \n")
     g3 = feynman_diagram(V2, [[1, 4], [2, 3]]; external=[1, 4])
     # print("$(g3.subgraphs), $(g3.operator) \n")
     gsum = g2 + g3
-    # print("$(gsum.subgraphs), $(gsum.operator) \n")
-    # for v in gsum.subgraphs
-    #     print("$(v.subgraphs), $(v.operator) \n\n")
-    # end
-    gsum_new = ComputationalGraphs.replace_subgraph(gsum,g2,g3)
-    @test  isequiv(gsum_new.subgraphs[1], gsum_new.subgraphs[2])
-    @test  isequiv(gsum_new.subgraphs[1], gsum_new.subgraphs[2] ,:id)
-    # print("$(gsum.subgraphs), $(gsum.operator) \n")
-    # for v in gsum_new.subgraphs
-    #     print("$(v.subgraphs), $(v.operator) \n\n")
-    # end
+    groot =  g1 + gsum
+    for node in PreOrderDFS(groot)
+        for (i, child) in enumerate(children(node))
+            print("$(child)\n")
+        end
+    end
+    print("inplace replace\n")
+    ComputationalGraphs.replace_subgraph!(groot,g2,g3)
+    gnew = ComputationalGraphs.replace_subgraph(groot,g2,g3)
+    for node in PreOrderDFS(groot)
+        for (i, child) in enumerate(children(node))
+            print("$(child)\n")
+        end
+    end
+    print("copy replace\n")
+    for node in PreOrderDFS(gnew)
+        for (i, child) in enumerate(children(node))
+            print("$(child)\n")
+        end
+    end
+
+    @test  isequiv(gsum.subgraphs[1], gsum.subgraphs[2])
+    @test  isequiv(gsum.subgraphs[1], gsum.subgraphs[2] ,:id)
 end
 @testset verbose = true "feynman_diagram" begin
     @testset "Phi4" begin
