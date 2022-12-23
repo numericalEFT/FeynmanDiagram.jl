@@ -94,25 +94,26 @@ end
     # print("$(g3.subgraphs), $(g3.operator) \n")
     gsum = g2 + g3
     groot =  g1 + gsum
-    for node in PreOrderDFS(groot)
-        for (i, child) in enumerate(children(node))
-            print("$(child)\n")
-        end
-    end
-    print("inplace replace\n")
+    # for node in PreOrderDFS(groot)
+    #     for (i, child) in enumerate(children(node))
+    #         print("$(child)\n")
+    #     end
+    # end
+    # print("inplace replace\n")
     ComputationalGraphs.replace_subgraph!(groot,g2,g3)
+    #ComputationalGraphs.replace_subgraph!(g2.subgraphs[1],g2,g3)
     gnew = ComputationalGraphs.replace_subgraph(groot,g2,g3)
-    for node in PreOrderDFS(groot)
-        for (i, child) in enumerate(children(node))
-            print("$(child)\n")
-        end
-    end
-    print("copy replace\n")
-    for node in PreOrderDFS(gnew)
-        for (i, child) in enumerate(children(node))
-            print("$(child)\n")
-        end
-    end
+    # for node in PreOrderDFS(groot)
+    #     for (i, child) in enumerate(children(node))
+    #         print("$(child)\n")
+    #     end
+    # end
+    # print("copy replace\n")
+    # for node in PreOrderDFS(gnew)
+    #     for (i, child) in enumerate(children(node))
+    #         print("$(child)\n")
+    #     end
+    # end
 
     @test  isequiv(gsum.subgraphs[1], gsum.subgraphs[2])
     @test  isequiv(gsum.subgraphs[1], gsum.subgraphs[2] ,:id)

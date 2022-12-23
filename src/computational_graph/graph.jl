@@ -122,6 +122,15 @@ function isequiv(a::Graph, b::Graph, args...)
     return true
 end
 
+
+"""
+    function isleaf(a::Graph)
+
+    Determine whether `a` is a leaf that do not have any subgraph.
+"""
+function isleaf(a::Graph)
+    return isempty(a.subgraphs)
+end
 """
     function is_external(g::Graph, i::Int) 
 
@@ -407,10 +416,10 @@ end
     Graph w and m should have the same internal and external vertices, and topology
 """
 function replace_subgraph!(g::Graph, w::Graph, m::Graph)
-    #@assert !isleaf(g) "Target parent graph can not be a leaf"
+    @assert !isleaf(g) "Target parent graph can not be a leaf"
     @assert w.vertices==m.vertices "Old and new subgraph should have the same vertices"
     @assert w.external==m.external "Old and new subgraph should have the same external vertices"
-    #print("isleaf $(isleaf(g))\n")
+    print("isleaf $(isleaf(g))\n")
     for node in PreOrderDFS(g)
         for (i, child) in enumerate(children(node))
             if isequiv(child, w ,:id)
@@ -431,11 +440,6 @@ function replace_subgraph(g::Graph, w::Graph, m::Graph)
     @assert w.vertices==m.vertices "Old and new subgraph should have the same vertices"
     @assert w.external==m.external "Old and new subgraph should have the same external vertices"
     g0 = deepcopy(g)
-    # for i in eachindex(g0.subgraphs)
-    #     if isequiv(g0.subgraphs[i], w ,:id)
-    #         g0.subgraphs[i] = m
-    #     end 
-    # end
     for node in PreOrderDFS(g0)
         for (i, child) in enumerate(children(node))
             if isequiv(child, w ,:id)
