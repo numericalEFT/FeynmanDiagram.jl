@@ -116,7 +116,6 @@ end
     # end
 
     @test  isequiv(gsum.subgraphs[1], gsum.subgraphs[2])
-    @test  isequiv(gsum.subgraphs[1], gsum.subgraphs[2] ,:id)
 end
 @testset verbose = true "feynman_diagram" begin
     @testset "Phi4" begin
