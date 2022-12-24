@@ -9,6 +9,17 @@ Base.show(io::IO, o::AbstractOperator) = print(io, typeof(o))
 Base.show(io::IO, ::Type{Sum}) = print(io, "⨁")
 Base.show(io::IO, ::Type{Prod}) = print(io, "Ⓧ")
 
+# Is the unary operation trivial (𝓞g = g)?
+unary_istrivial(::Type{AbstractOperator}) = false
+unary_istrivial(::Type{O}) where {O<:Union{Sum,Prod}} = true  # (+g) ≡ g and (*g) ≡ g
+
+# Is the operation associative: a 𝓞 (b 𝓞 c) = (a 𝓞 b) 𝓞 c = a 𝓞 b 𝓞 c?
+isassociative(::Type{AbstractOperator}) = false
+isassociative(::Type{Sum}) = true
+# NOTE: Associativity of Prod (graph composition)
+#       requires Base.*(g1, g2) and Base./(g1, g2)
+# isassociative(::Type{Prod}) = true
+
 """
     mutable struct Graph{F,W}
     
@@ -100,7 +111,7 @@ function Base.isequal(a::Graph, b::Graph)
     return true
 end
 Base.:(==)(a::Graph, b::Graph) = Base.isequal(a, b)
-# isbare(diag::Graph) = isempty(diag.subgraphs)
+# isbare(g::Graph) = isempty(g.subgraphs)
 
 """
     function isequiv(a::Graph, b::Graph, args...)
@@ -123,14 +134,6 @@ function isequiv(a::Graph, b::Graph, args...)
 end
 
 
-"""
-    function isleaf(a::Graph)
-
-    Determine whether `a` is a leaf that do not have any subgraph.
-"""
-function isleaf(a::Graph)
-    return isempty(a.subgraphs)
-end
 """
     function is_external(g::Graph, i::Int) 
 
@@ -226,8 +229,9 @@ function linear_combination(g1::Graph{F,W}, g2::Graph{F,W}, c1::C, c2::C) where 
     @assert g1.orders == g2.orders "g1 and g2 have different orders."
     @assert Set(vertices(g1)) == Set(vertices(g2)) "g1 and g2 have different vertices."
     @assert Set(external(g1)) == Set(external(g2)) "g1 and g2 have different external vertices."
-    return Graph(g1.vertices; external=g1.external, type=g1.type, subgraphs=[g1, g2],
+    g = Graph(g1.vertices; external=g1.external, type=g1.type, subgraphs=[g1, g2],
         subgraph_factors=[F(c1), F(c2)], operator=Sum(), ftype=F, wtype=W)
+    return simplify_products(g)
 end
 
 """
@@ -242,8 +246,9 @@ function linear_combination(graphs::Vector{Graph{F,W}}, constants::Vector{C}) wh
     @assert allequal(Set.(vertices.(graphs))) "Graphs do not share the same set of vertices."
     @assert allequal(Set.(external.(graphs))) "Graphs do not share the same set of external vertices."
     g1 = graphs[1]
-    return Graph(g1.vertices; external=g1.external, type=g1.type, subgraphs=graphs,
+    g = Graph(g1.vertices; external=g1.external, type=g1.type, subgraphs=graphs,
         subgraph_factors=constants, operator=Sum(), ftype=F, wtype=W)
+    return simplify_products(g)
 end
 
 function Base.:+(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
@@ -454,46 +459,66 @@ end
 
 
 prune_unary(g::Graph) = ((length(g.subgraph) == 1 && g.subgraph_factors[1] == 1 && g.factor == 1) ? g.subgraph[1] : g)
+#####################  interface to AbstractTrees ########################### 
+function AbstractTrees.children(g::Graph)
+    return g.subgraphs
+end
 
-function inplace_prod(g1::Graph{F,W}) where {F,W}
-    if (length(g1.subgraphs) == 1 && (g1.operator == Prod))
-        g0 = g1.subgraphs[1]
-        g = Graph(g0.vertices; external=g0.external, type=g0.type, topology=g0.topology,
-            subgraphs=g0.subgraphs, factor=g1.subgraph_factors[1] * g1.factor * g0.factor, operator=g0.operator(), ftype=F, wtype=W)
-        return g
+# Does the graph have any children?
+haschildren(g::Graph) = isempty(g.subgraphs) == false
+
+# Is the graph a leaf?
+isleaf(g::Graph) = isempty(g.subgraphs)
+
+# Does the graph have only one child?
+onechild(g::Graph) = length(children(g)) == 1
+
+# Is the graph a branch (depth-1 and one-child)?
+isbranch(g::Graph) = onechild(g) && isleaf(eldest(g))
+
+# Get the first child of a graph
+function eldest(g::Graph)
+    @assert haschildren(g) "Graph has no children!"
+    return children(g)[1]
+end
+
+# Is the graph a chain?
+function ischain(g::Graph)
+    if isleaf(g)
+        return true
+    elseif onechild(g) == false
+        return false
     else
-        return g1
+        return ischain(eldest(g))
     end
 end
 
-# function merge_prefactors(g0::Graph{F,W}) where {F,W}
-#     if (g1.operator==Sum && length(g1.subgraphs)==2 && isequiv(g1.subgraphs[1], g1.subgraphs[2], :factor, :id, :subgraph_factors))
-#         g1 = g0.subgraph[1]
-#         g2 = g0.subgraph[2]
-#         g_subg = Graph(g1.vertices; external=g1.external, type=g1.type, topology=g1.topology,
-#         subgraphs=g1.subgraphs, operator=g1.operator(), ftype=F, wtype=W)
-#         g = Graph(g1.vertices; external=g1.external, type=g1.type, topology=g1.topology,
-#         subgraphs=[g_subg,], operator=Prod(), ftype=F, wtype=W)
-#         g.subgraph_factors[1] = (g1.subgraph_factors[1]*g1.factor+g1.subgraph_factors[2]*g1.subgraphs[2].factor) * g0.factor
-#         return g
-#     else
-#         return g1
-#     end
-# end
-
-# 
-
-#####################  interface to AbstractTrees ########################### 
-function AbstractTrees.children(diag::Graph)
-    return diag.subgraphs
+# Is the graph factorless?
+function isfactorless(g::Graph{F,W}) where {F,W}
+    if isleaf(g)
+        return g.factor ≈ one(F)
+    elseif onechild(g)
+        return g.factor ≈ g.subgraph_factors[1] ≈ one(F)
+    else
+        return all(isone.([g.factor; g.subgraph_factors]))
+    end
 end
 
+# # Get the first subfactor of a graph
+# function first_subfactor(g::Graph)
+#     @assert haschildren(g) "Graph has no children!"
+#     return g.subgraph_factors[1]
+# end
+
 ## Things that make printing prettier
-AbstractTrees.printnode(io::IO, diag::Graph) = print(io, "\u001b[32m$(diag.id)\u001b[0m : $diag")
+AbstractTrees.printnode(io::IO, g::Graph) = print(io, "\u001b[32m$(g.id)\u001b[0m : $g")
+
+## Guarantee type-stable tree iteration for Graphs
+AbstractTrees.NodeType(::Graph) = HasNodeType()
 AbstractTrees.nodetype(::Graph{F,W}) where {F,W} = Graph{F,W}
 
 ## Optional enhancements
 # These next two definitions allow inference of the item type in iteration.
 # (They are not sufficient to solve all internal inference issues, however.)
-Base.IteratorEltype(::Type{<:TreeIterator{Graph{F,W}}}) where {F,W} = Base.HasEltype()
-Base.eltype(::Type{<:TreeIterator{Graph{F,W}}}) where {F,W} = Graph{F,W}
+# Base.IteratorEltype(::Type{<:TreeIterator{Graph{F,W}}}) where {F,W} = Base.HasEltype()
+# Base.eltype(::Type{<:TreeIterator{Graph{F,W}}}) where {F,W} = Graph{F,W}
