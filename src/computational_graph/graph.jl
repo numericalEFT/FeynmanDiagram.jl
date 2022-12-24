@@ -422,7 +422,7 @@ end
 haschildren(g::Graph) = isempty(g.subgraphs) == false
 
 # Is the graph a leaf?
-isleaf(g::Graph) = haschildren(g) == false
+isleaf(g::Graph) = isempty(g.subgraphs)
 
 # Does the graph have only one child?
 onechild(g::Graph) = length(children(g)) == 1
