@@ -2,6 +2,19 @@
     V = [𝑓⁺(1)𝑓⁻(2), 𝑓⁺(5)𝑓⁺(6)𝑓⁻(7)𝑓⁻(8), 𝑓⁺(3)𝑓⁻(4)]
     g1 = Graph(V, external=[1, 3])
     g2 = g1 * 2
+    @testset "Graph equivalence" begin
+        g1p = Graph(V, external=[1, 3])
+        g2p = Graph(V, external=[1, 3], factor=2)
+        # Test equivalence modulo fields id/factor
+        @test isequiv(g1, g1p) == false
+        @test isequiv(g1, g2p, :id) == false
+        @test isequiv(g1, g2p, :factor) == false
+        @test isequiv(g1, g1p, :id)
+        @test isequiv(g1, g2p, :id, :factor)
+        # Test inequivalence when subgraph lengths are different
+        t = g1 + g1
+        @test isequiv(t, g1, :id) == false
+    end
     @testset "Scalar multiplication" begin
         @test vertices(g2) == vertices(g1)
         println(external(g2))
@@ -256,4 +269,86 @@ end
         ggm.id = 1000
         @test isequiv(gm, ggm, :id)
     end
+    @testset "Construct feynman diagram from sub-diagrams" begin
+        V1 = [𝜙(5), 𝜙(6), 𝜙(7), 𝜙(8)]
+        g1 = feynman_diagram(V1, [[1, 2, 3, 4],], external=[1, 2, 3, 4])    #vacuum diagram
+        V2 = [𝜙(9), 𝜙(10), 𝜙(11), 𝜙(12)]
+        g2 = feynman_diagram(V2, [[1, 2, 3, 4],], external=[1, 2, 3, 4])    #vacuum diagram
+
+        g = feynman_diagram([𝜙(1), 𝜙(2), 𝜙(3), 𝜙(4), g1, g2], [[1, 5], [2, 6], [7, 9], [8, 10], [3, 11], [4, 12]]; external=[1, 2, 3, 4])
+
+        @test g.vertices[1:4] == [𝜙(1), 𝜙(2), 𝜙(3), 𝜙(4)]
+        @test external(g) == [𝜙(1), 𝜙(2), 𝜙(3), 𝜙(4)]
+        @test g.vertices[5] == 𝜙(5)𝜙(6)𝜙(7)𝜙(8)
+        @test g.vertices[6] == 𝜙(9)𝜙(10)𝜙(11)𝜙(12)
+        @test g.subgraphs[end-1] == g1
+        @test g.subgraphs[end] == g2
+
+        V3 = [𝑓⁻ₑ(1), 𝑓⁺ₑ(12), 𝑓⁺(2), 𝑓⁻(3), 𝑓⁺(4)𝑓⁺(5)𝑓⁻(6)𝑓⁻(7), 𝑓⁺(8)𝑓⁺(9)𝑓⁻(10)𝑓⁻(11)]
+        g3 = feynman_diagram(V3, [[1, 9], [3, 8], [4, 5], [6, 12], [7, 10], [11, 2]], external=[3, 4, 9, 11])
+
+        g4 = feynman_diagram([𝑓⁻ₑ(13), 𝑓⁺ₑ(14), 𝑓⁻(15), 𝑓⁺(16), g3],
+            [[1, 5], [2, 6], [3, 7], [4, 8]],
+            external=[3, 4, 5, 6]
+        )
+        @test g4.vertices[5] == 𝑓⁺(2)𝑓⁻(3)𝑓⁺(8)𝑓⁻(10)
+        @test external(g4) == [𝑓⁻(15), 𝑓⁺(16), 𝑓⁺(2), 𝑓⁻(3)]
+        @test external_with_ghost(g4) == [𝑓⁻ₑ(13), 𝑓⁺ₑ(14), 𝑓⁻(15), 𝑓⁺(16)]
+    end
+
+end
+
+@testset "relabel and standardize_labels" begin
+    using FeynmanDiagram.ComputationalGraphs
+
+    @testset "relabel" begin
+        # construct a graph
+        V = [𝑓ₑ(1), 𝑓⁺(2)𝑓⁻(3)𝑏⁺(4), 𝜙(5)𝑓⁺(6)𝑓⁻(7), 𝑓(8)𝑏⁻(9)𝜙(10)]
+        g1 = feynman_diagram(V, [[2, 3, 4, 9], [5, 6, 7, 10], [8, 1]], external=[8])
+
+        map = Dict(4 => 1, 6 => 1, 8 => 1, 9 => 1, 10 => 1)
+        g2 = relabel(g1, map)
+        uniqlabels = ComputationalGraphs.collect_labels(g2)
+        @test uniqlabels == [1, 2, 3, 5, 7]
+
+        map = Dict([i => 1 for i in 2:10])
+        g3 = relabel(g1, map)
+        uniqlabels = ComputationalGraphs.collect_labels(g3)
+        @test uniqlabels == [1,]
+    end
+
+    @testset "standardize_labels" begin
+        V = [𝑓ₑ(1), 𝑓⁺(2)𝑓⁻(3)𝑏⁺(4), 𝜙(5)𝑓⁺(6)𝑓⁻(7), 𝑓(8)𝑏⁻(9)𝜙(10)]
+        g1 = feynman_diagram(V, [[2, 3, 4, 9], [5, 6, 7, 10], [8, 1]], external=[8])
+
+        map = Dict([i => (11 - i) for i in 1:5])
+        g2 = relabel(g1, map)
+
+        g3 = standardize_labels(g2)
+        uniqlabels = ComputationalGraphs.collect_labels(g3)
+        @test uniqlabels == [1, 2, 3, 4, 5]
+    end
+end
+
+@testset "graph vector" begin
+    import FeynmanDiagram.ComputationalGraphs as Graphs
+
+    p1 = Graphs.propagator([𝑓⁺(1), 𝑓⁻(2)])
+    p2 = Graphs.propagator([𝑓⁺(1), 𝑓⁻(3)])
+    p3 = Graphs.propagator([𝑓⁺(2), 𝑓⁻(3)])
+
+    gv = [p1, p2, p3]
+
+    g1 = Graphs.group(gv, [1,])
+    @test Set(g1[[𝑓⁺(1),]]) == Set([p1, p2])
+    @test Set(g1[[𝑓⁺(2),]]) == Set([p3,])
+
+    g2 = Graphs.group(gv, [2,])
+    @test Set(g2[[𝑓⁻(2),]]) == Set([p1,])
+    @test Set(g2[[𝑓⁻(3),]]) == Set([p2, p3])
+
+    g3 = Graphs.group(gv, [1, 2])
+    @test Set(g3[[𝑓⁺(1), 𝑓⁻(2)]]) == Set([p1,])
+    @test Set(g3[[𝑓⁺(1), 𝑓⁻(3)]]) == Set([p2,])
+    @test Set(g3[[𝑓⁺(2), 𝑓⁻(3)]]) == Set([p3,])
 end

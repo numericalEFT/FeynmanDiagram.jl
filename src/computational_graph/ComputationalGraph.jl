@@ -8,6 +8,8 @@ import ..QuantumOperators: 𝑓⁻ₑ, 𝑓⁺ₑ, 𝑓ₑ, 𝑏⁻ₑ, 𝑏⁺�
 
 include("common.jl")
 export labelreset
+export _dtype
+export set_datatype
 
 include("graph.jl")
 export Graph, isequiv
@@ -18,11 +20,17 @@ export external_labels, external_with_ghost_labels
 
 # include("tree.jl")
 # include("operation.jl")
+include("graphvector.jl")
+# export GraphVector
 
 include("io.jl")
 # plot_tree
 
 # include("eval.jl")
 # include("optimize.jl")
+
+include("transform.jl")
+export relabel!, standardize_labels!
+export relabel, standardize_labels
 
 end
