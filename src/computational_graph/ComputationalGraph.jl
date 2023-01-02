@@ -12,9 +12,9 @@ export _dtype
 export set_datatype
 
 include("graph.jl")
-export AbstractOperator, Prod, Sum
+# export AbstractOperator, Prod, Sum
 export Graph, isequiv
-export GraphType, Interaction, ExternalVertex, Propagator, SelfEnergy, VertexDiag, GreenDiag, GenericDiag
+# export GraphType, Interaction, ExternalVertex, Propagator, SelfEnergy, VertexDiag, GreenDiag, GenericDiag
 export feynman_diagram, contractions_to_edges, propagator, interaction, external_vertex
 # export standardize_order!
 export is_external, is_internal, vertices, external
