@@ -155,7 +155,7 @@ end
         @test g5.subgraph_factors == ones(Int, 6)
         @test vertices(g5) == V5
         @test external(g5) == 𝑓⁻(2)𝜙(6)𝑓⁺(7)
-        g5p = feynman_diagram(interaction.(V5), [[1, 5], [3, 9], [4, 8]], perm_noleg=[3, 1, 2])
+        g5p = feynman_diagram(interaction.(V5), [[1, 5], [3, 9], [4, 8]], [3, 1, 2])
         @test g5.factor ≈ -g5p.factor    # reorder of external fake legs will not change the sign.
         @test g5p.subgraph_factors == ones(Int, 6)
         @test external(g5p) == 𝑓⁺(7)𝑓⁻(2)𝜙(6)
@@ -178,7 +178,7 @@ end
         @test external(g8) == 𝑓⁺(2)𝑓⁻(12)𝑓⁻(10)𝑓⁺(13)
 
         g8p = feynman_diagram([external_vertex.(V8[1:2]); interaction.(V8[3:end])],
-            [[1, 4], [3, 7], [5, 14], [6, 13], [8, 11], [9, 2]], perm_noleg=[2, 1])
+            [[1, 4], [3, 7], [5, 14], [6, 13], [8, 11], [9, 2]], [2, 1])
         @test g8p.factor == 1
         @test external(g8p) == 𝑓⁺(2)𝑓⁻(12)𝑓⁺(13)𝑓⁻(10)
     end
@@ -186,7 +186,7 @@ end
         V1 = [𝑓⁺(3), 𝑓⁺(4), 𝑓⁺(5)𝑓⁺(6)𝑓⁻(7)𝑓⁻(8), 𝑓⁺(9)𝑓⁺(10)𝑓⁻(11)𝑓⁻(12)]
         g1 = feynman_diagram([external_vertex.(V1[1:2]); interaction.(V1[3:4])], [[1, 6], [2, 9], [4, 10], [5, 7]])
         g1p = feynman_diagram([external_vertex.(V1[2:-1:1]); interaction.(V1[3:4])],
-            [[2, 6], [1, 9], [4, 10], [5, 7]], perm_noleg=[2, 1])
+            [[2, 6], [1, 9], [4, 10], [5, 7]], [2, 1])
         @test g1p.factor ≈ g1.factor
         @test external(g1) == 𝑓⁺(3)𝑓⁺(4)𝑓⁺(5)𝑓⁺(10)
         @test vertices(g1p) == [𝑓⁺(4), 𝑓⁺(3), 𝑓⁺(5)𝑓⁺(6)𝑓⁻(7)𝑓⁻(8), 𝑓⁺(9)𝑓⁺(10)𝑓⁻(11)𝑓⁻(12)]

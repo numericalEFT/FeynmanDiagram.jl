@@ -98,7 +98,7 @@ mutable struct Graph{F,W} # Graph
         @assert length(external) == length(hasLeg)
         # ftype = promote_type([typeof(g.factor) for g in subgraphs]...)
         # wtype = promote_type([typeof(g.weight) for g in subgraphs]...)
-        if vertices isa Nothing
+        if isnothing(vertices)
             vertices = [OperatorProduct(OperatorProduct(g.vertices)[g.external]) for g in subgraphs if g.type != Propagator]
         end
         return new{ftype,wtype}(uid(), name, typeof(type), orders, vertices, topology, external,
@@ -282,7 +282,7 @@ end
 # end
 
 """
-    function feynman_diagram(subgraphs::Vector{Graph{F,W}}, topology::Vector{Vector{Int}}; perm_noleg::Union{Vector{Int},Nothing}=nothing,
+    function feynman_diagram(subgraphs::Vector{Graph{F,W}}, topology::Vector{Vector{Int}}, perm_noleg::Union{Vector{Int},Nothing}=nothing;
         factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", diagtype::GraphType=GenericDiag()) where {F,W}
     
     Create a Graph representing feynman diagram from all subgraphs and topology (connections between vertices),
@@ -314,7 +314,7 @@ julia> g.subgraphs
  6:f⁺(4)|f⁻(8)⋅-1.0=0.0
 ```
 """
-function feynman_diagram(subgraphs::Vector{Graph{F,W}}, topology::Vector{Vector{Int}}; perm_noleg::Union{Vector{Int},Nothing}=nothing,
+function feynman_diagram(subgraphs::Vector{Graph{F,W}}, topology::Vector{Vector{Int}}, perm_noleg::Union{Vector{Int},Nothing}=nothing;
     factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", diagtype::GraphType=GenericDiag()) where {F,W}
 
     # external_ops = OperatorProduct(operators[external]) # the external operators for the building diagram after contractions
@@ -331,8 +331,9 @@ function feynman_diagram(subgraphs::Vector{Graph{F,W}}, topology::Vector{Vector{
         if g.type == ExternalVertex
             append!(external_leg, g.external .+ ind) # ExternalVertex will be legged after contraction.
         else
-            gext = setdiff(g.external .+ ind, contraction)
+            gext = setdiff(g.external .+ ind, contraction) # select all external operators
             gextLeg = g.hasLeg[gext.-ind]
+            # the selected gext[i] with gextLeg[i]==true is the external vertice with a leg
             append!(external_leg, gext[gextLeg])
             append!(external_noleg, gext[gextLeg.==false])
         end
@@ -342,7 +343,7 @@ function feynman_diagram(subgraphs::Vector{Graph{F,W}}, topology::Vector{Vector{
     @assert !any(all_hasLeg[setdiff(eachindex(all_hasLeg), external_noleg)]) "all contracted operators should have no leg."
     @assert external_leg ⊆ contraction
     @assert isempty(intersect(contraction, external_noleg)) "all nonleg external operators should not be contracted"
-    if !(perm_noleg isa Nothing)
+    if !isnothing(perm_noleg)
         @assert length(unique(perm_noleg)) == length(perm_noleg) == length(external_noleg)
         external_noleg = external_noleg[perm_noleg]
     end
