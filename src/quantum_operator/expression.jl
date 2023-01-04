@@ -38,12 +38,12 @@ const 𝑏⁺ = bosonic_creation
 const 𝜙 = real_classic
 '''
 """
-fermionic_annihilation(i, isghost=false) = OperatorProduct(QuantumOperator(FermiAnnihilation(), i, isghost))
-fermionic_creation(i, isghost=false) = OperatorProduct(QuantumOperator(FermiCreation(), i, isghost))
-majorana(i, isghost=false) = OperatorProduct(QuantumOperator(Majorana(), i, isghost))
-bosonic_annihilation(i, isghost=false) = OperatorProduct(QuantumOperator(BosonAnnihilation(), i, isghost))
-bosonic_creation(i, isghost=false) = OperatorProduct(QuantumOperator(BosonCreation(), i, isghost))
-real_classic(i, isghost=false) = OperatorProduct(QuantumOperator(Classic(), i, isghost))
+fermionic_annihilation(i) = OperatorProduct(QuantumOperator(FermiAnnihilation(), i))
+fermionic_creation(i) = OperatorProduct(QuantumOperator(FermiCreation(), i))
+majorana(i) = OperatorProduct(QuantumOperator(Majorana(), i))
+bosonic_annihilation(i) = OperatorProduct(QuantumOperator(BosonAnnihilation(), i))
+bosonic_creation(i) = OperatorProduct(QuantumOperator(BosonCreation(), i))
+real_classic(i) = OperatorProduct(QuantumOperator(Classic(), i))
 const 𝑓⁻ = fermionic_annihilation
 const 𝑓⁺ = fermionic_creation
 const 𝑓 = majorana
@@ -51,12 +51,12 @@ const 𝑏⁻ = bosonic_annihilation
 const 𝑏⁺ = bosonic_creation
 const 𝜙 = real_classic
 
-const 𝑓⁻ₑ = i -> fermionic_annihilation(i, true)
-const 𝑓⁺ₑ = i -> fermionic_creation(i, true)
-const 𝑓ₑ = i -> majorana(i, true)
-const 𝑏⁻ₑ = i -> bosonic_annihilation(i, true)
-const 𝑏⁺ₑ = i -> bosonic_creation(i, true)
-const 𝜙ₑ = i -> real_classic(i, true)
+# const 𝑓⁻ₑ = i -> fermionic_annihilation(i, true)
+# const 𝑓⁺ₑ = i -> fermionic_creation(i, true)
+# const 𝑓ₑ = i -> majorana(i, true)
+# const 𝑏⁻ₑ = i -> bosonic_annihilation(i, true)
+# const 𝑏⁺ₑ = i -> bosonic_creation(i, true)
+# const 𝜙ₑ = i -> real_classic(i, true)
 
 Base.eltype(::Type{OperatorProduct}) = QuantumOperator
 Base.getindex(o::OperatorProduct, i::Int) = o.operators[i]

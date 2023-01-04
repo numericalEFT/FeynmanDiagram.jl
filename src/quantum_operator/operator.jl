@@ -54,27 +54,26 @@ isannihilation(::Type{C}) where {C<:Union{FermiCreation,BosonCreation,Majorana,C
 struct QuantumOperator
     operator::DataType
     label::Int
-    is_ghost::Bool
-    function QuantumOperator(operator::AbstractQuantumOperator, label::Int, is_ghost=false)
+    function QuantumOperator(operator::AbstractQuantumOperator, label::Int)
         @assert label >= 0
-        return new(typeof(operator), label, is_ghost)
+        return new(typeof(operator), label)
     end
     # function QuantumOperator(::Type{operator}, label::Int, is_ghost=false) where {operator<:AbstractQuantumOperator}
     #     @assert label > 0
     #     return new(operator, label, is_ghost)
     # end
 end
-Base.isequal(a::QuantumOperator, b::QuantumOperator) = ((a.operator == b.operator) && (a.label == b.label) && (a.is_ghost == b.is_ghost))
+Base.isequal(a::QuantumOperator, b::QuantumOperator) = ((a.operator == b.operator) && (a.label == b.label))
 Base.:(==)(a::QuantumOperator, b::QuantumOperator) = Base.isequal(a, b)
 
-function Base.show(io::IO, o::QuantumOperator)
-    if o.is_ghost
-        print(io, "$(o.operator)ₑ($(o.label))")
-    else
-        print(io, "$(o.operator)($(o.label))")
-    end
-end
-
+# function Base.show(io::IO, o::QuantumOperator)
+#     if o.is_ghost
+#         print(io, "$(o.operator)ₑ($(o.label))")
+#     else
+#         print(io, "$(o.operator)($(o.label))")
+#     end
+# end
+Base.show(io::IO, o::QuantumOperator) = print(io, "$(o.operator)($(o.label))")
 Base.show(io::IO, ::MIME"text/plain", o::QuantumOperator) = Base.show(io, o)
 
 """
@@ -82,7 +81,7 @@ Base.show(io::IO, ::MIME"text/plain", o::QuantumOperator) = Base.show(io, o)
 
     Return the conjuated quantum operator of `operator`.
 """
-Base.adjoint(operator::QuantumOperator) = QuantumOperator(adjoint(operator.operator)(), operator.label, operator.is_ghost)
+Base.adjoint(operator::QuantumOperator) = QuantumOperator(adjoint(operator.operator)(), operator.label)
 
 """
     function isfermionic(operator::QuantumOperator)
@@ -105,9 +104,9 @@ iscreation(operator::QuantumOperator) = iscreation(operator.operator)
 """
 isannihilation(operator::QuantumOperator) = isannihilation(operator.operator)
 
-"""
-    function isghost(operator::QuantumOperator)
+# """
+#     function isghost(operator::QuantumOperator)
 
-    Check if `operator` is a ghost operator.
-"""
-isghost(operator::QuantumOperator) = operator.is_ghost
+#     Check if `operator` is a ghost operator.
+# """
+# isghost(operator::QuantumOperator) = operator.is_ghost
