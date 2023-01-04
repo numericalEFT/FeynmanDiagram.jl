@@ -218,32 +218,18 @@ end
     #     ggm.id = 1000
     #     @test isequiv(gm, ggm, :id)
     # end
-    # @testset "Construct feynman diagram from sub-diagrams" begin
-    #     V1 = [𝜙(5), 𝜙(6), 𝜙(7), 𝜙(8)]
-    #     g1 = feynman_diagram(V1, [[1, 2, 3, 4],], external=[1, 2, 3, 4])    #vacuum diagram
-    #     V2 = [𝜙(9), 𝜙(10), 𝜙(11), 𝜙(12)]
-    #     g2 = feynman_diagram(V2, [[1, 2, 3, 4],], external=[1, 2, 3, 4])    #vacuum diagram
+    @testset "Construct feynman diagram from sub-diagrams" begin
+        V1 = [𝑓⁺(1)𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5)𝜙(6)]
+        g1 = feynman_diagram(interaction.(V1), [[3, 6]])
+        V2 = [𝑓⁺(7)𝑓⁻(8)𝜙(9), 𝑓⁺(10)𝑓⁻(11)𝜙(12)]
+        g2 = feynman_diagram(interaction.(V2), [[3, 6]])
 
-    #     g = feynman_diagram([𝜙(1), 𝜙(2), 𝜙(3), 𝜙(4), g1, g2], [[1, 5], [2, 6], [7, 9], [8, 10], [3, 11], [4, 12]]; external=[1, 2, 3, 4])
+        V3 = [𝑓⁻(13), 𝑓⁻(14), 𝑓⁺(15), 𝑓⁺(16)]
+        g = feynman_diagram([g1, g2, external_vertex.(V3)...], [[1, 6], [2, 12], [3, 9], [4, 5], [7, 10], [8, 11]])
 
-    #     @test g.vertices[1:4] == [𝜙(1), 𝜙(2), 𝜙(3), 𝜙(4)]
-    #     @test external(g) == [𝜙(1), 𝜙(2), 𝜙(3), 𝜙(4)]
-    #     @test g.vertices[5] == 𝜙(5)𝜙(6)𝜙(7)𝜙(8)
-    #     @test g.vertices[6] == 𝜙(9)𝜙(10)𝜙(11)𝜙(12)
-    #     @test g.subgraphs[end-1] == g1
-    #     @test g.subgraphs[end] == g2
-
-    #     V3 = [𝑓⁻ₑ(1), 𝑓⁺ₑ(12), 𝑓⁺(2), 𝑓⁻(3), 𝑓⁺(4)𝑓⁺(5)𝑓⁻(6)𝑓⁻(7), 𝑓⁺(8)𝑓⁺(9)𝑓⁻(10)𝑓⁻(11)]
-    #     g3 = feynman_diagram(V3, [[1, 9], [3, 8], [4, 5], [6, 12], [7, 10], [11, 2]], external=[3, 4, 9, 11])
-
-    #     g4 = feynman_diagram([𝑓⁻ₑ(13), 𝑓⁺ₑ(14), 𝑓⁻(15), 𝑓⁺(16), g3],
-    #         [[1, 5], [2, 6], [3, 7], [4, 8]],
-    #         external=[3, 4, 5, 6]
-    #     )
-    #     @test g4.vertices[5] == 𝑓⁺(2)𝑓⁻(3)𝑓⁺(8)𝑓⁻(10)
-    #     @test external(g4) == [𝑓⁻(15), 𝑓⁺(16), 𝑓⁺(2), 𝑓⁻(3)]
-    #     @test external_with_ghost(g4) == [𝑓⁻ₑ(13), 𝑓⁺ₑ(14), 𝑓⁻(15), 𝑓⁺(16)]
-    # end
+        @test vertices(g) == [𝑓⁺(1)𝑓⁻(2)𝑓⁺(4)𝑓⁻(5), 𝑓⁺(7)𝑓⁻(8)𝑓⁺(10)𝑓⁻(11), V3...]
+        @test external(g) == reduce(*, V3)
+    end
 
 end
 

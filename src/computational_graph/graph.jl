@@ -469,7 +469,7 @@ end
 function interaction(ops::OperatorProduct; name="", reorder::Union{Function,Nothing}=nothing,
     factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
     @assert !isfermionic(ops) "interaction OperatorProduct must be bosonic."
-    if !(reorder isa Nothing)
+    if !isnothing(reorder)
         sign, perm = reorder(ops)
         return Graph(Graph[]; external=perm, hasLeg=[false for i in eachindex(perm)],
             vertices=[OperatorProduct(ops)], type=Interaction(), name=name, operator=operator, factor=factor * sign, weight=weight)
