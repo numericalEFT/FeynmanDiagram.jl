@@ -111,6 +111,74 @@ function prune_trivial_unary(g::Graph)
     end
 end
 
+"""
+    function replace_subgraph!(g::Graph, w::Graph, m::graph)
+
+    In place function that replaces the children graph w in graph g with a new graph m.
+    Graph w and m should have the same internal and external vertices, and topology
+"""
+function replace_subgraph!(g::Graph, w::Graph, m::Graph)
+    @assert !isleaf(g) "Target parent graph can not be a leaf"
+    @assert w.vertices == m.vertices "Old and new subgraph should have the same vertices"
+    @assert w.external == m.external "Old and new subgraph should have the same external vertices"
+    print("isleaf $(isleaf(g))\n")
+    for node in PreOrderDFS(g)
+        for (i, child) in enumerate(children(node))
+            if isequiv(child, w, :id)
+                node.subgraphs[i] = m
+                return
+            end
+        end
+    end
+end
+
+"""
+    function replace_subgraph(g::Graph, w::Graph, m::graph)
+
+    Generate a copy of graph g, with the children graph w replaced by a new graph m.
+    Graph w and m should have the same internal and external vertices, and topology
+"""
+function replace_subgraph(g::Graph, w::Graph, m::Graph)
+    @assert w.vertices == m.vertices "Old and new subgraph should have the same vertices"
+    @assert w.external == m.external "Old and new subgraph should have the same external vertices"
+    g0 = deepcopy(g)
+    for node in PreOrderDFS(g0)
+        for (i, child) in enumerate(children(node))
+            if isequiv(child, w, :id)
+                node.subgraphs[i] = m
+                break
+            end
+        end
+    end
+    return g0
+end
+
+function inplace_prod(g1::Graph{F,W}) where {F,W}
+    if (length(g1.subgraphs) == 1 && (g1.operator == Prod))
+        g0 = g1.subgraphs[1]
+        g = Graph(g0.vertices; external=g0.external, type=g0.type, topology=g0.topology,
+            subgraphs=g0.subgraphs, factor=g1.subgraph_factors[1] * g1.factor * g0.factor, operator=g0.operator(), ftype=F, wtype=W)
+        return g
+    else
+        return g1
+    end
+end
+
+# function merge_prefactors(g0::Graph{F,W}) where {F,W}
+#     if (g1.operator==Sum && length(g1.subgraphs)==2 && isequiv(g1.subgraphs[1], g1.subgraphs[2], :factor, :id, :subgraph_factors))
+#         g1 = g0.subgraph[1]
+#         g2 = g0.subgraph[2]
+#         g_subg = Graph(g1.vertices; external=g1.external, type=g1.type, topology=g1.topology,
+#         subgraphs=g1.subgraphs, operator=g1.operator(), ftype=F, wtype=W)
+#         g = Graph(g1.vertices; external=g1.external, type=g1.type, topology=g1.topology,
+#         subgraphs=[g_subg,], operator=Prod(), ftype=F, wtype=W)
+#         g.subgraph_factors[1] = (g1.subgraph_factors[1]*g1.factor+g1.subgraph_factors[2]*g1.subgraphs[2].factor) * g0.factor
+#         return g
+#     else
+#         return g1
+#     end
+# end
+
 ############LEGACY BELOW################
 
 # function readDiag(io::IO)

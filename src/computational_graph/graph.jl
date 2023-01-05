@@ -558,48 +558,6 @@ julia> g
 #     return Graph(subgraphs,)
 # end
 
-"""
-    function replace_subgraph!(g::Graph, w::Graph, m::graph)
-
-    In place function that replaces the children graph w in graph g with a new graph m.
-    Graph w and m should have the same internal and external vertices, and topology
-"""
-function replace_subgraph!(g::Graph, w::Graph, m::Graph)
-    @assert !isleaf(g) "Target parent graph can not be a leaf"
-    @assert w.vertices==m.vertices "Old and new subgraph should have the same vertices"
-    @assert w.external==m.external "Old and new subgraph should have the same external vertices"
-    print("isleaf $(isleaf(g))\n")
-    for node in PreOrderDFS(g)
-        for (i, child) in enumerate(children(node))
-            if isequiv(child, w ,:id)
-                node.subgraphs[i] = m
-                return
-            end
-        end
-    end
-end
-
-"""
-    function replace_subgraph(g::Graph, w::Graph, m::graph)
-
-    Generate a copy of graph g, with the children graph w replaced by a new graph m.
-    Graph w and m should have the same internal and external vertices, and topology
-"""
-function replace_subgraph(g::Graph, w::Graph, m::Graph)
-    @assert w.vertices==m.vertices "Old and new subgraph should have the same vertices"
-    @assert w.external==m.external "Old and new subgraph should have the same external vertices"
-    g0 = deepcopy(g)
-    for node in PreOrderDFS(g0)
-        for (i, child) in enumerate(children(node))
-            if isequiv(child, w ,:id)
-                node.subgraphs[i] = m
-                break
-            end
-        end
-    end
-    return g0
-end
-
 #####################  interface to AbstractTrees ########################### 
 function AbstractTrees.children(g::Graph)
     return g.subgraphs
