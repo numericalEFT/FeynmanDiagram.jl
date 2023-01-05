@@ -1,7 +1,7 @@
 # this file is included in ComputationalGraphs.jl
 
 # relabel constructor for QuantumOperator
-QuantumOperator(qo::QuantumOperator, label::Int) = QuantumOperator(qo.operator(), label, qo.is_ghost)
+QuantumOperator(qo::QuantumOperator, label::Int) = QuantumOperator(qo.operator(), label)
 # relabel constructor for OperatorProduct
 
 """
