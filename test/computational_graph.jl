@@ -132,8 +132,7 @@ end
     @test external_labels(g2) == [1, 4, 5, 3, 2]
 end
 
-# TODO: Update to new API
-@testset skip = true "Graph Operations" begin
+@testset_skip "TODO: Update to new API" "Graph Operations" begin
     V2 = [𝑏⁺(1), 𝑏⁺(2)𝑏⁻(2), 𝑏⁻(3)]
     g1 = feynman_diagram(V2, [[1, 2], [3, 4]]; external=[1, 4])
     g2 = feynman_diagram(V2, [[1, 3], [2, 4]]; external=[1, 4])
