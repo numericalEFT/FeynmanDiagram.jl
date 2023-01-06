@@ -88,7 +88,7 @@ using .QuantumOperators
 export QuantumOperators
 export QuantumOperator, OperatorProduct, isfermionic
 export 𝑓⁻, 𝑓⁺, 𝑓, 𝑏⁻, 𝑏⁺, 𝜙
-export 𝑓⁻ₑ, 𝑓⁺ₑ, 𝑓ₑ, 𝑏⁻ₑ, 𝑏⁺ₑ, 𝜙ₑ
+# export 𝑓⁻ₑ, 𝑓⁺ₑ, 𝑓ₑ, 𝑏⁻ₑ, 𝑏⁺ₑ, 𝜙ₑ
 export fermionic_annihilation, fermionic_creation, majorana
 export bosonic_annihilation, bosonic_creation, real_classic
 export correlator_order, normal_order
@@ -97,10 +97,13 @@ include("computational_graph/ComputationalGraph.jl")
 using .ComputationalGraphs
 export ComputationalGraphs
 export labelreset, parity, parity_old
+# export AbstractOperator, Prod, Sum
 export Graph, isequiv
-export feynman_diagram, contractions_to_edges, propagator, standardize_order!
-export is_external, is_internal, vertices, external, external_with_ghost
-export external_labels, external_with_ghost_labels
+# export GraphType, Interaction, ExternalVertex, Propagator, SelfEnergy, VertexDiag, GreenDiag, GenericDiag
+export feynman_diagram, contractions_to_edges, propagator, interaction, external_vertex
+# export standardize_order!
+export is_external, is_internal, vertices, external
+export external_labels
 # export reducibility, connectivity
 # export 𝐺ᶠ, 𝐺ᵇ, 𝐺ᵠ, 𝑊, Green2, Interaction
 # export Coupling_yukawa, Coupling_phi3, Coupling_phi4, Coupling_phi6

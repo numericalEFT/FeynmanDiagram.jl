@@ -67,19 +67,19 @@ Dict{Vector{OperatorProduct}, Vector{Graph{Float64, Float64}}} with 2 entries:
 
 """
 function group(gv::AbstractVector{G}, indices::Vector{Int}) where {G<:Graph}
-    l = length(gv[1].external)
-    @assert all(x -> length(x.external) == l, gv)
-    groups = Dict{Vector{OperatorProduct},Vector{G}}()
-    for t in gv
-        ext = external(t)
-        key = [ext[i] for i in indices]
-        if haskey(groups, key)
-            push!(groups[key], t)
-        else
-            groups[key] = [t,]
-        end
+  l = length(gv[1].external)
+  @assert all(x -> length(x.external) == l, gv)
+  groups = Dict{Vector{OperatorProduct},Vector{G}}()
+  for t in gv
+    ext = external(t)
+    key = [OperatorProduct(ext[i]) for i in indices]
+    if haskey(groups, key)
+      push!(groups[key], t)
+    else
+      groups[key] = [t,]
     end
-    return groups
+  end
+  return groups
 end
 
 

@@ -1,7 +1,7 @@
 # this file is included in ComputationalGraphs.jl
 
 # relabel constructor for QuantumOperator
-QuantumOperator(qo::QuantumOperator, label::Int) = QuantumOperator(qo.operator(), label, qo.is_ghost)
+QuantumOperator(qo::QuantumOperator, label::Int) = QuantumOperator(qo.operator(), label)
 # relabel constructor for OperatorProduct
 
 """
@@ -112,80 +112,56 @@ function prune_trivial_unary(g::Graph)
 end
 
 """
-    function simplify_products(g::Graph)
+    function replace_subgraph!(g::Graph, w::Graph, m::graph)
 
-Simplifies subgraph factors for a graph g by shifting them up to root level and merging the link.
+    In place function that replaces the children graph w in graph g with a new graph m.
+    Graph w and m should have the same internal and external vertices, and topology
 """
-function simplify_products(g::Graph)
-    # No-op for non-multiplicative node operations, branches/leaves, and non-chain graphs
-    if g.operator != Prod || isleaf(g) || isbranch(g) || onechild(g) == false
-        return g
+function replace_subgraph!(g::Graph, w::Graph, m::Graph)
+    @assert !isleaf(g) "Target parent graph can not be a leaf"
+    @assert w.vertices == m.vertices "Old and new subgraph should have the same vertices"
+    @assert w.external == m.external "Old and new subgraph should have the same external vertices"
+    print("isleaf $(isleaf(g))\n")
+    for node in PreOrderDFS(g)
+        for (i, child) in enumerate(children(node))
+            if isequiv(child, w, :id)
+                node.subgraphs[i] = m
+                return
+            end
+        end
     end
-    # Shift multiplicative subfactors to root level
-    gs = deepcopy(g)
-    child_gs = eldest(g)
-    while onechild(g)
-        gs.subgraph_factors[1] *= child_gs.subgraph_factors[1]
-        child_gs.subgraph_factors[1] = 1
-        g = child_gs
-    end
-    # 
 end
 
 """
-    function inplace_prod(g::Graph{F,W}) where {F,W}
+    function replace_subgraph(g::Graph, w::Graph, m::graph)
 
-Converts a unary Prod chain to in-place form by propagating subgraph_factors up the chain.
+    Generate a copy of graph g, with the children graph w replaced by a new graph m.
+    Graph w and m should have the same internal and external vertices, and topology
 """
-function inplace_prod(g::Graph{F,W}) where {F,W}
-    # Find unary Prod chain subgraphs of g
-    gt = deepcopy(g)
-    for sg in gt
-
+function replace_subgraph(g::Graph, w::Graph, m::Graph)
+    @assert w.vertices == m.vertices "Old and new subgraph should have the same vertices"
+    @assert w.external == m.external "Old and new subgraph should have the same external vertices"
+    g0 = deepcopy(g)
+    for node in PreOrderDFS(g0)
+        for (i, child) in enumerate(children(node))
+            if isequiv(child, w, :id)
+                node.subgraphs[i] = m
+                break
+            end
+        end
     end
+    return g0
+end
 
-    if g.operator == Prod && ischain(g)
-        gs = g.subgraphs[1]
-        return Graph(gs.vertices; external=gs.external, type=gs.type, topology=gs.topology, subgraphs=gs.subgraphs,
-            factor=g.subgraph_factors[1] * g.factor * gs.factor, operator=gs.operator, ftype=F, wtype=W)
+function inplace_prod(g1::Graph{F,W}) where {F,W}
+    if (length(g1.subgraphs) == 1 && (g1.operator == Prod))
+        g0 = g1.subgraphs[1]
+        g = Graph(g0.vertices; external=g0.external, type=g0.type, topology=g0.topology,
+            subgraphs=g0.subgraphs, factor=g1.subgraph_factors[1] * g1.factor * g0.factor, operator=g0.operator(), ftype=F, wtype=W)
+        return g
     else
-        return g
+        return g1
     end
-end
-
-"""
-    function merge_chain(g::Graph)
-
-Simplifies a graph g with a unary operator chain as its root.
-"""
-function merge_chain(g::Graph)
-    if g.depth == 0
-        return g
-    elseif g.depth == 1
-        # A branch is mergeable iff the unary operation is trivial
-        return prune_trivial_unary(g)
-    end
-    # First, simplify subgraph factors for multiplicative chains
-    gs = g.operator == Prod ? simplify_subfactors(g) : deepcopy(g)
-    # Then, merge operator chains of length > 1
-    while onechild(gs)
-        # Break case: last branch found
-        if node.depth == 1
-            # A branch is mergeable iff the unary operation is trivial
-            return prune_trivial_unary(g)
-        else
-            # If the branch is not factorless, propagate the subgraph factor up the chain
-        end
-
-        isunary = length(gs) == 1
-        isprunable = g.subgraph_factors[1] == 1 && g.factor == 1 && g.operator in [Prod, Sum]
-        if isunary && isprunable
-            return gs[1]
-        else
-            return g
-        end
-    end
-    return error("Encountered an unexpected error.")
 end
 
 """
