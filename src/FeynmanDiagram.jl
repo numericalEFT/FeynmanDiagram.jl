@@ -1,6 +1,10 @@
 module FeynmanDiagram
 using Random, LinearAlgebra, Parameters
 
+macro todo()
+    return :(error("Not yet implemented!"))
+end
+
 @enum DiagramType begin
     VacuumDiag         #vaccum diagram for the free energy
     SigmaDiag          #self-energy
