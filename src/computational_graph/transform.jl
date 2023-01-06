@@ -168,7 +168,7 @@ end
     function merge_prefactors(g::Graph)
         Factorize the prefactors of a multiplicative graph g.
 """
-function merge_prefactors(g0::Graph)
+function merge_prefactors(g0::Graph{F,W}) where {F,W}
     if (g0.operator==Sum)
         added = falses(length(g0.subgraphs))
         subg_fac = (eltype(g0.subgraph_factors))[]
@@ -189,8 +189,8 @@ function merge_prefactors(g0::Graph)
                 end
             end
         end
-        g = Graph(g0.vertices; external=g0.external, type=g0.type, topology=g0.topology,
-        subgraphs=subg, subgraph_factors= subg_fac, operator= g0.operator())
+        g = Graph(subg; topology=g0.topology, vertices = g0.vertices , external = g0.external, hasLeg = g0.hasLeg,
+        subgraph_factors = subg_fac, type = g0.type(), operator= g0.operator())
         return g
     else
         return g0
