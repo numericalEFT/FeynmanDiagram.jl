@@ -49,10 +49,10 @@ function ischain(g::Graph)
 end
 
 # Is the graph factorless?
-function isfactorless(g::Graph{F,W}) where {F,W}
+function isfactorless(g)
     if isleaf(g)
-        return g.factor ≈ one(F)
+        return isapprox_one(g.factor)
     else
-        return all(isone.([g.factor; g.subgraph_factors]))
+        return all(isapprox_one.([g.factor; g.subgraph_factors]))
     end
 end

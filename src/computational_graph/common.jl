@@ -37,3 +37,10 @@ end
 function alleq(x)
     return all(isequal(first(x)), x)
 end
+
+"""
+    function isapprox_one(x)
+
+Returns true if x ≈ one(x).
+"""
+isapprox_one(x) = x ≈ one(x)
