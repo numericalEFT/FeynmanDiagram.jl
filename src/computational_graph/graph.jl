@@ -596,8 +596,6 @@ end
 function isfactorless(g::Graph{F,W}) where {F,W}
     if isleaf(g)
         return g.factor ≈ one(F)
-    elseif onechild(g)
-        return g.factor ≈ g.subgraph_factors[1] ≈ one(F)
     else
         return all(isone.([g.factor; g.subgraph_factors]))
     end
