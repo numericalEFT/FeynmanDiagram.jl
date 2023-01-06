@@ -475,51 +475,7 @@ function replace_subgraph(g::Graph, w::Graph, m::Graph)
     return g0
 end
 
-function prune_unary(g::Graph{F, W}) where {F, W}
-    if (g.operator in [Prod, Sum] && length(g.subgraph) ≈ one(F) && g.subgraph_factors[1]≈ one(F) && g.factor == 1)
-        return g.subgraph[1]
-    else
-        return g
-    end
-end
 
-
-function inplace_prod(g1::Graph) 
-    if (length(g1.subgraphs)==1 && length(g1.subgraphs[1].subgraphs) ==1 && (g1.operator == Prod) && (g1.subgraphs[1].operator == Prod))
-        g1.subgraph_factors[1] *= g1.subgraphs[1].subgraph_factors[1] 
-        g1.subgraphs[1].subgraph_factors[1] = 1
-    end
-    return g1
-end
-
-function merge_prefactors(g0::Graph)
-    if (g0.operator==Sum)
-        added = falses(length(g0.subgraphs))
-        subg_fac = (eltype(g0.subgraph_factors))[]
-        subg = (eltype(g0.subgraphs))[]
-        k = 0
-        for i in eachindex(added)
-            if added[i] 
-                continue
-            end
-            push!(subg,g0.subgraphs[i])
-            push!(subg_fac,g0.subgraph_factors[i])
-            added[i] = true
-            k += 1
-            for j in i+1:length(g0.subgraphs)
-                if(added[j] == false && isequiv(g0.subgraphs[i], g0.subgraphs[j], :id))
-                    added[j] = true
-                    subg_fac[k] += g0.subgraph_factors[j]
-                end
-            end
-        end
-        g = Graph(g0.vertices; external=g0.external, type=g0.type, topology=g0.topology,
-        subgraphs=subg, subgraph_factors= subg_fac, operator= g0.operator())
-        return g
-    else
-        return g0
-    end
-end
 #####################  interface to AbstractTrees ########################### 
 function AbstractTrees.children(g::Graph)
     return g.subgraphs
