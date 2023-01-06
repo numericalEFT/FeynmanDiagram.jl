@@ -94,24 +94,6 @@ Return a copy of stantardized g.
 standardize_labels(g::Graph) = standardize_labels!(deepcopy(g))
 
 """
-    function prune_trivial_unary(g::Graph)
-
-Simplifies a graph g if it represents a trivial unary operation. Otherwise, returns the original graph.
-"""
-function prune_trivial_unary(g::Graph)
-    # No-op; g is not a branch (depth-1, one-child tree)
-    if isbranch(g) == false
-        return g
-    end
-    # Prune trivial unary operations
-    if unary_istrivial(g.operator) && isfactorless(g)
-        return eldest(g)
-    else
-        return g
-    end
-end
-
-"""
     function replace_subgraph!(g::Graph, w::Graph, m::graph)
 
     In place function that replaces the children graph w in graph g with a new graph m.
@@ -153,47 +135,21 @@ function replace_subgraph(g::Graph, w::Graph, m::Graph)
     return g0
 end
 
-function inplace_prod(g1::Graph{F,W}) where {F,W}
-    if (length(g1.subgraphs) == 1 && (g1.operator == Prod))
-        g0 = g1.subgraphs[1]
-        g = Graph(g0.vertices; external=g0.external, type=g0.type, topology=g0.topology,
-            subgraphs=g0.subgraphs, factor=g1.subgraph_factors[1] * g1.factor * g0.factor, operator=g0.operator(), ftype=F, wtype=W)
-        return g
-    else
-        return g1
-    end
-end
+"""
+    function prune_trivial_unary(g::Graph)
 
+Simplifies a graph g if it represents a trivial unary operation. Otherwise, returns the original graph.
 """
-    function merge_prefactors(g::Graph)
-        Factorize the prefactors of a multiplicative graph g.
-"""
-function merge_prefactors(g0::Graph{F,W}) where {F,W}
-    if (g0.operator==Sum)
-        added = falses(length(g0.subgraphs))
-        subg_fac = (eltype(g0.subgraph_factors))[]
-        subg = (eltype(g0.subgraphs))[]
-        k = 0
-        for i in eachindex(added)
-            if added[i] 
-                continue
-            end
-            push!(subg,g0.subgraphs[i])
-            push!(subg_fac,g0.subgraph_factors[i])
-            added[i] = true
-            k += 1
-            for j in i+1:length(g0.subgraphs)
-                if(added[j] == false && isequiv(g0.subgraphs[i], g0.subgraphs[j], :id))
-                    added[j] = true
-                    subg_fac[k] += g0.subgraph_factors[j]
-                end
-            end
-        end
-        g = Graph(subg; topology=g0.topology, vertices = g0.vertices , external = g0.external, hasLeg = g0.hasLeg,
-        subgraph_factors = subg_fac, type = g0.type(), operator= g0.operator())
+function prune_trivial_unary(g::Graph)
+    # No-op; g is not a branch (depth-1, one-child tree)
+    if isbranch(g) == false
         return g
+    end
+    # Prune trivial unary operations
+    if unary_istrivial(g.operator) && isfactorless(g)
+        return eldest(g)
     else
-        return g0
+        return g
     end
 end
 
@@ -205,28 +161,53 @@ end
 #     end
 # end
 
+"""Converts a unary Prod node to in-place form using subgraph factors."""
+function inplace_prod(g::Graph)
+    if onechild(g) == false
+        return g
+    end
+    child = eldest(g)
+    if onechild(child) && child.operator == Prod
+        # Merge subgraph factors at parent tree level
+        g.subgraph_factors[1] *= child.subgraph_factors[1]
+        child.subgraph_factors[1] = 1
+    end
+    return g
+end
 
-# function inplace_prod(g1::Graph) 
-#     if (length(g1.subgraphs)==1 && length(g1.subgraphs[1].subgraphs) ==1 && (g1.subgraphs[1].operator == Prod))
-#         g1.subgraph_factors[1] *= g1.subgraphs[1].subgraph_factors[1] 
-#         g1.subgraphs[1].subgraph_factors[1] = 1
-#     end
-#     return g1
-# end
-
-######
-
-# """Converts a unary Prod node to in-place form by merging factors and subgraph_factors."""
-# function inplace_prod(g::Graph{F,W}) where {F,W}
-#     if g.operator == Prod && length(g.subgraphs) == 1
-#         gs = g.subgraphs[1]
-#         return Graph(gs.vertices; external=gs.external, type=gs.type, topology=gs.topology, subgraphs=gs.subgraphs,
-#             factor=g.subgraph_factors[1] * g.factor * gs.factor, operator=gs.operator, ftype=F, wtype=W)
-#     else
-#         return g
-#     end
-# end
-
+"""
+    function merge_prefactors(g::Graph)
+   
+Factorize the prefactors of a multiplicative graph g.
+"""
+function merge_prefactors(g0::Graph{F,W}) where {F,W}
+    if g0.operator == Sum
+        added = falses(length(g0.subgraphs))
+        subg_fac = eltype(g0.subgraph_factors)[]
+        subg = eltype(g0.subgraphs)[]
+        k = 0
+        for i in eachindex(added)
+            if added[i]
+                continue
+            end
+            push!(subg, g0.subgraphs[i])
+            push!(subg_fac, g0.subgraph_factors[i])
+            added[i] = true
+            k += 1
+            for j in (i+1):length(g0.subgraphs)
+                if added[j] == false && isequiv(g0.subgraphs[i], g0.subgraphs[j], :id)
+                    added[j] = true
+                    subg_fac[k] += g0.subgraph_factors[j]
+                end
+            end
+        end
+        g = Graph(subg; topology=g0.topology, vertices=g0.vertices, external=g0.external, hasLeg=g0.hasLeg,
+            subgraph_factors=subg_fac, type=g0.type(), operator=g0.operator())
+        return g
+    else
+        return g0
+    end
+end
 
 ############LEGACY BELOW################
 
