@@ -3,6 +3,10 @@ module ComputationalGraphs
 using AbstractTrees
 using Printf, PyCall, DataFrames
 
+macro todo()
+    return :(error("Not yet implemented!"))
+end
+
 import ..QuantumOperators: QuantumOperator, OperatorProduct, 𝑓⁻, 𝑓⁺, 𝑓, 𝑏⁻, 𝑏⁺, 𝜙, iscreation, isannihilation, isfermionic, parity, normal_order, correlator_order
 # import ..QuantumOperators: 𝑓⁻ₑ, 𝑓⁺ₑ, 𝑓ₑ, 𝑏⁻ₑ, 𝑏⁺ₑ, 𝜙ₑ
 
@@ -21,7 +25,7 @@ export is_external, is_internal, vertices, external
 export external_labels
 # export 𝐺ᶠ, 𝐺ᵇ, 𝐺ᵠ, 𝑊, Green2, Interaction
 
-# include("tree.jl")
+include("tree_properties.jl")
 # include("operation.jl")
 include("graphvector.jl")
 # export GraphVector
