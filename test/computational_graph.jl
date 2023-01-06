@@ -83,6 +83,31 @@
     end
 end
 
+@testset "merge_prefactors" begin
+    g1 = propagator(𝑓⁺(1)𝑓⁻(2))
+    h1 = ComputationalGraphs.linear_combination(g1, g1, 1, 2)
+    @test h1.subgraph_factors == [1,2]
+    h2 = ComputationalGraphs.merge_prefactors(h1)
+    @test h2.subgraph_factors == [3]
+    @test length(h2.subgraphs) == 1
+    @test isequiv(h2.subgraphs[1], g1, :id)
+    g2 = propagator(𝑓⁺(1)𝑓⁻(2), factor=2)
+    h3 = ComputationalGraphs.linear_combination(g1, g2, 1, 2)
+    h4 = ComputationalGraphs.merge_prefactors(h3)
+    @test isequiv(h3, h4, :id)
+    h5 = ComputationalGraphs.linear_combination([g1, g2, g2, g1], [3, 5, 7, 9])
+    h6 = ComputationalGraphs.merge_prefactors(h5)
+    @test length(h6.subgraphs) ==2
+    @test h6.subgraphs == [g1,g2]
+    @test h6.subgraph_factors == [12,12]
+    g3 = 2*g1
+    h7 = ComputationalGraphs.linear_combination([g1, g3, g3, g1], [3, 5, 7, 9])
+    h8 = ComputationalGraphs.merge_prefactors(h5)
+    @test_broken h8.length(h8.subgraphs) == 1
+    @test_broken h8.subgraphs == [g1]
+    @test_broken h8.subgraph_factors == [36]
+end
+
 @testset "propagator" begin
     g1 = propagator(𝑓⁺(1)𝑓⁻(2))
     # g1 = propagator([𝑓⁺(1), 𝑓⁻(2)])
