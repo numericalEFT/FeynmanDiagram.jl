@@ -107,22 +107,12 @@ mutable struct Graph{F,W} # Graph
         orders=zeros(Int, 16), ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype)
     )
         @assert length(external) == length(hasLeg)
-        # ftype = promote_type([typeof(g.factor) for g in subgraphs]...)
-        # wtype = promote_type([typeof(g.weight) for g in subgraphs]...)
         if isnothing(vertices)
             vertices = [OperatorProduct(OperatorProduct(g.vertices)[g.external]) for g in subgraphs if g.type != Propagator]
         end
         return new{ftype,wtype}(uid(), name, typeof(type), orders, vertices, topology, external,
             hasLeg, subgraphs, subgraph_factors, typeof(operator), factor, weight)
     end
-    # function Graph(vertices::AbstractVector; external=[], subgraphs=[], subgraph_factors=one.(eachindex(subgraphs)),
-    #     topology=[], name="", type=:generic, operator::AbstractOperator=Sum(), orders=zeros(Int, 16),
-    #     ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype)
-    # )
-    #     vertices = [OperatorProduct(v) for v in vertices]
-    #     return new{ftype,wtype}(uid(), name, type, orders, external, vertices, topology,
-    #         subgraphs, subgraph_factors, typeof(operator), factor, weight)
-    # end
 end
 
 function Base.isequal(a::Graph, b::Graph)
@@ -137,7 +127,6 @@ function Base.isequal(a::Graph, b::Graph)
     return true
 end
 Base.:(==)(a::Graph, b::Graph) = Base.isequal(a, b)
-# isbare(g::Graph) = isempty(g.subgraphs)
 
 """
     function isequiv(a::Graph, b::Graph, args...)
@@ -175,13 +164,6 @@ is_external(g::Graph, i::Int) = i in g.external
 """
 is_internal(g::Graph, i::Int) = (i in g.external) == false
 
-# """
-#     function isghost(g::Graph, i::Int) 
-
-#     Check if `i::Int` in the ghost operator's indices of Graph `g`.
-# """
-# isghost(g::Graph, i::Int) = isghost(OperatorProduct(g.vertices)[i])
-
 """
     function vertices(g::Graph)
 
@@ -195,7 +177,6 @@ vertices(g::Graph) = g.vertices
     Return all physical external vertices (::OperatorProduct}) of Graph `g`.
 """
 external(g::Graph) = OperatorProduct(OperatorProduct(g.vertices)[g.external])
-# external(g::Graph) = OperatorProduct.(OperatorProduct(g.vertices)[g.external])
 
 """
     function external_labels(g::Graph)
@@ -204,27 +185,15 @@ external(g::Graph) = OperatorProduct(OperatorProduct(g.vertices)[g.external])
 """
 external_labels(g::Graph) = [o.label for o in external(g)]
 
-# """
-#     function external_with_ghost(g::Graph)
-
-#     Return all the external vertices (::Vector{OperatorProduct}), including real legs and ghost legs.
-# """
-# external_with_ghost(g::Graph) = OperatorProduct.(OperatorProduct(g.vertices)[eachindex(g.external)])
-
-# """
-#     function external_with_ghost_labels(g::Graph)
-
-#     Return the labels of all external vertices, including both real legs and ghost legs.
-# """
-# external_with_ghost_labels(g::Graph) = [o[1].label for o in external_with_ghost(g)]
-
-#TODO: add function return reducibility of Graph. 
 function reducibility(g::Graph)
+    #TODO: add function return reducibility of Graph. 
+    @todo
     return (OneFermiIrreducible,)
 end
 
-#TODO: add function for connected diagram check. 
 function connectivity(g::Graph)
+    #TODO: add function for connected diagram check. 
+    @todo
     isempty(g.subgraphs) && return true
 end
 
@@ -284,14 +253,6 @@ end
 function Base.:-(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
     return linear_combination(g1, g2, F(1), F(-1))
 end
-
-# function Base.:+(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
-#     return linear_combination([g1, g2], [F(1), F(1)])
-# end
-
-# function Base.:-(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
-#     return linear_combination([g1, g2], [F(1), F(-1)])
-# end
 
 """
     function feynman_diagram(subgraphs::Vector{Graph{F,W}}, topology::Vector{Vector{Int}}, perm_noleg::Union{Vector{Int},Nothing}=nothing;
@@ -377,81 +338,6 @@ function feynman_diagram(subgraphs::Vector{Graph{F,W}}, topology::Vector{Vector{
         name=name, type=diagtype, operator=Prod(), factor=factor * sign, weight=weight)
 end
 
-# """
-#     function feynman_diagram(vertices::AbstractVector, topology::Vector{Vector{Int}};
-#         external=[], factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic)
-
-#     Create a Graph representing feynman diagram from all vertices and topology (connections between vertices),
-#     where external vertices are given at the beginning of `vertices`, 
-#     while internal vertices are constructed with external legs of graphs in `vertices`, or simply OperatorProduct in `vertices`.
-
-# # Arguments:
-# - `vertices::AbstractVector` all vertices of the diagram. Formal external operators at the beginning, internal vertices given from Graph or OperatorProduct.
-# - `topology::Vector{Vector{Int}}` topology of the diagram. Each Vector{Int} stores vertices' index connected with each other (as a propagator). 
-# - `external`  index of external vertices. They are the actual external quantum operators, not the ghost operators.
-# - `factor::F`  overall scalar multiplicative factor for this diagram (e.g., permutation sign)
-# - `weight`  weight of the diagram
-# - `name`  name of the diagram
-# - `type`  type of the diagram
-
-# # Example:
-# ```julia-repl
-# julia> g = feynman_diagram([𝑓⁺(1)𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5)𝜙(6)], [[5, 1], [2, 4], [3, 6]])
-# 4:f⁺(1)f⁻(2)ϕ(3)|f⁺(4)f⁻(5)ϕ(6)=0.0=-1.0Ⓧ (1,2,3)
-
-# julia> g.subgraphs
-# 3-element Vector{Graph{Float64, Float64}}:
-# 1:f⁻(5)|f⁺(1)=0.0
-# 2:f⁻(2)|f⁺(4)=0.0
-# 3:ϕ(3)|ϕ(6)=0.0
-# ```
-# """
-# function feynman_diagram(vertices::AbstractVector,
-#     topology::Vector{Vector{Int}};
-#     external=[], factor=one(_dtype.factor),
-#     weight=zero(_dtype.weight),
-#     name="", type=:generic)
-
-#     # convert all Graphs to vertices by grouping all its external legs as a vertex
-#     converted_vertices = [_extract_vertex(typeof(v), v) for v in vertices]
-#     # collect graphs in vertices as subdiagrams
-#     subdiagrams = [v for v in vertices if isa(v, Graph)]
-
-#     operators = [o for v in converted_vertices for o in v.operators]
-#     permutation = collect(Iterators.flatten(topology))
-#     ind_ops = collect(eachindex(operators))
-
-
-#     @assert length(unique(permutation)) == length(permutation) # no repeated index
-#     @assert length(unique(external)) == length(external) # no repeated index
-#     # @assert Set(permutation) == Set(ind_ops) # permutation must exhaust all operators
-#     ind_ghost = filter(p -> isghost(operators[p]), ind_ops)
-#     @assert all(ind_ghost .<= length(external)) # external real/fake legs must be placed at the beginning of vertices.
-
-#     ind_fakeleg = Int[]
-#     subgraphs = Graph[]
-#     for connection in topology
-#         if isempty(intersect(connection, ind_ghost))
-#             push!(subgraphs, propagator(operators[connection]))
-#         else
-#             @assert length(connection) == 2 "Ghost external operator can only be connected to a single internal operator"
-#             ind_fop = setdiff(connection, ind_ghost)
-#             append!(ind_fakeleg, ind_fop)
-#         end
-#     end
-#     @assert ind_fakeleg ⊆ external "external operators are not consistent with ghost operators in vertices. Ghost leg indices: $ind_fakeleg not in external: $external"
-
-#     fermionic_operators = isfermionic.(operators)
-#     filter!(p -> fermionic_operators[p], permutation)
-#     sign = isempty(permutation) ? 1 : parity(sortperm(permutation))
-
-#     append!(subgraphs, subdiagrams)
-
-#     g = Graph(converted_vertices; external=external, subgraphs=subgraphs, topology=topology, name=name,
-#         type=type, operator=Prod(), factor=factor * sign, weight=weight)
-#     return g
-# end
-
 # do nothing when already a OperatorProduct; 
 _extract_vertex(::Type{<:OperatorProduct}, g) = g
 # helper functions extracting external legs from g::Graph to form a vertex 
@@ -502,58 +388,3 @@ function external_vertex(ops::OperatorProduct;
     return Graph(Graph[]; external=external, hasLeg=[false for i in external],
         vertices=[ops], type=ExternalVertex(), name=name, operator=operator, factor=factor, weight=weight)
 end
-
-# function propagator(ops::OperatorProduct;
-#     name="", diagtype=:propagator, factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
-#     return Graph([ops,]; external=collect(eachindex(ops)), type=diagtype, name=name, operator=operator, factor=factor, weight=weight)
-# end
-
-"""
-    function standardize_order!(g::Graph)
-
-    Standardize the external operators' order of Graph. 
-    Reorder all leaves (propagators) of Graph by correlator ordering. 
-    Reorder all non-leaves of Graph by normal ordering.
-
-# Example: 
-```julia-repl
-julia> g = propagator([𝑓⁺(1), 𝑏⁺(2), 𝜙(3), 𝑓⁻(1), 𝑏⁻(2)])
-1:f⁺(1)|b⁺(2)|ϕ(3)|f⁻(1)|b⁻(2)=0.0
-
-julia> standardize_order!(g)
-
-julia> g
-11:f⁻(1)|b⁻(2)|ϕ(3)|b⁺(2)|f⁺(1)⋅-1.0=0.0
-```
-"""
-# function standardize_order!(g::Graph)
-#     for node in PreOrderDFS(g)
-#         extL = external_with_ghost(node)
-#         if isempty(node.subgraphs)
-#             sign, perm = correlator_order(OperatorProduct(extL))
-#             # node.external = node.external[perm]
-#         else
-#             sign, perm = normal_order(OperatorProduct(extL))
-#             inds_real = [i for (i, op) in enumerate(extL) if !isghost(op[1])]
-#             node.external = union(sortperm(perm)[inds_real], setdiff(node.external, perm))
-#             for connection in node.topology
-#                 for (i, ind) in enumerate(connection)
-#                     ind in perm && (connection[i] = perm[ind])
-#                 end
-#             end
-#         end
-#         node.vertices[eachindex(node.external)] = node.vertices[perm]
-#         node.factor *= sign
-#     end
-# end
-
-# function attach_legs(graph::Graph, ops::OperatorProduct, attachInds::Vector{Int};
-#     factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", type=:generic)
-#     @assert length(ops) == length(attachInds)
-#     subgraphs = [graph]
-#     for (i, ind) in enumerate(attachInds)
-#         push!(subgraphs, propagator(OperatorProduct([external(graph)[ind], ops[i]])))
-#     end
-
-#     return Graph(subgraphs,)
-# end

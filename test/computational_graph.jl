@@ -63,9 +63,8 @@
         @test [g.subgraph_factors[1] for g in g5.subgraphs] == [3, 10]
         @test g5lc.subgraphs == [g1, g2]
         @test g5lc.subgraph_factors == [3, 5]
-        # WIP: Requires graph optimization inplace_prod on g5
+        # TODO: Requires graph optimization inplace_prod on g5
         # @test isequiv(simplify_subfactors(g5), g5lc, :id)
-        # @test_broken isequiv(g5, g5lc, :id)
         # Vector form
         g6lc = ComputationalGraphs.linear_combination([g1, g2, g5, g2, g1], [3, 5, 7, 9, 11])
         @test g6lc.subgraphs == [g1, g2, g5, g2, g1]
@@ -86,7 +85,7 @@ end
 @testset "merge_prefactors" begin
     g1 = propagator(𝑓⁺(1)𝑓⁻(2))
     h1 = ComputationalGraphs.linear_combination(g1, g1, 1, 2)
-    @test h1.subgraph_factors == [1,2]
+    @test h1.subgraph_factors == [1, 2]
     h2 = ComputationalGraphs.merge_prefactors(h1)
     @test h2.subgraph_factors == [3]
     @test length(h2.subgraphs) == 1
@@ -97,10 +96,10 @@ end
     @test isequiv(h3, h4, :id)
     h5 = ComputationalGraphs.linear_combination([g1, g2, g2, g1], [3, 5, 7, 9])
     h6 = ComputationalGraphs.merge_prefactors(h5)
-    @test length(h6.subgraphs) ==2
-    @test h6.subgraphs == [g1,g2]
-    @test h6.subgraph_factors == [12,12]
-    g3 = 2*g1
+    @test length(h6.subgraphs) == 2
+    @test h6.subgraphs == [g1, g2]
+    @test h6.subgraph_factors == [12, 12]
+    g3 = 2 * g1
     h7 = ComputationalGraphs.linear_combination([g1, g3, g3, g1], [3, 5, 7, 9])
     h8 = ComputationalGraphs.merge_prefactors(h5)
     @test_broken h8.length(h8.subgraphs) == 1
@@ -110,7 +109,6 @@ end
 
 @testset "propagator" begin
     g1 = propagator(𝑓⁺(1)𝑓⁻(2))
-    # g1 = propagator([𝑓⁺(1), 𝑓⁻(2)])
     @test g1.factor == -1
     @test g1.external == [2, 1]
     @test vertices(g1) == [𝑓⁺(1), 𝑓⁻(2)]
@@ -135,44 +133,23 @@ end
 end
 
 # TODO: Update to new API
-# @testset "Graph Operations" begin
-#     V2 = [𝑏⁺(1), 𝑏⁺(2)𝑏⁻(2), 𝑏⁻(3)]
-#     g1 =  feynman_diagram(V2, [[1, 2], [3, 4]]; external=[1, 4])
-#     g2 = feynman_diagram(V2, [[1, 3], [2, 4]]; external=[1, 4])
-#     # print("$(g2.subgraphs), $(g2.operator) \n")
-#     g3 = feynman_diagram(V2, [[1, 4], [2, 3]]; external=[1, 4])
-#     # print("$(g3.subgraphs), $(g3.operator) \n")
-#     gsum = g2 + g3
-#     groot =  g1 + gsum
-#     # for node in PreOrderDFS(groot)
-#     #     for (i, child) in enumerate(children(node))
-#     #         print("$(child)\n")
-#     #     end
-#     # end
-#     # print("inplace replace\n")
-#     ComputationalGraphs.replace_subgraph!(groot,g2,g3)
-#     #ComputationalGraphs.replace_subgraph!(g2.subgraphs[1],g2,g3)
-#     gnew = ComputationalGraphs.replace_subgraph(groot,g2,g3)
-#     # for node in PreOrderDFS(groot)
-#     #     for (i, child) in enumerate(children(node))
-#     #         print("$(child)\n")
-#     #     end
-#     # end
-#     # print("copy replace\n")
-#     # for node in PreOrderDFS(gnew)
-#     #     for (i, child) in enumerate(children(node))
-#     #         print("$(child)\n")
-#     #     end
-#     # end
-#     @test  isequiv(gsum.subgraphs[1], gsum.subgraphs[2])
-# end
+@testset skip = true "Graph Operations" begin
+    V2 = [𝑏⁺(1), 𝑏⁺(2)𝑏⁻(2), 𝑏⁻(3)]
+    g1 = feynman_diagram(V2, [[1, 2], [3, 4]]; external=[1, 4])
+    g2 = feynman_diagram(V2, [[1, 3], [2, 4]]; external=[1, 4])
+    g3 = feynman_diagram(V2, [[1, 4], [2, 3]]; external=[1, 4])
+    gsum = g2 + g3
+    groot = g1 + gsum
+    ComputationalGraphs.replace_subgraph!(groot, g2, g3)
+    gnew = ComputationalGraphs.replace_subgraph(groot, g2, g3)
+    @test isequiv(gsum.subgraphs[1], gsum.subgraphs[2])
+end
 
 @testset verbose = true "feynman_diagram" begin
     @testset "Phi4" begin
         # phi theory 
         V1 = [interaction(𝜙(1)𝜙(2)𝜙(3)𝜙(4))]
         g1 = feynman_diagram(V1, [[1, 2], [3, 4]])    #vacuum diagram
-        # g1 = feynman_diagram(V1, [1, 1, 2, 2])
         @test vertices(g1) == [𝜙(1)𝜙(2)𝜙(3)𝜙(4)]
         @test isempty(external(g1))
         @test g1.subgraph_factors == [1, 1, 1]
@@ -180,7 +157,6 @@ end
     @testset "Complex scalar field" begin
         #complex scalar field
         V2 = [𝑏⁺(1), 𝑏⁺(2)𝑏⁺(3)𝑏⁻(4)𝑏⁻(5), 𝑏⁺(6)𝑏⁺(7)𝑏⁻(8)𝑏⁻(9), 𝑏⁻(10)]
-        # g2 = feynman_diagram(V2, [1, 2, 3, 4, 1, 4, 5, 2, 3, 5]; external=[1, 10])
         g2V = [external_vertex(V2[1]), interaction(V2[2]), interaction(V2[3]), external_vertex(V2[4])]
         g2 = feynman_diagram(g2V, [[1, 5], [2, 8], [3, 9], [4, 6], [7, 10]])    # Green2
         @test vertices(g2) == V2
@@ -190,7 +166,6 @@ end
     @testset "Yukawa interaction" begin
         # Yukawa 
         V3 = [𝑓⁺(1)𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5)𝜙(6)]
-        # g3 = feynman_diagram(V3, [1, 2, 3, 2, 1, 3])
         g3 = feynman_diagram(interaction.(V3), [[1, 5], [2, 4], [3, 6]])  #vacuum diagram
         @test vertices(g3) == V3
         @test isempty(external(g3))
@@ -257,26 +232,6 @@ end
         @test external(g2) == 𝑓⁺(2)𝑓⁻(3)𝑓⁺(8)𝑓⁻(10)
         @test external_labels(g2) == [2, 3, 8, 10] # labels of external vertices    
     end
-    # @testset "Multi-operator contractions" begin
-    #     # multi-operator (>2) contractions
-    #     Vm = [𝑓ₑ(1), 𝑓⁺(2)𝑓⁻(3)𝑏⁺(4), 𝜙(5)𝑓⁺(6)𝑓⁻(7), 𝑓(8)𝑏⁻(9)𝜙(10)]
-    #     gm = feynman_diagram(Vm, [[2, 3, 4, 9], [5, 6, 7, 10], [8, 1]], external=[8])
-    #     @test vertices(gm) == Vm
-    #     @test gm.subgraph_factors == [1, 1]
-    #     @test gm.subgraphs[1].vertices == external(gm.subgraphs[1]) == [𝑓⁺(2), 𝑓⁻(3), 𝑏⁺(4), 𝑏⁻(9)]
-    #     @test gm.subgraphs[2].vertices == external(gm.subgraphs[2]) == [𝜙(5), 𝑓⁺(6), 𝑓⁻(7), 𝜙(10)]
-    #     @test external_with_ghost(gm) == [𝑓ₑ(1)]
-    #     @test external(gm) == [𝑓(8)]
-    #     standardize_order!(gm)
-    #     @test gm.subgraphs[1].factor == -1
-    #     @test external(gm.subgraphs[1]) == [𝑓⁻(3), 𝑏⁻(9), 𝑏⁺(4), 𝑓⁺(2)]
-    #     @test gm.subgraphs[2].factor == -1
-    #     @test external(gm.subgraphs[2]) == [𝜙(5), 𝑓⁻(7), 𝜙(10), 𝑓⁺(6)]
-
-    #     ggm = deepcopy(gm)
-    #     ggm.id = 1000
-    #     @test isequiv(gm, ggm, :id)
-    # end
     @testset "Construct feynman diagram from sub-diagrams" begin
         V1 = [𝑓⁺(1)𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5)𝜙(6)]
         g1 = feynman_diagram(interaction.(V1), [[3, 6]])
