@@ -153,14 +153,6 @@ function prune_trivial_unary(g::Graph)
     end
 end
 
-# function prune_unary(g::Graph{F, W}) where {F, W}
-#     if (g.operator in [Prod, Sum] && length(g.subgraph) = 1 && g.subgraph_factors[1]≈ one(F) && g.factor ≈ one(F))
-#         return g.subgraph[1]
-#     else
-#         return g
-#     end
-# end
-
 """Converts a unary Prod node to in-place form using subgraph factors."""
 function inplace_prod(g::Graph)
     if onechild(g) == false
