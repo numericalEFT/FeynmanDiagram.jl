@@ -149,7 +149,6 @@ function isequiv(a::Graph, b::Graph, args...)
     return true
 end
 
-
 """
     function is_external(g::Graph, i::Int) 
 
