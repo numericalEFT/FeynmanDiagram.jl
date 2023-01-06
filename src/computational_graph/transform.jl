@@ -8,8 +8,7 @@ QuantumOperator(qo::QuantumOperator, label::Int) = QuantumOperator(qo.operator()
     function relabel!(g::Graph, map::Dict{Int,Int})
 
     This function maps the labels of the quantum operators in g and its subgraphs to other labels. 
-For example, map = {1=>2, 3=>2} will find all quantum operators with labels 1 and 3, and then map them to 2.
-The graph g is modified.
+    For example, map = {1=>2, 3=>2} will find all quantum operators with labels 1 and 3, and then map them to 2. The graph g is modified.
 
 # Arguments:
 - `g::Graph`: graph to be modified
@@ -38,8 +37,7 @@ end
     function relabel(g::Graph, map::Dict{Int,Int})
 
     This function maps the labels of the quantum operators in g and its subgraphs to other labels. 
-For example, map = {1=>2, 3=>2} will find all quantum operators with labels 1 and 3, and then map them to 2.
-Return a new copy of modified g.
+    For example, map = {1=>2, 3=>2} will find all quantum operators with labels 1 and 3, and then map them to 2. Returns a modified copy of g.
 
 # Arguments:
 - `g::Graph`: graph to be modified
@@ -70,9 +68,9 @@ end
 """
     function standardize_labels!(g::Graph)
 
-This function first finds all labels involved in g and its subgraphs (for example, 1, 4, 5, 7, ...), 
-then relabel them in the order 1, 2, 3, 4, ....
-The graph g is modified.
+    This function first finds all labels involved in g and its subgraphs (for example, 1, 4, 5, 7, ...), 
+    then relabel them in the order 1, 2, 3, 4, ....
+    The graph g is modified.
 """
 function standardize_labels!(g::Graph)
     #TBD
@@ -87,9 +85,9 @@ end
 """
     function standardize_labels!(g::Graph)
 
-This function first finds all labels involved in g and its subgraphs (for example, 1, 4, 5, 7, ...), 
-then relabel them in the order 1, 2, 3, 4, ....
-Return a copy of stantardized g.
+    This function first finds all labels involved in g and its subgraphs (for example, 1, 4, 5, 7, ...), 
+    then relabel them in the order 1, 2, 3, 4, ....
+    Returns a standardized copy of g.
 """
 standardize_labels(g::Graph) = standardize_labels!(deepcopy(g))
 
@@ -97,7 +95,7 @@ standardize_labels(g::Graph) = standardize_labels!(deepcopy(g))
     function replace_subgraph!(g::Graph, w::Graph, m::graph)
 
     In place function that replaces the children graph w in graph g with a new graph m.
-    Graph w and m should have the same internal and external vertices, and topology
+    Graphs w and m should have the same internal and external vertices, and topology
 """
 function replace_subgraph!(g::Graph, w::Graph, m::Graph)
     @assert !isleaf(g) "Target parent graph can not be a leaf"
@@ -138,14 +136,15 @@ end
 """
     function prune_trivial_unary(g::Graph)
 
-Simplifies a graph g if it represents a trivial unary operation. Otherwise, returns the original graph.
+    Returns a simplified copy of g if it represents a trivial unary operation.
+    Otherwise, returns the original graph.
 """
 function prune_trivial_unary(g::Graph)
     # No-op; g is not a branch (depth-1, one-child tree)
     if isbranch(g) == false
         return g
     end
-    # Prune trivial unary operations
+    # Prune trivial unary operation
     if unary_istrivial(g.operator) && isfactorless(g)
         return eldest(g)
     else
@@ -153,7 +152,11 @@ function prune_trivial_unary(g::Graph)
     end
 end
 
-"""Converts a unary Prod node to in-place form using subgraph factors."""
+"""
+    function inplace_prod(g::Graph)
+
+    Converts a unary Prod link to in-place form by propagating subgraph_factors up a level.
+"""
 function inplace_prod(g::Graph)
     if onechild(g) == false
         return g
@@ -170,7 +173,7 @@ end
 """
     function merge_prefactors(g::Graph)
    
-Factorize the prefactors of a multiplicative graph g.
+    Factorize the prefactors of a multiplicative graph g.
 """
 function merge_prefactors(g0::Graph{F,W}) where {F,W}
     if g0.operator == Sum
