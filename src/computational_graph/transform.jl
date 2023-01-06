@@ -1,9 +1,5 @@
 # this file is included in ComputationalGraphs.jl
 
-# relabel constructor for QuantumOperator
-QuantumOperator(qo::QuantumOperator, label::Int) = QuantumOperator(qo.operator(), label)
-# relabel constructor for OperatorProduct
-
 """
     function relabel!(g::Graph, map::Dict{Int,Int})
 
@@ -203,16 +199,3 @@ function merge_prefactors(g0::Graph{F,W}) where {F,W}
         return g0
     end
 end
-
-############LEGACY BELOW################
-
-# function readDiag(io::IO)
-
-#     return Diagram
-# end
-
-# function printDiag(diag::Union{Tuple,AbstractVector}, kwargs...)
-
-#     f = open("./DiagFiles/Diag.txt", "w")
-#     writedlm(f, [])
-# end
