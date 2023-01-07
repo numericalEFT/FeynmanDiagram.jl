@@ -27,8 +27,9 @@ export external_labels
 
 include("tree_properties.jl")
 # include("operation.jl")
+
 include("graphvector.jl")
-# export GraphVector
+export group
 
 include("io.jl")
 # plot_tree
@@ -37,7 +38,8 @@ include("io.jl")
 # include("optimize.jl")
 
 include("transform.jl")
-export relabel!, standardize_labels!
-export relabel, standardize_labels
+export relabel!, standardize_labels!, replace_subgraph!
+export relabel, standardize_labels, replace_subgraph
+export prune_trivial_unary, merge_subgraph_factors, inplace_prod, merge_prefactors
 
 end
