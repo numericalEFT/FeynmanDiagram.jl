@@ -193,14 +193,14 @@ end
 function connectivity(g::Graph)
     #TODO: add function for connected diagram check. 
     @todo
-    isempty(g.subgraphs) && return true
+    isleaf(g) && return true
 end
 
 function Base.:*(g1::Graph{F,W}, c2::C) where {F,W,C}
     g = Graph([g1,]; topology=g1.topology, external=g1.external, hasLeg=g1.hasLeg, vertices=g1.vertices,
         type=g1.type(), subgraph_factors=[F(c2),], operator=Prod(), ftype=F, wtype=W)
     # Merge multiplicative link
-    if g1.operator == Prod && length(g1.subgraph_factors) == 1
+    if g1.operator == Prod && onechild(g1)
         g.subgraph_factors[1] *= g1.subgraph_factors[1]
         g.subgraphs = g1.subgraphs
     end
@@ -211,7 +211,7 @@ function Base.:*(c1::C, g2::Graph{F,W}) where {F,W,C}
     g = Graph([g2,]; topology=g2.topology, external=g2.external, hasLeg=g2.hasLeg, vertices=g2.vertices,
         type=g2.type(), subgraph_factors=[F(c1),], operator=Prod(), ftype=F, wtype=W)
     # Merge multiplicative link
-    if g2.operator == Prod && length(g2.subgraph_factors) == 1
+    if g2.operator == Prod && onechild(g2)
         g.subgraph_factors[1] *= g2.subgraph_factors[1]
         g.subgraphs = g2.subgraphs
     end

@@ -39,13 +39,12 @@ end
 
 # Is the graph a chain?
 function ischain(g::Graph)
-    if isleaf(g)
-        return true
-    elseif onechild(g) == false
-        return false
-    else
-        return ischain(eldest(g))
+    isleaf(g) && return true
+    while onechild(g)
+        isleaf(g) && return true
+        g = eldest(g)
     end
+    return false
 end
 
 # Is the graph factorless?

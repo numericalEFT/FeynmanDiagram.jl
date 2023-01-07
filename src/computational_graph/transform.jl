@@ -117,8 +117,8 @@ end
 function replace_subgraph(g::Graph, w::Graph, m::Graph)
     @assert w.vertices == m.vertices "Old and new subgraph should have the same vertices"
     @assert w.external == m.external "Old and new subgraph should have the same external vertices"
-    g0 = deepcopy(g)
-    for node in PreOrderDFS(g0)
+    g_new = deepcopy(g)
+    for node in PreOrderDFS(g_new)
         for (i, child) in enumerate(children(node))
             if isequiv(child, w, :id)
                 node.subgraphs[i] = m
@@ -126,76 +126,76 @@ function replace_subgraph(g::Graph, w::Graph, m::Graph)
             end
         end
     end
-    return g0
+    return g_new
 end
 
 """
     function prune_trivial_unary(g::Graph)
 
-    Returns a simplified copy of g if it represents a trivial unary operation.
+    Returns a simplified copy of g if it represents a trivial unary chain.
     Otherwise, returns the original graph.
 """
 function prune_trivial_unary(g::Graph)
-    # No-op; g is not a branch (depth-1, one-child tree)
-    if isbranch(g) == false
-        return g
-    end
-    # Prune trivial unary operation
-    if unary_istrivial(g.operator) && isfactorless(g)
-        return eldest(g)
-    else
-        return g
-    end
-end
-
-"""
-    function inplace_prod(g::Graph)
-
-    Converts a unary Prod link to in-place form by propagating subgraph_factors up a level.
-"""
-function inplace_prod(g::Graph)
-    if onechild(g) == false
-        return g
-    end
-    child = eldest(g)
-    if onechild(child) && child.operator == Prod
-        # Merge subgraph factors at parent tree level
-        g.subgraph_factors[1] *= child.subgraph_factors[1]
-        child.subgraph_factors[1] = 1
+    while unary_istrivial(g.operator) && onechild(g) && isfactorless(g)
+        g = eldest(g)
     end
     return g
 end
 
 """
     function merge_prefactors(g::Graph)
+
+    Simplifies subgraph_factors for a unary Prod link by merging them at the top level, a*(b*g) ↦ (ab)*g.
+"""
+function merge_subgraph_factors(g::Graph)
+    child = eldest(g)
+    while onechild(g) && child.operator == Prod
+        # Merge subgraph factors at parent tree level
+        g.subgraph_factors[1] *= child.subgraph_factors[1]
+        child.subgraph_factors[1] = 1
+        # Descend one level
+        g = eldest(g)
+        child = eldest(g)
+    end
+    return g
+end
+
+"""
+    function inplace_prod(g::Graph)
+
+    Tries to convert a unary Prod link to in-place form by propagating subgraph_factors
+    up a level and pruning the resultant unary product operation (*g) ↦ g.
+"""
+inplace_prod(g::Graph) = prune_trivial_unary(merge_subgraph_factors(g))
+
+"""
+    function merge_prefactors(g::Graph)
    
     Factorize the prefactors of a multiplicative graph g.
 """
-function merge_prefactors(g0::Graph{F,W}) where {F,W}
-    if g0.operator == Sum
-        added = falses(length(g0.subgraphs))
-        subg_fac = eltype(g0.subgraph_factors)[]
-        subg = eltype(g0.subgraphs)[]
+function merge_prefactors(g::Graph{F,W}) where {F,W}
+    if g.operator == Sum
+        added = falses(length(g.subgraphs))
+        subg_fac = eltype(g.subgraph_factors)[]
+        subg = eltype(g.subgraphs)[]
         k = 0
         for i in eachindex(added)
-            if added[i]
-                continue
-            end
-            push!(subg, g0.subgraphs[i])
-            push!(subg_fac, g0.subgraph_factors[i])
+            added[i] && continue
+            push!(subg, g.subgraphs[i])
+            push!(subg_fac, g.subgraph_factors[i])
             added[i] = true
             k += 1
-            for j in (i+1):length(g0.subgraphs)
-                if added[j] == false && isequiv(g0.subgraphs[i], g0.subgraphs[j], :id)
+            for j in (i+1):length(g.subgraphs)
+                if added[j] == false && isequiv(g.subgraphs[i], g.subgraphs[j], :id)
                     added[j] = true
-                    subg_fac[k] += g0.subgraph_factors[j]
+                    subg_fac[k] += g.subgraph_factors[j]
                 end
             end
         end
-        g = Graph(subg; topology=g0.topology, vertices=g0.vertices, external=g0.external, hasLeg=g0.hasLeg,
-            subgraph_factors=subg_fac, type=g0.type(), operator=g0.operator())
-        return g
+        g_merged = Graph(subg; topology=g.topology, vertices=g.vertices, external=g.external,
+            hasLeg=g.hasLeg, subgraph_factors=subg_fac, type=g.type(), operator=g.operator())
+        return g_merged
     else
-        return g0
+        return g
     end
 end
