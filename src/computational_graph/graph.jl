@@ -198,8 +198,8 @@ function connectivity(g::Graph)
 end
 
 function Base.:*(g1::Graph{F,W}, c2::C) where {F,W,C}
-    g = Graph([g1,]; topology=g1.topology, external=g1.external, hasLeg=g1.hasLeg, vertices=g1.vertices,
-        type=g1.type(), subgraph_factors=[F(c2),], operator=Prod(), ftype=F, wtype=W)
+    g = Graph([g1,]; topology=g1.topology, vertices=g1.vertices, external=g1.external, hasLeg=g1.hasLeg,
+        subgraph_factors=[F(c2),], type=g1.type(), operator=Prod(), ftype=F, wtype=W)
     # Merge multiplicative link
     if g1.operator == Prod && onechild(g1)
         g.subgraph_factors[1] *= g1.subgraph_factors[1]
@@ -209,8 +209,8 @@ function Base.:*(g1::Graph{F,W}, c2::C) where {F,W,C}
 end
 
 function Base.:*(c1::C, g2::Graph{F,W}) where {F,W,C}
-    g = Graph([g2,]; topology=g2.topology, external=g2.external, hasLeg=g2.hasLeg, vertices=g2.vertices,
-        type=g2.type(), subgraph_factors=[F(c1),], operator=Prod(), ftype=F, wtype=W)
+    g = Graph([g2,]; topology=g2.topology, vertices=g2.vertices, external=g2.external, hasLeg=g2.hasLeg,
+        subgraph_factors=[F(c1),], type=g2.type(), operator=Prod(), ftype=F, wtype=W)
     # Merge multiplicative link
     if g2.operator == Prod && onechild(g2)
         g.subgraph_factors[1] *= g2.subgraph_factors[1]
@@ -219,33 +219,35 @@ function Base.:*(c1::C, g2::Graph{F,W}) where {F,W,C}
     return g
 end
 
-# TODO: Update docstring
-"""Returns a graph representing the linear combination `c1*g1 + c2*g2`."""
+"""
+    function linear_combination(g1::Graph{F,W}, g2::Graph{F,W}, c1::C, c2::C) where {F,W,C}
+
+    Returns a graph representing the linear combination `c1*g1 + c2*g2`.
+"""
 function linear_combination(g1::Graph{F,W}, g2::Graph{F,W}, c1::C, c2::C) where {F,W,C}
-    # TODO: more check
     @assert g1.type == g2.type "g1 and g2 are not of the same type."
     @assert g1.orders == g2.orders "g1 and g2 have different orders."
-    @assert Set(vertices(g1)) == Set(vertices(g2)) "g1 and g2 have different vertices."
     @assert Set(external(g1)) == Set(external(g2)) "g1 and g2 have different external vertices."
-    return Graph([g1, g2]; external=g1.external, hasLeg=g1.hasLeg, vertices=g1.vertices, type=g1.type(),
-        subgraph_factors=[F(c1), F(c2)], operator=Sum(), ftype=F, wtype=W)
+    total_vertices = union(g1.vertices, g2.vertices)
+    return Graph([g1, g2]; vertices=total_vertices, external=g1.external, hasLeg=g1.hasLeg,
+        subgraph_factors=[F(c1), F(c2)], type=g1.type(), operator=Sum(), ftype=F, wtype=W)
 end
 
-# TODO: Update docstring
 """
-Given a vector `graphs` of graphs each with the same type and external/internal
-vertices and an equally-sized vector `constants` of constants, returns a new
-graph representing the linear combination ⟨`graphs`, `constants`⟩.
+    function linear_combination(graphs::Vector{Graph{F,W}}, constants::Vector{C}) where {F,W,C}
+
+    Given a vector 𝐠 of graphs each with the same type and external/internal
+    vertices and an equally-sized vector 𝐜 of constants, returns a new
+    graph representing the linear combination (𝐜 ⋅ 𝐠).
 """
 function linear_combination(graphs::Vector{Graph{F,W}}, constants::Vector{C}) where {F,W,C}
-    # TODO: more check
     @assert alleq(getproperty.(graphs, :type)) "Graphs are not all of the same type."
     @assert alleq(getproperty.(graphs, :orders)) "Graphs do not all have the same order."
-    @assert alleq(Set.(vertices.(graphs))) "Graphs do not share the same set of vertices."
     @assert alleq(Set.(external.(graphs))) "Graphs do not share the same set of external vertices."
+    total_vertices = union(Iterators.flatten(vertices.(graphs)))
     g1 = graphs[1]
-    return Graph(graphs; external=g1.external, hasLeg=g1.hasLeg, vertices=g1.vertices, type=g1.type(),
-        subgraph_factors=constants, operator=Sum(), ftype=F, wtype=W)
+    return Graph(graphs; vertices=total_vertices, external=g1.external, hasLeg=g1.hasLeg,
+        subgraph_factors=constants, type=g1.type(), operator=Sum(), ftype=F, wtype=W)
 end
 
 function Base.:+(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}

@@ -95,7 +95,8 @@ standardize_labels(g::Graph) = standardize_labels!(deepcopy(g))
 """
 function replace_subgraph!(g::Graph, w::Graph, m::Graph)
     @assert !isleaf(g) "Target parent graph can not be a leaf"
-    @assert w.vertices == m.vertices "Old and new subgraph should have the same vertices"
+    @assert w.type == m.type "Old and new subgraph should have the same type"
+    @assert w.orders == m.orders "Old and new subgraph should have the same orders"
     @assert w.external == m.external "Old and new subgraph should have the same external vertices"
     print("isleaf $(isleaf(g))\n")
     for node in PreOrderDFS(g)
@@ -115,7 +116,8 @@ end
     Graph w and m should have the same internal and external vertices, and topology
 """
 function replace_subgraph(g::Graph, w::Graph, m::Graph)
-    @assert w.vertices == m.vertices "Old and new subgraph should have the same vertices"
+    @assert w.type == m.type "Old and new subgraph should have the same type"
+    @assert w.orders == m.orders "Old and new subgraph should have the same orders"
     @assert w.external == m.external "Old and new subgraph should have the same external vertices"
     g_new = deepcopy(g)
     for node in PreOrderDFS(g_new)
