@@ -134,7 +134,8 @@ end
 
     Returns a simplified copy of g if it represents a trivial unary chain.
     Otherwise, returns the original graph. For example, +(+(+g)) ↦ g.
-    Does nothing unless g has the following structure: Ⓧ --- ⋯ --- Ⓧ --- G.
+    Does nothing unless g has the following structure: Ⓧ --- ⋯ --- Ⓧ ⋯ (!),
+    where the stop-case (!) represents a leaf, an operator 𝓞' != Ⓧ, or a non-unary Ⓧ node.
 """
 function prune_trivial_unary(g::Graph)
     while unary_istrivial(g.operator) && onechild(g) && isfactorless(g)
@@ -148,18 +149,26 @@ end
 
     Simplifies subgraph_factors for a graph g representing a unary Prod link
     by merging them at the top level, e.g., a*(b*(c*g)) ↦ (abc)*g. 
-    Does nothing unless g has the following structure: 𝓞 --- Ⓧ --- ⋯ --- Ⓧ --- G.
+    Does nothing unless g has the following structure: 𝓞 --- Ⓧ --- ⋯ --- Ⓧ ⋯ (!),
+    where the stop-case (!) represents a leaf, an operator 𝓞' != Ⓧ, or a non-unary Ⓧ node.
 """
 function merge_prod_subfactors(g::Graph)
+    if isleaf(g) || onechild(g) == false
+        return g
+    end
     child = eldest(g)
-    while onechild(g) && child.operator == Prod
-        # Merge subgraph factors at parent tree level
-        g.subgraph_factors[1] *= child.subgraph_factors[1]
+    children_factor = 1
+    while onechild(child)
+        # Break case: end of Prod chain, found 𝓞' != Ⓧ
+        child.operator != Prod && break
+        # Move this subfactor to running total
+        children_factor *= child.subgraph_factors[1]
         child.subgraph_factors[1] = 1
         # Descend one level
-        g = eldest(g)
-        child = eldest(g)
+        child = eldest(child)
     end
+    # Update g subfactor with total factors from children
+    g.subgraph_factors[1] *= children_factor
     return g
 end
 
@@ -168,9 +177,15 @@ end
 
     Tries to convert a unary Prod link to in-place form by propagating subgraph_factors
     up a level and pruning the resultant unary product operation (*g) ↦ g.
-    Does nothing unless g has the following structure: 𝓞 --- Ⓧ --- ⋯ --- Ⓧ --- G.
+    Does nothing unless g has the following structure: 𝓞 --- Ⓧ --- ⋯ --- Ⓧ ⋯ (!),
+    where the stop-case (!) represents a leaf, an operator 𝓞' != Ⓧ, or a non-unary Ⓧ node.
 """
-inplace_prod(g::Graph) = prune_trivial_unary(merge_prod_subfactors(g))
+function inplace_prod(g::Graph)
+    # First shift subfactors to parent, then prune left-over trivial unary operations.
+    g_new = merge_prod_subfactors(g)
+    g_new.subgraphs[1] = prune_trivial_unary(eldest(g_new))
+    return g_new
+end
 
 """
     function merge_prefactors(g::Graph)
