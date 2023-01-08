@@ -27,12 +27,12 @@ using FeynmanDiagram.ComputationalGraphs
         println(external(g1))
         @test external(g2) == external(g1)
         @test g2.subgraph_factors == [2]
-        @test g2.operator == Prod
+        @test g2.operator == ComputationalGraphs.Prod
         g2 = 2g1
         @test vertices(g2) == vertices(g1)
         @test external(g2) == external(g1)
         @test g2.subgraph_factors == [2]
-        @test g2.operator == Prod
+        @test g2.operator == ComputationalGraphs.Prod
     end
     @testset "Graph addition" begin
         g3 = g1 + g2
@@ -43,7 +43,7 @@ using FeynmanDiagram.ComputationalGraphs
         @test g3.subgraph_factors == [1, 1]
         @test g3.subgraphs[1].subgraph_factors == g1.subgraph_factors
         @test g3.subgraphs[2].subgraph_factors == [2]
-        @test g3.operator == Sum
+        @test g3.operator == ComputationalGraphs.Sum
     end
     @testset "Graph subtraction" begin
         g4 = g1 - g2
@@ -55,7 +55,7 @@ using FeynmanDiagram.ComputationalGraphs
         @test g4.subgraphs[1].subgraph_factors == g1.subgraph_factors
         @test g4.subgraphs[2].subgraph_factors == [2]
         @test g4.subgraphs[2].subgraphs[1].factor == 1
-        @test g4.operator == Sum
+        @test g4.operator == ComputationalGraphs.Sum
     end
     @testset "Linear combinations" begin
         # Binary form
@@ -84,7 +84,7 @@ using FeynmanDiagram.ComputationalGraphs
     end
 end
 
-@testset "Graph Operations" begin
+@testset verbose = true "Graph Operations" begin
     @testset "relabel" begin
         # construct a graph
         V = [𝑓⁺(1)𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5)𝜙(6), 𝑓⁺(7)𝑓⁻(8)𝜙(9)]

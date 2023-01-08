@@ -218,6 +218,7 @@ function Base.:*(c1::C, g2::Graph{F,W}) where {F,W,C}
     return g
 end
 
+# TODO: Update docstring
 """Returns a graph representing the linear combination `c1*g1 + c2*g2`."""
 function linear_combination(g1::Graph{F,W}, g2::Graph{F,W}, c1::C, c2::C) where {F,W,C}
     # TODO: more check
@@ -229,6 +230,7 @@ function linear_combination(g1::Graph{F,W}, g2::Graph{F,W}, c1::C, c2::C) where 
         subgraph_factors=[F(c1), F(c2)], operator=Sum(), ftype=F, wtype=W)
 end
 
+# TODO: Update docstring
 """
 Given a vector `graphs` of graphs each with the same type and external/internal
 vertices and an equally-sized vector `constants` of constants, returns a new

@@ -17,9 +17,9 @@ export set_datatype
 
 include("graph.jl")
 # export AbstractOperator, Prod, Sum
-export Graph, isequiv
+export Graph, isequiv, linear_combination
 # export GraphType, Interaction, ExternalVertex, Propagator, SelfEnergy, VertexDiag, GreenDiag, GenericDiag
-export feynman_diagram, contractions_to_edges, propagator, interaction, external_vertex
+export feynman_diagram, propagator, interaction, external_vertex
 # export standardize_order!
 export is_external, is_internal, vertices, external
 export external_labels
@@ -39,7 +39,7 @@ include("io.jl")
 
 include("transform.jl")
 export relabel!, standardize_labels!, replace_subgraph!
-export relabel, standardize_labels, replace_subgraph
+export relabel, standardize_labels, replace_subgraph, collect_labels
 export prune_trivial_unary, merge_subgraph_factors, inplace_prod, merge_prefactors
 
 end
