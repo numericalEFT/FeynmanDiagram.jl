@@ -148,7 +148,7 @@ end
     function merge_prod_subfactors(g::Graph)
 
     Simplifies subgraph_factors for a graph g representing a unary Prod link
-    by merging them at the top level, e.g., a*(b*(c*g)) ↦ (abc)*g. 
+    by merging them at the top level, e.g., 2*(3*(5*g)) ↦ 30*(*(*g)). 
     Does nothing unless g has the following structure: 𝓞 --- Ⓧ --- ⋯ --- Ⓧ ⋯ (!),
     where the stop-case (!) represents a leaf, an operator 𝓞' != Ⓧ, or a non-unary Ⓧ node.
 """
@@ -175,8 +175,8 @@ end
 """
     function inplace_prod(g::Graph)
 
-    Tries to convert a unary Prod link to in-place form by propagating subgraph_factors
-    up a level and pruning the resultant unary product operation (*g) ↦ g.
+    Tries to convert a unary Prod link to in-place form by propagating subgraph_factors up a 
+    and pruning the resultant unary product operation, e.g., 2*(3*(5*g)) ↦ 30*(*(*g)) ↦ 30*g.
     Does nothing unless g has the following structure: 𝓞 --- Ⓧ --- ⋯ --- Ⓧ ⋯ (!),
     where the stop-case (!) represents a leaf, an operator 𝓞' != Ⓧ, or a non-unary Ⓧ node.
 """
