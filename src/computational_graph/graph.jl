@@ -92,14 +92,15 @@ mutable struct Graph{F,W} # Graph
     - `topology` topology of the diagram
     - `vertices::Union{Vector{OperatorProduct},Nothing}`  vertices of the diagram, nothing by default
     - `external`  index of actual external vertices in terms of QuantumOperators, empty by default
-    - `subgraph_factors::Vector{F}`  scalar multiplicative factors associated with each subdiagram
+    - `hasLeg` index of each external operator (true: legged, false: nonleg)
+    - `subgraph_factors`  scalar multiplicative factors associated with each subdiagram
     - `name`  name of the diagram
     - `type::GraphType`  type of the diagram
-    - `operator::DataType`  node operation, Sum, Prod, etc.
+    - `operator::AbstractOperator`  node operation, Sum, Prod, etc.
     - `orders`  orders of the diagram
     - `ftype`  typeof(factor)
     - `wtype`  typeof(weight)
-    - `factor::F`  overall scalar multiplicative factor for this diagram (e.g., permutation sign)
+    - `factor`  overall scalar multiplicative factor for this diagram (e.g., permutation sign)
     - `weight`  weight of the diagram
     """
     function Graph(subgraphs::AbstractVector; topology=[], vertices::Union{Vector{OperatorProduct},Nothing}=nothing, external=[], hasLeg=[],
