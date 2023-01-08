@@ -133,7 +133,8 @@ end
     function prune_trivial_unary(g::Graph)
 
     Returns a simplified copy of g if it represents a trivial unary chain.
-    Otherwise, returns the original graph.
+    Otherwise, returns the original graph. For example, +(+(+g)) ↦ g.
+    Does nothing unless g has the following structure: Ⓧ --- ⋯ --- Ⓧ --- G.
 """
 function prune_trivial_unary(g::Graph)
     while unary_istrivial(g.operator) && onechild(g) && isfactorless(g)
@@ -143,11 +144,13 @@ function prune_trivial_unary(g::Graph)
 end
 
 """
-    function merge_prefactors(g::Graph)
+    function merge_prod_subfactors(g::Graph)
 
-    Simplifies subgraph_factors for a unary Prod link by merging them at the top level, a*(b*g) ↦ (ab)*g.
+    Simplifies subgraph_factors for a graph g representing a unary Prod link
+    by merging them at the top level, e.g., a*(b*(c*g)) ↦ (abc)*g. 
+    Does nothing unless g has the following structure: 𝓞 --- Ⓧ --- ⋯ --- Ⓧ --- G.
 """
-function merge_subgraph_factors(g::Graph)
+function merge_prod_subfactors(g::Graph)
     child = eldest(g)
     while onechild(g) && child.operator == Prod
         # Merge subgraph factors at parent tree level
@@ -165,13 +168,16 @@ end
 
     Tries to convert a unary Prod link to in-place form by propagating subgraph_factors
     up a level and pruning the resultant unary product operation (*g) ↦ g.
+    Does nothing unless g has the following structure: 𝓞 --- Ⓧ --- ⋯ --- Ⓧ --- G.
 """
-inplace_prod(g::Graph) = prune_trivial_unary(merge_subgraph_factors(g))
+inplace_prod(g::Graph) = prune_trivial_unary(merge_prod_subfactors(g))
 
 """
     function merge_prefactors(g::Graph)
    
-    Factorize the prefactors of a multiplicative graph g.
+    Factorizes multiplicative prefactors in an additive graph g,
+    e.g., 3*g1 + 5*g2 + 7*g1 + 9*g2 ↦ 10*g1 + 14*g2. Does nothing
+    if graph g does not represent a Sum operation.
 """
 function merge_prefactors(g::Graph{F,W}) where {F,W}
     if g.operator == Sum
