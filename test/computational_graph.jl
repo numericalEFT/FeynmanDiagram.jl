@@ -111,7 +111,7 @@ end
         uniqlabels = Graphs.collect_labels(g3)
         @test uniqlabels == [1, 2, 3, 4, 5]
     end
-    @testset "TODO: Update to new API" "replace subgraph" begin
+    @testset "replace subgraph" begin
         V2 = [external_vertex(𝜙(1)), interaction(𝜙(2)𝜙(3)), external_vertex(𝜙(4))]
         g1 = feynman_diagram(V2, [[1, 2], [3, 4]])
         g2 = feynman_diagram(V2, [[1, 3], [2, 4]])
