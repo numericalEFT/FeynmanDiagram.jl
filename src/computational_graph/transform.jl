@@ -3,8 +3,8 @@
 """
     function relabel!(g::Graph, map::Dict{Int,Int})
 
-    This function maps the labels of the quantum operators in g and its subgraphs to other labels. 
-    For example, map = {1=>2, 3=>2} will find all quantum operators with labels 1 and 3, and then map them to 2. The graph g is modified.
+    Relabels the quantum operators in g and its subgraphs according to `map`.
+    For example, `map = {1=>2, 3=>2}`` will find all quantum operators with labels 1 and 3, and then map them to 2.
 
 # Arguments:
 - `g::Graph`: graph to be modified
@@ -32,8 +32,8 @@ end
 """
     function relabel(g::Graph, map::Dict{Int,Int})
 
-    This function maps the labels of the quantum operators in g and its subgraphs to other labels. 
-    For example, map = {1=>2, 3=>2} will find all quantum operators with labels 1 and 3, and then map them to 2. Returns a modified copy of g.
+    Returns a copy of g with quantum operators in g and its subgraphs relabeled according to `map`.
+    For example, `map = {1=>2, 3=>2}` will find all quantum operators with labels 1 and 3, and then map them to 2.
 
 # Arguments:
 - `g::Graph`: graph to be modified
@@ -44,7 +44,10 @@ relabel(g::Graph, map::Dict{Int,Int}) = relabel!(deepcopy(g), map)
 """
     function collect_labels(g::Graph)
 
-Return sorted unique labels of graph g.
+    Returns the list of sorted unique labels in graph g.
+
+# Arguments:
+- `g::Graph`: graph to find labels for
 """
 function collect_labels(g::Graph)
     labels = Vector{Int}([])
@@ -64,9 +67,12 @@ end
 """
     function standardize_labels!(g::Graph)
 
-    This function first finds all labels involved in g and its subgraphs (for example, 1, 4, 5, 7, ...), 
-    then relabel them in the order 1, 2, 3, 4, ....
-    The graph g is modified.
+    Finds all labels involved in g and its subgraphs and 
+    modifies g by relabeling in standardized order, e.g.,
+    (1, 4, 5, 7, ...) ↦ (1, 2, 3, 4, ....)
+
+# Arguments:
+- `g::Graph`: graph to be relabeled
 """
 function standardize_labels!(g::Graph)
     #TBD
@@ -81,24 +87,31 @@ end
 """
     function standardize_labels!(g::Graph)
 
-    This function first finds all labels involved in g and its subgraphs (for example, 1, 4, 5, 7, ...), 
-    then relabel them in the order 1, 2, 3, 4, ....
-    Returns a standardized copy of g.
+    Finds all labels involved in g and its subgraphs and returns 
+    a copy of g relabeled in a standardized order, e.g.,
+    (1, 4, 5, 7, ...) ↦ (1, 2, 3, 4, ....)
+
+# Arguments:
+- `g::Graph`: graph to be relabeled
 """
 standardize_labels(g::Graph) = standardize_labels!(deepcopy(g))
 
 """
     function replace_subgraph!(g::Graph, w::Graph, m::graph)
 
-    In place function that replaces the children graph w in graph g with a new graph m.
-    Graphs w and m should have the same internal and external vertices, and topology
+    Modifies g by replacing the subgraph w with a new graph m.
+    Subgraphs w and m should have the same type, orders, and external vertices.
+
+# Arguments:
+- `g::Graph`: graph to be modified
+- `w::Graph`: subgraph to replace
+- `m::Graph`: new subgraph
 """
 function replace_subgraph!(g::Graph, w::Graph, m::Graph)
-    @assert !isleaf(g) "Target parent graph can not be a leaf"
+    @assert isleaf(g) == false "Target parent graph cannot be a leaf"
     @assert w.type == m.type "Old and new subgraph should have the same type"
     @assert w.orders == m.orders "Old and new subgraph should have the same orders"
     @assert w.external == m.external "Old and new subgraph should have the same external vertices"
-    print("isleaf $(isleaf(g))\n")
     for node in PreOrderDFS(g)
         for (i, child) in enumerate(children(node))
             if isequiv(child, w, :id)
@@ -112,10 +125,16 @@ end
 """
     function replace_subgraph(g::Graph, w::Graph, m::graph)
 
-    Generate a copy of graph g, with the children graph w replaced by a new graph m.
-    Graph w and m should have the same internal and external vertices, and topology
+    Creates a modified copy of g by replacing the subgraph w with a new graph m.
+    Subgraphs w and m should have the same type, orders, and external vertices.
+
+# Arguments:
+- `g::Graph`: graph to be modified
+- `w::Graph`: subgraph to replace
+- `m::Graph`: new subgraph
 """
 function replace_subgraph(g::Graph, w::Graph, m::Graph)
+    @assert isleaf(g) == false "Target parent graph cannot be a leaf"
     @assert w.type == m.type "Old and new subgraph should have the same type"
     @assert w.orders == m.orders "Old and new subgraph should have the same orders"
     @assert w.external == m.external "Old and new subgraph should have the same external vertices"
@@ -138,6 +157,9 @@ end
     Otherwise, returns the original graph. For example, +(+(+g)) ↦ g.
     Does nothing unless g has the following structure: Ⓧ --- ⋯ --- Ⓧ ⋯ (!),
     where the stop-case (!) represents a leaf, an operator 𝓞' != Ⓧ, or a non-unary Ⓧ node.
+
+# Arguments:
+- `g::Graph`: graph to be modified
 """
 function prune_trivial_unary(g::Graph)
     while unary_istrivial(g.operator) && onechild(g) && isfactorless(g)
@@ -147,14 +169,17 @@ function prune_trivial_unary(g::Graph)
 end
 
 """
-    function merge_prod_subfactors(g::Graph)
+    function merge_prodchain_subfactors!(g::Graph)
 
-    Simplifies subgraph_factors for a graph g representing a unary Prod link
-    by merging them at the top level, e.g., 2*(3*(5*g)) ↦ 30*(*(*g)). 
+    Simplifies the subgraph factors of a graph g representing a unary Prod
+    chain by merging them at root level, e.g., 2*(3*(5*g)) ↦ 30*(*(*g)). 
     Does nothing unless g has the following structure: 𝓞 --- Ⓧ --- ⋯ --- Ⓧ ⋯ (!),
     where the stop-case (!) represents a leaf, an operator 𝓞' != Ⓧ, or a non-unary Ⓧ node.
+
+# Arguments:
+- `g::Graph`: graph to be modified
 """
-function merge_prod_subfactors(g::Graph)
+function merge_prodchain_subfactors!(g::Graph)
     if isleaf(g) || onechild(g) == false
         return g
     end
@@ -175,26 +200,58 @@ function merge_prod_subfactors(g::Graph)
 end
 
 """
-    function inplace_prod(g::Graph)
+    function merge_prodchain_subfactors(g::Graph)
 
-    Tries to convert a unary Prod link to in-place form by propagating subgraph_factors up a 
-    and pruning the resultant unary product operation, e.g., 2*(3*(5*g)) ↦ 30*(*(*g)) ↦ 30*g.
+    Returns a copy of a graph g representing a unary Prod chain with subgraph factors
+    simplified by merging them at the root level, e.g., 2*(3*(5*g)) ↦ 30*(*(*g)). 
     Does nothing unless g has the following structure: 𝓞 --- Ⓧ --- ⋯ --- Ⓧ ⋯ (!),
     where the stop-case (!) represents a leaf, an operator 𝓞' != Ⓧ, or a non-unary Ⓧ node.
+
+# Arguments:
+- `g::Graph`: graph to be modified
 """
-function inplace_prod(g::Graph)
-    # First shift subfactors to parent, then prune left-over trivial unary operations.
-    g_new = merge_prod_subfactors(g)
-    g_new.subgraphs[1] = prune_trivial_unary(eldest(g_new))
-    return g_new
+merge_prodchain_subfactors(g::Graph) = merge_prodchain_subfactors!(deepcopy(g))
+
+"""
+    function inplace_prod!(g::Graph)
+
+    Converts a graph g representing a unary Prod chain to in-place form by merging its subgraph factors at
+    root level and pruning the resultant unary product operation(s), e.g., 2*(3*(5*g)) ↦ 30*(*(*g)) ↦ 30*g.
+    Does nothing unless g has the following structure: 𝓞 --- Ⓧ --- ⋯ --- Ⓧ ⋯ (!),
+    where the stop-case (!) represents a leaf, an operator 𝓞' != Ⓧ, or a non-unary Ⓧ node.
+
+# Arguments:
+- `g::Graph`: graph to be modified
+"""
+function inplace_prod!(g::Graph)
+    # First shift subfactors to root level, then prune left-over trivial unary operations.
+    merge_prodchain_subfactors!(g)
+    g.subgraphs[1] = prune_trivial_unary(eldest(g))
+    return g
 end
+
+"""
+    function inplace_prod(g::Graph)
+
+    Returns a copy of a graph g representing a unary Prod chain converted to in-place form by merging its subgraph 
+    factors at root level and pruning the resultant unary product operation(s), e.g., 2*(3*(5*g)) ↦ 30*(*(*g)) ↦ 30*g.
+    Does nothing unless g has the following structure: 𝓞 --- Ⓧ --- ⋯ --- Ⓧ ⋯ (!),
+    where the stop-case (!) represents a leaf, an operator 𝓞' != Ⓧ, or a non-unary Ⓧ node.
+
+# Arguments:
+- `g::Graph`: graph to be modified
+"""
+inplace_prod(g::Graph) = inplace_prod!(deepcopy(g))
 
 """
     function merge_prefactors(g::Graph)
    
-    Factorizes multiplicative prefactors in an additive graph g,
-    e.g., 3*g1 + 5*g2 + 7*g1 + 9*g2 ↦ 10*g1 + 14*g2. Does nothing
-    if graph g does not represent a Sum operation.
+    Returns a copy of graph g with multiplicative prefactors factorized,
+    e.g., 3*g1 + 5*g2 + 7*g1 + 9*g2 ↦ 10*g1 + 14*g2. Does nothing if 
+    graph g does not represent a Sum operation.
+
+# Arguments:
+- `g::Graph`: graph to be modified
 """
 function merge_prefactors(g::Graph{F,W}) where {F,W}
     if g.operator == Sum
