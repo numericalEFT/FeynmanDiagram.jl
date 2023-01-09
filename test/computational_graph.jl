@@ -161,59 +161,66 @@ end
     using FeynmanDiagram.ComputationalGraphs:
         haschildren, onechild, isleaf, isbranch, ischain, isfactorless, eldest
     # Leaves: gᵢ
-    g1 = propagator(𝑓⁺(1)𝑓⁻(2))
-    g2 = propagator(𝑓⁺(1)𝑓⁻(2), factor=2)
-    @test haschildren(g1) == false
-    @test onechild(g1) == false
-    @test isleaf(g1)
-    @test isbranch(g1) == false
-    @test ischain(g1)
-    @test isfactorless(g1)
-    @test isfactorless(g2) == false
-    @test_throws AssertionError eldest(g1)
+    g1 = propagator(𝑓⁻(1)𝑓⁺(2))
+    g2 = propagator(𝑓⁻(1)𝑓⁺(2), factor=2)
     # Branches: Ⓧ --- gᵢ
     g3 = 1 * g1
-    g4 = 2 * g1
-    g5 = 1 * g2
-    @test haschildren(g3)
-    @test onechild(g3)
-    @test isleaf(g3) == false
-    @test isbranch(g3)
-    @test ischain(g3)
-    @test isfactorless(g3)
-    @test isfactorless(g4) == false
-    @test isfactorless(g5) == false
-    @test isleaf(eldest(g3))
+    g4 = 1 * g2
+    g5 = 2 * g1
     # Chains: Ⓧ --- Ⓧ --- gᵢ (simplified by default)
-    g5 = Graph([g3,]; topology=g3.topology, external=g3.external, hasLeg=g3.hasLeg, vertices=g3.vertices,
+    g6 = Graph([g5,]; topology=g3.topology, external=g3.external, hasLeg=g3.hasLeg, vertices=g3.vertices,
         type=g3.type(), subgraph_factors=[1,], operator=Graphs.Prod())
-    g6 = Graph([g3,]; topology=g3.topology, external=g3.external, hasLeg=g3.hasLeg, vertices=g3.vertices,
+    g7 = Graph([g3,]; topology=g3.topology, external=g3.external, hasLeg=g3.hasLeg, vertices=g3.vertices,
         type=g3.type(), subgraph_factors=[2,], operator=Graphs.Prod())
-    g7 = Graph([g5,]; topology=g3.topology, external=g3.external, hasLeg=g3.hasLeg, vertices=g3.vertices,
-        type=g3.type(), subgraph_factors=[1,], operator=Graphs.Prod())
-    @test haschildren(g5)
-    @test onechild(g5)
-    @test isleaf(g5) == false
-    @test isbranch(g5) == false
-    @test ischain(g5)
-    @test isfactorless(g5)
-    @test isfactorless(g6) == false
-    @test isfactorless(g7) == false
-    @test isbranch(eldest(g5))
-    # Neither branch nor chain: Ⓧ --- ⨁ --- (Ⓧ --- gᵢ, Ⓧ --- gⱼ)
+    # General trees
     g8 = 2 * (3 * g1 + 5 * g2)
-    @test haschildren(g8)
-    @test onechild(g8)
-    @test isleaf(g8) == false
-    @test isbranch(g8) == false
-    @test ischain(g8) == false
-    @test isfactorless(g8) == false
-    @test onechild(eldest(g8)) == false
-    # Tree iteration
-    count_pre = sum(1 for node in PreOrderDFS(g8))
-    count_post = sum(1 for node in PostOrderDFS(g8))
-    @test count_pre == 6
-    @test count_post == 6
+    g9 = g1 + 2 * (3 * g1 + 5 * g2)
+    @testset "Leaves" begin
+        @test haschildren(g1) == false
+        @test onechild(g1) == false
+        @test isleaf(g1)
+        @test isbranch(g1) == false
+        @test ischain(g1)
+        @test isfactorless(g1)
+        @test isfactorless(g2) == false
+        @test_throws AssertionError eldest(g1)
+    end
+    @testset "Branches" begin
+        @test haschildren(g3)
+        @test onechild(g3)
+        @test isleaf(g3) == false
+        @test isbranch(g3)
+        @test ischain(g3)
+        @test isfactorless(g3)
+        @test isfactorless(g4)
+        @test isfactorless(g5) == false
+        @test isleaf(eldest(g3))
+    end
+    @testset "Chains" begin
+        @test haschildren(g6)
+        @test onechild(g6)
+        @test isleaf(g6) == false
+        @test isbranch(g6) == false
+        @test ischain(g6)
+        @test isfactorless(g6)
+        @test isfactorless(g7) == false
+        @test isbranch(eldest(g6))
+    end
+    @testset "General" begin
+        @test haschildren(g8)
+        @test onechild(g8)
+        @test isleaf(g8) == false
+        @test isbranch(g8) == false
+        @test ischain(g8) == false
+        @test isfactorless(g8) == false
+        @test onechild(eldest(g8)) == false
+    end
+    @testset "Iteration" begin
+        count_pre = sum(1 for node in PreOrderDFS(g9))
+        count_post = sum(1 for node in PostOrderDFS(g9))
+        @test count_pre == 8
+        @test count_post == 8
+    end
 end
 
 @testset "graph vector" begin

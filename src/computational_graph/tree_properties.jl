@@ -55,8 +55,8 @@ isbranch(g::Graph) = onechild(g) && isleaf(eldest(g))
 function ischain(g::Graph)
     isleaf(g) && return true
     while onechild(g)
-        isleaf(g) && return true
         g = eldest(g)
+        isleaf(g) && return true
     end
     return false
 end
@@ -64,7 +64,9 @@ end
 """
     function isfactorless(g)
 
-    Is the graph factorless?
+    Returns whether the graph g is factorless, i.e., has unity factor and, if applicable,
+    subgraph factor(s). Note that this function does not recurse through subgraphs of g,
+    so that one may have, for instance, `isfactorless(eldest(g)) == false`.
 """
 function isfactorless(g)
     if isleaf(g)
