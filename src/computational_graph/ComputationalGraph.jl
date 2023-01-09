@@ -37,8 +37,8 @@ include("io.jl")
 # include("optimize.jl")
 
 include("transform.jl")
-export relabel!, standardize_labels!, replace_subgraph!
-export relabel, standardize_labels, replace_subgraph
-export prune_trivial_unary, merge_subgraph_factors, inplace_prod, merge_prefactors
+export relabel!, standardize_labels!, replace_subgraph!, merge_prodchain_subfactors!, inplace_prod!
+export relabel, standardize_labels, replace_subgraph, merge_prodchain_subfactors, inplace_prod
+export prune_trivial_unary, merge_prefactors
 
 end

@@ -112,9 +112,9 @@ export external_labels
 # export 𝐺ᶠ, 𝐺ᵇ, 𝐺ᵠ, 𝑊, Green2, Interaction
 # export Coupling_yukawa, Coupling_phi3, Coupling_phi4, Coupling_phi6
 export haschildren, onechild, isleaf, isbranch, ischain, isfactorless, eldest
-export relabel!, standardize_labels!, replace_subgraph!
-export relabel, standardize_labels, replace_subgraph
-export prune_trivial_unary, merge_subgraph_factors, inplace_prod, merge_prefactors
+export relabel!, standardize_labels!, replace_subgraph!, merge_prodchain_subfactors!, inplace_prod!
+export relabel, standardize_labels, replace_subgraph, merge_prodchain_subfactors, inplace_prod
+export prune_trivial_unary, merge_prefactors
 
 include("backend/compiler.jl")
 using .Compilers
