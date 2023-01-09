@@ -80,8 +80,8 @@ end
     function isfactorless(g)
 
     Returns whether the graph g is factorless, i.e., has unity factor and, if applicable,
-    subgraph factor(s). Note that this function does not recurse through subgraphs of g,
-    so that one may have, for instance, `isfactorless(eldest(g)) == false`.
+    subgraph factor(s). Note that this function does not recurse through subgraphs of g, so 
+    that one may have, e.g., `isfactorless(g) == true` but `isfactorless(eldest(g)) == false`.
 
 # Arguments:
 - `g::Graph`: graph to be analyzed
