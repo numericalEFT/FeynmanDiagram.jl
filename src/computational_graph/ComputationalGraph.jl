@@ -26,11 +26,10 @@ export external_labels
 # export 𝐺ᶠ, 𝐺ᵇ, 𝐺ᵠ, 𝑊, Green2, Interaction
 
 include("tree_properties.jl")
+export haschildren, onechild, isleaf, isbranch, ischain, isfactorless, eldest
+
 # include("operation.jl")
-
 include("graphvector.jl")
-export group
-
 include("io.jl")
 # plot_tree
 
@@ -39,7 +38,7 @@ include("io.jl")
 
 include("transform.jl")
 export relabel!, standardize_labels!, replace_subgraph!
-export relabel, standardize_labels, replace_subgraph, collect_labels
+export relabel, standardize_labels, replace_subgraph
 export prune_trivial_unary, merge_subgraph_factors, inplace_prod, merge_prefactors
 
 end
