@@ -1,4 +1,4 @@
-using FeynmanDiagram.ComputationalGraphs
+using FeynmanDiagram: ComputationalGraphs as Graphs
 
 @testset verbose = true "Graph" begin
     V = [interaction(𝑓⁺(1)𝑓⁻(2)𝑓⁺(3)𝑓⁻(4)), interaction(𝑓⁺(5)𝑓⁺(6)𝑓⁻(7)𝑓⁻(8)),
@@ -27,12 +27,12 @@ using FeynmanDiagram.ComputationalGraphs
         println(external(g1))
         @test external(g2) == external(g1)
         @test g2.subgraph_factors == [2]
-        @test g2.operator == ComputationalGraphs.Prod
+        @test g2.operator == Graphs.Prod
         g2 = 2g1
         @test vertices(g2) == vertices(g1)
         @test external(g2) == external(g1)
         @test g2.subgraph_factors == [2]
-        @test g2.operator == ComputationalGraphs.Prod
+        @test g2.operator == Graphs.Prod
     end
     @testset "Graph addition" begin
         g3 = g1 + g2
@@ -43,7 +43,7 @@ using FeynmanDiagram.ComputationalGraphs
         @test g3.subgraph_factors == [1, 1]
         @test g3.subgraphs[1].subgraph_factors == g1.subgraph_factors
         @test g3.subgraphs[2].subgraph_factors == [2]
-        @test g3.operator == ComputationalGraphs.Sum
+        @test g3.operator == Graphs.Sum
     end
     @testset "Graph subtraction" begin
         g4 = g1 - g2
@@ -55,7 +55,7 @@ using FeynmanDiagram.ComputationalGraphs
         @test g4.subgraphs[1].subgraph_factors == g1.subgraph_factors
         @test g4.subgraphs[2].subgraph_factors == [2]
         @test g4.subgraphs[2].subgraphs[1].factor == 1
-        @test g4.operator == ComputationalGraphs.Sum
+        @test g4.operator == Graphs.Sum
     end
     @testset "Linear combinations" begin
         # Binary form
@@ -92,12 +92,12 @@ end
 
         map = Dict(3 => 1, 4 => 1, 5 => 1, 9 => 1, 8 => 1)
         g2 = relabel(g1, map)
-        uniqlabels = collect_labels(g2)
+        uniqlabels = Graphs.collect_labels(g2)
         @test uniqlabels == [1, 2, 6, 7]
 
         map = Dict([i => 1 for i in 2:9])
         g3 = relabel(g1, map)
-        uniqlabels = collect_labels(g3)
+        uniqlabels = Graphs.collect_labels(g3)
         @test uniqlabels == [1,]
     end
     @testset "standardize labels" begin
@@ -108,7 +108,7 @@ end
         g2 = relabel(g1, map)
 
         g3 = standardize_labels(g2)
-        uniqlabels = collect_labels(g3)
+        uniqlabels = Graphs.collect_labels(g3)
         @test uniqlabels == [1, 2, 3, 4, 5]
     end
     @testset "TODO: Update to new API" "replace subgraph" begin
@@ -157,6 +157,65 @@ end
     end
 end
 
+@testset verbose = true "Tree properties" begin
+    using FeynmanDiagram.ComputationalGraphs:
+        haschildren, onechild, isleaf, isbranch, ischain, isfactorless, eldest
+    # Leaves: gᵢ
+    g1 = propagator(𝑓⁺(1)𝑓⁻(2))
+    g2 = propagator(𝑓⁺(1)𝑓⁻(2), factor=2)
+    @test haschildren(g1) == false
+    @test onechild(g1) == false
+    @test isleaf(g1)
+    @test isbranch(g1) == false
+    @test ischain(g1)
+    @test isfactorless(g1)
+    @test isfactorless(g2) == false
+    @test_throws AssertionError eldest(g1)
+    # Branches: Ⓧ --- gᵢ
+    g3 = 1 * g1
+    g4 = 2 * g1
+    g5 = 1 * g2
+    @test haschildren(g3)
+    @test onechild(g3)
+    @test isleaf(g3) == false
+    @test isbranch(g3)
+    @test ischain(g3)
+    @test isfactorless(g3)
+    @test isfactorless(g4) == false
+    @test isfactorless(g5) == false
+    @test isleaf(eldest(g3))
+    # Chains: Ⓧ --- Ⓧ --- gᵢ (simplified by default)
+    g5 = Graph([g3,]; topology=g3.topology, external=g3.external, hasLeg=g3.hasLeg, vertices=g3.vertices,
+        type=g3.type(), subgraph_factors=[1,], operator=Graphs.Prod())
+    g6 = Graph([g3,]; topology=g3.topology, external=g3.external, hasLeg=g3.hasLeg, vertices=g3.vertices,
+        type=g3.type(), subgraph_factors=[2,], operator=Graphs.Prod())
+    g7 = Graph([g5,]; topology=g3.topology, external=g3.external, hasLeg=g3.hasLeg, vertices=g3.vertices,
+        type=g3.type(), subgraph_factors=[1,], operator=Graphs.Prod())
+    @test haschildren(g5)
+    @test onechild(g5)
+    @test isleaf(g5) == false
+    @test isbranch(g5) == false
+    @test ischain(g5)
+    @test isfactorless(g5)
+    @test isfactorless(g6) == false
+    @test isfactorless(g7) == false
+    @test isbranch(eldest(g5))
+    # Neither branch nor chain: Ⓧ --- ⨁ --- (Ⓧ --- gᵢ, Ⓧ --- gⱼ)
+    g8 = 2 * (3 * g1 + 5 * g2)
+    @test haschildren(g8)
+    @test onechild(g8)
+    @test isleaf(g8) == false
+    @test isbranch(g8) == false
+    @test ischain(g8) == false
+    @test isfactorless(g8) == false
+    @test onechild(eldest(g8)) == false
+    # Tree iteration
+    count_pre = sum(1 for node in PreOrderDFS(g8))
+    count_post = sum(1 for node in PostOrderDFS(g8))
+    @test count_pre == 6
+    @test count_post == 6
+end
+
 @testset "graph vector" begin
     p1 = propagator(𝑓⁺(1)𝑓⁻(2))
     p2 = propagator(𝑓⁺(1)𝑓⁻(3))
@@ -164,15 +223,15 @@ end
 
     gv = [p1, p2, p3]
 
-    g1 = group(gv, [2,])
+    g1 = Graphs.group(gv, [2,])
     @test Set(g1[[𝑓⁺(1),]]) == Set([p1, p2])
     @test Set(g1[[𝑓⁺(2),]]) == Set([p3,])
 
-    g2 = group(gv, [1,])
+    g2 = Graphs.group(gv, [1,])
     @test Set(g2[[𝑓⁻(2),]]) == Set([p1,])
     @test Set(g2[[𝑓⁻(3),]]) == Set([p2, p3])
 
-    g3 = group(gv, [2, 1])
+    g3 = Graphs.group(gv, [2, 1])
     @test Set(g3[[𝑓⁺(1), 𝑓⁻(2)]]) == Set([p1,])
     @test Set(g3[[𝑓⁺(1), 𝑓⁻(3)]]) == Set([p2,])
     @test Set(g3[[𝑓⁺(2), 𝑓⁻(3)]]) == Set([p3,])
