@@ -22,35 +22,50 @@ end
 """
     function haschildren(g::Graph)
 
-    Does the graph have any children?
+    Returns whether the graph has any children (subgraphs).
+
+# Arguments:
+- `g::Graph`: graph to be analyzed
 """
 haschildren(g::Graph) = isempty(g.subgraphs) == false
 
 """
     function onechild(g::Graph)
 
-    Does the graph have only one child?
+    Returns whether the graph g has only one child (subgraph).
+
+# Arguments:
+- `g::Graph`: graph to be analyzed
 """
 onechild(g::Graph) = length(children(g)) == 1
 
 """
     function isleaf(g::Graph)
 
-    Is the graph a leaf?
+    Returns whether the graph g is a leaf (terminating tree node).
+
+# Arguments:
+- `g::Graph`: graph to be analyzed
 """
 isleaf(g::Graph) = isempty(g.subgraphs)
 
 """
     function isbranch(g::Graph)
 
-    Is the graph a branch (depth-1 and one-child)?
+    Returns whether the graph g is a branch-type (depth-1 and one-child) graph.
+
+# Arguments:
+- `g::Graph`: graph to be analyzed
 """
 isbranch(g::Graph) = onechild(g) && isleaf(eldest(g))
 
 """
     function ischain(g::Graph)
 
-    Is the graph a chain?
+    Returns whether the graph g is a chain-type graph.
+
+# Arguments:
+- `g::Graph`: graph to be analyzed
 """
 function ischain(g::Graph)
     isleaf(g) && return true
@@ -67,6 +82,9 @@ end
     Returns whether the graph g is factorless, i.e., has unity factor and, if applicable,
     subgraph factor(s). Note that this function does not recurse through subgraphs of g,
     so that one may have, for instance, `isfactorless(eldest(g)) == false`.
+
+# Arguments:
+- `g::Graph`: graph to be analyzed
 """
 function isfactorless(g)
     if isleaf(g)
@@ -79,7 +97,10 @@ end
 """
     function eldest(g::Graph)
 
-    Get the first child of a graph
+    Returns the first child (subgraph) of a graph g.
+
+# Arguments:
+- `g::Graph`: graph for which to find the first child
 """
 function eldest(g::Graph)
     @assert haschildren(g) "Graph has no children!"
