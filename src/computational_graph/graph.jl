@@ -10,11 +10,11 @@ Base.show(io::IO, ::Type{Sum}) = print(io, "⨁")
 Base.show(io::IO, ::Type{Prod}) = print(io, "Ⓧ")
 
 # Is the unary operation trivial (𝓞g = g)?
-unary_istrivial(::Type{AbstractOperator}) = false
+unary_istrivial(::Type{O}) where {O<:AbstractOperator} = false
 unary_istrivial(::Type{O}) where {O<:Union{Sum,Prod}} = true  # (+g) ≡ g and (*g) ≡ g
 
 # Is the operation associative: a 𝓞 (b 𝓞 c) = (a 𝓞 b) 𝓞 c = a 𝓞 b 𝓞 c?
-isassociative(::Type{AbstractOperator}) = false
+isassociative(::Type{O}) where {O<:AbstractOperator} = false
 isassociative(::Type{Sum}) = true
 # NOTE: Associativity of Prod (graph composition)
 #       requires Base.*(g1, g2) and Base./(g1, g2)
