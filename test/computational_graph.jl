@@ -123,7 +123,35 @@ end
         @test isequiv(gsum.subgraphs[1], gsum.subgraphs[2])
     end
     @testset "prune trivial unary operations" begin
-        @test_skip true
+        g1 = propagator(𝑓⁺(1)𝑓⁻(2))
+        # +g1
+        g2 = Graph([g1,]; vertices=g1.vertices, external=g1.external,
+            hasLeg=g1.hasLeg, type=g1.type(), operator=Graphs.Sum())
+        # +(+g1)
+        g3 = Graph([g2,]; vertices=g2.vertices, external=g2.external,
+            hasLeg=g2.hasLeg, type=g2.type(), operator=Graphs.Sum())
+        # +2(+g1)
+        g3p = Graph([g2,]; vertices=g2.vertices, external=g2.external, hasLeg=g2.hasLeg,
+            subgraph_factors=[2,], type=g2.type(), operator=Graphs.Sum())
+        # +(+(+g1))
+        g4 = Graph([g3,]; vertices=g3.vertices, external=g3.external,
+            hasLeg=g3.hasLeg, type=g3.type(), operator=Graphs.Sum())
+        # +(+2(+g1))
+        g4p = Graph([g3p,]; vertices=g3p.vertices, external=g3p.external,
+            hasLeg=g3p.hasLeg, type=g3p.type(), operator=Graphs.Sum())
+        @test Graphs.unary_istrivial(Graphs.Prod)
+        @test Graphs.unary_istrivial(Graphs.Sum)
+        @test prune_trivial_unary(g2) == g1
+        @test prune_trivial_unary(g3) == g1
+        @test prune_trivial_unary(g4) == g1
+        @test prune_trivial_unary(g3p) == g3p
+        @test prune_trivial_unary(g4p) == g3p
+        # 𝓞(g1), where 𝓞 is a non-trivial unary operation
+        struct O <: Graphs.AbstractOperator end
+        g5 = Graph([g1,]; vertices=g1.vertices, external=g1.external,
+            hasLeg=g1.hasLeg, type=g1.type(), operator=O())
+        @test Graphs.unary_istrivial(O) == false
+        @test prune_trivial_unary(g5) == g5
     end
     @testset "merge subgraph factors" begin
         @test_skip true
@@ -168,10 +196,10 @@ end
     g4 = 1 * g2
     g5 = 2 * g1
     # Chains: Ⓧ --- Ⓧ --- gᵢ (simplified by default)
-    g6 = Graph([g5,]; topology=g3.topology, external=g3.external, hasLeg=g3.hasLeg, vertices=g3.vertices,
-        type=g3.type(), subgraph_factors=[1,], operator=Graphs.Prod())
-    g7 = Graph([g3,]; topology=g3.topology, external=g3.external, hasLeg=g3.hasLeg, vertices=g3.vertices,
-        type=g3.type(), subgraph_factors=[2,], operator=Graphs.Prod())
+    g6 = Graph([g5,]; vertices=g5.vertices, topology=g5.topology, external=g5.external,
+        hasLeg=g5.hasLeg, subgraph_factors=[1,], type=g5.type(), operator=Graphs.Prod())
+    g7 = Graph([g3,]; vertices=g3.vertices, topology=g3.topology, external=g3.external,
+        hasLeg=g3.hasLeg, subgraph_factors=[2,], type=g3.type(), operator=Graphs.Prod())
     # General trees
     g8 = 2 * (3 * g1 + 5 * g2)
     g9 = g1 + 2 * (3 * g1 + 5 * g2)
