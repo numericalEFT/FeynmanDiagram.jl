@@ -153,24 +153,30 @@ end
         @test Graphs.unary_istrivial(O) == false
         @test prune_trivial_unary(g5) == g5
     end
+    g1 = propagator(𝑓⁻(1)𝑓⁺(2))
+    g2 = Graph([g1,]; topology=g1.topology, vertices=g1.vertices, external=g1.external,
+        hasLeg=g1.hasLeg, subgraph_factors=[5,], type=g1.type(), operator=Graphs.Prod())
+    g3 = Graph([g2,]; topology=g2.topology, vertices=g2.vertices, external=g2.external,
+        hasLeg=g2.hasLeg, subgraph_factors=[3,], type=g2.type(), operator=Graphs.Prod())
+    # g = 2*(3*(5*g1))
+    g = Graph([g3,]; topology=g3.topology, vertices=g3.vertices, external=g3.external,
+        hasLeg=g3.hasLeg, subgraph_factors=[2,], type=g3.type(), operator=Graphs.Prod())
+    # gp = 2*(3*(g1 + 5*g1))
+    g2p = g1 + g2
+    g3p = Graph([g2p,]; topology=g2p.topology, vertices=g2p.vertices, external=g2p.external,
+        hasLeg=g2p.hasLeg, subgraph_factors=[3,], type=g2p.type(), operator=Graphs.Prod())
+    gp = Graph([g3p,]; topology=g3p.topology, vertices=g3p.vertices, external=g3p.external,
+        hasLeg=g3p.hasLeg, subgraph_factors=[2,], type=g3p.type(), operator=Graphs.Prod())
     @testset "merge Prod chain subfactors" begin
-        g1 = propagator(𝑓⁻(1)𝑓⁺(2))
-        g2 = Graph([g1,]; topology=g1.topology, vertices=g1.vertices, external=g1.external,
-            hasLeg=g1.hasLeg, subgraph_factors=[5,], type=g1.type(), operator=Graphs.Prod())
-        g2p = g1 + g2
-        g3 = Graph([g2,]; topology=g2.topology, vertices=g2.vertices, external=g2.external,
-            hasLeg=g2.hasLeg, subgraph_factors=[3,], type=g2.type(), operator=Graphs.Prod())
-        g3p = Graph([g2p,]; topology=g2p.topology, vertices=g2p.vertices, external=g2p.external,
-            hasLeg=g2p.hasLeg, subgraph_factors=[3,], type=g2p.type(), operator=Graphs.Prod())
-        # g = 2*(3*(5*g1)) ↦ 30*(*(*g1))
-        g = Graph([g3,]; topology=g3.topology, vertices=g3.vertices, external=g3.external,
-            hasLeg=g3.hasLeg, subgraph_factors=[2,], type=g3.type(), operator=Graphs.Prod())
+        # g ↦ 30*(*(*g1))
         g_merged = merge_prodchain_subfactors(g)
         @test g_merged.subgraph_factors == [30,]
         @test all(isfactorless(node) for node in PreOrderDFS(eldest(g_merged)))
-        # gp = 2*(3*(g1 + 5*g1)) ↦ 6*(*(g1 + 5*g1))
-        gp = Graph([g3p,]; topology=g3p.topology, vertices=g3p.vertices, external=g3p.external,
-            hasLeg=g3p.hasLeg, subgraph_factors=[2,], type=g3p.type(), operator=Graphs.Prod())
+        # in-place form
+        gc = deepcopy(g)
+        merge_prodchain_subfactors!(gc)
+        @test isequiv(gc, g_merged, :id)
+        # gp ↦ 6*(*(g1 + 5*g1))
         gp_merged = merge_prodchain_subfactors(gp)
         @test gp_merged.subgraph_factors == [6,]
         @test isfactorless(eldest(gp)) == false
@@ -178,7 +184,15 @@ end
         @test isequiv(eldest(eldest(gp_merged)), g2p, :id)
     end
     @testset "in-place product" begin
-        @test_skip true
+        # g ↦ 30*g1
+        g_inplace = inplace_prod(g)
+        @test isequiv(g_inplace, 30 * g1, :id)
+        # in-place form
+        inplace_prod!(g)
+        @test isequiv(g, 30 * g1, :id)
+        # gp ↦ 6*(g1 + 5*g1)
+        gp_inplace = inplace_prod(gp)
+        @test isequiv(gp_inplace, 6 * g2p, :id)
     end
     @testset "merge prefactors" begin
         g1 = propagator(𝑓⁺(1)𝑓⁻(2))
