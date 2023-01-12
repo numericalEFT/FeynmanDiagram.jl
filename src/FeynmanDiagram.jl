@@ -1,6 +1,10 @@
 module FeynmanDiagram
 using Random, LinearAlgebra, Parameters
 
+macro todo()
+    return :(error("Not yet implemented!"))
+end
+
 @enum DiagramType begin
     VacuumDiag         #vaccum diagram for the free energy
     SigmaDiag          #self-energy
@@ -96,17 +100,21 @@ export correlator_order, normal_order
 include("computational_graph/ComputationalGraph.jl")
 using .ComputationalGraphs
 export ComputationalGraphs
-export labelreset, parity, parity_old
+export labelreset, parity
 # export AbstractOperator, Prod, Sum
-export Graph, isequiv
+export Graph, isequiv, linear_combination
 # export GraphType, Interaction, ExternalVertex, Propagator, SelfEnergy, VertexDiag, GreenDiag, GenericDiag
-export feynman_diagram, contractions_to_edges, propagator, interaction, external_vertex
+export feynman_diagram, propagator, interaction, external_vertex
 # export standardize_order!
 export is_external, is_internal, vertices, external
 export external_labels
 # export reducibility, connectivity
 # export 𝐺ᶠ, 𝐺ᵇ, 𝐺ᵠ, 𝑊, Green2, Interaction
 # export Coupling_yukawa, Coupling_phi3, Coupling_phi4, Coupling_phi6
+export haschildren, onechild, isleaf, isbranch, ischain, isfactorless, eldest
+export relabel!, standardize_labels!, replace_subgraph!, merge_prodchain_subfactors!, inplace_prod!
+export relabel, standardize_labels, replace_subgraph, merge_prodchain_subfactors, inplace_prod
+export prune_trivial_unary, merge_prefactors
 
 include("backend/compiler.jl")
 using .Compilers
