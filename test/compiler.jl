@@ -5,7 +5,7 @@
         subgraphs = [external_vertex(V1[1]), external_vertex(V1[2])]
         g = Graph(subgraphs; factor=factor)
         # println(g)
-        gs = Compilers.static_graph([g,], name="eval_graph!")
+        gs = Compilers.to_julia_str([g,], name="eval_graph!")
         # println(gs)
         gexpr = Meta.parse(gs) # parse string to julia expression
         eval(gexpr) #create the function eval_graph!
@@ -20,11 +20,11 @@
         subgraphs = [external_vertex(V1[1]), external_vertex(V1[2])]
         g = Graph(subgraphs; factor=factor)
         # println(g)
-        eval_graph! = Compilers.static_graph_rgf([g,])
+        eval_graph! = Compilers.compile([g,])
         root = [0.0,]
         leaf = [1.0, 2.0]
         @test eval_graph!(root, leaf) ≈ (leaf[1] + leaf[2]) * factor
-        # test if default name leak out of static_graph_rgf
+        # test if default name leak out of to_julia_str_rgf
         @test !(@isdefined func_name!)
     end
 
@@ -32,7 +32,7 @@
         function graph_compile(g; name="eval_graph!")
             # the name is not contained inside this function
             # it can leak out to the global scope if the name is not defined outside
-            gs = Compilers.static_graph([g,], name=name)
+            gs = Compilers.to_julia_str([g,], name=name)
             gexpr = Meta.parse(gs) # parse string to julia expression
             eval(gexpr) #create the function eval_graph!
             return eval_graph!
