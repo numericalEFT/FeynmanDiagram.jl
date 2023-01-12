@@ -1,5 +1,5 @@
 module FeynmanDiagram
-using Random, LinearAlgebra, Parameters
+using Random, LinearAlgebra, Parameters, AbstractTrees, RuntimeGeneratedFunctions
 
 @enum DiagramType begin
     VacuumDiag         #vaccum diagram for the free energy

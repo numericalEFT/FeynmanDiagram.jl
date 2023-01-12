@@ -4,14 +4,28 @@
         V1 = [𝑓⁺(1)𝑓⁻(2), 𝑓⁺(3)𝑓⁻(4)]
         subgraphs = [external_vertex(V1[1]), external_vertex(V1[2])]
         g = Graph(subgraphs; factor=factor)
-        println(g)
+        # println(g)
         gs = Compilers.static_graph([g,], name="eval_graph!")
-        println(gs)
+        # println(gs)
         gexpr = Meta.parse(gs) # parse string to julia expression
         eval(gexpr) #create the function eval_graph!
         root = [0.0,]
         leaf = [1.0, 2.0]
         @test eval_graph!(root, leaf) ≈ (leaf[1] + leaf[2]) * factor
+    end
+
+    @testset "Compile using RuntimeGeneratedFunctions" begin
+        factor = 1.5
+        V1 = [𝑓⁺(1)𝑓⁻(2), 𝑓⁺(3)𝑓⁻(4)]
+        subgraphs = [external_vertex(V1[1]), external_vertex(V1[2])]
+        g = Graph(subgraphs; factor=factor)
+        # println(g)
+        eval_graph! = Compilers.static_graph_rgf([g,])
+        root = [0.0,]
+        leaf = [1.0, 2.0]
+        @test eval_graph!(root, leaf) ≈ (leaf[1] + leaf[2]) * factor
+        # test if default name leak out of static_graph_rgf
+        @test !(@isdefined func_name!)
     end
 
     @testset "Compile in func" begin

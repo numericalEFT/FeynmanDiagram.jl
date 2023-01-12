@@ -58,3 +58,17 @@ function static_graph(graphs::AbstractVector; root::AbstractVector{Int}=[g.id fo
     tail = "end"
     return head * body * tail
 end
+"""
+    function static_graph_rgf(graphs::AbstractVector; root::AbstractVector{Int}=[g.id for g in graphs])
+    
+Compile a list of graphs into a string for a julia static function. The function takes two arguments: `root` and `leaf`. `root` is a vector of the root node ids of the graphs, and `leaf` is a vector of the leaf node ids of the graphs. 
+This function calls static_graph and generate a defined function using RuntimeGeneratedFunctions.
+Comparing to eval(Meta.parse(static_graph(...))), this function does not leak out the function name into global scope.
+"""
+function static_graph_rgf(graphs::AbstractVector;
+    root::AbstractVector{Int}=[g.id for g in graphs])
+    # this function return a runtime generated function defined by static_graph()
+    func_string = static_graph(graphs; root=root, name="func_name!")
+    func_expr = Meta.parse(func_string)
+    return @RuntimeGeneratedFunction(func_expr)
+end
