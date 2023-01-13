@@ -1,5 +1,5 @@
 module FeynmanDiagram
-using Random, LinearAlgebra, Parameters
+using Random, LinearAlgebra, Parameters, AbstractTrees, RuntimeGeneratedFunctions
 
 macro todo()
     return :(error("Not yet implemented!"))

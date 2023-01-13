@@ -15,27 +15,11 @@ function _to_static(::Type{ComputationalGraphs.Prod}, subgraphs::Vector{Graph{F,
 end
 
 """
-    function static_graph(graphs::AbstractVector; root::AbstractVector{Int}=[g.id for g in graphs], name::String="eval_graph!")
+    function to_julia_str(graphs::AbstractVector; root::AbstractVector{Int}=[g.id for g in graphs], name::String="eval_graph!")
     
 Compile a list of graphs into a string for a julia static function. The function takes two arguments: `root` and `leaf`. `root` is a vector of the root node ids of the graphs, and `leaf` is a vector of the leaf node ids of the graphs. 
-
-# Example:
-```julia-repl
-julia> g = Graph([𝑓⁺(1)𝑓⁻(2), 𝑓⁺(3)𝑓⁻(4)], external=[1, 2], subgraphs=[Graph([𝑓⁺(1)𝑓⁻(4)]), Graph([𝑓⁻(2)𝑓⁺(3)])])
-3:f⁺(1)f⁻(2)|f⁺(3)f⁻(4)=0.0=⨁ (1,2)
-
-julia> gs = Compilers.static_graph([g, ])
-"function eval_graph!(root::AbstractVector, leaf::AbstractVector)\n     g1 = leaf[1]\n     g2 = leaf[2]\n     root[1] = (g1 + g2)*1.0\n end"
-
-julia> eval(Meta.parse(gs)) #compile the string into a callable function `eval_graph!(root, leaf)`
-eval_graph! (generic function with 1 method)
-
-julia> leaf = [1.0, 2.0]; root = [0.0,];
-
-julia> eval_graph!(root, leaf)
-3.0
 """
-function static_graph(graphs::AbstractVector; root::AbstractVector{Int}=[g.id for g in graphs], name::String="eval_graph!")
+function to_julia_str(graphs::AbstractVector; root::AbstractVector{Int}=[g.id for g in graphs], name::String="eval_graph!")
     head = "function $name(root::AbstractVector, leaf::AbstractVector)\n "
     body = ""
     leafidx = 1
@@ -57,4 +41,34 @@ function static_graph(graphs::AbstractVector; root::AbstractVector{Int}=[g.id fo
     end
     tail = "end"
     return head * body * tail
+end
+
+"""
+    function compile(graphs::AbstractVector; root::AbstractVector{Int}=[g.id for g in graphs])
+    
+Compile a list of graphs into a julia static function. 
+The function takes two arguments: `root` and `leaf`. `root` is a vector of the root node ids of the graphs, and `leaf` is a vector of the leaf node ids of the graphs. 
+This function calls to_julia_str and generate a defined function using RuntimeGeneratedFunctions.
+Comparing to eval(Meta.parse(to_julia_str(...))), this function does not leak out the function name into global scope.
+
+# Example:
+```julia
+factor = 1.5
+V1 = [𝑓⁺(1)𝑓⁻(2), 𝑓⁺(3)𝑓⁻(4)]
+subgraphs = [external_vertex(V1[1]), external_vertex(V1[2])]
+g = Graph(subgraphs; factor=factor)
+# println(g)
+eval_graph! = Compilers.compile([g,])
+root = [0.0,]
+leaf = [1.0, 2.0]
+
+@assert eval_graph!(root, leaf) ≈ (leaf[1] + leaf[2]) * factor
+```
+"""
+function compile(graphs::AbstractVector;
+    root::AbstractVector{Int}=[g.id for g in graphs])
+    # this function return a runtime generated function defined by compile()
+    func_string = to_julia_str(graphs; root=root, name="func_name!")
+    func_expr = Meta.parse(func_string)
+    return @RuntimeGeneratedFunction(func_expr)
 end
