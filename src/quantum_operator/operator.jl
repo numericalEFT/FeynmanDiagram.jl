@@ -58,21 +58,13 @@ struct QuantumOperator
         @assert label >= 0
         return new(typeof(operator), label)
     end
-    # function QuantumOperator(::Type{operator}, label::Int, is_ghost=false) where {operator<:AbstractQuantumOperator}
-    #     @assert label > 0
-    #     return new(operator, label, is_ghost)
-    # end
 end
 Base.isequal(a::QuantumOperator, b::QuantumOperator) = ((a.operator == b.operator) && (a.label == b.label))
 Base.:(==)(a::QuantumOperator, b::QuantumOperator) = Base.isequal(a, b)
 
-# function Base.show(io::IO, o::QuantumOperator)
-#     if o.is_ghost
-#         print(io, "$(o.operator)ₑ($(o.label))")
-#     else
-#         print(io, "$(o.operator)($(o.label))")
-#     end
-# end
+# Relabel constructor
+QuantumOperator(qo::QuantumOperator, label::Int) = QuantumOperator(qo.operator(), label)
+
 Base.show(io::IO, o::QuantumOperator) = print(io, "$(o.operator)($(o.label))")
 Base.show(io::IO, ::MIME"text/plain", o::QuantumOperator) = Base.show(io, o)
 
@@ -103,10 +95,3 @@ iscreation(operator::QuantumOperator) = iscreation(operator.operator)
     Check if `operator` is an annihilation operator.
 """
 isannihilation(operator::QuantumOperator) = isannihilation(operator.operator)
-
-# """
-#     function isghost(operator::QuantumOperator)
-
-#     Check if `operator` is a ghost operator.
-# """
-# isghost(operator::QuantumOperator) = operator.is_ghost

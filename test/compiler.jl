@@ -1,8 +1,12 @@
 @testset "Compiler" begin
     @testset "Compile directly" begin
         factor = 1.5
-        g = Graph([𝑓⁺(1)𝑓⁻(2), 𝑓⁺(3)𝑓⁻(4)], external=[1, 2], subgraphs=[Graph([𝑓⁺(1)𝑓⁻(4)]), Graph([𝑓⁻(2)𝑓⁺(3)])], factor=factor)
-        gs = Compilers.static_graph([g,], name="eval_graph!")
+        V1 = [𝑓⁺(1)𝑓⁻(2), 𝑓⁺(3)𝑓⁻(4)]
+        subgraphs = [external_vertex(V1[1]), external_vertex(V1[2])]
+        g = Graph(subgraphs; factor=factor)
+        # println(g)
+        gs = Compilers.to_julia_str([g,], name="eval_graph!")
+        # println(gs)
         gexpr = Meta.parse(gs) # parse string to julia expression
         eval(gexpr) #create the function eval_graph!
         root = [0.0,]
@@ -10,17 +14,33 @@
         @test eval_graph!(root, leaf) ≈ (leaf[1] + leaf[2]) * factor
     end
 
+    @testset "Compile using RuntimeGeneratedFunctions" begin
+        factor = 1.5
+        V1 = [𝑓⁺(1)𝑓⁻(2), 𝑓⁺(3)𝑓⁻(4)]
+        subgraphs = [external_vertex(V1[1]), external_vertex(V1[2])]
+        g = Graph(subgraphs; factor=factor)
+        # println(g)
+        eval_graph! = Compilers.compile([g,])
+        root = [0.0,]
+        leaf = [1.0, 2.0]
+        @test eval_graph!(root, leaf) ≈ (leaf[1] + leaf[2]) * factor
+        # test if default name leak out of to_julia_str_rgf
+        @test !(@isdefined func_name!)
+    end
+
     @testset "Compile in func" begin
         function graph_compile(g; name="eval_graph!")
             # the name is not contained inside this function
             # it can leak out to the global scope if the name is not defined outside
-            gs = Compilers.static_graph([g,], name=name)
+            gs = Compilers.to_julia_str([g,], name=name)
             gexpr = Meta.parse(gs) # parse string to julia expression
             eval(gexpr) #create the function eval_graph!
             return eval_graph!
         end
         factor = 1.5
-        g = Graph([𝑓⁺(1)𝑓⁻(2), 𝑓⁺(3)𝑓⁻(4)], external=[1, 2], subgraphs=[Graph([𝑓⁺(1)𝑓⁻(4)]), Graph([𝑓⁻(2)𝑓⁺(3)])], factor=factor)
+        V1 = [𝑓⁺(1)𝑓⁻(2), 𝑓⁺(3)𝑓⁻(4)]
+        subgraphs = [external_vertex(V1[1]), external_vertex(V1[2])]
+        g = Graph(subgraphs; factor=factor)
         evalf = graph_compile(g)
         root = [0.0,]
         leaf = [1.0, 2.0]
