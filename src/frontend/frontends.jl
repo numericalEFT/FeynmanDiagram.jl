@@ -5,6 +5,8 @@ import ..ComputationalGraphs as IR
 import ..ComputationalGraphs: Graph
 import ..ComputationalGraphs: _dtype
 
+include("pool.jl")
+
 include("LabelProduct.jl")
 export LabelProduct
 

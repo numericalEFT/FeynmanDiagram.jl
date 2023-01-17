@@ -67,22 +67,13 @@ Base.size(o::OperatorProduct) = size(o.operators)
 Base.show(io::IO, o::OperatorProduct) = print(io, reduce(*, ["$o" for o in o.operators]))
 Base.show(io::IO, ::MIME"text/plain", o::OperatorProduct) = Base.show(io, o)
 
-Base.oneunit(operator::AbstractQuantumOperator) = OperatorProduct(QuantumOperator(operator, -1))
-Base.oneunit(o::QuantumOperator) = oneunit(o.operator)
-
 """
     Base.:*(o1::Union{QuantumOperator, OperatorProduct}, o2::Union{QuantumOperator, OperatorProduct})
 
     `o1 * o2` returns the quantum operator product of `o1` and `o2`
 """
 function Base.:*(o1::QuantumOperator, o2::QuantumOperator)
-    if o1.label == -1
-        return OperatorProduct([o2])
-    elseif o2.label == -1
-        return OperatorProduct([o1])
-    else
-        return OperatorProduct([o1, o2])
-    end
+    return OperatorProduct([o1, o2])
 end
 
 function Base.:*(o1::OperatorProduct, o2::QuantumOperator)

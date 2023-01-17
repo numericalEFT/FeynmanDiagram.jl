@@ -66,6 +66,13 @@ Convert a tuple of the indexes of each label to a single linear index of the Lab
     end
     return :($ex + 1)
 end
+@generated function index_to_linear(dims::NTuple{N,Int}, I...) where {N}
+    ex = :(I[$N] - 1)
+    for i = (N-1):-1:1
+        ex = :(I[$i] - 1 + dims[$i] * $ex)
+    end
+    return :($ex + 1)
+end
 
 """
     function linear_to_index(obj::LabelProduct, I::Int)
@@ -79,6 +86,14 @@ Convert the single linear index of the LabelProduct to a tuple of indexes of eac
     inds, quotient = :((I - 1) % obj.dims[1] + 1), :((I - 1) ÷ obj.dims[1])
     for i = 2:N-1
         inds, quotient = :($inds..., $quotient % obj.dims[$i] + 1), :($quotient ÷ obj.dims[$i])
+    end
+    inds = :($inds..., $quotient + 1)
+    return :($inds)
+end
+@generated function linear_to_index(dims::NTuple{N,Int}, I::Int) where {N}
+    inds, quotient = :((I - 1) % dims[1] + 1), :((I - 1) ÷ dims[1])
+    for i = 2:N-1
+        inds, quotient = :($inds..., $quotient % dims[$i] + 1), :($quotient ÷ dims[$i])
     end
     inds = :($inds..., $quotient + 1)
     return :($inds)
