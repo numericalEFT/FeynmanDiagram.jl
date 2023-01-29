@@ -1,0 +1,88 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+Abort	logger.py	/^def Abort(info):$/;"	f
+Assert	logger.py	/^def Assert(condition, info):$/;"	f
+AssignMomentums	diagram.py	/^def AssignMomentums(permutation, reference, InteractionPairs):$/;"	f
+AttachExtVer	polar.py	/^    def AttachExtVer(self, FreeEnergyDiag):$/;"	m	class:polar
+BuildADiagram	free_energy.py	/^    def BuildADiagram(self):$/;"	m	class:free_energy
+BuildADiagram	polar.py	/^    def BuildADiagram(self):$/;"	m	class:polar
+CheckConservation	diagram.py	/^def CheckConservation(permutation, MomentumBases, InteractionPairs, LoopNum=None):$/;"	f
+DelayedInterrupt	logger.py	/^class DelayedInterrupt(object):$/;"	c
+Direct2Exchange	diagram.py	/^def Direct2Exchange(permutation, i, j):$/;"	f
+FindAllLoops	diagram.py	/^def FindAllLoops(permutation):$/;"	f
+FindIndependentK	diagram.py	/^def FindIndependentK(permutation, reference, InteractionPairs):$/;"	f
+Generate	main.py	/^def Generate(Order, VerOrder, SigmaOrder, QOrder, IsSelfEnergy, IsSpinPolar, IsSysPolar, SPIN):$/;"	f
+GetHugen	free_energy.py	/^    def GetHugen(self, Permutation):$/;"	m	class:free_energy
+GetInteractionPairs	free_energy.py	/^    def GetInteractionPairs(self):$/;"	m	class:free_energy
+GetInteractionPairs	polar.py	/^    def GetInteractionPairs(self, WithMeasuring=False):$/;"	m	class:polar
+GetPermu	diagram.py	/^    def GetPermu(self):$/;"	m	class:diagram
+GetReference	free_energy.py	/^    def GetReference(self):$/;"	m	class:free_energy
+GetReference	polar.py	/^    def GetReference(self):$/;"	m	class:polar
+Group	polar.py	/^    def Group(self, PermutationDict, TimeRotation=True):$/;"	m	class:polar
+HasFock	diagram.py	/^def HasFock(permutation, reference, vertype=None, gtype=None):$/;"	f
+HasTadpole	diagram.py	/^def HasTadpole(permutation, reference):$/;"	f
+HugenToFeyn	polar.py	/^    def HugenToFeyn(self, HugenPermu):$/;"	m	class:polar
+IsConnected	diagram.py	/^def IsConnected(Permutation, Reference, InteractionPairs):$/;"	f
+IsSelfEnergy	main.py	/^    IsSelfEnergy = False$/;"	v
+IsSpinPolar	main.py	/^    IsSpinPolar = False$/;"	v
+IsSymPolar	main.py	/^    IsSymPolar = False$/;"	v
+LoadDiagrams	free_energy.py	/^    def LoadDiagrams(self, FileName):$/;"	m	class:free_energy
+Mirror	diagram.py	/^def Mirror(Index):$/;"	f
+OptimizeLoopBasis	free_energy.py	/^    def OptimizeLoopBasis(self):$/;"	m	class:free_energy
+Order	main.py	/^    Order = 6$/;"	v
+SPIN	main.py	/^    SPIN = 2$/;"	v
+Swap	diagram.py	/^def Swap(permutation, i, j):$/;"	f
+SwapTwoInteraction	diagram.py	/^def SwapTwoInteraction(permutation, m, n, k, l):$/;"	f
+SwapTwoVertex	diagram.py	/^def SwapTwoVertex(permutation, i, j):$/;"	f
+ToString	polar.py	/^    def ToString(self, PolarHugenList, VerOrder, SigmaOrder, QOrder, IsSelfEnergy, IsSpinPolar, IsSysPolar, SPIN):$/;"	m	class:polar
+UnionFind	unionfind.py	/^class UnionFind:$/;"	c
+__ChainDiag	free_energy.py	/^    def __ChainDiag(self):$/;"	m	class:free_energy	file:
+__FindDeformation	polar.py	/^    def __FindDeformation(self, permutation, PermutationDict, TimeRotation):$/;"	m	class:polar	file:
+__GenerateMomentum	free_energy.py	/^    def __GenerateMomentum(self, permutation, OldMomentum, i, j):$/;"	m	class:free_energy	file:
+__GetEqDiags	free_energy.py	/^    def __GetEqDiags(self, UnlabeledDiagram):$/;"	m	class:free_energy	file:
+__GetInteractionMom	polar.py	/^    def __GetInteractionMom(self, Permutation, Mom):$/;"	m	class:polar	file:
+__InterCounterTerms	polar.py	/^    def __InterCounterTerms(self, CounterTermOrder):$/;"	m	class:polar	file:
+__IsReducibile	polar.py	/^    def __IsReducibile(self, Permutation, LoopBasis, vertype, gtype, IsSelfEnergy, IsSysPolar):$/;"	m	class:polar	file:
+__ReNameDiag	free_energy.py	/^    def __ReNameDiag(self, DiagListInput, Initial=0):$/;"	m	class:free_energy	file:
+__SigmaCounterTerms	polar.py	/^    def __SigmaCounterTerms(self, CounterTermOrder):$/;"	m	class:polar	file:
+__VerBasis	polar.py	/^    def __VerBasis(self, index):$/;"	m	class:polar	file:
+__enter__	logger.py	/^    def __enter__(self):$/;"	m	class:DelayedInterrupt	file:
+__exit__	logger.py	/^    def __exit__(self, type, value, traceback):$/;"	m	class:DelayedInterrupt	file:
+__init__	diagram.py	/^    def __init__(self, order):$/;"	m	class:diagram
+__init__	free_energy.py	/^    def __init__(self, Order):$/;"	m	class:free_energy
+__init__	polar.py	/^    def __init__(self, Order):$/;"	m	class:polar
+__init__	unionfind.py	/^    def __init__(self, n):$/;"	m	class:UnionFind
+_wrap_with	color.py	/^def _wrap_with(code):$/;"	f
+blue	color.py	/^blue = _wrap_with('34')$/;"	v
+ch	logger.py	/^ch = logging.StreamHandler(sys.stdout)$/;"	v
+currentdir	logger.py	/^currentdir = os.path.dirname(os.path.abspath($/;"	v
+cyan	color.py	/^cyan = _wrap_with('36')$/;"	v
+datefmt	logger.py	/^                              datefmt='%y\/%m\/%d %H:%M:%S')$/;"	v
+diagram	diagram.py	/^class diagram:$/;"	c
+fh	logger.py	/^fh = logging.FileHandler(os.path.join(workspace, 'diagram.log'))$/;"	v
+find	unionfind.py	/^    def find(self, node):$/;"	m	class:UnionFind
+formatter	logger.py	/^formatter = logging.Formatter(fmt="[calc][%(asctime)s][%(levelname)s]:\\n%(message)s",$/;"	v
+free_energy	free_energy.py	/^class free_energy:$/;"	c
+friend_circles	unionfind.py	/^def friend_circles(friends):$/;"	f
+friends	unionfind.py	/^    friends = ["YNNNN", "NYNNN", "NNYNN", "NNNYN", "NNNNY"]$/;"	v
+get_n_circles	unionfind.py	/^    def get_n_circles(self):$/;"	m	class:UnionFind
+green	color.py	/^green = _wrap_with('32')$/;"	v
+handler	logger.py	/^    def handler(self, signal, frame):$/;"	m	class:DelayedInterrupt
+inner	color.py	/^    def inner(text, bold=False):$/;"	f	function:_wrap_with
+is_connected	unionfind.py	/^    def is_connected(self, node1, node2):$/;"	m	class:UnionFind
+log	logger.py	/^log = logging.getLogger()$/;"	v
+magenta	color.py	/^magenta = _wrap_with('35')$/;"	v
+memory_usage	logger.py	/^def memory_usage():$/;"	f
+nullspace	nullspace.py	/^def nullspace(A, atol=1e-13, rtol=0):$/;"	f
+parentdir	logger.py	/^parentdir = os.path.dirname(currentdir)$/;"	v
+polar	polar.py	/^class polar():$/;"	c
+rank	nullspace.py	/^def rank(A, atol=1e-13, rtol=0):$/;"	f
+red	color.py	/^red = _wrap_with('31')$/;"	v
+union	unionfind.py	/^    def union(self, node1, node2):$/;"	m	class:UnionFind
+white	color.py	/^white = _wrap_with('37')$/;"	v
+workspace	logger.py	/^workspace = parentdir$/;"	v
+yellow	color.py	/^yellow = _wrap_with('33')$/;"	v

@@ -14,8 +14,8 @@ include("parquet.jl")
 using .Parquet
 # export Parquet
 
-include("readfile.jl")
-export read_onediagram, read_diagrams
+include("G0_Yukawa_diagrams/readfile.jl")
+# export read_onediagram, read_diagrams
 
 
 end

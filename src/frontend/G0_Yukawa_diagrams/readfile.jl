@@ -2,30 +2,6 @@
 𝑎⁻(i) = Op.𝑓⁻(i)
 𝜙(i) = Op.𝜙(i)
 
-# struct CurrentLabels <: AbstractVector{Int}
-#     order::Int
-# end
-
-# Base.size(A::CurrentLabels) = (3^A.order,)
-# Base.IndexStyle(::Type{<:CurrentLabels}) = IndexLinear()
-# Base.getindex(A::CurrentLabels, i::Int) = digits(Int, i - 1, base=3, pad=A.order) .- 1
-
-# _current_to_index(current::AbstractVector; base::Int=3) = sum((current[k] + 1) * base^(k - 1) for k in eachindex(current)) + 1
-
-# struct CurrentLabels{N} <: AbstractVector{Int}
-#     currents::Vector{NTuple{N,Int}}
-#     function CurrentLabels(order::Int)
-#         comb = Iterators.product(fill([0,1,-1], order)...) |> collect |> vec
-#         currents = filter(A-> A[findfirst(a -> a!=0, A)]==1, comb[2:end])
-#         push!(currents, ntuple(x->0, Val(order)))
-#         return new{order}(currents)
-#     end
-# end
-
-# Base.size(A::CurrentLabels) = (length(A.currents),)
-# Base.IndexStyle(::Type{<:CurrentLabels}) = IndexLinear()
-# Base.getindex(A::CurrentLabels, i::Int) = Base.getindex(A.currents, i)
-
 function _StringtoIntVector(str::AbstractString)
     return [parse(Int, m.match) for m in eachmatch(r"\d+", str)]
 end
@@ -145,8 +121,11 @@ function read_onediagram(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex:
 
         # label1 = index_to_linear(fermi_labelProd, tau_labels[ind1], current_index, ind_GType)
         # label2 = index_to_linear(fermi_labelProd, tau_labels[ind2], current_index, ind_GType)
-        label1 = index_to_linear((fermi_dims..., length(loopPool)), tau_labels[ind1], ind_GType, current_index)
-        label2 = index_to_linear((fermi_dims..., length(loopPool)), tau_labels[ind2], ind_GType, current_index)
+        # label1 = index_to_linear((fermi_dims..., length(loopPool)), tau_labels[ind1], ind_GType, current_index)
+        # label2 = index_to_linear((fermi_dims..., length(loopPool)), tau_labels[ind2], ind_GType, current_index)
+        labelProd_size = (fermi_dims..., length(loopPool))
+        label1 = LinearIndices(labelProd_size)[tau_labels[ind1], ind_GType, current_index]
+        label2 = LinearIndices(labelProd_size)[tau_labels[ind2], ind_GType, current_index]
 
         vertices[ind1][1].label == 0 ? vertices[ind1] = 𝑎⁺(label1) : vertices[ind1] *= 𝑎⁺(label1)
         vertices[ind2][1].label == 0 ? vertices[ind2] = 𝑎⁻(label2) : vertices[ind2] *= 𝑎⁻(label2)
@@ -166,8 +145,11 @@ function read_onediagram(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex:
 
         # label1 = index_to_linear(bose_labelProd, tau_labels[ind1], current_index, ind1_WType)
         # label2 = index_to_linear(bose_labelProd, tau_labels[ind2], current_index, ind2_WType)
-        label1 = index_to_linear((bose_dims..., length(loopPool)), tau_labels[ind1], ind1_WType, current_index)
-        label2 = index_to_linear((bose_dims..., length(loopPool)), tau_labels[ind2], ind2_WType, current_index)
+        # label1 = index_to_linear((bose_dims..., length(loopPool)), tau_labels[ind1], ind1_WType, current_index)
+        # label2 = index_to_linear((bose_dims..., length(loopPool)), tau_labels[ind2], ind2_WType, current_index)
+        labelProd_size = (bose_dims..., length(loopPool))
+        label1 = LinearIndices(labelProd_size)[tau_labels[ind1], ind1_WType, current_index]
+        label2 = LinearIndices(labelProd_size)[tau_labels[ind2], ind2_WType, current_index]
 
         vertices[ind1][1].label == 0 ? vertices[ind1] = 𝜙(label1) : vertices[ind1] *= 𝜙(label1)
         vertices[ind2][1].label == 0 ? vertices[ind2] = 𝜙(label2) : vertices[ind2] *= 𝜙(label2)

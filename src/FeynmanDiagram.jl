@@ -124,7 +124,7 @@ include("frontend/frontends.jl")
 using .FrontEnds
 export FrontEnds
 export LabelProduct
-export read_onediagram, read_diagrams
+# export read_onediagram, read_diagrams
 
 include("diagram_tree/DiagTree.jl")
 using .DiagTree

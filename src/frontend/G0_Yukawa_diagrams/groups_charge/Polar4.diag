@@ -1,0 +1,518 @@
+#Type: Polarization
+#DiagNum: 23
+#Order: 4
+#GNum: 8
+#Ver4Num: 3
+#LoopNum: 5
+#ExtLoopIndex: 0
+#DummyLoopIndex: 
+#TauNum: 5
+#ExtTauIndex: 0 1
+#DummyTauIndex: 
+
+# Permutation
+ 2  7  0  4  3  6  5  1 
+# SymFactor
+-1.0
+# GType
+ 0  0  0  0  0  0  0  0 
+# VertexBasis
+ 0  1  2  2  3  3  4  4 
+ 2  4  0  3  2  4  3  1 
+# LoopBasis
+ 1  0  0  1  0  1  0  1 
+ 1  0  1  0  0  0  0  0 
+ 0  0  0  1  1  0  0  0 
+ 0  0  0  0  0  1  1  0 
+ 0  1  0  0  0  0  0  1 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 0  2  4  3 | 3  4  6  5 | 5  6  1  7 |
+# WType(Direct,Exchange)
+ 0  0 | 0  0 | 0  0 |
+# SpinFactor
+ 0  0  0  0  0  0  0 -2 
+
+# Permutation
+ 4  7  6  0  3  2  5  1 
+# SymFactor
+0.5
+# GType
+ 0  0  0  0  0  0  0  0 
+# VertexBasis
+ 0  1  2  2  3  3  4  4 
+ 3  4  4  0  2  2  3  1 
+# LoopBasis
+ 1  0  1  0  0  1  0  1 
+ 0  0  0  0 -1  1  0  0 
+ 1  0  0  1  1  0  0  0 
+ 0  0  1  0  1  0  1  0 
+ 0  1  0  0  0  0  0  1 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 5  2  4  3 | 0  4  6  5 | 2  6  1  7 |
+# WType(Direct,Exchange)
+ 0  0 | 0  0 | 0  0 |
+# SpinFactor
+ 0 -4  0  2  0  2  0 -4 
+
+# Permutation
+ 7  0  6  4  3  2  5  1 
+# SymFactor
+0.5
+# GType
+ 0  0  0  0  0  0  0  0 
+# VertexBasis
+ 0  1  2  2  3  3  4  4 
+ 4  0  4  3  2  2  3  1 
+# LoopBasis
+ 1  0  0  0  0  0  0  1 
+ 0  0  0  0 -1  1  0  0 
+ 0  0  0  1  1  0  0  0 
+ 0  0  1  0  1  0  1  0 
+ 1  1  0  0  0  0  0  1 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 5  2  4  3 | 3  4  6  5 | 2  6  0  7 |
+# WType(Direct,Exchange)
+ 0  0 | 0  0 | 0  0 |
+# SpinFactor
+ 0 -4  0  2  0  2  0 -4 
+
+# Permutation
+ 7  2  6  4  3  1  5  0 
+# SymFactor
+1.0
+# GType
+ 0  0  0  0  0  0  0  0 
+# VertexBasis
+ 0  1  2  2  3  3  4  4 
+ 4  2  4  3  2  1  3  0 
+# LoopBasis
+ 1  0  0  0  0  1  1  0 
+ 0  1  0  0 -1  1  0  0 
+ 0  0  0  1  1  0  0  0 
+ 0  0  1  0  1  0  1  0 
+ 1  0  0  0  0  0  0  1 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 1  2  4  3 | 3  4  6  5 | 2  6  0  7 |
+# WType(Direct,Exchange)
+ 0  0 | 0  0 | 0  0 |
+# SpinFactor
+ 0 -4  0  2  0  2  0 -4 
+
+# Permutation
+ 7  5  6  4  3  2  1  0 
+# SymFactor
+0.5
+# GType
+ 0  0  0  0  0  0  0  0 
+# VertexBasis
+ 0  1  2  2  3  3  4  4 
+ 4  3  4  3  2  2  1  0 
+# LoopBasis
+ 1  0  0  0  0  0  1  0 
+ 0  0  0  0 -1  1  0  0 
+ 0  0  0  1  1  0  0  0 
+ 0  1  1  0  1  0  1  0 
+ 1  0  0  0  0  0  0  1 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 5  2  4  3 | 3  4  1  5 | 2  6  0  7 |
+# WType(Direct,Exchange)
+ 0  0 | 0  0 | 0  0 |
+# SpinFactor
+ 0 -4  0  2  0  2  0 -4 
+
+# Permutation
+ 6  7  0  4  3  2  5  1 
+# SymFactor
+0.5
+# GType
+ 0  0  0  0  0  0  0  0 
+# VertexBasis
+ 0  1  2  2  3  3  4  4 
+ 4  4  0  3  2  2  3  1 
+# LoopBasis
+ 1  0  0  0  0  0  0  1 
+ 0  0  0  0 -1  1  0  0 
+ 0  0  0  1  1  0  0  0 
+ 1  0  1  0  1  0  1  0 
+ 0  1  0  0  0  0  0  1 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 5  2  4  3 | 3  4  6  5 | 0  6  1  7 |
+# WType(Direct,Exchange)
+ 0  0 | 0  0 | 0  0 |
+# SpinFactor
+ 0 -4  0  2  0  2  0 -4 
+
+# Permutation
+ 7  4  6  1  3  2  5  0 
+# SymFactor
+0.5
+# GType
+ 0  0  0  0  0  0  0  0 
+# VertexBasis
+ 0  1  2  2  3  3  4  4 
+ 4  3  4  1  2  2  3  0 
+# LoopBasis
+ 1  0  0  1  1  0  1  0 
+ 0  0  0  0 -1  1  0  0 
+ 0  1  0  1  1  0  0  0 
+ 0  0  1  0  1  0  1  0 
+ 1  0  0  0  0  0  0  1 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 5  2  4  3 | 1  4  6  5 | 2  6  0  7 |
+# WType(Direct,Exchange)
+ 0  0 | 0  0 | 0  0 |
+# SpinFactor
+ 0 -4  0  2  0  2  0 -4 
+
+# Permutation
+ 3  7  6  4  0  2  5  1 
+# SymFactor
+1.0
+# GType
+ 0  0  0  0  0  0  0  0 
+# VertexBasis
+ 0  1  2  2  3  3  4  4 
+ 2  4  4  3  0  2  3  1 
+# LoopBasis
+ 1  0  1  0  0  0  0  1 
+-1  0  0  0 -1  1  0  0 
+ 1  0  0  1  1  0  0  0 
+ 1  0  1  0  1  0  1  0 
+ 0  1  0  0  0  0  0  1 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 5  2  0  3 | 3  4  6  5 | 2  6  1  7 |
+# WType(Direct,Exchange)
+ 0  0 | 0  0 | 0  0 |
+# SpinFactor
+ 0 -4  0  2  0  2  0 -4 
+
+# Permutation
+ 5  7  6  4  3  2  0  1 
+# SymFactor
+0.5
+# GType
+ 0  0  0  0  0  0  0  0 
+# VertexBasis
+ 0  1  2  2  3  3  4  4 
+ 3  4  4  3  2  2  0  1 
+# LoopBasis
+ 1  0  1  0  1  0  0  1 
+ 0  0  0  0 -1  1  0  0 
+ 0  0  0  1  1  0  0  0 
+ 1  0  1  0  1  0  1  0 
+ 0  1  0  0  0  0  0  1 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 5  2  4  3 | 3  4  0  5 | 2  6  1  7 |
+# WType(Direct,Exchange)
+ 0  0 | 0  0 | 0  0 |
+# SpinFactor
+ 0 -4  0  2  0  2  0 -4 
+
+# Permutation
+ 1  7  6  4  3  2  5  0 
+# SymFactor
+0.5
+# GType
+ 0  0  0  0  0  0  0  0 
+# VertexBasis
+ 0  1  2  2  3  3  4  4 
+ 1  4  4  3  2  2  3  0 
+# LoopBasis
+ 1  0  0  0  0  0  0  0 
+ 0  0  0  0 -1  1  0  0 
+ 0  0  0  1  1  0  0  0 
+ 0  0  1  0  1  0  1  0 
+ 1  1  0  0  0  0  0  1 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 5  2  4  3 | 3  4  6  5 | 2  6  1  7 |
+# WType(Direct,Exchange)
+ 0  0 | 0  0 | 0  0 |
+# SpinFactor
+ 0 -4  0  2  0  2  0 -4 
+
+# Permutation
+ 7  6  1  4  3  2  5  0 
+# SymFactor
+0.5
+# GType
+ 0  0  0  0  0  0  0  0 
+# VertexBasis
+ 0  1  2  2  3  3  4  4 
+ 4  4  1  3  2  2  3  0 
+# LoopBasis
+ 1  0  1  0  1  0  1  0 
+ 0  0  0  0 -1  1  0  0 
+ 0  0  0  1  1  0  0  0 
+ 0  1  1  0  1  0  1  0 
+ 1  0  0  0  0  0  0  1 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 5  2  4  3 | 3  4  6  5 | 1  6  0  7 |
+# WType(Direct,Exchange)
+ 0  0 | 0  0 | 0  0 |
+# SpinFactor
+ 0 -4  0  2  0  2  0 -4 
+
+# Permutation
+ 3  4  6  7  0  2  5  1 
+# SymFactor
+-0.5
+# GType
+ 0  0  0  0  0  0  0  0 
+# VertexBasis
+ 0  1  2  2  3  3  4  4 
+ 2  3  4  4  0  2  3  1 
+# LoopBasis
+ 1  0  1  0  0  0  0  1 
+-1  0  0  0 -1  1  0  0 
+ 1  1  1  0  1  0  0  1 
+ 1  0  1  0  1  0  1  0 
+ 0  0 -1  1  0  0  0  0 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 5  2  0  3 | 1  4  6  5 | 2  6  3  7 |
+# WType(Direct,Exchange)
+ 0  0 | 0  0 | 0  0 |
+# SpinFactor
+ 4 -2 -2  4 -2  4  4 -2 
+
+# Permutation
+ 5  4  6  7  3  2  0  1 
+# SymFactor
+-0.25
+# GType
+ 0  0  0  0  0  0  0  0 
+# VertexBasis
+ 0  1  2  2  3  3  4  4 
+ 3  3  4  4  2  2  0  1 
+# LoopBasis
+ 1  0  1  0  1  0  0  1 
+ 0  0  0  0 -1  1  0  0 
+ 0  1  1  0  1  0  0  1 
+ 1  0  1  0  1  0  1  0 
+ 0  0 -1  1  0  0  0  0 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 5  2  4  3 | 1  4  0  5 | 2  6  3  7 |
+# WType(Direct,Exchange)
+ 0  0 | 0  0 | 0  0 |
+# SpinFactor
+ 4 -2 -2  4 -2  4  4 -2 
+
+# Permutation
+ 4  3  6  7  1  2  5  0 
+# SymFactor
+-0.5
+# GType
+ 0  0  0  0  0  0  0  0 
+# VertexBasis
+ 0  1  2  2  3  3  4  4 
+ 3  2  4  4  1  2  3  0 
+# LoopBasis
+ 1  0  0  0  1  0  0  0 
+ 0 -1  0  0 -1  1  0  0 
+ 1  1  1  0  1  0  0  1 
+ 0  1  1  0  1  0  1  0 
+ 0  0 -1  1  0  0  0  0 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 5  2  1  3 | 0  4  6  5 | 2  6  3  7 |
+# WType(Direct,Exchange)
+ 0  0 | 0  0 | 0  0 |
+# SpinFactor
+ 4 -2 -2  4 -2  4  4 -2 
+
+# Permutation
+ 1  3  6  7  0  2  5  4 
+# SymFactor
+-0.25
+# GType
+ 0  0  0  0  0  0  0  0 
+# VertexBasis
+ 0  1  2  2  3  3  4  4 
+ 1  2  4  4  0  2  3  3 
+# LoopBasis
+ 1  0  0  0  0  0  0  0 
+-1 -1  0  0 -1  1  0  0 
+ 1  1  1  0  1  0  0  1 
+ 1  1  1  0  1  0  1  0 
+ 0  0 -1  1  0  0  0  0 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 5  2  1  3 | 7  4  6  5 | 2  6  3  7 |
+# WType(Direct,Exchange)
+ 0  0 | 0  0 | 0  0 |
+# SpinFactor
+ 4 -2 -2  4 -2  4  4 -2 
+
+# Permutation
+ 6  0  1  7  3  2  5  4 
+# SymFactor
+-0.25
+# GType
+ 0  0  0  0  0  0  0  0 
+# VertexBasis
+ 0  1  2  2  3  3  4  4 
+ 4  0  1  4  2  2  3  3 
+# LoopBasis
+ 1  0  1  0  0  1  0  1 
+ 0  0  0  0 -1  1  0  0 
+ 1  1  1  0  1  0  0  1 
+ 1  1  1  0  1  0  1  0 
+-1 -1 -1  1  0  0  0  0 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 5  2  4  3 | 7  4  6  5 | 0  6  3  7 |
+# WType(Direct,Exchange)
+ 0  0 | 0  0 | 0  0 |
+# SpinFactor
+ 4 -2 -2  4 -2  4  4 -2 
+
+# Permutation
+ 2  0  6  4  7  1  5  3 
+# SymFactor
+-1.0
+# GType
+ 0  0  0  0  0  0  0  0 
+# VertexBasis
+ 0  1  2  2  3  3  4  4 
+ 2  0  4  3  4  1  3  2 
+# LoopBasis
+ 1  0  0  1  0  1  0  0 
+ 1  1  0  0  0  1  1 -1 
+ 0  0  0  1  0  0 -1  1 
+ 0  0  1  0  0  0  0  1 
+ 0  0  0  0  1  0  1  0 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 0  2  7  3 | 3  4  6  5 | 2  6  4  7 |
+# WType(Direct,Exchange)
+ 0  0 | 0  0 | 0  0 |
+# SpinFactor
+ 4 -2 -2  4 -2  4  4 -8 
+
+# Permutation
+ 1  3  6  4  7  2  5  0 
+# SymFactor
+-1.0
+# GType
+ 0  0  0  0  0  0  0  0 
+# VertexBasis
+ 0  1  2  2  3  3  4  4 
+ 1  2  4  3  4  2  3  0 
+# LoopBasis
+ 1  0  0  0  0  0  0  0 
+-1 -1  0  0  0  1  1 -1 
+ 1  1  0  1  0  0 -1  1 
+ 1  1  1  0  0  0  0  1 
+ 0  0  0  0  1  0  1  0 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 5  2  1  3 | 3  4  6  5 | 2  6  4  7 |
+# WType(Direct,Exchange)
+ 0  0 | 0  0 | 0  0 |
+# SpinFactor
+ 4 -2 -2  4 -2  4  4 -8 
+
+# Permutation
+ 4  7  6  0  1  2  5  3 
+# SymFactor
+-1.0
+# GType
+ 0  0  0  0  0  0  0  0 
+# VertexBasis
+ 0  1  2  2  3  3  4  4 
+ 3  4  4  0  1  2  3  2 
+# LoopBasis
+ 1  0  0  0  1  0  0  0 
+ 0  0  0  0  0  1  1 -1 
+ 1  0  0  1  0  0 -1  1 
+ 0  0  1  0  0  0  0  1 
+ 0  1  0  0  1  0  1  0 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 5  2  7  3 | 0  4  6  5 | 2  6  1  7 |
+# WType(Direct,Exchange)
+ 0  0 | 0  0 | 0  0 |
+# SpinFactor
+ 4 -2 -2  4 -2  4  4 -8 
+
+# Permutation
+ 5  3  6  4  7  2  0  1 
+# SymFactor
+-1.0
+# GType
+ 0  0  0  0  0  0  0  0 
+# VertexBasis
+ 0  1  2  2  3  3  4  4 
+ 3  2  4  3  4  2  0  1 
+# LoopBasis
+ 1  0  0  0  1  0  0  1 
+ 1 -1  0  0  0  1  1 -1 
+-1  1  0  1  0  0 -1  1 
+ 0  1  1  0  0  0  0  1 
+ 1  0  0  0  1  0  1  0 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 5  2  1  3 | 3  4  0  5 | 2  6  4  7 |
+# WType(Direct,Exchange)
+ 0  0 | 0  0 | 0  0 |
+# SpinFactor
+ 4 -2 -2  4 -2  4  4 -8 
+
+# Permutation
+ 4  5  6  0  7  2  1  3 
+# SymFactor
+-1.0
+# GType
+ 0  0  0  0  0  0  0  0 
+# VertexBasis
+ 0  1  2  2  3  3  4  4 
+ 3  3  4  0  4  2  1  2 
+# LoopBasis
+ 1  0  1  0  0  1  1  0 
+ 0  1  0  0  0  1  1 -1 
+ 1 -1  0  1  0  0 -1  1 
+ 0  0  1  0  0  0  0  1 
+ 0  1  0  0  1  0  1  0 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 5  2  7  3 | 0  4  1  5 | 2  6  4  7 |
+# WType(Direct,Exchange)
+ 0  0 | 0  0 | 0  0 |
+# SpinFactor
+ 4 -2 -2  4 -2  4  4 -8 
+
+# Permutation
+ 3  6  1  4  7  2  5  0 
+# SymFactor
+-1.0
+# GType
+ 0  0  0  0  0  0  0  0 
+# VertexBasis
+ 0  1  2  2  3  3  4  4 
+ 2  4  1  3  4  2  3  0 
+# LoopBasis
+ 1  0  1  0  0  0  0  0 
+-1  0  0  0  0  1  1 -1 
+ 1  0  0  1  0  0 -1  1 
+ 1  1  1  0  0  0  0  1 
+ 0  0  0  0  1  0  1  0 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 5  2  0  3 | 3  4  6  5 | 1  6  4  7 |
+# WType(Direct,Exchange)
+ 0  0 | 0  0 | 0  0 |
+# SpinFactor
+ 4 -2 -2  4 -2  4  4 -8 
+
+# Permutation
+ 4  3  6  0  7  2  5  1 
+# SymFactor
+-1.0
+# GType
+ 0  0  0  0  0  0  0  0 
+# VertexBasis
+ 0  1  2  2  3  3  4  4 
+ 3  2  4  0  4  2  3  1 
+# LoopBasis
+ 1  0  1  0  0  1  0  1 
+ 0 -1  0  0  0  1  1 -1 
+ 1  1  0  1  0  0 -1  1 
+ 0  1  1  0  0  0  0  1 
+ 0  0  0  0  1  0  1  0 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 5  2  1  3 | 0  4  6  5 | 2  6  4  7 |
+# WType(Direct,Exchange)
+ 0  0 | 0  0 | 0  0 |
+# SpinFactor
+ 4 -2 -2  4 -2  4  4 -8 
+

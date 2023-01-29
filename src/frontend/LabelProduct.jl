@@ -59,20 +59,23 @@ Convert a tuple of the indexes of each label to a single linear index of the Lab
 - 'obj': The LabelProduct object
 - 'index...': N indexes of the label factor, where N is the number of label factor
 """
-@generated function index_to_linear(obj::LabelProduct{LT,N}, I...) where {LT,N}
-    ex = :(I[$N] - 1)
-    for i = (N-1):-1:1
-        ex = :(I[$i] - 1 + obj.dims[$i] * $ex)
-    end
-    return :($ex + 1)
+function index_to_linear(obj::LabelProduct{LT,N}, I...) where {LT,N}
+    return LinearIndices(obj.dims)[I...]
 end
-@generated function index_to_linear(dims::NTuple{N,Int}, I...) where {N}
-    ex = :(I[$N] - 1)
-    for i = (N-1):-1:1
-        ex = :(I[$i] - 1 + dims[$i] * $ex)
-    end
-    return :($ex + 1)
-end
+# @generated function index_to_linear(obj::LabelProduct{LT,N}, I...) where {LT,N}
+#     ex = :(I[$N] - 1)
+#     for i = (N-1):-1:1
+#         ex = :(I[$i] - 1 + obj.dims[$i] * $ex)
+#     end
+#     return :($ex + 1)
+# end
+# @generated function index_to_linear(dims::NTuple{N,Int}, I...) where {N}
+#     ex = :(I[$N] - 1)
+#     for i = (N-1):-1:1
+#         ex = :(I[$i] - 1 + dims[$i] * $ex)
+#     end
+#     return :($ex + 1)
+# end
 
 """
     function linear_to_index(obj::LabelProduct, I::Int)
