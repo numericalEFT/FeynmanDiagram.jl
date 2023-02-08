@@ -124,6 +124,11 @@ include("frontend/frontends.jl")
 using .FrontEnds
 export FrontEnds
 export LabelProduct
+
+include("frontend/ElectronLiquid.jl")
+using .ElectronLiquidGraph
+export ElectronLiquidGraph
+export PolarEachOrder, PolarDiagrams
 # export read_onediagram, read_diagrams
 
 include("diagram_tree/DiagTree.jl")

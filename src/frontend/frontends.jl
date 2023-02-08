@@ -6,6 +6,7 @@ import ..ComputationalGraphs: Graph
 import ..ComputationalGraphs: _dtype
 
 include("pool.jl")
+export LoopPool
 
 include("LabelProduct.jl")
 export LabelProduct
@@ -13,9 +14,5 @@ export LabelProduct
 include("parquet.jl")
 using .Parquet
 # export Parquet
-
-include("G0_Yukawa_diagrams/readfile.jl")
-# export read_onediagram, read_diagrams
-
 
 end

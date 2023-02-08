@@ -15,12 +15,12 @@
 # SymFactor
 -1.0
 # GType
- 0  0
+ -1 -1 
 # VertexBasis
  0  1
  1  0
 # LoopBasis
- 1  0 
+ 0  0 
  1  1  
 # Ver4Legs(InL,OutL,InR,OutR)
 # WType(Direct,Exchange)

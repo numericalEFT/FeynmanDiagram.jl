@@ -6,7 +6,8 @@ function _StringtoIntVector(str::AbstractString)
     return [parse(Int, m.match) for m in eachmatch(r"\d+", str)]
 end
 
-function read_diagrams(filename::AbstractString; dim::Int=3, GTypes=[0, 1], WTypes=[0, 1, 2],
+function read_diagrams(filename::AbstractString; loopPool::Union{LoopPool,Nothing}=nothing,
+    dim::Int=3, tau_labels::Union{Nothing,Vector{Int}}=nothing, GTypes=[0, 1], WTypes=[0, 1, 2],
     keywords::Vector{String}=["Polarization", "DiagNum", "Order", "GNum", "Ver4Num", "LoopNum", "ExtLoopIndex",
         "DummyLoopIndex", "TauNum", "ExtTauIndex", "DummyTauIndex"])
 
@@ -36,7 +37,9 @@ function read_diagrams(filename::AbstractString; dim::Int=3, GTypes=[0, 1], WTyp
         lineNum += 1
     end
 
-    tau_labels = collect(1:tauNum)
+    if isnothing(tau_labels)
+        tau_labels = collect(1:tauNum)
+    end
     # current_labels = CurrentLabels(loopNum)
     # innerlabels = []
     # GTypeNum >1 && push!(innerlabels, collect(1:GTypeNum))
@@ -44,9 +47,11 @@ function read_diagrams(filename::AbstractString; dim::Int=3, GTypes=[0, 1], WTyp
     # labelProd = LabelProduct(tau_labels, current_labels, innerlabels...)
     fermi_labelProd = LabelProduct(tau_labels, GTypes)
     bose_labelProd = LabelProduct(tau_labels, WTypes)
-    loopPool = LoopPool(:K, dim, loopNum, Float64)
+    if isnothing(loopPool)
+        loopPool = LoopPool(:K, dim, loopNum, Float64)
+    end
 
-    diagrams = IR.Graph[]
+    diagrams = Graph{_dtype.factor,_dtype.weight}[]
     for i in 1:diagNum
         diag, loopPool = read_onediagram(IOBuffer(readuntil(io, "\n\n")), GNum, verNum, loopNum, extIndex, fermi_labelProd, bose_labelProd, loopPool)
         push!(diagrams, diag)
@@ -55,8 +60,7 @@ function read_diagrams(filename::AbstractString; dim::Int=3, GTypes=[0, 1], WTyp
 
     fermi_labelProd = LabelProduct(tau_labels, GTypes, loopPool)
     bose_labelProd = LabelProduct(tau_labels, WTypes, loopPool)
-    # return IR.group(diagrams, extIndex)
-    return IR.Graph(diagrams, external=[1, 2, 3, 4], hasLeg=[false, false, false, false]), fermi_labelProd, bose_labelProd
+    return IR.linear_combination(diagrams, ones(_dtype.factor, diagNum)), fermi_labelProd, bose_labelProd
 end
 
 function read_onediagram(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex::Vector{Int}, fermi_labelProd::LabelProduct,
@@ -87,11 +91,17 @@ function read_onediagram(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex:
     end
 
     @assert occursin("Ver4Legs", readline(io))
-    strs = split(readline(io), splitter)
-    ver4Legs = _StringtoIntVector.(strs[1:verNum])
+    if verNum == 0
+        ver4Legs = []
+    else
+        strs = split(readline(io), splitter)
+        ver4Legs = _StringtoIntVector.(strs[1:verNum])
+    end
 
     @assert occursin("WType", readline(io))
-    opWType = _StringtoIntVector(readline(io))
+    if verNum > 0
+        opWType = _StringtoIntVector(readline(io))
+    end
 
     @assert occursin("SpinFactor", readline(io))
     spinFactors = _StringtoIntVector(readline(io))
@@ -116,7 +126,7 @@ function read_onediagram(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex:
     # create all fermionic operators
     for (ind1, ind2) in enumerate(permutation)
         # current_index = _current_to_index(currentBasis[ind1, :])
-        current_index = append(loopPool, currentBasis[ind1, :])
+        current_index = FrontEnds.append(loopPool, currentBasis[ind1, :])
         ind_GType = findfirst(p -> p == opGType[ind1], GTypes)
 
         # label1 = index_to_linear(fermi_labelProd, tau_labels[ind1], current_index, ind_GType)
@@ -137,7 +147,7 @@ function read_onediagram(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex:
         current = currentBasis[verLeg[1]-offset, :] - currentBasis[verLeg[2]-offset, :]
         @assert current == currentBasis[verLeg[4]-offset, :] - currentBasis[verLeg[3]-offset, :] # momentum conservation
         # current_index = _current_to_index(current)
-        current_index = append(loopPool, current)
+        current_index = FrontEnds.append(loopPool, current)
 
         ind1, ind2 = 2 * iVer - 1 + extNum, 2 * iVer + extNum
         ind1_WType = findfirst(p -> p == opWType[ind1-extNum], WTypes)
@@ -156,15 +166,22 @@ function read_onediagram(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex:
         push!(connected_operators, 𝜙(label1)𝜙(label2))
     end
 
+    # add external operators in each external vertices
+    external_current = append!([1], zeros(Int, loopNum - 1))
+    extcurrent_index = FrontEnds.append(loopPool, external_current)
+    for ind in extIndex .- offset
+        labelProd_size = (bose_dims..., length(loopPool))
+        label = LinearIndices(labelProd_size)[tau_labels[ind], 1, extcurrent_index]
+        vertices[ind] *= 𝜙(label)
+    end
+
     operators = Op.OperatorProduct(vertices)
     contraction = Vector{Int}[]
     for connection in connected_operators
         push!(contraction, [findfirst(x -> x == connection[1], operators), findlast(x -> x == connection[2], operators)])
     end
 
-    # println(operators)
-    # println(connected_operators)
-    # println(contraction)
-    return IR.feynman_diagram([IR.external_vertex.(vertices[1:extNum]); IR.interaction.(vertices[extNum+1:end])],
-        contraction, factor=symfactor * spinFactors[1]), loopPool
+    return IR.feynman_diagram(IR.interaction.(vertices), contraction, factor=symfactor * spinFactors[1]), loopPool
+    # return IR.feynman_diagram([IR.external_vertex.(vertices[1:extNum]); IR.interaction.(vertices[extNum+1:end])],
+    # contraction, factor=symfactor * spinFactors[1]), loopPool
 end
