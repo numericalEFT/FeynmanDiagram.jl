@@ -23,6 +23,8 @@ makedocs(;
         "API reference" => Any[
             "lib/operator.md",
             "lib/computgraph.md",
+            "lib/frontend.md",
+            "lib/GW.md",
             "lib/parquet.md",
             "lib/diagtree.md",
             "lib/exprtree.md",

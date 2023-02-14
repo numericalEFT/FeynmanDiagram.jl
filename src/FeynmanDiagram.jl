@@ -125,9 +125,9 @@ using .FrontEnds
 export FrontEnds
 export LabelProduct
 
-include("frontend/ElectronLiquid.jl")
-using .ElectronLiquidGraph
-export ElectronLiquidGraph
+include("frontend/GW.jl")
+using .GW
+export GW
 export PolarEachOrder, PolarDiagrams
 # export read_onediagram, read_diagrams
 

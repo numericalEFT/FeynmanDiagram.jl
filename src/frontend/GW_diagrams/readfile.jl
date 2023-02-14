@@ -6,6 +6,30 @@ function _StringtoIntVector(str::AbstractString)
     return [parse(Int, m.match) for m in eachmatch(r"\d+", str)]
 end
 
+"""
+    function read_diagrams(filename::AbstractString; loopPool::Union{LoopPool,Nothing}=nothing,
+        dim::Int=3, tau_labels::Union{Nothing,Vector{Int}}=nothing, GTypes=[0, 1], WTypes=[0, 1, 2],
+        keywords::Vector{String}=["Polarization", "DiagNum", "Order", "GNum", "Ver4Num", "LoopNum", "ExtLoopIndex",
+            "DummyLoopIndex", "TauNum", "ExtTauIndex", "DummyTauIndex"])
+
+    Reads a GW_diagrams file and returns Graph of diagrams in this file 
+    and the corresponding `LabelProduct` objects, which are used to keep track of QuantumOperator.label.
+
+# Arguments:
+- `filename` (AbstractString): The path to the file containing the diagrams.
+- `loopPool` (Union{LoopPool,Nothing}): An optional `LoopPool` object. If not provided, a new one will be created.
+- `dim` (Int): The dimension of the system, used to initialize the `LoopPool` object. Default is 3.
+- `tau_labels` (Union{Nothing,Vector{Int}}): The labels for the `Tau` objects in the diagrams. If not provided, they will be set to the integers from 1 to `tauNum`.
+- `GTypes` (Vector{Int}): The labels for the fermionic `G` objects in the diagrams. Default is `[0, 1]`.
+- `WTypes` (Vector{Int}): The labels for the bosonic `W` objects in the diagrams. Default is `[0, 1, 2]`.
+- `keywords` (Vector{String}): A set of keywords used to extract information from the file. Default is `["Polarization", "DiagNum", "Order", "GNum", "Ver4Num", "LoopNum", "ExtLoopIndex", "DummyLoopIndex", "TauNum", "ExtTauIndex", "DummyTauIndex"]`.
+
+# Returns
+A tuple `(diagrams, fermi_labelProd, bose_labelProd)` where 
+- `diagrams` is a `Graph` object representing the diagrams, 
+- `fermi_labelProd` is a `LabelProduct` object containing the labels for the fermionic `G` objects in the diagrams, 
+- `bose_labelProd` is a `LabelProduct` object containing the labels for the bosonic `W` objects in the diagrams.
+"""
 function read_diagrams(filename::AbstractString; loopPool::Union{LoopPool,Nothing}=nothing,
     dim::Int=3, tau_labels::Union{Nothing,Vector{Int}}=nothing, GTypes=[0, 1], WTypes=[0, 1, 2],
     keywords::Vector{String}=["Polarization", "DiagNum", "Order", "GNum", "Ver4Num", "LoopNum", "ExtLoopIndex",
