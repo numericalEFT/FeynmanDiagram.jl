@@ -125,9 +125,9 @@ using .FrontEnds
 export FrontEnds
 export LabelProduct
 
-include("frontend/GW.jl")
-using .GW
-export GW
+include("frontend/GV.jl")
+using .GV
+export GV
 export PolarEachOrder, PolarDiagrams
 # export read_onediagram, read_diagrams
 

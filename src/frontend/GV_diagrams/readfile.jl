@@ -8,11 +8,11 @@ end
 
 """
     function read_diagrams(filename::AbstractString; loopPool::Union{LoopPool,Nothing}=nothing,
-        dim::Int=3, tau_labels::Union{Nothing,Vector{Int}}=nothing, GTypes=[0, 1], WTypes=[0, 1, 2],
+        dim::Int=3, tau_labels::Union{Nothing,Vector{Int}}=nothing, GTypes=[0, 1], VTypes=[0, 1, 2],
         keywords::Vector{String}=["Polarization", "DiagNum", "Order", "GNum", "Ver4Num", "LoopNum", "ExtLoopIndex",
             "DummyLoopIndex", "TauNum", "ExtTauIndex", "DummyTauIndex"])
 
-    Reads a GW_diagrams file and returns Graph of diagrams in this file 
+    Reads a GV_diagrams file and returns Graph of diagrams in this file 
     and the corresponding `LabelProduct` objects, which are used to keep track of QuantumOperator.label.
 
 # Arguments:
@@ -21,7 +21,7 @@ end
 - `dim` (Int): The dimension of the system, used to initialize the `LoopPool` object. Default is 3.
 - `tau_labels` (Union{Nothing,Vector{Int}}): The labels for the `Tau` objects in the diagrams. If not provided, they will be set to the integers from 1 to `tauNum`.
 - `GTypes` (Vector{Int}): The labels for the fermionic `G` objects in the diagrams. Default is `[0, 1]`.
-- `WTypes` (Vector{Int}): The labels for the bosonic `W` objects in the diagrams. Default is `[0, 1, 2]`.
+- `VTypes` (Vector{Int}): The labels for the bosonic `V` objects in the diagrams. Default is `[0, 1, 2]`.
 - `keywords` (Vector{String}): A set of keywords used to extract information from the file. Default is `["Polarization", "DiagNum", "Order", "GNum", "Ver4Num", "LoopNum", "ExtLoopIndex", "DummyLoopIndex", "TauNum", "ExtTauIndex", "DummyTauIndex"]`.
 
 # Returns
@@ -31,7 +31,7 @@ A tuple `(diagrams, fermi_labelProd, bose_labelProd)` where
 - `bose_labelProd` is a `LabelProduct` object containing the labels for the bosonic `W` objects in the diagrams.
 """
 function read_diagrams(filename::AbstractString; loopPool::Union{LoopPool,Nothing}=nothing,
-    dim::Int=3, tau_labels::Union{Nothing,Vector{Int}}=nothing, GTypes=[0, 1], WTypes=[0, 1, 2],
+    dim::Int=3, tau_labels::Union{Nothing,Vector{Int}}=nothing, GTypes=[0, 1], VTypes=[0, 1, 2],
     keywords::Vector{String}=["Polarization", "DiagNum", "Order", "GNum", "Ver4Num", "LoopNum", "ExtLoopIndex",
         "DummyLoopIndex", "TauNum", "ExtTauIndex", "DummyTauIndex"])
 
@@ -70,7 +70,7 @@ function read_diagrams(filename::AbstractString; loopPool::Union{LoopPool,Nothin
     # WTypeNum >1 && push!(innerlabels, collect(1:WTypeNum))
     # labelProd = LabelProduct(tau_labels, current_labels, innerlabels...)
     fermi_labelProd = LabelProduct(tau_labels, GTypes)
-    bose_labelProd = LabelProduct(tau_labels, WTypes)
+    bose_labelProd = LabelProduct(tau_labels, VTypes)
     if isnothing(loopPool)
         loopPool = LoopPool(:K, dim, loopNum, Float64)
     end
@@ -83,7 +83,7 @@ function read_diagrams(filename::AbstractString; loopPool::Union{LoopPool,Nothin
     close(io)
 
     fermi_labelProd = LabelProduct(tau_labels, GTypes, loopPool)
-    bose_labelProd = LabelProduct(tau_labels, WTypes, loopPool)
+    bose_labelProd = LabelProduct(tau_labels, VTypes, loopPool)
     return IR.linear_combination(diagrams, ones(_dtype.factor, diagNum)), fermi_labelProd, bose_labelProd
 end
 
@@ -137,7 +137,7 @@ function read_onediagram(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex:
     connected_operators = Op.OperatorProduct[]
 
     GTypes = fermi_labelProd.labels[2]
-    WTypes = bose_labelProd.labels[2]
+    VTypes = bose_labelProd.labels[2]
     fermi_dims = fermi_labelProd.dims
     bose_dims = bose_labelProd.dims
     # if staticBose
@@ -174,8 +174,8 @@ function read_onediagram(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex:
         current_index = FrontEnds.append(loopPool, current)
 
         ind1, ind2 = 2 * iVer - 1 + extNum, 2 * iVer + extNum
-        ind1_WType = findfirst(p -> p == opWType[ind1-extNum], WTypes)
-        ind2_WType = findfirst(p -> p == opWType[ind2-extNum], WTypes)
+        ind1_WType = findfirst(p -> p == opWType[ind1-extNum], VTypes)
+        ind2_WType = findfirst(p -> p == opWType[ind2-extNum], VTypes)
 
         # label1 = index_to_linear(bose_labelProd, tau_labels[ind1], current_index, ind1_WType)
         # label2 = index_to_linear(bose_labelProd, tau_labels[ind2], current_index, ind2_WType)

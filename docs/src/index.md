@@ -19,7 +19,7 @@ Pages = [
     "lib/operator.md",
     "lib/computgraph.md",
     "lib/frontend.md",
-    "lib/GW.md",
+    "lib/GV.md",
     "lib/parquet.md",
     "lib/diagtree.md",
     "lib/exprtree.md",
