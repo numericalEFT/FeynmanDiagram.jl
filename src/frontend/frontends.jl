@@ -5,6 +5,12 @@ import ..ComputationalGraphs as IR
 import ..ComputationalGraphs: Graph
 import ..ComputationalGraphs: _dtype
 
+include("pool.jl")
+export LoopPool
+
+include("LabelProduct.jl")
+export LabelProduct
+
 include("parquet.jl")
 using .Parquet
 # export Parquet
