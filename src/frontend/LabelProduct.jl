@@ -111,7 +111,7 @@ Get a label point of the LabelProduct at the given index. Return a tuple as `(mp
 @generated function Base.getindex(obj::LabelProduct{LT,N}, index...) where {LT,N}
     m = :(obj.labels[1][index[1]])
     for i in 2:N
-        m = :(($m, obj.labels[$i][index[$i]]))
+        m = :(($m..., obj.labels[$i][index[$i]]))
     end
     return :($m)
 end

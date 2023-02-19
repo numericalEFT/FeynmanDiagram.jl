@@ -30,15 +30,17 @@ mutable struct LoopPool{T} <: AbstractVector{T}
         loopNum = length(basis[1])
         N = length(basis) #number of basis
         @assert all(x -> length(x) == loopNum, basis)
-        loops = rands(T, (dim, N))
-        return new{T}(name, dim, loopNum, basis, loops)
+        # loops = rands(T, (dim, N))
+        loops = Matrix{T}(undef, dim, N)
+        return new{T}(name, dim, loopNum, reduce(hcat, basis), loops)
     end
 end
 
 Base.size(pool::LoopPool) = (size(pool.basis)[2],)
 Base.IndexStyle(::Type{<:LoopPool}) = IndexLinear()
 Base.getindex(pool::LoopPool, i::Int) = pool.basis[:, i]
-Base.setindex!(pool::LoopPool, v, i::Int) = setindex!(pool.basis, v, i)
+Base.setindex!(pool::LoopPool, v, i::Int) = pool.basis[:, i] = v
+# Base.setindex!(pool::LoopPool, v, i::Int) = setindex!(pool.basis, v, i)
 
 function update(pool::LoopPool, variable=rand(eltype(pool.loops), pool.dim, pool.loopNum))
     @assert size(variable)[1] == pool.dim
