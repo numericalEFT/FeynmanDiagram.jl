@@ -1,5 +1,6 @@
 module FrontEnds
 
+using LinearAlgebra
 import ..QuantumOperators as Op
 import ..ComputationalGraphs as IR
 import ..ComputationalGraphs: Graph

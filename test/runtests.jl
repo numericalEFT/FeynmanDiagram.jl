@@ -44,6 +44,7 @@ if isempty(ARGS)
     include("expression_tree.jl")
     include("parquet_builder.jl")
     include("compiler.jl")
+    include("front_end.jl")
 else
     include(ARGS[1])
 end
