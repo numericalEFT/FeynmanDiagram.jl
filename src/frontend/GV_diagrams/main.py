@@ -6,7 +6,7 @@ import sys
 
 def Generate(Order, VerOrder, SigmaOrder, IsSelfEnergy, IsSpinPolar, IsSysPolar, SPIN):
     LnZOrder = Order-1
-    DiagFile = "./Diagram/HugenDiag{0}.txt".format(LnZOrder)
+    DiagFile = "./Diagram/HugenDiag{0}.diag".format(LnZOrder)
     LnZ = free_energy(LnZOrder)
     # Load pre-generated lnZ diagrams
     # build labeled Feynman diagram to unlabled Hugenholtz diagram mapping
@@ -57,7 +57,7 @@ def Generate(Order, VerOrder, SigmaOrder, IsSelfEnergy, IsSpinPolar, IsSysPolar,
 
     print "Save diagrams ..."
 
-    fname = "./output/{0}{1}_{2}_{3}.txt".format(
+    fname = "./output/{0}{1}_{2}_{3}.diag".format(
         "Polar", Order, VerOrder, SigmaOrder)
     # with open(fname, "w") as f:
     with open(fname, "w") as f:
