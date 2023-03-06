@@ -175,7 +175,7 @@ class polar():
         #     PermutationDict)
         return list(DeformationFinal)
 
-    def ToString(self, PolarHugenList, VerOrder, SigmaOrder, QOrder, IsSelfEnergy, IsSpinPolar, IsSysPolar, SPIN):
+    def ToString(self, PolarHugenList, VerOrder, SigmaOrder, IsSelfEnergy, IsSpinPolar, IsSymPolar, SPIN):
         if len(PolarHugenList) == 0:
             return
 
@@ -195,7 +195,7 @@ class polar():
                     FactorList = []
 
                     for FeynPermu in FeynList:
-                        if self.__IsReducibile(FeynPermu, Diag.LoopBasis, vertype, gtype, IsSelfEnergy, IsSysPolar):
+                        if self.__IsReducibile(FeynPermu, Diag.LoopBasis, vertype, gtype, IsSelfEnergy, IsSymPolar):
                             FactorList.append(0)
                         else:
                             FactorList.append(1)
@@ -219,13 +219,9 @@ class polar():
         for Diag, FeynList, FactorList, VerType, GType in IrreDiagList:
             Permutation = Diag.GetPermu()
             SymFactor = Diag.SymFactor
-            if IsSysPolar and Permutation[0] == 1:
+            if IsSymPolar and not IsSelfEnergy and Permutation[0] == 1:
                 # only save one of symmetric self-energy diagrams
-                if QOrder == 2:
-                    continue
                 SymFactor *= 2
-            elif QOrder == 1:
-                continue
             Mom = Diag.LoopBasis
             DiagNum += 1
             print "Save {0}".format(Permutation)
@@ -322,6 +318,7 @@ class polar():
         if Body == "":
             return None
         else:
+            print Body
             return Title+Body
 
     def HugenToFeyn(self, HugenPermu):
@@ -350,7 +347,7 @@ class polar():
         else:
             return int(index/2)+1
 
-    def __IsReducibile(self, Permutation, LoopBasis, vertype, gtype, IsSelfEnergy, IsSysPolar):
+    def __IsReducibile(self, Permutation, LoopBasis, vertype, gtype, IsSelfEnergy, IsSymPolar):
         ExterLoop = [0, ]*self.LoopNum
         ExterLoop[0] = 1
         for i in range(1, self.Ver4Num+1):
@@ -370,8 +367,9 @@ class polar():
                 # print "Contain high-order Hartree: ", Permutation
                 return True
 
-        if diag.HasFock(Permutation, self.GetReference(), vertype, gtype):
-            return True
+        # remove Fock subdiagrams
+        # if diag.HasFock(Permutation, self.GetReference(), vertype, gtype):
+        #     return True
 
         if IsSelfEnergy:
             # make sure 1->0 only has one Green's function
@@ -381,7 +379,7 @@ class polar():
             # for i in range(1, self.GNum):
             #     if np.allclose(k, LoopBasis[:, i]):
             #         return True
-        if IsSysPolar:
+        if IsSymPolar:
             if Permutation[1] == 0:
                 return True
 
@@ -395,7 +393,7 @@ class polar():
         #     print 'Reduc Perm:', Permutation, 'kG:', kG, 'index:', last
         #     return True
         # print 'irReduc Perm:', Permutation, 'kG:', kG, 'index:', last
-        
+
         # for i in range(len(kW)):
         #     if abs(kW[i]) < 1e-12:
         #             # print "k=0 on W {0}: {1}".format(p, kW[i])

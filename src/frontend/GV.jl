@@ -37,9 +37,9 @@ A tuple `(diagrams, fermi_labelProd, bose_labelProd)` where
 function PolarEachOrder(type::Symbol, order::Int, VerOrder::Int=0, SigmaOrder::Int=0; dim::Int=3, loopPool::Union{LoopPool,Nothing}=nothing,
     tau_labels::Union{Nothing,Vector{Int}}=nothing, GTypes::Union{Nothing,Vector{Int}}=nothing, VTypes::Union{Nothing,Vector{Int}}=nothing)
     if type == :spin
-        filename = string(@__DIR__, "/GV_diagrams/groups_spin/Polar$(order)_$(VerOrder)_$(SigmaOrder).diag")
+        filename = string(@__DIR__, "/GV_diagrams/groups_spin/Polar$(order)_$(VerOrder)_$(SigmaOrder).txt")
     elseif type == :charge
-        filename = string(@__DIR__, "/GV_diagrams/groups_charge/Polar$(order)_$(VerOrder)_$(SigmaOrder).diag")
+        filename = string(@__DIR__, "/GV_diagrams/groups_charge/Polar$(order)_$(VerOrder)_$(SigmaOrder).txt")
     end
 
     if isnothing(GTypes)
@@ -74,13 +74,13 @@ function PolarDiagrams(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false,
     tau_labels = collect(1:MaxOrder+1)
     loopPool = LoopPool(:K, dim, MaxOrder + 1, Float64)
     if has_counterterm
-        GTypes = collect(0:(MaxOrder-1)÷2)
+        GTypes = collect(0:MaxOrder-1)
         VTypes = collect(0:MaxOrder-2)
         for order in 1:MaxOrder
             for VerOrder in VTypes
                 order == 1 && VerOrder > 0 && continue
                 for SigmaOrder in GTypes
-                    order + VerOrder + 2 * SigmaOrder > MaxOrder && continue
+                    order + VerOrder + SigmaOrder > MaxOrder && continue
                     g, fermi_labelProd, bose_labelProd = PolarEachOrder(type, order, VerOrder, SigmaOrder;
                         dim=dim, loopPool=loopPool, tau_labels=tau_labels, GTypes=GTypes, VTypes=VTypes)
                     push!(graphs, g)
