@@ -2,7 +2,7 @@ using FeynmanDiagram, MCIntegration
 using LinearAlgebra, Random, Printf
 using StaticArrays, AbstractTrees
 
-Steps = 1e5
+Steps = 1e6
 
 Base.@kwdef struct Para
     rs::Float64 = 1.0
@@ -36,6 +36,7 @@ function integrand(vars, config)
     para = config.userdata[1]
     Order = config.userdata[2]
     leaf, leafType, leafτ_i, leafτ_o, leafMom = config.userdata[3]
+    graphfunc! = config.userdata[4]
     # eval_graph! =  config.userdata[4]
     # Diag2Inter = config.userdata[4]
     # eval(Diag2Inter)
@@ -85,11 +86,10 @@ function integrand(vars, config)
     #         push!(leaf, (8*π)/(dot(kq,kq)+λ))
     #     end
     # end
-    # return eval_graph!(root, leaf)
-    # Base.invokelatest(eval_graph!, root, leaf)
-    # return root[1]* prod(factor)
-    # println(factor)
-    return (leaf[3]*leaf[4])*(-2.0) * prod(factor)
+
+    # return Base.invokelatest(eval_graph!, root, leaf) * prod(factor)
+    return graphfunc!(root,leaf) * prod(factor)
+    # return (leaf[3]*leaf[4])*(-2.0) * prod(factor)
 
 end
 
@@ -131,9 +131,9 @@ function run(steps,Order::Int)
     P = PolarEachOrder(:charge,Order,0,0)
     Ps =  Compilers.to_julia_str([P[1],], name="eval_graph!")
     Pexpr = Meta.parse(Ps)
-    # eval(Pexpr)
-    # println(Base.invokelatest(eval_graph!, [1.0,],[1.0,2.0,3.0,4.0]) )
-    # println(typeof(eval_graph!))
+    eval(Pexpr)
+    println(Base.invokelatest(eval_graph!, [1.0,],[1.0,2.0,3.0,4.0]) )
+    funcGraph!(x, y) = Base.invokelatest(eval_graph!, x, y)
     LeafStat = LeafInfor(P)
 
     T = Continuous(0.0, β; alpha=3.0, adapt=true)
@@ -145,7 +145,7 @@ function run(steps,Order::Int)
     dof = [[Order, Order, Order, Order, 1],] # degrees of freedom of the diagram
     obs = [zeros(Float64, Qsize),]
 
-    result = integrate(integrand; measure=measure, userdata=(para, Order, LeafStat, Pexpr),
+    result = integrate(integrand; measure=measure, userdata=(para, Order, LeafStat, funcGraph!),
         var=(R, θ, ϕ, T, Ext), dof=dof, obs=obs, solver=:vegasmc,
         neval=steps, print=0, debug=true)
 
