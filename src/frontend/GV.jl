@@ -37,9 +37,9 @@ A tuple `(diagrams, fermi_labelProd, bose_labelProd)` where
 function PolarEachOrder(type::Symbol, order::Int, VerOrder::Int=0, SigmaOrder::Int=0; dim::Int=3, loopPool::Union{LoopPool,Nothing}=nothing,
     tau_labels::Union{Nothing,Vector{Int}}=nothing, GTypes::Union{Nothing,Vector{Int}}=nothing, VTypes::Union{Nothing,Vector{Int}}=nothing)
     if type == :spin
-        filename = string(@__DIR__, "/GV_diagrams/groups_spin/Polar$(order)_$(VerOrder)_$(SigmaOrder).txt")
+        filename = string(@__DIR__, "/GV_diagrams/groups_spin/Polar$(order)_$(VerOrder)_$(SigmaOrder).diag")
     elseif type == :charge
-        filename = string(@__DIR__, "/GV_diagrams/groups_charge/Polar$(order)_$(VerOrder)_$(SigmaOrder).txt")
+        filename = string(@__DIR__, "/GV_diagrams/groups_charge/Polar$(order)_$(VerOrder)_$(SigmaOrder).diag")
     end
 
     if isnothing(GTypes)
