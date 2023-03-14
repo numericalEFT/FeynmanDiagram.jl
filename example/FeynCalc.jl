@@ -2,11 +2,11 @@ using FeynmanDiagram, MCIntegration
 using LinearAlgebra, Random, Printf
 using StaticArrays, AbstractTrees
 
-Steps = 1e6
+Steps = 1e5
 
 Base.@kwdef struct Para
     rs::Float64 = 1.0
-    beta::Float64 = 25.0
+    beta::Float64 = 40.0
     spin::Int = 2
     Qsize::Int = 4
     n::Int = 0 # external Matsubara frequency
@@ -57,13 +57,14 @@ function integrand(vars, config)
     k = [(i == 0 ? q : [r[i]*sin(θ[i])*cos(ϕ[i]), r[i]*sin(θ[i])*sin(ϕ[i]), r[i]*cos(θ[i])]) for i in 0:Order]
     root = [0.0,]
     for (i,lf) in enumerate(leafType)
-        if( lf == 0)
+        if (lf == 0)
             continue
-        elseif(lf == 1)
-            τ_l = τ[leafτ_i[i]] - τ[leafτ_o[i]]
+        elseif (lf == 1)
+            τ_l = τ[leafτ_o[i]] - τ[leafτ_i[i]]
             kq = sum(leafMom[i] .* k)
             ω = (dot(kq,kq)-kF^2)/(2me)
-            leaf[i] = green(τ_l,ω,β)
+            if(i>=10 && leaf[i]≈0.0) println(i) end
+            leaf[i] = green(τ_l, ω, β)
         else
             kq = sum(leafMom[i] .* k)
             leaf[i] = (8*π)/(dot(kq,kq)+λ)
@@ -89,17 +90,21 @@ function integrand(vars, config)
 
     # return Base.invokelatest(eval_graph!, root, leaf) * prod(factor)
     return graphfunc!(root,leaf) * prod(factor)
-    # return (leaf[3]*leaf[4])*(-2.0) * prod(factor)
+    # println((prod(leaf[1:9])*2.0 + prod(leaf[10:18])*(-4.0)) * prod(factor))
+    # return prod(leaf[10:18]) * (-4.0) * prod(factor)
+    # return (prod(leaf[1:9])*2.0 + prod(leaf[10:18])*(-4.0)) * prod(factor)
+    # println(leaf[3] * leaf[4] * (-2.0) * prod(factor))
+    # return leaf[3] * leaf[4] * (-2.0) * prod(factor)
 
 end
 
-function LeafInfor(G::Tuple)
+function LeafInfor(FeynGraph::Graph, FermiLabel::LabelProduct, BoseLabel::LabelProduct)
     LeafType = Vector{Int}(undef, 0)
     LeafInTau = Vector{Int}(undef, 0)
     LeafOutTau = Vector{Int}(undef, 0)
     LeafLoopMom = Vector{Vector{Float64}}(undef, 0)
     Leaf = Vector{Float64}(undef, 0)
-    for g in Leaves(G[1])
+    for g in Leaves(FeynGraph)
         if (g.type == FeynmanDiagram.ComputationalGraphs.Interaction)
             push!(LeafType,0)
             In = Out = g.vertices[1][1].label
@@ -111,11 +116,15 @@ function LeafInfor(G::Tuple)
             In, Out = g.vertices[1][1].label, g.vertices[2][1].label
         end 
         push!(Leaf,1.0)
-        push!(LeafInTau, G[2][In][1])
-        push!(LeafOutTau, G[2][Out][1])
-        push!(LeafLoopMom, G[2][In][3])
+        push!(LeafInTau, FermiLabel[In][1])
+        push!(LeafOutTau, FermiLabel[Out][1])
+        push!(LeafLoopMom, FermiLabel[In][3])
     end
     return Leaf, LeafType, LeafInTau, LeafOutTau, LeafLoopMom
+end
+
+function integrand(idx, vars, config) #for the mcmc algorithm
+    return integrand(vars, config)::Float64
 end
 
 function measure(vars, obs, weight, config) # for vegas and vegasmc algorithms
@@ -123,18 +132,23 @@ function measure(vars, obs, weight, config) # for vegas and vegasmc algorithms
     obs[1][Ext[1]] += weight[1]
 end
 
+function measure(idx, vars, obs, weight, config) # for the mcmc algorithm
+    measure(vars, obs, weight, config)
+end
+
 function run(steps,Order::Int)
     para = Para()
     extQ, Qsize = para.extQ, para.Qsize
     kF, β = para.kF, para.β
     LoopNum = Order+1
-    P = PolarEachOrder(:charge,Order,0,0)
-    Ps =  Compilers.to_julia_str([P[1],], name="eval_graph!")
-    Pexpr = Meta.parse(Ps)
-    eval(Pexpr)
-    println(Base.invokelatest(eval_graph!, [1.0,],[1.0,2.0,3.0,4.0]) )
+    FeynGraph, FermiLabel, BoseLabel = PolarEachOrder(:charge,Order,0,0)
+    # Ps =  Compilers.to_julia_str([P[1],], name="eval_graph!")
+    # Pexpr = Meta.parse(Ps)
+    # eval(Pexpr)
+    # println(Pexpr)
     funcGraph!(x, y) = Base.invokelatest(eval_graph!, x, y)
-    LeafStat = LeafInfor(P)
+    funcGraph! = Compilers.compile([FeynGraph,])
+    LeafStat = LeafInfor(FeynGraph, FermiLabel, BoseLabel)
 
     T = Continuous(0.0, β; alpha=3.0, adapt=true)
     R = Continuous(0.0, 1.0; alpha=3.0, adapt=true)
