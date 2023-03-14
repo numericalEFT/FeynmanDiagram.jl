@@ -123,6 +123,13 @@ export Compilers
 include("frontend/frontends.jl")
 using .FrontEnds
 export FrontEnds
+export LabelProduct
+
+include("frontend/GV.jl")
+using .GV
+export GV
+export PolarEachOrder, PolarDiagrams
+# export read_onediagram, read_diagrams
 
 include("diagram_tree/DiagTree.jl")
 using .DiagTree

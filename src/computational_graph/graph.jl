@@ -278,7 +278,7 @@ end
 # Example:
 ```julia-repl
 julia> V = [𝑓⁺(1)𝑓⁻(2)𝜙(3), 𝑓⁺(4)𝑓⁻(5)𝜙(6), 𝑓⁺(7)𝑓⁻(8)𝜙(9)];
-julia> g = feynman_diagram(interaction.(V), [[1, 5], [3, 9], [4, 8]], perm_noleg=[3, 1, 2])
+julia> g = feynman_diagram(interaction.(V), [[1, 5], [3, 9], [4, 8]], [3, 1, 2])
 7:f⁺(1)f⁻(2)ϕ(3)|f⁺(4)f⁻(5)ϕ(6)|f⁺(7)f⁻(8)ϕ(9)=0.0=Ⓧ (1,2,3,4,5,6)
 
 julia> g.subgraphs
