@@ -6,16 +6,16 @@ Steps = 1e6
 
 Base.@kwdef struct Para
     rs::Float64 = 1.0
-    beta::Float64 = 25.0
+    beta::Float64 = 40.0
     spin::Int = 2
-    Qsize::Int = 4
+    Qsize::Int = 6
     n::Int = 0 # external Matsubara frequency
     dim::Int = 3
     me::Float64 = 0.5
     λ ::Float64 = 1.0
 
     kF::Float64 = (dim == 3) ? (9π / (2spin))^(1 / 3) / rs : sqrt(4 / spin) / rs
-    extQ::Vector{SVector{3,Float64}} = [@SVector [q, 0.0, 0.0] for q in LinRange(0.0 * kF, 1.5 * kF, Qsize)]
+    extQ::Vector{SVector{3,Float64}} = [@SVector [q, 0.0, 0.0] for q in LinRange(0.0 * kF, 2.5 * kF, Qsize)]
     β::Float64 = beta / (kF^2 / 2me)
 end
 
@@ -68,8 +68,7 @@ function integrand(vars, config)
             leaf[i] = (8*π)/(dot(kq,kq) + λ)
         end
     end
-    return graphfunc!(root, leaf) * prod(factor) / factorial(Order)
-
+    return graphfunc!(root, leaf) * prod(factor) 
 end
 
 function LeafInfor(FeynGraph::Graph, FermiLabel::LabelProduct, BoseLabel::LabelProduct)
