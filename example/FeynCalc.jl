@@ -1,12 +1,12 @@
-using FeynmanDiagram, MCIntegration
+using FeynmanDiagram, MCIntegration, Lehmann
 using LinearAlgebra, Random, Printf
 using StaticArrays, AbstractTrees
 
-Steps = 1e5
+Steps = 1e6
 
 Base.@kwdef struct Para
     rs::Float64 = 1.0
-    beta::Float64 = 40.0
+    beta::Float64 = 25.0
     spin::Int = 2
     Qsize::Int = 4
     n::Int = 0 # external Matsubara frequency
@@ -20,7 +20,8 @@ Base.@kwdef struct Para
 end
 
 function green(τ::T, ω::T, β::T) where {T}
-    if τ >= T(0.0)
+    if τ == T(0.0) τ = -1e-12 end
+    if τ > T(0.0)
         return ω > T(0.0) ?
                exp(-ω * τ) / (1 + exp(-ω * β)) :
                exp(ω * (β - τ)) / (1 + exp(ω * β))
@@ -37,9 +38,6 @@ function integrand(vars, config)
     Order = config.userdata[2]
     leaf, leafType, leafτ_i, leafτ_o, leafMom = config.userdata[3]
     graphfunc! = config.userdata[4]
-    # eval_graph! =  config.userdata[4]
-    # Diag2Inter = config.userdata[4]
-    # eval(Diag2Inter)
 
     kF, β, me, λ = para.kF, para.β, para.me, para.λ
 
@@ -49,7 +47,7 @@ function integrand(vars, config)
     ϕ = [Phi[i]  for i in 1:Order]
     
     factor = 1.0 / (2π)^(para.dim)  #each momentum loop is ∫dkxdkydkz/(2π)^3
-    factor *= r.^2 ./ (1 .- Ri).^2 .* sin.(θ)
+    factor *= r .^ 2 ./ (1 .- Ri) .^ 2 .* sin.(θ)
 
     τ = [(i == 0 ? 0.0 : T[i]) for i = 0:Order]
     extidx = Ext[1]
@@ -63,38 +61,14 @@ function integrand(vars, config)
             τ_l = τ[leafτ_o[i]] - τ[leafτ_i[i]]
             kq = sum(leafMom[i] .* k)
             ω = (dot(kq,kq)-kF^2)/(2me)
-            if(i>=10 && leaf[i]≈0.0) println(i) end
-            leaf[i] = green(τ_l, ω, β)
+            # leaf[i] = Spectral.kernelFermiT(τ_l, ω, β) # green function of Fermion
+            leaf[i] = green(τ_l, ω, β) # green function of Fermion
         else
             kq = sum(leafMom[i] .* k)
-            leaf[i] = (8*π)/(dot(kq,kq)+λ)
+            leaf[i] = (8*π)/(dot(kq,kq) + λ)
         end
     end
-    # for g in Leaves(Diagram[1])
-    #     if (g.type == FeynmanDiagram.ComputationalGraphs.Interaction)
-    #         push!(leaf,1.0)
-    #     elseif (isfermionic(g.vertices[1]))
-    #         In, Out = g.vertices[1][1].label, g.vertices[2][1].label
-    #         kq = sum(Diagram[2][In][3] .* k)
-    #         # println(kq)
-    #         ω = (dot(kq,kq)-kF^2)/(2me)
-    #         τ_l = τ[Diagram[2][In][1]] - τ[Diagram[2][Out][1]]
-    #         # println(τ_l, ω, green(τ_l, ω, β))
-    #         push!(leaf,green(τ_l,ω,β))
-    #     else
-    #         In = g.vertices[1][1].label
-    #         kq = sum([Diagram[3][In][3][i] * k[i] for i in 1:Order+1])
-    #         push!(leaf, (8*π)/(dot(kq,kq)+λ))
-    #     end
-    # end
-
-    # return Base.invokelatest(eval_graph!, root, leaf) * prod(factor)
-    return graphfunc!(root,leaf) * prod(factor)
-    # println((prod(leaf[1:9])*2.0 + prod(leaf[10:18])*(-4.0)) * prod(factor))
-    # return prod(leaf[10:18]) * (-4.0) * prod(factor)
-    # return (prod(leaf[1:9])*2.0 + prod(leaf[10:18])*(-4.0)) * prod(factor)
-    # println(leaf[3] * leaf[4] * (-2.0) * prod(factor))
-    # return leaf[3] * leaf[4] * (-2.0) * prod(factor)
+    return graphfunc!(root, leaf) * prod(factor) / factorial(Order)
 
 end
 
@@ -142,13 +116,14 @@ function run(steps,Order::Int)
     kF, β = para.kF, para.β
     LoopNum = Order+1
     FeynGraph, FermiLabel, BoseLabel = PolarEachOrder(:charge,Order,0,0)
-    # Ps =  Compilers.to_julia_str([P[1],], name="eval_graph!")
+
+    # Ps = Compilers.to_julia_str([FeynGraph,], name="eval_graph!")
     # Pexpr = Meta.parse(Ps)
     # eval(Pexpr)
-    # println(Pexpr)
-    funcGraph!(x, y) = Base.invokelatest(eval_graph!, x, y)
+    # funcGraph!(x, y) = Base.invokelatest(eval_graph!, x, y)
+
     funcGraph! = Compilers.compile([FeynGraph,])
-    LeafStat = LeafInfor(FeynGraph, FermiLabel, BoseLabel)
+    LeafStat = LeafInfor(FeynGraph, FermiLabel, BoseLabel) 
 
     T = Continuous(0.0, β; alpha=3.0, adapt=true)
     R = Continuous(0.0, 1.0; alpha=3.0, adapt=true)
@@ -169,7 +144,6 @@ function run(steps,Order::Int)
         @printf("%10s  %10s   %10s \n", "q/kF", "avg", "err")
         for (idx, q) in enumerate(extQ)
             q = q[1]
-            # p = lindhard(q, para)
             @printf("%10.6f  %10.6f ± %10.6f\n", q / kF, avg[idx], std[idx])
         end
         report(result)
@@ -177,5 +151,5 @@ function run(steps,Order::Int)
 end
 
 run(Steps, 1)
-# run(Steps, 2)
+run(Steps, 2)
 
