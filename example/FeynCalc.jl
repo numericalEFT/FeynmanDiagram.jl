@@ -1,8 +1,10 @@
+# This example demonstrated how to calculate the diagrams of free electrons without counterterms
+# in various orders using the FeynmanDiagram and MCIntegration module.
 using FeynmanDiagram, MCIntegration, Lehmann
 using LinearAlgebra, Random, Printf
 using StaticArrays, AbstractTrees
 
-Steps = 1e6
+Steps = 1e5
 
 Base.@kwdef struct Para
     rs::Float64 = 1.0
@@ -20,7 +22,7 @@ Base.@kwdef struct Para
 end
 
 function green(τ::T, ω::T, β::T) where {T}
-    if τ == T(0.0) τ = -1e-12 end
+    if τ == T(0.0) τ = - 1e-10 end
     if τ > T(0.0)
         return ω > T(0.0) ?
                exp(-ω * τ) / (1 + exp(-ω * β)) :
@@ -118,6 +120,7 @@ function run(steps,Order::Int)
 
     # Ps = Compilers.to_julia_str([FeynGraph,], name="eval_graph!")
     # Pexpr = Meta.parse(Ps)
+    # println(Pexpr)
     # eval(Pexpr)
     # funcGraph!(x, y) = Base.invokelatest(eval_graph!, x, y)
 
@@ -135,7 +138,10 @@ function run(steps,Order::Int)
 
     result = integrate(integrand; measure=measure, userdata=(para, Order, LeafStat, funcGraph!),
         var=(R, θ, ϕ, T, Ext), dof=dof, obs=obs, solver=:vegasmc,
-        neval=steps, print=0, debug=true)
+        neval=steps, print=-1, block=8, niter=1)
+    @time result = integrate(integrand; measure=measure, userdata=(para, Order, LeafStat, funcGraph!),
+        var=(R, θ, ϕ, T, Ext), dof=dof, obs=obs, solver=:vegasmc,
+        neval=steps * 10, print=0, block=32, config=result.config, debug=true)
 
         if isnothing(result) == false
         avg, std = result.mean, result.stdev
@@ -149,6 +155,6 @@ function run(steps,Order::Int)
     end
 end
 
-run(Steps, 1)
+run(Steps, 2)
 run(Steps, 2)
 
