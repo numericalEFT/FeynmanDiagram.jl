@@ -4,7 +4,7 @@ using FeynmanDiagram, MCIntegration, Lehmann
 using LinearAlgebra, Random, Printf
 using StaticArrays, AbstractTrees
 
-Steps = 1e5
+Steps = 1e6
 
 Base.@kwdef struct Para
     rs::Float64 = 1.0
@@ -138,10 +138,7 @@ function run(steps,Order::Int)
 
     result = integrate(integrand; measure=measure, userdata=(para, Order, LeafStat, funcGraph!),
         var=(R, θ, ϕ, T, Ext), dof=dof, obs=obs, solver=:vegasmc,
-        neval=steps, print=-1, block=8, niter=1)
-    @time result = integrate(integrand; measure=measure, userdata=(para, Order, LeafStat, funcGraph!),
-        var=(R, θ, ϕ, T, Ext), dof=dof, obs=obs, solver=:vegasmc,
-        neval=steps * 10, print=0, block=32, config=result.config, debug=true)
+        neval=steps, print=0, block=32, config=result.config, debug=true)
 
         if isnothing(result) == false
         avg, std = result.mean, result.stdev
@@ -155,6 +152,6 @@ function run(steps,Order::Int)
     end
 end
 
-run(Steps, 2)
+run(Steps, 1)
 run(Steps, 2)
 
