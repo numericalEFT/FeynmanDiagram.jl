@@ -22,6 +22,7 @@ Base.@kwdef struct Para
 end
 
 function green(τ::T, ω::T, β::T) where {T}
+    #generate green function of fermion
     if τ == T(0.0) τ = - 1e-10 end
     if τ > T(0.0)
         return ω > T(0.0) ?
@@ -35,6 +36,7 @@ function green(τ::T, ω::T, β::T) where {T}
 end
 
 function integrand(vars, config)
+    #generate the MC integrand function
     R, Theta, Phi, T, Ext = vars
     para = config.userdata[1]
     Order = config.userdata[2]
@@ -74,6 +76,7 @@ function integrand(vars, config)
 end
 
 function LeafInfor(FeynGraph::Graph, FermiLabel::LabelProduct, BoseLabel::LabelProduct)
+    #read information of each leaf from the generated graph and its LabelProduct, the information include type, loop momentum, imaginary time.
     LeafType = Vector{Int}(undef, 0)
     LeafInTau = Vector{Int}(undef, 0)
     LeafOutTau = Vector{Int}(undef, 0)
@@ -117,6 +120,12 @@ function run(steps,Order::Int)
     kF, β = para.kF, para.β
     LoopNum = Order+1
     FeynGraph, FermiLabel, BoseLabel = PolarEachOrder(:charge,Order,0,0)
+    #=
+    function PolarEachOrder(type::Symbol, order::Int, VerOrder::Int=0, SigmaOrder::Int=0; loopPool::Union{LoopPool,Nothing}=nothing,
+        # tau_labels::Union{Nothing,Vector{Int}}=nothing, GTypes::Union{Nothing,Vector{Int}}=nothing, VTypes::Union{Nothing,Vector{Int}}=nothing)
+ 
+    Generates a `Graph`: the polarization diagrams with static interactions of a given order, where the actual order of diagrams equals to `order + VerOrder + 2 * SigmaOrder`.
+    =#
 
     # Ps = Compilers.to_julia_str([FeynGraph,], name="eval_graph!")
     # Pexpr = Meta.parse(Ps)
@@ -124,7 +133,7 @@ function run(steps,Order::Int)
     # eval(Pexpr)
     # funcGraph!(x, y) = Base.invokelatest(eval_graph!, x, y)
 
-    funcGraph! = Compilers.compile([FeynGraph,])
+    funcGraph! = Compilers.compile([FeynGraph,]) #Compile graphs into a julia static function. 
     LeafStat = LeafInfor(FeynGraph, FermiLabel, BoseLabel) 
 
     T = Continuous(0.0, β; alpha=3.0, adapt=true)
