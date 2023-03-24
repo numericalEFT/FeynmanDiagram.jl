@@ -147,7 +147,7 @@ function run(steps,Order::Int)
 
     result = integrate(integrand; measure=measure, userdata=(para, Order, LeafStat, funcGraph!),
         var=(R, θ, ϕ, T, Ext), dof=dof, obs=obs, solver=:vegasmc,
-        neval=steps, print=0, block=32, config=result.config, debug=true)
+        neval=steps, print=0, block=32, debug=true)
 
         if isnothing(result) == false
         avg, std = result.mean, result.stdev
