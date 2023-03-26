@@ -163,7 +163,12 @@ function read_onediagram(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex:
 
         vertices[ind1][1].label == 0 ? vertices[ind1] = 𝑎⁺(label1) : vertices[ind1] *= 𝑎⁺(label1)
         vertices[ind2][1].label == 0 ? vertices[ind2] = 𝑎⁻(label2) : vertices[ind2] *= 𝑎⁻(label2)
-        push!(connected_operators, 𝑎⁺(label1)𝑎⁻(label2))
+        push!(connected_operators, 𝑎⁻(label2)𝑎⁺(label1))
+    end
+
+    for ind in 1:GNum
+        sign, perm = Op.normal_order(vertices[ind])
+        vertices[ind] = Op.OperatorProduct(vertices[ind][perm])
     end
 
     # creation all bosionic operators (relevant to interaction lines)
