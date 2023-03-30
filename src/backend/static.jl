@@ -1,6 +1,6 @@
 function _to_static(::Type{ComputationalGraphs.Sum}, subgraphs::Vector{Graph{F,W}}, subgraph_factors::Vector{F}) where {F,W}
     if length(subgraphs) == 1
-        return "(g$(subgraphs[1].id))"
+        return "(g$(subgraphs[1].id) * $(subgraph_factors[1]))"
     else
         return "(" * join(["g$(g.id) * $gfactor" for (g, gfactor) in zip(subgraphs, subgraph_factors)], " + ") * ")"
     end
