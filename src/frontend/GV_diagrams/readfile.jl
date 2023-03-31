@@ -247,7 +247,7 @@ function read_onediagram(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex:
         for connection in connected_operators
             push!(contraction, [findfirst(x -> x == connection[1], operators), findlast(x -> x == connection[2], operators)])
         end
-        push!(graphs, IR.feynman_diagram(IR.interaction.(vertices), contraction, factor=symfactor))
+        push!(graphs, IR.feynman_diagram(IR.interaction.(vertices), contraction, factor=symfactor, is_signed=true))
         # return IR.feynman_diagram(IR.interaction.(vertices), contraction, factor=symfactor * spinFactor), loopPool
     end
 

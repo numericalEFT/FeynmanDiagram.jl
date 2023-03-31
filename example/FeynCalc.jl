@@ -141,10 +141,10 @@ function run(steps, Order::Int)
     # funcGraph!(x, y) = Base.invokelatest(eval_graph!, x, y)
 
     funcGraph! = Compilers.compile([FeynGraph,]) #Compile graphs into a julia static function. 
-    println(green("Julia static function from Graph has been compiled."))
+    # println(green("Julia static function from Graph has been compiled."))
 
     LeafStat = LeafInfor(FeynGraph, FermiLabel, BoseLabel)
-    println(green("Leaf information has been extracted."))
+    # println(green("Leaf information has been extracted."))
 
     T = Continuous(0.0, β; alpha=3.0, adapt=true)
     R = Continuous(0.0, 1.0; alpha=3.0, adapt=true)
