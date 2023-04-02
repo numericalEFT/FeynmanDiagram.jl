@@ -4,8 +4,7 @@ using FeynmanDiagram, MCIntegration, Lehmann
 using LinearAlgebra, Random, Printf
 using StaticArrays, AbstractTrees
 
-Steps = 1e7
-
+Steps = 1e6
 Base.@kwdef struct Para
     rs::Float64 = 1.0
     beta::Float64 = 40.0
@@ -59,7 +58,7 @@ function integrand(vars, config)
     extidx = Ext[1]
     q = para.extQ[extidx]
     k = [(i == 0 ? q : [r[i] * sin(θ[i]) * cos(ϕ[i]), r[i] * sin(θ[i]) * sin(ϕ[i]), r[i] * cos(θ[i])]) for i in 0:Order]
-    root = [0.0,]
+    root = zeros(Float64,Order)
     for (i, lf) in enumerate(leafType)
         if (lf == 0)
             continue
@@ -74,7 +73,10 @@ function integrand(vars, config)
             leaf[i] = (8 * π) / (dot(kq, kq) + λ)
         end
     end
-    return graphfunc!(root, leaf) * prod(factor)
+    graphfunc!(root, leaf)
+    Factor::Vector{Float64}=[prod(factor[1:o]) for o in 1:Order]
+    # Factor::Vector{Float64} = prod(factor)
+    return root .* Factor
 end
 
 function LeafInfor(FeynGraph::Graph, FermiLabel::LabelProduct, BoseLabel::LabelProduct)
@@ -104,29 +106,35 @@ function LeafInfor(FeynGraph::Graph, FermiLabel::LabelProduct, BoseLabel::LabelP
 end
 
 function integrand(idx, vars, config) #for the mcmc algorithm
-    return integrand(vars, config)::Float64
+    return integrand(vars, config)[idx]::Float64
 end
 
 function measure(vars, obs, weight, config) # for vegas and vegasmc algorithms
+    N = config.userdata[2]
     Ext = vars[end]
-    obs[1][Ext[1]] += weight[1]
+    for i in 1:N
+        obs[i][Ext[1]] += weight[i]
+    end 
 end
 
 function measure(idx, vars, obs, weight, config) # for the mcmc algorithm
-    measure(vars, obs, weight, config)
+    Ext = vars[end]
+    obs[idx][Ext[1]] += weight
 end
 
 @inline function green(str)
     return "\u001b[32m$str\u001b[0m"
 end
 
-function run(steps, Order::Int)
+function run(steps, MaxOrder::Int)
     para = Para()
     extQ, Qsize = para.extQ, para.Qsize
     kF, β = para.kF, para.β
-    LoopNum = Order + 1
-    FeynGraph, FermiLabel, BoseLabel = PolarEachOrder(:charge, Order, 0, 0)
-    println(green("Diagram with order $Order has been read."))
+    FeynGraph, FermiLabel, BoseLabel = PolarDiagrams(:charge, MaxOrder)
+    println(green("Diagrams with the largest order $MaxOrder has been read."))
+    # SinGraph, FermiLabel, BoseLabel = PolarEachOrder(:charge, MaxOrder,0,0)
+    # println(green("Diagram with order $MaxOrder has been read."))
+    # FeynGraph = Graph(SinGraph,factor=1.0)
     #=
     function PolarEachOrder(type::Symbol, order::Int, VerOrder::Int=0, SigmaOrder::Int=0; loopPool::Union{LoopPool,Nothing}=nothing,
         # tau_labels::Union{Nothing,Vector{Int}}=nothing, GTypes::Union{Nothing,Vector{Int}}=nothing, VTypes::Union{Nothing,Vector{Int}}=nothing)
@@ -140,7 +148,7 @@ function run(steps, Order::Int)
     # eval(Pexpr)
     # funcGraph!(x, y) = Base.invokelatest(eval_graph!, x, y)
 
-    funcGraph! = Compilers.compile([FeynGraph,]) #Compile graphs into a julia static function. 
+    funcGraph! = Compilers.compile(FeynGraph.subgraphs) #Compile graphs into a julia static function. 
     # println(green("Julia static function from Graph has been compiled."))
 
     LeafStat = LeafInfor(FeynGraph, FermiLabel, BoseLabel)
@@ -152,21 +160,31 @@ function run(steps, Order::Int)
     ϕ = Continuous(0.0, 2π; alpha=3.0, adapt=true)
     Ext = Discrete(1, length(extQ); adapt=false)
 
-    dof = [[Order, Order, Order, Order, 1],] # degrees of freedom of the diagram
-    obs = [zeros(Float64, Qsize),]
+    dof = [[Order, Order, Order, Order, 1] for Order in 1:MaxOrder] # degrees of freedom of the diagram
+    obs = [zeros(Float64, Qsize) for i in 1:MaxOrder]
+
+    # dof = [[MaxOrder, MaxOrder, MaxOrder, MaxOrder, 1],] # degrees of freedom of the diagram
+    # obs = [zeros(Float64, Qsize),]
 
     println(green("Start computing integral:"))
-    result = integrate(integrand; measure=measure, userdata=(para, Order, LeafStat, funcGraph!),
-        var=(R, θ, ϕ, T, Ext), dof=dof, obs=obs, solver=:vegasmc,
+    result = integrate(integrand; measure=measure, userdata=(para, MaxOrder, LeafStat, funcGraph!),
+        var=(R, θ, ϕ, T, Ext), dof=dof, obs=obs, solver=:mcmc,
         neval=steps, print=0, block=32, debug=true)
 
     if isnothing(result) == false
         avg, std = result.mean, result.stdev
-
-        @printf("%10s  %10s   %10s \n", "q/kF", "avg", "err")
-        for (idx, q) in enumerate(extQ)
-            q = q[1]
-            @printf("%10.6f  %10.6f ± %10.6f\n", q / kF, avg[idx], std[idx])
+        
+        for o in 1:MaxOrder
+            println("Order:$o")
+            @printf("%10s  %10s   %10s \n", "q/kF", "avg", "err")
+            for (idx, q) in enumerate(extQ)
+                q = q[1]
+                if (MaxOrder==1)
+                    @printf("%10.6f  %10.6f ± %10.6f\n", q / kF, avg[idx], std[idx])
+                else
+                    @printf("%10.6f  %10.6f ± %10.6f\n", q / kF, avg[o][idx], std[o][idx])
+                end
+            end
         end
         report(result)
     end
@@ -174,5 +192,5 @@ end
 
 # run(Steps, 1)
 # run(Steps, 2)
-run(Steps, 3)
+run(Steps, 2)
 
