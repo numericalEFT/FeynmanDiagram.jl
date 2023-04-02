@@ -146,7 +146,7 @@ function read_onediagram(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex:
 
     @assert occursin("Ver4Legs", readline(io))
     if verNum == 0
-        ver4Legs = []
+        ver4Legs = Vector{Vector{Int64}}(undef,0)
     else
         strs = split(readline(io), splitter)
         ver4Legs = _StringtoIntVector.(strs[1:verNum])
