@@ -3,6 +3,7 @@
 using FeynmanDiagram, MCIntegration, Lehmann
 using LinearAlgebra, Random, Printf
 using StaticArrays, AbstractTrees
+using RuntimeGeneratedFunctions
 
 Steps = 1e6
 Base.@kwdef struct Para
@@ -74,6 +75,17 @@ end
 #     return root .* ((1.0 / (2π)^3) .^ (1:Order))
 # end
 
+# macro apply_graphfunc(graphfuncs, idx, root, leaf)
+#     quote
+#         $(esc(graphfuncs))[$(esc(idx))]($(esc(root)), $(esc(leaf)))
+#     end
+# end
+
+function apply_graphfunc(graphfuncs, idx, root, leaf)
+    graphfuncs[idx](root, leaf)
+    return nothing
+end
+
 function integrand(idx, vars, config) #for the mcmc algorithm
     K, T, Ext = vars
     para = config.userdata[1]
@@ -81,24 +93,22 @@ function integrand(idx, vars, config) #for the mcmc algorithm
     @assert idx in 1:MaxOrder "$(idx) is not a valid integrand"
 
     leaf, leafType, leafτ_i, leafτ_o, leafMomIdx = config.userdata[3]
-    graphfunc! = config.userdata[4][idx]
-    LoopPool = config.userdata[5]
-    tVar, root = config.userdata[6:7]
+    LoopPool = config.userdata[4]
+    root = config.userdata[5]
+    graphfuncs! = config.userdata[6]
+    # graphfunc1!, graphfunc2! = config.userdata[6:7]
 
     kF, β, me, λ = para.kF, para.β, para.me, para.λ
 
-    k = @view K[1:MaxOrder]
-    tVar[2:end] = @view T[1:MaxOrder]
     extidx = Ext[1]
-    q = para.extQ[extidx]
-    MomVar = hcat(q, k...)
-    FrontEnds.update(LoopPool, MomVar)
+    K.data[:, 1] .= para.extQ[extidx]
+    FrontEnds.update(LoopPool, K.data[:, 1:MaxOrder+1])
 
     for (i, lf) in enumerate(leafType[idx])
-        if (lf == 0)
+        if lf == 0
             continue
         elseif (lf == 1)
-            τ_l = tVar[leafτ_o[idx][i]] - tVar[leafτ_i[idx][i]]
+            τ_l = T[leafτ_o[idx][i]] - T[leafτ_i[idx][i]]
             kq = FrontEnds.loop(LoopPool, leafMomIdx[idx][i])
             ω = (dot(kq, kq) - kF^2) / (2me)
             # leaf[i] = Spectral.kernelFermiT(τ_l, ω, β) # green function of Fermion
@@ -109,8 +119,13 @@ function integrand(idx, vars, config) #for the mcmc algorithm
         end
     end
 
-    graphfunc!(root, leaf[idx])
-
+    # @apply_graphfunc(graphfuncs!, idx, root, leaf[idx])
+    apply_graphfunc(graphfuncs!, idx, root, leaf[idx])
+    # if idx == 1
+    #     graphfunc1!(root, leaf[idx])
+    # elseif idx == 2
+    #     graphfunc2!(root, leaf[idx])
+    # end
     return root[1] * (1.0 / (2π)^3)^idx
 end
 
@@ -183,35 +198,34 @@ function run(steps, MaxOrder::Int)
     # eval(Pexpr)
     # funcGraph!(x, y) = Base.invokelatest(eval_graph!, x, y)
 
-    funcGraph! = [Compilers.compile([FeynGraph.subgraphs[i],]) for i in 1:MaxOrder] #Compile graphs into a julia static function. 
+    funcGraphs! = [Compilers.compile([FeynGraph.subgraphs[i],]) for i in 1:MaxOrder] #Compile graphs into a julia static function Vector. 
+    # funcGraph!(i) = Compilers.compile([FeynGraph.subgraphs[i],]) #Compile graph i into a julia static function. 
     # println(green("Julia static function from Graph has been compiled."))
 
     LoopPool = FermiLabel.labels[3]
-
     LeafStat = LeafInfor(FeynGraph, FermiLabel, BoseLabel)
     # println(green("Leaf information has been extracted."))
-
     root = zeros(Float64, 1)
-    tVar = zeros(Float64, MaxOrder + 1)
-    # MomVar = Matrix{Float64}(undef, dim, MaxOrder + 1)
 
-    T = Continuous(0.0, β; alpha=3.0, adapt=true)
+    T = Continuous(0.0, β; alpha=3.0, adapt=true, offset=1)
+    T.data[1] = 0.0
     # R = Continuous(0.0, 1.0; alpha=3.0, adapt=true)
     # θ = Continuous(0.0, 1π; alpha=3.0, adapt=true)
     # ϕ = Continuous(0.0, 2π; alpha=3.0, adapt=true)
-    K = MCIntegration.FermiK(3, kF, 0.2 * kF, 10.0 * kF)
+    K = MCIntegration.FermiK(3, kF, 0.2 * kF, 10.0 * kF, offset=1)
+    K.data[:, 1] .= extQ[1]
     Ext = Discrete(1, length(extQ); adapt=false)
 
     dof = [[Order, Order, 1] for Order in 1:MaxOrder] # degrees of freedom of the diagram
     obs = [zeros(Float64, Qsize) for i in 1:MaxOrder]
 
     println(green("Start computing integral:"))
-    # result = integrate(integrand; measure=measure, userdata=(para, MaxOrder, LeafStat, funcGraph!, LoopPool, tVar, root),
-    # var=(K, T, Ext), dof=dof, obs=obs, solver=:mcmc,
-    # neval=steps, print=-1, block=16)
-    result = integrate(integrand; measure=measure, userdata=(para, MaxOrder, LeafStat, funcGraph!, LoopPool, tVar, root),
+    # result = integrate(integrand; measure=measure, userdata=(para, MaxOrder, LeafStat, LoopPool, root, funcGraphs!),
+    #     var=(K, T, Ext), dof=dof, obs=obs, solver=:mcmc,
+    #     neval=steps, print=-1, block=8)
+    result = integrate(integrand; measure=measure, userdata=(para, MaxOrder, LeafStat, LoopPool, root, funcGraphs!),
         var=(K, T, Ext), dof=dof, obs=obs, solver=:mcmc,
-        neval=steps, print=0, block=32)
+        neval=steps, print=0, block=16, debug=true)
 
     if isnothing(result) == false
         avg, std = result.mean, result.stdev
