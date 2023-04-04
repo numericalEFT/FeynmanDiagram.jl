@@ -4,7 +4,7 @@ using FeynmanDiagram, MCIntegration, Lehmann
 using LinearAlgebra, Random, Printf
 using StaticArrays, AbstractTrees
 
-Steps = 1e6
+Steps = 1e7
 Base.@kwdef struct Para
     rs::Float64 = 1.0
     beta::Float64 = 40.0
@@ -38,45 +38,40 @@ end
 
 function integrand(vars, config)
     #generate the MC integrand function
-    R, Theta, Phi, T, Ext = vars
+    K, T, Ext = vars
     para = config.userdata[1]
     Order = config.userdata[2]
     leaf, leafType, leafτ_i, leafτ_o, leafMom = config.userdata[3]
     graphfunc! = config.userdata[4]
+    LoopPool = config.userdata[5]
+    root = config.userdata[6]
 
     kF, β, me, λ = para.kF, para.β, para.me, para.λ
 
-    Ri = [R[i] for i in 1:Order]
-    r = [R[i] / (1 - R[i]) for i in 1:Order]
-    θ = [Theta[i] for i in 1:Order]
-    ϕ = [Phi[i] for i in 1:Order]
-
-    factor = 1.0 / (2π)^(para.dim)  #each momentum loop is ∫dkxdkydkz/(2π)^3
-    factor *= r .^ 2 ./ (1 .- Ri) .^ 2 .* sin.(θ)
-
-    τ = [(i == 0 ? 0.0 : T[i]) for i = 0:Order]
+    k = @view K[1:Order]
+    τ = @view [0.0;T][1:Order+1]
     extidx = Ext[1]
     q = para.extQ[extidx]
-    k = [(i == 0 ? q : [r[i] * sin(θ[i]) * cos(ϕ[i]), r[i] * sin(θ[i]) * sin(ϕ[i]), r[i] * cos(θ[i])]) for i in 0:Order]
-    root = zeros(Float64,Order)
+    MomVar = hcat(q,k...)
+    FrontEnds.update(LoopPool,MomVar)
+
     for (i, lf) in enumerate(leafType)
         if (lf == 0)
             continue
         elseif (lf == 1)
             τ_l = τ[leafτ_o[i]] - τ[leafτ_i[i]]
-            kq = sum(leafMom[i] .* k)
+            kq = FrontEnds.loop(LoopPool, leafMom[i])
             ω = (dot(kq, kq) - kF^2) / (2me)
             # leaf[i] = Spectral.kernelFermiT(τ_l, ω, β) # green function of Fermion
             leaf[i] = green(τ_l, ω, β) # green function of Fermion
         else
-            kq = sum(leafMom[i] .* k)
+            kq = FrontEnds.loop(LoopPool, leafMom[i])
             leaf[i] = (8 * π) / (dot(kq, kq) + λ)
         end
     end
+
     graphfunc!(root, leaf)
-    Factor::Vector{Float64}=[prod(factor[1:o]) for o in 1:Order]
-    # Factor::Vector{Float64} = prod(factor)
-    return root .* Factor
+    return root .* ((1.0 / (2π)^3) .^ (1:Order))
 end
 
 function LeafInfor(FeynGraph::Graph, FermiLabel::LabelProduct, BoseLabel::LabelProduct)
@@ -84,7 +79,7 @@ function LeafInfor(FeynGraph::Graph, FermiLabel::LabelProduct, BoseLabel::LabelP
     LeafType = Vector{Int}(undef, 0)
     LeafInTau = Vector{Int}(undef, 0)
     LeafOutTau = Vector{Int}(undef, 0)
-    LeafLoopMom = Vector{Vector{Float64}}(undef, 0)
+    LeafLoopMom = Vector{Int}(undef, 0)
     Leaf = Vector{Float64}(undef, 0)
     for g in Leaves(FeynGraph)
         if (g.type == FeynmanDiagram.ComputationalGraphs.Interaction)
@@ -100,7 +95,7 @@ function LeafInfor(FeynGraph::Graph, FermiLabel::LabelProduct, BoseLabel::LabelP
         push!(Leaf, 1.0)
         push!(LeafInTau, FermiLabel[In][1])
         push!(LeafOutTau, FermiLabel[Out][1])
-        push!(LeafLoopMom, FermiLabel[In][3])
+        push!(LeafLoopMom, FrontEnds.linear_to_index(FermiLabel,In)[3]) #the label of LoopPool for each leaf
     end
     return Leaf, LeafType, LeafInTau, LeafOutTau, LeafLoopMom
 end
@@ -130,6 +125,7 @@ function run(steps, MaxOrder::Int)
     para = Para()
     extQ, Qsize = para.extQ, para.Qsize
     kF, β = para.kF, para.β
+    root = zeros(Float64, MaxOrder)
     FeynGraph, FermiLabel, BoseLabel = PolarDiagrams(:charge, MaxOrder)
     println(green("Diagrams with the largest order $MaxOrder has been read."))
     # SinGraph, FermiLabel, BoseLabel = PolarEachOrder(:charge, MaxOrder,0,0)
@@ -151,24 +147,27 @@ function run(steps, MaxOrder::Int)
     funcGraph! = Compilers.compile(FeynGraph.subgraphs) #Compile graphs into a julia static function. 
     # println(green("Julia static function from Graph has been compiled."))
 
+    LoopPool = FermiLabel.labels[3]
+
     LeafStat = LeafInfor(FeynGraph, FermiLabel, BoseLabel)
     # println(green("Leaf information has been extracted."))
 
     T = Continuous(0.0, β; alpha=3.0, adapt=true)
-    R = Continuous(0.0, 1.0; alpha=3.0, adapt=true)
-    θ = Continuous(0.0, 1π; alpha=3.0, adapt=true)
-    ϕ = Continuous(0.0, 2π; alpha=3.0, adapt=true)
+    # R = Continuous(0.0, 1.0; alpha=3.0, adapt=true)
+    # θ = Continuous(0.0, 1π; alpha=3.0, adapt=true)
+    # ϕ = Continuous(0.0, 2π; alpha=3.0, adapt=true)
+    K = MCIntegration.FermiK(3, kF, 0.2 * kF, 10.0 * kF)
     Ext = Discrete(1, length(extQ); adapt=false)
 
-    dof = [[Order, Order, Order, Order, 1] for Order in 1:MaxOrder] # degrees of freedom of the diagram
+    dof = [[Order, Order, 1] for Order in 1:MaxOrder] # degrees of freedom of the diagram
     obs = [zeros(Float64, Qsize) for i in 1:MaxOrder]
 
     # dof = [[MaxOrder, MaxOrder, MaxOrder, MaxOrder, 1],] # degrees of freedom of the diagram
     # obs = [zeros(Float64, Qsize),]
 
     println(green("Start computing integral:"))
-    result = integrate(integrand; measure=measure, userdata=(para, MaxOrder, LeafStat, funcGraph!),
-        var=(R, θ, ϕ, T, Ext), dof=dof, obs=obs, solver=:mcmc,
+    result = integrate(integrand; measure=measure, userdata=(para, MaxOrder, LeafStat, funcGraph!, LoopPool, root),
+        var=(K, T, Ext), dof=dof, obs=obs, solver=:mcmc,
         neval=steps, print=0, block=32, debug=true)
 
     if isnothing(result) == false
