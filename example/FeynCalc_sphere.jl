@@ -38,110 +38,75 @@ end
 
 function integrand(vars, config)
     #generate the MC integrand function
-    K, T, Ext = vars
+    R, Theta, Phi, T, Ext = vars
     para = config.userdata[1]
     Order = config.userdata[2]
     leaf, leafType, leafτ_i, leafτ_o, leafMom = config.userdata[3]
     graphfunc! = config.userdata[4]
-    LoopPool = config.userdata[5]
-    root = config.userdata[6]
 
     kF, β, me, λ = para.kF, para.β, para.me, para.λ
 
-    k = @view K[1:Order]
-    τ = @view [0.0; T][1:Order+1]
+    Ri = [R[i] for i in 1:Order]
+    r = [R[i] / (1 - R[i]) for i in 1:Order]
+    θ = [Theta[i] for i in 1:Order]
+    ϕ = [Phi[i] for i in 1:Order]
+
+    factor = 1.0 / (2π)^(para.dim)  #each momentum loop is ∫dkxdkydkz/(2π)^3
+    factor *= r .^ 2 ./ (1 .- Ri) .^ 2 .* sin.(θ)
+
+    τ = [(i == 0 ? 0.0 : T[i]) for i = 0:Order]
     extidx = Ext[1]
     q = para.extQ[extidx]
-    MomVar = hcat(q, k...)
-    FrontEnds.update(LoopPool, MomVar)
-
+    k = [(i == 0 ? q : [r[i] * sin(θ[i]) * cos(ϕ[i]), r[i] * sin(θ[i]) * sin(ϕ[i]), r[i] * cos(θ[i])]) for i in 0:Order]
+    root = zeros(Float64,Order)
     for (i, lf) in enumerate(leafType)
         if (lf == 0)
             continue
         elseif (lf == 1)
             τ_l = τ[leafτ_o[i]] - τ[leafτ_i[i]]
-            kq = FrontEnds.loop(LoopPool, leafMom[i])
+            kq = sum(leafMom[i] .* k)
             ω = (dot(kq, kq) - kF^2) / (2me)
             # leaf[i] = Spectral.kernelFermiT(τ_l, ω, β) # green function of Fermion
             leaf[i] = green(τ_l, ω, β) # green function of Fermion
         else
-            kq = FrontEnds.loop(LoopPool, leafMom[i])
+            kq = sum(leafMom[i] .* k)
             leaf[i] = (8 * π) / (dot(kq, kq) + λ)
         end
     end
-
     graphfunc!(root, leaf)
-    return root .* ((1.0 / (2π)^3) .^ (1:Order))
-end
-
-function integrand(idx, vars, config) #for the mcmc algorithm
-    K, T, Ext = vars
-    para = config.userdata[1]
-    MaxOrder = config.userdata[2]
-    @assert idx in 1:MaxOrder "$(idx) is not a valid integrand"
-
-    leaf, leafType, leafτ_i, leafτ_o, leafMomIdx = config.userdata[3]
-    graphfunc! = config.userdata[4][idx]
-    LoopPool = config.userdata[5]
-    root = config.userdata[6][idx]
-
-    kF, β, me, λ = para.kF, para.β, para.me, para.λ
-
-    k = @view K[1:MaxOrder]
-    τ = @view [0.0; T][1:MaxOrder+1]
-    extidx = Ext[1]
-    q = para.extQ[extidx]
-    MomVar = hcat(q, k...)
-    FrontEnds.update(LoopPool, MomVar)
-
-    for (i, lf) in enumerate(leafType[idx])
-        if (lf == 0)
-            continue
-        elseif (lf == 1)
-            τ_l = τ[leafτ_o[idx][i]] - τ[leafτ_i[idx][i]]
-            kq = FrontEnds.loop(LoopPool, leafMomIdx[idx][i])
-            ω = (dot(kq, kq) - kF^2) / (2me)
-            # leaf[i] = Spectral.kernelFermiT(τ_l, ω, β) # green function of Fermion
-            leaf[idx][i] = green(τ_l, ω, β) # green function of Fermion
-        else
-            kq = FrontEnds.loop(LoopPool, leafMomIdx[idx][i])
-            leaf[idx][i] = (8 * π) / (dot(kq, kq) + λ)
-        end
-    end
-
-    graphfunc!(root, leaf[idx])
-
-    return root * (1.0 / (2π)^3)^idx
+    Factor::Vector{Float64}=[prod(factor[1:o]) for o in 1:Order]
+    # Factor::Vector{Float64} = prod(factor)
+    return root .* Factor
 end
 
 function LeafInfor(FeynGraph::Graph, FermiLabel::LabelProduct, BoseLabel::LabelProduct)
     #read information of each leaf from the generated graph and its LabelProduct, the information include type, loop momentum, imaginary time.
-    num_g = length(FeynGraph.subgraphs)
-    LeafType = [Vector{Int}() for _ in 1:num_g]
-    LeafInTau = [Vector{Int}() for _ in 1:num_g]
-    LeafOutTau = [Vector{Int}() for _ in 1:num_g]
-    LeafLoopIndex = [Vector{Int}() for _ in 1:num_g]
-    Leaf = [Vector{Float64}() for _ in 1:num_g]
-
-    for ig in 1:num_g
-        for g in Leaves(FeynGraph.subgraphs[ig])
-            if (g.type == FeynmanDiagram.ComputationalGraphs.Interaction)
-                push!(LeafType[ig], 0)
-                In = Out = g.vertices[1][1].label
-            elseif (isfermionic(g.vertices[1]))
-                push!(LeafType[ig], 1)
-                In, Out = g.vertices[1][1].label, g.vertices[2][1].label
-            else
-                push!(LeafType[ig], 2)
-                In, Out = g.vertices[1][1].label, g.vertices[2][1].label
-            end
-            push!(Leaf[ig], 1.0)
-            push!(LeafInTau[ig], FermiLabel[In][1])
-            push!(LeafOutTau[ig], FermiLabel[Out][1])
-            push!(LeafLoopIndex[ig], FrontEnds.linear_to_index(FermiLabel, In)[end]) #the label of LoopPool for each leaf
+    LeafType = Vector{Int}(undef, 0)
+    LeafInTau = Vector{Int}(undef, 0)
+    LeafOutTau = Vector{Int}(undef, 0)
+    LeafLoopMom = Vector{Vector{Float64}}(undef, 0)
+    Leaf = Vector{Float64}(undef, 0)
+    for g in Leaves(FeynGraph)
+        if (g.type == FeynmanDiagram.ComputationalGraphs.Interaction)
+            push!(LeafType, 0)
+            In = Out = g.vertices[1][1].label
+        elseif (isfermionic(g.vertices[1]))
+            push!(LeafType, 1)
+            In, Out = g.vertices[1][1].label, g.vertices[2][1].label
+        else
+            push!(LeafType, 2)
+            In, Out = g.vertices[1][1].label, g.vertices[2][1].label
         end
+        push!(Leaf, 1.0)
+        push!(LeafInTau, FermiLabel[In][1])
+        push!(LeafOutTau, FermiLabel[Out][1])
+        push!(LeafLoopMom, FermiLabel[In][3])
     end
-    return Leaf, LeafType, LeafInTau, LeafOutTau, LeafLoopIndex
+    return Leaf, LeafType, LeafInTau, LeafOutTau, LeafLoopMom
+end
+
+function integrand(idx, vars, config) #for the mcmc algorithm
+    return integrand(vars, config)[idx]::Float64
 end
 
 function measure(vars, obs, weight, config) # for vegas and vegasmc algorithms
@@ -149,7 +114,7 @@ function measure(vars, obs, weight, config) # for vegas and vegasmc algorithms
     Ext = vars[end]
     for i in 1:N
         obs[i][Ext[1]] += weight[i]
-    end
+    end 
 end
 
 function measure(idx, vars, obs, weight, config) # for the mcmc algorithm
@@ -165,7 +130,6 @@ function run(steps, MaxOrder::Int)
     para = Para()
     extQ, Qsize = para.extQ, para.Qsize
     kF, β = para.kF, para.β
-    root = zeros(Float64, MaxOrder)
     FeynGraph, FermiLabel, BoseLabel = PolarDiagrams(:charge, MaxOrder)
     println(green("Diagrams with the largest order $MaxOrder has been read."))
     # SinGraph, FermiLabel, BoseLabel = PolarEachOrder(:charge, MaxOrder,0,0)
@@ -184,41 +148,38 @@ function run(steps, MaxOrder::Int)
     # eval(Pexpr)
     # funcGraph!(x, y) = Base.invokelatest(eval_graph!, x, y)
 
-    funcGraph! = [Compilers.compile([FeynGraph.subgraphs[i],]) for i in 1:MaxOrder] #Compile graphs into a julia static function. 
+    funcGraph! = Compilers.compile(FeynGraph.subgraphs) #Compile graphs into a julia static function. 
     # println(green("Julia static function from Graph has been compiled."))
-
-    LoopPool = FermiLabel.labels[3]
 
     LeafStat = LeafInfor(FeynGraph, FermiLabel, BoseLabel)
     # println(green("Leaf information has been extracted."))
 
     T = Continuous(0.0, β; alpha=3.0, adapt=true)
-    # R = Continuous(0.0, 1.0; alpha=3.0, adapt=true)
-    # θ = Continuous(0.0, 1π; alpha=3.0, adapt=true)
-    # ϕ = Continuous(0.0, 2π; alpha=3.0, adapt=true)
-    K = MCIntegration.FermiK(3, kF, 0.2 * kF, 10.0 * kF)
+    R = Continuous(0.0, 1.0; alpha=3.0, adapt=true)
+    θ = Continuous(0.0, 1π; alpha=3.0, adapt=true)
+    ϕ = Continuous(0.0, 2π; alpha=3.0, adapt=true)
     Ext = Discrete(1, length(extQ); adapt=false)
 
-    dof = [[Order, Order, 1] for Order in 1:MaxOrder] # degrees of freedom of the diagram
+    dof = [[Order, Order, Order, Order, 1] for Order in 1:MaxOrder] # degrees of freedom of the diagram
     obs = [zeros(Float64, Qsize) for i in 1:MaxOrder]
 
     # dof = [[MaxOrder, MaxOrder, MaxOrder, MaxOrder, 1],] # degrees of freedom of the diagram
     # obs = [zeros(Float64, Qsize),]
 
     println(green("Start computing integral:"))
-    result = integrate(integrand; measure=measure, userdata=(para, MaxOrder, LeafStat, funcGraph!, LoopPool, root),
-        var=(K, T, Ext), dof=dof, obs=obs, solver=:mcmc,
+    result = integrate(integrand; measure=measure, userdata=(para, MaxOrder, LeafStat, funcGraph!),
+        var=(R, θ, ϕ, T, Ext), dof=dof, obs=obs, solver=:mcmc,
         neval=steps, print=0, block=32, debug=true)
 
     if isnothing(result) == false
         avg, std = result.mean, result.stdev
-
+        
         for o in 1:MaxOrder
             println("Order:$o")
             @printf("%10s  %10s   %10s \n", "q/kF", "avg", "err")
             for (idx, q) in enumerate(extQ)
                 q = q[1]
-                if (MaxOrder == 1)
+                if (MaxOrder==1)
                     @printf("%10.6f  %10.6f ± %10.6f\n", q / kF, avg[idx], std[idx])
                 else
                     @printf("%10.6f  %10.6f ± %10.6f\n", q / kF, avg[o][idx], std[o][idx])
