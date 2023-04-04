@@ -58,7 +58,7 @@ function integrand(vars, config)
     extidx = Ext[1]
     q = para.extQ[extidx]
     k = [(i == 0 ? q : [r[i] * sin(θ[i]) * cos(ϕ[i]), r[i] * sin(θ[i]) * sin(ϕ[i]), r[i] * cos(θ[i])]) for i in 0:Order]
-    root = zeros(Float64,Order)
+    root = zeros(Float64, Order)
     for (i, lf) in enumerate(leafType)
         if (lf == 0)
             continue
@@ -74,7 +74,7 @@ function integrand(vars, config)
         end
     end
     graphfunc!(root, leaf)
-    Factor::Vector{Float64}=[prod(factor[1:o]) for o in 1:Order]
+    Factor::Vector{Float64} = [prod(factor[1:o]) for o in 1:Order]
     # Factor::Vector{Float64} = prod(factor)
     return root .* Factor
 end
@@ -114,7 +114,7 @@ function measure(vars, obs, weight, config) # for vegas and vegasmc algorithms
     Ext = vars[end]
     for i in 1:N
         obs[i][Ext[1]] += weight[i]
-    end 
+    end
 end
 
 function measure(idx, vars, obs, weight, config) # for the mcmc algorithm
@@ -169,17 +169,20 @@ function run(steps, MaxOrder::Int)
     println(green("Start computing integral:"))
     result = integrate(integrand; measure=measure, userdata=(para, MaxOrder, LeafStat, funcGraph!),
         var=(R, θ, ϕ, T, Ext), dof=dof, obs=obs, solver=:mcmc,
-        neval=steps, print=0, block=32, debug=true)
+        neval=steps, print=-1, block=16)
+    @time result = integrate(integrand; measure=measure, userdata=(para, MaxOrder, LeafStat, funcGraph!),
+        var=(R, θ, ϕ, T, Ext), dof=dof, obs=obs, solver=:mcmc,
+        neval=steps, print=0, block=32)
 
     if isnothing(result) == false
         avg, std = result.mean, result.stdev
-        
+
         for o in 1:MaxOrder
             println("Order:$o")
             @printf("%10s  %10s   %10s \n", "q/kF", "avg", "err")
             for (idx, q) in enumerate(extQ)
                 q = q[1]
-                if (MaxOrder==1)
+                if (MaxOrder == 1)
                     @printf("%10.6f  %10.6f ± %10.6f\n", q / kF, avg[idx], std[idx])
                 else
                     @printf("%10.6f  %10.6f ± %10.6f\n", q / kF, avg[o][idx], std[o][idx])

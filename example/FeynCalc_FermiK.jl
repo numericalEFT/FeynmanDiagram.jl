@@ -36,43 +36,43 @@ function green(τ::T, ω::T, β::T) where {T}
     end
 end
 
-function integrand(vars, config)
-    #generate the MC integrand function
-    K, T, Ext = vars
-    para = config.userdata[1]
-    Order = config.userdata[2]
-    leaf, leafType, leafτ_i, leafτ_o, leafMom = config.userdata[3]
-    graphfunc! = config.userdata[4]
-    LoopPool = config.userdata[5]
-    root = config.userdata[6]
+# function integrand(vars, config)
+#     #generate the MC integrand function
+#     K, T, Ext = vars
+#     para = config.userdata[1]
+#     Order = config.userdata[2]
+#     leaf, leafType, leafτ_i, leafτ_o, leafMom = config.userdata[3]
+#     graphfunc! = config.userdata[4]
+#     LoopPool = config.userdata[5]
+#     root = config.userdata[6]
 
-    kF, β, me, λ = para.kF, para.β, para.me, para.λ
+#     kF, β, me, λ = para.kF, para.β, para.me, para.λ
 
-    k = @view K[1:Order]
-    τ = @view [0.0; T][1:Order+1]
-    extidx = Ext[1]
-    q = para.extQ[extidx]
-    MomVar = hcat(q, k...)
-    FrontEnds.update(LoopPool, MomVar)
+#     k = @view K[1:Order]
+#     τ = @view [0.0; T][1:Order+1]
+#     extidx = Ext[1]
+#     q = para.extQ[extidx]
+#     MomVar = hcat(q, k...)
+#     FrontEnds.update(LoopPool, MomVar)
 
-    for (i, lf) in enumerate(leafType)
-        if (lf == 0)
-            continue
-        elseif (lf == 1)
-            τ_l = τ[leafτ_o[i]] - τ[leafτ_i[i]]
-            kq = FrontEnds.loop(LoopPool, leafMom[i])
-            ω = (dot(kq, kq) - kF^2) / (2me)
-            # leaf[i] = Spectral.kernelFermiT(τ_l, ω, β) # green function of Fermion
-            leaf[i] = green(τ_l, ω, β) # green function of Fermion
-        else
-            kq = FrontEnds.loop(LoopPool, leafMom[i])
-            leaf[i] = (8 * π) / (dot(kq, kq) + λ)
-        end
-    end
+#     for (i, lf) in enumerate(leafType)
+#         if (lf == 0)
+#             continue
+#         elseif (lf == 1)
+#             τ_l = τ[leafτ_o[i]] - τ[leafτ_i[i]]
+#             kq = FrontEnds.loop(LoopPool, leafMom[i])
+#             ω = (dot(kq, kq) - kF^2) / (2me)
+#             # leaf[i] = Spectral.kernelFermiT(τ_l, ω, β) # green function of Fermion
+#             leaf[i] = green(τ_l, ω, β) # green function of Fermion
+#         else
+#             kq = FrontEnds.loop(LoopPool, leafMom[i])
+#             leaf[i] = (8 * π) / (dot(kq, kq) + λ)
+#         end
+#     end
 
-    graphfunc!(root, leaf)
-    return root .* ((1.0 / (2π)^3) .^ (1:Order))
-end
+#     graphfunc!(root, leaf)
+#     return root .* ((1.0 / (2π)^3) .^ (1:Order))
+# end
 
 function integrand(idx, vars, config) #for the mcmc algorithm
     K, T, Ext = vars
@@ -83,12 +83,12 @@ function integrand(idx, vars, config) #for the mcmc algorithm
     leaf, leafType, leafτ_i, leafτ_o, leafMomIdx = config.userdata[3]
     graphfunc! = config.userdata[4][idx]
     LoopPool = config.userdata[5]
-    root = config.userdata[6][idx]
+    tVar, root = config.userdata[6:7]
 
     kF, β, me, λ = para.kF, para.β, para.me, para.λ
 
     k = @view K[1:MaxOrder]
-    τ = @view [0.0; T][1:MaxOrder+1]
+    tVar[2:end] = @view T[1:MaxOrder]
     extidx = Ext[1]
     q = para.extQ[extidx]
     MomVar = hcat(q, k...)
@@ -98,7 +98,7 @@ function integrand(idx, vars, config) #for the mcmc algorithm
         if (lf == 0)
             continue
         elseif (lf == 1)
-            τ_l = τ[leafτ_o[idx][i]] - τ[leafτ_i[idx][i]]
+            τ_l = tVar[leafτ_o[idx][i]] - tVar[leafτ_i[idx][i]]
             kq = FrontEnds.loop(LoopPool, leafMomIdx[idx][i])
             ω = (dot(kq, kq) - kF^2) / (2me)
             # leaf[i] = Spectral.kernelFermiT(τ_l, ω, β) # green function of Fermion
@@ -111,7 +111,7 @@ function integrand(idx, vars, config) #for the mcmc algorithm
 
     graphfunc!(root, leaf[idx])
 
-    return root * (1.0 / (2π)^3)^idx
+    return root[1] * (1.0 / (2π)^3)^idx
 end
 
 function LeafInfor(FeynGraph::Graph, FermiLabel::LabelProduct, BoseLabel::LabelProduct)
@@ -165,7 +165,6 @@ function run(steps, MaxOrder::Int)
     para = Para()
     extQ, Qsize = para.extQ, para.Qsize
     kF, β = para.kF, para.β
-    root = zeros(Float64, MaxOrder)
     FeynGraph, FermiLabel, BoseLabel = PolarDiagrams(:charge, MaxOrder)
     println(green("Diagrams with the largest order $MaxOrder has been read."))
     # SinGraph, FermiLabel, BoseLabel = PolarEachOrder(:charge, MaxOrder,0,0)
@@ -192,6 +191,10 @@ function run(steps, MaxOrder::Int)
     LeafStat = LeafInfor(FeynGraph, FermiLabel, BoseLabel)
     # println(green("Leaf information has been extracted."))
 
+    root = zeros(Float64, 1)
+    tVar = zeros(Float64, MaxOrder + 1)
+    # MomVar = Matrix{Float64}(undef, dim, MaxOrder + 1)
+
     T = Continuous(0.0, β; alpha=3.0, adapt=true)
     # R = Continuous(0.0, 1.0; alpha=3.0, adapt=true)
     # θ = Continuous(0.0, 1π; alpha=3.0, adapt=true)
@@ -202,13 +205,13 @@ function run(steps, MaxOrder::Int)
     dof = [[Order, Order, 1] for Order in 1:MaxOrder] # degrees of freedom of the diagram
     obs = [zeros(Float64, Qsize) for i in 1:MaxOrder]
 
-    # dof = [[MaxOrder, MaxOrder, MaxOrder, MaxOrder, 1],] # degrees of freedom of the diagram
-    # obs = [zeros(Float64, Qsize),]
-
     println(green("Start computing integral:"))
-    result = integrate(integrand; measure=measure, userdata=(para, MaxOrder, LeafStat, funcGraph!, LoopPool, root),
+    # result = integrate(integrand; measure=measure, userdata=(para, MaxOrder, LeafStat, funcGraph!, LoopPool, tVar, root),
+    # var=(K, T, Ext), dof=dof, obs=obs, solver=:mcmc,
+    # neval=steps, print=-1, block=16)
+    result = integrate(integrand; measure=measure, userdata=(para, MaxOrder, LeafStat, funcGraph!, LoopPool, tVar, root),
         var=(K, T, Ext), dof=dof, obs=obs, solver=:mcmc,
-        neval=steps, print=0, block=32, debug=true)
+        neval=steps, print=0, block=32)
 
     if isnothing(result) == false
         avg, std = result.mean, result.stdev
