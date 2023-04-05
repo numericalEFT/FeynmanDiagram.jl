@@ -4,7 +4,7 @@ using FeynmanDiagram, MCIntegration, Lehmann
 using LinearAlgebra, Random, Printf
 using StaticArrays, AbstractTrees
 
-Steps = 1e7
+Steps = 1e6
 Base.@kwdef struct Para
     rs::Float64 = 1.0
     beta::Float64 = 40.0
@@ -111,13 +111,18 @@ function integrand(idx, vars, config) #for the mcmc algorithm
     graphfunc! = config.userdata[4]
     LoopPool = config.userdata[5]
     root = config.userdata[6]
+    τ = config.userdata[7]
+    ValK = config.userdata[8]
 
     kF, β, me, λ = para.kF, para.β, para.me, para.λ
 
-    k = @view K[1:Order]
-    τ = @view [0.0;T][1:Order+1]
+    τ[2:end] = @view T[1:Order]
+
     extidx = Ext[1]
     q = para.extQ[extidx]
+
+    ValK[:,1] = q
+    ValK[:,2:end] = @view K[1:Order]
     # MomVar = hcat(q,k...)
     FrontEnds.update(LoopPool, hcat(q,k...))
 
@@ -160,8 +165,10 @@ function run(steps, MaxOrder::Int)
     para = Para()
     extQ, Qsize = para.extQ, para.Qsize
     kF, β = para.kF, para.β
-    root = zeros(Float64, MaxOrder)
+    root = zeros(Float64, 1)
     FeynGraph, FermiLabel, BoseLabel = PolarDiagrams(:charge, MaxOrder)
+    Tau = zeros(Float64, MaxOrder+1)
+    KValue = zeros(Float64, para.dim, MaxOrder+1)
     println(green("Diagrams with the largest order $MaxOrder has been read."))
     # SinGraph, FermiLabel, BoseLabel = PolarEachOrder(:charge, MaxOrder,0,0)
     # println(green("Diagram with order $MaxOrder has been read."))
@@ -201,7 +208,7 @@ function run(steps, MaxOrder::Int)
     # obs = [zeros(Float64, Qsize),]
 
     println(green("Start computing integral:"))
-    result = integrate(integrand; measure=measure, userdata=(para, MaxOrder, LeafStat, funcGraph!, LoopPool, root),
+    result = integrate(integrand; measure=measure, userdata=(para, MaxOrder, LeafStat, funcGraph!, LoopPool, root, Tau, KValue),
         var=(K, T, Ext), dof=dof, obs=obs, solver=:mcmc,
         neval=steps, print=0, block=32)
 
