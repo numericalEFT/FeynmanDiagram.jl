@@ -3,9 +3,9 @@
 using FeynmanDiagram, MCIntegration, Lehmann
 using LinearAlgebra, Random, Printf
 using StaticArrays, AbstractTrees
-using RuntimeGeneratedFunctions
+using Profile
 
-Steps = 1e6
+Steps = 1e7
 Base.@kwdef struct Para
     rs::Float64 = 1.0
     beta::Float64 = 40.0
@@ -36,44 +36,6 @@ function green(τ::T, ω::T, β::T) where {T}
                -exp(-ω * τ) / (1 + exp(ω * β))
     end
 end
-
-# function integrand(vars, config)
-#     #generate the MC integrand function
-#     K, T, Ext = vars
-#     para = config.userdata[1]
-#     Order = config.userdata[2]
-#     leaf, leafType, leafτ_i, leafτ_o, leafMom = config.userdata[3]
-#     graphfunc! = config.userdata[4]
-#     LoopPool = config.userdata[5]
-#     root = config.userdata[6]
-
-#     kF, β, me, λ = para.kF, para.β, para.me, para.λ
-
-#     k = @view K[1:Order]
-#     τ = @view [0.0; T][1:Order+1]
-#     extidx = Ext[1]
-#     q = para.extQ[extidx]
-#     MomVar = hcat(q, k...)
-#     FrontEnds.update(LoopPool, MomVar)
-
-#     for (i, lf) in enumerate(leafType)
-#         if (lf == 0)
-#             continue
-#         elseif (lf == 1)
-#             τ_l = τ[leafτ_o[i]] - τ[leafτ_i[i]]
-#             kq = FrontEnds.loop(LoopPool, leafMom[i])
-#             ω = (dot(kq, kq) - kF^2) / (2me)
-#             # leaf[i] = Spectral.kernelFermiT(τ_l, ω, β) # green function of Fermion
-#             leaf[i] = green(τ_l, ω, β) # green function of Fermion
-#         else
-#             kq = FrontEnds.loop(LoopPool, leafMom[i])
-#             leaf[i] = (8 * π) / (dot(kq, kq) + λ)
-#         end
-#     end
-
-#     graphfunc!(root, leaf)
-#     return root .* ((1.0 / (2π)^3) .^ (1:Order))
-# end
 
 # macro apply_graphfunc(graphfuncs, idx, root, leaf)
 #     quote
@@ -115,7 +77,7 @@ function integrand(idx, vars, config) #for the mcmc algorithm
             leaf[idx][i] = green(τ_l, ω, β) # green function of Fermion
         else
             kq = FrontEnds.loop(LoopPool, leafMomIdx[idx][i])
-            leaf[idx][i] = (8 * π) / (dot(kq, kq) + λ)
+            leaf[idx][i] = 8π / (dot(kq, kq) + λ)
         end
     end
 
@@ -209,9 +171,6 @@ function run(steps, MaxOrder::Int)
 
     T = Continuous(0.0, β; alpha=3.0, adapt=true, offset=1)
     T.data[1] = 0.0
-    # R = Continuous(0.0, 1.0; alpha=3.0, adapt=true)
-    # θ = Continuous(0.0, 1π; alpha=3.0, adapt=true)
-    # ϕ = Continuous(0.0, 2π; alpha=3.0, adapt=true)
     K = MCIntegration.FermiK(3, kF, 0.2 * kF, 10.0 * kF, offset=1)
     K.data[:, 1] .= extQ[1]
     Ext = Discrete(1, length(extQ); adapt=false)
@@ -220,12 +179,13 @@ function run(steps, MaxOrder::Int)
     obs = [zeros(Float64, Qsize) for i in 1:MaxOrder]
 
     println(green("Start computing integral:"))
-    # result = integrate(integrand; measure=measure, userdata=(para, MaxOrder, LeafStat, LoopPool, root, funcGraphs!),
-    #     var=(K, T, Ext), dof=dof, obs=obs, solver=:mcmc,
-    #     neval=steps, print=-1, block=8)
     result = integrate(integrand; measure=measure, userdata=(para, MaxOrder, LeafStat, LoopPool, root, funcGraphs!),
         var=(K, T, Ext), dof=dof, obs=obs, solver=:mcmc,
-        neval=steps, print=0, block=16, debug=true)
+        neval=steps, print=-1, block=2) # gets compiled
+    Profile.clear_malloc_data() # clear allocations
+    @time result = integrate(integrand; measure=measure, userdata=(para, MaxOrder, LeafStat, LoopPool, root, funcGraphs!),
+        var=(K, T, Ext), dof=dof, obs=obs, solver=:mcmc,
+        neval=steps, print=0, block=16)
 
     if isnothing(result) == false
         avg, std = result.mean, result.stdev
@@ -243,10 +203,11 @@ function run(steps, MaxOrder::Int)
             end
         end
         report(result)
+        report(result.config)
     end
 end
 
 # run(Steps, 1)
 # run(Steps, 2)
-run(Steps, 2)
+run(Steps, 3)
 
