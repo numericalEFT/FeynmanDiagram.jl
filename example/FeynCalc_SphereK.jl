@@ -5,7 +5,7 @@ using LinearAlgebra, Random, Printf
 using StaticArrays, AbstractTrees
 using Profile
 
-Steps = 1e6
+Steps = 1e8
 Base.@kwdef struct Para
     rs::Float64 = 1.0
     beta::Float64 = 40.0
@@ -43,10 +43,10 @@ end
 #     end
 # end
 
-function apply_graphfunc(graphfuncs, idx, root, leaf)
-    graphfuncs[idx](root, leaf)
-    return nothing
-end
+# function apply_graphfunc(graphfuncs, idx, root, leaf)
+#     graphfuncs[idx](root, leaf)
+#     return nothing
+# end
 
 function integrand(idx, vars, config) #for the mcmc algorithm
     X, T, Ext = vars
@@ -88,8 +88,9 @@ function integrand(idx, vars, config) #for the mcmc algorithm
         end
     end
 
+    graphfuncs![idx](root, leaf[idx])
     # @apply_graphfunc(graphfuncs!, idx, root, leaf[idx])
-    apply_graphfunc(graphfuncs!, idx, root, leaf[idx])
+    # apply_graphfunc(graphfuncs!, idx, root, leaf[idx])
     # if idx == 1
     #     graphfunc1!(root, leaf[idx])
     # elseif idx == 2
@@ -250,8 +251,8 @@ function run(steps, alg, MaxOrder::Int)
     # funcGraph!(x, y) = Base.invokelatest(eval_graph!, x, y)
 
     if alg == :mcmc
-        funcGraphs! = [Compilers.compile([FeynGraph.subgraphs[i],]) for i in 1:MaxOrder] #Compile graphs into a julia static function Vector. 
-        # funcGraph!(i) = Compilers.compile([FeynGraph.subgraphs[i],]) #Compile graph i into a julia static function. 
+        # funcGraphs! = [Compilers.compile([FeynGraph.subgraphs[i],]) for i in 1:MaxOrder] #Compile graphs into a julia static function Vector. 
+        funcGraphs! = Dict{Int,Function}(i => Compilers.compile([FeynGraph.subgraphs[i],]) for i in 1:MaxOrder)
         LeafStat = LeafInfor(FeynGraph, FermiLabel, BoseLabel)
     else
         funcGraphs! = Compilers.compile(FeynGraph.subgraphs)
@@ -280,7 +281,7 @@ function run(steps, alg, MaxOrder::Int)
     println(green("Start computing integral:"))
     result = integrate(integrand; measure=measure, userdata=(para, MaxOrder, LeafStat, LoopPool, MomVar, kVar, root, funcGraphs!),
         var=(X, T, Ext), dof=dof, obs=obs, solver=alg,
-        neval=steps, print=0, block=4) # gets compiled
+        neval=steps, print=-1, block=2) # gets compiled
     Profile.clear_malloc_data() # clear allocations
     @time result = integrate(integrand; measure=measure, userdata=(para, MaxOrder, LeafStat, LoopPool, MomVar, kVar, root, funcGraphs!),
         var=(X, T, Ext), dof=dof, obs=obs, solver=alg,
@@ -307,6 +308,6 @@ function run(steps, alg, MaxOrder::Int)
 end
 
 # run(Steps, :mcmc, 1)
-# run(Steps, :mcmc, 2)
-run(Steps, :vegasmc, 2)
+run(Steps, :mcmc, 3)
+# run(Steps, :vegasmc, 2)
 

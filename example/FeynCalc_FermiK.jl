@@ -4,8 +4,9 @@ using FeynmanDiagram, MCIntegration, Lehmann
 using LinearAlgebra, Random, Printf
 using StaticArrays, AbstractTrees
 using Profile
+using ProfileView
 
-Steps = 1e7
+Steps = 1e8
 Base.@kwdef struct Para
     rs::Float64 = 1.0
     beta::Float64 = 40.0
@@ -43,10 +44,15 @@ end
 #     end
 # end
 
-function apply_graphfunc(graphfuncs, idx, root, leaf)
-    graphfuncs[idx](root, leaf)
-    return nothing
-end
+# function _apply_graphfunc(graphfuncs, ::Val{I}, root, leaf) where {I}
+#     graphfuncs[I](root, leaf)
+#     return nothing
+# end
+
+# function _apply_graphfunc(graphfuncs, I, root, leaf)
+#     graphfuncs[I](root, leaf)
+#     return nothing
+# end
 
 function integrand(idx, vars, config) #for the mcmc algorithm
     K, T, Ext = vars
@@ -65,7 +71,7 @@ function integrand(idx, vars, config) #for the mcmc algorithm
     extidx = Ext[1]
     K.data[:, 1] .= para.extQ[extidx]
     FrontEnds.update(LoopPool, K.data[:, 1:MaxOrder+1])
-
+    # println(K.data[:, 1:MaxOrder+1])
     for (i, lf) in enumerate(leafType[idx])
         if lf == 0
             continue
@@ -81,8 +87,10 @@ function integrand(idx, vars, config) #for the mcmc algorithm
         end
     end
 
+    graphfuncs![idx](root, leaf[idx])  # allocations due to run-time variable `idx`
     # @apply_graphfunc(graphfuncs!, idx, root, leaf[idx])
-    apply_graphfunc(graphfuncs!, idx, root, leaf[idx])
+    # _apply_graphfunc(graphfuncs!, Val(idx), root, leaf[idx])
+    # _apply_graphfunc(graphfuncs!, idx, root, leaf[idx])
     # if idx == 1
     #     graphfunc1!(root, leaf[idx])
     # elseif idx == 2
@@ -160,9 +168,10 @@ function run(steps, MaxOrder::Int)
     # eval(Pexpr)
     # funcGraph!(x, y) = Base.invokelatest(eval_graph!, x, y)
 
-    funcGraphs! = [Compilers.compile([FeynGraph.subgraphs[i],]) for i in 1:MaxOrder] #Compile graphs into a julia static function Vector. 
+    # funcGraphs! = Tuple([Compilers.compile([FeynGraph.subgraphs[i],]) for i in 1:MaxOrder]) #Compile graphs into a julia static function Vector. 
     # funcGraph!(i) = Compilers.compile([FeynGraph.subgraphs[i],]) #Compile graph i into a julia static function. 
     # println(green("Julia static function from Graph has been compiled."))
+    funcGraphs! = Dict{Int,Function}(i => Compilers.compile([FeynGraph.subgraphs[i],]) for i in 1:MaxOrder)
 
     LoopPool = FermiLabel.labels[3]
     LeafStat = LeafInfor(FeynGraph, FermiLabel, BoseLabel)
@@ -171,7 +180,7 @@ function run(steps, MaxOrder::Int)
 
     T = Continuous(0.0, β; alpha=3.0, adapt=true, offset=1)
     T.data[1] = 0.0
-    K = MCIntegration.FermiK(3, kF, 0.2 * kF, 10.0 * kF, offset=1)
+    K = MCIntegration.FermiK(3, kF, 0.5 * kF, 10.0 * kF, offset=1)
     K.data[:, 1] .= extQ[1]
     Ext = Discrete(1, length(extQ); adapt=false)
 
@@ -186,6 +195,7 @@ function run(steps, MaxOrder::Int)
     @time result = integrate(integrand; measure=measure, userdata=(para, MaxOrder, LeafStat, LoopPool, root, funcGraphs!),
         var=(K, T, Ext), dof=dof, obs=obs, solver=:mcmc,
         neval=steps, print=0, block=16)
+    # ProfileView.view()
 
     if isnothing(result) == false
         avg, std = result.mean, result.stdev
@@ -210,4 +220,5 @@ end
 # run(Steps, 1)
 # run(Steps, 2)
 run(Steps, 3)
+# run(Steps, 4)
 
