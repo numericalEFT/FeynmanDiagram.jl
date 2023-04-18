@@ -292,7 +292,7 @@ julia> g.subgraphs
 ```
 """
 function feynman_diagram(subgraphs::Vector{Graph{F,W}}, topology::Vector{Vector{Int}}, perm_noleg::Union{Vector{Int},Nothing}=nothing;
-    factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", diagtype::GraphType=GenericDiag()) where {F,W}
+    factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", diagtype::GraphType=GenericDiag(), is_signed::Bool=false) where {F,W}
 
     # external_ops = OperatorProduct(operators[external]) # the external operators for the building diagram after contractions
     contraction = collect(Iterators.flatten(topology))
@@ -329,9 +329,13 @@ function feynman_diagram(subgraphs::Vector{Graph{F,W}}, topology::Vector{Vector{
     permutation = union(contraction, external_noleg)
     @assert Set(permutation) == Set(eachindex(operators)) # permutation must exhaust all operators
 
-    fermionic_operators = isfermionic.(operators)
-    filter!(p -> fermionic_operators[p], permutation)
-    sign = isempty(permutation) ? 1 : parity(sortperm(permutation))
+    if !is_signed
+        fermionic_operators = isfermionic.(operators)
+        filter!(p -> fermionic_operators[p], permutation)
+        sign = isempty(permutation) ? 1 : parity(sortperm(permutation))
+    else
+        sign = 1
+    end
 
     for connection in topology
         push!(subgraphs, propagator(operators[connection]))

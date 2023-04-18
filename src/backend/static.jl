@@ -1,12 +1,12 @@
-function _to_static(::Type{ComputationalGraphs.Sum}, subgraphs::Vector{Graph{F,W}}) where {F,W}
+function _to_static(::Type{ComputationalGraphs.Sum}, subgraphs::Vector{Graph{F,W}}, subgraph_factors::Vector{F}) where {F,W}
     if length(subgraphs) == 1
-        return "(g$(subgraphs[1].id))"
+        return "(g$(subgraphs[1].id) * $(subgraph_factors[1]))"
     else
-        return "(" * join(["g$(g.id)" for g in subgraphs], " + ") * ")"
+        return "(" * join(["g$(g.id) * $gfactor" for (g, gfactor) in zip(subgraphs, subgraph_factors)], " + ") * ")"
     end
 end
 
-function _to_static(::Type{ComputationalGraphs.Prod}, subgraphs::Vector{Graph{F,W}}) where {F,W}
+function _to_static(::Type{ComputationalGraphs.Prod}, subgraphs::Vector{Graph{F,W}}, subgraph_factors::Vector{F}) where {F,W}
     if length(subgraphs) == 1
         return "(g$(subgraphs[1].id))"
     else
@@ -35,7 +35,7 @@ function to_julia_str(graphs::AbstractVector; root::AbstractVector{Int}=[g.id fo
                 body *= "    $target = leaf[$leafidx]\n "
                 leafidx += 1
             else
-                body *= "    $target = $(_to_static(g.operator, g.subgraphs))*$(g.factor)\n "
+                body *= "    $target = $(_to_static(g.operator, g.subgraphs, g.subgraph_factors))*$(g.factor)\n "
             end
         end
     end

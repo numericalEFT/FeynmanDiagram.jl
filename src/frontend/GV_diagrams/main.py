@@ -4,9 +4,9 @@ import copy
 import sys
 
 
-def Generate(Order, VerOrder, SigmaOrder, QOrder, IsSelfEnergy, IsSpinPolar, IsSysPolar, SPIN):
+def Generate(Order, VerOrder, SigmaOrder, IsSelfEnergy, IsSpinPolar, IsSysPolar, SPIN):
     LnZOrder = Order-1
-    DiagFile = "./Diagram/HugenDiag{0}.txt".format(LnZOrder)
+    DiagFile = "./Diagram/HugenDiag{0}.diag".format(LnZOrder)
     LnZ = free_energy(LnZOrder)
     # Load pre-generated lnZ diagrams
     # build labeled Feynman diagram to unlabled Hugenholtz diagram mapping
@@ -56,33 +56,34 @@ def Generate(Order, VerOrder, SigmaOrder, QOrder, IsSelfEnergy, IsSpinPolar, IsS
         len(UniqueUnLabelDiagList)))
 
     print "Save diagrams ..."
-    if IsSysPolar:
-        fname = "./output/{0}{1}_{2}_{3}_{4}.diag".format(
-            "Polar", Order, VerOrder, SigmaOrder, QOrder)
-    else:
-        fname = "./output/{0}{1}_{2}_{3}.diag".format(
-            "Polar", Order, VerOrder, SigmaOrder)
+
+    fname = "./output/{0}{1}_{2}_{3}.diag".format(
+        "Polar", Order, VerOrder, SigmaOrder)
+    # with open(fname, "w") as f:
     with open(fname, "w") as f:
         str_polar = Polar.ToString(UniqueUnLabelDiagList,
-                                   VerOrder, SigmaOrder, QOrder, IsSelfEnergy, IsSpinPolar, IsSysPolar, SPIN)
+                                   VerOrder, SigmaOrder, IsSelfEnergy, IsSpinPolar, IsSysPolar, SPIN)
         if not(str_polar is None):
             f.write(Polar.ToString(UniqueUnLabelDiagList,
-                                   VerOrder, SigmaOrder, QOrder, IsSelfEnergy, IsSpinPolar, IsSysPolar, SPIN))
+                                   VerOrder, SigmaOrder, IsSelfEnergy, IsSpinPolar, IsSysPolar, SPIN))
 
 
 if __name__ == "__main__":
     # print "Input Diagram Order: "
     # Order = int(sys.argv[1])
-    Order = 6
+    Order = 5
     IsSelfEnergy = False
+    # IsSelfEnergy = True
     IsSpinPolar = False
-    IsSymPolar = False
+    IsSymPolar = True
     SPIN = 2
+    # for o in range(2, Order+1):
     for o in range(2, Order+1):
         for v in range(0, Order):
-            for g in range(0, (Order-1)/2+1):
-                for qo in [1, 2]:
-                    if o+v+2*g > Order:
-                        continue
-                    Generate(o, v, g, qo, IsSelfEnergy,
-                             IsSpinPolar, IsSymPolar, SPIN)
+            # for g in range(0, (Order-1)/2+1):
+            for g in range(0, Order):
+                # if o+v+2*g > Order:
+                if o+v+g > Order:
+                    continue
+                Generate(o, v, g, IsSelfEnergy,
+                         IsSpinPolar, IsSymPolar, SPIN)
