@@ -99,7 +99,6 @@ function integrand(idx, vars, config) #for the mcmc algorithm
     for i in 1:idx
         root[1] *= Ri[i]^2 / (1.0 - Ri[i])^4 * sin(θ[i])
     end
-    # kVar[1:idx] = 1.0 / (2π)^3 * view(X[1], 1:idx) .^ 2 ./ (1 .- view(X[1], 1:idx)) .^ 4 .* sin.(view(X[2], 1:idx))
 
     root[1] *= 1.0 / (2π)^(3idx)
     return root[1]
@@ -278,13 +277,17 @@ function run(steps, alg, MaxOrder::Int)
     dof = [[Order, Order, 1] for Order in 1:MaxOrder] # degrees of freedom of the diagram
     obs = [zeros(Float64, Qsize) for _ in 1:MaxOrder]
 
-    println(green("Start computing integral:"))
+    reweight_goal = [4.0^(i - 1) for i in 1:MaxOrder]
+    # reweight_goal = [2.0^(i - 1) for i in 1:MaxOrder]
+    push!(reweight_goal, 1.0)
+
+    println(green("Start computing integral with $alg:"))
+    # result = integrate(integrand; measure=measure, userdata=(para, MaxOrder, LeafStat, LoopPool, MomVar, kVar, root, funcGraphs!),
+    #     var=(X, T, Ext), dof=dof, obs=obs, solver=alg, reweight_goal=reweight_goal,
+    #     neval=steps, print=-1, block=2) # gets compiled
+    # Profile.clear_malloc_data() # clear allocations
     result = integrate(integrand; measure=measure, userdata=(para, MaxOrder, LeafStat, LoopPool, MomVar, kVar, root, funcGraphs!),
-        var=(X, T, Ext), dof=dof, obs=obs, solver=alg,
-        neval=steps, print=-1, block=2) # gets compiled
-    Profile.clear_malloc_data() # clear allocations
-    @time result = integrate(integrand; measure=measure, userdata=(para, MaxOrder, LeafStat, LoopPool, MomVar, kVar, root, funcGraphs!),
-        var=(X, T, Ext), dof=dof, obs=obs, solver=alg,
+        var=(X, T, Ext), dof=dof, obs=obs, solver=alg, reweight_goal=reweight_goal,
         neval=steps, print=0, block=16)
 
     if isnothing(result) == false
@@ -309,5 +312,5 @@ end
 
 # run(Steps, :mcmc, 1)
 run(Steps, :mcmc, 3)
-# run(Steps, :vegasmc, 2)
+# run(Steps, :vegasmc, 3)
 

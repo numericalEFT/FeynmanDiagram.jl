@@ -3,8 +3,7 @@
 using FeynmanDiagram, MCIntegration, Lehmann
 using LinearAlgebra, Random, Printf
 using StaticArrays, AbstractTrees
-using Profile
-using ProfileView
+using Profile, ProfileView
 
 Steps = 1e8
 Base.@kwdef struct Para
@@ -96,7 +95,10 @@ function integrand(idx, vars, config) #for the mcmc algorithm
     # elseif idx == 2
     #     graphfunc2!(root, leaf[idx])
     # end
-    return root[1] * (1.0 / (2π)^3)^idx
+    root[1] *= 1.0 / (2π)^(3idx)
+
+    # println("$idx  $(root[1])")
+    return root[1]
 end
 
 function LeafInfor(FeynGraph::Graph, FermiLabel::LabelProduct, BoseLabel::LabelProduct)
@@ -179,22 +181,30 @@ function run(steps, MaxOrder::Int)
     root = zeros(Float64, 1)
 
     T = Continuous(0.0, β; alpha=3.0, adapt=true, offset=1)
+    # T = Continuous(0.0, β; adapt=false, offset=1)
     T.data[1] = 0.0
     K = MCIntegration.FermiK(3, kF, 0.5 * kF, 10.0 * kF, offset=1)
     K.data[:, 1] .= extQ[1]
     Ext = Discrete(1, length(extQ); adapt=false)
 
     dof = [[Order, Order, 1] for Order in 1:MaxOrder] # degrees of freedom of the diagram
-    obs = [zeros(Float64, Qsize) for i in 1:MaxOrder]
+    obs = [zeros(Float64, Qsize) for _ in 1:MaxOrder]
 
-    println(green("Start computing integral:"))
+    reweight_goal = [4.0^(i - 1) for i in 1:MaxOrder]
+    push!(reweight_goal, 1.0) # reweight for the normalization part
+
+    println(green("Start computing MCMC integral:"))
+    # result = integrate(integrand; measure=measure, userdata=(para, MaxOrder, LeafStat, LoopPool, root, funcGraphs!),
+    #     var=(K, T, Ext), dof=dof, obs=obs, solver=:mcmc, reweight_goal=reweight, gamma=0.5,
+    #     neval=steps, print=-1, block=2) # gets compiled
+    # Profile.clear_malloc_data() # clear allocations
+
     result = integrate(integrand; measure=measure, userdata=(para, MaxOrder, LeafStat, LoopPool, root, funcGraphs!),
-        var=(K, T, Ext), dof=dof, obs=obs, solver=:mcmc,
-        neval=steps, print=-1, block=2) # gets compiled
-    Profile.clear_malloc_data() # clear allocations
-    @time result = integrate(integrand; measure=measure, userdata=(para, MaxOrder, LeafStat, LoopPool, root, funcGraphs!),
-        var=(K, T, Ext), dof=dof, obs=obs, solver=:mcmc,
-        neval=steps, print=0, block=16)
+        var=(K, T, Ext), dof=dof, obs=obs, solver=:mcmc, niter=10, reweight_goal=reweight_goal,
+        neval=steps, print=0, block=16, parallel=:thread)
+    # result = integrate(integrand; measure=measure, userdata=(para, MaxOrder, LeafStat, LoopPool, root, funcGraphs!),
+    #     var=(K, T, Ext), dof=dof, obs=obs, solver=:mcmc, niter=10, reweight=reweight_goal, gamma=0,
+    #     neval=steps, print=0, block=16, parallel=:thread)   # strictly setting reweight as reweight_goal (with gamma=0)
     # ProfileView.view()
 
     if isnothing(result) == false
