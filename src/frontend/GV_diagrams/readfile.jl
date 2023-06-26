@@ -53,7 +53,8 @@ A tuple `(diagrams, fermi_labelProd, bose_labelProd)` where
 """
 function read_diagrams(filename::AbstractString; loopPool::Union{LoopPool,Nothing}=nothing,
     dim::Int=3, tau_labels::Union{Nothing,Vector{Int}}=nothing, GTypes=[0, 1], VTypes=[0, 1, 2],
-    keywords::Vector{String}=["Polarization", "DiagNum", "Order", "GNum", "Ver4Num", "LoopNum", "ExtLoopIndex",
+    # keywords::Vector{String}=["Polarization", "DiagNum", "Order", "GNum", "Ver4Num", "LoopNum", "ExtLoopIndex",
+    keywords::Vector{String}=["SelfEnergy", "DiagNum", "Order", "GNum", "Ver4Num", "LoopNum", "ExtLoopIndex",
         "DummyLoopIndex", "TauNum", "ExtTauIndex", "DummyTauIndex"]
 )
     # Open a diagram file
@@ -64,11 +65,12 @@ function read_diagrams(filename::AbstractString; loopPool::Union{LoopPool,Nothin
     extIndex = Int[]
     GNum = 2
     lineNum = 1
+    # filename[1:5] == "Sigma" && keywords[1] = "SelfEnergy"
     while true
         line = readline(io)
         length(line) == 0 && break
         keyword = keywords[lineNum]
-        @assert occursin(keyword, line)
+        # @assert occursin(keyword, line)
         if keyword == "DiagNum"
             diagNum = _StringtoIntVector(line)[1]
         elseif keyword == "GNum"
@@ -133,8 +135,13 @@ function read_onediagram(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex:
     @assert length(opGType) == GNum
 
     @assert occursin("VertexBasis", readline(io))
-    tau_labels = _StringtoIntVector(readline(io)) .- offset
+    tau_labels = _StringtoIntVector(readline(io))
+    unique_values = unique(tau_labels)
+    mapping = Dict(val => idx for (idx, val) in enumerate(unique_values))
+    tau_labels = [mapping[val] for val in tau_labels] .- (1 + offset)
     readline(io)
+
+    extIndex = extIndex .- offset
 
     @assert occursin("LoopBasis", readline(io))
     currentBasis = zeros(Int, (GNum, loopNum))
@@ -146,7 +153,7 @@ function read_onediagram(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex:
 
     @assert occursin("Ver4Legs", readline(io))
     if verNum == 0
-        ver4Legs = Vector{Vector{Int64}}(undef,0)
+        ver4Legs = Vector{Vector{Int64}}(undef, 0)
     else
         strs = split(readline(io), splitter)
         ver4Legs = _StringtoIntVector.(strs[1:verNum])
@@ -199,6 +206,7 @@ function read_onediagram(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex:
 
             vertices[ind1][1].label == 0 ? vertices[ind1] = 𝑎⁺(label1) : vertices[ind1] *= 𝑎⁺(label1)
             vertices[ind2][1].label == 0 ? vertices[ind2] = 𝑎⁻(label2) : vertices[ind2] *= 𝑎⁻(label2)
+            # ind2 == 1 && continue
             push!(connected_operators, 𝑎⁻(label2)𝑎⁺(label1))
         end
 
@@ -235,9 +243,10 @@ function read_onediagram(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex:
         # add external operators in each external vertices
         external_current = append!([1], zeros(Int, loopNum - 1))
         extcurrent_index = FrontEnds.append(loopPool, external_current)
-        for ind in extIndex .- offset
+        for ind in extIndex
             labelProd_size = (bose_dims..., length(loopPool))
-            label = LinearIndices(labelProd_size)[tau_labels[ind], 1, extcurrent_index]
+            # label = LinearIndices(labelProd_size)[tau_labels[ind], 1, extcurrent_index]
+            label = LinearIndices(labelProd_size)[tau_labels[extIndex[1]], 1, extcurrent_index]
             vertices[ind] *= 𝜙(label)
         end
 
@@ -247,6 +256,7 @@ function read_onediagram(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex:
         for connection in connected_operators
             push!(contraction, [findfirst(x -> x == connection[1], operators), findlast(x -> x == connection[2], operators)])
         end
+
         push!(graphs, IR.feynman_diagram(IR.interaction.(vertices), contraction, factor=symfactor, is_signed=true))
         # return IR.feynman_diagram(IR.interaction.(vertices), contraction, factor=symfactor * spinFactor), loopPool
     end

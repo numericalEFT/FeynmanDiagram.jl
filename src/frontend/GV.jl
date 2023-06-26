@@ -40,14 +40,12 @@ function PolarEachOrder(type::Symbol, order::Int, VerOrder::Int=0, SigmaOrder::I
         filename = string(@__DIR__, "/GV_diagrams/groups_spin/Polar$(order)_$(VerOrder)_$(SigmaOrder).diag")
     elseif type == :charge
         filename = string(@__DIR__, "/GV_diagrams/groups_charge/Polar$(order)_$(VerOrder)_$(SigmaOrder).diag")
+    elseif type == :sigma
+        filename = string(@__DIR__, "/GV_diagrams/groups_sigma/Sigma$(order)_$(VerOrder)_$(SigmaOrder).diag")
     end
 
-    if isnothing(GTypes)
-        GTypes = collect(0:SigmaOrder)
-    end
-    if isnothing(VTypes)
-        VTypes = collect(0:VerOrder)
-    end
+    isnothing(GTypes) && (GTypes = collect(0:SigmaOrder))
+    isnothing(VTypes) && (VTypes = collect(0:VerOrder))
     return read_diagrams(filename; dim=dim, loopPool=loopPool, tau_labels=tau_labels, GTypes=GTypes, VTypes=VTypes)
 end
 
@@ -58,7 +56,7 @@ end
     Generates fermionic/bosonic `LabelProduct`: `fermi_labelProd`/`bose_labelProd` for this `Graph`.
 
 # Arguments:
-- `type` (Symbol): The type of the diagrams, either `:spin` or `:charge`.
+- `type` (Symbol): The type of the diagrams, either `:spin`, `:charge`, or `:sigma`.
 - `Maxorder` (Int): The maximum actual order of the diagrams.
 - `has_counterterm` (Bool, optional): `false` for G0W0, `true` for GW with interaction and self-energy counterterms.
 - `dim` (Int, optional): The dimension of the system (defaults to 3).
@@ -71,15 +69,22 @@ A tuple `(diagrams, fermi_labelProd, bose_labelProd)` where
 """
 function PolarDiagrams(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, dim::Int=3)
     graphs = Graph{_dtype.factor,_dtype.weight}[]
-    tau_labels = collect(1:MaxOrder+1)
-    loopPool = LoopPool(:K, dim, MaxOrder + 1, Float64)
+    if type == :sigma
+        MaxLoopNum = MaxOrder + 2
+        tau_labels = collect(1:MaxOrder)
+    else
+        MaxLoopNum = MaxOrder + 1
+        tau_labels = collect(1:MaxOrder+1)
+    end
+    loopPool = LoopPool(:K, dim, MaxLoopNum, Float64)
     if has_counterterm
         GTypes = collect(0:MaxOrder-1)
-        VTypes = collect(0:MaxOrder-2)
+        type == :sigma && append!(GTypes, [-2, -3])
+        VTypes = collect(0:MaxOrder-1)
         for order in 1:MaxOrder
             for VerOrder in VTypes
                 order == 1 && VerOrder > 0 && continue
-                for SigmaOrder in GTypes
+                for SigmaOrder in 0:MaxOrder-1
                     order + VerOrder + SigmaOrder > MaxOrder && continue
                     g, fermi_labelProd, bose_labelProd = PolarEachOrder(type, order, VerOrder, SigmaOrder;
                         dim=dim, loopPool=loopPool, tau_labels=tau_labels, GTypes=GTypes, VTypes=VTypes)
@@ -90,6 +95,7 @@ function PolarDiagrams(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false,
         end
     else
         GTypes, VTypes = [0], [0]
+        type == :sigma && append!(GTypes, [-2, -3])
         for order in 1:MaxOrder
             g, fermi_labelProd, bose_labelProd = PolarEachOrder(type, order;
                 loopPool=loopPool, tau_labels=tau_labels, GTypes=GTypes, VTypes=VTypes)
