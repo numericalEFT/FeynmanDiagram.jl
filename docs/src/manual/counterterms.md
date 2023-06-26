@@ -130,7 +130,36 @@ Thus,
 
 Since the order of differentiation w.r.t. $\mu$ and $\lambda$ does not matter, it follows that a general diagram $\mathcal{D}[g, V] \sim g^n V^m$ may be represented either by pre-expanding $g[g_\mu]$ and $V[V_\lambda]$ and collecting terms, or by directly evaluating terms in the Taylor series for $\mathcal{D}[g_\mu, V_\lambda]$; this codebase uses the latter approach.
 
+## Evaluation of interaction counterterms
+
+An example of the interaction counterterm evaluation for a diagram with $n_\lambda = 3$ and $m$ interaction lines. Since the Julia implementation evaluates the interaction counterterms of a given diagram as $\frac{(-\lambda)^n}{n!}\partial^n_\lambda V^m_\lambda$, we pick up an extra factor of $l!$ on each $l$th-order derivative in the chain rule.
+
+![An example of the representation of interaction counterterm diagrams via differentiation.](../../assets/derivative_example.svg#derivative_example)
+
 ## Benchmark of counterterms in the UEG
 
-As a concrete example, we have benchmarked the equivalence of the old and new approaches to the evaluation of diagrams (and associated counterterms) entering the RPT series for the total density $n[g_\mu, V_\lambda]$.
+As a concrete example, we have evaluated the individual diagrams and associated counterterms entering the RPT series for the total density $n[g_\mu, V_\lambda]$ in units of the non-interacting density $n_0$. The diagrams/counterterms are denoted by partitions $\mathcal{P} \equiv (n_{\text{loop}}, n_\mu, n_\lambda)$ indicating the total loop order and number of $\mu$ and $\lambda$ derivatives.
 
+### 3D UEG
+
+For this benchmark, we take $r_s = 1$, $\beta = 40 \epsilon_F$, and $\lambda = 0.6$. All partitions contributing up to 4th order are included, as well as some selected partitions at 5th and 6th order.
+
+| $(n_{\text{loop}}, n_\lambda, n_\mu)$ | $n / n_0$ |
+| :---: | :---: |
+| (1, 0, 1) |     0.40814(16)    |
+| (1, 0, 2) |     0.02778(21)    |
+| (1, 0, 3) |    -0.00096(60)    |
+| (2, 0, 0) |     0.28853(12)    |
+| (2, 1, 0) |     0.07225(3)     |
+| (2, 2, 0) |     0.02965(2)     |
+| (2, 0, 1) |     0.09774(30)    |
+| (2, 1, 1) |     0.01594(10)    |
+| (2, 0, 2) |     0.00240(130)   |
+| (3, 0, 0) |     0.10027(37)    |
+| (3, 1, 0) |     0.04251(21)    |
+| (3, 0, 1) |     0.02600(150)   |
+| (4, 0, 0) |     0.00320(130)   |
+| (2, 1, 2) |    -0.00111(18)    |
+| (2, 0, 3) |    -0.00430(150)   |
+| (3, 2, 0) |     0.02241(8)     |
+| (3, 3, 0) |     0.01429(7)     |
