@@ -10,7 +10,7 @@ diag_type = :sigma
 datatype = ComplexF64
 # datatype = Float64
 has_counterterm = true
-Steps = 1e8
+Steps = 1e7
 Base.@kwdef struct Para
     rs::Float64 = 0.5
     beta::Float64 = 50.0
@@ -23,7 +23,7 @@ Base.@kwdef struct Para
     kF::Float64 = (dim == 3) ? (9π / (2spin))^(1 / 3) / rs : sqrt(4 / spin) / rs
     # extQ::Vector{SVector{3,Float64}} = [@SVector [q, 0.0, 0.0] for q in LinRange(0.0 * kF, 2.5 * kF, Qsize)]
     extQ::Vector{SVector{2,Float64}} = [@SVector [(1.0 + q) * kF, 0.0] for q in [-0.1, -0.05, 0, 0.05, 0.1]]
-    ngrid::Vector{Int} = [0,] # external Matsubara frequency
+    ngrid::Vector{Int} = [-1, 0] # external Matsubara frequency
     β::Float64 = beta / (kF^2 / 2me)
     μ::Float64 = kF^2 / 2me
 end
@@ -172,9 +172,6 @@ function LeafInfor(FeynGraphs::Dict{Tuple{Int,Int,Int},Vector{G}}, FermiLabel::L
                 push!(LeafLoopIndex[ig], FrontEnds.linear_to_index(FermiLabel, In)[end]) #the label of LoopPool for each leaf
             end
         end
-        println(key)
-        println(LeafType[ig])
-        println(Leaf[ig])
     end
     return Leaf, LeafType, LeafInTau, LeafOutTau, LeafLoopIndex
 end
@@ -237,7 +234,7 @@ function run(steps, MaxOrder::Int; alpha=3.0)
     dof = Vector{Int}[]
     reweight_goal = Float64[]
     for (order, verOrder, SigmaOrder) in gkeys
-        println("($order, $verOrder, $SigmaOrder)")
+        print("($order, $verOrder, $SigmaOrder) ")
         # order, verOrder, SigmaOrder = [parse(Int, c) for c in g.name]
         push!(dof, [order, order - 1, 1, 1])
         push!(reweight_goal, 4.0^(order + verOrder - 1))
@@ -272,30 +269,15 @@ function run(steps, MaxOrder::Int; alpha=3.0)
             data = Complex.(r, i)
             datadict[key] = data
             println("Group ", key)
-            println(datadict[key])
+            # println(datadict[key])
+            @printf("%10s  %10s   %10s   %10s   %10s \n", "q/kF", "real(avg)", "err", "imag(avg)", "err")
+            for (in, n) in enumerate(ngrid)
+                println("n = $n")
+                for (iq, q) in enumerate(extQ)
+                    @printf("%10.6f  %10.6f ± %10.6f   %10.6f ± %10.6f\n", q[1] / kF, r[in, iq].val, r[in, iq].err, i[in, iq].val, i[in, iq].err)
+                end
+            end
         end
-
-        # for key in gkeys
-        #     println("Group ", key)
-        #     println(datadict[key])
-        #     # @printf("%10s  %10s   %10s   %10s   %10s \n", "q/kF", "real(avg)", "err", "imag(avg)", "err")
-        #     # for (in, n) in enumerate(ngrid)
-        #     #     for (idx, q) in enumerate(extQ)
-        #     #         q = q[1]
-        #     #         println(avg)
-        #     #         println(std)
-        #     #         if (MaxOrder == 1)
-        #     #             @printf("%10.6f  %10.6f ± %10.6f  %10.6f ± %10.6f\n", q / kF, real(avg[idx]), real(std[idx]), imag(avg[idx]), imag(std[idx]))
-        #     #             @printf("%10.6f  %10.6f ± %10.6f  %10.6f ± %10.6f\n", q / kF, real(avg[idx]), real(std[idx]), imag(avg[idx]), imag(std[idx]))
-        #     #             # println(q / kF, avg[idx], std[idx])
-        #     #         else
-        #     #             @printf("%10.6f  %10.6f ± %10.6f  %10.6f ± %10.6f\n", q / kF, real(avg[o][idx]), real(std[o][idx]), imag(avg[idx]), imag(std[idx]))
-        #     #             @printf("%10.6f  %10.6f ± %10.6f  %10.6f ± %10.6f\n", q / kF, real(avg[o][idx]), real(std[o][idx]), imag(avg[idx]), imag(std[idx]))
-        #     #             # println(q / kF, avg[o][idx], std[idx])
-        #     #         end
-        #     #     end
-        #     # end
-        # end
         report(result)
         report(result.config)
         return datadict, result
