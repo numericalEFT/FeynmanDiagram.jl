@@ -21,9 +21,9 @@
  0  0  0  3  0  3 
 # LoopBasis
  1  1  1  0  0  0 
- 1  0  0  0  0  0 
  0  0  0  1  1  0 
  0  0  0  0  0  1 
+ 1  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
  1  2  4  3 | 3  4  5  5 |
 # WType(Direct,Exchange)
@@ -43,8 +43,8 @@
 # LoopBasis
  1  1  0  1  1  0 
  0  0  0  0 -1  1 
- 1  0  0  0  0  0 
  0  0  1  0  1  0 
+ 1  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
  5  2  4  3 | 1  4  2  5 |
 # WType(Direct,Exchange)
@@ -63,9 +63,9 @@
  0  0  0  3  0  3 
 # LoopBasis
  1  1  1  0  0  0 
- 1  0  0  0  0  0 
  0  0  0  1  1  0 
  0  0  0  0  0  1 
+ 1  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
  1  2  4  3 | 3  4  5  5 |
 # WType(Direct,Exchange)
@@ -85,8 +85,8 @@
 # LoopBasis
  1  1  0  1  1  0 
  0  0  0  0 -1  1 
- 1  0  0  0  0  0 
  0  0  1  0  1  0 
+ 1  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
  5  2  4  3 | 1  4  2  5 |
 # WType(Direct,Exchange)
@@ -105,9 +105,9 @@
  0  0  0  3  0  3 
 # LoopBasis
  1  1  1  0  0  0 
- 1  0  0  0  0  0 
  0  0  0  1  1  0 
  0  0  0  0  0  1 
+ 1  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
  1  2  4  3 | 3  4  5  5 |
 # WType(Direct,Exchange)
@@ -127,8 +127,8 @@
 # LoopBasis
  1  1  0  1  1  0 
  0  0  0  0 -1  1 
- 1  0  0  0  0  0 
  0  0  1  0  1  0 
+ 1  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
  5  2  4  3 | 1  4  2  5 |
 # WType(Direct,Exchange)
@@ -147,9 +147,9 @@
  0  0  0  3  0  3 
 # LoopBasis
  1  1  1  0  0  0 
- 1  0  0  0  0  0 
  0  0  0  1  1  0 
  0  0  0  0  0  1 
+ 1  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
  1  2  4  3 | 3  4  5  5 |
 # WType(Direct,Exchange)
@@ -169,8 +169,8 @@
 # LoopBasis
  1  1  0  1  1  0 
  0  0  0  0 -1  1 
- 1  0  0  0  0  0 
  0  0  1  0  1  0 
+ 1  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
  5  2  4  3 | 1  4  2  5 |
 # WType(Direct,Exchange)
@@ -189,9 +189,9 @@
  0  0  0  3  0  3 
 # LoopBasis
  1  1  1  0  0  0 
- 1  0  0  0  0  0 
  0  0  0  1  1  0 
  0  0  0  0  0  1 
+ 1  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
  1  2  4  3 | 3  4  5  5 |
 # WType(Direct,Exchange)
@@ -211,8 +211,8 @@
 # LoopBasis
  1  1  0  1  1  0 
  0  0  0  0 -1  1 
- 1  0  0  0  0  0 
  0  0  1  0  1  0 
+ 1  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
  5  2  4  3 | 1  4  2  5 |
 # WType(Direct,Exchange)
@@ -231,9 +231,9 @@
  0  0  0  3  0  3 
 # LoopBasis
  1  1  1  0  0  0 
- 1  0  0  0  0  0 
  0  0  0  1  1  0 
  0  0  0  0  0  1 
+ 1  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
  1  2  4  3 | 3  4  5  5 |
 # WType(Direct,Exchange)
@@ -253,8 +253,8 @@
 # LoopBasis
  1  1  0  1  1  0 
  0  0  0  0 -1  1 
- 1  0  0  0  0  0 
  0  0  1  0  1  0 
+ 1  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
  5  2  4  3 | 1  4  2  5 |
 # WType(Direct,Exchange)
@@ -273,9 +273,9 @@
  0  0  0  3  0  3 
 # LoopBasis
  1  1  1  0  0  0 
- 1  0  0  0  0  0 
  0  0  0  1  1  0 
  0  0  0  0  0  1 
+ 1  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
  1  2  4  3 | 3  4  5  5 |
 # WType(Direct,Exchange)
@@ -295,8 +295,8 @@
 # LoopBasis
  1  1  0  1  1  0 
  0  0  0  0 -1  1 
- 1  0  0  0  0  0 
  0  0  1  0  1  0 
+ 1  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
  5  2  4  3 | 1  4  2  5 |
 # WType(Direct,Exchange)
@@ -315,9 +315,9 @@
  0  0  0  3  0  3 
 # LoopBasis
  1  1  1  0  0  0 
- 1  0  0  0  0  0 
  0  0  0  1  1  0 
  0  0  0  0  0  1 
+ 1  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
  1  2  4  3 | 3  4  5  5 |
 # WType(Direct,Exchange)
@@ -337,8 +337,8 @@
 # LoopBasis
  1  1  0  1  1  0 
  0  0  0  0 -1  1 
- 1  0  0  0  0  0 
  0  0  1  0  1  0 
+ 1  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
  5  2  4  3 | 1  4  2  5 |
 # WType(Direct,Exchange)
@@ -357,9 +357,9 @@
  0  0  0  3  0  3 
 # LoopBasis
  1  1  1  0  0  0 
- 1  0  0  0  0  0 
  0  0  0  1  1  0 
  0  0  0  0  0  1 
+ 1  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
  1  2  4  3 | 3  4  5  5 |
 # WType(Direct,Exchange)
@@ -379,8 +379,8 @@
 # LoopBasis
  1  1  0  1  1  0 
  0  0  0  0 -1  1 
- 1  0  0  0  0  0 
  0  0  1  0  1  0 
+ 1  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
  5  2  4  3 | 1  4  2  5 |
 # WType(Direct,Exchange)

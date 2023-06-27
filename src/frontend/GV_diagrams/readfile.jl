@@ -55,7 +55,7 @@ function read_diagrams(filename::AbstractString; loopPool::Union{LoopPool,Nothin
     dim::Int=3, tau_labels::Union{Nothing,Vector{Int}}=nothing, GTypes=[0, 1], VTypes=[0, 1, 2],
     # keywords::Vector{String}=["Polarization", "DiagNum", "Order", "GNum", "Ver4Num", "LoopNum", "ExtLoopIndex",
     keywords::Vector{String}=["SelfEnergy", "DiagNum", "Order", "GNum", "Ver4Num", "LoopNum", "ExtLoopIndex",
-        "DummyLoopIndex", "TauNum", "ExtTauIndex", "DummyTauIndex"]
+        "DummyLoopIndex", "TauNum", "ExtTauIndex", "DummyTauIndex"], diagType=:polar
 )
     # Open a diagram file
     io = open(filename, "r")
@@ -112,11 +112,27 @@ function read_diagrams(filename::AbstractString; loopPool::Union{LoopPool,Nothin
         push!(diagrams, diag)
     end
 
-    # Close file and create new label products with loop pool
+    # Create new label products with loop pool
     close(io)
     fermi_labelProd = LabelProduct(tau_labels, GTypes, loopPool)
     bose_labelProd = LabelProduct(tau_labels, VTypes, loopPool)
-    return IR.linear_combination(diagrams, ones(_dtype.factor, diagNum)), fermi_labelProd, bose_labelProd
+
+    if diagType == :sigma
+        @assert length(extIndex) == 2
+        # Create GraphVector
+        gr = group(diagrams, [1, 2])
+        graphvec = [Graph([], factor=0), Graph([], factor=0)]
+        for key in keys(gr)
+            if key[1] == key[2]
+                graphvec[1] = IR.linear_combination(gr[key], ones(_dtype.factor, length(gr[key])))
+            else
+                graphvec[2] = IR.linear_combination(gr[key], ones(_dtype.factor, length(gr[key])))
+            end
+        end
+        return graphvec, fermi_labelProd, bose_labelProd
+    else
+        return IR.linear_combination(diagrams, ones(_dtype.factor, diagNum)), fermi_labelProd, bose_labelProd
+    end
 end
 
 function read_onediagram(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex::Vector{Int}, fermi_labelProd::LabelProduct,
@@ -245,8 +261,8 @@ function read_onediagram(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex:
         extcurrent_index = FrontEnds.append(loopPool, external_current)
         for ind in extIndex
             labelProd_size = (bose_dims..., length(loopPool))
-            # label = LinearIndices(labelProd_size)[tau_labels[ind], 1, extcurrent_index]
-            label = LinearIndices(labelProd_size)[tau_labels[extIndex[1]], 1, extcurrent_index]
+            label = LinearIndices(labelProd_size)[tau_labels[ind], 1, extcurrent_index]
+            # label = LinearIndices(labelProd_size)[tau_labels[extIndex[1]], 1, extcurrent_index]
             vertices[ind] *= 𝜙(label)
         end
 

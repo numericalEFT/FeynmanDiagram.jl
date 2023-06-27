@@ -250,7 +250,6 @@ class polar():
             iseqTime = False
             if IsSelfEnergy:
                 idx = np.where(np.array(Permutation) == 0)[0][0]
-                print yellow("{0}".format(idx))
                 if Permutation[1] == idx or Permutation[1] == idx+1-idx % 2*2:
                     iseqTime = True
                     # exit(-1)
@@ -265,12 +264,21 @@ class polar():
             Body += "\n"
 
             Body += "# LoopBasis\n"
+
+            basis_temp = np.copy(Diag.LoopBasis)
             if IsSelfEnergy:
                 loc = np.where(Diag.LoopBasis[:, 1] == 1)[0][0]
-                Diag.LoopBasis[[0, loc], :] = Diag.LoopBasis[[loc, 0], :]
+                basis_temp[0, :] = Diag.LoopBasis[loc, :]
+                basis_temp[loc:-1, :] = Diag.LoopBasis[loc+1:, :]
+                basis_temp[-1, :] = Diag.LoopBasis[0, :]
+            # print yellow("{0}".format(loc))
+            # print Diag.LoopBasis
             for i in range(self.LoopNum):
+                # if IsSelfEnergy and i == loc:
+                #     continue
                 for j in range(self.GNum):
-                    Body += "{0:2d} ".format(Diag.LoopBasis[i, j])
+                    # Body += "{0:2d} ".format(Diag.LoopBasis[i, j])
+                    Body += "{0:2d} ".format(basis_temp[i, j])
                 Body += "\n"
 
             Body += "# Ver4Legs(InL,OutL,InR,OutR)\n"
@@ -327,6 +335,9 @@ class polar():
         Title += "#Order: {0}\n".format(self.Order)
         Title += "#GNum: {0}\n".format(self.GNum)
         Title += "#Ver4Num: {0}\n".format(self.Ver4Num)
+        # if IsSelfEnergy:
+        #     Title += "#LoopNum: {0}\n".format(self.LoopNum-1)
+        # else:
         Title += "#LoopNum: {0}\n".format(self.LoopNum)
         Title += "#ExtLoopIndex: {0}\n".format(0)
         Title += "#DummyLoopIndex: \n"

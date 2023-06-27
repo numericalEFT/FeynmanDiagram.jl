@@ -128,7 +128,7 @@ export LabelProduct
 include("frontend/GV.jl")
 using .GV
 export GV
-export PolarEachOrder, PolarDiagrams
+export PolarEachOrder, PolarDiagrams, SigmaDiagrams
 # export read_onediagram, read_diagrams
 
 include("diagram_tree/DiagTree.jl")
