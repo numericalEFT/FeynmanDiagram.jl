@@ -10,7 +10,7 @@ diag_type = :sigma
 datatype = ComplexF64
 # datatype = Float64
 has_counterterm = true
-Steps = 1e7
+Steps = 2e8
 Base.@kwdef struct Para
     rs::Float64 = 0.5
     beta::Float64 = 50.0
@@ -23,7 +23,8 @@ Base.@kwdef struct Para
     kF::Float64 = (dim == 3) ? (9π / (2spin))^(1 / 3) / rs : sqrt(4 / spin) / rs
     # extQ::Vector{SVector{3,Float64}} = [@SVector [q, 0.0, 0.0] for q in LinRange(0.0 * kF, 2.5 * kF, Qsize)]
     extQ::Vector{SVector{2,Float64}} = [@SVector [(1.0 + q) * kF, 0.0] for q in [-0.1, -0.05, 0, 0.05, 0.1]]
-    ngrid::Vector{Int} = [-1, 0] # external Matsubara frequency
+    # ngrid::Vector{Int} = [-1, 0] # external Matsubara frequency
+    ngrid::Vector{Int} = [0] # external Matsubara frequency
     β::Float64 = beta / (kF^2 / 2me)
     μ::Float64 = kF^2 / 2me
 end
@@ -95,13 +96,13 @@ function integrand(idx, vars, config) #for the mcmc algorithm
             elseif order == 1
                 leaf[idx][i] = -Spectral.kernelFermiT_dω(τ, ϵ, β)
             elseif order == 2
-                leaf[idx][i] = Spectral.kernelFermiT_dω2(τ, ϵ, β)
+                leaf[idx][i] = Spectral.kernelFermiT_dω2(τ, ϵ, β) / 2.0
             elseif order == 3
-                leaf[idx][i] = -Spectral.kernelFermiT_dω3(τ, ϵ, β)
+                leaf[idx][i] = -Spectral.kernelFermiT_dω3(τ, ϵ, β) / 6.0
             elseif order == 4
-                leaf[idx][i] = Spectral.kernelFermiT_dω4(τ, ϵ, β)
+                leaf[idx][i] = Spectral.kernelFermiT_dω4(τ, ϵ, β) / 24.0
             elseif order == 5
-                leaf[idx][i] = -Spectral.kernelFermiT_dω5(τ, ϵ, β)
+                leaf[idx][i] = -Spectral.kernelFermiT_dω5(τ, ϵ, β) / 120.0
             else
                 error("not implemented!")
             end
@@ -112,8 +113,14 @@ function integrand(idx, vars, config) #for the mcmc algorithm
             invK = 1.0 / (sqrt(dot(kq, kq)) + λ)
             leaf[idx][i] = 4π * invK * (λ * invK)^order
         end
+        # if idx == 4
+        #     println("$i, $lf, $(LoopPool[leafMomIdx[idx][i]]), $(leafτ_o[idx][i]), $(leafτ_i[idx][i]);   $(leaf[idx][i]), $(T[leafτ_o[idx][i]]), $(T[leafτ_i[idx][i]])")
+        # end
     end
-
+    # if idx == 4
+    #     println(graphfuncs![idx])
+    #     exit()
+    # end
     graphfuncs![idx](root, leaf[idx])  # allocations due to run-time variable `idx`
     # @apply_graphfunc(graphfuncs!, idx, root, leaf[idx])
     # _apply_graphfunc(graphfuncs!, Val(idx), root, leaf[idx])
@@ -150,26 +157,31 @@ function LeafInfor(FeynGraphs::Dict{Tuple{Int,Int,Int},Vector{G}}, FermiLabel::L
                     push!(LeafType[ig], 0)
                     In = Out = 1
                     push!(Leaf[ig], 0.0)
+                    push!(LeafLoopIndex[ig], 1)
                 else
                     if g.type == FeynmanDiagram.ComputationalGraphs.Interaction
                         push!(LeafType[ig], 0)
                         In = Out = g.vertices[1][1].label
+                        push!(LeafLoopIndex[ig], 1)
                     elseif (isfermionic(g.vertices[1]))
                         In, Out = g.vertices[1][1].label, g.vertices[2][1].label
                         if FermiLabel[In][2] in [-2, -3]
                             push!(LeafType[ig], 0)
+                            push!(LeafLoopIndex[ig], 1)
                         else
                             push!(LeafType[ig], FermiLabel[In][2] * 2 + 1)
+                            push!(LeafLoopIndex[ig], FrontEnds.linear_to_index(FermiLabel, In)[end]) #the label of LoopPool for each fermionic leaf
                         end
                     else
                         In, Out = g.vertices[1][1].label, g.vertices[2][1].label
                         push!(LeafType[ig], BoseLabel[In][2] * 2 + 2)
+                        push!(LeafLoopIndex[ig], FrontEnds.linear_to_index(BoseLabel, In)[end]) #the label of LoopPool for each bosonic leaf
                     end
                     push!(Leaf[ig], 1.0)
                 end
                 push!(LeafInTau[ig], FermiLabel[In][1])
                 push!(LeafOutTau[ig], FermiLabel[Out][1])
-                push!(LeafLoopIndex[ig], FrontEnds.linear_to_index(FermiLabel, In)[end]) #the label of LoopPool for each leaf
+                # push!(LeafLoopIndex[ig], FrontEnds.linear_to_index(FermiLabel, In)[end]) #the label of LoopPool for each fermionic leaf
             end
         end
     end
@@ -199,7 +211,7 @@ function run(steps, MaxOrder::Int; alpha=3.0)
     para = Para()
     extQ, ngrid = para.extQ, para.ngrid
     dim, kF, β = para.dim, para.kF, para.β
-    FeynGraphs, FermiLabel, BoseLabel = SigmaDiagrams(diag_type, MaxOrder, has_counterterm, para.dim)
+    FeynGraphs, FermiLabel, BoseLabel = SigmaDiagrams(MaxOrder, has_counterterm, para.dim)
     println(green("Diagrams with the largest order $MaxOrder has been read."))
 
     # Ps = Compilers.to_julia_str([FeynGraph,], name="eval_graph!")
@@ -215,6 +227,7 @@ function run(steps, MaxOrder::Int; alpha=3.0)
     # funcGraphs! = Dict{Int,Function}(i => Compilers.compile([FeynGraph.subgraphs[i],]) for i in inds)
     # gkeys = keys(FeynGraphs)
     gkeys = UEG.partition(MaxOrder)
+    # gkeys = [(1, 0, 0), (1, 0, 1), (1, 0, 2), (1, 1, 0), (1, 1, 1), (1, 2, 0), (2, 0, 0), (2, 0, 1), (2, 1, 0)]
     neighbor = UEG.neighbor(gkeys)
     funcGraphs! = Dict{Int,Function}(i => Compilers.compile(FeynGraphs[key]) for (i, key) in enumerate(gkeys))
 
