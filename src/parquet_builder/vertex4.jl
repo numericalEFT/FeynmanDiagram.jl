@@ -198,8 +198,13 @@ function bubble2diag!(ver4df::DataFrame, para::DiagPara{W}, chan::TwoBodyChannel
         add(UpDown, UpUp, UpDown, 1.0)
     elseif chan == PHEr
         add(UpUp, UpUp, UpUp, 1.0)
-        add(UpUp, UpUp, UpDown, 1.0)
         add(UpDown, UpDown, UpUp, 1.0)
+
+        # for the spin configuration (lin, lout, rin, rout) = (up, up, down, down), the spins of the internal G pair must be (up, down)
+        # which gives only one spin configuration for the left and the right vertex (up, down, down, up) and (up, down, down, up)
+        # Due to the SU(2) symmetry, v(up, down, down, up) = v(up, up, up, up) - v(up, up, down, down) = v_uu - v_ud
+        # the total contribution is (vl_uu-vl_ud)*(vr_uu-vr_ud) = vl_uu*vr_uu + vl_ud*vr_ud - vl_uu*vr_ud - vl_ud*vr_uu
+        add(UpUp, UpUp, UpDown, 1.0)
         add(UpDown, UpDown, UpDown, 1.0)
         #! the sign here is from the spin symmetry, not from the fermionic statistics
         add(UpUp, UpDown, UpDown, -1.0)
@@ -207,8 +212,12 @@ function bubble2diag!(ver4df::DataFrame, para::DiagPara{W}, chan::TwoBodyChannel
         add(UpDown, UpUp, UpDown, -1.0)
     elseif chan == PPr
         add(UpUp, UpUp, UpUp, 1.0)
-        #! the sign here is from the spin symmetry, not from the fermionic statistics
-        add(UpDown, UpDown, UpDown, -2.0)
+
+        # for the spin configuration (lin, lout, rin, rout) = (up, up, down, down), the spins of the internal G pair should be either (up, down) or (down, up)
+        # which gives two spin configurations for the left and the right vertex: one is (up, up, down, down) and (up, down, down, up); another is (up, down, down, up) and (up, up, down, down)
+        # Due to the SU(2) symmetry, v(up, down, down, up) = v(up, up, up, up) - v(up, up, down, down) = v_uu - v_ud
+        # the total contribution is (vl_uu-vl_ud)*vr_ud + vl_ud*(vr_uu-vr_ud) = vl_uu*vr_ud + vl_ud*vr_uu - 2*vl_ud*vr_ud
+        add(UpDown, UpDown, UpDown, -2.0) #! the sign here is from the spin symmetry, not from the fermionic statistics
         add(UpUp, UpDown, UpDown, 1.0)
         add(UpDown, UpUp, UpDown, 1.0)
     else
