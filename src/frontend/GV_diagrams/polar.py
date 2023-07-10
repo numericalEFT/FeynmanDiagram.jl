@@ -341,10 +341,10 @@ class polar():
         Title += "#LoopNum: {0}\n".format(self.LoopNum)
         Title += "#ExtLoopIndex: {0}\n".format(0)
         Title += "#DummyLoopIndex: \n"
-        if IsSelfEnergy:
-            Title += "#TauNum: {0}\n".format(self.Ver4Num)
-        else:
-            Title += "#TauNum: {0}\n".format(self.Ver4Num+2)
+        # if IsSelfEnergy:
+        #     Title += "#TauNum: {0}\n".format(self.Ver4Num)
+        # else:
+        Title += "#TauNum: {0}\n".format(self.Ver4Num+2)
         Title += "#ExtTauIndex: {0} {1}\n".format(0, 1)
         Title += "#DummyTauIndex: \n"
         Title += "\n"
@@ -376,27 +376,31 @@ class polar():
         return FeynList
 
     def __VerBasis(self, index, Permutation, IsSelfEnergy, IseqTime):
-        if not IsSelfEnergy:
-            if index <= 1:
-                return index
-            else:
-                return int(index/2)+1
+        if index <= 1:
+            return index
         else:
-            pair_index = index+1-index % 2*2
-            if index <= 1:
-                if IseqTime:
-                    return 0
-                else:
-                    return pair_index
-            elif index == Permutation[1] or pair_index == Permutation[1]:
-                return 0
-            elif Permutation[index] == 0 or Permutation[pair_index] == 0:
-                if IseqTime:
-                    return 0
-                else:
-                    return 1
-            else:
-                return int(index/2)+1
+            return int(index/2)+1
+        # if not IsSelfEnergy:
+        #     if index <= 1:
+        #         return index
+        #     else:
+        #         return int(index/2)+1
+        # else:
+        #     pair_index = index+1-index % 2*2
+        #     if index <= 1:
+        #         if IseqTime:
+        #             return 0
+        #         else:
+        #             return pair_index
+        #     elif index == Permutation[1] or pair_index == Permutation[1]:
+        #         return 0
+        #     elif Permutation[index] == 0 or Permutation[pair_index] == 0:
+        #         if IseqTime:
+        #             return 0
+        #         else:
+        #             return 1
+        #     else:
+        #         return int(index/2)+1
 
     def __IsReducibile(self, Permutation, LoopBasis, vertype, gtype, IsSelfEnergy, IsSymPolar):
         ExterLoop = [0, ]*self.LoopNum

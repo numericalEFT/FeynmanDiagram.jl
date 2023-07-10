@@ -4,7 +4,7 @@ import ..QuantumOperators as Op
 import ..ComputationalGraphs as IR
 import ..ComputationalGraphs: Graph
 import ..ComputationalGraphs: _dtype
-import ..ComputationalGraphs: group
+# import ..ComputationalGraphs: group
 using ..FrontEnds
 
 export PolarEachOrder, PolarDiagrams, SigmaDiagrams
@@ -112,24 +112,26 @@ function PolarDiagrams(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false,
 end
 
 function SigmaDiagrams(MaxOrder::Int, has_counterterm::Bool=false, dim::Int=3)
-    dict_graphs = Dict{Tuple{Int,Int,Int},Vector{Graph{_dtype.factor,_dtype.weight}}}()
+    # dict_graphs = Dict{Tuple{Int,Int,Int},Vector{Graph{_dtype.factor,_dtype.weight}}}()
+    dict_graphs = Dict{Tuple{Int,Int,Int},Tuple{Vector{Graph{_dtype.factor,_dtype.weight}},Vector{Vector{Int}}}}()
     MaxLoopNum = MaxOrder + 2
-    tau_labels = collect(1:MaxOrder)
+    # tau_labels = collect(1:MaxOrder)
+    tau_labels = collect(1:MaxOrder+2)
     loopPool = LoopPool(:K, dim, MaxLoopNum, Float64)
     if has_counterterm
         GTypes = collect(0:MaxOrder-1)
         append!(GTypes, [-2, -3])
         VTypes = collect(0:MaxOrder-1)
         for order in 1:MaxOrder
-            order > 2 && continue
             for VerOrder in VTypes
                 for SigmaOrder in 0:MaxOrder-1
                     order + VerOrder + SigmaOrder > MaxOrder && continue
-                    gvec, fermi_labelProd, bose_labelProd = PolarEachOrder(:sigma, order, VerOrder, SigmaOrder;
+                    gvec, fermi_labelProd, bose_labelProd, extT_labels = PolarEachOrder(:sigma, order, VerOrder, SigmaOrder;
                         dim=dim, loopPool=loopPool, tau_labels=tau_labels, GTypes=GTypes, VTypes=VTypes)
                     # g.name = "$(order)$(VerOrder)$(SigmaOrder)"
                     key = (order, VerOrder, SigmaOrder)
-                    dict_graphs[key] = gvec
+                    # dict_graphs[key] = gvec
+                    dict_graphs[key] = (gvec, extT_labels)
                     # push!(graphs, gvec)
                     loopPool = fermi_labelProd.labels[3]
                 end
@@ -139,10 +141,11 @@ function SigmaDiagrams(MaxOrder::Int, has_counterterm::Bool=false, dim::Int=3)
         GTypes, VTypes = [0], [0]
         append!(GTypes, [-2, -3])
         for order in 1:MaxOrder
-            gvec, fermi_labelProd, bose_labelProd = PolarEachOrder(:sigma, order;
+            gvec, fermi_labelProd, bose_labelProd, extT_labels = PolarEachOrder(:sigma, order;
                 loopPool=loopPool, tau_labels=tau_labels, GTypes=GTypes, VTypes=VTypes)
             key = (order, 0, 0)
-            dict_graphs[key] = gvec
+            # dict_graphs[key] = gvec
+            dict_graphs[key] = (gvec, extT_labels)
             # push!(graphs, gvec)
             loopPool = fermi_labelProd.labels[3]
         end

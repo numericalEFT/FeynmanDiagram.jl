@@ -13,10 +13,11 @@ function _StringtoFloatVector(str::AbstractString)
 end
 
 function _exchange(perm::Vector{Int}, ver4Legs::Vector{Vector{Int}}, index::Int)
-    inds = digits(index - 1, base=2)
+    inds = digits(index - 1, base=2, pad=length(ver4Legs))
     permu_ex = copy(perm)
     ver4Legs_ex = deepcopy(ver4Legs)
-    for (i, value) in enumerate(inds)
+    # for (i, value) in enumerate(inds)
+    for (i, value) in enumerate(reverse(inds))
         value == 0 && continue
         loc1 = findfirst(isequal(2i + 1), perm)
         loc2 = findfirst(isequal(2i + 2), perm)
@@ -24,6 +25,24 @@ function _exchange(perm::Vector{Int}, ver4Legs::Vector{Vector{Int}}, index::Int)
         ver4Legs_ex[i][2], ver4Legs_ex[i][4] = ver4Legs[i][4], ver4Legs[i][2]
     end
     return permu_ex, ver4Legs_ex
+end
+
+function _group(gv::AbstractVector{G}, indices::Vector{Vector{Int}}) where {G<:Graph}
+    l = length(gv[1].external)
+    @assert all(x -> length(x.external) == l, gv)
+    @assert length(gv) == length(indices)
+    groups = Dict{Vector{Int},Vector{G}}()
+    for (i, t) in enumerate(gv)
+        # ext = external(t)
+        # key = [OperatorProduct(ext[i]) for i in indices]
+        key = indices[i]
+        if haskey(groups, key)
+            push!(groups[key], t)
+        else
+            groups[key] = [t,]
+        end
+    end
+    return groups
 end
 
 
@@ -107,9 +126,12 @@ function read_diagrams(filename::AbstractString; loopPool::Union{LoopPool,Nothin
 
     # Read one diagram at a time
     diagrams = Graph{_dtype.factor,_dtype.weight}[]
+    extT_labels = Vector{Int}[]
     for i in 1:diagNum
-        diag, loopPool = read_onediagram(IOBuffer(readuntil(io, "\n\n")), GNum, verNum, loopNum, extIndex, fermi_labelProd, bose_labelProd, loopPool)
+        diag, loopPool, extTlabel = read_onediagram(IOBuffer(readuntil(io, "\n\n")),
+            GNum, verNum, loopNum, extIndex, fermi_labelProd, bose_labelProd, loopPool; diagType=diagType)
         push!(diagrams, diag)
+        push!(extT_labels, extTlabel)
     end
 
     # Create new label products with loop pool
@@ -119,24 +141,30 @@ function read_diagrams(filename::AbstractString; loopPool::Union{LoopPool,Nothin
 
     if diagType == :sigma
         @assert length(extIndex) == 2
-        # Create GraphVector
-        gr = group(diagrams, [1, 2])
-        graphvec = [Graph([], factor=0), Graph([], factor=0)]
-        for key in keys(gr)
-            if key[1] == key[2]
-                graphvec[1] = IR.linear_combination(gr[key], ones(_dtype.factor, length(gr[key])))
-            else
-                graphvec[2] = IR.linear_combination(gr[key], ones(_dtype.factor, length(gr[key])))
-            end
+        # Create a GraphVector with keys of external-tau labels
+        # gr = group(diagrams, [1, 2])
+        gr = _group(diagrams, extT_labels)
+        unique!(extT_labels)
+        # graphvec = [Graph([], factor=0) for _ in eachindex(extT_labels)]
+        graphvec = Graph[]
+        # for (i, key) in enumerate(extT_labels)
+        for key in extT_labels
+            push!(graphvec, IR.linear_combination(gr[key], ones(_dtype.factor, length(gr[key]))))
+            # if key[1] == key[2]
+            #     graphvec[1] = IR.linear_combination(gr[key], ones(_dtype.factor, length(gr[key])))
+            # else
+            #     graphvec[2] = IR.linear_combination(gr[key], ones(_dtype.factor, length(gr[key])))
+            # end
         end
-        return graphvec, fermi_labelProd, bose_labelProd
+        return graphvec, fermi_labelProd, bose_labelProd, extT_labels
     else
+        @assert length(unique(extT_labels)) == 1
         return IR.linear_combination(diagrams, ones(_dtype.factor, diagNum)), fermi_labelProd, bose_labelProd
     end
 end
 
 function read_onediagram(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex::Vector{Int}, fermi_labelProd::LabelProduct,
-    bose_labelProd::LabelProduct, loopPool::LoopPool; splitter="|", offset::Int=-1, staticBose::Bool=true)
+    bose_labelProd::LabelProduct, loopPool::LoopPool; splitter="|", offset::Int=-1, diagType=:polar, staticBose::Bool=true)
 
     ################ Read Hugenholtz Diagram information ####################
     @assert occursin("Permutation", readline(io))
@@ -151,13 +179,13 @@ function read_onediagram(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex:
     @assert length(opGType) == GNum
 
     @assert occursin("VertexBasis", readline(io))
-    tau_labels = _StringtoIntVector(readline(io))
-    unique_values = unique(tau_labels)
-    mapping = Dict(val => idx for (idx, val) in enumerate(unique_values))
-    tau_labels = [mapping[val] for val in tau_labels] .- (1 + offset)
+    tau_labels = _StringtoIntVector(readline(io)) .- offset
+    # tau_labels = _StringtoIntVector(readline(io))
+    # unique_values = sort(unique(tau_labels))
+    # tau_labels = [findfirst(x -> x == tau, unique_values) for tau in tau_labels] .- (1 + offset)
     readline(io)
 
-    extIndex = extIndex .- offset
+    # extIndex = extIndex .- offset
 
     @assert occursin("LoopBasis", readline(io))
     currentBasis = zeros(Int, (GNum, loopNum))
@@ -184,6 +212,7 @@ function read_onediagram(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex:
     spinFactors = _StringtoIntVector(readline(io))
 
     graphs = Graph{Float64,Float64}[]
+    # println("##### $permutation  $ver4Legs")
     for (iex, spinFactor) in enumerate(spinFactors)
         # create permutation and ver4Legs for each Feynman diagram from a Hugenholtz diagram
         spinFactor == 0 && continue
@@ -222,7 +251,6 @@ function read_onediagram(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex:
 
             vertices[ind1][1].label == 0 ? vertices[ind1] = 𝑎⁺(label1) : vertices[ind1] *= 𝑎⁺(label1)
             vertices[ind2][1].label == 0 ? vertices[ind2] = 𝑎⁻(label2) : vertices[ind2] *= 𝑎⁻(label2)
-            # ind2 == 1 && continue
             push!(connected_operators, 𝑎⁻(label2)𝑎⁺(label1))
         end
 
@@ -259,7 +287,7 @@ function read_onediagram(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex:
         # add external operators in each external vertices
         external_current = append!([1], zeros(Int, loopNum - 1))
         extcurrent_index = FrontEnds.append(loopPool, external_current)
-        for ind in extIndex
+        for ind in extIndex .- offset
             labelProd_size = (bose_dims..., length(loopPool))
             label = LinearIndices(labelProd_size)[tau_labels[ind], 1, extcurrent_index]
             # label = LinearIndices(labelProd_size)[tau_labels[extIndex[1]], 1, extcurrent_index]
@@ -277,6 +305,20 @@ function read_onediagram(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex:
         # return IR.feynman_diagram(IR.interaction.(vertices), contraction, factor=symfactor * spinFactor), loopPool
     end
 
-    # create a graph as a linear combination from all subgraphs and subgraph_factors (spinFactors), and loopPool
-    return IR.linear_combination(graphs, filter(!iszero, spinFactors)), loopPool
+    # create a graph as a linear combination from all subgraphs and subgraph_factors (spinFactors), loopPool, and external-tau variables
+    extT = similar(extIndex)
+    if diagType == :sigma
+        extT[1] = tau_labels[permutation[extIndex[2]-offset]]
+        extT[2] = tau_labels[findfirst(isequal(extIndex[1] - offset), permutation)]
+        if extT[1] == extT[2]
+            extT = [1, 1]
+        end
+        # println("### $extIndex")
+        # println(permutation)
+        # println(tau_labels)
+        # println(extT)
+    else
+        extT = extIndex
+    end
+    return IR.linear_combination(graphs, filter(!iszero, spinFactors)), loopPool, extT
 end

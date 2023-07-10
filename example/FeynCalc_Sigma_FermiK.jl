@@ -9,8 +9,10 @@ import ElectronLiquid: UEG
 diag_type = :sigma
 datatype = ComplexF64
 # datatype = Float64
-has_counterterm = true
-Steps = 2e8
+# has_counterterm = true
+has_counterterm = false
+Steps = 1e7
+# Steps = 1e6
 Base.@kwdef struct Para
     rs::Float64 = 0.5
     beta::Float64 = 50.0
@@ -23,15 +25,14 @@ Base.@kwdef struct Para
     kF::Float64 = (dim == 3) ? (9π / (2spin))^(1 / 3) / rs : sqrt(4 / spin) / rs
     # extQ::Vector{SVector{3,Float64}} = [@SVector [q, 0.0, 0.0] for q in LinRange(0.0 * kF, 2.5 * kF, Qsize)]
     extQ::Vector{SVector{2,Float64}} = [@SVector [(1.0 + q) * kF, 0.0] for q in [-0.1, -0.05, 0, 0.05, 0.1]]
-    # ngrid::Vector{Int} = [-1, 0] # external Matsubara frequency
-    ngrid::Vector{Int} = [0] # external Matsubara frequency
+    ngrid::Vector{Int} = [0,] # external Matsubara frequency
     β::Float64 = beta / (kF^2 / 2me)
     μ::Float64 = kF^2 / 2me
 end
 
 function green(τ::T, ω::T, β::T) where {T}
     #generate green function of fermion
-    if τ == T(0.0)
+    if τ ≈ T(0.0)
         τ = -1e-10
     end
     if τ > T(0.0)
@@ -45,54 +46,44 @@ function green(τ::T, ω::T, β::T) where {T}
     end
 end
 
-# macro apply_graphfunc(graphfuncs, idx, root, leaf)
-#     quote
-#         $(esc(graphfuncs))[$(esc(idx))]($(esc(root)), $(esc(leaf)))
-#     end
-# end
-
-# function _apply_graphfunc(graphfuncs, ::Val{I}, root, leaf) where {I}
-#     graphfuncs[I](root, leaf)
-#     return nothing
-# end
-
-# function _apply_graphfunc(graphfuncs, I, root, leaf)
-#     graphfuncs[I](root, leaf)
-#     return nothing
-# end
+function phase(varT, extT, l, β)
+    tin, tout = varT[extT[1]], varT[extT[2]]
+    return exp(1im * π * (2l + 1) / β * (tout - tin))
+end
 
 function integrand(idx, vars, config) #for the mcmc algorithm
-    K, T, N, Ext = vars
+    varK, varT, varN, Ext = vars
     para = config.userdata[1]
     MaxOrder = config.userdata[2]
     # @assert idx in 1:MaxOrder "$(idx) is not a valid integrand"
-    leaf, leafType, leafτ_i, leafτ_o, leafMomIdx = config.userdata[3]
+    leaf, leafType, leafτ_i, leafτ_o, leafMomIdx, extT_labels = config.userdata[3]
     LoopPool = config.userdata[4]
     root = config.userdata[5]
     graphfuncs! = config.userdata[6]
-    # graphfunc1!, graphfunc2! = config.userdata[6:7]
 
     dim, β, me, λ, μ, ngrid = para.dim, para.β, para.me, para.λ, para.μ, para.ngrid
     loopNum = config.dof[idx][1]
 
     extidx = Ext[1]
-    K.data[:, 1] .= para.extQ[extidx]
+    varK.data[:, 1] .= para.extQ[extidx]
     # FrontEnds.update(LoopPool, K.data[:, 1:MaxOrder+1])
-    FrontEnds.update(LoopPool, K.data[:, 1:MaxOrder+2])
+    FrontEnds.update(LoopPool, varK.data[:, 1:MaxOrder+2])
     for (i, lf) in enumerate(leafType[idx])
         if lf == 0
             continue
-        elseif isodd(lf)
-            τ = T[leafτ_o[idx][i]] - T[leafτ_i[idx][i]]
+        elseif isodd(lf) #fermionic 
+            τ = varT[leafτ_o[idx][i]] - varT[leafτ_i[idx][i]]
             kq = FrontEnds.loop(LoopPool, leafMomIdx[idx][i])
             ϵ = dot(kq, kq) / (2me) - μ
             order = (lf - 1) / 2
             if order == 0
-                if τ ≈ 0.0
-                    leaf[idx][i] = Spectral.kernelFermiT(-1e-10, ϵ, β)
-                else
-                    leaf[idx][i] = Spectral.kernelFermiT(τ, ϵ, β)
-                end
+                leaf[idx][i] = green(τ, ϵ, β)
+                # if τ ≈ 0.0
+                #     leaf[idx][i] = Spectral.kernelFermiT(-1e-10, ϵ, β)
+                #     # leaf[idx][i] = Spectral.kernelFermiT(-1e-8, ϵ, β)
+                # else
+                #     leaf[idx][i] = Spectral.kernelFermiT(τ, ϵ, β)
+                # end
             elseif order == 1
                 leaf[idx][i] = -Spectral.kernelFermiT_dω(τ, ϵ, β)
             elseif order == 2
@@ -113,34 +104,21 @@ function integrand(idx, vars, config) #for the mcmc algorithm
             invK = 1.0 / (sqrt(dot(kq, kq)) + λ)
             leaf[idx][i] = 4π * invK * (λ * invK)^order
         end
-        # if idx == 4
-        #     println("$i, $lf, $(LoopPool[leafMomIdx[idx][i]]), $(leafτ_o[idx][i]), $(leafτ_i[idx][i]);   $(leaf[idx][i]), $(T[leafτ_o[idx][i]]), $(T[leafτ_i[idx][i]])")
-        # end
     end
-    # if idx == 4
-    #     println(graphfuncs![idx])
-    #     exit()
-    # end
     graphfuncs![idx](root, leaf[idx])  # allocations due to run-time variable `idx`
-    # @apply_graphfunc(graphfuncs!, idx, root, leaf[idx])
-    # _apply_graphfunc(graphfuncs!, Val(idx), root, leaf[idx])
-    # _apply_graphfunc(graphfuncs!, idx, root, leaf[idx])
-    # if idx == 1
-    #     graphfunc1!(root, leaf[idx])
-    # elseif idx == 2
-    #     graphfunc2!(root, leaf[idx])
-    # end
-    n = ngrid[N[1]]
 
-    phase1 = 1.0 / (2π)^(dim * loopNum)
-    phase2 = phase1 * exp(1im * π * (2n + 1) / β * T[2])
+    n = ngrid[varN[1]]
+    factor = 1.0 / (2π)^(dim * loopNum)
 
-    # root[1] *= phase
-    return root[1] * phase1 + root[2] * phase2
+    # println("$idx, $(extT_labels[idx])")
+    # println(varT.data[1:5])
+    weight = sum(root[i] * phase(varT, extT, n, β) for (i, extT) in enumerate(extT_labels[idx]))
+
+    return weight * factor
 end
 
 # function LeafInfor(FeynGraph::Graph, FermiLabel::LabelProduct, BoseLabel::LabelProduct)
-function LeafInfor(FeynGraphs::Dict{Tuple{Int,Int,Int},Vector{G}}, FermiLabel::LabelProduct, BoseLabel::LabelProduct,
+function LeafInfor(FeynGraphs::Dict{Tuple{Int,Int,Int},Tuple{Vector{G},Vector{Vector{Int}}}}, FermiLabel::LabelProduct, BoseLabel::LabelProduct,
     graph_keys) where {G<:Graph}
     #read information of each leaf from the generated graph and its LabelProduct, the information include type, loop momentum, imaginary time.
     num_g = length(graph_keys)
@@ -149,10 +127,12 @@ function LeafInfor(FeynGraphs::Dict{Tuple{Int,Int,Int},Vector{G}}, FermiLabel::L
     LeafOutTau = [Vector{Int}() for _ in 1:num_g]
     LeafLoopIndex = [Vector{Int}() for _ in 1:num_g]
     Leaf = [Vector{Float64}() for _ in 1:num_g]
+    ExtT_index = [Vector{Vector{Int}}() for _ in 1:num_g]
 
     for (ig, key) in enumerate(graph_keys)
-        for j in 1:2
-            for g in Leaves(FeynGraphs[key][j])
+        ExtT_index[ig] = FeynGraphs[key][2]  # external tau variables
+        for j in eachindex(ExtT_index[ig])
+            for g in Leaves(FeynGraphs[key][1][j])
                 if g.type == FeynmanDiagram.ComputationalGraphs.GenericDiag
                     push!(LeafType[ig], 0)
                     In = Out = 1
@@ -181,11 +161,10 @@ function LeafInfor(FeynGraphs::Dict{Tuple{Int,Int,Int},Vector{G}}, FermiLabel::L
                 end
                 push!(LeafInTau[ig], FermiLabel[In][1])
                 push!(LeafOutTau[ig], FermiLabel[Out][1])
-                # push!(LeafLoopIndex[ig], FrontEnds.linear_to_index(FermiLabel, In)[end]) #the label of LoopPool for each fermionic leaf
             end
         end
     end
-    return Leaf, LeafType, LeafInTau, LeafOutTau, LeafLoopIndex
+    return Leaf, LeafType, LeafInTau, LeafOutTau, LeafLoopIndex, ExtT_index
 end
 
 function measure(vars, obs, weight, config) # for vegas and vegasmc algorithms
@@ -214,31 +193,29 @@ function run(steps, MaxOrder::Int; alpha=3.0)
     FeynGraphs, FermiLabel, BoseLabel = SigmaDiagrams(MaxOrder, has_counterterm, para.dim)
     println(green("Diagrams with the largest order $MaxOrder has been read."))
 
-    # Ps = Compilers.to_julia_str([FeynGraph,], name="eval_graph!")
-    # Pexpr = Meta.parse(Ps)
-    # println(Pexpr)
-    # eval(Pexpr)
-    # funcGraph!(x, y) = Base.invokelatest(eval_graph!, x, y)
-
     # funcGraphs! = Tuple([Compilers.compile([FeynGraph.subgraphs[i],]) for i in 1:MaxOrder]) #Compile graphs into a julia static function Vector. 
     # funcGraph!(i) = Compilers.compile([FeynGraph.subgraphs[i],]) #Compile graph i into a julia static function. 
     # println(green("Julia static function from Graph has been compiled."))
     # inds = eachindex(FeynGraph.subgraphs)
     # funcGraphs! = Dict{Int,Function}(i => Compilers.compile([FeynGraph.subgraphs[i],]) for i in inds)
     # gkeys = keys(FeynGraphs)
-    gkeys = UEG.partition(MaxOrder)
+    # gkeys = UEG.partition(MaxOrder)
+    gkeys = [(1, 0, 0), (2, 0, 0), (3, 0, 0)]
     # gkeys = [(1, 0, 0), (1, 0, 1), (1, 0, 2), (1, 1, 0), (1, 1, 1), (1, 2, 0), (2, 0, 0), (2, 0, 1), (2, 1, 0)]
     neighbor = UEG.neighbor(gkeys)
-    funcGraphs! = Dict{Int,Function}(i => Compilers.compile(FeynGraphs[key]) for (i, key) in enumerate(gkeys))
+    funcGraphs! = Dict{Int,Function}(i => Compilers.compile(FeynGraphs[key][1]) for (i, key) in enumerate(gkeys))
 
     LoopPool = FermiLabel.labels[3]
     LeafStat = LeafInfor(FeynGraphs, FermiLabel, BoseLabel, gkeys)
     # println(green("Leaf information has been extracted."))
-    root = zeros(Float64, 2)
+    # root = zeros(Float64, 2)
+    root = zeros(Float64, 24)
 
-    T = Continuous(0.0, β; alpha=alpha, adapt=true, offset=1)
-    # T = Continuous(0.0, β; adapt=false, offset=1)
-    T.data[1] = 0.0
+    # T = MCIntegration.Continuous(0.0, β; grid=collect(LinRange(0.0, β, 1000)), offset=1, alpha=alpha)
+    # T = Continuous(0.0, β; alpha=alpha, adapt=true, offset=1)
+    T = Continuous(0.0, β; alpha=alpha, adapt=true, offset=2)
+    # T.data[1] = 0.0
+    T.data[1], T.data[2] = 0.0, 0.0
     K = MCIntegration.FermiK(dim, kF, 0.5 * kF, 10.0 * kF, offset=1)
     K.data[:, 1] .= extQ[1]
     X = MCIntegration.Discrete(1, length(ngrid), alpha=alpha)
@@ -249,7 +226,8 @@ function run(steps, MaxOrder::Int; alpha=3.0)
     for (order, verOrder, SigmaOrder) in gkeys
         print("($order, $verOrder, $SigmaOrder) ")
         # order, verOrder, SigmaOrder = [parse(Int, c) for c in g.name]
-        push!(dof, [order, order - 1, 1, 1])
+        # push!(dof, [order, order - 1, 1, 1])
+        push!(dof, [order, order, 1, 1])
         push!(reweight_goal, 4.0^(order + verOrder - 1))
     end
     push!(reweight_goal, 2.0) # reweight for the normalization part
@@ -264,9 +242,6 @@ function run(steps, MaxOrder::Int; alpha=3.0)
     result = integrate(integrand; measure=measure, userdata=(para, MaxOrder, LeafStat, LoopPool, root, funcGraphs!),
         var=(K, T, X, Ext), dof=dof, obs=obs, type=datatype, solver=:mcmc, niter=10, block=16, neval=steps,
         reweight_goal=reweight_goal, neighbor=neighbor, print=0, parallel=:thread)
-    # result = integrate(integrand; measure=measure, userdata=(para, MaxOrder, LeafStat, LoopPool, root, funcGraphs!),
-    #     var=(K, T, Ext), dof=dof, obs=obs, solver=:mcmc, niter=10, reweight=reweight_goal, gamma=0,
-    #     neval=steps, print=0, block=16, parallel=:thread)   # strictly setting reweight as reweight_goal (with gamma=0)
     # ProfileView.view()
 
     if isnothing(result) == false
@@ -277,8 +252,10 @@ function run(steps, MaxOrder::Int; alpha=3.0)
             else
                 avg, std = result.mean[o], result.stdev[o]
             end
-            r = measurement.(real(avg), real(std))
-            i = measurement.(imag(avg), imag(std))
+            # r = measurement.(real(avg), real(std))
+            # i = measurement.(imag(avg), imag(std))
+            r = measurement.(real(avg), real(std)) ./ β
+            i = measurement.(imag(avg), imag(std)) ./ β
             data = Complex.(r, i)
             datadict[key] = data
             println("Group ", key)
@@ -300,7 +277,7 @@ function run(steps, MaxOrder::Int; alpha=3.0)
 end
 
 # run(Steps, 1)
-run(Steps, 2)
-# run(Steps, 3)
+# run(Steps, 2)
+run(Steps, 3)
 # run(Steps, 4)
 
