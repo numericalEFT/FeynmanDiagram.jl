@@ -36,9 +36,9 @@ function vertex4(para::DiagPara{W},
     blockstoplevel::ParquetBlocks=blocks
 ) where {W}
 
-    if (para.innerLoopNum > 1) && (NoBubble in para.filter)
-        @warn "Vertex4 with two or more loop orders still contain bubble subdiagram even if NoBubble is turned on in para.filter!"
-    end
+    # if (para.innerLoopNum > 1) && (NoBubble in para.filter)
+    #     @warn "Vertex4 with two or more loop orders still contain bubble subdiagram even if NoBubble is turned on in para.filter!"
+    # end
 
     for k in extK
         @assert length(k) >= para.totalLoopNum "expect dim of extK>=$(para.totalLoopNum), got $(length(k))"
@@ -172,6 +172,9 @@ function bubble!(ver4df::DataFrame, para::DiagPara, legK, chan::TwoBodyChannel, 
 end
 
 function RPA_chain!(ver4df::DataFrame, para::DiagPara, legK, chan::TwoBodyChannel, level::Int, name::Symbol, extrafactor=1.0)
+    if chan != PHr && chan != PHEr
+        return
+    end
     new_filter = append!(deepcopy(para.filter), Girreducible)
     para_rpa = reconstruct(para, filter=new_filter)
     blocks = ParquetBlocks(; phi=[], ppi=[], Γ4=[PHr,])

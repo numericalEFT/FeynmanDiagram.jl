@@ -101,31 +101,39 @@ evalFakePropagator(id::PropagatorId, K, extT, varT) = 1.0
 
     loopnum = 3
 
-    ver4df = DataFrame(response=Response[], type=AnalyticProperty[], extT=Tuple{Int,Int,Int,Int}[], diagram=Diagram{Float64}[])
     para = DiagParaF64(type=Ver4Diag, hasTau=true, innerLoopNum=loopnum, interaction=[Interaction(ChargeCharge, [Instant, Dynamic])])
 
 
     legK1, legK2, legK3 = DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)
     extK = [legK1, legK2, legK3, legK1 + legK3 - legK2]
-    c = PHr
     level = 0
-    Parquet.RPA_chain!(ver4df, para, extK, c, level, :RPA, -1.0)
-
-    # if isempty(ver4df) == false
-    #     ver4df = mergeby(Float64, ver4df, [:response, :type, :extT], name=:RPA,
-    #         getid=g -> Ver4Id(para, g[1, :response], g[1, :type], k=extK, t=g[1, :extT]) #generate id from the dataframe
-    #     )
-    # end
-    # println(ver4df)
-
-    diags = mergeby(ver4df, :response)
 
     varK = rand(3, para.totalLoopNum)
     varT = [rand() for i in 1:para.totalTauNum]
 
+    weight = (2^loopnum) * (2^(loopnum + 1))
+
+    ############ PHEr ############
+    c = PHEr
+    ver4df = DataFrame(response=Response[], type=AnalyticProperty[], extT=Tuple{Int,Int,Int,Int}[], diagram=Diagram{Float64}[])
+    Parquet.RPA_chain!(ver4df, para, extK, c, level, :RPA, -1.0)
+    diags = mergeby(ver4df, :response)
     DiagTree.evalKT!(diags, varK, varT; eval=evalFakePropagator)
     w = [diags.diagram[1].weight, diags.diagram[2].weight]
+    plot_tree(diags, maxdepth=15)
+    # println(w1)
+    #each bubble contribute 2, each dynamic interaction contribute 2, and there is two spin configuration upup, updown 
+    @test w[1] ≈ -weight #additional minus sign from the exchange diagram
+    @test w[2] ≈ 0.0 # updown is not allowed in exchange diagram
 
+
+    ############ PHr ############
+    c = PHr
+    ver4df = DataFrame(response=Response[], type=AnalyticProperty[], extT=Tuple{Int,Int,Int,Int}[], diagram=Diagram{Float64}[])
+    Parquet.RPA_chain!(ver4df, para, extK, c, level, :RPA, -1.0)
+    diags = mergeby(ver4df, :response)
+    DiagTree.evalKT!(diags, varK, varT; eval=evalFakePropagator)
+    w = [diags.diagram[1].weight, diags.diagram[2].weight]
     # plot_tree(diags, maxdepth=15)
     # println(w1)
     weight = (2^loopnum) * (2^(loopnum + 1))
