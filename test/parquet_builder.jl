@@ -120,7 +120,7 @@ evalFakePropagator(id::PropagatorId, K, extT, varT) = 1.0
     diags = mergeby(ver4df, :response)
     DiagTree.evalKT!(diags, varK, varT; eval=evalFakePropagator)
     w = [diags.diagram[1].weight, diags.diagram[2].weight]
-    plot_tree(diags, maxdepth=15)
+    # plot_tree(diags, maxdepth=15)
     # println(w1)
     #each bubble contribute 2, each dynamic interaction contribute 2, and there is two spin configuration upup, updown 
     @test w[1] ≈ -weight #additional minus sign from the exchange diagram

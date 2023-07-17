@@ -19,12 +19,35 @@
 - `name`            : name of the vertex
 - `level`           : level in the diagram tree
 - `resetuid`        : restart uid count from 1
-- `subchannel`      : :All, :W, :Lver3, :Rver3, :RPA to select all, W-interaction, left-vertex-correction, right-vertex-correction or RPA-interaction diagrams
+- `subchannel`      : :All, :W, :Lver3, :Rver3, :RPA to select all, W-interaction, left-vertex-correction, right-vertex-correction or RPA-interaction diagrams. See the remarks for more details.
 - `blocks`          : building blocks of the Parquet equation. See the struct ParquetBlocks for more details.
 - `blockstoplevel`  : building blocks of the Parquet equation at the toplevel. See the struct ParquetBlocks for more details.
 
 # Output
 - A DataFrame with fields :response, :type, :extT, :diagram, :hash
+
+# Remarks
+- RPA diagram:
+|                 |
+|- Π0 - ... - Π0 -|
+|                 |
+
+- LVer3 diagram (if loopNum>0, then the right incoming Tau will be set to the last Tau for all diagrams):
+|         |
+Γ3 -------|
+|         |
+
+- RVer3 diagram:
+|         |
+|------- Γ3
+|         |
+
+- W-interaction diagram (if loopNum>0, then the right incoming Tau will be set to the last Tau for all diagrams):
+|         |
+|--- Π ---|
+|         |
+W-intearction is both Lver3 and Rver3
+
 """
 function vertex4(para::DiagPara{W},
     extK=[DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)],
@@ -71,7 +94,12 @@ function vertex4(para::DiagPara{W},
         else
             permutation = [Di, Ex]
         end
-        bareVer4(ver4df, para, legK, permutation)
+        if (subchannel == :LVer3) && subdiagram  # if it is right ver3, then the right incoming Tau will be set to the same for all diagrams
+            leftalign = false
+        else
+            leftalign = true
+        end
+        bareVer4(ver4df, para, legK, permutation, leftalign)
     else # loopNum>0
         for c in chan
             if c == Alli
@@ -104,7 +132,7 @@ function vertex4(para::DiagPara{W},
             getid=g -> Ver4Id(para, g[1, :response], g[1, :type], k=legK, t=g[1, :extT]) #generate id from the dataframe
         )
     end
-    @assert all(x -> x[1] == para.firstTauIdx, ver4df.extT) "not all extT[1] are the same! $ver4df"
+    @assert all(x -> x[1] == para.firstTauIdx, ver4df.extT) "not all extT[1] are equal to the first Tau index $(para.firstTauIdx)! $ver4df"
     # println(typeof(groups))
     return ver4df
 end
@@ -314,7 +342,7 @@ function _pushbarever4_with_response!(para::DiagPara, nodes::DataFrame, response
     end
 end
 
-function bareVer4(nodes::DataFrame, para::DiagPara, legK, diex::Vector{Permutation}=[Di, Ex])
+function bareVer4(nodes::DataFrame, para::DiagPara, legK, diex::Vector{Permutation}=[Di, Ex], leftalign=true)
     # @assert para.type == Ver4Diag
 
     KinL, KoutL, KinR = legK[1], legK[2], legK[3]
@@ -330,7 +358,11 @@ function bareVer4(nodes::DataFrame, para::DiagPara, legK, diex::Vector{Permutati
     See Line 346 for more details.
     """
     if para.hasTau
-        extT_ins = [(t0, t0, t0, t0), (t0, t0, t0, t0)]
+        if leftalign
+            extT_ins = [(t0, t0, t0, t0), (t0, t0, t0, t0)]
+        else
+            extT_ins = [(t0 + 1, t0 + 1, t0 + 1, t0 + 1), (t0 + 1, t0 + 1, t0 + 1, t0 + 1)]
+        end
         extT_dyn = [(t0, t0, t0 + 1, t0 + 1), (t0, t0 + 1, t0 + 1, t0)]
         innerT_ins = [(1, 1), (1, 1)]
         innerT_dyn = [(t0, t0 + 1), (t0, t0 + 1)]
@@ -368,62 +400,6 @@ function bareVer4(nodes::DataFrame, para::DiagPara, legK, diex::Vector{Permutati
 
     return nodes
 end
-
-# function remove_RPA_chain!(ver4df::DataFrame, para::DiagPara, legK, chan::TwoBodyChannel, level::Int, name::Symbol)
-#     extrafactor = -1.0 # additional -1 because it is a counterterm
-
-#     TauNum = interactionTauNum(para) # maximum tau number for each bare interaction
-
-#     #the first loop idx is the inner loop of the bubble!
-#     LoopIdx = para.firstLoopIdx
-#     idx, maxLoop = findFirstLoopIdx(partition, LoopIdx + 1)
-#     LfirstLoopIdx, G0firstLoopIdx, RfirstLoopIdx, GxfirstLoopIdx = idx
-#     @assert maxLoop == maxVer4LoopIdx(para)
-
-#     type = [Ver4Diag, GreenDiag, Ver4Diag, GreenDiag]
-#     idx, maxTau = findFirstTauIdx(partition, type, para.firstTauIdx, TauNum)
-#     LfirstTauIdx, G0firstTauIdx, RfirstTauIdx, GxfirstTauIdx = idx
-#     @assert maxTau == maxVer4TauIdx(para) "Partition $partition with tauNum configuration $idx. maxTau = $maxTau, yet $(maxTauIdx(para)) is expected!"
-
-#     lPara = reconstruct(para, type=Ver4Diag, innerLoopNum=oL, firstLoopIdx=LfirstLoopIdx, firstTauIdx=LfirstTauIdx)
-#     rPara = reconstruct(para, type=Ver4Diag, innerLoopNum=oR, firstLoopIdx=RfirstLoopIdx, firstTauIdx=RfirstTauIdx)
-#     gxPara = reconstruct(para, type=GreenDiag, innerLoopNum=oGx, firstLoopIdx=GxfirstLoopIdx, firstTauIdx=GxfirstTauIdx)
-#     g0Para = reconstruct(para, type=GreenDiag, innerLoopNum=oG0, firstLoopIdx=G0firstLoopIdx, firstTauIdx=G0firstTauIdx)
-
-#     phi, ppi, Γ4 = blocks.phi, blocks.ppi, blocks.Γ4
-#     phi_toplevel, ppi_toplevel, Γ4_toplevel = blockstoplevel.phi, blockstoplevel.ppi, blockstoplevel.Γ4
-#     if chan == PHr || chan == PHEr
-#         Γi = (level == 1) ? phi_toplevel : phi
-#         Γf = (level == 1) ? Γ4_toplevel : Γ4
-#     elseif chan == PPr
-#         Γi = (level == 1) ? ppi_toplevel : ppi
-#         Γf = (level == 1) ? Γ4_toplevel : Γ4
-#     else
-#         error("chan $chan isn't implemented!")
-#     end
-
-#     LLegK, K, RLegK, Kx = legBasis(chan, legK, LoopIdx)
-#     # println(K, ", ", Kx)
-
-#     ls, rs = subChannel(subchannel)
-
-#     Lver = vertex4(lPara, LLegK, Γi, true; level=level + 1, name=:Γi, subchannel=ls, blocks=blocks)
-#     isempty(Lver) && return
-#     Rver = vertex4(rPara, RLegK, Γf, true; level=level + 1, name=:Γf, subchannel=rs, blocks=blocks)
-#     isempty(Rver) && return
-
-#     for ldiag in Lver.diagram
-#         for rdiag in Rver.diagram
-#             extT, G0T, GxT = tauBasis(chan, ldiag.id.extT, rdiag.id.extT)
-#             g0 = green(g0Para, K, G0T, true, name=:G0, blocks=blocks)
-#             gx = green(gxPara, Kx, GxT, true, name=:Gx, blocks=blocks)
-#             @assert g0 isa Diagram && gx isa Diagram
-#             # append!(diag, bubble2diag(para, chan, ldiag, rdiag, legK, g0, gx, extrafactor))
-#             bubble2diag!(ver4df, para, chan, ldiag, rdiag, legK, g0, gx, extrafactor)
-#         end
-#     end
-#     return
-# end
 
 ######################### utility functions ############################
 maxVer4TauIdx(para) = (para.innerLoopNum + 1) * interactionTauNum(para) + para.firstTauIdx - 1
@@ -507,11 +483,11 @@ function subChannel(subchan)
     if subchan == :RPA
         return :RPA, :RPA
     elseif subchan == :LVer3
-        return :LVer3, :All
+        return :All, :LVer3
     elseif subchan == :RVer3
-        return :All, :RVer3
+        return :RVer3, :All
     elseif subchan == :W
-        return :LVer3, :RVer3
+        return :RVer3, :LVer3
     elseif subchan == :All
         return :All, :All
     else
