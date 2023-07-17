@@ -17,7 +17,7 @@ Base.@kwdef struct Para
     rs::Float64 = 0.5
     beta::Float64 = 50.0
     spin::Int = 2
-    Qsize::Int = 5
+    # Qsize::Int = 5
     dim::Int = 2
     me::Float64 = 0.5
     λ::Float64 = 4.0
@@ -55,7 +55,6 @@ function integrand(idx, vars, config) #for the mcmc algorithm
     varK, varT, varN, Ext = vars
     para = config.userdata[1]
     MaxOrder = config.userdata[2]
-    # @assert idx in 1:MaxOrder "$(idx) is not a valid integrand"
     leaf, leafType, leafτ_i, leafτ_o, leafMomIdx, extT_labels = config.userdata[3]
     LoopPool = config.userdata[4]
     root = config.userdata[5]
@@ -66,7 +65,6 @@ function integrand(idx, vars, config) #for the mcmc algorithm
 
     extidx = Ext[1]
     varK.data[:, 1] .= para.extQ[extidx]
-    # FrontEnds.update(LoopPool, K.data[:, 1:MaxOrder+1])
     FrontEnds.update(LoopPool, varK.data[:, 1:MaxOrder+2])
     for (i, lf) in enumerate(leafType[idx])
         if lf == 0
@@ -80,7 +78,6 @@ function integrand(idx, vars, config) #for the mcmc algorithm
                 leaf[idx][i] = green(τ, ϵ, β)
                 # if τ ≈ 0.0
                 #     leaf[idx][i] = Spectral.kernelFermiT(-1e-10, ϵ, β)
-                #     # leaf[idx][i] = Spectral.kernelFermiT(-1e-8, ϵ, β)
                 # else
                 #     leaf[idx][i] = Spectral.kernelFermiT(τ, ϵ, β)
                 # end
@@ -110,14 +107,10 @@ function integrand(idx, vars, config) #for the mcmc algorithm
     n = ngrid[varN[1]]
     factor = 1.0 / (2π)^(dim * loopNum)
 
-    # println("$idx, $(extT_labels[idx])")
-    # println(varT.data[1:5])
     weight = sum(root[i] * phase(varT, extT, n, β) for (i, extT) in enumerate(extT_labels[idx]))
-
     return weight * factor
 end
 
-# function LeafInfor(FeynGraph::Graph, FermiLabel::LabelProduct, BoseLabel::LabelProduct)
 function LeafInfor(FeynGraphs::Dict{Tuple{Int,Int,Int},Tuple{Vector{G},Vector{Vector{Int}}}}, FermiLabel::LabelProduct, BoseLabel::LabelProduct,
     graph_keys) where {G<:Graph}
     #read information of each leaf from the generated graph and its LabelProduct, the information include type, loop momentum, imaginary time.
@@ -196,8 +189,6 @@ function run(steps, MaxOrder::Int; alpha=3.0)
     # funcGraphs! = Tuple([Compilers.compile([FeynGraph.subgraphs[i],]) for i in 1:MaxOrder]) #Compile graphs into a julia static function Vector. 
     # funcGraph!(i) = Compilers.compile([FeynGraph.subgraphs[i],]) #Compile graph i into a julia static function. 
     # println(green("Julia static function from Graph has been compiled."))
-    # inds = eachindex(FeynGraph.subgraphs)
-    # funcGraphs! = Dict{Int,Function}(i => Compilers.compile([FeynGraph.subgraphs[i],]) for i in inds)
     # gkeys = keys(FeynGraphs)
     # gkeys = UEG.partition(MaxOrder)
     gkeys = [(1, 0, 0), (2, 0, 0), (3, 0, 0)]
@@ -213,8 +204,8 @@ function run(steps, MaxOrder::Int; alpha=3.0)
 
     # T = MCIntegration.Continuous(0.0, β; grid=collect(LinRange(0.0, β, 1000)), offset=1, alpha=alpha)
     # T = Continuous(0.0, β; alpha=alpha, adapt=true, offset=1)
-    T = Continuous(0.0, β; alpha=alpha, adapt=true, offset=2)
     # T.data[1] = 0.0
+    T = Continuous(0.0, β; alpha=alpha, adapt=true, offset=2)
     T.data[1], T.data[2] = 0.0, 0.0
     K = MCIntegration.FermiK(dim, kF, 0.5 * kF, 10.0 * kF, offset=1)
     K.data[:, 1] .= extQ[1]
