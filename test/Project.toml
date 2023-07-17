@@ -1,5 +1,6 @@
 [deps]
 AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 FeynmanDiagram = "e424a512-dbd9-41ff-9883-094748823e72"
 Lehmann = "95bf888a-8996-4655-9f35-1c0506bdfefe"

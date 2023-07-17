@@ -5,6 +5,7 @@ import ..NoHartree
 import ..NoFock
 import ..NoBubble  # true to remove all bubble subdiagram
 import ..Proper  #ver4, ver3, and polarization diagrams may require to be irreducible along the transfer momentum/frequency
+import ..DirectOnly
 
 import ..DiagramType
 import ..GreenDiag

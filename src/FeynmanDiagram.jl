@@ -22,6 +22,7 @@ function Base.iterate(r::DiagramType, ::Nothing) end
     NoFock
     NoBubble  # true to remove all bubble subdiagram
     Proper  #ver4, ver3, and polarization diagrams may require to be irreducible along the transfer momentum/frequency
+    DirectOnly # only direct interaction, this can be useful for debug purpose
 end
 
 Base.length(r::Filter) = 1
@@ -55,7 +56,7 @@ function Base.iterate(r::AnalyticProperty, ::Nothing) end
 
 export SigmaDiag, PolarDiag, Ver3Diag, Ver4Diag, GreenDiag
 export VacuumDiag, GnDiag, GcDiag
-export Wirreducible, Girreducible, NoBubble, NoHartree, NoFock, Proper
+export Wirreducible, Girreducible, NoBubble, NoHartree, NoFock, Proper, DirectOnly
 export Response, ChargeCharge, SpinSpin, UpUp, UpDown
 export AnalyticProperty, Instant, Dynamic, D_Instant, D_Dynamic
 

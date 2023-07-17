@@ -89,17 +89,12 @@ function vertex4(para::DiagPara{W},
     ver4df = DataFrame(response=Response[], type=AnalyticProperty[], extT=Tuple{Int,Int,Int,Int}[], diagram=Diagram{W}[])
 
     if loopNum == 0
-        if subchannel == :W || subchannel == :RPA || subchannel == :LVer3 || subchannel == :RVer3
+        if DirectOnly in para.filter
             permutation = [Di,]
         else
             permutation = [Di, Ex]
         end
-        if (subchannel == :LVer3) && subdiagram  # if it is right ver3, then the right incoming Tau will be set to the same for all diagrams
-            leftalign = false
-        else
-            leftalign = true
-        end
-        bareVer4(ver4df, para, legK, permutation, leftalign)
+        bareVer4(ver4df, para, legK, permutation)
     else # loopNum>0
         for c in chan
             if c == Alli
@@ -203,7 +198,7 @@ function RPA_chain!(ver4df::DataFrame, para::DiagPara, legK, chan::TwoBodyChanne
     if chan != PHr && chan != PHEr
         return
     end
-    new_filter = append!(deepcopy(para.filter), Girreducible)
+    new_filter = union(union(para.filter, Girreducible), DirectOnly)
     para_rpa = reconstruct(para, filter=new_filter)
     blocks = ParquetBlocks(; phi=[], ppi=[], Γ4=[PHr,])
     bubble!(ver4df, para_rpa, legK, chan, [0, 0, para.innerLoopNum - 1, 0], level, Symbol("$(name)_RPA_CT"), blocks, blocks, extrafactor, :RPA)
