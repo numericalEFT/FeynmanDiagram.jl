@@ -81,16 +81,16 @@ function vertex4(para::DiagPara{W},
             partition = orderedPartition(loopNum - 1, 4, 0)
 
             for p in partition
-
                 if c == PHr || c == PHEr || c == PPr
                     bubble!(ver4df, para, legK, c, p, level, name, blocks, blockstoplevel, 1.0, subchannel)
-                    if (NoBubble in para.filter) && (loopNum == 1) && (c == PHr || c == PHEr)
-                        #add bubble counter-diagram to remove the bubble
-                        bubble!(ver4df, para, legK, c, p, level, Symbol("$(name)_counter"), blocks, blockstoplevel, -1.0, :RPA)
-                    end
-                    # println(bub)
                 end
             end
+
+            if (NoBubble in para.filter) && (c == PHr || c == PHEr)
+                # add RPA bubble counter-diagram to remove the bubble
+                RPA_chain!(ver4df, para, legK, c, level, name, -1.0)
+            end
+            # println(bub)
         end
         # # TODO: add envolpe diagrams
     end
@@ -168,6 +168,14 @@ function bubble!(ver4df::DataFrame, para::DiagPara, legK, chan::TwoBodyChannel, 
             bubble2diag!(ver4df, para, chan, ldiag, rdiag, legK, g0, gx, extrafactor)
         end
     end
+    return
+end
+
+function RPA_chain!(ver4df::DataFrame, para::DiagPara, legK, chan::TwoBodyChannel, level::Int, name::Symbol, extrafactor=1.0)
+    new_filter = append!(deepcopy(para.filter), Girreducible)
+    para_rpa = reconstruct(para, filter=new_filter)
+    blocks = ParquetBlocks(; phi=[], ppi=[], Γ4=[PHr,])
+    bubble!(ver4df, para_rpa, legK, chan, [0, 0, para.innerLoopNum - 1, 0], level, Symbol("$(name)_RPA_CT"), blocks, blocks, extrafactor, :RPA)
     return
 end
 
@@ -357,6 +365,62 @@ function bareVer4(nodes::DataFrame, para::DiagPara, legK, diex::Vector{Permutati
 
     return nodes
 end
+
+# function remove_RPA_chain!(ver4df::DataFrame, para::DiagPara, legK, chan::TwoBodyChannel, level::Int, name::Symbol)
+#     extrafactor = -1.0 # additional -1 because it is a counterterm
+
+#     TauNum = interactionTauNum(para) # maximum tau number for each bare interaction
+
+#     #the first loop idx is the inner loop of the bubble!
+#     LoopIdx = para.firstLoopIdx
+#     idx, maxLoop = findFirstLoopIdx(partition, LoopIdx + 1)
+#     LfirstLoopIdx, G0firstLoopIdx, RfirstLoopIdx, GxfirstLoopIdx = idx
+#     @assert maxLoop == maxVer4LoopIdx(para)
+
+#     type = [Ver4Diag, GreenDiag, Ver4Diag, GreenDiag]
+#     idx, maxTau = findFirstTauIdx(partition, type, para.firstTauIdx, TauNum)
+#     LfirstTauIdx, G0firstTauIdx, RfirstTauIdx, GxfirstTauIdx = idx
+#     @assert maxTau == maxVer4TauIdx(para) "Partition $partition with tauNum configuration $idx. maxTau = $maxTau, yet $(maxTauIdx(para)) is expected!"
+
+#     lPara = reconstruct(para, type=Ver4Diag, innerLoopNum=oL, firstLoopIdx=LfirstLoopIdx, firstTauIdx=LfirstTauIdx)
+#     rPara = reconstruct(para, type=Ver4Diag, innerLoopNum=oR, firstLoopIdx=RfirstLoopIdx, firstTauIdx=RfirstTauIdx)
+#     gxPara = reconstruct(para, type=GreenDiag, innerLoopNum=oGx, firstLoopIdx=GxfirstLoopIdx, firstTauIdx=GxfirstTauIdx)
+#     g0Para = reconstruct(para, type=GreenDiag, innerLoopNum=oG0, firstLoopIdx=G0firstLoopIdx, firstTauIdx=G0firstTauIdx)
+
+#     phi, ppi, Γ4 = blocks.phi, blocks.ppi, blocks.Γ4
+#     phi_toplevel, ppi_toplevel, Γ4_toplevel = blockstoplevel.phi, blockstoplevel.ppi, blockstoplevel.Γ4
+#     if chan == PHr || chan == PHEr
+#         Γi = (level == 1) ? phi_toplevel : phi
+#         Γf = (level == 1) ? Γ4_toplevel : Γ4
+#     elseif chan == PPr
+#         Γi = (level == 1) ? ppi_toplevel : ppi
+#         Γf = (level == 1) ? Γ4_toplevel : Γ4
+#     else
+#         error("chan $chan isn't implemented!")
+#     end
+
+#     LLegK, K, RLegK, Kx = legBasis(chan, legK, LoopIdx)
+#     # println(K, ", ", Kx)
+
+#     ls, rs = subChannel(subchannel)
+
+#     Lver = vertex4(lPara, LLegK, Γi, true; level=level + 1, name=:Γi, subchannel=ls, blocks=blocks)
+#     isempty(Lver) && return
+#     Rver = vertex4(rPara, RLegK, Γf, true; level=level + 1, name=:Γf, subchannel=rs, blocks=blocks)
+#     isempty(Rver) && return
+
+#     for ldiag in Lver.diagram
+#         for rdiag in Rver.diagram
+#             extT, G0T, GxT = tauBasis(chan, ldiag.id.extT, rdiag.id.extT)
+#             g0 = green(g0Para, K, G0T, true, name=:G0, blocks=blocks)
+#             gx = green(gxPara, Kx, GxT, true, name=:Gx, blocks=blocks)
+#             @assert g0 isa Diagram && gx isa Diagram
+#             # append!(diag, bubble2diag(para, chan, ldiag, rdiag, legK, g0, gx, extrafactor))
+#             bubble2diag!(ver4df, para, chan, ldiag, rdiag, legK, g0, gx, extrafactor)
+#         end
+#     end
+#     return
+# end
 
 ######################### utility functions ############################
 maxVer4TauIdx(para) = (para.innerLoopNum + 1) * interactionTauNum(para) + para.firstTauIdx - 1
