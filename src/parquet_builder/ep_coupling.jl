@@ -139,3 +139,116 @@ function _properVer3Para(p::DiagPara{W}, q) where {W}
     end
     return p
 end
+
+
+"""
+    ep_vertex4(para::DiagPara,
+        extK = [DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)],
+        chan::AbstractVector = [PHr, PHEr, PPr, Alli],
+        subdiagram = false;
+        level = 1, name = :none, resetuid = false,
+        subchannel::Symbol=:All, #:All, :W, :Lver3, :Rver3, :RPA
+        blocks::ParquetBlocks=ParquetBlocks(),
+        blockstoplevel::ParquetBlocks=blocks
+        )
+
+    Generate 4-vertex diagrams using Parquet Algorithm
+
+# Arguments
+- `para`            : parameters. It should provide internalLoopNum, interactionTauNum, firstTauIdx
+- `extK`            : basis of external loops as a vector [left in, left out, right in, right out]. 
+- `chan`            : vector of channels of the current 4-vertex. 
+- `subdiagram`      : a sub-vertex or not
+- `name`            : name of the vertex
+- `level`           : level in the diagram tree
+- `resetuid`        : restart uid count from 1
+- `subchannel`      : :All, :W, :Lver3, :Rver3, :RPA to select all, W-interaction, left-vertex-correction, right-vertex-correction or RPA-interaction diagrams. See the remarks for more details.
+- `blocks`          : building blocks of the Parquet equation. See the struct ParquetBlocks for more details.
+- `blockstoplevel`  : building blocks of the Parquet equation at the toplevel. See the struct ParquetBlocks for more details.
+
+# Output
+- A DataFrame with fields :response, :type, :extT, :diagram, :hash
+
+# Remarks
+- ep diagram (if loopNum>0, then the right incoming Tau will be set to the last Tau for all diagrams):
+|         |
+Γ3 -------|
+|         |
+
+"""
+function vertex4(para::DiagPara{W};
+    extK=[DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)],
+    chan::AbstractVector=[PHr, PHEr, PPr, Alli], subdiagram=false,
+    level=1, name=:none, resetuid=false,
+    blocks::ParquetBlocks=ParquetBlocks()
+) where {W}
+
+    for k in extK
+        @assert length(k) >= para.totalLoopNum "expect dim of extK>=$(para.totalLoopNum), got $(length(k))"
+    end
+
+    legK = [k[1:para.totalLoopNum] for k in extK[1:3]]
+    push!(legK, legK[1] + legK[3] - legK[2])
+
+    resetuid && uidreset()
+
+    @assert para.totalTauNum >= maxVer4TauIdx(para) "Increase totalTauNum!\n$para"
+    @assert para.totalLoopNum >= maxVer4LoopIdx(para) "Increase totalLoopNum\n$para"
+
+    phi, ppi = blocks.phi, blocks.ppi
+    phi_toplevel, ppi_toplevel = blockstoplevel.phi, blockstoplevel.ppi
+    blockstoplevel = ParquetBlocks(phi=phi_toplevel, ppi=ppi_toplevel)
+
+    @assert (PHr in phi) == false "PHi vertex is particle-hole irreducible, so that PHr channel is not allowed in $phi"
+    @assert (PPr in ppi) == false "PPi vertex is particle-particle irreducible, so that PPr channel is not allowed in $ppi"
+    @assert (PHr in phi_toplevel) == false "PHi vertex is particle-hole irreducible, so that PHr channel is not allowed in $phi_toplevel"
+    @assert (PPr in ppi_toplevel) == false "PPi vertex is particle-particle irreducible, so that PPr channel is not allowed in $ppi_toplevel"
+
+    loopNum = para.innerLoopNum
+    # @assert loopNum >= 0
+
+    ver4df = DataFrame(response=Response[], type=AnalyticProperty[], extT=Tuple{Int,Int,Int,Int}[], diagram=Diagram{W}[])
+
+    if loopNum == 0
+        if DirectOnly in para.filter
+            permutation = [Di,]
+        else
+            permutation = [Di, Ex]
+        end
+        bareVer4(ver4df, para, legK, permutation)
+    else # loopNum>0
+        for c in chan
+            if c == Alli
+                continue
+            end
+
+            partition = orderedPartition(loopNum - 1, 4, 0)
+
+            for p in partition
+                if c == PHr || c == PHEr || c == PPr
+                    bubble!(ver4df, para, legK, c, p, level, name, blocks, blockstoplevel, 1.0, subchannel)
+                end
+            end
+
+            if (NoBubble in para.filter) && (c == PHr || c == PHEr)
+                # add RPA bubble counter-diagram to remove the bubble
+                RPA_chain!(ver4df, para, legK, c, level, name, -1.0)
+            end
+            # println(bub)
+        end
+        # # TODO: add envolpe diagrams
+    end
+    diags = ver4df.diagram
+    @assert all(x -> x.id isa Ver4Id, diags) "not all id are Ver4Id! $diags"
+    @assert all(x -> x.id.extK ≈ legK, diags) "not all extK are the same! $diags"
+
+    # @assert isempty(diags) == false "got empty ver4! $chan with\n $para\n"
+    if isempty(ver4df) == false
+        ver4df = mergeby(W, ver4df, [:response, :type, :extT], name=name,
+            getid=g -> Ver4Id(para, g[1, :response], g[1, :type], k=legK, t=g[1, :extT]) #generate id from the dataframe
+        )
+    end
+    @assert all(x -> x[1] == para.firstTauIdx, ver4df.extT) "not all extT[1] are equal to the first Tau index $(para.firstTauIdx)! $ver4df"
+    # println(typeof(groups))
+    return ver4df
+end
