@@ -1,20 +1,22 @@
-function build(diags::Union{Diagram,Tuple,AbstractVector}, hasLoop=true; verbose::Int=0)
+function build(diags::Union{Diagram,Tuple,AbstractVector}, hasLoop=true; verbose::Int=0, normalize=nothing)
     if isempty(diags)
         return nothing
     else
         diags = collect(diags)
         @assert eltype(diags) <: Diagram "Diagram struct expected for $diags"
-        return _build(diags, hasLoop; verbose=verbose)
+        return _build(diags, hasLoop; verbose=verbose, normalize=normalize)
     end
 end
 
-function _build(diags::Vector{Diagram{W}}, hasLoop=true; verbose::Int=0) where {W}
+function _build(diags::Vector{Diagram{W}}, hasLoop=true; verbose::Int=0, normalize=nothing) where {W}
     # println(diags)
     @assert all(d -> (d.id.para == diags[1].id.para), diags) "Parameters of all diagrams shoud be the same!"
 
-    DiagTree.optimize!(diags, verbose=verbose)
+    DiagTree.optimize!(diags, verbose=verbose, normalize=normalize)
 
     tree = newExprTree(diags[1].id.para::DiagPara{W}, :none, hasLoop)
+
+    # nodepool = CachedPool(:node, Node{DiagramId,W}, W)
 
     verbose > 0 && println("Constructing expression tree...")
     nodes = Dict{Int,Any}()
@@ -33,8 +35,7 @@ function _build(diags::Vector{Diagram{W}}, hasLoop=true; verbose::Int=0) where {
         end
     end
 
-    tree.root = [nodes[d.hash] for d in diags]
-
+    setroot!(tree, collect([nodes[d.hash] for d in diags]))
     initialize!(tree.node)
     return tree
 end
@@ -60,4 +61,5 @@ function newExprTree(para::DiagPara{W}, name::Symbol=:none, hasLoop=true) where 
         Kpool = LoopPool(:K, 0, para.totalLoopNum, Float64)
     end
     return ExpressionTree{W,DiagramId}(loopBasis=Kpool, name=name)
+    # return ExpressionTree{W,Any}(loopBasis=Kpool, name=name)
 end

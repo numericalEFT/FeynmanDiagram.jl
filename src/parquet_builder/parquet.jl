@@ -1,9 +1,14 @@
 module Parquet
+
 using StaticArrays, PyCall
 using AbstractTrees
 using Parameters, Combinatorics
 using DataFrames
 using ..DiagTree
+
+# if isdefined(Base, :Experimental) && isdefined(Base.Experimental, Symbol("@optlevel"))
+#     @eval Base.Experimental.@optlevel 1
+# end
 
 
 const DI, EX, BOTH = 1, 2, 3
