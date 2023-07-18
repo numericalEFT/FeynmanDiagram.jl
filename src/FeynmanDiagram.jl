@@ -1,5 +1,9 @@
 module FeynmanDiagram
-using Random, LinearAlgebra, Parameters
+using Random, LinearAlgebra, Parameters, AbstractTrees, RuntimeGeneratedFunctions
+
+macro todo()
+    return :(error("Not yet implemented!"))
+end
 
 @enum DiagramType begin
     VacuumDiag         #vaccum diagram for the free energy
@@ -14,6 +18,17 @@ end
 Base.length(r::DiagramType) = 1
 Base.iterate(r::DiagramType) = (r, nothing)
 function Base.iterate(r::DiagramType, ::Nothing) end
+
+abstract type DiagType end
+abstract type Vacuum <: DiagType end
+abstract type Tadpole <: DiagType end
+abstract type FermiPropagator <: DiagType end
+abstract type BosePropagator <: DiagType end
+abstract type FermiSelfEnergy <: DiagType end
+abstract type BoseSelfEnergy <: DiagType end
+abstract type VertexDiag <: DiagType end
+abstract type GncDiag <: DiagType end
+abstract type GndDiag <: DiagType end
 
 @enum Filter begin
     Wirreducible  #remove all polarization subdiagrams
@@ -59,9 +74,62 @@ export Wirreducible, Girreducible, NoBubble, NoHartree, NoFock, Proper
 export Response, ChargeCharge, SpinSpin, UpUp, UpDown
 export AnalyticProperty, Instant, Dynamic, D_Instant, D_Dynamic
 
+export DiagType
+export FermiPropagator, BosePropagator, FermiSelfEnergy, BoseSelfEnergy, VertexDiag
+export Vacuum, Tadpole, GncDiag, GndDiag
+
 include("common.jl")
 export DiagPara, DiagParaF64
 export Interaction, interactionTauNum, innerTauNum
+
+include("common_new.jl")
+export DiagramPara, DiagramParaF64
+# export Interaction, interactionTauNum, innerTauNum
+
+include("quantum_operator/QuantumOperators.jl")
+
+using .QuantumOperators
+export QuantumOperators
+export QuantumOperator, OperatorProduct, isfermionic
+export 𝑓⁻, 𝑓⁺, 𝑓, 𝑏⁻, 𝑏⁺, 𝜙
+# export 𝑓⁻ₑ, 𝑓⁺ₑ, 𝑓ₑ, 𝑏⁻ₑ, 𝑏⁺ₑ, 𝜙ₑ
+export fermionic_annihilation, fermionic_creation, majorana
+export bosonic_annihilation, bosonic_creation, real_classic
+export correlator_order, normal_order
+
+include("computational_graph/ComputationalGraph.jl")
+using .ComputationalGraphs
+export ComputationalGraphs
+export labelreset, parity
+# export AbstractOperator, Prod, Sum
+export Graph, isequiv, linear_combination
+# export GraphType, Interaction, ExternalVertex, Propagator, SelfEnergy, VertexDiag, GreenDiag, GenericDiag
+export feynman_diagram, propagator, interaction, external_vertex
+# export standardize_order!
+export is_external, is_internal, vertices, external
+export external_labels
+# export reducibility, connectivity
+# export 𝐺ᶠ, 𝐺ᵇ, 𝐺ᵠ, 𝑊, Green2, Interaction
+# export Coupling_yukawa, Coupling_phi3, Coupling_phi4, Coupling_phi6
+export haschildren, onechild, isleaf, isbranch, ischain, isfactorless, eldest
+export relabel!, standardize_labels!, replace_subgraph!, merge_prodchain_subfactors!, inplace_prod!
+export relabel, standardize_labels, replace_subgraph, merge_prodchain_subfactors, inplace_prod
+export prune_trivial_unary, merge_prefactors
+
+include("backend/compiler.jl")
+using .Compilers
+export Compilers
+
+include("frontend/frontends.jl")
+using .FrontEnds
+export FrontEnds
+export LabelProduct
+
+include("frontend/GV.jl")
+using .GV
+export GV
+export PolarEachOrder, PolarDiagrams, SigmaDiagrams
+# export read_onediagram, read_diagrams
 
 include("diagram_tree/DiagTree.jl")
 using .DiagTree
