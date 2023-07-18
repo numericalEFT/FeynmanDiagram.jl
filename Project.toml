@@ -18,7 +18,7 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 [compat]
 AbstractTrees = "0.3, 0.4"
 Combinatorics = "1"
-DataFrames = "1.0"
+DataFrames = "1.6"
 Lehmann = "0.2"
 Parameters = "0.12"
 PyCall = "1"
