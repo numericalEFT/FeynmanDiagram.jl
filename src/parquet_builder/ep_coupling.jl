@@ -1,21 +1,23 @@
 """
     function ep_coupling(para::DiagPara{W};
         extK=[DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)],
-        channels::AbstractVector=[PHr, PHEr, PPr, Alli], 
+        channels::AbstractVector=[PHr, PHEr, PPr, Alli],
         subdiagram=false,
-        level=1, name=:none, resetuid=false,
+        name=:none, resetuid=false,
         blocks::ParquetBlocks=ParquetBlocks()
     ) where {W}
 
-    Generate 4-vertex diagrams using Parquet Algorithm
+Generate electron-phonon 4-vertex diagrams using Parquet Algorithm. The right incoming Tau will be set to the last Tau for all diagrams
+|         |
+Γ3 -------|
+|         |
 
 # Arguments
 - `para`            : parameters. It should provide internalLoopNum, interactionTauNum, firstTauIdx
 - `extK`            : basis of external loops as a vector [left in, left out, right in, right out]. 
-- `channels`            : vector of channels in the left Γ3 diagrams. 
+- `channels`        : vector of channels in the left Γ3 diagrams. 
 - `subdiagram`      : a sub-vertex or not
 - `name`            : name of the vertex
-- `level`           : level in the diagram tree
 - `resetuid`        : restart uid count from 1
 - `blocks`          : building blocks of the Parquet equation. See the struct ParquetBlocks for more details.
 
@@ -24,12 +26,6 @@
 
 # Output
 - A DataFrame with fields :response, :type, :extT, :diagram, :hash
-
-# Remarks
-- e-p coupling diagram (if loopNum>0, then the right incoming Tau will be set to the last Tau for all diagrams):
-|         |
-Γ3 -------|
-|         |
 
 """
 function ep_coupling(para::DiagPara{W};

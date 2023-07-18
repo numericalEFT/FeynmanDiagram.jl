@@ -8,7 +8,7 @@
         blockstoplevel::ParquetBlocks=blocks
         )
 
-    Generate 4-vertex diagrams using Parquet Algorithm
+Generate 4-vertex diagrams using Parquet Algorithm
 
 # Arguments
 - `para`            : parameters. It should provide internalLoopNum, interactionTauNum, firstTauIdx

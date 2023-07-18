@@ -2,7 +2,7 @@
 """
     function polarization(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = false; name = :Π, resetuid = false, blocks::ParquetBlocks=ParquetBlocks())
 
-    Generate polarization diagrams using Parquet Algorithm.
+Generate polarization diagrams using Parquet Algorithm.
 
 # Arguments
 - `para`            : parameters. It should provide internalLoopNum, interactionTauNum, firstTauIdx
