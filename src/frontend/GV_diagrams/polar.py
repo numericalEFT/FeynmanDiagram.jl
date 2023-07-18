@@ -235,25 +235,50 @@ class polar():
 
             Body += "# GType\n"
             for i in range(self.GNum):
-                if IsSelfEnergy and i == 0:
+                # if IsSelfEnergy and i == 0:
+                if IsSelfEnergy and i in [0, 1]:
                     Body += "{0:2d} ".format(-2)
+                # elif IsSelfEnergy and (i == 1 or Permutation[i] == 0):
+                elif IsSelfEnergy and Permutation[i] == 0:
+                    # Body += "{0:2d} ".format(-2)
+                    Body += "{0:2d} ".format(-3)
                 else:
                     Body += "{0:2d} ".format(GType[i])
 
             Body += "\n"
 
+            iseqTime = False
+            if IsSelfEnergy:
+                idx = np.where(np.array(Permutation) == 0)[0][0]
+                if Permutation[1] == idx or Permutation[1] == idx+1-idx % 2*2:
+                    iseqTime = True
+                    # exit(-1)
             Body += "# VertexBasis\n"
             for i in range(self.GNum):
-                Body += "{0:2d} ".format(self.__VerBasis(i))
+                Body += "{0:2d} ".format(self.__VerBasis(i,
+                                         Permutation, IsSelfEnergy, iseqTime))
             Body += "\n"
             for i in range(self.GNum):
-                Body += "{0:2d} ".format(self.__VerBasis(Permutation[i]))
+                Body += "{0:2d} ".format(self.__VerBasis(
+                    Permutation[i], Permutation, IsSelfEnergy, iseqTime))
             Body += "\n"
 
             Body += "# LoopBasis\n"
+
+            basis_temp = np.copy(Diag.LoopBasis)
+            if IsSelfEnergy:
+                loc = np.where(Diag.LoopBasis[:, 1] == 1)[0][0]
+                basis_temp[0, :] = Diag.LoopBasis[loc, :]
+                basis_temp[loc:-1, :] = Diag.LoopBasis[loc+1:, :]
+                basis_temp[-1, :] = Diag.LoopBasis[0, :]
+            # print yellow("{0}".format(loc))
+            # print Diag.LoopBasis
             for i in range(self.LoopNum):
+                # if IsSelfEnergy and i == loc:
+                #     continue
                 for j in range(self.GNum):
-                    Body += "{0:2d} ".format(Diag.LoopBasis[i, j])
+                    # Body += "{0:2d} ".format(Diag.LoopBasis[i, j])
+                    Body += "{0:2d} ".format(basis_temp[i, j])
                 Body += "\n"
 
             Body += "# Ver4Legs(InL,OutL,InR,OutR)\n"
@@ -302,14 +327,23 @@ class polar():
 
             Body += "\n"
             Body += "\n"
-        Title = "#Type: {0}\n".format("Polarization")
+        if IsSelfEnergy:
+            Title = "#Type: {0}\n".format("SelfEnergy")
+        else:
+            Title = "#Type: {0}\n".format("Polarization")
         Title += "#DiagNum: {0}\n".format(DiagNum)
         Title += "#Order: {0}\n".format(self.Order)
         Title += "#GNum: {0}\n".format(self.GNum)
         Title += "#Ver4Num: {0}\n".format(self.Ver4Num)
+        # if IsSelfEnergy:
+        #     Title += "#LoopNum: {0}\n".format(self.LoopNum-1)
+        # else:
         Title += "#LoopNum: {0}\n".format(self.LoopNum)
         Title += "#ExtLoopIndex: {0}\n".format(0)
         Title += "#DummyLoopIndex: \n"
+        # if IsSelfEnergy:
+        #     Title += "#TauNum: {0}\n".format(self.Ver4Num)
+        # else:
         Title += "#TauNum: {0}\n".format(self.Ver4Num+2)
         Title += "#ExtTauIndex: {0} {1}\n".format(0, 1)
         Title += "#DummyTauIndex: \n"
@@ -341,11 +375,32 @@ class polar():
             FeynList = TempFeynList
         return FeynList
 
-    def __VerBasis(self, index):
+    def __VerBasis(self, index, Permutation, IsSelfEnergy, IseqTime):
         if index <= 1:
             return index
         else:
             return int(index/2)+1
+        # if not IsSelfEnergy:
+        #     if index <= 1:
+        #         return index
+        #     else:
+        #         return int(index/2)+1
+        # else:
+        #     pair_index = index+1-index % 2*2
+        #     if index <= 1:
+        #         if IseqTime:
+        #             return 0
+        #         else:
+        #             return pair_index
+        #     elif index == Permutation[1] or pair_index == Permutation[1]:
+        #         return 0
+        #     elif Permutation[index] == 0 or Permutation[pair_index] == 0:
+        #         if IseqTime:
+        #             return 0
+        #         else:
+        #             return 1
+        #     else:
+        #         return int(index/2)+1
 
     def __IsReducibile(self, Permutation, LoopBasis, vertype, gtype, IsSelfEnergy, IsSymPolar):
         ExterLoop = [0, ]*self.LoopNum
@@ -373,12 +428,14 @@ class polar():
 
         if IsSelfEnergy:
             # make sure 1->0 only has one Green's function
-            if Permutation[0] != 1 or gtype[0] != 0:
+            if Permutation[0] != 1 or gtype[0] != 0 or gtype[1] != 0:
                 return True
-            # k = LoopBasis[:, 0]
-            # for i in range(1, self.GNum):
-            #     if np.allclose(k, LoopBasis[:, i]):
-            #         return True
+            k = LoopBasis[:, 1]
+            for i in range(2, self.GNum):
+                if Permutation[i] != 0 and np.allclose(k, LoopBasis[:, i]):
+                    return True
+                if Permutation[i] == 0 and gtype[i] != 0:
+                    return True
         if IsSymPolar:
             if Permutation[1] == 0:
                 return True

@@ -168,17 +168,20 @@ function LeafInfor(FeynGraph::Graph, FermiLabel::LabelProduct, BoseLabel::LabelP
             if (g.type == FeynmanDiagram.ComputationalGraphs.Interaction)
                 push!(LeafType[ig], 0)
                 In = Out = g.vertices[1][1].label
+                push!(LeafLoopIndex[ig], 1)
             elseif (isfermionic(g.vertices[1]))
                 push!(LeafType[ig], 1)
                 In, Out = g.vertices[1][1].label, g.vertices[2][1].label
+                push!(LeafLoopIndex[ig], FrontEnds.linear_to_index(FermiLabel, In)[end]) #the label of LoopPool for each fermionic leaf
             else
                 push!(LeafType[ig], 2)
                 In, Out = g.vertices[1][1].label, g.vertices[2][1].label
+                push!(LeafLoopIndex[ig], FrontEnds.linear_to_index(BoseLabel, In)[end]) #the label of LoopPool for each bosonic leaf
             end
             push!(Leaf[ig], 1.0)
             push!(LeafInTau[ig], FermiLabel[In][1])
             push!(LeafOutTau[ig], FermiLabel[Out][1])
-            push!(LeafLoopIndex[ig], FrontEnds.linear_to_index(FermiLabel, In)[end]) #the label of LoopPool for each leaf
+            # push!(LeafLoopIndex[ig], FrontEnds.linear_to_index(FermiLabel, In)[end]) #the label of LoopPool for each leaf
         end
     end
     return Leaf, LeafType, LeafInTau, LeafOutTau, LeafLoopIndex

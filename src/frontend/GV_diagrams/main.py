@@ -57,8 +57,13 @@ def Generate(Order, VerOrder, SigmaOrder, IsSelfEnergy, IsSpinPolar, IsSysPolar,
 
     print "Save diagrams ..."
 
-    fname = "./output/{0}{1}_{2}_{3}.diag".format(
-        "Polar", Order, VerOrder, SigmaOrder)
+    if IsSelfEnergy:
+        # fname = "./output/{0}{1}_{2}_{3}.diag".format(
+        fname = "./groups_sigma/{0}{1}_{2}_{3}.diag".format(
+            "Sigma", Order-1, VerOrder, SigmaOrder)
+    else:
+        fname = "./output/{0}{1}_{2}_{3}.diag".format(
+            "Polar", Order, VerOrder, SigmaOrder)
     # with open(fname, "w") as f:
     with open(fname, "w") as f:
         str_polar = Polar.ToString(UniqueUnLabelDiagList,
@@ -71,9 +76,9 @@ def Generate(Order, VerOrder, SigmaOrder, IsSelfEnergy, IsSpinPolar, IsSysPolar,
 if __name__ == "__main__":
     # print "Input Diagram Order: "
     # Order = int(sys.argv[1])
-    Order = 5
-    IsSelfEnergy = False
-    # IsSelfEnergy = True
+    Order = 6
+    # IsSelfEnergy = False
+    IsSelfEnergy = True
     IsSpinPolar = False
     IsSymPolar = True
     SPIN = 2
