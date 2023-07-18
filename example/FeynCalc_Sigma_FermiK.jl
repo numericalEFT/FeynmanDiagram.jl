@@ -3,7 +3,7 @@
 using FeynmanDiagram, MCIntegration, Lehmann
 using LinearAlgebra, Random, Printf, Measurements
 using StaticArrays, AbstractTrees
-using Profile, ProfileView
+# using Profile, ProfileView
 import ElectronLiquid: UEG
 
 diag_type = :sigma
