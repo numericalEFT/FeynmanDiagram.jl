@@ -40,6 +40,11 @@ function ep_coupling(para::DiagPara{W};
     blocks::ParquetBlocks=ParquetBlocks()
 ) where {W}
 
+    @warn("ep vertex4 breaks SU(2) spin symmetry!")
+    if NoBubble in para.filter
+        @warn("the RPA chain counterterms from the renormalization of the outgoing interaction leg in the ep vertex4 have not yet been implemented!")
+    end
+
     for k in extK
         @assert length(k) >= para.totalLoopNum "expect dim of extK>=$(para.totalLoopNum), got $(length(k))"
     end

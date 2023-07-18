@@ -24,7 +24,6 @@ include("vertex3.jl")
 include("polarization.jl")
 
 include("ep_coupling.jl")
-# include("sigma_GxGamma3.jl")
 
 include("benchmark/benchmark.jl")
 end

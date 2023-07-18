@@ -24,7 +24,7 @@ using MCIntegration
             push!(diagpara, p)
             _s = Parquet.build(p)
             push!(sigma, _s)
-            plot_tree(_s, maxdepth=15)
+            # plot_tree(_s, maxdepth=15)
         end
         diag = [ExprTree.build(s.diagram) for s in sigma]
         root = [d.root for d in diag] #get the list of root nodes
@@ -106,7 +106,7 @@ using MCIntegration
 
     for (oi, o) in enumerate(orders)
         println("order $o :  ", avg[oi], " +- ", std[oi], "  ~  ", expect[o])
-        compare(avg[oi], expect[oi], std[oi])
+        compare(avg[oi], expect[o], std[oi])
     end
     # @test abs(avg[1] - expect[1]) < 5 * std[1]
     # @test abs(avg[2] - expect[2]) < 5 * std[2]

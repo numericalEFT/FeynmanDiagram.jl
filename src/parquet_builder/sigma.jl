@@ -17,8 +17,7 @@
 - All sigma share the same incoming Tau index, but not the outgoing one
 """
 function sigma(para::DiagPara{W}, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false;
-    name=:Σ, resetuid=false, blocks::ParquetBlocks=ParquetBlocks(),
-    compact=true
+    name=:Σ, resetuid=false, blocks::ParquetBlocks=ParquetBlocks()
 ) where {W}
     resetuid && uidreset()
     (para.type == SigmaDiag) || error("$para is not for a sigma diagram")
@@ -60,24 +59,11 @@ function sigma(para::DiagPara{W}, extK=DiagTree.getK(para.totalLoopNum, 1), subd
         sid = SigmaId(para, type, k=extK, t=group[:extT])
         g = green(paraG, K, group[:GT], true; name=(oW == 0 ? :Gfock : :G_Σ), blocks=blocks) #there is only one G diagram for a extT
         (g isa Diagram) || error("green function must return a Diagram")
-        if compact == false
-            # Sigma = G*(2 W↑↑ - W↑↓)
-            # ! The sign of ↑↓ is from the spin symmetry, not from the fermionic statistics!
-            spinfactor = (response == UpUp) ? 2 : -1
-            if (oW > 0) && (compact == false)# oW are composte Sigma, there is a symmetry factor 1/2
-                spinfactor *= 0.5
-            end
-        else # for the compact case 
-            # the ep_coupling vertex4 breaks the SU(2) symmetry, so that the spin factor needs to be adjusted according to the interaction type
-            for interaction in para.interaction
-                response = interaction.response
-                if response == SpinSpin
-                    error("construct Sigma from GWΓ3 does not support SpinSpin interaction yet because WΓ3 breaks the SU(2) spin symmetry!")
-                end
-            end
-            # for charge-charge interaction or UpDown or UpUp interaction, the interaction doesn't permute the spins, so that the fermionic particle line has conserved spins. Therefore, WΓ3 only has two spin configurations (up, up, up, up) and (up, up, down, down). Only the first one contributes to the Sigma diagram.
-            spinfactor = (response == UpUp) ? 1 : 0
-            # if all(x -> (x==ChargeCharge || x==UpDown || x==UpUp), )
+        # Sigma = G*(2 W↑↑ - W↑↓)
+        # ! The sign of ↑↓ is from the spin symmetry, not from the fermionic statistics!
+        spinfactor = (response == UpUp) ? 2 : -1
+        if (oW > 0) # oW are composte Sigma, there is a symmetry factor 1/2
+            spinfactor *= 0.5
         end
         # plot_tree(mergeby(DataFrame(group)), maxdepth = 7)
         sigmadiag = Diagram{W}(sid, Prod(), [g, group[:diagram]], factor=spinfactor, name=name)
@@ -116,11 +102,11 @@ function sigma(para::DiagPara{W}, extK=DiagTree.getK(para.totalLoopNum, 1), subd
             else # composite Σ
                 # paraW0 = reconstruct(paraW, filter=union(paraW.filter, Proper), transferLoop=extK-K)
                 # plot_tree(mergeby(ver4).diagram[1])
-                if compact
-                    ver4 = ep_coupling(paraW; extK=legK, subdiagram=true, name=:W, blocks=blocks)
-                else
-                    ver4 = vertex4(paraW, legK, [PHr,], true; blocks=blocks, blockstoplevel=ParquetBlocks(phi=[], Γ4=[PHr, PHEr, PPr]))
-                end
+                # if compact
+                #     ver4 = ep_coupling(paraW; extK=legK, subdiagram=true, name=:W, blocks=blocks)
+                # else
+                ver4 = vertex4(paraW, legK, [PHr,], true; blocks=blocks, blockstoplevel=ParquetBlocks(phi=[], Γ4=[PHr, PHEr, PPr]))
+                # end
             end
             #transform extT coloum intwo extT for Σ and extT for G
             # plot_tree(ver4)
