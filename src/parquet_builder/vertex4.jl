@@ -4,7 +4,6 @@
         chan::AbstractVector = [PHr, PHEr, PPr, Alli],
         subdiagram = false;
         level = 1, name = :none, resetuid = false,
-        subchannel::Symbol=:All, #:All, :W, :Lver3, :Rver3, :RPA
         blocks::ParquetBlocks=ParquetBlocks(),
         blockstoplevel::ParquetBlocks=blocks
         )
@@ -19,42 +18,17 @@
 - `name`            : name of the vertex
 - `level`           : level in the diagram tree
 - `resetuid`        : restart uid count from 1
-- `subchannel`      : :All, :W, :Lver3, :Rver3, :RPA to select all, W-interaction, left-vertex-correction, right-vertex-correction or RPA-interaction diagrams. See the remarks for more details.
 - `blocks`          : building blocks of the Parquet equation. See the struct ParquetBlocks for more details.
 - `blockstoplevel`  : building blocks of the Parquet equation at the toplevel. See the struct ParquetBlocks for more details.
 
 # Output
 - A DataFrame with fields :response, :type, :extT, :diagram, :hash
-
-# Remarks
-- RPA diagram:
-|                 |
-|- Π0 - ... - Π0 -|
-|                 |
-
-- LVer3 diagram (if loopNum>0, then the right incoming Tau will be set to the last Tau for all diagrams):
-|         |
-Γ3 -------|
-|         |
-
-- RVer3 diagram:
-|         |
-|------- Γ3
-|         |
-
-- W-interaction diagram (if loopNum>0, then the right incoming Tau will be set to the last Tau for all diagrams):
-|         |
-|--- Π ---|
-|         |
-W-intearction is both Lver3 and Rver3
-
 """
 function vertex4(para::DiagPara{W},
     extK=[DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)],
     chan::AbstractVector=[PHr, PHEr, PPr, Alli], subdiagram=false;
     level=1, name=:none, resetuid=false,
     # phi_toplevel=ParquetBlocks().phi, ppi_toplevel=ParquetBlocks().ppi, Γ4_toplevel=ParquetBlocks().Γ4,
-    subchannel::Symbol=:All, #:All, :W, :Lver3, :Rver3, :RPA
     blocks::ParquetBlocks=ParquetBlocks(),
     blockstoplevel::ParquetBlocks=blocks
 ) where {W}
@@ -105,7 +79,7 @@ function vertex4(para::DiagPara{W},
 
             for p in partition
                 if c == PHr || c == PHEr || c == PPr
-                    bubble!(ver4df, para, legK, c, p, level, name, blocks, blockstoplevel, 1.0, subchannel)
+                    bubble!(ver4df, para, legK, c, p, level, name, blocks, blockstoplevel, 1.0)
                 end
             end
 
@@ -117,6 +91,13 @@ function vertex4(para::DiagPara{W},
         end
         # # TODO: add envolpe diagrams
     end
+    # println(typeof(groups))
+    ver4df = merge_vertex4(para, ver4df, name, legK, W)
+    @assert all(x -> x[1] == para.firstTauIdx, ver4df.extT) "not all extT[1] are equal to the first Tau index $(para.firstTauIdx)! $ver4df"
+    return ver4df
+end
+
+function merge_vertex4(para, ver4df, name, legK, W)
     diags = ver4df.diagram
     @assert all(x -> x.id isa Ver4Id, diags) "not all id are Ver4Id! $diags"
     @assert all(x -> x.id.extK ≈ legK, diags) "not all extK are the same! $diags"
@@ -127,14 +108,12 @@ function vertex4(para::DiagPara{W},
             getid=g -> Ver4Id(para, g[1, :response], g[1, :type], k=legK, t=g[1, :extT]) #generate id from the dataframe
         )
     end
-    @assert all(x -> x[1] == para.firstTauIdx, ver4df.extT) "not all extT[1] are equal to the first Tau index $(para.firstTauIdx)! $ver4df"
-    # println(typeof(groups))
     return ver4df
 end
 
 function bubble!(ver4df::DataFrame, para::DiagPara, legK, chan::TwoBodyChannel, partition::Vector{Int}, level::Int, name::Symbol,
     blocks::ParquetBlocks, blockstoplevel::ParquetBlocks,
-    extrafactor=1.0, subchannel=:All)
+    extrafactor=1.0)
 
     TauNum = interactionTauNum(para) # maximum tau number for each bare interaction
     oL, oG0, oR, oGx = partition[1], partition[2], partition[3], partition[4]
@@ -174,11 +153,9 @@ function bubble!(ver4df::DataFrame, para::DiagPara, legK, chan::TwoBodyChannel, 
     LLegK, K, RLegK, Kx = legBasis(chan, legK, LoopIdx)
     # println(K, ", ", Kx)
 
-    ls, rs = subChannel(subchannel)
-
-    Lver = vertex4(lPara, LLegK, Γi, true; level=level + 1, name=:Γi, subchannel=ls, blocks=blocks)
+    Lver = vertex4(lPara, LLegK, Γi, true; level=level + 1, name=:Γi, blocks=blocks)
     isempty(Lver) && return
-    Rver = vertex4(rPara, RLegK, Γf, true; level=level + 1, name=:Γf, subchannel=rs, blocks=blocks)
+    Rver = vertex4(rPara, RLegK, Γf, true; level=level + 1, name=:Γf, blocks=blocks)
     isempty(Rver) && return
 
     for ldiag in Lver.diagram
@@ -201,7 +178,7 @@ function RPA_chain!(ver4df::DataFrame, para::DiagPara, legK, chan::TwoBodyChanne
     new_filter = union(union(para.filter, Girreducible), DirectOnly)
     para_rpa = reconstruct(para, filter=new_filter)
     blocks = ParquetBlocks(; phi=[], ppi=[], Γ4=[PHr,])
-    bubble!(ver4df, para_rpa, legK, chan, [0, 0, para.innerLoopNum - 1, 0], level, Symbol("$(name)_RPA_CT"), blocks, blocks, extrafactor, :RPA)
+    bubble!(ver4df, para_rpa, legK, chan, [0, 0, para.innerLoopNum - 1, 0], level, Symbol("$(name)_RPA_CT"), blocks, blocks, extrafactor)
     return
 end
 
@@ -353,11 +330,8 @@ function bareVer4(nodes::DataFrame, para::DiagPara, legK, diex::Vector{Permutati
     See Line 346 for more details.
     """
     if para.hasTau
-        if leftalign
-            extT_ins = [(t0, t0, t0, t0), (t0, t0, t0, t0)]
-        else
-            extT_ins = [(t0 + 1, t0 + 1, t0 + 1, t0 + 1), (t0 + 1, t0 + 1, t0 + 1, t0 + 1)]
-        end
+        extT_ins = [(t0, t0, t0, t0), (t0, t0, t0, t0)]
+        extT_ins_rightalign = [(t0 + 1, t0 + 1, t0 + 1, t0 + 1), (t0 + 1, t0 + 1, t0 + 1, t0 + 1)]
         extT_dyn = [(t0, t0, t0 + 1, t0 + 1), (t0, t0 + 1, t0 + 1, t0)]
         innerT_ins = [(1, 1), (1, 1)]
         innerT_dyn = [(t0, t0 + 1), (t0, t0 + 1)]
@@ -378,7 +352,11 @@ function bareVer4(nodes::DataFrame, para::DiagPara, legK, diex::Vector{Permutati
             _pushbarever4_with_response!(para, nodes, response, Dynamic, legK, q, diex, extT_dyn, innerT_dyn)
         elseif Instant ∈ typeVec && Dynamic ∈ typeVec
             #if hasTau, instant interaction has an additional fake tau variable, making it similar to the dynamic interaction
-            _pushbarever4_with_response!(para, nodes, response, Instant, legK, q, diex, extT_ins, innerT_dyn)
+            if leftalign
+                _pushbarever4_with_response!(para, nodes, response, Instant, legK, q, diex, extT_ins, innerT_dyn)
+            else
+                _pushbarever4_with_response!(para, nodes, response, Instant, legK, q, diex, extT_ins_rightalign, innerT_dyn)
+            end
             _pushbarever4_with_response!(para, nodes, response, Dynamic, legK, q, diex, extT_dyn, innerT_dyn)
         end
 
@@ -472,20 +450,4 @@ function typeMap(ltype::AnalyticProperty, rtype::AnalyticProperty)
     # else
     #     return nothing
     # end
-end
-
-function subChannel(subchan)
-    if subchan == :RPA
-        return :RPA, :RPA
-    elseif subchan == :LVer3
-        return :All, :LVer3
-    elseif subchan == :RVer3
-        return :RVer3, :All
-    elseif subchan == :W
-        return :RVer3, :LVer3
-    elseif subchan == :All
-        return :All, :All
-    else
-        error("not implemented!")
-    end
 end

@@ -96,8 +96,9 @@ function sigmaGΓ3(para::DiagPara{W}, extK=DiagTree.getK(para.totalLoopNum, 1), 
                 # println(ver4)
             else # composite Σ
                 # paraW0 = reconstruct(paraW, filter=union(paraW.filter, Proper), transferLoop=extK-K)
-                ver4 = vertex4(paraW, legK, [PHr, PHEr, PPr], true; blocks=blocks, blockstoplevel=blocks, subchannel=:LVer3)
+                # ver4 = vertex4(paraW, legK, [PHr, PHEr, PPr], true; blocks=blocks, blockstoplevel=blocks, subchannel=:LVer3)
                 # plot_tree(mergeby(ver4).diagram[1])
+                ver4 = ep_coupling(paraW; extK=legK, subdiagram=true, name=:W, blocks=blocks)
             end
             #transform extT coloum intwo extT for Σ and extT for G
             # plot_tree(ver4)

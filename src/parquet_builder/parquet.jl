@@ -19,10 +19,12 @@ include("filter.jl")
 include("vertex4.jl")
 
 include("sigma.jl")
-# include("sigma_GxGamma3.jl")
 include("green.jl")
 include("vertex3.jl")
 include("polarization.jl")
+
+include("ep_coupling.jl")
+# include("sigma_GxGamma3.jl")
 
 include("benchmark/benchmark.jl")
 end
