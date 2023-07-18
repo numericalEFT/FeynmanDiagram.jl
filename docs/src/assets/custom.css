@@ -31,3 +31,7 @@ article#documenter-page img[src*="#gamma4"] {
 article#documenter-page img[src*="#susceptibility"] {
     width: 100%;
 }
+
+article#documenter-page img[src*="#derivative_example"] {
+    width: 100%;
+}
