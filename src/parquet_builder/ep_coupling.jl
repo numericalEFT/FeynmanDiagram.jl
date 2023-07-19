@@ -26,7 +26,6 @@ Generate electron-phonon 4-vertex diagrams using Parquet Algorithm. The right in
 
 # Output
 - A DataFrame with fields :response, :type, :extT, :diagram, :hash
-
 """
 function ep_coupling(para::DiagPara{W};
     extK=[DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)],
