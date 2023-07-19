@@ -24,7 +24,7 @@ function sigma(para::DiagPara{W}, extK=DiagTree.getK(para.totalLoopNum, 1), subd
     (para.innerLoopNum >= 1) || error("sigma must has more than one inner loop")
     # @assert length(extK) == para.totalLoopNum
     # @assert (para.innerLoopNum <= 1) || ((NoBubble in para.filter) == false) "The many-body correction sigma only accounts for half of the bubble counterterm right now."
-    if (para.innerLoopNum > 1) && (NoBubble in para.filter) && (compact == false)
+    if (para.innerLoopNum > 1) && (NoBubble in para.filter)
         @warn "Sigma with two or more loop orders still contain bubble subdiagram even if NoBubble is turned on in para.filter!"
     end
 
