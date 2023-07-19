@@ -97,6 +97,58 @@ evalPropagatorfixK(id::BareGreenId, K, extT, varT) = evalGfixK(K, varT[extT[1]],
 evalPropagatorfixK(id::BareInteractionId, K, extT, varT) = evalVfixK(K)
 evalFakePropagator(id::PropagatorId, K, extT, varT) = 1.0
 
+@testset "ep Ver4" begin
+    loopnum = 2
+    para = DiagParaF64(type=Ver4Diag, hasTau=true, innerLoopNum=loopnum, interaction=[Interaction(ChargeCharge, [Instant, Dynamic])])
+    Parquet.ep_coupling(para) # make sure ep_coupling runs
+end
+
+
+@testset "Ver4 RPA chain" begin
+
+    loopnum = 3
+
+    para = DiagParaF64(type=Ver4Diag, hasTau=true, innerLoopNum=loopnum, interaction=[Interaction(ChargeCharge, [Instant, Dynamic])])
+
+
+    legK1, legK2, legK3 = DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)
+    extK = [legK1, legK2, legK3, legK1 + legK3 - legK2]
+    level = 0
+
+    varK = rand(3, para.totalLoopNum)
+    varT = [rand() for i in 1:para.totalTauNum]
+
+    weight = (2^loopnum) * (2^(loopnum + 1))
+
+    ############ PHEr ############
+    c = PHEr
+    ver4df = DataFrame(response=Response[], type=AnalyticProperty[], extT=Tuple{Int,Int,Int,Int}[], diagram=Diagram{Float64}[])
+    Parquet.RPA_chain!(ver4df, para, extK, c, level, :RPA, -1.0)
+    diags = mergeby(ver4df, :response)
+    DiagTree.evalKT!(diags, varK, varT; eval=evalFakePropagator)
+    w = [diags.diagram[1].weight, diags.diagram[2].weight]
+    # plot_tree(diags, maxdepth=15)
+    # println(w1)
+    #each bubble contribute 2, each dynamic interaction contribute 2, and there is two spin configuration upup, updown 
+    @test w[1] ≈ -weight #additional minus sign from the exchange diagram
+    @test w[2] ≈ 0.0 # updown is not allowed in exchange diagram
+
+
+    ############ PHr ############
+    c = PHr
+    ver4df = DataFrame(response=Response[], type=AnalyticProperty[], extT=Tuple{Int,Int,Int,Int}[], diagram=Diagram{Float64}[])
+    Parquet.RPA_chain!(ver4df, para, extK, c, level, :RPA, -1.0)
+    diags = mergeby(ver4df, :response)
+    DiagTree.evalKT!(diags, varK, varT; eval=evalFakePropagator)
+    w = [diags.diagram[1].weight, diags.diagram[2].weight]
+    # plot_tree(diags, maxdepth=15)
+    # println(w1)
+    weight = (2^loopnum) * (2^(loopnum + 1))
+    #each bubble contribute 2, each dynamic interaction contribute 2, and there is two spin configuration upup, updown 
+    @test w[1] ≈ weight
+    @test w[2] ≈ weight
+end
+
 
 @testset "ParquetNew Ver4" begin
     Benchmark = Parquet.Benchmark

@@ -24,7 +24,7 @@ using MCIntegration
             push!(diagpara, p)
             _s = Parquet.build(p)
             push!(sigma, _s)
-            # plot_tree(_s)
+            # plot_tree(_s, maxdepth=15)
         end
         diag = [ExprTree.build(s.diagram) for s in sigma]
         root = [d.root for d in diag] #get the list of root nodes
@@ -53,10 +53,10 @@ using MCIntegration
         return para.U
     end
 
-    function integrate(config)
-        para, diag = config.para
-        varT = config.var[1]
-        diagram = diag[config.curr]
+    function integrand(idx, vars, config)
+        para, diag = config.userdata
+        varT = vars
+        diagram = diag[idx]
         object = diagram.node.object
         weight = diagram.node.current
         ExprTree.evalKT!(diagram, nothing, varT.data, para; eval=eval)
@@ -81,8 +81,8 @@ using MCIntegration
         dof = [[diagpara[o].totalTauNum - 1,] for o in 1:length(orders)]
         obs = zeros(ComplexF64, length(orders))
 
-        config = Configuration((T,), dof, obs; para=(para, diag), kwargs...)
-        result = sample(config, integrate; neval=neval, kwargs...)
+        config = Configuration(; var=(T,), dof=dof, obs=obs, userdata=(para, diag), type=ComplexF64)
+        result = integrate(integrand; config=config, neval=neval, solver=:mcmc, kwargs...)
         # ExprTree.showTree(diag[1], 3)
         return result
     end
@@ -94,7 +94,8 @@ using MCIntegration
     para = ParaMC(μ, U, β, n)
     neval = 1e6
     print = 0
-    orders = [1, 2, 3, 4]
+    # orders = [1, 2, 3, 4]
+    orders = [2,]
     result = sigmaMC(para, orders, neval; print=print)
     avg, std = result.mean, result.stdev
     expect = [-U / 2,
@@ -103,9 +104,9 @@ using MCIntegration
         -(24im - 12π + 6im * π^2 + π^3) * β^3 * U^4 / 384 / π^3,
     ]
 
-    for o in 1:length(orders)
-        println("order $o :  ", avg[o], " +- ", std[o], "  ~  ", expect[o])
-        compare(avg[o], expect[o], std[o])
+    for (oi, o) in enumerate(orders)
+        println("order $o :  ", avg[oi], " +- ", std[oi], "  ~  ", expect[o])
+        compare(avg[oi], expect[o], std[oi])
     end
     # @test abs(avg[1] - expect[1]) < 5 * std[1]
     # @test abs(avg[2] - expect[2]) < 5 * std[2]

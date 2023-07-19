@@ -2,6 +2,7 @@ using FeynmanDiagram
 using Lehmann
 using Test, LinearAlgebra, Random, StaticArrays, Printf, Parameters, Documenter
 using AbstractTrees
+using DataFrames
 
 """
 Skip a testset

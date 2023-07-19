@@ -2,8 +2,8 @@
     green(para::DiagPara, extK = DiagTree.getK(para.totalLoopNum, 1), extT = para.hasTau ? (1, 2) : (0, 0), subdiagram = false;
         name = :G, resetuid = false, blocks::ParquetBlocks=ParquetBlocks())
     
-    Build composite Green's function.
-    By definition, para.firstTauIdx is the first Tau index of the left most self-energy subdiagram.
+Build composite Green's function.
+By definition, para.firstTauIdx is the first Tau index of the left most self-energy subdiagram.
 
 # Arguments
 - `para`            : parameters. It should provide internalLoopNum, interactionTauNum, firstTauIdx
