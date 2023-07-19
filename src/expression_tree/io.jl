@@ -113,9 +113,12 @@ function showTree(tree::ExpressionTree, _root::Int; verbose=0, depth=999)
     end
 
     t = treeview(_root, 1)
-    # style = ete.NodeStyle()
-    # style["bgcolor"] = "Khaki"
-    # t.set_style(style)
+
+    # NOTE: t.set_style does not update the original PyObject as expected, i.e.,
+    #       `t.set_style(ete.NodeStyle(bgcolor="Khaki"))` does not modify t.
+    #
+    # The low-level approach circumvents this by directly updating the original PyObject `t."img_style"`
+    PyCall.set!(t."img_style", "bgcolor", "Khaki")
 
 
     ts = ete.TreeStyle()
