@@ -26,7 +26,7 @@ Parameters = "0.12"
 PyCall = "1"
 StaticArrays = "1"
 RuntimeGeneratedFunctions = "0.5"
-SnoopPrecompile = "2"
+SnoopPrecompile = "1, 2"
 julia = "1.6"
 
 [extras]
