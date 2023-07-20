@@ -12,7 +12,7 @@ datatype = ComplexF64
 # has_counterterm = true
 has_counterterm = false
 Steps = 1e7
-# Steps = 1e6
+# Steps = 2e8
 Base.@kwdef struct Para
     rs::Float64 = 0.5
     beta::Float64 = 50.0
@@ -54,7 +54,7 @@ end
 function integrand(idx, vars, config) #for the mcmc algorithm
     varK, varT, varN, Ext = vars
     para = config.userdata[1]
-    MaxOrder = config.userdata[2]
+    MaxLoopNum = config.userdata[2]
     leaf, leafType, leafτ_i, leafτ_o, leafMomIdx, extT_labels = config.userdata[3]
     LoopPool = config.userdata[4]
     root = config.userdata[5]
@@ -65,7 +65,7 @@ function integrand(idx, vars, config) #for the mcmc algorithm
 
     extidx = Ext[1]
     varK.data[:, 1] .= para.extQ[extidx]
-    FrontEnds.update(LoopPool, varK.data[:, 1:MaxOrder+2])
+    FrontEnds.update(LoopPool, varK.data[:, 1:MaxLoopNum])
     for (i, lf) in enumerate(leafType[idx])
         if lf == 0
             continue
@@ -137,7 +137,7 @@ function LeafInfor(FeynGraphs::Dict{Tuple{Int,Int,Int},Tuple{Vector{G},Vector{Ve
                         In = Out = g.vertices[1][1].label
                         push!(LeafLoopIndex[ig], 1)
                     elseif (isfermionic(g.vertices[1]))
-                        In, Out = g.vertices[1][1].label, g.vertices[2][1].label
+                        In, Out = g.vertices[2][1].label, g.vertices[1][1].label
                         if FermiLabel[In][2] in [-2, -3]
                             push!(LeafType[ig], 0)
                             push!(LeafLoopIndex[ig], 1)
@@ -146,7 +146,7 @@ function LeafInfor(FeynGraphs::Dict{Tuple{Int,Int,Int},Tuple{Vector{G},Vector{Ve
                             push!(LeafLoopIndex[ig], FrontEnds.linear_to_index(FermiLabel, In)[end]) #the label of LoopPool for each fermionic leaf
                         end
                     else
-                        In, Out = g.vertices[1][1].label, g.vertices[2][1].label
+                        In, Out = g.vertices[2][1].label, g.vertices[1][1].label
                         push!(LeafType[ig], BoseLabel[In][2] * 2 + 2)
                         push!(LeafLoopIndex[ig], FrontEnds.linear_to_index(BoseLabel, In)[end]) #the label of LoopPool for each bosonic leaf
                     end
@@ -179,20 +179,19 @@ end
     return "\u001b[32m$str\u001b[0m"
 end
 
-function run(steps, MaxOrder::Int; alpha=3.0)
+function run(steps, gkeys::Vector{Tuple{Int,Int,Int}}; alpha=3.0)
     para = Para()
     extQ, ngrid = para.extQ, para.ngrid
     dim, kF, β = para.dim, para.kF, para.β
-    FeynGraphs, FermiLabel, BoseLabel = SigmaDiagrams(MaxOrder, has_counterterm, para.dim)
-    println(green("Diagrams with the largest order $MaxOrder has been read."))
+    MaxLoopNum = maximum([key[1] for key in gkeys]) + 2
 
-    # funcGraphs! = Tuple([Compilers.compile([FeynGraph.subgraphs[i],]) for i in 1:MaxOrder]) #Compile graphs into a julia static function Vector. 
+    # FeynGraphs, FermiLabel, BoseLabel = SigmaDiagrams(MaxOrder, has_counterterm, para.dim)
+    FeynGraphs, FermiLabel, BoseLabel = SigmaDiagrams(gkeys, para.dim)
+    println(green("Diagrams have been read with keys: $gkeys."))
+
     # funcGraph!(i) = Compilers.compile([FeynGraph.subgraphs[i],]) #Compile graph i into a julia static function. 
     # println(green("Julia static function from Graph has been compiled."))
     # gkeys = keys(FeynGraphs)
-    # gkeys = UEG.partition(MaxOrder)
-    gkeys = [(1, 0, 0), (2, 0, 0), (3, 0, 0)]
-    # gkeys = [(1, 0, 0), (1, 0, 1), (1, 0, 2), (1, 1, 0), (1, 1, 1), (1, 2, 0), (2, 0, 0), (2, 0, 1), (2, 1, 0)]
     neighbor = UEG.neighbor(gkeys)
     funcGraphs! = Dict{Int,Function}(i => Compilers.compile(FeynGraphs[key][1]) for (i, key) in enumerate(gkeys))
 
@@ -203,8 +202,6 @@ function run(steps, MaxOrder::Int; alpha=3.0)
     root = zeros(Float64, 24)
 
     # T = MCIntegration.Continuous(0.0, β; grid=collect(LinRange(0.0, β, 1000)), offset=1, alpha=alpha)
-    # T = Continuous(0.0, β; alpha=alpha, adapt=true, offset=1)
-    # T.data[1] = 0.0
     T = Continuous(0.0, β; alpha=alpha, adapt=true, offset=2)
     T.data[1], T.data[2] = 0.0, 0.0
     K = MCIntegration.FermiK(dim, kF, 0.5 * kF, 10.0 * kF, offset=1)
@@ -215,22 +212,22 @@ function run(steps, MaxOrder::Int; alpha=3.0)
     dof = Vector{Int}[]
     reweight_goal = Float64[]
     for (order, verOrder, SigmaOrder) in gkeys
-        print("($order, $verOrder, $SigmaOrder) ")
+        # print("($order, $verOrder, $SigmaOrder) ")
         # order, verOrder, SigmaOrder = [parse(Int, c) for c in g.name]
-        # push!(dof, [order, order - 1, 1, 1])
         push!(dof, [order, order, 1, 1])
         push!(reweight_goal, 4.0^(order + verOrder - 1))
     end
+    # reweight_goal = [1.0, 50.0, 200.0]
     push!(reweight_goal, 2.0) # reweight for the normalization part
     obs = [zeros(datatype, length(ngrid), length(extQ)) for _ in gkeys]
 
     println(green("Start computing MCMC integral:"))
-    # result = integrate(integrand; measure=measure, userdata=(para, MaxOrder, LeafStat, LoopPool, root, funcGraphs!),
+    # result = integrate(integrand; measure=measure, userdata=(para, MaxLoopNum, LeafStat, LoopPool, root, funcGraphs!),
     #     var=(K, T, Ext), dof=dof, obs=obs, solver=:mcmc, reweight_goal=reweight, gamma=0.5,
     #     neval=steps, print=-1, block=2) # gets compiled
     # Profile.clear_malloc_data() # clear allocations
 
-    result = integrate(integrand; measure=measure, userdata=(para, MaxOrder, LeafStat, LoopPool, root, funcGraphs!),
+    result = integrate(integrand; measure=measure, userdata=(para, MaxLoopNum, LeafStat, LoopPool, root, funcGraphs!),
         var=(K, T, X, Ext), dof=dof, obs=obs, type=datatype, solver=:mcmc, niter=10, block=16, neval=steps,
         reweight_goal=reweight_goal, neighbor=neighbor, print=0, parallel=:thread)
     # ProfileView.view()
@@ -267,7 +264,15 @@ function run(steps, MaxOrder::Int; alpha=3.0)
     end
 end
 
-# run(Steps, 1)
+function run(steps, MaxOrder::Int; alpha=3.0)
+    gkeys = UEG.partition(MaxOrder)
+    run(steps, gkeys, alpha=alpha)
+end
+
+# gkeys = [(1, 0, 2), (2, 0, 2), (3, 0, 1)]
+# gkeys = [(1, 0, 0), (2, 0, 0), (3, 0, 0)]
+# run(Steps, gkeys)
+
 # run(Steps, 2)
 run(Steps, 3)
 # run(Steps, 4)
