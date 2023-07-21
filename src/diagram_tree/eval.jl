@@ -56,7 +56,7 @@ function evalKT!(diags::Vector{Diagram{W}}, varK, varT; eval=DiagTree.eval) wher
     # return W[d.weight for d in diags]
 end
 
-function evalKT!(df::DataFrame, varK, varT; eval=DiagTree.eval) where {W}
+function evalKT!(df::DataFrame, varK, varT; eval=DiagTree.eval)
     for d in df[!, :diagram]
         evalKT!(d, varK, varT; eval=eval)
     end
@@ -87,7 +87,7 @@ function eval!(diags::Vector{Diagram{W}}, vargs...; eval=DiagTree.eval) where {W
     # return W[d.weight for d in diags]
 end
 
-function eval!(df::DataFrame, vargs...; eval=DiagTree.eval) where {W}
+function eval!(df::DataFrame, vargs...; eval=DiagTree.eval)
     for d in df[!, :diagram]
         eval!(d, vargs...; eval=eval)
     end

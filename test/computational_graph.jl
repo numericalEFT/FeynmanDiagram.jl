@@ -213,8 +213,8 @@ end
         @test h6.subgraph_factors == [12, 12]
         g3 = 2 * g1
         h7 = linear_combination([g1, g3, g3, g1], [3, 5, 7, 9])
-        h8 = merge_prefactors(h5)
-        @test_broken h8.length(h8.subgraphs) == 1
+        h8 = merge_prefactors(h7)
+        @test_broken length(h8.subgraphs) == 1
         @test_broken h8.subgraphs == [g1]
         @test_broken h8.subgraph_factors == [36]
     end

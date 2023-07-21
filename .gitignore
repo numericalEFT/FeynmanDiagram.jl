@@ -76,5 +76,5 @@ __pycache__
 
 *.DS_Store
 *.pb.gz
-
+.DS_Store
 *.history

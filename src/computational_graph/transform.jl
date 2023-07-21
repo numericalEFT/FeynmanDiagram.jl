@@ -62,6 +62,7 @@ function collect_labels(g::Graph)
     end
 
     uniqlables = sort(unique(labels))
+    return uniqlables
 end
 
 """

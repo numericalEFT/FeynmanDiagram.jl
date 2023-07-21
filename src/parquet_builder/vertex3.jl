@@ -4,8 +4,8 @@
         blocks::ParquetBlocks=ParquetBlocks()
         )
 
-    Generate 3-vertex diagrams using Parquet Algorithm.
-    With imaginary-time variables, all vertex3 generated has the same bosonic Tidx ``extT[1]=para.firstTauIdx`` and the incoming fermionic Tidx ``extT[2]=para.firstTauIdx+1``.
+Generate 3-vertex diagrams using Parquet Algorithm.
+With imaginary-time variables, all vertex3 generated has the same bosonic Tidx ``extT[1]=para.firstTauIdx`` and the incoming fermionic Tidx ``extT[2]=para.firstTauIdx+1``.
 
 #Arguments
 - `para`            : parameters. It should provide internalLoopNum, interactionTauNum, firstTauIdx
