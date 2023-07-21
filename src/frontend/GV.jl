@@ -190,7 +190,7 @@ function LeavesState(FeynGraphs::Dict{T,Tuple{Vector{G},Vector{Vector{Int}}}},
     LeafInTau = [Vector{Int}() for _ in 1:num_g]
     LeafOutTau = [Vector{Int}() for _ in 1:num_g]
     LeafLoopIndex = [Vector{Int}() for _ in 1:num_g]
-    Leaves = [Vector{Float64}() for _ in 1:num_g]
+    Leaf = [Vector{Float64}() for _ in 1:num_g]
     ExtT_index = [Vector{Vector{Int}}() for _ in 1:num_g]
 
     for (ig, key) in enumerate(graph_keys)
@@ -200,7 +200,7 @@ function LeavesState(FeynGraphs::Dict{T,Tuple{Vector{G},Vector{Vector{Int}}}},
                 if g.type == IR.GenericDiag
                     push!(LeafType[ig], 0)
                     In = Out = 1
-                    push!(Leaves[ig], 0.0)
+                    push!(Leaf[ig], 0.0)
                     push!(LeafLoopIndex[ig], 1)
                 else
                     if g.type == IR.Interaction
@@ -221,14 +221,14 @@ function LeavesState(FeynGraphs::Dict{T,Tuple{Vector{G},Vector{Vector{Int}}}},
                         push!(LeafType[ig], BoseLabel[In][2] * 2 + 2)
                         push!(LeafLoopIndex[ig], FrontEnds.linear_to_index(BoseLabel, In)[end]) #the label of LoopPool for each bosonic leaf
                     end
-                    push!(Leaves[ig], 1.0)
+                    push!(Leaf[ig], 1.0)
                 end
                 push!(LeafInTau[ig], FermiLabel[In][1])
                 push!(LeafOutTau[ig], FermiLabel[Out][1])
             end
         end
     end
-    return (Leaves, LeafType, LeafInTau, LeafOutTau, LeafLoopIndex, ExtT_index)
+    return (Leaf, LeafType, LeafInTau, LeafOutTau, LeafLoopIndex, ExtT_index)
 end
 
 end
