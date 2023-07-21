@@ -171,11 +171,11 @@ function LeafInfor(FeynGraph::Graph, FermiLabel::LabelProduct, BoseLabel::LabelP
                 push!(LeafLoopIndex[ig], 1)
             elseif (isfermionic(g.vertices[1]))
                 push!(LeafType[ig], 1)
-                In, Out = g.vertices[1][1].label, g.vertices[2][1].label
+                In, Out = g.vertices[2][1].label, g.vertices[1][1].label
                 push!(LeafLoopIndex[ig], FrontEnds.linear_to_index(FermiLabel, In)[end]) #the label of LoopPool for each fermionic leaf
             else
                 push!(LeafType[ig], 2)
-                In, Out = g.vertices[1][1].label, g.vertices[2][1].label
+                In, Out = g.vertices[2][1].label, g.vertices[1][1].label
                 push!(LeafLoopIndex[ig], FrontEnds.linear_to_index(BoseLabel, In)[end]) #the label of LoopPool for each bosonic leaf
             end
             push!(Leaf[ig], 1.0)
@@ -200,10 +200,10 @@ function LeafInfor_total(FeynGraph::Graph, FermiLabel::LabelProduct, BoseLabel::
             In = Out = g.vertices[1][1].label
         elseif (isfermionic(g.vertices[1]))
             push!(LeafType, 1)
-            In, Out = g.vertices[1][1].label, g.vertices[2][1].label
+            In, Out = g.vertices[2][1].label, g.vertices[1][1].label
         else
             push!(LeafType, 2)
-            In, Out = g.vertices[1][1].label, g.vertices[2][1].label
+            In, Out = g.vertices[2][1].label, g.vertices[1][1].label
         end
         push!(Leaf, 1.0)
         push!(LeafInTau, FermiLabel[In][1])
