@@ -6,8 +6,9 @@ import ..ComputationalGraphs: Graph
 import ..ComputationalGraphs: _dtype
 # import ..ComputationalGraphs: group
 using ..FrontEnds
+using AbstractTrees
 
-export PolarEachOrder, PolarDiagrams, SigmaDiagrams
+export PolarEachOrder, PolarDiagrams, SigmaDiagrams, LeavesState
 
 include("GV_diagrams/readfile.jl")
 
@@ -179,6 +180,55 @@ function SigmaDiagrams(gkeys::Vector{Tuple{Int,Int,Int}}, dim::Int=3)
     fermi_labelProd = LabelProduct(tau_labels, GTypes, loopPool)
     bose_labelProd = LabelProduct(tau_labels, VTypes, loopPool)
     return dict_graphs, fermi_labelProd, bose_labelProd
+end
+
+function LeavesState(FeynGraphs::Dict{T,Tuple{Vector{G},Vector{Vector{Int}}}},
+    FermiLabel::LabelProduct, BoseLabel::LabelProduct, graph_keys::Vector{T}) where {T,G<:Graph}
+    #read information of each leaf from the generated graph and its LabelProduct, the information include type, loop momentum, imaginary time.
+    num_g = length(graph_keys)
+    LeafType = [Vector{Int}() for _ in 1:num_g]
+    LeafInTau = [Vector{Int}() for _ in 1:num_g]
+    LeafOutTau = [Vector{Int}() for _ in 1:num_g]
+    LeafLoopIndex = [Vector{Int}() for _ in 1:num_g]
+    Leaves = [Vector{Float64}() for _ in 1:num_g]
+    ExtT_index = [Vector{Vector{Int}}() for _ in 1:num_g]
+
+    for (ig, key) in enumerate(graph_keys)
+        ExtT_index[ig] = FeynGraphs[key][2]  # external tau variables
+        for j in eachindex(ExtT_index[ig])
+            for g in Leaves(FeynGraphs[key][1][j])
+                if g.type == IR.GenericDiag
+                    push!(LeafType[ig], 0)
+                    In = Out = 1
+                    push!(Leaves[ig], 0.0)
+                    push!(LeafLoopIndex[ig], 1)
+                else
+                    if g.type == IR.Interaction
+                        push!(LeafType[ig], 0)
+                        In = Out = g.vertices[1][1].label
+                        push!(LeafLoopIndex[ig], 1)
+                    elseif (Op.isfermionic(g.vertices[1]))
+                        In, Out = g.vertices[2][1].label, g.vertices[1][1].label
+                        if FermiLabel[In][2] in [-2, -3]
+                            push!(LeafType[ig], 0)
+                            push!(LeafLoopIndex[ig], 1)
+                        else
+                            push!(LeafType[ig], FermiLabel[In][2] * 2 + 1)
+                            push!(LeafLoopIndex[ig], FrontEnds.linear_to_index(FermiLabel, In)[end]) #the label of LoopPool for each fermionic leaf
+                        end
+                    else
+                        In, Out = g.vertices[2][1].label, g.vertices[1][1].label
+                        push!(LeafType[ig], BoseLabel[In][2] * 2 + 2)
+                        push!(LeafLoopIndex[ig], FrontEnds.linear_to_index(BoseLabel, In)[end]) #the label of LoopPool for each bosonic leaf
+                    end
+                    push!(Leaves[ig], 1.0)
+                end
+                push!(LeafInTau[ig], FermiLabel[In][1])
+                push!(LeafOutTau[ig], FermiLabel[Out][1])
+            end
+        end
+    end
+    return (Leaves, LeafType, LeafInTau, LeafOutTau, LeafLoopIndex, ExtT_index)
 end
 
 end
