@@ -1,3 +1,27 @@
+# struct FastHashInt{T<:Integer}
+#     i::T
+# end
+# Base.:(==)(x::FastHashInt, y::FastHashInt) = x.i == y.i
+# Base.hash(x::FastHashInt, h::UInt) = xor(UInt(x.i), h)
+
+# # struct CachePool{O,T} <: AbstractVector{T}
+# struct CachePool{O,T}
+#     name::String
+#     object::Dict{FastHashInt{Int},O}
+#     current::Dict{FastHashInt{Int},T}
+
+#     function CachePool(objType::DataType, weightType::DataType; name::String="")
+#         object = Dict{FastHashInt{Int},objType}()
+#         current = Dict{FastHashInt{Int},weightType}()
+#         return new{objType,weightType}(name, object, current)
+#     end
+# end
+
+# Base.size(pool::CachePool) = (length(pool.current),)
+# Base.getindex(pool::CachePool, i) = pool.current[FastHashInt(i)]
+# Base.setindex!(pool::CachePool, v, i) = setindex!(pool.current, v, FastHashInt(i))
+# # Base.show(io::IO, pool::CachePool) = print(io, pool.current)
+
 """
     struct LoopPool{T}
 

@@ -7,7 +7,7 @@ import ..ComputationalGraphs: Graph
 import ..ComputationalGraphs: _dtype
 
 include("pool.jl")
-export LoopPool
+export LoopPool, CachePool
 
 include("LabelProduct.jl")
 export LabelProduct

@@ -228,7 +228,8 @@ function run(steps, gkeys::Vector{Tuple{Int,Int,Int}}; alpha=3.0)
     # Profile.clear_malloc_data() # clear allocations
 
     result = integrate(integrand; measure=measure, userdata=(para, MaxLoopNum, LeafStat, LoopPool, root, funcGraphs!),
-        var=(K, T, X, Ext), dof=dof, obs=obs, type=datatype, solver=:mcmc, niter=10, block=16, neval=steps,
+        # var=(K, T, X, Ext), dof=dof, obs=obs, type=datatype, solver=:mcmc, niter=10, block=16, neval=steps,
+        var=(K, T, X, Ext), dof=dof, obs=obs, type=datatype, solver=:mcmc, neval=steps,
         reweight_goal=reweight_goal, neighbor=neighbor, print=0, parallel=:thread)
     # ProfileView.view()
 

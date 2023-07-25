@@ -25,7 +25,6 @@ function to_julia_str(graphs::AbstractVector; root::AbstractVector{Int}=[g.id fo
     leafidx = 1
     for graph in graphs
         for g in PostOrderDFS(graph) #leaf first search
-
             if g.id in root
                 target = "root[$(findfirst(x -> x == g.id, root))]"
             else
@@ -34,6 +33,34 @@ function to_julia_str(graphs::AbstractVector; root::AbstractVector{Int}=[g.id fo
             if isempty(g.subgraphs) #leaf
                 body *= "    $target = leaf[$leafidx]\n "
                 leafidx += 1
+            else
+                body *= "    $target = $(_to_static(g.operator, g.subgraphs, g.subgraph_factors))*$(g.factor)\n "
+            end
+        end
+    end
+    tail = "end"
+    return head * body * tail
+end
+
+function to_julia_str(graphs::AbstractVector, propagatorMap::Dict{Int,Int}, interactionMap::Dict{Int,Int}; root::AbstractVector{Int}=[g.id for g in graphs], name::String="eval_graph!")
+    head = "function $name(root::AbstractVector, propagatorVal::AbstractVector, interactionVal::AbstractVector)\n "
+    body = ""
+    pIdx, iIdx = 1, 1
+    for graph in graphs
+        for g in PostOrderDFS(graph) #leaf first search
+            if g.id in root
+                target = "root[$(findfirst(x -> x == g.id, root))]"
+            else
+                target = "g$(g.id)"
+            end
+            if isempty(g.subgraphs) #leaf
+                if g.type == ComputationalGraphs.Propagator
+                    body *= "    $target = propagatorVal[$(propagatorMap[g.id])]\n "
+                    pIdx += 1
+                elseif g.type == ComputationalGraphs.Interaction
+                    body *= "    $target = interactionVal[$(interactionMap[g.id])]\n "
+                    iIdx += 1
+                end
             else
                 body *= "    $target = $(_to_static(g.operator, g.subgraphs, g.subgraph_factors))*$(g.factor)\n "
             end
@@ -69,6 +96,14 @@ function compile(graphs::AbstractVector;
     root::AbstractVector{Int}=[g.id for g in graphs])
     # this function return a runtime generated function defined by compile()
     func_string = to_julia_str(graphs; root=root, name="func_name!")
+    func_expr = Meta.parse(func_string)
+    return @RuntimeGeneratedFunction(func_expr)
+end
+
+function compile(graphs::AbstractVector, propagatorMap::Dict{Int,Int}, interactionMap::Dict{Int,Int};
+    root::AbstractVector{Int}=[g.id for g in graphs])
+    # this function return a runtime generated function defined by compile()
+    func_string = to_julia_str(graphs, propagatorMap, interactionMap; root=root, name="func_name!")
     func_expr = Meta.parse(func_string)
     return @RuntimeGeneratedFunction(func_expr)
 end
