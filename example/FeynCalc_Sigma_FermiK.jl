@@ -65,6 +65,7 @@ function integrand(idx, vars, config) #for the mcmc algorithm
 
     extidx = Ext[1]
     varK.data[:, 1] .= para.extQ[extidx]
+    varK.data[:, 2:MaxLoopNum] .= [para.kF, 0.0]
     FrontEnds.update(LoopPool, varK.data[:, 1:MaxLoopNum])
     for (i, lf) in enumerate(leafType[idx])
         if lf == 0
@@ -236,11 +237,11 @@ function run(steps, gkeys::Vector{Tuple{Int,Int,Int}}; alpha=3.0)
     if isnothing(result) == false
         datadict = Dict{eltype(gkeys),Any}()
         for (o, key) in enumerate(gkeys)
-            if length(dof) == 1
-                avg, std = result.mean, result.stdev
-            else
-                avg, std = result.mean[o], result.stdev[o]
-            end
+            # if length(dof) == 1
+            #     avg, std = result.mean, result.stdev
+            # else
+            avg, std = result.mean[o], result.stdev[o]
+            # end
             # r = measurement.(real(avg), real(std))
             # i = measurement.(imag(avg), imag(std))
             r = measurement.(real(avg), real(std)) ./ β
@@ -272,6 +273,7 @@ end
 
 # gkeys = [(1, 0, 2), (2, 0, 2), (3, 0, 1)]
 # gkeys = [(1, 0, 0), (2, 0, 0), (3, 0, 0)]
+# gkeys = [(1, 0, 0), (2, 0, 1), (2, 1, 0), (3, 0, 0)]
 # run(Steps, gkeys)
 
 # run(Steps, 2)

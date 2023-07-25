@@ -54,6 +54,7 @@ function to_julia_str(graphs::AbstractVector, propagatorMap::Dict{Int,Int}, inte
                 target = "g$(g.id)"
             end
             if isempty(g.subgraphs) #leaf
+                g.name == "compiled" && continue
                 if g.type == ComputationalGraphs.Propagator
                     body *= "    $target = propagatorVal[$(propagatorMap[g.id])]\n "
                     pIdx += 1
@@ -61,6 +62,7 @@ function to_julia_str(graphs::AbstractVector, propagatorMap::Dict{Int,Int}, inte
                     body *= "    $target = interactionVal[$(interactionMap[g.id])]\n "
                     iIdx += 1
                 end
+                g.name = "compiled"
             else
                 body *= "    $target = $(_to_static(g.operator, g.subgraphs, g.subgraph_factors))*$(g.factor)\n "
             end

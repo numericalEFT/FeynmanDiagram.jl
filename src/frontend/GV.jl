@@ -112,10 +112,8 @@ function PolarDiagrams(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false,
 end
 
 function SigmaDiagrams(MaxOrder::Int, has_counterterm::Bool=false, dim::Int=3)
-    # dict_graphs = Dict{Tuple{Int,Int,Int},Vector{Graph{_dtype.factor,_dtype.weight}}}()
     dict_graphs = Dict{Tuple{Int,Int,Int},Tuple{Vector{Graph{_dtype.factor,_dtype.weight}},Vector{Vector{Int}}}}()
     MaxLoopNum = MaxOrder + 2
-    # tau_labels = collect(1:MaxOrder)
     tau_labels = collect(1:MaxOrder+2)
     loopPool = LoopPool(:K, dim, MaxLoopNum, Float64)
     # graphvector = Vector{Graph{_dtype.factor,_dtype.weight}}()
@@ -130,11 +128,11 @@ function SigmaDiagrams(MaxOrder::Int, has_counterterm::Bool=false, dim::Int=3)
                     order + VerOrder + GOrder > MaxOrder && continue
                     gvec, fermi_labelProd, bose_labelProd, extT_labels = PolarEachOrder(:sigma, order, VerOrder, GOrder;
                         dim=dim, loopPool=loopPool, tau_labels=tau_labels, GTypes=GTypes, VTypes=VTypes)
-                    # g.name = "$(order)$(VerOrder)$(GOrder)"
                     key = (order, VerOrder, GOrder)
                     dict_graphs[key] = (gvec, extT_labels)
                     # push!(graphs, gvec)
                     loopPool = fermi_labelProd.labels[3]
+                    propagatorMap[key], interactionMap[key] = IR.optimize!(gvec)
                 end
             end
         end
@@ -147,14 +145,14 @@ function SigmaDiagrams(MaxOrder::Int, has_counterterm::Bool=false, dim::Int=3)
             key = (order, 0, 0)
             dict_graphs[key] = (gvec, extT_labels)
             loopPool = fermi_labelProd.labels[3]
+            propagatorMap[key], interactionMap[key] = IR.optimize!(gvec)
         end
     end
     # IR.optimize!(graphvector)
     fermi_labelProd = LabelProduct(tau_labels, GTypes, loopPool)
     bose_labelProd = LabelProduct(tau_labels, VTypes, loopPool)
 
-    # return IR.linear_combination(graphs_eqT, ones(_dtype.factor, length(graphs_eqT))), fermi_labelProd, bose_labelProd
-    return dict_graphs, fermi_labelProd, bose_labelProd
+    return dict_graphs, fermi_labelProd, bose_labelProd, (propagatorMap, interactionMap)
 end
 
 function SigmaDiagrams(gkeys::Vector{Tuple{Int,Int,Int}}, dim::Int=3)
@@ -205,84 +203,49 @@ function LeavesState(FeynGraphs::Dict{T,Tuple{Vector{G},Vector{Vector{Int}}}},
 
     for (ikey, key) in enumerate(graph_keys)
         ExtT_index[ikey] = FeynGraphs[key][2]  # external tau variables
-        for j in eachindex(ExtT_index[ikey])
-            for g in Leaves(FeynGraphs[key][1][j])
-                g.name == "visited" && continue
-                if g.type == IR.Interaction
-                    push!(InteractionType[ikey], 0)
-                    In = Out = g.vertices[1][1].label
-                    push!(InteractionLoopIndex[ikey], 1)
-                    push!(InteractionInTau[ikey], FermiLabel[In][1])
-                    push!(InteractionOutTau[ikey], FermiLabel[Out][1])
-                    push!(InteractionValue[ikey], 1.0)
-                elseif g.type == IR.Propagator
-                    if (Op.isfermionic(g.vertices[1]))
-                        In, Out = g.vertices[2][1].label, g.vertices[1][1].label
-                        if FermiLabel[In][2] in [-2, -3]
-                            push!(PropagatorType[ikey], 0)
-                            push!(PropagatorLoopIndex[ikey], 1)
-                        else
-                            push!(PropagatorType[ikey], FermiLabel[In][2] * 2 + 1)
-                            push!(PropagatorLoopIndex[ikey], FrontEnds.linear_to_index(FermiLabel, In)[end]) #the label of LoopPool for each fermionic leaf
-                        end
-                        push!(PropagatorInTau[ikey], FermiLabel[In][1])
-                        push!(PropagatorOutTau[ikey], FermiLabel[Out][1])
+
+        leaves = Vector{G}()
+        for graph in FeynGraphs[key][1]
+            append!(leaves, collect(Leaves(graph)))
+        end
+        sort!(leaves, by=x -> x.id) #sort the id of the leaves in an asscend order
+        unique!(x -> x.id, leaves) #filter out the leaves with the same id number  
+
+        for g in leaves
+            g.name == "visited" && continue
+            if g.type == IR.Interaction
+                push!(InteractionType[ikey], 0)
+                In = Out = g.vertices[1][1].label
+                push!(InteractionLoopIndex[ikey], 1)
+                push!(InteractionInTau[ikey], FermiLabel[In][1])
+                push!(InteractionOutTau[ikey], FermiLabel[Out][1])
+                push!(InteractionValue[ikey], 1.0)
+            elseif g.type == IR.Propagator
+                if (Op.isfermionic(g.vertices[1]))
+                    In, Out = g.vertices[2][1].label, g.vertices[1][1].label
+                    if FermiLabel[In][2] in [-2, -3]
+                        push!(PropagatorType[ikey], 0)
+                        push!(PropagatorLoopIndex[ikey], 1)
                     else
-                        In, Out = g.vertices[2][1].label, g.vertices[1][1].label
-                        push!(PropagatorType[ikey], BoseLabel[In][2] * 2 + 2)
-                        push!(PropagatorLoopIndex[ikey], FrontEnds.linear_to_index(BoseLabel, In)[end]) #the label of LoopPool for each bosonic leaf
-                        push!(PropagatorInTau[ikey], BoseLabel[In][1])
-                        push!(PropagatorOutTau[ikey], BoseLabel[Out][1])
+                        push!(PropagatorType[ikey], FermiLabel[In][2] * 2 + 1)
+                        push!(PropagatorLoopIndex[ikey], FrontEnds.linear_to_index(FermiLabel, In)[end]) #the label of LoopPool for each fermionic leaf
                     end
-                    push!(PropagatorValue[ikey], 1.0)
+                    push!(PropagatorInTau[ikey], FermiLabel[In][1])
+                    push!(PropagatorOutTau[ikey], FermiLabel[Out][1])
+                else
+                    In, Out = g.vertices[2][1].label, g.vertices[1][1].label
+                    push!(PropagatorType[ikey], BoseLabel[In][2] * 2 + 2)
+                    push!(PropagatorLoopIndex[ikey], FrontEnds.linear_to_index(BoseLabel, In)[end]) #the label of LoopPool for each bosonic leaf
+                    push!(PropagatorInTau[ikey], BoseLabel[In][1])
+                    push!(PropagatorOutTau[ikey], BoseLabel[Out][1])
                 end
-                g.name = "visited"
+                push!(PropagatorValue[ikey], 1.0)
             end
+            g.name = "visited"
         end
     end
     return (PropagatorValue, PropagatorType, PropagatorInTau, PropagatorOutTau, PropagatorLoopIndex),
     (InteractionValue, InteractionType, InteractionInTau, InteractionOutTau, InteractionLoopIndex), ExtT_index
 end
-
-# function LeavesState(FeynGraphs::Dict{T,Tuple{Vector{G},Vector{Vector{Int}}}},
-#     FermiLabel::LabelProduct, BoseLabel::LabelProduct, graph_keys::Vector{T}) where {T,G<:Graph}
-#     #read information of each leaf from the generated graph and its LabelProduct, the information include type, loop momentum, imaginary time.
-#     ExtT_index = [Vector{Vector{Int}}() for _ in eachindex(graph_keys)]
-#     dict_pools = Dict{T,CachePool{Tuple{Int,Int,Int,Int},Float64}}()
-
-#     for (ikey, key) in enumerate(graph_keys)
-#         ExtT_index[ikey] = FeynGraphs[key][2]  # external tau variables
-#         pool = CachePool(Tuple{Int,Int,Int,Int}, Float64)
-#         for j in eachindex(ExtT_index[ikey])
-#             for g in Leaves(FeynGraphs[key][1][j])
-#                 if g.type == IR.Interaction
-#                     LeafType, LeafLoopIndex = 0, 1
-#                     In = Out = g.vertices[1][1].label
-#                 elseif (Op.isfermionic(g.vertices[1]))
-#                     In, Out = g.vertices[2][1].label, g.vertices[1][1].label
-#                     if FermiLabel[In][2] in [-2, -3]
-#                         LeafType, LeafLoopIndex = 0, 1
-#                     else
-#                         LeafType = FermiLabel[In][2] * 2 + 1  # 1,3,5...
-#                         LeafLoopIndex = FrontEnds.linear_to_index(FermiLabel, In)[end] #the label of LoopPool for each fermionic leaf
-#                     end
-#                 else
-#                     In, Out = g.vertices[2][1].label, g.vertices[1][1].label
-#                     LeafType = BoseLabel[In][2] * 2 + 2  # 2,4,6...
-#                     LeafLoopIndex = FrontEnds.linear_to_index(BoseLabel, In)[end] #the label of LoopPool for each bosonic leaf
-#                 end
-#                 id = FrontEnds.FastHashInt(g.id)
-#                 if haskey(pool.object, id)
-#                     @assert pool.object[id] == (LeafType, LeafLoopIndex, FermiLabel[In][1], FermiLabel[Out][1]) "the leaf with the same id should be the same!"
-#                 else
-#                     pool.object[id] = (LeafType, LeafLoopIndex, FermiLabel[In][1], FermiLabel[Out][1])
-#                     pool[g.id] = 1.0
-#                 end
-#             end
-#         end
-#         dict_pools[key] = pool
-#     end
-#     return dict_pools, ExtT_index
-# end
 
 end
