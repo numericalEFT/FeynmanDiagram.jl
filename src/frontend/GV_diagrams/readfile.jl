@@ -142,24 +142,18 @@ function read_diagrams(filename::AbstractString; loopPool::Union{LoopPool,Nothin
     if diagType == :sigma
         @assert length(extIndex) == 2
         # Create a GraphVector with keys of external-tau labels
-        # gr = group(diagrams, [1, 2])
         gr = _group(diagrams, extT_labels)
         unique!(extT_labels)
-        # graphvec = [Graph([], factor=0) for _ in eachindex(extT_labels)]
         graphvec = Graph[]
-        # for (i, key) in enumerate(extT_labels)
         for key in extT_labels
             push!(graphvec, IR.linear_combination(gr[key], ones(_dtype.factor, length(gr[key]))))
-            # if key[1] == key[2]
-            #     graphvec[1] = IR.linear_combination(gr[key], ones(_dtype.factor, length(gr[key])))
-            # else
-            #     graphvec[2] = IR.linear_combination(gr[key], ones(_dtype.factor, length(gr[key])))
-            # end
         end
         return graphvec, fermi_labelProd, bose_labelProd, extT_labels
     else
-        @assert length(unique(extT_labels)) == 1
-        return IR.linear_combination(diagrams, ones(_dtype.factor, diagNum)), fermi_labelProd, bose_labelProd
+        unique!(extT_labels)
+        @assert length(extT_labels) == 1
+        # return IR.linear_combination(diagrams, ones(_dtype.factor, diagNum)), fermi_labelProd, bose_labelProd
+        return [IR.linear_combination(diagrams, ones(_dtype.factor, diagNum))], fermi_labelProd, bose_labelProd, extT_labels
     end
 end
 
@@ -313,12 +307,8 @@ function read_onediagram(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex:
         if extT[1] == extT[2]
             extT = [1, 1]
         end
-        # println("### $extIndex")
-        # println(permutation)
-        # println(tau_labels)
-        # println(extT)
     else
-        extT = extIndex
+        extT = extIndex .- offset
     end
     return IR.linear_combination(graphs, filter(!iszero, spinFactors)), loopPool, extT
 end

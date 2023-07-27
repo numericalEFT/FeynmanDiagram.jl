@@ -7,7 +7,7 @@ import ..ComputationalGraphs: _dtype
 using ..FrontEnds
 using AbstractTrees
 
-export PolarEachOrder, PolarDiagrams, SigmaDiagrams, LeavesState
+export PolarEachOrder, GVdiagrams, LeavesState
 
 include("GV_diagrams/readfile.jl")
 
@@ -19,7 +19,7 @@ include("GV_diagrams/readfile.jl")
     Generates fermionic/bosonic `LabelProduct`: `fermi_labelProd`/`bose_labelProd` with inputs `tau_labels`, `GTypes`/`VTypes`, and updated `loopPool`. 
 
 # Arguments:
-- `type` (Symbol): The type of the diagrams, either `:spin` or `:charge`.
+- `type` (Symbol): The type of the diagrams, including `:spinPolar`, `:chargePolar`, or `:sigma`.
 - `order` (Int): The order of the diagrams without counterterms.
 - `VerOrder` (Int, optional): The order of interaction counterterms (defaults to 0).
 - `GOrder` (Int, optional): The order of self-energy counterterms (defaults to 0).
@@ -35,12 +35,12 @@ A tuple `(diagrams, fermi_labelProd, bose_labelProd)` where
 - `fermi_labelProd` is a `LabelProduct` object containing the labels for the fermionic `G` objects in the diagrams, 
 - `bose_labelProd` is a `LabelProduct` object containing the labels for the bosonic `W` objects in the diagrams.
 """
-function PolarEachOrder(type::Symbol, order::Int, VerOrder::Int=0, GOrder::Int=0; dim::Int=3, loopPool::Union{LoopPool,Nothing}=nothing,
+function PolarEachOrder(type::Symbol, order::Int, GOrder::Int=0, VerOrder::Int=0; dim::Int=3, loopPool::Union{LoopPool,Nothing}=nothing,
     tau_labels::Union{Nothing,Vector{Int}}=nothing, GTypes::Union{Nothing,Vector{Int}}=nothing, VTypes::Union{Nothing,Vector{Int}}=nothing)
     diagtype = :polar
-    if type == :spin
+    if type == :spinPolar
         filename = string(@__DIR__, "/GV_diagrams/groups_spin/Polar$(order)_$(VerOrder)_$(GOrder).diag")
-    elseif type == :charge
+    elseif type == :chargePolar
         filename = string(@__DIR__, "/GV_diagrams/groups_charge/Polar$(order)_$(VerOrder)_$(GOrder).diag")
     elseif type == :sigma
         diagtype = type
@@ -58,13 +58,13 @@ function PolarEachOrder(type::Symbol, order::Int, VerOrder::Int=0, GOrder::Int=0
 end
 
 """
-    function PolarDiagrams(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, dim::Int=3)
+    function GVdiagrams(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, dim::Int=3)
 
-    Generates a `Graph`: the `dim`-dimensional polarization diagrams with static interactions in a given `type`, to a given maximum order `MaxOrder`, with switchable couterterms. 
+    Generates a `Graph`: the `dim`-dimensional spin/charge polarization or self-energy diagrams with static interactions in a given `type`, to a given maximum order `MaxOrder`, with switchable couterterms. 
     Generates fermionic/bosonic `LabelProduct`: `fermi_labelProd`/`bose_labelProd` for this `Graph`.
 
 # Arguments:
-- `type` (Symbol): The type of the polarization diagrams, either `:spin` or `:charge`.
+- `type` (Symbol): The type of the Feynman diagrams, including `:spinPolar`, `:chargePolar`, or `:sigma`.
 - `Maxorder` (Int): The maximum actual order of the diagrams.
 - `has_counterterm` (Bool, optional): `false` for G0W0, `true` for GW with interaction and self-energy counterterms.
 - `dim` (Int, optional): The dimension of the system (defaults to 3).
@@ -75,62 +75,33 @@ A tuple `(diagrams, fermi_labelProd, bose_labelProd)` where
 - `fermi_labelProd` is a `LabelProduct` object containing the labels for the fermionic `G` objects in the diagrams, 
 - `bose_labelProd` is a `LabelProduct` object containing the labels for the bosonic `W` objects in the diagrams.
 """
-function PolarDiagrams(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, dim::Int=3)
-    graphs = Graph{_dtype.factor,_dtype.weight}[]
-    MaxLoopNum = MaxOrder + 1
-    tau_labels = collect(1:MaxOrder+1)
-    loopPool = LoopPool(:K, dim, MaxLoopNum, Float64)
-    if has_counterterm
-        GTypes = collect(0:MaxOrder-1)
-        VTypes = collect(0:MaxOrder-1)
-        for order in 1:MaxOrder
-            for VerOrder in VTypes
-                order == 1 && VerOrder > 0 && continue
-                for GOrder in 0:MaxOrder-1
-                    order + VerOrder + GOrder > MaxOrder && continue
-                    g, fermi_labelProd, bose_labelProd = PolarEachOrder(type, order, VerOrder, GOrder;
-                        dim=dim, loopPool=loopPool, tau_labels=tau_labels, GTypes=GTypes, VTypes=VTypes)
-                    g.name = "$(order)$(VerOrder)$(GOrder)"
-                    push!(graphs, g)
-                    loopPool = fermi_labelProd.labels[3]
-                end
-            end
-        end
-    else
-        GTypes, VTypes = [0], [0]
-        for order in 1:MaxOrder
-            g, fermi_labelProd, bose_labelProd = PolarEachOrder(type, order;
-                loopPool=loopPool, tau_labels=tau_labels, GTypes=GTypes, VTypes=VTypes)
-            push!(graphs, g)
-            loopPool = fermi_labelProd.labels[3]
-        end
-    end
-    fermi_labelProd = LabelProduct(tau_labels, GTypes, loopPool)
-    bose_labelProd = LabelProduct(tau_labels, VTypes, loopPool)
-
-    return IR.linear_combination(graphs, ones(_dtype.factor, length(graphs))), fermi_labelProd, bose_labelProd
-end
-
-function SigmaDiagrams(MaxOrder::Int, has_counterterm::Bool=false, dim::Int=3)
+function GVdiagrams(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, dim::Int=3)
     dict_graphs = Dict{Tuple{Int,Int,Int},Tuple{Vector{Graph{_dtype.factor,_dtype.weight}},Vector{Vector{Int}}}}()
-    MaxLoopNum = MaxOrder + 2
-    tau_labels = collect(1:MaxOrder+2)
+    if type in [:chargePolar, :spinPolar]
+        MaxLoopNum = MaxOrder + 1
+    elseif type == :sigma
+        MaxLoopNum = MaxOrder + 2
+    else
+        error("no support for $type diagram")
+    end
+    tau_labels = collect(1:MaxLoopNum)
     loopPool = LoopPool(:K, dim, MaxLoopNum, Float64)
-    # graphvector = Vector{Graph{_dtype.factor,_dtype.weight}}()
 
+    propagatorMap, interactionMap = Dict{Tuple{Int,Int,Int},Dict{Int,Int}}(), Dict{Tuple{Int,Int,Int},Dict{Int,Int}}()
     if has_counterterm
         GTypes = collect(0:MaxOrder-1)
-        append!(GTypes, [-2, -3])
+        type == :sigma && append!(GTypes, [-2, -3])
         VTypes = collect(0:MaxOrder-1)
         for order in 1:MaxOrder
             for VerOrder in VTypes
+                type in [:chargePolar, :spinPolar] && order == 1 && VerOrder > 0 && continue
                 for GOrder in 0:MaxOrder-1
                     order + VerOrder + GOrder > MaxOrder && continue
-                    gvec, fermi_labelProd, bose_labelProd, extT_labels = PolarEachOrder(:sigma, order, VerOrder, GOrder;
+                    gvec, fermi_labelProd, bose_labelProd, extT_labels = PolarEachOrder(type, order, GOrder, VerOrder;
                         dim=dim, loopPool=loopPool, tau_labels=tau_labels, GTypes=GTypes, VTypes=VTypes)
-                    key = (order, VerOrder, GOrder)
+                    # push!(graphs, g)
+                    key = (order, GOrder, VerOrder)
                     dict_graphs[key] = (gvec, extT_labels)
-                    # push!(graphs, gvec)
                     loopPool = fermi_labelProd.labels[3]
                     propagatorMap[key], interactionMap[key] = IR.optimize!(gvec)
                 end
@@ -138,39 +109,46 @@ function SigmaDiagrams(MaxOrder::Int, has_counterterm::Bool=false, dim::Int=3)
         end
     else
         GTypes, VTypes = [0], [0]
-        append!(GTypes, [-2, -3])
+        type == :sigma && append!(GTypes, [-2, -3])
         for order in 1:MaxOrder
-            gvec, fermi_labelProd, bose_labelProd, extT_labels = PolarEachOrder(:sigma, order;
+            gvec, fermi_labelProd, bose_labelProd, extT_labels = PolarEachOrder(type, order;
                 loopPool=loopPool, tau_labels=tau_labels, GTypes=GTypes, VTypes=VTypes)
+            # push!(graphs, g)
             key = (order, 0, 0)
             dict_graphs[key] = (gvec, extT_labels)
             loopPool = fermi_labelProd.labels[3]
             propagatorMap[key], interactionMap[key] = IR.optimize!(gvec)
         end
     end
-    # IR.optimize!(graphvector)
     fermi_labelProd = LabelProduct(tau_labels, GTypes, loopPool)
     bose_labelProd = LabelProduct(tau_labels, VTypes, loopPool)
 
+    # return IR.linear_combination(graphs, ones(_dtype.factor, length(graphs))), fermi_labelProd, bose_labelProd
     return dict_graphs, fermi_labelProd, bose_labelProd, (propagatorMap, interactionMap)
 end
 
-function SigmaDiagrams(gkeys::Vector{Tuple{Int,Int,Int}}, dim::Int=3)
+function GVdiagrams(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}, dim::Int=3)
     dict_graphs = Dict{Tuple{Int,Int,Int},Tuple{Vector{Graph{_dtype.factor,_dtype.weight}},Vector{Vector{Int}}}}()
-    MaxLoopNum = maximum([key[1] for key in gkeys]) + 2
-    MaxVerOrder = maximum([key[2] for key in gkeys])
-    MaxGOrder = maximum([key[3] for key in gkeys])
+    if type == :sigma
+        MaxLoopNum = maximum([key[1] for key in gkeys]) + 2
+    elseif type in [:chargePolar, :spinPolar]
+        MaxLoopNum = maximum([key[1] for key in gkeys]) + 1
+    else
+        error("no support for $type diagram")
+    end
+    MaxGOrder = maximum([key[2] for key in gkeys])
+    MaxVerOrder = maximum([key[3] for key in gkeys])
 
     tau_labels = collect(1:MaxLoopNum)
     loopPool = LoopPool(:K, dim, MaxLoopNum, Float64)
     GTypes = collect(0:MaxGOrder)
-    append!(GTypes, [-2, -3])
+    type == :sigma && append!(GTypes, [-2, -3])
     VTypes = collect(0:MaxVerOrder)
 
     # graphvector = Vector{_dtype.factor,_dtype.weight}()
     propagatorMap, interactionMap = Dict{eltype(gkeys),Dict{Int,Int}}(), Dict{eltype(gkeys),Dict{Int,Int}}()
     for key in gkeys
-        gvec, fermi_labelProd, bose_labelProd, extT_labels = PolarEachOrder(:sigma, key...;
+        gvec, fermi_labelProd, bose_labelProd, extT_labels = PolarEachOrder(type, key...;
             dim=dim, loopPool=loopPool, tau_labels=tau_labels, GTypes=GTypes, VTypes=VTypes)
         dict_graphs[key] = (gvec, extT_labels)
         loopPool = fermi_labelProd.labels[3]
