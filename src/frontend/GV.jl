@@ -15,8 +15,9 @@ include("GV_diagrams/readfile.jl")
     function eachorder_diag(type::Symbol, order::Int, VerOrder::Int=0, GOrder::Int=0; loopPool::Union{LoopPool,Nothing}=nothing,
         tau_labels::Union{Nothing,Vector{Int}}=nothing, GTypes::Union{Nothing,Vector{Int}}=nothing, VTypes::Union{Nothing,Vector{Int}}=nothing)
  
-    Generates a `Graph`: the polarization diagrams with static interactions of a given order, where the actual order of diagrams equals to `order + VerOrder + 2 * GOrder`.
+    Generates a `Vector{Graph}`: the polarization diagrams with static interactions of a given order, where the actual order of diagrams equals to `order + VerOrder + 2 * GOrder`.
     Generates fermionic/bosonic `LabelProduct`: `fermi_labelProd`/`bose_labelProd` with inputs `tau_labels`, `GTypes`/`VTypes`, and updated `loopPool`. 
+    Generates external tau labels Vector{Vector{Int}}. The i-th labels (Vector{Int}) corresponds to the i-th `Graph` in `Vector{Graph}`.
 
 # Arguments:
 - `type` (Symbol): The type of the diagrams, including `:spinPolar`, `:chargePolar`, or `:sigma`.
@@ -30,10 +31,11 @@ include("GV_diagrams/readfile.jl")
 - `VTypes`: The types of boson static interaction `V` in the diagrams (defaults to `collect(0:VerOrder)`).
 
 # Returns
-A tuple `(diagrams, fermi_labelProd, bose_labelProd)` where 
-- `diagrams` is a `Vector{Graph}` objects representing the diagrams, 
+A tuple `(diagrams, fermi_labelProd, bose_labelProd, extT_labels)` where 
+- `diagrams` is a `Vector{Graph}` object representing the diagrams, 
 - `fermi_labelProd` is a `LabelProduct` object containing the labels for the fermionic `G` objects in the diagrams, 
 - `bose_labelProd` is a `LabelProduct` object containing the labels for the bosonic `W` objects in the diagrams.
+- `extT_labels` is a `Vector{Vector{Int}}` object containing the external tau labels for each `Graph` in `diagrams`.
 """
 function eachorder_diag(type::Symbol, order::Int, GOrder::Int=0, VerOrder::Int=0; dim::Int=3, loopPool::Union{LoopPool,Nothing}=nothing,
     tau_labels::Union{Nothing,Vector{Int}}=nothing, GTypes::Union{Nothing,Vector{Int}}=nothing, VTypes::Union{Nothing,Vector{Int}}=nothing)
@@ -60,20 +62,23 @@ end
 """
     function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, dim::Int=3)
 
-    Generates a `Graph`: the `dim`-dimensional spin/charge polarization or self-energy diagrams with static interactions in a given `type`, to a given maximum order `MaxOrder`, with switchable couterterms. 
-    Generates fermionic/bosonic `LabelProduct`: `fermi_labelProd`/`bose_labelProd` for this `Graph`.
+    Generates a Graph Dict: the `dim`-dimensional spin/charge polarization or self-energy diagrams with static interactions in a given `type`, to a given maximum order `MaxOrder`, with switchable couterterms. 
+    Generates fermionic/bosonic `LabelProduct`: `fermi_labelProd`/`bose_labelProd` for these Graphs.
+    Generates a Tuple (propagatorMap, interactionMap) for mapping `g.id` to the index of unique proapgators and interactions, respectively. 
 
 # Arguments:
 - `type` (Symbol): The type of the Feynman diagrams, including `:spinPolar`, `:chargePolar`, or `:sigma`.
 - `Maxorder` (Int): The maximum actual order of the diagrams.
-- `has_counterterm` (Bool, optional): `false` for G0W0, `true` for GW with interaction and self-energy counterterms.
+- `has_counterterm` (Bool, optional): `false` for G0W0, `true` for GW with self-energy and interaction counterterms.
 - `dim` (Int, optional): The dimension of the system (defaults to 3).
 
 # Returns
 A tuple `(diagrams, fermi_labelProd, bose_labelProd)` where 
-- `diagrams` is a `Graph` objects representing the diagrams, 
+- `diagrams` is a `Dict{Tuple{Int,Int,Int},Tuple{Vector{Graph},Vector{Vector{Int}}}}` object representing the diagrams. 
+   The key is (order, Gorder, Vorder). The element is a Tuple (diagrams, extT_labels).
 - `fermi_labelProd` is a `LabelProduct` object containing the labels for the fermionic `G` objects in the diagrams, 
 - `bose_labelProd` is a `LabelProduct` object containing the labels for the bosonic `W` objects in the diagrams.
+- `(propagatorMap, interactionMap)` maps `g.id` to the index of unique proapgators and interactions, respectively. 
 """
 function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, dim::Int=3)
     dict_graphs = Dict{Tuple{Int,Int,Int},Tuple{Vector{Graph{_dtype.factor,_dtype.weight}},Vector{Vector{Int}}}}()
@@ -127,6 +132,26 @@ function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, di
     return dict_graphs, fermi_labelProd, bose_labelProd, (propagatorMap, interactionMap)
 end
 
+"""
+    function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, dim::Int=3)
+
+    Generates a Graph Dict: the `dim`-dimensional spin/charge polarization or self-energy diagrams with static interactions in a given `type`, to a given maximum order `MaxOrder`, with switchable couterterms. 
+    Generates fermionic/bosonic `LabelProduct`: `fermi_labelProd`/`bose_labelProd` for these Graphs.
+    Generates a Tuple (propagatorMap, interactionMap) for mapping `g.id` to the index of unique proapgators and interactions, respectively. 
+
+# Arguments:
+- `type` (Symbol): The type of the Feynman diagrams, including `:spinPolar`, `:chargePolar`, or `:sigma`.
+- `gkeys` (Vector{Tuple{Int,Int,Int}}): The (order, Gorder, Vorder) of the diagrams. Gorder is the order of self-energy counterterms, and Vorder is the order of interaction counterterms. 
+- `dim` (Int, optional): The dimension of the system (defaults to 3).
+
+# Returns
+A tuple `(diagrams, fermi_labelProd, bose_labelProd)` where 
+- `diagrams` is a `Dict{Tuple{Int,Int,Int},Tuple{Vector{Graph},Vector{Vector{Int}}}}` object representing the diagrams. 
+   The key is (order, Gorder, Vorder). The element is a Tuple (diagrams, extT_labels).
+- `fermi_labelProd` is a `LabelProduct` object containing the labels for the fermionic `G` objects in the diagrams, 
+- `bose_labelProd` is a `LabelProduct` object containing the labels for the bosonic `W` objects in the diagrams.
+- `(propagatorMap, interactionMap)` maps `g.id` to the index of unique proapgators and interactions, respectively. 
+"""
 function diagdictGV(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}, dim::Int=3)
     dict_graphs = Dict{Tuple{Int,Int,Int},Tuple{Vector{Graph{_dtype.factor,_dtype.weight}},Vector{Vector{Int}}}}()
     if type == :sigma
@@ -162,6 +187,28 @@ function diagdictGV(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}, dim::Int=3)
     return dict_graphs, fermi_labelProd, bose_labelProd, (propagatorMap, interactionMap)
 end
 
+"""
+    function leafstates(
+        FeynGraphs::Dict{T, Tuple{Vector{G}, Vector{Vector{Int}}}},
+        FermiLabel::LabelProduct, BoseLabel::LabelProduct,
+        graph_keys::Vector{T}
+    ) where {T, G <: Graph}
+
+    Extracts leaf information from a Dict collection of Feynman graphs (`FeynGraphs` with its keys `graph_keys`)
+    and their associated LabelProduct data (`FermiLabel` and `BoseLabel`). 
+    The information includes their initial value, type, in/out time, and loop momenta.
+    
+# Arguments:
+- `FeynGraphs`: A dictionary mapping keys of type T to tuples containing a vector of `Graph` objects and a vector of external time labels.
+- `FermiLabel`: A LabelProduct used to label the fermionic `G` objects in the graphs.
+- `BoseLabel`: A LabelProduct used to label bosonic `W` objects in the graphs.
+- `graph_keys`: A vector containing keys of type `T`, specifying which graphs to analyze.
+
+# Returns
+- A tuple of vectors containing information about the propagators in the graphs, including their initial values, types, input and output time indexes, and loop-momenta indexes.
+- A tuple of vectors containing information about the interactions in the graphs, including their initial values, types, input and output time indexes, and loop-momenta indexes.
+- A Vector{Vector{Int}} representing the external tau variables of each vector of graph corresponding to each key of type `T`.
+"""
 function leafstates(FeynGraphs::Dict{T,Tuple{Vector{G},Vector{Vector{Int}}}},
     FermiLabel::LabelProduct, BoseLabel::LabelProduct, graph_keys::Vector{T}) where {T,G<:Graph}
     #read information of each leaf from the generated graph and its LabelProduct, the information include type, loop momentum, imaginary time.
