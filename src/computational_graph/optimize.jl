@@ -1,120 +1,120 @@
-function optimize!(diag::Union{Tuple,AbstractVector}, optlevel=1; verbose=0, kwargs...)
-    if isempty(diag)
-        return diag
+function optimize!(graphs::Union{Tuple,AbstractVector}; verbose=0, normalize=nothing)
+    if isempty(graphs)
+        # return graphs
+        return nothing
     else
-        diag = collect(diag)
-        removeOneChildParent!(diag, verbose=verbose)
-        removeDuplicatedLeaves!(diag, verbose=verbose)
-        return diag
+        graphs = collect(graphs)
+        removeOneChildParent!(graphs, verbose=verbose)
+        mappings = removeDuplicatedLeaves!(graphs, verbose=verbose, normalize=normalize)
+        return mappings
+        # return graphs, mappings
     end
 end
 
-"""
-    removeOneChildParent!(diags::AbstractVector; verbose = 0)
-
-    remove duplicated nodes such as:  ---> ver4 ---> InteractionId. Leaf will not be touched!
-"""
-function removeOneChildParent!(diags::Vector{Diagram{W}}; verbose=0) where {W}
+function removeOneChildParent!(graphs::AbstractVector{G}; verbose=0) where {G<:Graph}
     verbose > 0 && println("remove nodes with only one child.")
-    for diag in diags
-        #deep first search, remove one-child parent from the leaf level first
-        removeOneChildParent!(diag.subdiagram)
-        #then remove the one-child subdiagram of the current diagram
-        for (si, subdiag) in enumerate(diag.subdiagram)
-            if length(subdiag.subdiagram) == 1
-                subdiag.subdiagram[1].factor *= subdiag.factor
-                diag.subdiagram[si] = subdiag.subdiagram[1]
-            end
+    for g in graphs
+        removeOneChildParent!(g.subgraphs)
+        for sub_g in g.subgraphs
+            merge_prodchain_subfactors!(sub_g)
         end
     end
-    return diags
+    return graphs
 end
 
-"""
-    removeDuplicatedLeaves!(diags::AbstractVector; verbose = 0)
-
-    remove duplicated nodes such as:  ---> ver4 ---> InteractionId. Leaf will not be touched!
-"""
-function removeDuplicatedLeaves!(diags::Vector{Diagram{W}}; verbose=0) where {W}
+function removeDuplicatedLeaves!(graphs::AbstractVector{G}; verbose=0, normalize=nothing, kwargs...) where {G<:Graph}
     verbose > 0 && println("remove duplicated leaves.")
-    leaves = Vector{Diagram{W}}()
-    for diag in diags
-        #leaves must be the propagators
-        append!(leaves, collect(Leaves(diag)))
+    leaves = Vector{G}()
+    for g in graphs
+        append!(leaves, collect(Leaves(g)))
     end
-    # println([d.hash for d in leaves])
-    sort!(leaves, by=x -> x.hash) #sort the hash of the leaves in an asscend order
-    unique!(x -> x.hash, leaves) #filter out the leaves with the same hash number
+    if isnothing(normalize) == false
+        @assert normalize isa Function "a function call is expected for normalize"
+        for leaf in leaves
+            normalize(leaf.id)
+        end
+    end
+    sort!(leaves, by=x -> x.id) #sort the id of the leaves in an asscend order
+    unique!(x -> x.id, leaves) #filter out the leaves with the same id number
 
     for l in leaves
-        #make sure all leaves are either Green's functions or interactions
-        @assert l.id isa PropagatorId
+        #make sure all leaves are either propagators or interactions
+        @assert l.type in [Interaction, Propagator]
     end
 
-    function uniqueLeaves(_diags::Vector{Diagram{W}}) where {W}
+    function uniqueLeaves(_graphs::Vector{G}) where {G}
         ############### find the unique Leaves #####################
-        uniqueDiag = []
-        mapping = Dict{Int,Any}()
-        for diag in _diags
+        uniqueGraph = []
+        mapping = Dict{Int,Int}()
+
+        idx = 1
+        for g in _graphs
             flag = true
-            for (ei, e) in enumerate(uniqueDiag)
-                if e.factor ≈ diag.factor && e.id == diag.id
-                    mapping[diag.hash] = e
+            for (ie, e) in enumerate(uniqueGraph)
+                if isequiv(e, g, :id)
+                    mapping[g.id] = ie
                     flag = false
                     break
                 end
             end
             if flag
-                push!(uniqueDiag, diag)
-                # push!(mapping, length(uniqueDiag))
-                mapping[diag.hash] = diag
+                push!(uniqueGraph, g)
+                # push!(mapping, length(uniqueGraph))
+                mapping[g.id] = idx
+                idx += 1
             end
         end
-        return uniqueDiag, mapping
+        return uniqueGraph, mapping
     end
 
-    # println(leaves)
-    green = [l for l in leaves if l.id isa BareGreenId]
-    interaction = [l for l in leaves if l.id isa BareInteractionId]
-    greenN = [l for l in leaves if l.id isa BareGreenNId]
-    hopping = [l for l in leaves if l.id isa BareHoppingId]
-    # println(green)
-    # println(interaction)
+    green = [l for l in leaves if l.type == Propagator]
+    interaction = [l for l in leaves if l.type == Interaction]
 
     uniqueGreen, greenMap = uniqueLeaves(green)
-    uniqueGreenN, greenNMap = uniqueLeaves(greenN)
     uniqueInteraction, interactionMap = uniqueLeaves(interaction)
-    uniqueHopping, hoppingMap = uniqueLeaves(hopping)
-    # println(uniqueInteraction)
-    # display(greenMap)
 
-    verbose > 0 && length(green) > 0 && println("Number of independent Greens $(length(green)) → $(length(uniqueGreen))")
-    verbose > 0 && length(greenN) > 0 && println("Number of independent GreenNs $(length(greenN)) → $(length(uniqueGreenN))")
+    verbose > 0 && length(green) > 0 && println("Number of independent Propagators $(length(green)) → $(length(uniqueGreen))")
     verbose > 0 && length(interaction) > 0 && println("Number of independent Interactions $(length(interaction)) → $(length(uniqueInteraction))")
-    verbose > 0 && length(hopping) > 0 && println("Number of independent Hopping $(length(hopping)) → $(length(uniqueHopping))")
 
-    for diag in diags
-        for n in PreOrderDFS(diag)
-            for (si, subdiag) in enumerate(n.subdiagram)
-                @assert (n.id isa PropagatorId) == false "the diagram $n with subdiagrams cannot be a proapgator!"
-
-                if subdiag.id isa PropagatorId
-                    if subdiag.id isa BareGreenId
-                        n.subdiagram[si] = greenMap[subdiag.hash]
-                    elseif subdiag.id isa BareInteractionId
-                        n.subdiagram[si] = interactionMap[subdiag.hash]
-                    elseif subdiag.id isa BareGreenNId
-                        n.subdiagram[si] = greenNMap[subdiag.hash]
-                    elseif subdiag.id isa BareHoppingId
-                        n.subdiagram[si] = hoppingMap[subdiag.hash]
-                    else
-                        error("not implemented!")
-                    end
+    for g in graphs
+        for n in PreOrderDFS(g)
+            for (si, sub_g) in enumerate(n.subgraphs)
+                if sub_g.type == Propagator
+                    n.subgraphs[si] = uniqueGreen[greenMap[sub_g.id]]
+                elseif sub_g.type == Interaction
+                    n.subgraphs[si] = uniqueInteraction[interactionMap[sub_g.id]]
                 end
             end
         end
     end
 
-    return uniqueGreen, uniqueInteraction
-    # return diags
+    # return uniqueGreen, uniqueInteraction
+    return greenMap, interactionMap
 end
+
+# function removeDuplicatedLeaves!(graphs::AbstractVector{G}; verbose=0, normalize=nothing, kwargs...) where {G<:Graph}
+#     verbose > 0 && println("remove duplicated leaves.")
+#     uniqueGreen, uniqueInteraction = Vector{G}(), Vector{G}()
+#     for g in graphs
+#         for l in Leaves(g)
+#             if l.type == Interaction
+#                 loc = findfirst(x -> isequiv(x, l, :id), uniqueInteraction)
+#                 if !isnothing(loc)
+#                     l.id = uniqueInteraction[loc].id
+#                 else
+#                     push!(uniqueInteraction, l)
+#                 end
+#             elseif l.type == Propagator
+#                 loc = findfirst(x -> isequiv(x, l, :id), uniqueGreen)
+#                 if !isnothing(loc)
+#                     l.id = uniqueGreen[loc].id
+#                 else
+#                     push!(uniqueGreen, l)
+#                 end
+#             else
+#                 error("the leaf's type cannot be $(l.type)!")
+#             end
+#         end
+#     end
+#     return uniqueGreen, uniqueInteraction
+# end
