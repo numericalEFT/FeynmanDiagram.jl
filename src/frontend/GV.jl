@@ -7,12 +7,12 @@ import ..ComputationalGraphs: _dtype
 using ..FrontEnds
 using AbstractTrees
 
-export PolarEachOrder, GVdiagrams, LeavesState
+export eachorder_diag, diagdictGV, leafstates
 
 include("GV_diagrams/readfile.jl")
 
 """
-    function PolarEachOrder(type::Symbol, order::Int, VerOrder::Int=0, GOrder::Int=0; loopPool::Union{LoopPool,Nothing}=nothing,
+    function eachorder_diag(type::Symbol, order::Int, VerOrder::Int=0, GOrder::Int=0; loopPool::Union{LoopPool,Nothing}=nothing,
         tau_labels::Union{Nothing,Vector{Int}}=nothing, GTypes::Union{Nothing,Vector{Int}}=nothing, VTypes::Union{Nothing,Vector{Int}}=nothing)
  
     Generates a `Graph`: the polarization diagrams with static interactions of a given order, where the actual order of diagrams equals to `order + VerOrder + 2 * GOrder`.
@@ -31,11 +31,11 @@ include("GV_diagrams/readfile.jl")
 
 # Returns
 A tuple `(diagrams, fermi_labelProd, bose_labelProd)` where 
-- `diagrams` is a `Graph` objects representing the diagrams, 
+- `diagrams` is a `Vector{Graph}` objects representing the diagrams, 
 - `fermi_labelProd` is a `LabelProduct` object containing the labels for the fermionic `G` objects in the diagrams, 
 - `bose_labelProd` is a `LabelProduct` object containing the labels for the bosonic `W` objects in the diagrams.
 """
-function PolarEachOrder(type::Symbol, order::Int, GOrder::Int=0, VerOrder::Int=0; dim::Int=3, loopPool::Union{LoopPool,Nothing}=nothing,
+function eachorder_diag(type::Symbol, order::Int, GOrder::Int=0, VerOrder::Int=0; dim::Int=3, loopPool::Union{LoopPool,Nothing}=nothing,
     tau_labels::Union{Nothing,Vector{Int}}=nothing, GTypes::Union{Nothing,Vector{Int}}=nothing, VTypes::Union{Nothing,Vector{Int}}=nothing)
     diagtype = :polar
     if type == :spinPolar
@@ -58,7 +58,7 @@ function PolarEachOrder(type::Symbol, order::Int, GOrder::Int=0, VerOrder::Int=0
 end
 
 """
-    function GVdiagrams(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, dim::Int=3)
+    function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, dim::Int=3)
 
     Generates a `Graph`: the `dim`-dimensional spin/charge polarization or self-energy diagrams with static interactions in a given `type`, to a given maximum order `MaxOrder`, with switchable couterterms. 
     Generates fermionic/bosonic `LabelProduct`: `fermi_labelProd`/`bose_labelProd` for this `Graph`.
@@ -75,7 +75,7 @@ A tuple `(diagrams, fermi_labelProd, bose_labelProd)` where
 - `fermi_labelProd` is a `LabelProduct` object containing the labels for the fermionic `G` objects in the diagrams, 
 - `bose_labelProd` is a `LabelProduct` object containing the labels for the bosonic `W` objects in the diagrams.
 """
-function GVdiagrams(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, dim::Int=3)
+function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, dim::Int=3)
     dict_graphs = Dict{Tuple{Int,Int,Int},Tuple{Vector{Graph{_dtype.factor,_dtype.weight}},Vector{Vector{Int}}}}()
     if type in [:chargePolar, :spinPolar]
         MaxLoopNum = MaxOrder + 1
@@ -97,7 +97,7 @@ function GVdiagrams(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, di
                 type in [:chargePolar, :spinPolar] && order == 1 && VerOrder > 0 && continue
                 for GOrder in 0:MaxOrder-1
                     order + VerOrder + GOrder > MaxOrder && continue
-                    gvec, fermi_labelProd, bose_labelProd, extT_labels = PolarEachOrder(type, order, GOrder, VerOrder;
+                    gvec, fermi_labelProd, bose_labelProd, extT_labels = eachorder_diag(type, order, GOrder, VerOrder;
                         dim=dim, loopPool=loopPool, tau_labels=tau_labels, GTypes=GTypes, VTypes=VTypes)
                     # push!(graphs, g)
                     key = (order, GOrder, VerOrder)
@@ -111,7 +111,7 @@ function GVdiagrams(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, di
         GTypes, VTypes = [0], [0]
         type == :sigma && append!(GTypes, [-2, -3])
         for order in 1:MaxOrder
-            gvec, fermi_labelProd, bose_labelProd, extT_labels = PolarEachOrder(type, order;
+            gvec, fermi_labelProd, bose_labelProd, extT_labels = eachorder_diag(type, order;
                 loopPool=loopPool, tau_labels=tau_labels, GTypes=GTypes, VTypes=VTypes)
             # push!(graphs, g)
             key = (order, 0, 0)
@@ -127,7 +127,7 @@ function GVdiagrams(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, di
     return dict_graphs, fermi_labelProd, bose_labelProd, (propagatorMap, interactionMap)
 end
 
-function GVdiagrams(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}, dim::Int=3)
+function diagdictGV(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}, dim::Int=3)
     dict_graphs = Dict{Tuple{Int,Int,Int},Tuple{Vector{Graph{_dtype.factor,_dtype.weight}},Vector{Vector{Int}}}}()
     if type == :sigma
         MaxLoopNum = maximum([key[1] for key in gkeys]) + 2
@@ -148,7 +148,7 @@ function GVdiagrams(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}, dim::Int=3)
     # graphvector = Vector{_dtype.factor,_dtype.weight}()
     propagatorMap, interactionMap = Dict{eltype(gkeys),Dict{Int,Int}}(), Dict{eltype(gkeys),Dict{Int,Int}}()
     for key in gkeys
-        gvec, fermi_labelProd, bose_labelProd, extT_labels = PolarEachOrder(type, key...;
+        gvec, fermi_labelProd, bose_labelProd, extT_labels = eachorder_diag(type, key...;
             dim=dim, loopPool=loopPool, tau_labels=tau_labels, GTypes=GTypes, VTypes=VTypes)
         dict_graphs[key] = (gvec, extT_labels)
         loopPool = fermi_labelProd.labels[3]
@@ -162,7 +162,7 @@ function GVdiagrams(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}, dim::Int=3)
     return dict_graphs, fermi_labelProd, bose_labelProd, (propagatorMap, interactionMap)
 end
 
-function LeavesState(FeynGraphs::Dict{T,Tuple{Vector{G},Vector{Vector{Int}}}},
+function leafstates(FeynGraphs::Dict{T,Tuple{Vector{G},Vector{Vector{Int}}}},
     FermiLabel::LabelProduct, BoseLabel::LabelProduct, graph_keys::Vector{T}) where {T,G<:Graph}
     #read information of each leaf from the generated graph and its LabelProduct, the information include type, loop momentum, imaginary time.
     num_g = length(graph_keys)
