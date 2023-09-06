@@ -220,9 +220,43 @@ end
     end
 end
 
+@testset verbose = true "Evaluation" begin
+    using FeynmanDiagram.ComputationalGraphs:
+        evalGraph!
+    g1 = propagator(𝑓⁻(1)𝑓⁺(2))
+    g2 = propagator(𝑓⁻(1)𝑓⁺(2), factor=2)
+    g3 = 2 * (3 * g1 + 5 * g2)
+    g4 = g1 + 2 * (3 * g1 + 5 * g2)
+    g5 = g4*g3
+    @testset "Eval" begin
+        @test evalGraph!(g3) == 26
+        @test evalGraph!(g4) == 27
+        @test evalGraph!(g5) == 27*26
+    end
+end
+
+@testset verbose = true "Auto Differentiation" begin
+    using FeynmanDiagram.ComputationalGraphs:
+        evalGraph!,derivative
+    g1 = propagator(𝑓⁻(1)𝑓⁺(2))
+    g2 = propagator(𝑓⁻(3)𝑓⁺(4))
+    print("type:$(g2.type)\n")
+    g3 =3*g1
+    g4 = 4*g1*g1
+    g5 = 4*(2*g3 +3*g4)
+    glist = g1,g2,g3,g4,g5
+    
+    @testset "Eval" begin
+        print("value:",evalGraph!(g5),"\n")
+        gs = Compilers.to_julia_str([derivative(g5, g1.id),], name="eval_graph!")
+        println(gs,"\n")
+        @test evalGraph!(derivative(g5, g1.id)) == 120
+    end
+end
+
 @testset verbose = true "Tree properties" begin
     using FeynmanDiagram.ComputationalGraphs:
-        haschildren, onechild, isleaf, isbranch, ischain, isfactorless, eldest
+        haschildren, onechild, isleaf, isbranch, ischain, isfactorless, eldest, totaloperation
     # Leaves: gᵢ
     g1 = propagator(𝑓⁻(1)𝑓⁺(2))
     g2 = propagator(𝑓⁻(1)𝑓⁺(2), factor=2)
@@ -238,6 +272,9 @@ end
     # General trees
     g8 = 2 * (3 * g1 + 5 * g2)
     g9 = g1 + 2 * (3 * g1 + 5 * g2)
+    g10 = g1*g2 + g8*g9
+    glist = [g1,g2,g8,g9,g10]
+   
     @testset "Leaves" begin
         @test haschildren(g1) == false
         @test onechild(g1) == false
@@ -247,6 +284,8 @@ end
         @test isfactorless(g1)
         @test isfactorless(g2) == false
         @test_throws AssertionError eldest(g1)
+        @test totaloperation(g1) == [0,0]
+        @test totaloperation(g2)== [0,0]
     end
     @testset "Branches" begin
         @test haschildren(g3)
@@ -277,6 +316,9 @@ end
         @test ischain(g8) == false
         @test isfactorless(g8) == false
         @test onechild(eldest(g8)) == false
+        @test totaloperation(g8) == [1,0]
+        @test totaloperation(g9) == [2,0]
+        @test totaloperation(g10) == [4,2]
     end
     @testset "Iteration" begin
         count_pre = sum(1 for node in PreOrderDFS(g9))
