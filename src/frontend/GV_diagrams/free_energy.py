@@ -219,3 +219,11 @@ class free_energy:
         FermiSign = (-1)**self.Order * (-1)**LoopNum
         # n+1 loop  contributes (-1)^(n+1) and order n contributes (-1)^n
         return tuple(Permutation), Momentum, FermiSign
+    
+    def ToString(self, HugenList, VerOrder, SigmaOrder, SPIN):
+        if len(HugenList) == 0:
+            return
+        
+        #TODO: add counterterm
+
+
