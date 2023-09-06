@@ -1,0 +1,50 @@
+#Type: FreeEnergy
+#DiagNum: 2
+#Order: 1
+#GNum: 2
+#Ver4Num: 1
+#LoopNum: 2
+#ExtLoopIndex: 
+#DummyLoopIndex: 
+#TauNum: 3
+#ExtTauIndex: 
+#DummyTauIndex: 
+
+# Permutation
+ 0  1 
+# SymFactor
+-0.5
+# GType
+ 0  1 
+# VertexBasis
+ 0  1 
+ 0  1 
+# LoopBasis
+ 1  0 
+ 0  1 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 0  0  1  1 |
+# WType(Direct,Exchange)
+ 0  0 |
+# SpinFactor
+ 0  2 
+
+# Permutation
+ 0  1 
+# SymFactor
+-0.5
+# GType
+ 1  0 
+# VertexBasis
+ 0  1 
+ 0  1 
+# LoopBasis
+ 1  0 
+ 0  1 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 0  0  1  1 |
+# WType(Direct,Exchange)
+ 0  0 |
+# SpinFactor
+ 0  2 
+
