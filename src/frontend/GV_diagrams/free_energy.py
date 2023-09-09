@@ -310,7 +310,8 @@ class free_energy:
             for idx, FeynPermu in enumerate(FeynList):
                 Path = diag.FindAllLoops(FeynPermu)
                 nloop = len(Path)
-                Sign = (-1)**nloop*(-1)**(self.Order-1) / \
+                # Sign = (-1)**nloop*(-1)**(self.Order-1) / \
+                Sign = (-1)**nloop*(-1)**self.Order / \
                     (Diag.SymFactor/abs(Diag.SymFactor))
 
                 if SPIN == 2:

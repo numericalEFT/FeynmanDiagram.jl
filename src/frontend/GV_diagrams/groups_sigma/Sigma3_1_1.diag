@@ -30,7 +30,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  3  6  4  0  2  5  7 
@@ -43,8 +43,8 @@
  1  2  4  3  0  2  3  4 
 # LoopBasis
  1  1  0  1  1  0  0  0 
--1 -1  0  0 -1  1  0  0 
- 1  1  1  0  1  0  1  0 
+ 0  0  1  0  0  1  1  0
+ 0  0 -1  1  0  0 -1  0
  0  0  0  0  0  0  0  1 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -52,7 +52,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  2  0  6  3  4  5  7 
@@ -74,7 +74,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 0  0  0  0  0  1  0  0 
+ 0  0  0  0  0  2  0  0 
 
 # Permutation
  1  3  6  7  0  2  5  4 
@@ -87,8 +87,8 @@
  1  2  4  4  0  2  3  3 
 # LoopBasis
  1  1  1  0  1  0  0  1 
--1 -1  0  0 -1  1  0  0 
- 1  1  1  0  1  0  1  0 
+ 0  0  1  0  0  1  1  0
+ 0  0  0  0  0  0 -1  1
  0  0 -1  1  0  0  0  0 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -96,7 +96,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 2 -1 -1  2 -1  2  2 -1 
+ 4 -2 -2  4 -2  4  4 -2 
 
 # Permutation
  1  7  2  4  3  6  5  0 
@@ -118,7 +118,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 0  0  0  0  0  0  0 -1 
+ 0  0  0  0  0  0  0 -2 
 
 # Permutation
  1  4  6  0  3  2  5  7 
@@ -140,7 +140,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  3  6  4  0  2  5  7 
@@ -153,8 +153,8 @@
  1  2  4  3  0  2  3  4 
 # LoopBasis
  1  1  0  1  1  0  0  0 
--1 -1  0  0 -1  1  0  0 
- 1  1  1  0  1  0  1  0 
+ 0  0  1  0  0  1  1  0
+ 0  0 -1  1  0  0 -1  0
  0  0  0  0  0  0  0  1 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -162,7 +162,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  7  6  4  3  2  5  0 
@@ -184,7 +184,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  2  0  6  3  4  5  7 
@@ -206,7 +206,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 0  0  0  0  0  1  0  0 
+ 0  0  0  0  0  2  0  0 
 
 # Permutation
  1  3  6  7  0  2  5  4 
@@ -219,8 +219,8 @@
  1  2  4  4  0  2  3  3 
 # LoopBasis
  1  1  1  0  1  0  0  1 
--1 -1  0  0 -1  1  0  0 
- 1  1  1  0  1  0  1  0 
+ 0  0  1  0  0  1  1  0
+ 0  0  0  0  0  0 -1  1
  0  0 -1  1  0  0  0  0 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -228,7 +228,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 2 -1 -1  2 -1  2  2 -1 
+ 4 -2 -2  4 -2  4  4 -2 
 
 # Permutation
  1  3  6  4  7  2  5  0 
@@ -241,8 +241,8 @@
  1  2  4  3  4  2  3  0 
 # LoopBasis
  1  1  0  1  0  0 -1  1 
--1 -1  0  0  0  1  1 -1 
- 1  1  1  0  0  0  0  1 
+ 0  0  1  0  0  1  1  0
+ 0  0 -1  1  0  0 -1  0
  0  0  0  0  1  0  1  0 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -250,7 +250,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 2 -1 -1  2 -1  2  2 -4 
+ 4 -2 -2  4 -2  4  4 -8 
 
 # Permutation
  1  7  2  4  3  6  5  0 
@@ -272,7 +272,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 0  0  0  0  0  0  0 -1 
+ 0  0  0  0  0  0  0 -2 
 
 # Permutation
  1  4  6  0  3  2  5  7 
@@ -294,7 +294,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  3  6  4  0  2  5  7 
@@ -307,8 +307,8 @@
  1  2  4  3  0  2  3  4 
 # LoopBasis
  1  1  0  1  1  0  0  0 
--1 -1  0  0 -1  1  0  0 
- 1  1  1  0  1  0  1  0 
+ 0  0  1  0  0  1  1  0
+ 0  0 -1  1  0  0 -1  0
  0  0  0  0  0  0  0  1 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -316,7 +316,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  7  6  4  3  2  5  0 
@@ -338,7 +338,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  2  0  6  3  4  5  7 
@@ -360,7 +360,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 0  0  0  0  0  1  0  0 
+ 0  0  0  0  0  2  0  0 
 
 # Permutation
  1  3  6  7  0  2  5  4 
@@ -373,8 +373,8 @@
  1  2  4  4  0  2  3  3 
 # LoopBasis
  1  1  1  0  1  0  0  1 
--1 -1  0  0 -1  1  0  0 
- 1  1  1  0  1  0  1  0 
+ 0  0  1  0  0  1  1  0
+ 0  0  0  0  0  0 -1  1
  0  0 -1  1  0  0  0  0 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -382,7 +382,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 2 -1 -1  2 -1  2  2 -1 
+ 4 -2 -2  4 -2  4  4 -2 
 
 # Permutation
  1  3  6  4  7  2  5  0 
@@ -395,8 +395,8 @@
  1  2  4  3  4  2  3  0 
 # LoopBasis
  1  1  0  1  0  0 -1  1 
--1 -1  0  0  0  1  1 -1 
- 1  1  1  0  0  0  0  1 
+ 0  0  1  0  0  1  1  0
+ 0  0 -1  1  0  0 -1  0
  0  0  0  0  1  0  1  0 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -404,7 +404,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 2 -1 -1  2 -1  2  2 -4 
+ 4 -2 -2  4 -2  4  4 -8 
 
 # Permutation
  1  7  2  4  3  6  5  0 
@@ -426,7 +426,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 0  0  0  0  0  0  0 -1 
+ 0  0  0  0  0  0  0 -2 
 
 # Permutation
  1  4  6  0  3  2  5  7 
@@ -448,7 +448,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  7  6  4  3  2  5  0 
@@ -470,7 +470,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  2  0  6  3  4  5  7 
@@ -492,7 +492,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 0  0  0  0  0  1  0  0 
+ 0  0  0  0  0  2  0  0 
 
 # Permutation
  1  3  6  4  7  2  5  0 
@@ -505,8 +505,8 @@
  1  2  4  3  4  2  3  0 
 # LoopBasis
  1  1  0  1  0  0 -1  1 
--1 -1  0  0  0  1  1 -1 
- 1  1  1  0  0  0  0  1 
+ 0  0  1  0  0  1  1  0
+ 0  0 -1  1  0  0 -1  0
  0  0  0  0  1  0  1  0 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -514,7 +514,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 2 -1 -1  2 -1  2  2 -4 
+ 4 -2 -2  4 -2  4  4 -8 
 
 # Permutation
  1  7  2  4  3  6  5  0 
@@ -536,7 +536,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 0  0  0  0  0  0  0 -1 
+ 0  0  0  0  0  0  0 -2 
 
 # Permutation
  1  3  6  4  0  2  5  7 
@@ -549,8 +549,8 @@
  1  2  4  3  0  2  3  4 
 # LoopBasis
  1  1  0  1  1  0  0  0 
--1 -1  0  0 -1  1  0  0 
- 1  1  1  0  1  0  1  0 
+ 0  0  1  0  0  1  1  0
+ 0  0 -1  1  0  0 -1  0
  0  0  0  0  0  0  0  1 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -558,7 +558,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  7  6  4  3  2  5  0 
@@ -580,7 +580,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  2  0  6  3  4  5  7 
@@ -602,7 +602,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 0  0  0  0  0  1  0  0 
+ 0  0  0  0  0  2  0  0 
 
 # Permutation
  1  3  6  7  0  2  5  4 
@@ -615,8 +615,8 @@
  1  2  4  4  0  2  3  3 
 # LoopBasis
  1  1  1  0  1  0  0  1 
--1 -1  0  0 -1  1  0  0 
- 1  1  1  0  1  0  1  0 
+ 0  0  1  0  0  1  1  0
+ 0  0  0  0  0  0 -1  1
  0  0 -1  1  0  0  0  0 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -624,7 +624,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 2 -1 -1  2 -1  2  2 -1 
+ 4 -2 -2  4 -2  4  4 -2 
 
 # Permutation
  1  3  6  4  7  2  5  0 
@@ -637,8 +637,8 @@
  1  2  4  3  4  2  3  0 
 # LoopBasis
  1  1  0  1  0  0 -1  1 
--1 -1  0  0  0  1  1 -1 
- 1  1  1  0  0  0  0  1 
+ 0  0  1  0  0  1  1  0
+ 0  0 -1  1  0  0 -1  0
  0  0  0  0  1  0  1  0 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -646,7 +646,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 2 -1 -1  2 -1  2  2 -4 
+ 4 -2 -2  4 -2  4  4 -8 
 
 # Permutation
  1  7  2  4  3  6  5  0 
@@ -668,7 +668,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 0  0  0  0  0  0  0 -1 
+ 0  0  0  0  0  0  0 -2 
 
 # Permutation
  1  4  6  0  3  2  5  7 
@@ -690,7 +690,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  3  6  4  0  2  5  7 
@@ -703,8 +703,8 @@
  1  2  4  3  0  2  3  4 
 # LoopBasis
  1  1  0  1  1  0  0  0 
--1 -1  0  0 -1  1  0  0 
- 1  1  1  0  1  0  1  0 
+ 0  0  1  0  0  1  1  0
+ 0  0 -1  1  0  0 -1  0
  0  0  0  0  0  0  0  1 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -712,7 +712,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  7  6  4  3  2  5  0 
@@ -734,7 +734,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  3  6  7  0  2  5  4 
@@ -747,8 +747,8 @@
  1  2  4  4  0  2  3  3 
 # LoopBasis
  1  1  1  0  1  0  0  1 
--1 -1  0  0 -1  1  0  0 
- 1  1  1  0  1  0  1  0 
+ 0  0  1  0  0  1  1  0
+ 0  0  0  0  0  0 -1  1
  0  0 -1  1  0  0  0  0 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -756,7 +756,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 2 -1 -1  2 -1  2  2 -1 
+ 4 -2 -2  4 -2  4  4 -2 
 
 # Permutation
  1  3  6  4  7  2  5  0 
@@ -769,8 +769,8 @@
  1  2  4  3  4  2  3  0 
 # LoopBasis
  1  1  0  1  0  0 -1  1 
--1 -1  0  0  0  1  1 -1 
- 1  1  1  0  0  0  0  1 
+ 0  0  1  0  0  1  1  0
+ 0  0 -1  1  0  0 -1  0
  0  0  0  0  1  0  1  0 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -778,7 +778,7 @@
 # WType(Direct,Exchange)
  0  0 | 0  0 | 1  1 |
 # SpinFactor
- 2 -1 -1  2 -1  2  2 -4 
+ 4 -2 -2  4 -2  4  4 -8 
 
 # Permutation
  1  4  6  0  3  2  5  7 
@@ -800,7 +800,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  3  6  4  0  2  5  7 
@@ -813,8 +813,8 @@
  1  2  4  3  0  2  3  4 
 # LoopBasis
  1  1  0  1  1  0  0  0 
--1 -1  0  0 -1  1  0  0 
- 1  1  1  0  1  0  1  0 
+ 0  0  1  0  0  1  1  0
+ 0  0 -1  1  0  0 -1  0
  0  0  0  0  0  0  0  1 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -822,7 +822,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  2  0  6  3  4  5  7 
@@ -844,7 +844,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 0  0  0  0  0  1  0  0 
+ 0  0  0  0  0  2  0  0 
 
 # Permutation
  1  3  6  7  0  2  5  4 
@@ -857,8 +857,8 @@
  1  2  4  4  0  2  3  3 
 # LoopBasis
  1  1  1  0  1  0  0  1 
--1 -1  0  0 -1  1  0  0 
- 1  1  1  0  1  0  1  0 
+ 0  0  1  0  0  1  1  0
+ 0  0  0  0  0  0 -1  1
  0  0 -1  1  0  0  0  0 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -866,7 +866,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 2 -1 -1  2 -1  2  2 -1 
+ 4 -2 -2  4 -2  4  4 -2 
 
 # Permutation
  1  7  2  4  3  6  5  0 
@@ -888,7 +888,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 0  0  0  0  0  0  0 -1 
+ 0  0  0  0  0  0  0 -2 
 
 # Permutation
  1  4  6  0  3  2  5  7 
@@ -910,7 +910,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  3  6  4  0  2  5  7 
@@ -923,8 +923,8 @@
  1  2  4  3  0  2  3  4 
 # LoopBasis
  1  1  0  1  1  0  0  0 
--1 -1  0  0 -1  1  0  0 
- 1  1  1  0  1  0  1  0 
+ 0  0  1  0  0  1  1  0
+ 0  0 -1  1  0  0 -1  0
  0  0  0  0  0  0  0  1 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -932,7 +932,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  7  6  4  3  2  5  0 
@@ -954,7 +954,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  2  0  6  3  4  5  7 
@@ -976,7 +976,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 0  0  0  0  0  1  0  0 
+ 0  0  0  0  0  2  0  0 
 
 # Permutation
  1  3  6  7  0  2  5  4 
@@ -989,8 +989,8 @@
  1  2  4  4  0  2  3  3 
 # LoopBasis
  1  1  1  0  1  0  0  1 
--1 -1  0  0 -1  1  0  0 
- 1  1  1  0  1  0  1  0 
+ 0  0  1  0  0  1  1  0
+ 0  0  0  0  0  0 -1  1
  0  0 -1  1  0  0  0  0 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -998,7 +998,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 2 -1 -1  2 -1  2  2 -1 
+ 4 -2 -2  4 -2  4  4 -2 
 
 # Permutation
  1  3  6  4  7  2  5  0 
@@ -1011,8 +1011,8 @@
  1  2  4  3  4  2  3  0 
 # LoopBasis
  1  1  0  1  0  0 -1  1 
--1 -1  0  0  0  1  1 -1 
- 1  1  1  0  0  0  0  1 
+ 0  0  1  0  0  1  1  0
+ 0  0 -1  1  0  0 -1  0
  0  0  0  0  1  0  1  0 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -1020,7 +1020,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 2 -1 -1  2 -1  2  2 -4 
+ 4 -2 -2  4 -2  4  4 -8 
 
 # Permutation
  1  7  2  4  3  6  5  0 
@@ -1042,7 +1042,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 0  0  0  0  0  0  0 -1 
+ 0  0  0  0  0  0  0 -2 
 
 # Permutation
  1  4  6  0  3  2  5  7 
@@ -1064,7 +1064,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  3  6  4  0  2  5  7 
@@ -1077,8 +1077,8 @@
  1  2  4  3  0  2  3  4 
 # LoopBasis
  1  1  0  1  1  0  0  0 
--1 -1  0  0 -1  1  0  0 
- 1  1  1  0  1  0  1  0 
+ 0  0  1  0  0  1  1  0
+ 0  0 -1  1  0  0 -1  0
  0  0  0  0  0  0  0  1 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -1086,7 +1086,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  7  6  4  3  2  5  0 
@@ -1108,7 +1108,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  2  0  6  3  4  5  7 
@@ -1130,7 +1130,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 0  0  0  0  0  1  0  0 
+ 0  0  0  0  0  2  0  0 
 
 # Permutation
  1  3  6  7  0  2  5  4 
@@ -1143,8 +1143,8 @@
  1  2  4  4  0  2  3  3 
 # LoopBasis
  1  1  1  0  1  0  0  1 
--1 -1  0  0 -1  1  0  0 
- 1  1  1  0  1  0  1  0 
+ 0  0  1  0  0  1  1  0
+ 0  0  0  0  0  0 -1  1
  0  0 -1  1  0  0  0  0 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -1152,7 +1152,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 2 -1 -1  2 -1  2  2 -1 
+ 4 -2 -2  4 -2  4  4 -2 
 
 # Permutation
  1  3  6  4  7  2  5  0 
@@ -1165,8 +1165,8 @@
  1  2  4  3  4  2  3  0 
 # LoopBasis
  1  1  0  1  0  0 -1  1 
--1 -1  0  0  0  1  1 -1 
- 1  1  1  0  0  0  0  1 
+ 0  0  1  0  0  1  1  0
+ 0  0 -1  1  0  0 -1  0
  0  0  0  0  1  0  1  0 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -1174,7 +1174,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 2 -1 -1  2 -1  2  2 -4 
+ 4 -2 -2  4 -2  4  4 -8 
 
 # Permutation
  1  7  2  4  3  6  5  0 
@@ -1196,7 +1196,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 0  0  0  0  0  0  0 -1 
+ 0  0  0  0  0  0  0 -2 
 
 # Permutation
  1  4  6  0  3  2  5  7 
@@ -1218,7 +1218,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  7  6  4  3  2  5  0 
@@ -1240,7 +1240,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  2  0  6  3  4  5  7 
@@ -1262,7 +1262,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 0  0  0  0  0  1  0  0 
+ 0  0  0  0  0  2  0  0 
 
 # Permutation
  1  3  6  4  7  2  5  0 
@@ -1275,8 +1275,8 @@
  1  2  4  3  4  2  3  0 
 # LoopBasis
  1  1  0  1  0  0 -1  1 
--1 -1  0  0  0  1  1 -1 
- 1  1  1  0  0  0  0  1 
+ 0  0  1  0  0  1  1  0
+ 0  0 -1  1  0  0 -1  0
  0  0  0  0  1  0  1  0 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -1284,7 +1284,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 2 -1 -1  2 -1  2  2 -4 
+ 4 -2 -2  4 -2  4  4 -8 
 
 # Permutation
  1  7  2  4  3  6  5  0 
@@ -1306,7 +1306,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 0  0  0  0  0  0  0 -1 
+ 0  0  0  0  0  0  0 -2 
 
 # Permutation
  1  3  6  4  0  2  5  7 
@@ -1319,8 +1319,8 @@
  1  2  4  3  0  2  3  4 
 # LoopBasis
  1  1  0  1  1  0  0  0 
--1 -1  0  0 -1  1  0  0 
- 1  1  1  0  1  0  1  0 
+ 0  0  1  0  0  1  1  0
+ 0  0 -1  1  0  0 -1  0
  0  0  0  0  0  0  0  1 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -1328,7 +1328,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  7  6  4  3  2  5  0 
@@ -1350,7 +1350,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  2  0  6  3  4  5  7 
@@ -1372,7 +1372,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 0  0  0  0  0  1  0  0 
+ 0  0  0  0  0  2  0  0 
 
 # Permutation
  1  3  6  7  0  2  5  4 
@@ -1385,8 +1385,8 @@
  1  2  4  4  0  2  3  3 
 # LoopBasis
  1  1  1  0  1  0  0  1 
--1 -1  0  0 -1  1  0  0 
- 1  1  1  0  1  0  1  0 
+ 0  0  1  0  0  1  1  0
+ 0  0  0  0  0  0 -1  1
  0  0 -1  1  0  0  0  0 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -1394,7 +1394,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 2 -1 -1  2 -1  2  2 -1 
+ 4 -2 -2  4 -2  4  4 -2 
 
 # Permutation
  1  3  6  4  7  2  5  0 
@@ -1407,8 +1407,8 @@
  1  2  4  3  4  2  3  0 
 # LoopBasis
  1  1  0  1  0  0 -1  1 
--1 -1  0  0  0  1  1 -1 
- 1  1  1  0  0  0  0  1 
+ 0  0  1  0  0  1  1  0
+ 0  0 -1  1  0  0 -1  0
  0  0  0  0  1  0  1  0 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -1416,7 +1416,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 2 -1 -1  2 -1  2  2 -4 
+ 4 -2 -2  4 -2  4  4 -8 
 
 # Permutation
  1  7  2  4  3  6  5  0 
@@ -1438,7 +1438,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 0  0  0  0  0  0  0 -1 
+ 0  0  0  0  0  0  0 -2 
 
 # Permutation
  1  4  6  0  3  2  5  7 
@@ -1460,7 +1460,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  3  6  4  0  2  5  7 
@@ -1473,8 +1473,8 @@
  1  2  4  3  0  2  3  4 
 # LoopBasis
  1  1  0  1  1  0  0  0 
--1 -1  0  0 -1  1  0  0 
- 1  1  1  0  1  0  1  0 
+ 0  0  1  0  0  1  1  0
+ 0  0 -1  1  0  0 -1  0
  0  0  0  0  0  0  0  1 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -1482,7 +1482,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  7  6  4  3  2  5  0 
@@ -1504,7 +1504,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  3  6  7  0  2  5  4 
@@ -1517,8 +1517,8 @@
  1  2  4  4  0  2  3  3 
 # LoopBasis
  1  1  1  0  1  0  0  1 
--1 -1  0  0 -1  1  0  0 
- 1  1  1  0  1  0  1  0 
+ 0  0  1  0  0  1  1  0
+ 0  0  0  0  0  0 -1  1
  0  0 -1  1  0  0  0  0 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -1526,7 +1526,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 2 -1 -1  2 -1  2  2 -1 
+ 4 -2 -2  4 -2  4  4 -2 
 
 # Permutation
  1  3  6  4  7  2  5  0 
@@ -1539,8 +1539,8 @@
  1  2  4  3  4  2  3  0 
 # LoopBasis
  1  1  0  1  0  0 -1  1 
--1 -1  0  0  0  1  1 -1 
- 1  1  1  0  0  0  0  1 
+ 0  0  1  0  0  1  1  0
+ 0  0 -1  1  0  0 -1  0
  0  0  0  0  1  0  1  0 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -1548,7 +1548,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 | 0  0 |
 # SpinFactor
- 2 -1 -1  2 -1  2  2 -4 
+ 4 -2 -2  4 -2  4  4 -8 
 
 # Permutation
  1  4  6  0  3  2  5  7 
@@ -1570,7 +1570,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  3  6  4  0  2  5  7 
@@ -1583,8 +1583,8 @@
  1  2  4  3  0  2  3  4 
 # LoopBasis
  1  1  0  1  1  0  0  0 
--1 -1  0  0 -1  1  0  0 
- 1  1  1  0  1  0  1  0 
+ 0  0  1  0  0  1  1  0
+ 0  0 -1  1  0  0 -1  0
  0  0  0  0  0  0  0  1 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -1592,7 +1592,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  2  0  6  3  4  5  7 
@@ -1614,7 +1614,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 0  0  0  0  0  1  0  0 
+ 0  0  0  0  0  2  0  0 
 
 # Permutation
  1  3  6  7  0  2  5  4 
@@ -1627,8 +1627,8 @@
  1  2  4  4  0  2  3  3 
 # LoopBasis
  1  1  1  0  1  0  0  1 
--1 -1  0  0 -1  1  0  0 
- 1  1  1  0  1  0  1  0 
+ 0  0  1  0  0  1  1  0
+ 0  0  0  0  0  0 -1  1
  0  0 -1  1  0  0  0  0 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -1636,7 +1636,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 2 -1 -1  2 -1  2  2 -1 
+ 4 -2 -2  4 -2  4  4 -2 
 
 # Permutation
  1  7  2  4  3  6  5  0 
@@ -1658,7 +1658,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 0  0  0  0  0  0  0 -1 
+ 0  0  0  0  0  0  0 -2 
 
 # Permutation
  1  4  6  0  3  2  5  7 
@@ -1680,7 +1680,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  3  6  4  0  2  5  7 
@@ -1693,8 +1693,8 @@
  1  2  4  3  0  2  3  4 
 # LoopBasis
  1  1  0  1  1  0  0  0 
--1 -1  0  0 -1  1  0  0 
- 1  1  1  0  1  0  1  0 
+ 0  0  1  0  0  1  1  0
+ 0  0 -1  1  0  0 -1  0
  0  0  0  0  0  0  0  1 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -1702,7 +1702,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  7  6  4  3  2  5  0 
@@ -1724,7 +1724,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  2  0  6  3  4  5  7 
@@ -1746,7 +1746,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 0  0  0  0  0  1  0  0 
+ 0  0  0  0  0  2  0  0 
 
 # Permutation
  1  3  6  7  0  2  5  4 
@@ -1759,8 +1759,8 @@
  1  2  4  4  0  2  3  3 
 # LoopBasis
  1  1  1  0  1  0  0  1 
--1 -1  0  0 -1  1  0  0 
- 1  1  1  0  1  0  1  0 
+ 0  0  1  0  0  1  1  0
+ 0  0  0  0  0  0 -1  1
  0  0 -1  1  0  0  0  0 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -1768,7 +1768,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 2 -1 -1  2 -1  2  2 -1 
+ 4 -2 -2  4 -2  4  4 -2 
 
 # Permutation
  1  3  6  4  7  2  5  0 
@@ -1781,8 +1781,8 @@
  1  2  4  3  4  2  3  0 
 # LoopBasis
  1  1  0  1  0  0 -1  1 
--1 -1  0  0  0  1  1 -1 
- 1  1  1  0  0  0  0  1 
+ 0  0  1  0  0  1  1  0
+ 0  0 -1  1  0  0 -1  0
  0  0  0  0  1  0  1  0 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -1790,7 +1790,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 2 -1 -1  2 -1  2  2 -4 
+ 4 -2 -2  4 -2  4  4 -8 
 
 # Permutation
  1  7  2  4  3  6  5  0 
@@ -1812,7 +1812,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 0  0  0  0  0  0  0 -1 
+ 0  0  0  0  0  0  0 -2 
 
 # Permutation
  1  4  6  0  3  2  5  7 
@@ -1834,7 +1834,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  3  6  4  0  2  5  7 
@@ -1847,8 +1847,8 @@
  1  2  4  3  0  2  3  4 
 # LoopBasis
  1  1  0  1  1  0  0  0 
--1 -1  0  0 -1  1  0  0 
- 1  1  1  0  1  0  1  0 
+ 0  0  1  0  0  1  1  0
+ 0  0 -1  1  0  0 -1  0
  0  0  0  0  0  0  0  1 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -1856,7 +1856,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  7  6  4  3  2  5  0 
@@ -1878,7 +1878,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  2  0  6  3  4  5  7 
@@ -1900,7 +1900,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 0  0  0  0  0  1  0  0 
+ 0  0  0  0  0  2  0  0 
 
 # Permutation
  1  3  6  7  0  2  5  4 
@@ -1913,8 +1913,8 @@
  1  2  4  4  0  2  3  3 
 # LoopBasis
  1  1  1  0  1  0  0  1 
--1 -1  0  0 -1  1  0  0 
- 1  1  1  0  1  0  1  0 
+ 0  0  1  0  0  1  1  0
+ 0  0  0  0  0  0 -1  1
  0  0 -1  1  0  0  0  0 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -1922,7 +1922,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 2 -1 -1  2 -1  2  2 -1 
+ 4 -2 -2  4 -2  4  4 -2 
 
 # Permutation
  1  3  6  4  7  2  5  0 
@@ -1935,8 +1935,8 @@
  1  2  4  3  4  2  3  0 
 # LoopBasis
  1  1  0  1  0  0 -1  1 
--1 -1  0  0  0  1  1 -1 
- 1  1  1  0  0  0  0  1 
+ 0  0  1  0  0  1  1  0
+ 0  0 -1  1  0  0 -1  0
  0  0  0  0  1  0  1  0 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -1944,7 +1944,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 2 -1 -1  2 -1  2  2 -4 
+ 4 -2 -2  4 -2  4  4 -8 
 
 # Permutation
  1  7  2  4  3  6  5  0 
@@ -1966,7 +1966,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 0  0  0  0  0  0  0 -1 
+ 0  0  0  0  0  0  0 -2 
 
 # Permutation
  1  4  6  0  3  2  5  7 
@@ -1988,7 +1988,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  7  6  4  3  2  5  0 
@@ -2010,7 +2010,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  2  0  6  3  4  5  7 
@@ -2032,7 +2032,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 0  0  0  0  0  1  0  0 
+ 0  0  0  0  0  2  0  0 
 
 # Permutation
  1  3  6  4  7  2  5  0 
@@ -2045,8 +2045,8 @@
  1  2  4  3  4  2  3  0 
 # LoopBasis
  1  1  0  1  0  0 -1  1 
--1 -1  0  0  0  1  1 -1 
- 1  1  1  0  0  0  0  1 
+ 0  0  1  0  0  1  1  0
+ 0  0 -1  1  0  0 -1  0
  0  0  0  0  1  0  1  0 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -2054,7 +2054,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 2 -1 -1  2 -1  2  2 -4 
+ 4 -2 -2  4 -2  4  4 -8 
 
 # Permutation
  1  7  2  4  3  6  5  0 
@@ -2076,7 +2076,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 0  0  0  0  0  0  0 -1 
+ 0  0  0  0  0  0  0 -2 
 
 # Permutation
  1  3  6  4  0  2  5  7 
@@ -2089,8 +2089,8 @@
  1  2  4  3  0  2  3  4 
 # LoopBasis
  1  1  0  1  1  0  0  0 
--1 -1  0  0 -1  1  0  0 
- 1  1  1  0  1  0  1  0 
+ 0  0  1  0  0  1  1  0
+ 0  0 -1  1  0  0 -1  0
  0  0  0  0  0  0  0  1 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -2098,7 +2098,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  7  6  4  3  2  5  0 
@@ -2120,7 +2120,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  2  0  6  3  4  5  7 
@@ -2142,7 +2142,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 0  0  0  0  0  1  0  0 
+ 0  0  0  0  0  2  0  0 
 
 # Permutation
  1  3  6  7  0  2  5  4 
@@ -2155,8 +2155,8 @@
  1  2  4  4  0  2  3  3 
 # LoopBasis
  1  1  1  0  1  0  0  1 
--1 -1  0  0 -1  1  0  0 
- 1  1  1  0  1  0  1  0 
+ 0  0  1  0  0  1  1  0
+ 0  0  0  0  0  0 -1  1
  0  0 -1  1  0  0  0  0 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -2164,7 +2164,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 2 -1 -1  2 -1  2  2 -1 
+ 4 -2 -2  4 -2  4  4 -2 
 
 # Permutation
  1  3  6  4  7  2  5  0 
@@ -2177,8 +2177,8 @@
  1  2  4  3  4  2  3  0 
 # LoopBasis
  1  1  0  1  0  0 -1  1 
--1 -1  0  0  0  1  1 -1 
- 1  1  1  0  0  0  0  1 
+ 0  0  1  0  0  1  1  0
+ 0  0 -1  1  0  0 -1  0
  0  0  0  0  1  0  1  0 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -2186,7 +2186,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 2 -1 -1  2 -1  2  2 -4 
+ 4 -2 -2  4 -2  4  4 -8 
 
 # Permutation
  1  7  2  4  3  6  5  0 
@@ -2208,7 +2208,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 0  0  0  0  0  0  0 -1 
+ 0  0  0  0  0  0  0 -2 
 
 # Permutation
  1  4  6  0  3  2  5  7 
@@ -2230,7 +2230,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  3  6  4  0  2  5  7 
@@ -2243,8 +2243,8 @@
  1  2  4  3  0  2  3  4 
 # LoopBasis
  1  1  0  1  1  0  0  0 
--1 -1  0  0 -1  1  0  0 
- 1  1  1  0  1  0  1  0 
+ 0  0  1  0  0  1  1  0
+ 0  0 -1  1  0  0 -1  0
  0  0  0  0  0  0  0  1 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -2252,7 +2252,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  7  6  4  3  2  5  0 
@@ -2274,7 +2274,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 0 -2  0  1  0  1  0 -2 
+ 0 -4  0  2  0  2  0 -4 
 
 # Permutation
  1  3  6  7  0  2  5  4 
@@ -2287,8 +2287,8 @@
  1  2  4  4  0  2  3  3 
 # LoopBasis
  1  1  1  0  1  0  0  1 
--1 -1  0  0 -1  1  0  0 
- 1  1  1  0  1  0  1  0 
+ 0  0  1  0  0  1  1  0
+ 0  0  0  0  0  0 -1  1
  0  0 -1  1  0  0  0  0 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -2296,7 +2296,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 2 -1 -1  2 -1  2  2 -1 
+ 4 -2 -2  4 -2  4  4 -2 
 
 # Permutation
  1  3  6  4  7  2  5  0 
@@ -2309,8 +2309,8 @@
  1  2  4  3  4  2  3  0 
 # LoopBasis
  1  1  0  1  0  0 -1  1 
--1 -1  0  0  0  1  1 -1 
- 1  1  1  0  0  0  0  1 
+ 0  0  1  0  0  1  1  0
+ 0  0 -1  1  0  0 -1  0
  0  0  0  0  1  0  1  0 
  1  0  0  0  0  0  0  0 
 # Ver4Legs(InL,OutL,InR,OutR)
@@ -2318,5 +2318,5 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 | 0  0 |
 # SpinFactor
- 2 -1 -1  2 -1  2  2 -4 
+ 4 -2 -2  4 -2  4  4 -8 
 

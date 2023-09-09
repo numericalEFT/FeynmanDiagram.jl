@@ -209,6 +209,9 @@ function read_onediagram(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex:
 
     graphs = Graph{Float64,Float64}[]
     spinfactors_existed = Float64[]
+    if diagType == :sigma
+        spinFactors = Int.(spinFactors ./ 2)
+    end
     # println("##### $permutation  $ver4Legs")
     for (iex, spinFactor) in enumerate(spinFactors)
         # create permutation and ver4Legs for each Feynman diagram from a Hugenholtz diagram
