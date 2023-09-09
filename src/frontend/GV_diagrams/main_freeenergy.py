@@ -34,10 +34,10 @@ def Generate(Order, VerOrder, SigmaOrder, SPIN):
 if __name__ == "__main__":
     # print "Input Diagram Order: "
     # Order = int(sys.argv[1])
-    Order = 3
+    Order = 5
     SPIN = 2
     # for o in range(2, Order+1):
-    for o in range(1, Order):
+    for o in range(1, Order+1):
         for v in range(0, Order):
             # for g in range(0, (Order-1)/2+1):
             for g in range(0, Order):

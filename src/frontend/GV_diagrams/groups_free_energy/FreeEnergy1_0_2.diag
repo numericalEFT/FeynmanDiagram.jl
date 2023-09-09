@@ -6,7 +6,7 @@
 #LoopNum: 2
 #ExtLoopIndex: 
 #DummyLoopIndex: 
-#TauNum: 3
+#TauNum: 1
 #ExtTauIndex: 
 #DummyTauIndex: 
 
@@ -17,8 +17,8 @@
 # GType
  0  2 
 # VertexBasis
- 0  1 
- 0  1 
+ 0  0 
+ 0  0 
 # LoopBasis
  1  0 
  0  1 
@@ -36,8 +36,8 @@
 # GType
  1  1 
 # VertexBasis
- 0  1 
- 0  1 
+ 0  0 
+ 0  0 
 # LoopBasis
  1  0 
  0  1 
@@ -55,8 +55,8 @@
 # GType
  2  0 
 # VertexBasis
- 0  1 
- 0  1 
+ 0  0 
+ 0  0 
 # LoopBasis
  1  0 
  0  1 

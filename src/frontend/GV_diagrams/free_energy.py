@@ -339,7 +339,7 @@ class free_energy:
         # if IsSelfEnergy:
         #     Title += "#TauNum: {0}\n".format(self.Ver4Num)
         # else:
-        Title += "#TauNum: {0}\n".format(self.Ver4Num+2)
+        Title += "#TauNum: {0}\n".format(self.Ver4Num)
         Title += "#ExtTauIndex: \n"
         Title += "#DummyTauIndex: \n"
         Title += "\n"
@@ -352,10 +352,7 @@ class free_energy:
 
 
     def __VerBasis(self, index):
-        if index <= 1:
-            return index
-        else:
-            return int(index/2)+1
+            return int(index/2)
 
     def HugenToFeyn(self, HugenPermu):
         """construct a list of feyn diagram permutation from a hugen diagram permutation"""

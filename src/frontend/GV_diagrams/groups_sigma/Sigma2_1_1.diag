@@ -29,7 +29,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 |
 # SpinFactor
- 0  0  0  2 
+ 0  0  0  1 
 
 # Permutation
  1  4  5  0  3  2 
@@ -50,7 +50,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 |
 # SpinFactor
- 4 -2 -2  4 
+ 2 -1 -1  2 
 
 # Permutation
  1  2  0  4  3  5 
@@ -71,7 +71,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 |
 # SpinFactor
- 0  0  0  2 
+ 0  0  0  1 
 
 # Permutation
  1  4  5  0  3  2 
@@ -92,7 +92,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 |
 # SpinFactor
- 4 -2 -2  4 
+ 2 -1 -1  2 
 
 # Permutation
  1  2  0  4  3  5 
@@ -113,7 +113,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 |
 # SpinFactor
- 0  0  0  2 
+ 0  0  0  1 
 
 # Permutation
  1  4  5  0  3  2 
@@ -134,7 +134,7 @@
 # WType(Direct,Exchange)
  0  0 | 1  1 |
 # SpinFactor
- 4 -2 -2  4 
+ 2 -1 -1  2 
 
 # Permutation
  1  2  0  4  3  5 
@@ -155,7 +155,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 |
 # SpinFactor
- 0  0  0  2 
+ 0  0  0  1 
 
 # Permutation
  1  4  5  0  3  2 
@@ -176,7 +176,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 |
 # SpinFactor
- 4 -2 -2  4 
+ 2 -1 -1  2 
 
 # Permutation
  1  2  0  4  3  5 
@@ -197,7 +197,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 |
 # SpinFactor
- 0  0  0  2 
+ 0  0  0  1 
 
 # Permutation
  1  4  5  0  3  2 
@@ -218,7 +218,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 |
 # SpinFactor
- 4 -2 -2  4 
+ 2 -1 -1  2 
 
 # Permutation
  1  2  0  4  3  5 
@@ -239,7 +239,7 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 |
 # SpinFactor
- 0  0  0  2 
+ 0  0  0  1 
 
 # Permutation
  1  4  5  0  3  2 
@@ -260,5 +260,5 @@
 # WType(Direct,Exchange)
  1  1 | 0  0 |
 # SpinFactor
- 4 -2 -2  4 
+ 2 -1 -1  2 
 
