@@ -91,7 +91,8 @@ A tuple `(diagrams, fermi_labelProd, bose_labelProd)` where
 - `bose_labelProd` is a `LabelProduct` object containing the labels for the bosonic `W` objects in the diagrams.
 - `(propagatorMap, interactionMap)` maps `g.id` to the index of unique proapgators and interactions, respectively. 
 """
-function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, dim::Int=3; spinPolarPara::Float64=0.0)
+function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, dim::Int=3;
+    MinOrder::Int=1, spinPolarPara::Float64=0.0)
     dict_graphs = Dict{Tuple{Int,Int,Int},Tuple{Vector{Graph{_dtype.factor,_dtype.weight}},Vector{Vector{Int}}}}()
     if type == :sigma
         MaxLoopNum = MaxOrder + 2
@@ -102,6 +103,7 @@ function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, di
     elseif type == :freeEnergy
         MaxLoopNum = MaxOrder + 1
         tau_labels = collect(1:MaxLoopNum-1)
+        MaxLoopNum == 1 && (tau_labels = [1])  # must set a tau label
     else
         error("no support for $type diagram")
     end
@@ -109,14 +111,16 @@ function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, di
 
     propagatorMap, interactionMap = Dict{Tuple{Int,Int,Int},Dict{Int,Int}}(), Dict{Tuple{Int,Int,Int},Dict{Int,Int}}()
     if has_counterterm
-        GTypes = collect(0:MaxOrder-1)
+        GTypes = collect(0:MaxOrder-MinOrder)
         type == :sigma && append!(GTypes, [-2, -3])
         type == :green && push!(GTypes, -2)
+        type == :freeEnergy && push!(GTypes, -1)
         VTypes = collect(0:MaxOrder-1)
-        for order in 1:MaxOrder
+        for order in MinOrder:MaxOrder
             for VerOrder in VTypes
                 type in [:chargePolar, :spinPolar] && order == 1 && VerOrder > 0 && continue
-                for GOrder in 0:MaxOrder-1
+                order == 0 && VerOrder > 0 && continue
+                for GOrder in GTypes
                     order + VerOrder + GOrder > MaxOrder && continue
                     gvec, fermi_labelProd, bose_labelProd, extT_labels = eachorder_diag(type, order, GOrder, VerOrder;
                         dim=dim, loopPool=loopPool, tau_labels=tau_labels, GTypes=GTypes, VTypes=VTypes, spinPolarPara=spinPolarPara)
@@ -181,6 +185,7 @@ function diagdictGV(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}, dim::Int=3;
     elseif type == :freeEnergy
         MaxLoopNum = maximum([key[1] for key in gkeys]) + 1
         tau_labels = collect(1:MaxLoopNum-1)
+        MaxLoopNum == 1 && (tau_labels = [1])  # must set a tau label
     else
         error("no support for $type diagram")
     end
@@ -191,6 +196,7 @@ function diagdictGV(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}, dim::Int=3;
     GTypes = collect(0:MaxGOrder)
     type == :sigma && append!(GTypes, [-2, -3])
     type == :green && push!(GTypes, -2)
+    type == :freeEnergy && push!(GTypes, -1)
     VTypes = collect(0:MaxVerOrder)
 
     # graphvector = Vector{_dtype.factor,_dtype.weight}()

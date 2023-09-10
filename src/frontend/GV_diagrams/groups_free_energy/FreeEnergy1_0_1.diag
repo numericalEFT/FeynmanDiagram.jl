@@ -27,7 +27,7 @@
 # WType(Direct,Exchange)
  0  0 |
 # SpinFactor
- 0 -2 
+ 0  2 
 
 # Permutation
  0  1 
@@ -46,5 +46,5 @@
 # WType(Direct,Exchange)
  0  0 |
 # SpinFactor
- 0 -2 
+ 0  2 
 

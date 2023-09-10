@@ -181,8 +181,6 @@ function read_onediagram(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex:
     # tau_labels = [findfirst(x -> x == tau, unique_values) for tau in tau_labels] .- (1 + offset)
     readline(io)
 
-    # extIndex = extIndex .- offset
-
     @assert occursin("LoopBasis", readline(io))
     currentBasis = zeros(Int, (GNum, loopNum))
     for i in 1:loopNum
