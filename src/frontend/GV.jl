@@ -20,11 +20,12 @@ include("GV_diagrams/readfile.jl")
     Generates external tau labels Vector{Vector{Int}}. The i-th labels (Vector{Int}) corresponds to the i-th `Graph` in `Vector{Graph}`.
 
 # Arguments:
-- `type` (Symbol): The type of the diagrams, including `:spinPolar`, `:chargePolar`, or `:sigma`.
+- `type` (Symbol): The type of the diagrams, including `:spinPolar`, `:chargePolar`, `:sigma`, `:green`, or `:freeEnergy`.
 - `order` (Int): The order of the diagrams without counterterms.
 - `VerOrder` (Int, optional): The order of interaction counterterms (defaults to 0).
 - `GOrder` (Int, optional): The order of self-energy counterterms (defaults to 0).
 - `dim` (Int, optional): The dimension of the system (defaults to 3).
+- `spinPolarPara` (Float64, optional): The spin-polarization parameter (n_up - n_down) / (n_up + n_down) (defaults to `0.0`).
 - `loopPool` (Union{LoopPool,Nothing}=nothing, optional): The initial pool of loop momenta (defaults to `nothing`).
 - `tau_labels`(Union{Nothing, Vector{Int}}, optional): The labels for the discrete time of each vertex. (defaults to `nothing`).
 - `GTypes`: The types of fermion propagators `G` in the diagrams (defaults to `collect(0:GOrder)`).
@@ -37,8 +38,9 @@ A tuple `(diagrams, fermi_labelProd, bose_labelProd, extT_labels)` where
 - `bose_labelProd` is a `LabelProduct` object containing the labels for the bosonic `W` objects in the diagrams.
 - `extT_labels` is a `Vector{Vector{Int}}` object containing the external tau labels for each `Graph` in `diagrams`.
 """
-function eachorder_diag(type::Symbol, order::Int, GOrder::Int=0, VerOrder::Int=0; dim::Int=3, loopPool::Union{LoopPool,Nothing}=nothing,
-    tau_labels::Union{Nothing,Vector{Int}}=nothing, GTypes::Union{Nothing,Vector{Int}}=nothing, VTypes::Union{Nothing,Vector{Int}}=nothing)
+function eachorder_diag(type::Symbol, order::Int, GOrder::Int=0, VerOrder::Int=0; dim::Int=3, spinPolarPara::Float64=0.0,
+    loopPool::Union{LoopPool,Nothing}=nothing, tau_labels::Union{Nothing,Vector{Int}}=nothing,
+    GTypes::Union{Nothing,Vector{Int}}=nothing, VTypes::Union{Nothing,Vector{Int}}=nothing)
     diagtype = :polar
     if type == :spinPolar
         filename = string(@__DIR__, "/GV_diagrams/groups_spin/Polar$(order)_$(VerOrder)_$(GOrder).diag")
@@ -47,6 +49,12 @@ function eachorder_diag(type::Symbol, order::Int, GOrder::Int=0, VerOrder::Int=0
     elseif type == :sigma
         diagtype = type
         filename = string(@__DIR__, "/GV_diagrams/groups_sigma/Sigma$(order)_$(VerOrder)_$(GOrder).diag")
+    elseif type == :green
+        diagtype = type
+        filename = string(@__DIR__, "/GV_diagrams/groups_green/Green$(order)_$(VerOrder)_$(GOrder).diag")
+    elseif type == :freeEnergy
+        diagtype = type
+        filename = string(@__DIR__, "/GV_diagrams/groups_free_energy/FreeEnergy$(order)_$(VerOrder)_$(GOrder).diag")
     end
 
     # println("Reading ", filename)
@@ -54,9 +62,11 @@ function eachorder_diag(type::Symbol, order::Int, GOrder::Int=0, VerOrder::Int=0
     if isnothing(GTypes)
         GTypes = collect(0:GOrder)
         type == :sigma && append!(GTypes, [-2, -3])
+        type == :green && push!(GTypes, -2)
     end
     isnothing(VTypes) && (VTypes = collect(0:VerOrder))
-    return read_diagrams(filename; dim=dim, loopPool=loopPool, tau_labels=tau_labels, GTypes=GTypes, VTypes=VTypes, diagType=diagtype)
+    return read_diagrams(filename; dim=dim, loopPool=loopPool, tau_labels=tau_labels, GTypes=GTypes, VTypes=VTypes,
+        diagType=diagtype, spinPolarPara=spinPolarPara)
 end
 
 """
@@ -67,10 +77,11 @@ end
     Generates a Tuple (propagatorMap, interactionMap) for mapping `g.id` to the index of unique proapgators and interactions, respectively. 
 
 # Arguments:
-- `type` (Symbol): The type of the Feynman diagrams, including `:spinPolar`, `:chargePolar`, or `:sigma`.
+- `type` (Symbol): The type of the Feynman diagrams, including `:spinPolar`, `:chargePolar`, `:sigma`, `:green`, or `:freeEnergy`.
 - `Maxorder` (Int): The maximum actual order of the diagrams.
-- `has_counterterm` (Bool, optional): `false` for G0W0, `true` for GW with self-energy and interaction counterterms.
-- `dim` (Int, optional): The dimension of the system (defaults to 3).
+- `has_counterterm` (Bool): `false` for G0W0, `true` for GW with self-energy and interaction counterterms (defaults to `false`).
+- `dim` (Int): The dimension of the system (defaults to 3).
+- `spinPolarPara` (Float64, optional): The spin-polarization parameter (n_up - n_down) / (n_up + n_down) (defaults to `0.0`).
 
 # Returns
 A tuple `(diagrams, fermi_labelProd, bose_labelProd)` where 
@@ -80,30 +91,39 @@ A tuple `(diagrams, fermi_labelProd, bose_labelProd)` where
 - `bose_labelProd` is a `LabelProduct` object containing the labels for the bosonic `W` objects in the diagrams.
 - `(propagatorMap, interactionMap)` maps `g.id` to the index of unique proapgators and interactions, respectively. 
 """
-function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, dim::Int=3)
+function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, dim::Int=3;
+    MinOrder::Int=1, spinPolarPara::Float64=0.0)
     dict_graphs = Dict{Tuple{Int,Int,Int},Tuple{Vector{Graph{_dtype.factor,_dtype.weight}},Vector{Vector{Int}}}}()
-    if type in [:chargePolar, :spinPolar]
-        MaxLoopNum = MaxOrder + 1
-    elseif type == :sigma
+    if type == :sigma
         MaxLoopNum = MaxOrder + 2
+        tau_labels = collect(1:MaxLoopNum)
+    elseif type in [:chargePolar, :spinPolar, :green]
+        MaxLoopNum = MaxOrder + 1
+        tau_labels = collect(1:MaxLoopNum)
+    elseif type == :freeEnergy
+        MaxLoopNum = MaxOrder + 1
+        tau_labels = collect(1:MaxLoopNum-1)
+        MaxLoopNum == 1 && (tau_labels = [1])  # must set a tau label
     else
         error("no support for $type diagram")
     end
-    tau_labels = collect(1:MaxLoopNum)
     loopPool = LoopPool(:K, dim, MaxLoopNum, Float64)
 
     propagatorMap, interactionMap = Dict{Tuple{Int,Int,Int},Dict{Int,Int}}(), Dict{Tuple{Int,Int,Int},Dict{Int,Int}}()
     if has_counterterm
-        GTypes = collect(0:MaxOrder-1)
+        GTypes = collect(0:MaxOrder-MinOrder)
         type == :sigma && append!(GTypes, [-2, -3])
+        type == :green && push!(GTypes, -2)
+        type == :freeEnergy && push!(GTypes, -1)
         VTypes = collect(0:MaxOrder-1)
-        for order in 1:MaxOrder
+        for order in MinOrder:MaxOrder
             for VerOrder in VTypes
                 type in [:chargePolar, :spinPolar] && order == 1 && VerOrder > 0 && continue
-                for GOrder in 0:MaxOrder-1
+                order == 0 && VerOrder > 0 && continue
+                for GOrder in GTypes
                     order + VerOrder + GOrder > MaxOrder && continue
                     gvec, fermi_labelProd, bose_labelProd, extT_labels = eachorder_diag(type, order, GOrder, VerOrder;
-                        dim=dim, loopPool=loopPool, tau_labels=tau_labels, GTypes=GTypes, VTypes=VTypes)
+                        dim=dim, loopPool=loopPool, tau_labels=tau_labels, GTypes=GTypes, VTypes=VTypes, spinPolarPara=spinPolarPara)
                     # push!(graphs, g)
                     key = (order, GOrder, VerOrder)
                     dict_graphs[key] = (gvec, extT_labels)
@@ -115,9 +135,10 @@ function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, di
     else
         GTypes, VTypes = [0], [0]
         type == :sigma && append!(GTypes, [-2, -3])
+        type == :green && push!(GTypes, -2)
         for order in 1:MaxOrder
             gvec, fermi_labelProd, bose_labelProd, extT_labels = eachorder_diag(type, order;
-                loopPool=loopPool, tau_labels=tau_labels, GTypes=GTypes, VTypes=VTypes)
+                loopPool=loopPool, tau_labels=tau_labels, GTypes=GTypes, VTypes=VTypes, spinPolarPara=spinPolarPara)
             # push!(graphs, g)
             key = (order, 0, 0)
             dict_graphs[key] = (gvec, extT_labels)
@@ -140,9 +161,10 @@ end
     Generates a Tuple (propagatorMap, interactionMap) for mapping `g.id` to the index of unique proapgators and interactions, respectively. 
 
 # Arguments:
-- `type` (Symbol): The type of the Feynman diagrams, including `:spinPolar`, `:chargePolar`, or `:sigma`.
+- `type` (Symbol): The type of the Feynman diagrams, including `:spinPolar`, `:chargePolar`, `:sigma`, `:green`, or `:freeEnergy`.
 - `gkeys` (Vector{Tuple{Int,Int,Int}}): The (order, Gorder, Vorder) of the diagrams. Gorder is the order of self-energy counterterms, and Vorder is the order of interaction counterterms. 
-- `dim` (Int, optional): The dimension of the system (defaults to 3).
+- `dim` (Int): The dimension of the system (defaults to 3).
+- `spinPolarPara` (Float64, optional): The spin-polarization parameter (n_up - n_down) / (n_up + n_down) (defaults to `0.0`).
 
 # Returns
 A tuple `(diagrams, fermi_labelProd, bose_labelProd)` where 
@@ -152,29 +174,36 @@ A tuple `(diagrams, fermi_labelProd, bose_labelProd)` where
 - `bose_labelProd` is a `LabelProduct` object containing the labels for the bosonic `W` objects in the diagrams.
 - `(propagatorMap, interactionMap)` maps `g.id` to the index of unique proapgators and interactions, respectively. 
 """
-function diagdictGV(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}, dim::Int=3)
+function diagdictGV(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}, dim::Int=3; spinPolarPara::Float64=0.0)
     dict_graphs = Dict{Tuple{Int,Int,Int},Tuple{Vector{Graph{_dtype.factor,_dtype.weight}},Vector{Vector{Int}}}}()
     if type == :sigma
         MaxLoopNum = maximum([key[1] for key in gkeys]) + 2
-    elseif type in [:chargePolar, :spinPolar]
+        tau_labels = collect(1:MaxLoopNum)
+    elseif type in [:chargePolar, :spinPolar, :green]
         MaxLoopNum = maximum([key[1] for key in gkeys]) + 1
+        tau_labels = collect(1:MaxLoopNum)
+    elseif type == :freeEnergy
+        MaxLoopNum = maximum([key[1] for key in gkeys]) + 1
+        tau_labels = collect(1:MaxLoopNum-1)
+        MaxLoopNum == 1 && (tau_labels = [1])  # must set a tau label
     else
         error("no support for $type diagram")
     end
     MaxGOrder = maximum([key[2] for key in gkeys])
     MaxVerOrder = maximum([key[3] for key in gkeys])
 
-    tau_labels = collect(1:MaxLoopNum)
     loopPool = LoopPool(:K, dim, MaxLoopNum, Float64)
     GTypes = collect(0:MaxGOrder)
     type == :sigma && append!(GTypes, [-2, -3])
+    type == :green && push!(GTypes, -2)
+    type == :freeEnergy && push!(GTypes, -1)
     VTypes = collect(0:MaxVerOrder)
 
     # graphvector = Vector{_dtype.factor,_dtype.weight}()
     propagatorMap, interactionMap = Dict{eltype(gkeys),Dict{Int,Int}}(), Dict{eltype(gkeys),Dict{Int,Int}}()
     for key in gkeys
         gvec, fermi_labelProd, bose_labelProd, extT_labels = eachorder_diag(type, key...;
-            dim=dim, loopPool=loopPool, tau_labels=tau_labels, GTypes=GTypes, VTypes=VTypes)
+            dim=dim, loopPool=loopPool, tau_labels=tau_labels, GTypes=GTypes, VTypes=VTypes, spinPolarPara=spinPolarPara)
         dict_graphs[key] = (gvec, extT_labels)
         loopPool = fermi_labelProd.labels[3]
         propagatorMap[key], interactionMap[key] = IR.optimize!(gvec)

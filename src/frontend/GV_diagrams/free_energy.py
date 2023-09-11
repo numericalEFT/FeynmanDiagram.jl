@@ -219,3 +219,224 @@ class free_energy:
         FermiSign = (-1)**self.Order * (-1)**LoopNum
         # n+1 loop  contributes (-1)^(n+1) and order n contributes (-1)^n
         return tuple(Permutation), Momentum, FermiSign
+    
+    def ToString(self, HugenList, VerOrder, SigmaOrder, SPIN):
+        if len(HugenList) == 0:
+            return
+        
+        #TODO: add counterterm
+
+        InterCounterTerms = self.__InterCounterTerms(VerOrder)
+        SigmaCounterTerms = self.__SigmaCounterTerms(SigmaOrder)
+        print InterCounterTerms
+        print SigmaCounterTerms
+
+        IrreDiagList = []
+        for vertype in InterCounterTerms:
+            for gtype in SigmaCounterTerms:
+                for Diag in HugenList:
+                    Permutation = Diag.GetPermu()
+
+                    FeynList = self.HugenToFeyn(Diag.GetPermu())
+                    FactorList = []
+
+                    for FeynPermu in FeynList:
+                        if self.__IsReducibile(FeynPermu, Diag.LoopBasis, vertype, gtype):
+                            FactorList.append(0)
+                        else:
+                            FactorList.append(1)
+
+                    # if np.all(np.array(FactorList) == 0):
+                    #     print "Reducible diagram: ", Permutation
+                    #     continue
+
+                    IrreDiagList.append(
+                        [Diag, FeynList, FactorList, vertype, gtype])
+
+        Body = ""
+        DiagNum = 0
+
+        for Diag, FeynList, FactorList, VerType, GType in IrreDiagList:
+            Permutation = Diag.GetPermu()
+            SymFactor = Diag.SymFactor
+            DiagNum += 1
+            print "Save {0}".format(Permutation)
+
+            Body += "# Permutation\n"
+            for i in Permutation:
+                Body += "{0:2d} ".format(i)
+            Body += "\n"
+
+            Body += "# SymFactor\n{0}\n".format(SymFactor)
+
+            Body += "# GType\n"
+            for i in range(self.GNum):
+                Body += "{0:2d} ".format(GType[i])
+            Body += "\n"
+
+            Body += "# VertexBasis\n"
+            for i in range(self.GNum):
+                Body += "{0:2d} ".format(self.__VerBasis(i))
+            Body += "\n"
+            for i in range(self.GNum):
+                Body += "{0:2d} ".format(self.__VerBasis(Permutation[i]))
+            Body += "\n"
+
+            Body += "# LoopBasis\n"
+            for i in range(self.LoopNum):
+                for j in range(self.GNum):
+                    Body += "{0:2d} ".format(Diag.LoopBasis[i, j])
+                Body += "\n"
+
+            Body += "# Ver4Legs(InL,OutL,InR,OutR)\n"
+            for i in range(0, self.Ver4Num):
+                # skip the external vertexes 0 and 1
+                end1, end2 = 2*i, 2*i+1
+                start1 = Permutation.index(end1)
+                start2 = Permutation.index(end2)
+                Body += "{0:2d} {1:2d} {2:2d} {3:2d} |".format(
+                    start1, end1, start2, end2)
+            Body += "\n"
+
+            Body += "# WType(Direct,Exchange)\n"
+            for i in range(0, self.Ver4Num):
+                Body += "{0:2d} {1:2d} |".format(VerType[i], VerType[i])
+            Body += "\n"
+
+            Body += "# SpinFactor\n"
+
+            FeynList = self.HugenToFeyn(Permutation)
+
+            for idx, FeynPermu in enumerate(FeynList):
+                Path = diag.FindAllLoops(FeynPermu)
+                nloop = len(Path)
+                Sign = (-1)**nloop*(-1)**(self.Order-1) / \
+                    (Diag.SymFactor/abs(Diag.SymFactor))
+
+                if SPIN == 2:
+                    Body += "{0:2d} ".format(SPIN**nloop *
+                                                int(Sign)*FactorList[idx])
+                else:
+                    # make sure the sign of the Spin factor of the first diagram is positive
+                    Body += "{0:2d} ".format(SPIN**nloop *
+                                             int(Sign)*FactorList[idx])
+            #   Body += "{0:2d} ".format(-(-1)**nloop*Factor)
+
+            Body += "\n"
+            Body += "\n"
+
+        Title = "#Type: {0}\n".format("FreeEnergy")
+        Title += "#DiagNum: {0}\n".format(DiagNum)
+        Title += "#Order: {0}\n".format(self.Order)
+        Title += "#GNum: {0}\n".format(self.GNum)
+        Title += "#Ver4Num: {0}\n".format(self.Ver4Num)
+        # if IsSelfEnergy:
+        #     Title += "#LoopNum: {0}\n".format(self.LoopNum-1)
+        # else:
+        Title += "#LoopNum: {0}\n".format(self.LoopNum)
+        Title += "#ExtLoopIndex: \n"
+        Title += "#DummyLoopIndex: \n"
+        # if IsSelfEnergy:
+        #     Title += "#TauNum: {0}\n".format(self.Ver4Num)
+        # else:
+        Title += "#TauNum: {0}\n".format(self.Ver4Num)
+        Title += "#ExtTauIndex: \n"
+        Title += "#DummyTauIndex: \n"
+        Title += "\n"
+
+        if Body == "":
+            return None
+        else:
+            print Body
+            return Title+Body
+
+
+    def __VerBasis(self, index):
+            return int(index/2)
+
+    def HugenToFeyn(self, HugenPermu):
+        """construct a list of feyn diagram permutation from a hugen diagram permutation"""
+        FeynList = []
+        FeynList.append(HugenPermu)
+        Permutation = HugenPermu
+        for j in range(0, self.Order):
+            end1, end2 = 2*j, 2*j+1
+            start1 = Permutation.index(end1)
+            start2 = Permutation.index(end2)
+
+            TempFeynList = []
+            for permu in FeynList:
+                TempPermu = list(permu)
+                TempFeynList.append(tuple(TempPermu))
+                TempPermu[start1], TempPermu[start2] = TempPermu[start2], TempPermu[start1]
+                TempFeynList.append(tuple(TempPermu))
+
+            FeynList = TempFeynList
+        return FeynList
+
+    def __InterCounterTerms(self, CounterTermOrder):
+        Collection = [[]]
+        Sum = [0]
+        for _ in range(1, self.Ver4Num+1):  # number of elements
+            newCollection = []
+            newSum = []
+            for ic, c in enumerate(Collection):
+                for i in range(CounterTermOrder+1):  # element value
+                    if Sum[ic]+i <= CounterTermOrder:
+                        newCollection.append(c + [i])
+                        newSum.append(Sum[ic] + i)
+                Collection = newCollection
+                Sum = newSum
+
+        return [c for ic, c in enumerate(Collection) if Sum[ic] == CounterTermOrder]
+
+    def __SigmaCounterTerms(self, CounterTermOrder):
+        Collection = [[]]
+        Sum = [0]
+        for _ in range(1, self.GNum+1):  # number of elements
+            newCollection = []
+            newSum = []
+            for ic, c in enumerate(Collection):
+                for i in range(CounterTermOrder+1):  # element value
+                    if Sum[ic]+i <= CounterTermOrder:
+                        newCollection.append(c + [i])
+                        newSum.append(Sum[ic] + i)
+                Collection = newCollection
+                Sum = newSum
+        return [c for ic, c in enumerate(Collection) if Sum[ic] == CounterTermOrder]
+
+    def __IsReducibile(self, Permutation, LoopBasis, vertype, gtype):
+        for i in range(0, self.Ver4Num):
+            end1, end2 = 2*i, 2*i+1
+            start1 = Permutation.index(end1)
+            # start2 = Permutation.index(end2)
+            VerLoopBasis = LoopBasis[:, start1]-LoopBasis[:, end1]
+            # print Permutation, 2*i,  VerLoopBasis
+
+        # remove Fock subdiagrams
+        # if diag.HasFock(Permutation, self.GetReference(), vertype, gtype):
+        #     return True
+
+        # remove Hartree subdiagrams
+        if diag.HasTadpole(Permutation, self.GetReference()):
+             return True
+
+        ###### Check High order Hatree ######################
+        # kG, kW = diag.AssignMomentums(
+        #     Permutation, self.GetReference(), self.GetInteractionPairs(True))
+        # last = Permutation.index(1)
+        # first = 0
+        # print '###############################################'
+        # if abs(kG[first]- kG[last])<1e-6:
+        #     print 'Reduc Perm:', Permutation, 'kG:', kG, 'index:', last
+        #     return True
+        # print 'irReduc Perm:', Permutation, 'kG:', kG, 'index:', last
+
+        # for i in range(len(kW)):
+        #     if abs(kW[i]) < 1e-12:
+        #             # print "k=0 on W {0}: {1}".format(p, kW[i])
+        #         print "Contain high-order Hartree: ", Permutation
+        #         return True
+
+        return False
+
