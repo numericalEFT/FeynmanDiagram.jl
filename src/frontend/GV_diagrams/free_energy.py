@@ -109,16 +109,27 @@ class free_energy:
                             MomList.append(Momentum)
                             SignList.append(-SignList[i])
                             # print newpermutation, -SignList[i]
-                        # else:
+                        else:
+                            OrigHugen = self.Permu2HugenDiag[newpermutation]
+                            # print newpermutation
+                            # print OrigHugen.GetPermu()
                             # if FreeEnergyDiagramInvDict[newpermutation]==(2,5,4,7,6,9,8,1,0,3):
-                            # PermuList.append(newpermutation)
-                            # MomList.append(None)
-                            # SignList.append(-SignList[i])
-                            # print "Can not generate Momentum"
-                            # print "old: ", PermuList[i], "new", newpermutation
-                            # print "Permutate", idx, j
-                            # print "OldBases:\n", MomList[i]
-                            # sys.exit(0)
+                            if OrigHugen.GetPermu()==(2,5,4,7,6,9,8,1,0,3):
+                                Momentum = np.array([[1, -1,  1,  0,  0,  0,  0,  0,  0,  0, ],
+                                                    [0,  0,  1, -1,  1,  0,  0,  0,  0,  0, ],
+                                                    [0,  1,  0,  0,  1,  0,  0,  1,  0,  0, ],
+                                                    [0,  0,  0,  0,  1, -1,  1,  0,  0,  0, ],
+                                                    [0,  0,  0,  1,  0,  0,  1,  0,  0,  1, ],
+                                                    [0,  0,  0,  0,  0,  0,  1, -1,  1,  0, ]])
+                                PermuList.append(newpermutation)
+                                MomList.append(Momentum)
+                                SignList.append(-SignList[i])
+                                print newpermutation, -SignList[i]
+                                print "Can not generate Momentum"
+                                print "old: ", PermuList[i], "new", newpermutation
+                                print "Permutate", idx, j
+                                print "OldBases:\n", MomList[i]
+                                # sys.exit(0)
             idx += 1
 
         # set of optimized hugen diagrams
