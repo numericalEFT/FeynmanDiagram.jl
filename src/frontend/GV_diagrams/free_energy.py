@@ -111,24 +111,21 @@ class free_energy:
                             # print newpermutation, -SignList[i]
                         else:
                             OrigHugen = self.Permu2HugenDiag[newpermutation]
-                            # print newpermutation
-                            # print OrigHugen.GetPermu()
-                            # if FreeEnergyDiagramInvDict[newpermutation]==(2,5,4,7,6,9,8,1,0,3):
-                            if OrigHugen.GetPermu()==(2,5,4,7,6,9,8,1,0,3):
-                                Momentum = np.array([[1, -1,  1,  0,  0,  0,  0,  0,  0,  0, ],
-                                                    [0,  0,  1, -1,  1,  0,  0,  0,  0,  0, ],
-                                                    [0,  1,  0,  0,  1,  0,  0,  1,  0,  0, ],
-                                                    [0,  0,  0,  0,  1, -1,  1,  0,  0,  0, ],
-                                                    [0,  0,  0,  1,  0,  0,  1,  0,  0,  1, ],
-                                                    [0,  0,  0,  0,  0,  0,  1, -1,  1,  0, ]])
+                            if OrigHugen.GetPermu() == (2, 5, 4, 7, 6, 9, 8, 1, 0, 3):
+                                Momentum = np.array([[1, -1,  0,  0,  0,  0, -1,  0,  0,  0], 
+                                                    [0,  1,  0,  1,  0,  0,  0,  1,  0,  0], 
+                                                    [0,  0,  1, -1,  0,  0,  0,  0,  0,  1], 
+                                                    [0,  0,  1,  0, -1,  1,  0,  0,  0,  0], 
+                                                    [0,  0,  1,  0,  0,  0,  0,  1,  1,  0], 
+                                                    [0,  0,  0,  0,  0,  1,  1, -1,  0,  0]])
                                 PermuList.append(newpermutation)
                                 MomList.append(Momentum)
                                 SignList.append(-SignList[i])
-                                print newpermutation, -SignList[i]
-                                print "Can not generate Momentum"
-                                print "old: ", PermuList[i], "new", newpermutation
-                                print "Permutate", idx, j
-                                print "OldBases:\n", MomList[i]
+                                # print newpermutation, -SignList[i]
+                                # print "Can not generate Momentum"
+                                # print "old: ", PermuList[i], "new", newpermutation
+                                # print "Permutate", idx, j
+                                # print "OldBases:\n", MomList[i]
                                 # sys.exit(0)
             idx += 1
 
@@ -230,12 +227,12 @@ class free_energy:
         FermiSign = (-1)**self.Order * (-1)**LoopNum
         # n+1 loop  contributes (-1)^(n+1) and order n contributes (-1)^n
         return tuple(Permutation), Momentum, FermiSign
-    
+
     def ToString(self, HugenList, VerOrder, SigmaOrder, SPIN):
         if len(HugenList) == 0:
             return
-        
-        #TODO: add counterterm
+
+        # TODO: add counterterm
 
         InterCounterTerms = self.__InterCounterTerms(VerOrder)
         SigmaCounterTerms = self.__SigmaCounterTerms(SigmaOrder)
@@ -326,7 +323,7 @@ class free_energy:
 
                 if SPIN == 2:
                     Body += "{0:2d} ".format(SPIN**nloop *
-                                                int(Sign)*FactorList[idx])
+                                             int(Sign)*FactorList[idx])
                 else:
                     # make sure the sign of the Spin factor of the first diagram is positive
                     Body += "{0:2d} ".format(SPIN**nloop *
@@ -361,9 +358,8 @@ class free_energy:
             print Body
             return Title+Body
 
-
     def __VerBasis(self, index):
-            return int(index/2)
+        return int(index/2)
 
     def HugenToFeyn(self, HugenPermu):
         """construct a list of feyn diagram permutation from a hugen diagram permutation"""
@@ -430,7 +426,7 @@ class free_energy:
 
         # remove Hartree subdiagrams
         if diag.HasTadpole(Permutation, self.GetReference()):
-             return True
+            return True
 
         ###### Check High order Hatree ######################
         # kG, kW = diag.AssignMomentums(
@@ -450,4 +446,3 @@ class free_energy:
         #         return True
 
         return False
-

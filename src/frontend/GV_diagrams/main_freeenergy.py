@@ -22,7 +22,8 @@ def Generate(Order, VerOrder, SigmaOrder, SPIN):
 
     print "Save diagrams ..."
 
-    fname = "./groups_free_energy/{0}{1}_{2}_{3}.diag".format(
+    # fname = "./groups_free_energy/{0}{1}_{2}_{3}.diag".format(
+    fname = "./{0}{1}_{2}_{3}.diag".format(
         "FreeEnergy", Order, VerOrder, SigmaOrder)
 
     with open(fname, "w") as f:
