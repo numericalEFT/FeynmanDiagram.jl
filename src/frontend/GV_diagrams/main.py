@@ -61,7 +61,7 @@ def Generate(Order, VerOrder, SigmaOrder, IsSelfEnergy, IsGreen, IsSpinPolar, Is
         fname = "./groups_sigma/{0}{1}_{2}_{3}.diag".format(
             "Sigma", Order-1, VerOrder, SigmaOrder)
     elif IsGreen:
-        fname = "./groups_green/{0}{1}_{2}_{3}.diag".format(
+        fname = "./groups_green/{0}{1}_{2}_{3}.diag0".format(
             "Green", Order, VerOrder, SigmaOrder)
     else:
         fname = "./output/{0}{1}_{2}_{3}.diag".format(
@@ -80,10 +80,11 @@ if __name__ == "__main__":
     # Order = int(sys.argv[1])
     Order = 6
     IsGreen = False
-    # IsSelfEnergy = False
-    IsSelfEnergy = True
-    IsSpinPolar = False
-    IsSymPolar = False
+    # IsGreen = True
+    IsSelfEnergy = False
+    # IsSelfEnergy = True
+    IsSpinPolar = True
+    IsSymPolar = True
     SPIN = 2
     for o in range(2, Order+1):
         for v in range(0, Order):
@@ -94,3 +95,5 @@ if __name__ == "__main__":
                     continue
                 Generate(o, v, g, IsSelfEnergy, IsGreen,
                          IsSpinPolar, IsSymPolar, SPIN)
+    # Generate(6, 0, 0, IsSelfEnergy, IsGreen,
+    #          IsSpinPolar, IsSymPolar, SPIN)

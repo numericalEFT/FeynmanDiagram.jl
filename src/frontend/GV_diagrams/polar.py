@@ -241,7 +241,7 @@ class polar():
                 elif IsSelfEnergy and Permutation[i] == 0:
                     # Body += "{0:2d} ".format(-2)
                     Body += "{0:2d} ".format(-3)
-                elif IsGreen and i==0:
+                elif IsGreen and i == 0:
                     Body += "{0:2d} ".format(-2)
                 else:
                     Body += "{0:2d} ".format(GType[i])
@@ -268,8 +268,11 @@ class polar():
 
             basis_temp = np.copy(Diag.LoopBasis)
             if IsSelfEnergy:
-                loc = np.where(Diag.LoopBasis[:, 1] == 1)[0][0]
-                basis_temp[0, :] = Diag.LoopBasis[loc, :]
+                loc = np.where(abs(Diag.LoopBasis[:, 1]) == 1)[0][0]
+                if Diag.LoopBasis[loc, 1] == 1:
+                    basis_temp[0, :] = Diag.LoopBasis[loc, :]
+                else:
+                    basis_temp[0, :] = -Diag.LoopBasis[loc, :]
                 basis_temp[loc:-1, :] = Diag.LoopBasis[loc+1:, :]
                 basis_temp[-1, :] = Diag.LoopBasis[0, :]
             # print yellow("{0}".format(loc))
@@ -322,8 +325,9 @@ class polar():
                                                  int(Sign)*FactorList[idx])
                 else:
                     # make sure the sign of the Spin factor of the first diagram is positive
-                    spinfactor = SPIN**nloop *int(Sign)*FactorList[idx]
-                    if IsGreen or IsSelfEnergy:
+                    spinfactor = SPIN**nloop * int(Sign)*FactorList[idx]
+                    # if IsGreen or IsSelfEnergy:
+                    if IsGreen:
                         spinfactor /= 2
                     Body += "{0:2d} ".format(spinfactor)
             #   Body += "{0:2d} ".format(-(-1)**nloop*Factor)
@@ -432,7 +436,7 @@ class polar():
         #     return True
 
         if IsSelfEnergy:
-            # make sure 1->0 only has one Green's function 
+            # make sure 1->0 only has one Green's function
             if Permutation[0] != 1 or gtype[0] != 0 or gtype[1] != 0:
                 return True
             k = LoopBasis[:, 1]
@@ -441,7 +445,7 @@ class polar():
                     return True
                 if Permutation[i] == 0 and gtype[i] != 0:
                     return True
-        if IsGreen:        
+        if IsGreen:
             # make sure 1->0 only has one Green's function
             if Permutation[0] != 1 or gtype[0] != 0:
                 return True
