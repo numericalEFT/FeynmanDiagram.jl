@@ -43,9 +43,9 @@ class polar():
         Assert(FreeEnergyDiag.Order+1 == self.Order,
                "Polarization and Free energy order should match! {0} vs {1}".format(self.Order, FreeEnergyDiag.Order))
 
-        Diag0 = FreeEnergyDiag.GetPermu()
+        Diag = FreeEnergyDiag.GetPermu()
         # shift all vertex index with 2
-        Diag = [e+SHIFT for e in Diag0]
+        Diag = [e+SHIFT for e in Diag]
 
         ZMomentum = FreeEnergyDiag.LoopBasis
         Sym = FreeEnergyDiag.SymFactor
@@ -64,7 +64,6 @@ class polar():
             Momentum[1:, 1] = ZMomentum[:, i-SHIFT]
             Momentum[0, 0] = 1
 
-            # if Diag0 != (4, 6, 9, 0, 8, 2, 5, 3, 7, 1):
             Assert(diag.CheckConservation(d, Momentum, self.GetInteractionPairs(
             )), "For the first diagram, Momentum does not conserve or rank is wrong!")
 
@@ -98,7 +97,6 @@ class polar():
                 Mom[:, 1] = Mom[:, Index]
                 Mom[:, Index] += deltaMom
 
-                # if Diag0 != (4, 6, 9, 0, 8, 2, 5, 3, 7, 1):
                 Assert(diag.CheckConservation(Permutation, Mom, self.GetInteractionPairs(
                 )), "Momentum does not conserve or rank is wrong!")
 
