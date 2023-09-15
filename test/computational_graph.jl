@@ -240,17 +240,28 @@ end
         evalGraph!,derivative
     g1 = propagator(𝑓⁻(1)𝑓⁺(2))
     g2 = propagator(𝑓⁻(3)𝑓⁺(4))
+    g3 = propagator(𝑓⁻(5)𝑓⁺(6),factor = 2.0)
     print("type:$(g2.type)\n")
-    g3 =3*g1
-    g4 = 4*g1*g1
-    g5 = 4*(2*g3 +3*g4)
-    glist = g1,g2,g3,g4,g5
+    G3 =g1
+    G4 = 4*g1*g1
+    G5 = 4*(2*G3 +3*G4)
+    G6 = (2*g1+3*g2)*(4*g1+g3)
     
     @testset "Eval" begin
-        print("value:",evalGraph!(g5),"\n")
-        gs = Compilers.to_julia_str([derivative(g5, g1.id),], name="eval_graph!")
-        println(gs,"\n")
-        @test evalGraph!(derivative(g5, g1.id)) == 120
+        # Current test assign all green's function equal to 1 for simplicity.
+        # print(evalGraph!(derivative(G5, g1.id)),"\n")
+        # print(evalGraph!(derivative(G3, g1.id)),"\n")
+        # print(evalGraph!(derivative(G3, g2.id)),"\n")
+        # print(evalGraph!(derivative(G6, g1.id)),"\n")
+        # print(evalGraph!(derivative(derivative(G6, g1.id), g2.id)),"\n")
+        # print(evalGraph!(derivative(derivative(G6, g1.id), g3.id)),"\n")
+        # gs = Compilers.to_julia_str([derivative(G5, g1.id),], name="eval_graph!")
+        # println(gs,"\n")
+        @test evalGraph!(derivative(G3, g1.id))==1
+        @test evalGraph!(derivative(G4, g1.id))==8
+        @test evalGraph!(derivative(G5, g1.id))==104
+        @test evalGraph!(derivative(G6, g1.id))==32
+        @test evalGraph!(derivative(derivative(G6, g1.id), g2.id))==12
     end
 end
 

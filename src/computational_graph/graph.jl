@@ -116,7 +116,7 @@ mutable struct Graph{F,W} # Graph
     end
 end
 
-const unity = Graph([];ftype = Float64, wtype = Float64,  weight = 1.0) 
+const Unity = Graph([];ftype = Float64, wtype = Float64,  weight = 1.0) 
 
 
 function Base.isequal(a::Graph, b::Graph)
@@ -279,25 +279,31 @@ function linear_combination(graphs::Vector{Graph{F,W}}, constants::Vector{C}) wh
         subgraph_factors=constants, type=g1.type(), operator=Sum(), ftype=F, wtype=W)
 end
 
+
+
+
 function Base.:+(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
     return linear_combination(g1, g2, F(1), F(1))
 end
 
-function Base.:+(c::C, g1::Graph{F,W}) where {F,W,C}
-    return linear_combination(g1, unity, F(1), F(c))
-end
-function Base.:+(g1::Graph{F,W},c::C) where {F,W,C}
-    return linear_combination(g1, unity, F(1), F(c))
-end
+
 function Base.:-(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
     return linear_combination(g1, g2, F(1), F(-1))
 end
-function Base.:-(c::C, g1::Graph{F,W}) where {F,W,C}
-    return linear_combination(unity, g1, F(c), F(-1))
-end
-function Base.:-(g1::Graph{F,W},c::C) where {F,W,C}
-    return linear_combination(g1, unity, F(1), F(-c))
-end
+
+# function Base.:+(c::C, g1::Graph{F,W}) where {F,W,C}
+#     return linear_combination(g1, Unity, F(1), F(c))
+# end
+# function Base.:+(g1::Graph{F,W},c::C) where {F,W,C}
+#     return linear_combination(g1, Unity, F(1), F(c))
+# end
+
+# function Base.:-(c::C, g1::Graph{F,W}) where {F,W,C}
+#     return linear_combination(Unity, g1, F(c), F(-1))
+# end
+# function Base.:-(g1::Graph{F,W},c::C) where {F,W,C}
+#     return linear_combination(g1, Unity, F(1), F(-c))
+# end
 
 
 """

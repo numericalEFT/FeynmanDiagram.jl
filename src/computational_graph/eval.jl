@@ -19,3 +19,7 @@ function evalGraph!(g::Graph)
     end
     return result
 end
+
+function evalGraph!(g::Number)
+    return g
+end

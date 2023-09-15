@@ -43,7 +43,48 @@
 #     end
 # end
 
-function derivative(diag::Graph{F,W}, ID::Int) where {F, W}
+function separate_number_graph(g::Vector{Union{F, Graph{F, W}}} ) where {F,W}
+    subgraphs = Vector{Graph{F, W}}()
+    subnumber = nothing
+    for child in g
+        if  typeof(child) <: Number
+            if isnothing(subnumber)
+                subnumber = child
+            else
+                subnumber += child
+            end
+        elseif typeof(child) <: Graph{F,W}     
+            push!(subgraphs, child)
+        else
+            error("The type of subgraphs in derivative is incorrect!")
+        end
+    end
+    return subgraphs, subnumber
+end
+
+function separate_number_graph(g::Vector{Union{F, Graph{F, W}}}, coeff::Vector{F} ) where {F,W}
+    @assert length(g) == length(coeff)
+    subgraphs = Vector{Graph{F, W}}()
+    subnumber = nothing
+    subcoeff = Vector{F}()
+    for (i,child) in enumerate(g)
+        if  typeof(child) <: Number
+            if isnothing(subnumber)
+                subnumber = child*coeff[i]
+            else
+                subnumber += child*coeff[i]
+            end
+        elseif typeof(child) <: Graph{F,W}     
+            push!(subgraphs, child)
+            push!(subcoeff, coeff[i])
+        else
+            error("The type of subgraphs in derivative is incorrect!")
+        end
+    end
+    return subgraphs, subnumber, subcoeff
+end
+
+function derivative(diag::Graph{F,W}, ID::Int; unity = Graph([]; type = diag.type(), ftype = F, wtype = W,  weight = W(1.0)) )where {F, W}
     # use a dictionary to host the dual diagram of a diagram for a given hash number
     # a dual diagram is defined as the derivative of the original diagram
     rootid = -1
@@ -56,22 +97,35 @@ function derivative(diag::Graph{F,W}, ID::Int) where {F, W}
         if isleaf(d) 
             # For leaves, derivative with respect to same leaf is 1, otherwise is 0 (no dual graph in this case).
             if d.id == ID
-                dual[d.id] = F(1)
+                dual[d.id] = F(1)*d.factor
             end
         else # composite diagram
             if d.operator == Sum
-                # for a diagram which is a sum of subdiagrams, derivative means a sub of derivative subdiagrams
-                children = [dual[sub.id] for sub in d.subgraphs if haskey(dual, sub.id)]
-                if isempty(children) == false
-                    dual[d.id] = sum(children)
+                children = Vector{Union{F,Graph{F,W}}}()
+                coeff = Vector{F}()
+                for (i,sub) in enumerate(d.subgraphs)
+                    if haskey(dual, sub.id)
+                        push!( children, dual[sub.id])
+                        push!(coeff, d.subgraph_factors[i])
+                    end
+                end
+
+                subgraphs, subnumber, subcoeff = separate_number_graph(children, coeff)
+                if isempty(subgraphs) == false
+                    if !isnothing(subnumber)
+                        push!(subgraphs, unity)     #If both numbers and graphs appear in derivative, convert number to a unity graph, and asign the number to subgraph_factors of parent node.
+                        push!(subcoeff, subnumber) 
+                    end
+                    dual[d.id] =linear_combination(subgraphs,subcoeff)
                     dual[d.id].factor *= d.factor
-                    dual[d.id].subgraph_factors = dual[d.id].subgraph_factors .* d.subgraph_factors
+                elseif !isnothing(subnumber)  #if only numbers appear in derivative, return a number
+                    dual[d.id] = subnumber*d.factor
                 end
             elseif d.operator == Prod
                 # d = s1xs2x... = s1'xs2x... + s1xs2'x... + ...
-                children = Vector{Union{F,Graph{F,W}}}()
                 factor = 1.0
-                for (si, sub) in enumerate(d.subgraphs)
+                children = Vector{Union{F,Graph{F,W}}}()
+                for (si, sub) in enumerate(d.subgraphs) # First generate each addend s1'xs2x...
                     if haskey(dual, sub.id) == false
                         continue
                     end
@@ -84,20 +138,28 @@ function derivative(diag::Graph{F,W}, ID::Int) where {F, W}
                     end
                     push!(children, child)
                 end
-                if isempty(children) == false
-                    dual[d.id] = sum(children)
-                    if typeof(dual[d.id]) <: Number 
-                        dual[d.id] *= d.factor * factor
-                    else
-                        dual[d.id].factor *= d.factor * factor
+
+                subgraphs, subnumber = separate_number_graph(children)
+          
+                if isempty(subgraphs) == false
+                    if !isnothing(subnumber)
+                        push!(subgraphs, unity)     #If both numbers and graphs appear in derivative, convert number to a unity graph, and asign the number to subgraph_factors of parent node.
+                        push!(subcoeff, subnumber) 
                     end
+                    subcoeff = ones(F, length(subgraphs))
+                    dual[d.id] =linear_combination(subgraphs,subcoeff)
+                    dual[d.id].factor *= d.factor*factor
+                elseif !isnothing(subnumber)  #if only numbers appear in derivative, return a number
+                    dual[d.id] = subnumber*d.factor*factor
                 end
             else
                 error("not implemented!")
             end
         end
     end
-
+    if isempty(dual)
+        return 0.0
+    end
     return dual[rootid]
 end
 
