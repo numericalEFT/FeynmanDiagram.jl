@@ -116,9 +116,6 @@ mutable struct Graph{F,W} # Graph
     end
 end
 
-const unity = Graph([];ftype = Float64, wtype = Float64,  weight = 1.0) 
-
-
 function Base.isequal(a::Graph, b::Graph)
     typeof(a) != typeof(b) && return false
     for field in fieldnames(typeof(a))
@@ -216,35 +213,9 @@ function Base.:*(c1::C, g2::Graph{F,W}) where {F,W,C}
         subgraph_factors=[F(c1),], type=g2.type(), operator=Prod(), ftype=F, wtype=W)
     # Merge multiplicative link
     if g2.operator == Prod && onechild(g2)
-        ##when prune single child nodes, why the subgraph_factors are merged, but factor is not merged ? 
         g.subgraph_factors[1] *= g2.subgraph_factors[1]
         g.subgraphs = g2.subgraphs
     end
-    return g
-end
-
-function Base.:*(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
-    # Currently Prod of two green's function ignore topology
-    if  g1.operator == Prod && onechild(g1)
-        g1_sub = g1.subgraphs[1]
-        subfactor1 = g1.subgraph_factors[1] * g1.factor
-    else
-        g1_sub = g1
-        subfactor1 = F(1.0)
-    end
-        
-    if  g2.operator == Prod && onechild(g2)
-        g2_sub = g2.subgraphs[1]
-        subfactor2 = g2.subgraph_factors[1]*g2.factor
-    else
-        g2_sub = g2
-        subfactor2 = F(1.0)
-    end
-
-    g = Graph([g1_sub,g2_sub]; 
-    subgraph_factors=[F(subfactor1),F(subfactor2)]  , type=g2_sub.type(), operator=Prod(), ftype=F, wtype=W)
-    # Merge multiplicative link
- 
     return g
 end
 
@@ -254,9 +225,9 @@ end
     Returns a graph representing the linear combination `c1*g1 + c2*g2`.
 """
 function linear_combination(g1::Graph{F,W}, g2::Graph{F,W}, c1::C, c2::C) where {F,W,C}
-    #@assert g1.type == g2.type "g1 and g2 are not of the same type."
-    #@assert g1.orders == g2.orders "g1 and g2 have different orders."
-    #@assert Set(external(g1)) == Set(external(g2)) "g1 and g2 have different external vertices."
+    @assert g1.type == g2.type "g1 and g2 are not of the same type."
+    @assert g1.orders == g2.orders "g1 and g2 have different orders."
+    @assert Set(external(g1)) == Set(external(g2)) "g1 and g2 have different external vertices."
     total_vertices = union(g1.vertices, g2.vertices)
     return Graph([g1, g2]; vertices=total_vertices, external=g1.external, hasLeg=g1.hasLeg,
         subgraph_factors=[F(c1), F(c2)], type=g1.type(), operator=Sum(), ftype=F, wtype=W)
@@ -270,9 +241,9 @@ end
     graph representing the linear combination (𝐜 ⋅ 𝐠).
 """
 function linear_combination(graphs::Vector{Graph{F,W}}, constants::Vector{C}) where {F,W,C}
-    #@assert alleq(getproperty.(graphs, :type)) "Graphs are not all of the same type."
-    #@assert alleq(getproperty.(graphs, :orders)) "Graphs do not all have the same order."
-    #@assert alleq(Set.(external.(graphs))) "Graphs do not share the same set of external vertices."
+    @assert alleq(getproperty.(graphs, :type)) "Graphs are not all of the same type."
+    @assert alleq(getproperty.(graphs, :orders)) "Graphs do not all have the same order."
+    @assert alleq(Set.(external.(graphs))) "Graphs do not share the same set of external vertices."
     total_vertices = union(Iterators.flatten(vertices.(graphs)))
     g1 = graphs[1]
     return Graph(graphs; vertices=total_vertices, external=g1.external, hasLeg=g1.hasLeg,
@@ -283,22 +254,9 @@ function Base.:+(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
     return linear_combination(g1, g2, F(1), F(1))
 end
 
-function Base.:+(c::C, g1::Graph{F,W}) where {F,W,C}
-    return linear_combination(g1, unity, F(1), F(c))
-end
-function Base.:+(g1::Graph{F,W},c::C) where {F,W,C}
-    return linear_combination(g1, unity, F(1), F(c))
-end
 function Base.:-(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
     return linear_combination(g1, g2, F(1), F(-1))
 end
-function Base.:-(c::C, g1::Graph{F,W}) where {F,W,C}
-    return linear_combination(unity, g1, F(c), F(-1))
-end
-function Base.:-(g1::Graph{F,W},c::C) where {F,W,C}
-    return linear_combination(g1, unity, F(1), F(-c))
-end
-
 
 """
     function feynman_diagram(subgraphs::Vector{Graph{F,W}}, topology::Vector{Vector{Int}}, perm_noleg::Union{Vector{Int},Nothing}=nothing;

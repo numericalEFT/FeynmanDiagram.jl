@@ -106,26 +106,3 @@ function eldest(g::Graph)
     @assert haschildren(g) "Graph has no children!"
     return children(g)[1]
 end
-
-"""
-    function totaloperation(g::Graph)
-
-    Returns the total number of  additions and multiplications in the graph.
-
-# Arguments:
-- `g::Graph`: graph for which to find the total number of  operations.
-"""
-function totaloperation(g::Graph)
-    totalsum = 0
-    totalprod = 0
-    for node in PreOrderDFS(g)
-        if length(node.subgraphs) > 0 
-            if node.operator == Prod
-                totalprod += length(node.subgraphs) - 1
-            elseif node.operator == Sum
-                totalsum += length(node.subgraphs) - 1 
-            end
-        end
-    end
-    return [totalsum, totalprod]
-end
