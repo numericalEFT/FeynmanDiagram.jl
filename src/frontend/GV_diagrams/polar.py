@@ -175,7 +175,7 @@ class polar():
         #     PermutationDict)
         return list(DeformationFinal)
 
-    def ToString(self, PolarHugenList, VerOrder, SigmaOrder, IsSelfEnergy, IsSpinPolar, IsSymPolar, SPIN):
+    def ToString(self, PolarHugenList, VerOrder, SigmaOrder, IsSelfEnergy, IsGreen, IsSpinPolar, IsSymPolar, SPIN):
         if len(PolarHugenList) == 0:
             return
 
@@ -195,7 +195,7 @@ class polar():
                     FactorList = []
 
                     for FeynPermu in FeynList:
-                        if self.__IsReducibile(FeynPermu, Diag.LoopBasis, vertype, gtype, IsSelfEnergy, IsSymPolar):
+                        if self.__IsReducibile(FeynPermu, Diag.LoopBasis, vertype, gtype, IsSelfEnergy, IsGreen, IsSymPolar):
                             FactorList.append(0)
                         else:
                             FactorList.append(1)
@@ -219,7 +219,7 @@ class polar():
         for Diag, FeynList, FactorList, VerType, GType in IrreDiagList:
             Permutation = Diag.GetPermu()
             SymFactor = Diag.SymFactor
-            if IsSymPolar and not IsSelfEnergy and Permutation[0] == 1:
+            if IsSymPolar and not IsSelfEnergy and not IsGreen and Permutation[0] == 1:
                 # only save one of symmetric self-energy diagrams
                 SymFactor *= 2
             Mom = Diag.LoopBasis
@@ -238,10 +238,11 @@ class polar():
                 # if IsSelfEnergy and i == 0:
                 if IsSelfEnergy and i in [0, 1]:
                     Body += "{0:2d} ".format(-2)
-                # elif IsSelfEnergy and (i == 1 or Permutation[i] == 0):
                 elif IsSelfEnergy and Permutation[i] == 0:
                     # Body += "{0:2d} ".format(-2)
                     Body += "{0:2d} ".format(-3)
+                elif IsGreen and i == 0:
+                    Body += "{0:2d} ".format(-2)
                 else:
                     Body += "{0:2d} ".format(GType[i])
 
@@ -267,8 +268,11 @@ class polar():
 
             basis_temp = np.copy(Diag.LoopBasis)
             if IsSelfEnergy:
-                loc = np.where(Diag.LoopBasis[:, 1] == 1)[0][0]
-                basis_temp[0, :] = Diag.LoopBasis[loc, :]
+                loc = np.where(abs(Diag.LoopBasis[:, 1]) == 1)[0][0]
+                if Diag.LoopBasis[loc, 1] == 1:
+                    basis_temp[0, :] = Diag.LoopBasis[loc, :]
+                else:
+                    basis_temp[0, :] = -Diag.LoopBasis[loc, :]
                 basis_temp[loc:-1, :] = Diag.LoopBasis[loc+1:, :]
                 basis_temp[-1, :] = Diag.LoopBasis[0, :]
             # print yellow("{0}".format(loc))
@@ -321,14 +325,19 @@ class polar():
                                                  int(Sign)*FactorList[idx])
                 else:
                     # make sure the sign of the Spin factor of the first diagram is positive
-                    Body += "{0:2d} ".format(SPIN**nloop *
-                                             int(Sign)*FactorList[idx])
+                    spinfactor = SPIN**nloop * int(Sign)*FactorList[idx]
+                    # if IsGreen or IsSelfEnergy:
+                    if IsGreen:
+                        spinfactor /= 2
+                    Body += "{0:2d} ".format(spinfactor)
             #   Body += "{0:2d} ".format(-(-1)**nloop*Factor)
 
             Body += "\n"
             Body += "\n"
         if IsSelfEnergy:
             Title = "#Type: {0}\n".format("SelfEnergy")
+        elif IsGreen:
+            Title = "#Type: {0}\n".format("Green2")
         else:
             Title = "#Type: {0}\n".format("Polarization")
         Title += "#DiagNum: {0}\n".format(DiagNum)
@@ -402,7 +411,7 @@ class polar():
         #     else:
         #         return int(index/2)+1
 
-    def __IsReducibile(self, Permutation, LoopBasis, vertype, gtype, IsSelfEnergy, IsSymPolar):
+    def __IsReducibile(self, Permutation, LoopBasis, vertype, gtype, IsSelfEnergy, IsGreen, IsSymPolar):
         ExterLoop = [0, ]*self.LoopNum
         ExterLoop[0] = 1
         for i in range(1, self.Ver4Num+1):
@@ -436,6 +445,10 @@ class polar():
                     return True
                 if Permutation[i] == 0 and gtype[i] != 0:
                     return True
+        if IsGreen:
+            # make sure 1->0 only has one Green's function
+            if Permutation[0] != 1 or gtype[0] != 0:
+                return True
         if IsSymPolar:
             if Permutation[1] == 0:
                 return True
