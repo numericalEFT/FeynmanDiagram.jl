@@ -42,10 +42,13 @@ function to_julia_str(graphs::AbstractVector; root::AbstractVector{Int}=[g.id fo
     return head * body * tail
 end
 
-function to_julia_str(graphs::AbstractVector, propagatorMap::Dict{Int,Int}, interactionMap::Dict{Int,Int}; root::AbstractVector{Int}=[g.id for g in graphs], name::String="eval_graph!")
-    head = "function $name(root::AbstractVector, propagatorVal::AbstractVector, interactionVal::AbstractVector)\n "
+# function to_julia_str(graphs::AbstractVector, propagatorMap::Dict{Int,Int}, interactionMap::Dict{Int,Int}; root::AbstractVector{Int}=[g.id for g in graphs], name::String="eval_graph!")
+function to_julia_str(graphs::AbstractVector, leafMap::Dict{Int,Int}; root::AbstractVector{Int}=[g.id for g in graphs],
+    leaftypes=[ComputationalGraphs.Propagator, ComputationalGraphs.Interaction], name::String="eval_graph!")
+    # head = "function $name(root::AbstractVector, propagatorVal::AbstractVector, interactionVal::AbstractVector)\n "
+    head = "function $name(root::AbstractVector, leafVal::AbstractVector)\n "
     body = ""
-    pIdx, iIdx = 1, 1
+    # pIdx, iIdx = 1, 1
     for graph in graphs
         for g in PostOrderDFS(graph) #leaf first search
             if g.id in root
@@ -55,12 +58,15 @@ function to_julia_str(graphs::AbstractVector, propagatorMap::Dict{Int,Int}, inte
             end
             if isempty(g.subgraphs) #leaf
                 g.name == "compiled" && continue
-                if g.type == ComputationalGraphs.Propagator
-                    body *= "    $target = propagatorVal[$(propagatorMap[g.id])]\n "
-                    pIdx += 1
-                elseif g.type == ComputationalGraphs.Interaction
-                    body *= "    $target = interactionVal[$(interactionMap[g.id])]\n "
-                    iIdx += 1
+                # if g.type == ComputationalGraphs.Propagator
+                #     body *= "    $target = propagatorVal[$(propagatorMap[g.id])]\n "
+                #     pIdx += 1
+                # elseif g.type == ComputationalGraphs.Interaction
+                #     body *= "    $target = interactionVal[$(interactionMap[g.id])]\n "
+                #     iIdx += 1
+                # end
+                if g.type in leaftypes
+                    body *= "    $target = leafVal[$(leafMap[g.id])]\n "
                 end
                 g.name = "compiled"
             else
@@ -102,10 +108,12 @@ function compile(graphs::AbstractVector;
     return @RuntimeGeneratedFunction(func_expr)
 end
 
-function compile(graphs::AbstractVector, propagatorMap::Dict{Int,Int}, interactionMap::Dict{Int,Int};
+# function compile(graphs::AbstractVector, propagatorMap::Dict{Int,Int}, interactionMap::Dict{Int,Int};
+function compile(graphs::AbstractVector, leafMap::Dict{Int,Int};
     root::AbstractVector{Int}=[g.id for g in graphs])
     # this function return a runtime generated function defined by compile()
-    func_string = to_julia_str(graphs, propagatorMap, interactionMap; root=root, name="func_name!")
+    # func_string = to_julia_str(graphs, propagatorMap, interactionMap; root=root, name="func_name!")
+    func_string = to_julia_str(graphs, leafMap; root=root, name="func_name!")
     func_expr = Meta.parse(func_string)
     return @RuntimeGeneratedFunction(func_expr)
 end

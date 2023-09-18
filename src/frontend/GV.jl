@@ -109,7 +109,8 @@ function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, di
     end
     loopPool = LoopPool(:K, dim, MaxLoopNum, Float64)
 
-    propagatorMap, interactionMap = Dict{Tuple{Int,Int,Int},Dict{Int,Int}}(), Dict{Tuple{Int,Int,Int},Dict{Int,Int}}()
+    # propagatorMap, interactionMap = Dict{Tuple{Int,Int,Int},Dict{Int,Int}}(), Dict{Tuple{Int,Int,Int},Dict{Int,Int}}()
+    leafMap = Dict{Tuple{Int,Int,Int},Dict{Int,Int}}()
     if has_counterterm
         GTypes = collect(0:MaxOrder-MinOrder)
         type == :sigma && append!(GTypes, [-2, -3])
@@ -128,7 +129,7 @@ function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, di
                     key = (order, GOrder, VerOrder)
                     dict_graphs[key] = (gvec, extT_labels)
                     loopPool = fermi_labelProd.labels[3]
-                    propagatorMap[key], interactionMap[key] = IR.optimize!(gvec)
+                    leafMap[key] = IR.optimize!(gvec)
                 end
             end
         end
@@ -143,14 +144,14 @@ function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, di
             key = (order, 0, 0)
             dict_graphs[key] = (gvec, extT_labels)
             loopPool = fermi_labelProd.labels[3]
-            propagatorMap[key], interactionMap[key] = IR.optimize!(gvec)
+            leafMap[key] = IR.optimize!(gvec)
         end
     end
     fermi_labelProd = LabelProduct(tau_labels, GTypes, loopPool)
     bose_labelProd = LabelProduct(tau_labels, VTypes, loopPool)
 
     # return IR.linear_combination(graphs, ones(_dtype.factor, length(graphs))), fermi_labelProd, bose_labelProd
-    return dict_graphs, fermi_labelProd, bose_labelProd, (propagatorMap, interactionMap)
+    return dict_graphs, fermi_labelProd, bose_labelProd, leafMap
 end
 
 """
@@ -200,20 +201,23 @@ function diagdictGV(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}, dim::Int=3;
     VTypes = collect(0:MaxVerOrder)
 
     # graphvector = Vector{_dtype.factor,_dtype.weight}()
-    propagatorMap, interactionMap = Dict{eltype(gkeys),Dict{Int,Int}}(), Dict{eltype(gkeys),Dict{Int,Int}}()
+    # propagatorMap, interactionMap = Dict{eltype(gkeys),Dict{Int,Int}}(), Dict{eltype(gkeys),Dict{Int,Int}}()
+    leafMap = Dict{eltype(gkeys),Dict{Int,Int}}()
     for key in gkeys
         gvec, fermi_labelProd, bose_labelProd, extT_labels = eachorder_diag(type, key...;
             dim=dim, loopPool=loopPool, tau_labels=tau_labels, GTypes=GTypes, VTypes=VTypes, spinPolarPara=spinPolarPara)
         dict_graphs[key] = (gvec, extT_labels)
         loopPool = fermi_labelProd.labels[3]
-        propagatorMap[key], interactionMap[key] = IR.optimize!(gvec)
+        # propagatorMap[key], interactionMap[key] = IR.optimize!(gvec)
+        leafMap[key] = IR.optimize!(gvec)
         # append!(graphvector, gvec)
     end
     # IR.optimize!(graphvector)
 
     fermi_labelProd = LabelProduct(tau_labels, GTypes, loopPool)
     bose_labelProd = LabelProduct(tau_labels, VTypes, loopPool)
-    return dict_graphs, fermi_labelProd, bose_labelProd, (propagatorMap, interactionMap)
+    # return dict_graphs, fermi_labelProd, bose_labelProd, (propagatorMap, interactionMap)
+    return dict_graphs, fermi_labelProd, bose_labelProd, leafMap
 end
 
 """
