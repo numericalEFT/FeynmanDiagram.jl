@@ -26,7 +26,7 @@ export external_labels
 # export 𝐺ᶠ, 𝐺ᵇ, 𝐺ᵠ, 𝑊, Green2, Interaction
 
 include("tree_properties.jl")
-export haschildren, onechild, isleaf, isbranch, ischain, isfactorless, eldest, totaloperation
+export haschildren, onechild, isleaf, isbranch, ischain, isfactorless, eldest, count_operation
 
 include("operation.jl")
 export derivative

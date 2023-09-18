@@ -21,6 +21,7 @@ isassociative(::Type{Sum}) = true
 # isassociative(::Type{Prod}) = true
 
 abstract type GraphType end
+struct Unity <: GraphType end
 struct Interaction <: GraphType end
 struct ExternalVertex <: GraphType end
 struct Propagator <: GraphType end
@@ -116,9 +117,9 @@ mutable struct Graph{F,W} # Graph
     end
 end
 
-const Unity = Graph([];ftype = Float64, wtype = Float64,  weight = 1.0) 
-
-
+function constant_graph(wtype, factor::F=F(1)) where {F}
+    return Graph([]; type=Unity(), factor=factor, ftype=F, wtype=wtype)
+end
 function Base.isequal(a::Graph, b::Graph)
     typeof(a) != typeof(b) && return false
     for field in fieldnames(typeof(a))
@@ -225,26 +226,26 @@ end
 
 function Base.:*(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
     # Currently Prod of two green's function ignore topology
-    if  g1.operator == Prod && onechild(g1)
+    if g1.operator == Prod && onechild(g1)
         g1_sub = g1.subgraphs[1]
         subfactor1 = g1.subgraph_factors[1] * g1.factor
     else
         g1_sub = g1
         subfactor1 = F(1.0)
     end
-        
-    if  g2.operator == Prod && onechild(g2)
+
+    if g2.operator == Prod && onechild(g2)
         g2_sub = g2.subgraphs[1]
-        subfactor2 = g2.subgraph_factors[1]*g2.factor
+        subfactor2 = g2.subgraph_factors[1] * g2.factor
     else
         g2_sub = g2
         subfactor2 = F(1.0)
     end
 
-    g = Graph([g1_sub,g2_sub]; 
-    subgraph_factors=[F(subfactor1),F(subfactor2)]  , type=g2_sub.type(), operator=Prod(), ftype=F, wtype=W)
+    g = Graph([g1_sub, g2_sub];
+        subgraph_factors=[F(subfactor1), F(subfactor2)], type=g2_sub.type(), operator=Prod(), ftype=F, wtype=W)
     # Merge multiplicative link
- 
+
     return g
 end
 
@@ -285,6 +286,7 @@ end
 function Base.:+(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
     return linear_combination(g1, g2, F(1), F(1))
 end
+
 
 
 function Base.:-(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
@@ -341,7 +343,7 @@ julia> g.subgraphs
 """
 function feynman_diagram(subgraphs::Vector{Graph{F,W}}, topology::Vector{Vector{Int}}, perm_noleg::Union{Vector{Int},Nothing}=nothing;
     factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", diagtype::GraphType=GenericDiag(), is_signed::Bool=false) where {F,W}
-
+    a = [1, 2, 3]
     # external_ops = OperatorProduct(operators[external]) # the external operators for the building diagram after contractions
     contraction = collect(Iterators.flatten(topology))
     @assert length(unique(contraction)) == length(contraction)  # no repeated index

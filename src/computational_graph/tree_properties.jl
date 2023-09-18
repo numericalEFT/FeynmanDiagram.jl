@@ -115,15 +115,15 @@ end
 # Arguments:
 - `g::Graph`: graph for which to find the total number of  operations.
 """
-function totaloperation(g::Graph)
+function count_operation(g::Graph)
     totalsum = 0
     totalprod = 0
     for node in PreOrderDFS(g)
-        if length(node.subgraphs) > 0 
+        if length(node.subgraphs) > 0
             if node.operator == Prod
                 totalprod += length(node.subgraphs) - 1
             elseif node.operator == Sum
-                totalsum += length(node.subgraphs) - 1 
+                totalsum += length(node.subgraphs) - 1
             end
         end
     end
