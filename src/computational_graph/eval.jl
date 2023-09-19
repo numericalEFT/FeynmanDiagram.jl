@@ -6,16 +6,16 @@
 
 # #@inline eval(d::DiagramId) = error("eval for $d has not yet implemented!")
 # #
-function eval!(g::Graph{F,W}, leafmap::Dict{Int,W}=Dict{Int,W}()) where {F,W}
+function eval!(g::Graph{F,W}, leafmap::Dict{Int,Int}=Dict{Int,Int}(), leaf::Vector{W}=Vector{W}()) where {F,W}
     result = nothing
-    if isempty(leafmap)
-        for node in Leaves(g)
-            leafmap[node.id] = 1.0
-        end
-    end
+
     for node in PostOrderDFS(g)
         if isleaf(node)
-            node.weight = leafmap[node.id]
+            if isempty(leafmap)
+                node.weight = 1.0
+            else
+                node.weight = leaf[leafmap[node.id]]
+            end
         else
             node.weight = apply(node.operator, node.subgraphs, node.subgraph_factors)
             #node.weight = add(node.subgraphs) * node.factor

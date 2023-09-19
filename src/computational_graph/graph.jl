@@ -21,7 +21,7 @@ isassociative(::Type{Sum}) = true
 # isassociative(::Type{Prod}) = true
 
 abstract type GraphType end
-struct Unity <: GraphType end
+struct Constant <: GraphType end
 struct Interaction <: GraphType end
 struct ExternalVertex <: GraphType end
 struct Propagator <: GraphType end
@@ -117,8 +117,8 @@ mutable struct Graph{F,W} # Graph
     end
 end
 
-function constant_graph(wtype, factor::F=F(1)) where {F}
-    return Graph([]; type=Unity(), factor=factor, ftype=F, wtype=wtype)
+function constant_graph(factor=one(_dtype.factor))
+    return Graph([]; type=Constant(), factor=factor, ftype=_dtype.factor, wtype=_dtype.weight, weight=one(_dtype.weight))
 end
 function Base.isequal(a::Graph, b::Graph)
     typeof(a) != typeof(b) && return false

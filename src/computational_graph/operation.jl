@@ -113,7 +113,7 @@ function frontAD(diag::Graph{F,W}, ID::Int) where {F,W}
                 subgraphs, subnumber, subcoeff = separate_number_graph(children, coeff)
                 if isempty(subgraphs) == false
                     if !isnothing(subnumber)
-                        push!(subgraphs, constant_graph(W, F(subnumber)))     #If both numbers and graphs appear in derivative, convert number to a unity graph, and asign the number to subgraph_factors of parent node.
+                        push!(subgraphs, constant_graph(F(subnumber)))     #If both numbers and graphs appear in derivative, convert number to a unity graph, and asign the number to subgraph_factors of parent node.
                         push!(subcoeff, 1.0)
                     end
                     dual[d.id] = linear_combination(subgraphs, subcoeff)
@@ -143,7 +143,7 @@ function frontAD(diag::Graph{F,W}, ID::Int) where {F,W}
 
                 if isempty(subgraphs) == false
                     if !isnothing(subnumber)
-                        push!(subgraphs, constant_graph(W, F(subnumber)))     #If both numbers and graphs appear in derivative, convert number to a unity graph, and asign the number to subgraph_factors of parent node.
+                        push!(subgraphs, constant_graph(F(subnumber)))     #If both numbers and graphs appear in derivative, convert number to a unity graph, and asign the number to subgraph_factors of parent node.
                         push!(subcoeff, 1.0)
                     end
                     subcoeff = ones(F, length(subgraphs))
