@@ -73,7 +73,7 @@ end
 
     Generates a Graph Dict: the `dim`-dimensional spin/charge polarization or self-energy diagrams with static interactions in a given `type`, to a given maximum order `MaxOrder`, with switchable couterterms. 
     Generates fermionic/bosonic `LabelProduct`: `fermi_labelProd`/`bose_labelProd` for these Graphs.
-    Generates a Tuple (propagatorMap, interactionMap) for mapping `g.id` to the index of unique proapgators and interactions, respectively. 
+    Generates a leafMap for mapping `g.id` to the index of unique leaf.
 
 # Arguments:
 - `type` (Symbol): The type of the Feynman diagrams, including `:spinPolar`, `:chargePolar`, `:sigma`, `:green`, or `:freeEnergy`.
@@ -83,12 +83,12 @@ end
 - `spinPolarPara` (Float64, optional): The spin-polarization parameter (n_up - n_down) / (n_up + n_down) (defaults to `0.0`).
 
 # Returns
-A tuple `(diagrams, fermi_labelProd, bose_labelProd)` where 
-- `diagrams` is a `Dict{Tuple{Int,Int,Int},Tuple{Vector{Graph},Vector{Vector{Int}}}}` object representing the diagrams. 
-   The key is (order, Gorder, Vorder). The element is a Tuple (diagrams, extT_labels).
+A tuple `(dict_graphs, fermi_labelProd, bose_labelProd, leafMap)` where 
+- `dict_graphs` is a `Dict{Tuple{Int,Int,Int},Tuple{Vector{Graph},Vector{Vector{Int}}}}` object representing the diagrams. 
+   The key is (order, Gorder, Vorder). The element is a Tuple (graphVector, extT_labels).
 - `fermi_labelProd` is a `LabelProduct` object containing the labels for the fermionic `G` objects in the diagrams, 
 - `bose_labelProd` is a `LabelProduct` object containing the labels for the bosonic `W` objects in the diagrams.
-- `(propagatorMap, interactionMap)` maps `g.id` to the index of unique proapgators and interactions, respectively. 
+- `leafMap` maps `g.id` to the index of unique leaf. 
 """
 function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, dim::Int=3;
     MinOrder::Int=1, spinPolarPara::Float64=0.0)
@@ -154,7 +154,7 @@ end
 
     Generates a Graph Dict: the `dim`-dimensional spin/charge polarization or self-energy diagrams with static interactions in a given `type`, to a given maximum order `MaxOrder`, with switchable couterterms. 
     Generates fermionic/bosonic `LabelProduct`: `fermi_labelProd`/`bose_labelProd` for these Graphs.
-    Generates a Tuple (propagatorMap, interactionMap) for mapping `g.id` to the index of unique proapgators and interactions, respectively. 
+    Generates a leafMap for mapping `g.id` to the index of unique leaf.
 
 # Arguments:
 - `type` (Symbol): The type of the Feynman diagrams, including `:spinPolar`, `:chargePolar`, `:sigma`, `:green`, or `:freeEnergy`.
@@ -163,12 +163,12 @@ end
 - `spinPolarPara` (Float64, optional): The spin-polarization parameter (n_up - n_down) / (n_up + n_down) (defaults to `0.0`).
 
 # Returns
-A tuple `(diagrams, fermi_labelProd, bose_labelProd)` where 
-- `diagrams` is a `Dict{Tuple{Int,Int,Int},Tuple{Vector{Graph},Vector{Vector{Int}}}}` object representing the diagrams. 
-   The key is (order, Gorder, Vorder). The element is a Tuple (diagrams, extT_labels).
+A tuple `(dict_graphs, fermi_labelProd, bose_labelProd, leafMap)` where 
+- `dict_graphs` is a `Dict{Tuple{Int,Int,Int},Tuple{Vector{Graph},Vector{Vector{Int}}}}` object representing the diagrams. 
+   The key is (order, Gorder, Vorder). The element is a Tuple (graphVector, extT_labels).
 - `fermi_labelProd` is a `LabelProduct` object containing the labels for the fermionic `G` objects in the diagrams, 
 - `bose_labelProd` is a `LabelProduct` object containing the labels for the bosonic `W` objects in the diagrams.
-- `(propagatorMap, interactionMap)` maps `g.id` to the index of unique proapgators and interactions, respectively. 
+- `leafMap` maps `g.id` to the index of unique leaf. 
 """
 function diagdictGV(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}, dim::Int=3; spinPolarPara::Float64=0.0)
     dict_graphs = Dict{Tuple{Int,Int,Int},Tuple{Vector{Graph{_dtype.factor,_dtype.weight}},Vector{Vector{Int}}}}()
@@ -230,8 +230,7 @@ end
 - `graph_keys`: A vector containing keys of type `T`, specifying which graphs to analyze.
 
 # Returns
-- A tuple of vectors containing information about the propagators in the graphs, including their initial values, types, input and output time indexes, and loop-momenta indexes.
-- A tuple of vectors containing information about the interactions in the graphs, including their initial values, types, input and output time indexes, and loop-momenta indexes.
+- A tuple of vectors containing information about the leaves in the graphs, including their initial values, types, input and output time indexes, and loop-momenta indexes.
 - A Vector{Vector{Int}} representing the external tau variables of each vector of graph corresponding to each key of type `T`.
 """
 function leafstates(FeynGraphs::Dict{T,Tuple{Vector{G},Vector{Vector{Int}}}},
