@@ -29,12 +29,11 @@ include("tree_properties.jl")
 export haschildren, onechild, isleaf, isbranch, ischain, isfactorless, eldest, count_operation
 
 include("operation.jl")
-export derivative
 include("graphvector.jl")
 include("io.jl")
 # plot_tree
 
-# include("eval.jl")
+include("eval.jl")
 
 include("transform.jl")
 export relabel!, standardize_labels!, replace_subgraph!, merge_prodchain_subfactors!, inplace_prod!
@@ -43,6 +42,5 @@ export prune_trivial_unary, merge_prefactors
 
 include("optimize.jl")
 export optimize!
-include("eval.jl")
-export evalGraph!
+
 end

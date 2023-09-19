@@ -17,7 +17,8 @@ end
 """
     function to_julia_str(graphs::AbstractVector; root::AbstractVector{Int}=[g.id for g in graphs], name::String="eval_graph!")
     
-Compile a list of graphs into a string for a julia static function. The function takes two arguments: `root` and `leaf`. `root` is a vector of the root node ids of the graphs, and `leaf` is a vector of the leaf node ids of the graphs. 
+Compile a list of graphs into a string for a julia static function. The function takes two arguments: `root` and `leaf`. 
+`root` is a vector of the root node ids of the graphs, and `leaf` is a vector of the leaf nodes' weights of the graphs. 
 """
 function to_julia_str(graphs::AbstractVector; root::AbstractVector{Int}=[g.id for g in graphs], name::String="eval_graph!")
     head = "function $name(root::AbstractVector, leaf::AbstractVector)\n "
@@ -42,10 +43,24 @@ function to_julia_str(graphs::AbstractVector; root::AbstractVector{Int}=[g.id fo
     return head * body * tail
 end
 
-function to_julia_str(graphs::AbstractVector, propagatorMap::Dict{Int,Int}, interactionMap::Dict{Int,Int}; root::AbstractVector{Int}=[g.id for g in graphs], name::String="eval_graph!")
-    head = "function $name(root::AbstractVector, propagatorVal::AbstractVector, interactionVal::AbstractVector)\n "
+"""
+    function to_julia_str(graphs::AbstractVector, leafMap::Dict{Int,Int}; root::AbstractVector{Int}=[g.id for g in graphs],
+        leaftypes=[ComputationalGraphs.Propagator, ComputationalGraphs.Interaction], name::String="eval_graph!")
+    
+Compile a list of graphs into a string for a julia static function. The complied function takes two arguments: `root` and `leafVal`. 
+`root` is a vector of the root node ids of the graphs, and `leafVal` is a vector of the leaf nodes' weights of the graphs. 
+
+# Arguments:
+- `graphs` (AbstractVector): The vector object representing the graphs,
+- `leafMap (Dict{Int,Int})`: The mapping dictionary from the id of each leaf to the index of the leaf weight's table `leafVal`.
+- `root` (AbstractVector{Int}, optional): The vector of the root node ids of the graphs (defaults to `[g.id for g in graphs]`).
+- `leaftypes (optional)`: The set of `GraphType` for all the relevant leaves to the weight table. It defaults to `[Propagator, Interaction]`.
+- `name` (String,optional): The name of the complied function (defaults to `"eval_graph!"`).  
+"""
+function to_julia_str(graphs::AbstractVector, leafMap::Dict{Int,Int}; root::AbstractVector{Int}=[g.id for g in graphs],
+    leaftypes=[ComputationalGraphs.Propagator, ComputationalGraphs.Interaction], name::String="eval_graph!")
+    head = "function $name(root::AbstractVector, leafVal::AbstractVector)\n "
     body = ""
-    pIdx, iIdx = 1, 1
     for graph in graphs
         for g in PostOrderDFS(graph) #leaf first search
             if g.id in root
@@ -55,12 +70,8 @@ function to_julia_str(graphs::AbstractVector, propagatorMap::Dict{Int,Int}, inte
             end
             if isempty(g.subgraphs) #leaf
                 g.name == "compiled" && continue
-                if g.type == ComputationalGraphs.Propagator
-                    body *= "    $target = propagatorVal[$(propagatorMap[g.id])]\n "
-                    pIdx += 1
-                elseif g.type == ComputationalGraphs.Interaction
-                    body *= "    $target = interactionVal[$(interactionMap[g.id])]\n "
-                    iIdx += 1
+                if g.type in leaftypes
+                    body *= "    $target = leafVal[$(leafMap[g.id])]\n "
                 end
                 g.name = "compiled"
             else
@@ -102,10 +113,10 @@ function compile(graphs::AbstractVector;
     return @RuntimeGeneratedFunction(func_expr)
 end
 
-function compile(graphs::AbstractVector, propagatorMap::Dict{Int,Int}, interactionMap::Dict{Int,Int};
+function compile(graphs::AbstractVector, leafMap::Dict{Int,Int};
     root::AbstractVector{Int}=[g.id for g in graphs])
     # this function return a runtime generated function defined by compile()
-    func_string = to_julia_str(graphs, propagatorMap, interactionMap; root=root, name="func_name!")
+    func_string = to_julia_str(graphs, leafMap; root=root, name="func_name!")
     func_expr = Meta.parse(func_string)
     return @RuntimeGeneratedFunction(func_expr)
 end

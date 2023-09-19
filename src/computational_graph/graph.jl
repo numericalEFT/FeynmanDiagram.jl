@@ -217,7 +217,6 @@ function Base.:*(c1::C, g2::Graph{F,W}) where {F,W,C}
         subgraph_factors=[F(c1),], type=g2.type(), operator=Prod(), ftype=F, wtype=W)
     # Merge multiplicative link
     if g2.operator == Prod && onechild(g2)
-        ##when prune single child nodes, why the subgraph_factors are merged, but factor is not merged ? 
         g.subgraph_factors[1] *= g2.subgraph_factors[1]
         g.subgraphs = g2.subgraphs
     end
@@ -287,26 +286,9 @@ function Base.:+(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
     return linear_combination(g1, g2, F(1), F(1))
 end
 
-
-
 function Base.:-(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
     return linear_combination(g1, g2, F(1), F(-1))
 end
-
-# function Base.:+(c::C, g1::Graph{F,W}) where {F,W,C}
-#     return linear_combination(g1, Unity, F(1), F(c))
-# end
-# function Base.:+(g1::Graph{F,W},c::C) where {F,W,C}
-#     return linear_combination(g1, Unity, F(1), F(c))
-# end
-
-# function Base.:-(c::C, g1::Graph{F,W}) where {F,W,C}
-#     return linear_combination(Unity, g1, F(c), F(-1))
-# end
-# function Base.:-(g1::Graph{F,W},c::C) where {F,W,C}
-#     return linear_combination(g1, Unity, F(1), F(-c))
-# end
-
 
 """
     function feynman_diagram(subgraphs::Vector{Graph{F,W}}, topology::Vector{Vector{Int}}, perm_noleg::Union{Vector{Int},Nothing}=nothing;
