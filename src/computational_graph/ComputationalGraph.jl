@@ -26,9 +26,10 @@ export external_labels
 # export 𝐺ᶠ, 𝐺ᵇ, 𝐺ᵠ, 𝑊, Green2, Interaction
 
 include("tree_properties.jl")
-export haschildren, onechild, isleaf, isbranch, ischain, isfactorless, eldest
+export haschildren, onechild, isleaf, isbranch, ischain, isfactorless, eldest, count_operation
 
-# include("operation.jl")
+include("operation.jl")
+export derivative
 include("graphvector.jl")
 include("io.jl")
 # plot_tree
@@ -42,5 +43,6 @@ export prune_trivial_unary, merge_prefactors
 
 include("optimize.jl")
 export optimize!
-
+include("eval.jl")
+export evalGraph!
 end
