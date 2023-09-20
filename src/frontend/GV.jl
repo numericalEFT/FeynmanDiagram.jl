@@ -178,6 +178,9 @@ function diagdictGV(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}, dim::Int=3;
     elseif type in [:chargePolar, :spinPolar, :green]
         MaxLoopNum = maximum([key[1] for key in gkeys]) + 1
         tau_labels = collect(1:MaxLoopNum)
+        if type == :spinPolar
+            @assert iszero(spinPolarPara) "no support for the spin polarization in the spin-polarized systems"
+        end
     elseif type == :freeEnergy
         MaxLoopNum = maximum([key[1] for key in gkeys]) + 1
         tau_labels = collect(1:MaxLoopNum-1)
