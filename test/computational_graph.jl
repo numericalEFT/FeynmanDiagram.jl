@@ -220,6 +220,34 @@ end
     end
 end
 
+@testset verbose = true "Graph Optimizations" begin
+    @testset "remove one-child parents" begin
+        # h = O(7 * (5 * (3 * (2 * g)))) ↦ O(210 * g)
+        g1 = propagator(𝑓⁻(1)𝑓⁺(2))
+        g2 = 2 * g1
+        g3 = Graph([g2,]; topology=g2.topology, vertices=g2.vertices, external=g2.external,
+            hasLeg=g2.hasLeg, subgraph_factors=[3,], type=g2.type(), operator=Graphs.Prod())
+        g4 = Graph([g3,]; topology=g3.topology, vertices=g3.vertices, external=g3.external,
+            hasLeg=g3.hasLeg, subgraph_factors=[5,], type=g3.type(), operator=Graphs.Prod())
+        struct Op <: Graphs.AbstractOperator end
+        h = Graph([g4,]; vertices=g4.vertices, external=g4.external,
+            subgraph_factors=[7,], hasLeg=g4.hasLeg, type=g4.type(), operator=Op())
+        hvec = repeat([h], 3)
+        # Test on a single graph
+        Graphs.removeOneChildParent!(h)
+        print_tree(h)
+        print_tree(hvec)
+        @test h.operator == Op
+        @test h.subgraph_factors == [210,]
+        @test isequiv(eldest(h), g1, :id)
+        # Test on a vector of graphs
+        Graphs.removeOneChildParent!(hvec)
+        @test all(h.operator == Op for h in hvec)
+        @test all(h.subgraph_factors == [210,] for h in hvec)
+        @test all(isequiv(eldest(h), g1, :id) for h in hvec)
+    end
+end
+
 @testset verbose = true "Tree properties" begin
     using FeynmanDiagram.ComputationalGraphs:
         haschildren, onechild, isleaf, isbranch, ischain, isfactorless, eldest

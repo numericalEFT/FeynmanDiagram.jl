@@ -11,13 +11,24 @@ function optimize!(graphs::Union{Tuple,AbstractVector}; verbose=0, normalize=not
     end
 end
 
+function removeOneChildParent!(g::G; verbose=0) where {G<:Graph}
+    verbose > 0 && println("remove nodes with only one child.")
+    for sub_g in g.subgraphs
+        removeOneChildParent!(sub_g)
+        inplace_prod!(sub_g)
+    end
+    inplace_prod!(g)
+    return g
+end
+
 function removeOneChildParent!(graphs::AbstractVector{G}; verbose=0) where {G<:Graph}
     verbose > 0 && println("remove nodes with only one child.")
     for g in graphs
         removeOneChildParent!(g.subgraphs)
         for sub_g in g.subgraphs
-            merge_prodchain_subfactors!(sub_g)
+            inplace_prod!(sub_g)
         end
+        inplace_prod!(g)
     end
     return graphs
 end

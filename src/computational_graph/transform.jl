@@ -225,6 +225,9 @@ merge_prodchain_subfactors(g::Graph) = merge_prodchain_subfactors!(deepcopy(g))
 - `g::Graph`: graph to be modified
 """
 function inplace_prod!(g::Graph)
+    if isleaf(g) || onechild(g) == false
+        return g
+    end
     # First shift subfactors to root level, then prune left-over trivial unary operations.
     merge_prodchain_subfactors!(g)
     g.subgraphs[1] = prune_trivial_unary(eldest(g))
