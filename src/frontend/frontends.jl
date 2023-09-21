@@ -3,7 +3,7 @@ module FrontEnds
 using LinearAlgebra
 import ..QuantumOperators as Op
 import ..ComputationalGraphs as IR
-import ..ComputationalGraphs: Graph
+import ..ComputationalGraphs: FeynmanGraph
 import ..ComputationalGraphs: _dtype
 
 include("pool.jl")

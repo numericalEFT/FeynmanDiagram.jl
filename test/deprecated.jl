@@ -45,14 +45,14 @@
 end
 
 @testset "feynman_diagram from Wick"
-    # construct Feynman diagram from Graphs
+    # construct Feynman diagram from FeynmanGraphs
     g1 = ComputationalGraphs.propagator(𝑓⁺(1)𝑓⁻(2),)
     g2 = ComputationalGraphs.propagator(𝑓⁺(2)𝑓⁻(1),)
-    g = feynman_diagram([g1, g2], [1, 2, 2, 1]; external=[1, 2]) #build Feynman diagram from Graphs with Wick's contractions
+    g = feynman_diagram([g1, g2], [1, 2, 2, 1]; external=[1, 2]) #build Feynman diagram from FeynmanGraphs with Wick's contractions
     @test external(g) == [external(g1); external(g2)]
     @test isempty(internal_vertices(g))
 
-    g = feynman_diagram([g1, g2], [1, 2, 2, 1]; external=[1, 2]) #build Feynman diagram from Graphs with topology
+    g = feynman_diagram([g1, g2], [1, 2, 2, 1]; external=[1, 2]) #build Feynman diagram from FeynmanGraphs with topology
     @test external(g) == [external(g1); external(g2)]
     @test isempty(internal_vertices(g))
 end
