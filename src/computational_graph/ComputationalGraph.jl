@@ -15,21 +15,31 @@ export labelreset
 export _dtype
 export set_datatype
 
+include("abstractgraph.jl")
+export AbstractGraph, AbstractOperator, BuiltinGraphType
+export unary_istrivial, isassociative, isequiv
+
 include("graph.jl")
-# export AbstractOperator, Prod, Sum
-export Graph, isequiv, linear_combination
-# export GraphType, Interaction, ExternalVertex, Propagator, SelfEnergy, VertexDiag, GreenDiag, GenericDiag
-export feynman_diagram, propagator, interaction, external_vertex
+include("stablegraph.jl")
+include("feynmangraph.jl")
+const BuiltinGraphType = Union{Graph,StableGraph,FeynmanGraph}
+
+export Graph, StableGraph, FeynmanGraph, FeynmanProperties
+# export DiagramType
+
+export isequiv, drop_topology, is_external, is_internal, diagram_type, orders, vertices, topology
+export hasLeg, external_indices, external_operators, external_labels
+export linear_combination, feynman_diagram, propagator, interaction, external_vertex
+
+# export Prod, Sum
+# export DiagramType, Interaction, ExternalVertex, Propagator, SelfEnergy, VertexDiag, GreenDiag, GenericDiag
 # export standardize_order!
-export is_external, is_internal, vertices, external
-export external_labels
 # export 𝐺ᶠ, 𝐺ᵇ, 𝐺ᵠ, 𝑊, Green2, Interaction
 
 include("tree_properties.jl")
 export haschildren, onechild, isleaf, isbranch, ischain, isfactorless, eldest
 
 # include("operation.jl")
-include("graphvector.jl")
 include("io.jl")
 # plot_tree
 

@@ -1,9 +1,10 @@
 @testset "Compiler" begin
     @testset "Compile directly" begin
+        # TODO: Add tests for Graph and StableGraph
         factor = 1.5
         V1 = [𝑓⁺(1)𝑓⁻(2), 𝑓⁺(3)𝑓⁻(4)]
         subgraphs = [external_vertex(V1[1]), external_vertex(V1[2])]
-        g = Graph(subgraphs; factor=factor)
+        g = FeynmanGraph(subgraphs; factor=factor)
         # println(g)
         gs = Compilers.to_julia_str([g,], name="eval_graph!")
         # println(gs)
@@ -15,10 +16,11 @@
     end
 
     @testset "Compile using RuntimeGeneratedFunctions" begin
+        # TODO: Add tests for Graph and StableGraph
         factor = 1.5
         V1 = [𝑓⁺(1)𝑓⁻(2), 𝑓⁺(3)𝑓⁻(4)]
         subgraphs = [external_vertex(V1[1]), external_vertex(V1[2])]
-        g = Graph(subgraphs; factor=factor)
+        g = FeynmanGraph(subgraphs; factor=factor)
         # println(g)
         eval_graph! = Compilers.compile([g,])
         root = [0.0,]
@@ -37,10 +39,11 @@
             eval(gexpr) #create the function eval_graph!
             return eval_graph!
         end
+        # TODO: Add tests for Graph and StableGraph
         factor = 1.5
         V1 = [𝑓⁺(1)𝑓⁻(2), 𝑓⁺(3)𝑓⁻(4)]
         subgraphs = [external_vertex(V1[1]), external_vertex(V1[2])]
-        g = Graph(subgraphs; factor=factor)
+        g = FeynmanGraph(subgraphs; factor=factor)
         evalf = graph_compile(g)
         root = [0.0,]
         leaf = [1.0, 2.0]
