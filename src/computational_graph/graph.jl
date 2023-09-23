@@ -227,7 +227,7 @@ function Base.:*(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
     # Currently Prod of two green's function ignore topology
     if g1.operator == Prod && onechild(g1)
         g1_sub = g1.subgraphs[1]
-        subfactor1 = g1.subgraph_factors[1] * g1.factor
+        subfactor1 = g1.subgraph_factors[1]  #* g1.factor
     else
         g1_sub = g1
         subfactor1 = F(1.0)
@@ -235,7 +235,7 @@ function Base.:*(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
 
     if g2.operator == Prod && onechild(g2)
         g2_sub = g2.subgraphs[1]
-        subfactor2 = g2.subgraph_factors[1] * g2.factor
+        subfactor2 = g2.subgraph_factors[1] # * g2.factor
     else
         g2_sub = g2
         subfactor2 = F(1.0)

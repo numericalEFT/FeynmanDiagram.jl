@@ -27,3 +27,7 @@ end
 function eval!(g::Number)
     return g
 end
+
+function eval!(nothing)
+    return nothing
+end

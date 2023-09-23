@@ -237,7 +237,7 @@ end
 
 @testset verbose = true "Auto Differentiation" begin
     using FeynmanDiagram.ComputationalGraphs:
-        eval!, frontAD
+        eval!, frontAD, backAD, node_derivative
     g1 = propagator(𝑓⁻(1)𝑓⁺(2))
     g2 = propagator(𝑓⁻(3)𝑓⁺(4))
     g3 = propagator(𝑓⁻(5)𝑓⁺(6), factor=2.0)
@@ -246,7 +246,20 @@ end
     G4 = 4 * g1 * g1
     G5 = 4 * (2 * G3 + 3 * G4)
     G6 = (2 * g1 + 3 * g2) * (4 * g1 + g3)
+    G7 = (3 * g1 + 4 * g2 + 5 * g3) * 3 * g1
 
+    @testset "node_derivative" begin
+        F1 = g1 * g1
+        F2 = (3 * g1) * (4 * g1)
+        F3 = (2 * g1 * g2) * (3 * g1)
+        F4 = (2 * g1 + 3 * g2) + g1
+        @test eval!(node_derivative(F1, g1)) == 2
+        @test eval!(node_derivative(F2, g1)) == 24
+        @test eval!(node_derivative(F1, g2)) == nothing
+        @test eval!(node_derivative(F3, g1)) == 6 #The derivative is local, and only considers the children at root 
+        print(node_derivative(F4, g1), "\n")
+        @test eval!(node_derivative(F4, g1)) == 1
+    end
     @testset "Eval" begin
         # Current test assign all green's function equal to 1 for simplicity.
         # print(eval!(frontAD(G5, g1.id)),"\n")
@@ -261,7 +274,17 @@ end
         @test eval!(frontAD(G4, g1.id)) == 8
         @test eval!(frontAD(G5, g1.id)) == 104
         @test eval!(frontAD(G6, g1.id)) == 32
+        @test eval!(frontAD(G6, g3.id)) == 5
         @test eval!(frontAD(frontAD(G6, g1.id), g2.id)) == 12
+        backAD(G5, true)
+        # for (i, G) in enumerate([G5,])#[G3, G4, G5, G6, G7])
+        #     back_deriv = backAD(G)
+        #     for (key, value) in back_deriv
+        #         gs = Compilers.to_julia_str([value,], name="eval_graph!")
+        #         println("id:$(key)", gs, "\n")
+        #         print("Parent:$(i+2)  id:$(key)  $(eval!(value))   $(eval!(frontAD(G,key)))\n")
+        #     end
+        # end
     end
 end
 
