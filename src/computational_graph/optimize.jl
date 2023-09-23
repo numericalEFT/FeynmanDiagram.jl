@@ -31,6 +31,17 @@ function remove_onechild_parent!(graphs::AbstractVector{G}; verbose=0) where {G<
     return graphs
 end
 
+function merge_pf(g::G) where {G<:AbstractGraph}
+    g = merge_prefactors(g)
+    for node in PreOrderDFS(g)
+        for sub_g in node.subgraphs
+            new_sub_g = merge_prefactors(sub_g)
+            replace_subgraph!(node, sub_g, new_sub_g)
+        end
+    end
+    return g
+end
+
 function unique_leaves(_graphs::Vector{G}) where {G<:AbstractGraph}
     ############### find the unique Leaves #####################
     uniqueGraph = []
