@@ -237,7 +237,7 @@ end
 
 @testset verbose = true "Auto Differentiation" begin
     using FeynmanDiagram.ComputationalGraphs:
-        eval!, frontAD, backAD, node_derivative
+        eval!, frontAD, backAD, node_derivative, back_AD
     g1 = propagator(𝑓⁻(1)𝑓⁺(2))
     g2 = propagator(𝑓⁻(3)𝑓⁺(4))
     g3 = propagator(𝑓⁻(5)𝑓⁺(6), factor=2.0)
@@ -285,6 +285,23 @@ end
         #         print("Parent:$(i+2)  id:$(key)  $(eval!(value))   $(eval!(frontAD(G,key)))\n")
         #     end
         # end
+    end
+    @testset "back_AD" begin
+        F3 = g1 + g2
+        F2 = linear_combination([g1, g3, F3], [2, 1, 3])
+        # F1 = Graph([g1, F2, F3], operator=FeynmanDiagram.ComputationalGraphs.Prod())
+        F1 = Graph([g1, F2, F3], operator=Graphs.Prod())
+
+        dual = back_AD(F1)
+        leafmap = Dict{Int,Int}()
+        leafmap[g1.id], leafmap[g2.id], leafmap[g3.id] = 1, 2, 3
+        leafmap[dual[g1.id].id] = 4
+        leafmap[dual[g2.id].id] = 5
+        leafmap[dual[g3.id].id] = 6
+        leaf = [1.0, 1.0, 1.0, 1.0, 0.0, 0.0]   # d / d g1
+        @test eval!(dual[F1.id], leafmap, leaf) == 40.0
+        @test eval!(dual[F2.id], leafmap, leaf) == 5.0
+        @test eval!(dual[F3.id], leafmap, leaf) == 1.0
     end
 end
 
