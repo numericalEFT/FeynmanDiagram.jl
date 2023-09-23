@@ -3,26 +3,26 @@ function optimize!(graphs::Union{Tuple,AbstractVector}; verbose=0, normalize=not
         return nothing
     else
         graphs = collect(graphs)
-        removeOneChildParent!(graphs, verbose=verbose)
-        mappings = removeDuplicatedLeaves!(graphs, verbose=verbose, normalize=normalize)
+        remove_onechild_parent!(graphs, verbose=verbose)
+        mappings = remove_duplicated_leaves!(graphs, verbose=verbose, normalize=normalize)
         return mappings
     end
 end
 
-function removeOneChildParent!(g::G; verbose=0) where {G<:AbstractGraph}
+function remove_onechild_parent!(g::G; verbose=0) where {G<:AbstractGraph}
     verbose > 0 && println("remove nodes with only one child.")
     for sub_g in g.subgraphs
-        removeOneChildParent!(sub_g)
+        remove_onechild_parent!(sub_g)
         inplace_prod!(sub_g)
     end
     inplace_prod!(g)
     return g
 end
 
-function removeOneChildParent!(graphs::AbstractVector{G}; verbose=0) where {G<:AbstractGraph}
+function remove_onechild_parent!(graphs::AbstractVector{G}; verbose=0) where {G<:AbstractGraph}
     verbose > 0 && println("remove nodes with only one child.")
     for g in graphs
-        removeOneChildParent!(g.subgraphs)
+        remove_onechild_parent!(g.subgraphs)
         for sub_g in g.subgraphs
             inplace_prod!(sub_g)
         end
@@ -31,7 +31,7 @@ function removeOneChildParent!(graphs::AbstractVector{G}; verbose=0) where {G<:A
     return graphs
 end
 
-function uniqueLeaves(_graphs::Vector{G}) where {G<:AbstractGraph}
+function unique_leaves(_graphs::Vector{G}) where {G<:AbstractGraph}
     ############### find the unique Leaves #####################
     uniqueGraph = []
     mapping = Dict{Int,Int}()
@@ -55,7 +55,7 @@ function uniqueLeaves(_graphs::Vector{G}) where {G<:AbstractGraph}
     return uniqueGraph, mapping
 end
 
-function removeDuplicatedLeaves!(graphs::AbstractVector{G}; verbose=0, normalize=nothing, kwargs...) where {G<:AbstractGraph}
+function remove_duplicated_leaves!(graphs::AbstractVector{G}; verbose=0, normalize=nothing, kwargs...) where {G<:AbstractGraph}
     verbose > 0 && println("remove duplicated leaves.")
     leaves = Vector{G}()
     for g in graphs
@@ -70,49 +70,13 @@ function removeDuplicatedLeaves!(graphs::AbstractVector{G}; verbose=0, normalize
     sort!(leaves, by=x -> x.id) #sort the id of the leaves in an asscend order
     unique!(x -> x.id, leaves) #filter out the leaves with the same id number
 
-    uniqueLeaf, leafMap = uniqueLeaves(leaves)
+    uniqueLeaf, leafMap = unique_leaves(leaves)
     verbose > 0 && length(leaves) > 0 && println("Number of independent Leaves $(length(leaves)) → $(length(uniqueLeaf))")
 
     for g in graphs
         for n in PreOrderDFS(g)
             for (si, sub_g) in enumerate(n.subgraphs)
                 n.subgraphs[si] = uniqueLeaf[leafMap[sub_g.id]]
-            end
-        end
-    end
-
-    return leafMap
-end
-
-function removeDuplicatedLeaves!(graphs::AbstractVector{FeynmanGraph}; verbose=0, normalize=nothing, leaftypes=[Interaction, Propagator], kwargs...)
-    verbose > 0 && println("remove duplicated leaves.")
-    leaves = Vector{FeynmanGraph}()
-    for g in graphs
-        append!(leaves, collect(Leaves(g)))
-    end
-    if isnothing(normalize) == false
-        @assert normalize isa Function "a function call is expected for normalize"
-        for leaf in leaves
-            normalize(leaf.id)
-        end
-    end
-    sort!(leaves, by=x -> x.id) #sort the id of the leaves in an asscend order
-    unique!(x -> x.id, leaves) #filter out the leaves with the same id number
-
-    for l in leaves
-        #make sure all leaves are either propagators or interactions
-        @assert l.type in leaftypes
-    end
-
-    uniqueLeaf, leafMap = uniqueLeaves(leaves)
-    verbose > 0 && length(leaves) > 0 && println("Number of independent Leaves $(length(leaves)) → $(length(uniqueLeaf))")
-
-    for g in graphs
-        for n in PreOrderDFS(g)
-            for (si, sub_g) in enumerate(n.subgraphs)
-                if sub_g.type in leaftypes
-                    n.subgraphs[si] = uniqueLeaf[leafMap[sub_g.id]]
-                end
             end
         end
     end
