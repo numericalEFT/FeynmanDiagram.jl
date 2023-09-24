@@ -83,39 +83,3 @@ function removeDuplicatedLeaves!(graphs::AbstractVector{G}; verbose=0, normalize
 
     return leafMap
 end
-
-function removeDuplicatedLeaves!(graphs::AbstractVector{FeynmanGraph}; verbose=0, normalize=nothing, leaftypes=[Interaction, Propagator], kwargs...)
-    verbose > 0 && println("remove duplicated leaves.")
-    leaves = Vector{FeynmanGraph}()
-    for g in graphs
-        append!(leaves, collect(Leaves(g)))
-    end
-    if isnothing(normalize) == false
-        @assert normalize isa Function "a function call is expected for normalize"
-        for leaf in leaves
-            normalize(leaf.id)
-        end
-    end
-    sort!(leaves, by=x -> x.id) #sort the id of the leaves in an asscend order
-    unique!(x -> x.id, leaves) #filter out the leaves with the same id number
-
-    for l in leaves
-        #make sure all leaves are either propagators or interactions
-        @assert l.type in leaftypes
-    end
-
-    uniqueLeaf, leafMap = uniqueLeaves(leaves)
-    verbose > 0 && length(leaves) > 0 && println("Number of independent Leaves $(length(leaves)) → $(length(uniqueLeaf))")
-
-    for g in graphs
-        for n in PreOrderDFS(g)
-            for (si, sub_g) in enumerate(n.subgraphs)
-                if sub_g.type in leaftypes
-                    n.subgraphs[si] = uniqueLeaf[leafMap[sub_g.id]]
-                end
-            end
-        end
-    end
-
-    return leafMap
-end

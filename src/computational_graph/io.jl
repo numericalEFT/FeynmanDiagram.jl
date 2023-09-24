@@ -17,11 +17,11 @@ function short(factor, ignore=nothing)
     end
 end
 
-function _stringrep(graph::BuiltinGraphType, color=true)
+function _stringrep(graph::G, color=true) where {G<:AbstractGraph}
     namestr = isempty(graph.name) ? "" : "-$(graph.name)"
     idstr = "$(graph.id)$namestr"
     if graph isa FeynmanGraph
-        idstr *= ":$(_ops_to_str(vertices(graph)))" 
+        idstr *= ":$(_ops_to_str(vertices(graph)))"
     end
     fstr = short(graph.factor, one(graph.factor))
     wstr = short(graph.weight)
@@ -35,10 +35,9 @@ function _stringrep(graph::BuiltinGraphType, color=true)
 end
 
 """
-    show(io::IO, g::G; kwargs...) where {G<:AbstractGraph}
+    show(io::IO, graph::G; kwargs...) where {G<:AbstractGraph}
 
     Write a text representation of `graph` to the output stream `io`.
-    Supports built-in graph types `Graph` and `StableGraph`, and `FeynmanGraph`.
 
     To add support for a user-defined graph type `G`, provide an overload method `Base.show(io::IO, graph::G; kwargs...)` with a custom text representation.
 """
@@ -60,7 +59,7 @@ end
 Base.show(io::IO, ::MIME"text/plain", graph::G; kwargs...) where {G<:AbstractGraph} = Base.show(io, graph; kwargs...)
 
 """
-    function plot_tree(graph::Graph; verbose = 0, maxdepth = 6)
+    function plot_tree(graph::AbstractGraph; verbose = 0, maxdepth = 6)
 
     Visualize the computational graph as a tree using ete3 python package
 

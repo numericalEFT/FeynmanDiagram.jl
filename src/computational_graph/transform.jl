@@ -282,9 +282,7 @@ function merge_prefactors(g::Graph{F,W}) where {F,W}
                 end
             end
         end
-        nodedata = union(getproperty.(subg, :nodedata))
-        g_merged = Graph(subg; subgraph_factors=subg_fac,
-            nodedata=nodedata, operator=Sum(), ftype=F, wtype=W)
+        g_merged = Graph(subg; subgraph_factors=subg_fac, operator=Sum(), ftype=F, wtype=W)
         return g_merged
     else
         return g
