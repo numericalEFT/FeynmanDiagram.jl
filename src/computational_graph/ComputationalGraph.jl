@@ -22,8 +22,7 @@ export unary_istrivial, isassociative, isequiv
 include("graph.jl")
 include("feynmangraph.jl")
 
-const BuiltinGraphType = Union{Graph,FeynmanGraph}
-export Graph, FeynmanGraph, FeynmanProperties, BuiltinGraphType
+export Graph, FeynmanGraph, FeynmanProperties
 # export DiagramType
 
 export isequiv, drop_topology, is_external, is_internal, diagram_type, orders, vertices, topology

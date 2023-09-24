@@ -42,12 +42,6 @@ end
     To add support for a user-defined graph type `G`, provide an overload method `Base.show(io::IO, graph::G; kwargs...)` with a custom text representation.
 """
 function Base.show(io::IO, graph::G; kwargs...) where {G<:AbstractGraph}
-    if graph isa BuiltinGraphType == false
-        error(
-            "No built-in string representation for user-defined graph type $G. " *
-            "Please provide an overload method 'Base.show(io::IO, graph::G; kwargs...)' with a custom text representation."
-        )
-    end
     if length(graph.subgraphs) == 0
         typestr = ""
     else
@@ -77,7 +71,7 @@ function plot_tree(graph::AbstractGraph; verbose=0, maxdepth=6)
         if level > maxdepth
             return
         end
-        name = graph isa BuiltinGraphType ? "$(_stringrep(node, false))" : "$node"
+        name = "$(_stringrep(node, false))"
         nt = t.add_child(name=name)
 
         if length(node.subgraphs) > 0
