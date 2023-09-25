@@ -14,13 +14,29 @@ function _to_static(::Type{ComputationalGraphs.Prod}, subgraphs::Vector{Graph{F,
     end
 end
 
+function _to_static(::Type{ComputationalGraphs.Sum}, subgraphs::Vector{FeynmanGraph{F,W}}, subgraph_factors::Vector{F}) where {F,W}
+    if length(subgraphs) == 1
+        return "(g$(subgraphs[1].id) * $(subgraph_factors[1]))"
+    else
+        return "(" * join(["g$(g.id) * $gfactor" for (g, gfactor) in zip(subgraphs, subgraph_factors)], " + ") * ")"
+    end
+end
+
+function _to_static(::Type{ComputationalGraphs.Prod}, subgraphs::Vector{FeynmanGraph{F,W}}, subgraph_factors::Vector{F}) where {F,W}
+    if length(subgraphs) == 1
+        return "(g$(subgraphs[1].id))"
+    else
+        return "(" * join(["g$(g.id)" for g in subgraphs], " * ") * ")"
+    end
+end
+
 """
-    function to_julia_str(graphs::AbstractVector; root::AbstractVector{Int}=[g.id for g in graphs], name::String="eval_graph!")
+    function to_julia_str(graphs::AbstractVector{G}; root::AbstractVector{Int}=[g.id for g in graphs], name::String="eval_graph!") where {G<:AbstractGraph}
     
 Compile a list of graphs into a string for a julia static function. The function takes two arguments: `root` and `leaf`. 
 `root` is a vector of the root node ids of the graphs, and `leaf` is a vector of the leaf nodes' weights of the graphs. 
 """
-function to_julia_str(graphs::AbstractVector; root::AbstractVector{Int}=[g.id for g in graphs], name::String="eval_graph!")
+function to_julia_str(graphs::AbstractVector{G}; root::AbstractVector{Int}=[g.id for g in graphs], name::String="eval_graph!") where {G<:AbstractGraph}
     head = "function $name(root::AbstractVector, leaf::AbstractVector)\n "
     body = ""
     leafidx = 1
@@ -44,21 +60,20 @@ function to_julia_str(graphs::AbstractVector; root::AbstractVector{Int}=[g.id fo
 end
 
 """
-    function to_julia_str(graphs::AbstractVector, leafMap::Dict{Int,Int}; root::AbstractVector{Int}=[g.id for g in graphs],
-        leaftypes=[ComputationalGraphs.Propagator, ComputationalGraphs.Interaction], name::String="eval_graph!")
+    function to_julia_str(graphs::AbstractVector{G}, leafMap::Dict{Int,Int}; root::AbstractVector{Int}=[g.id for g in graphs],
+        name::String="eval_graph!") where {G<:AbstractGraph}
     
-Compile a list of graphs into a string for a julia static function. The complied function takes two arguments: `root` and `leafVal`. 
+Compile a list of Feynman graphs into a string for a julia static function. The complied function takes two arguments: `root` and `leafVal`. 
 `root` is a vector of the root node ids of the graphs, and `leafVal` is a vector of the leaf nodes' weights of the graphs. 
 
 # Arguments:
-- `graphs` (AbstractVector): The vector object representing the graphs,
+- `graphs` (AbstractVector{G}): The vector object representing the Feynman graphs,
 - `leafMap (Dict{Int,Int})`: The mapping dictionary from the id of each leaf to the index of the leaf weight's table `leafVal`.
 - `root` (AbstractVector{Int}, optional): The vector of the root node ids of the graphs (defaults to `[g.id for g in graphs]`).
-- `leaftypes (optional)`: The set of `GraphType` for all the relevant leaves to the weight table. It defaults to `[Propagator, Interaction]`.
 - `name` (String,optional): The name of the complied function (defaults to `"eval_graph!"`).  
 """
-function to_julia_str(graphs::AbstractVector, leafMap::Dict{Int,Int}; root::AbstractVector{Int}=[g.id for g in graphs],
-    leaftypes=[ComputationalGraphs.Propagator, ComputationalGraphs.Interaction], name::String="eval_graph!")
+function to_julia_str(graphs::AbstractVector{G}, leafMap::Dict{Int,Int}; root::AbstractVector{Int}=[g.id for g in graphs],
+    name::String="eval_graph!") where {G<:AbstractGraph}
     head = "function $name(root::AbstractVector, leafVal::AbstractVector)\n "
     body = ""
     for graph in graphs
@@ -70,9 +85,7 @@ function to_julia_str(graphs::AbstractVector, leafMap::Dict{Int,Int}; root::Abst
             end
             if isempty(g.subgraphs) #leaf
                 g.name == "compiled" && continue
-                if g.type in leaftypes
-                    body *= "    $target = leafVal[$(leafMap[g.id])]\n "
-                end
+                body *= "    $target = leafVal[$(leafMap[g.id])]\n "
                 g.name = "compiled"
             else
                 body *= "    $target = $(_to_static(g.operator, g.subgraphs, g.subgraph_factors))*$(g.factor)\n "
@@ -84,7 +97,7 @@ function to_julia_str(graphs::AbstractVector, leafMap::Dict{Int,Int}; root::Abst
 end
 
 """
-    function compile(graphs::AbstractVector; root::AbstractVector{Int}=[g.id for g in graphs])
+    function compile(graphs::AbstractVector{G}; root::AbstractVector{Int}=[g.id for g in graphs]) where {G<:AbstractGraph}
     
 Compile a list of graphs into a julia static function. 
 The function takes two arguments: `root` and `leaf`. `root` is a vector of the root node ids of the graphs, and `leaf` is a vector of the leaf node ids of the graphs. 
@@ -96,7 +109,7 @@ Comparing to eval(Meta.parse(to_julia_str(...))), this function does not leak ou
 factor = 1.5
 V1 = [𝑓⁺(1)𝑓⁻(2), 𝑓⁺(3)𝑓⁻(4)]
 subgraphs = [external_vertex(V1[1]), external_vertex(V1[2])]
-g = Graph(subgraphs; factor=factor)
+g = FeynmanGraph(subgraphs; factor=factor)
 # println(g)
 eval_graph! = Compilers.compile([g,])
 root = [0.0,]
@@ -105,16 +118,16 @@ leaf = [1.0, 2.0]
 @assert eval_graph!(root, leaf) ≈ (leaf[1] + leaf[2]) * factor
 ```
 """
-function compile(graphs::AbstractVector;
-    root::AbstractVector{Int}=[g.id for g in graphs])
+function compile(graphs::AbstractVector{G};
+    root::AbstractVector{Int}=[g.id for g in graphs]) where {G<:AbstractGraph}
     # this function return a runtime generated function defined by compile()
     func_string = to_julia_str(graphs; root=root, name="func_name!")
     func_expr = Meta.parse(func_string)
     return @RuntimeGeneratedFunction(func_expr)
 end
 
-function compile(graphs::AbstractVector, leafMap::Dict{Int,Int};
-    root::AbstractVector{Int}=[g.id for g in graphs])
+function compile(graphs::AbstractVector{G}, leafMap::Dict{Int,Int};
+    root::AbstractVector{Int}=[g.id for g in graphs]) where {G<:AbstractGraph}
     # this function return a runtime generated function defined by compile()
     func_string = to_julia_str(graphs, leafMap; root=root, name="func_name!")
     func_expr = Meta.parse(func_string)

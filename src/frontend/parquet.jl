@@ -26,7 +26,7 @@ function _bubble(; left_label=[1, 2, 3, 4], right_label=[5, 6, 7, 8], external_i
     lver = a⁺(l1) * a⁺(l2) * a⁻(l3) * a⁻(l4)
     rver = a⁺(r1) * a⁺(r2) * a⁻(r3) * a⁻(r4)
 
-    g = IR.feynman_diagram([ea⁺(1), ea⁺(2), ea⁻(3), ea⁻(4), lver, rver], topology, external=external_indices, factor=factor)
+    g = IR.feynman_diagram([ea⁺(1), ea⁺(2), ea⁻(3), ea⁻(4), lver, rver], topology, external_indices=external_indices, factor=factor)
     IR.standardize_order!(g)
     return g
 end
