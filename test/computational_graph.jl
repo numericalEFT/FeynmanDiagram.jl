@@ -328,6 +328,16 @@ end
         leaf = [5.0, -1.0, 2.0, 0.0, 0.0, 1.0]
         @test eval!(dual1[F0.id], leafmap, leaf) == 240.0
         @test isequiv(dual[F1.id], dual1[F1.id], :id, :weight, :vertices)
+
+        F0_r1 = F1 + F3
+        dual = forwardAD_root([F0, F0_r1])
+        leafmap[dual[g1.id].id] = 4
+        leafmap[dual[g2.id].id] = 5
+        leafmap[dual[g3.id].id] = 6
+        @test eval!(dual[F0.id], leafmap, leaf) == 240.0
+        @test eval!(dual[F0_r1.id], leafmap, leaf) == 60.0
+        @test isequiv(dual[F0.id], dual1[F0.id], :id, :weight)
+        @test isequiv(dual[F1.id], dual1[F1.id], :id, :weight)
     end
 end
 
