@@ -31,7 +31,7 @@ function removeOneChildParent!(graphs::AbstractVector{G}; verbose=0) where {G<:A
     return graphs
 end
 
-function uniqueLeaves(_graphs::Vector{G}) where {G<:AbstractGraph}
+function uniqueLeaves(_graphs::AbstractVector{G}) where {G<:AbstractGraph}
     ############### find the unique Leaves #####################
     uniqueGraph = []
     mapping = Dict{Int,Int}()
@@ -76,7 +76,9 @@ function removeDuplicatedLeaves!(graphs::AbstractVector{G}; verbose=0, normalize
     for g in graphs
         for n in PreOrderDFS(g)
             for (si, sub_g) in enumerate(n.subgraphs)
-                n.subgraphs[si] = uniqueLeaf[leafMap[sub_g.id]]
+                if isleaf(sub_g)
+                    n.subgraphs[si] = uniqueLeaf[leafMap[sub_g.id]]
+                end
             end
         end
     end
