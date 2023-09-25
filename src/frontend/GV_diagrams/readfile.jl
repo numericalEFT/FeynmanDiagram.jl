@@ -26,10 +26,10 @@ function _exchange(perm::Vector{Int}, ver4Legs::Vector{Vector{Int}}, index::Int,
     end
     return permu_ex, ver4Legs_ex
 end
-
-function _group(gv::AbstractVector{FeynmanGraph}, indices::Vector{Vector{Int}})
-    l = length(external_indices(gv[1]))
-    @assert all(x -> length(external_indices(x)) == l, gv)
+ 
+function _group(gv::AbstractVector{G}, indices::Vector{Vector{Int}}) where {G<:FeynmanGraph} 
+    l = length(IR.external_indices(gv[1]))
+    @assert all(x -> length(IR.external_indices(x)) == l, gv)
     @assert length(gv) == length(indices)
     groups = Dict{Vector{Int},Vector{G}}()
     for (i, t) in enumerate(gv)
