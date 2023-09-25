@@ -499,7 +499,7 @@ function external_vertex(ops::OperatorProduct;
 end
 
 """
-    function group(gv::Vector{G}, indices::Vector{Int}) where {G<:FeynmanGraph}
+    function group(gv::AbstractVector{G}, indices::Vector{Int}) where {G<:FeynmanGraph}
 
 Group the graphs in `gv` by the external operators at the indices `indices`. Return a dictionary of `Vector{OperatorProduct}` to `GraphVector`.
 
@@ -531,7 +531,7 @@ Dict{Vector{OperatorProduct}, Vector{FeynmanGraph{Float64, Float64}}} with 2 ent
   [f⁺(1)] => [1:f⁺(1)|f⁻(2)⋅-1.0=0.0, 2:f⁺(1)|f⁻(3)⋅-1.0=0.0]
 ```
 """
-function group(gv::Vector{G}, indices::Vector{Int}) where {G<:FeynmanGraph}
+function group(gv::AbstractVector{G}, indices::Vector{Int}) where {G<:FeynmanGraph}
     l = length(external_indices(gv[1]))
     @assert all(x -> length(external_indices(x)) == l, gv)
     groups = Dict{Vector{OperatorProduct},Vector{G}}()

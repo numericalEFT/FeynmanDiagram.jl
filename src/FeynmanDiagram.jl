@@ -105,7 +105,7 @@ export labelreset, parity
 # export AbstractOperator, Prod, Sum
 
 export AbstractGraph, AbstractOperator
-export Graph, FeynmanGraph, FeynmanProperties, BuiltinGraphType
+export Graph, FeynmanGraph, FeynmanProperties
 
 export isequiv, drop_topology, is_external, is_internal, diagram_type, orders, vertices, topology
 export external_legs, external_indices, external_operators, external_labels
