@@ -405,3 +405,19 @@ function forwardAD_root(diags::AbstractVector{G}) where {G<:Graph}
 end
 
 forwardAD_root(diag::Graph) = forwardAD_root([diag])
+
+
+function burn_graph(diag::G, target_node::G) where {G<:Graph}
+    for node in PostOrderDFS(diag)
+        isleaf(node) && continue
+        node.operator != Prod && continue
+        if target_node in children(node)
+
+        end
+    end
+end
+
+
+function burn_graph(diags::AbstractVector{G}, target_node::G) where {G<:Graph}
+
+end
