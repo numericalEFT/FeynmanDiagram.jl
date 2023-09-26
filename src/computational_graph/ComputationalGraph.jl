@@ -16,19 +16,17 @@ export _dtype
 export set_datatype
 
 include("abstractgraph.jl")
-export AbstractGraph, AbstractOperator, BuiltinGraphType
+export AbstractGraph, AbstractOperator
 export unary_istrivial, isassociative, isequiv
 
 include("graph.jl")
-include("stablegraph.jl")
 include("feynmangraph.jl")
-const BuiltinGraphType = Union{Graph,StableGraph,FeynmanGraph}
 
-export Graph, StableGraph, FeynmanGraph, FeynmanProperties
+export Graph, FeynmanGraph, FeynmanProperties
 # export DiagramType
 
 export isequiv, drop_topology, is_external, is_internal, diagram_type, orders, vertices, topology
-export hasLeg, external_indices, external_operators, external_labels
+export external_legs, external_indices, external_operators, external_labels
 export linear_combination, feynman_diagram, propagator, interaction, external_vertex
 
 # export Prod, Sum

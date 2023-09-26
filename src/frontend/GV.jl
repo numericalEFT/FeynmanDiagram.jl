@@ -220,7 +220,7 @@ end
         FeynGraphs::Dict{T, Tuple{Vector{G}, Vector{Vector{Int}}}},
         FermiLabel::LabelProduct, BoseLabel::LabelProduct,
         graph_keys::Vector{T}
-    ) where {T, G <: FeynmanGraph}
+    ) where {T, G<:FeynmanGraph}
 
     Extracts leaf information from a Dict collection of Feynman graphs (`FeynGraphs` with its keys `graph_keys`)
     and their associated LabelProduct data (`FermiLabel` and `BoseLabel`). 
@@ -260,16 +260,17 @@ function leafstates(FeynGraphs::Dict{T,Tuple{Vector{G},Vector{Vector{Int}}}},
 
         for g in leaves
             g.name == "visited" && continue
-            if g.type == IR.Interaction
+            vertices = IR.vertices(g)
+            if IR.diagram_type(g) == IR.Interaction
                 push!(leafType[ikey], 0)
-                In = Out = vertices(g)[1][1].label
+                In = Out = vertices[1][1].label
                 push!(leafLoopIndex[ikey], 1)
                 push!(leafInTau[ikey], FermiLabel[In][1])
                 push!(leafOutTau[ikey], FermiLabel[Out][1])
                 push!(leafValue[ikey], 1.0)
-            elseif g.type == IR.Propagator
-                if (Op.isfermionic(vertices(g)[1]))
-                    In, Out = vertices(g)[2][1].label, vertices(g)[1][1].label
+            elseif IR.diagram_type(g) == IR.Propagator
+                if (Op.isfermionic(vertices[1]))
+                    In, Out = vertices[2][1].label, vertices[1][1].label
                     if FermiLabel[In][2] in [-2, -3]
                         push!(leafType[ikey], 0)
                         push!(leafLoopIndex[ikey], 1)
@@ -280,7 +281,7 @@ function leafstates(FeynGraphs::Dict{T,Tuple{Vector{G},Vector{Vector{Int}}}},
                     push!(leafInTau[ikey], FermiLabel[In][1])
                     push!(leafOutTau[ikey], FermiLabel[Out][1])
                 else
-                    In, Out = vertices(g)[2][1].label, vertices(g)[1][1].label
+                    In, Out = vertices[2][1].label, vertices[1][1].label
                     push!(leafType[ikey], BoseLabel[In][2] * 2 + 2)
                     push!(leafLoopIndex[ikey], FrontEnds.linear_to_index(BoseLabel, In)[end]) #the label of LoopPool for each bosonic leaf
                     push!(leafInTau[ikey], BoseLabel[In][1])

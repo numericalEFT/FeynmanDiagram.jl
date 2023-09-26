@@ -1,6 +1,6 @@
 @testset "Compiler" begin
     @testset "Compile directly" begin
-        # TODO: Add tests for Graph and StableGraph
+        # TODO: Add tests for generic Graph
         factor = 1.5
         V1 = [𝑓⁺(1)𝑓⁻(2), 𝑓⁺(3)𝑓⁻(4)]
         subgraphs = [external_vertex(V1[1]), external_vertex(V1[2])]
@@ -16,7 +16,7 @@
     end
 
     @testset "Compile using RuntimeGeneratedFunctions" begin
-        # TODO: Add tests for Graph and StableGraph
+        # TODO: Add tests for generic Graph
         factor = 1.5
         V1 = [𝑓⁺(1)𝑓⁻(2), 𝑓⁺(3)𝑓⁻(4)]
         subgraphs = [external_vertex(V1[1]), external_vertex(V1[2])]
@@ -39,7 +39,7 @@
             eval(gexpr) #create the function eval_graph!
             return eval_graph!
         end
-        # TODO: Add tests for Graph and StableGraph
+        # TODO: Add tests for generic Graph
         factor = 1.5
         V1 = [𝑓⁺(1)𝑓⁻(2), 𝑓⁺(3)𝑓⁻(4)]
         subgraphs = [external_vertex(V1[1]), external_vertex(V1[2])]

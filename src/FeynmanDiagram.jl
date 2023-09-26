@@ -104,11 +104,11 @@ export ComputationalGraphs
 export labelreset, parity
 # export AbstractOperator, Prod, Sum
 
-export AbstractGraph, AbstractOperator, BuiltinGraphType
-export Graph, StableGraph, FeynmanGraph, FeynmanProperties
+export AbstractGraph, AbstractOperator
+export Graph, FeynmanGraph, FeynmanProperties
 
 export isequiv, drop_topology, is_external, is_internal, diagram_type, orders, vertices, topology
-export hasLeg, external_indices, external_operators, external_labels
+export external_legs, external_indices, external_operators, external_labels
 export linear_combination, feynman_diagram, propagator, interaction, external_vertex
 # export DiagramType, Interaction, ExternalVertex, Propagator, SelfEnergy, VertexDiag, GreenDiag, GenericDiag
 

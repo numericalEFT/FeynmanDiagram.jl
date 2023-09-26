@@ -31,6 +31,7 @@ function remove_onechild_parent!(graphs::AbstractVector{G}; verbose=0) where {G<
     return graphs
 end
 
+<<<<<<< HEAD
 function merge_pf(g::G) where {G<:AbstractGraph}
     g = merge_prefactors(g)
     for node in PreOrderDFS(g)
@@ -43,6 +44,9 @@ function merge_pf(g::G) where {G<:AbstractGraph}
 end
 
 function unique_leaves(_graphs::Vector{G}) where {G<:AbstractGraph}
+=======
+function uniqueLeaves(_graphs::AbstractVector{G}) where {G<:AbstractGraph}
+>>>>>>> master
     ############### find the unique Leaves #####################
     uniqueGraph = []
     mapping = Dict{Int,Int}()
@@ -87,7 +91,13 @@ function remove_duplicated_leaves!(graphs::AbstractVector{G}; verbose=0, normali
     for g in graphs
         for n in PreOrderDFS(g)
             for (si, sub_g) in enumerate(n.subgraphs)
+<<<<<<< HEAD
                 n.subgraphs[si] = uniqueLeaf[leafMap[sub_g.id]]
+=======
+                if isleaf(sub_g)
+                    n.subgraphs[si] = uniqueLeaf[leafMap[sub_g.id]]
+                end
+>>>>>>> master
             end
         end
     end

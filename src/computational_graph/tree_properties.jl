@@ -5,10 +5,8 @@ AbstractTrees.printnode(io::IO, g::AbstractGraph) = print(io, "\u001b[32m$(g.id)
 
 ## Guarantee type-stable tree iteration for Graphs, StableGraphs, and FeynmanGraphs
 AbstractTrees.NodeType(::Graph) = HasNodeType()
-AbstractTrees.NodeType(::StableGraph) = HasNodeType()
 AbstractTrees.NodeType(::FeynmanGraph) = HasNodeType()
 AbstractTrees.nodetype(::Graph{F,W}) where {F,W} = Graph{F,W}
-AbstractTrees.nodetype(::StableGraph{F,W,NT}) where {F,W,NT} = StableGraph{F,W,NT}
 AbstractTrees.nodetype(::FeynmanGraph{F,W}) where {F,W} = FeynmanGraph{F,W}
 
 ## Optional enhancements
@@ -16,8 +14,6 @@ AbstractTrees.nodetype(::FeynmanGraph{F,W}) where {F,W} = FeynmanGraph{F,W}
 # (They are not sufficient to solve all internal inference issues, however.)
 Base.IteratorEltype(::Type{<:TreeIterator{Graph{F,W}}}) where {F,W} = Base.HasEltype()
 Base.eltype(::Type{<:TreeIterator{Graph{F,W}}}) where {F,W} = Graph{F,W}
-Base.IteratorEltype(::Type{<:TreeIterator{StableGraph{F,W,NT}}}) where {F,W,NT} = Base.HasEltype()
-Base.eltype(::Type{<:TreeIterator{StableGraph{F,W,NT}}}) where {F,W,NT} = StableGraph{F,W,NT}
 Base.IteratorEltype(::Type{<:TreeIterator{FeynmanGraph{F,W}}}) where {F,W} = Base.HasEltype()
 Base.eltype(::Type{<:TreeIterator{FeynmanGraph{F,W}}}) where {F,W} = FeynmanGraph{F,W}
 

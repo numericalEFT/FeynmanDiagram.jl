@@ -1,3 +1,19 @@
+function _to_static(::Type{ComputationalGraphs.Sum}, subgraphs::Vector{Graph{F,W}}, subgraph_factors::Vector{F}) where {F,W}
+    if length(subgraphs) == 1
+        return "(g$(subgraphs[1].id) * $(subgraph_factors[1]))"
+    else
+        return "(" * join(["g$(g.id) * $gfactor" for (g, gfactor) in zip(subgraphs, subgraph_factors)], " + ") * ")"
+    end
+end
+
+function _to_static(::Type{ComputationalGraphs.Prod}, subgraphs::Vector{Graph{F,W}}, subgraph_factors::Vector{F}) where {F,W}
+    if length(subgraphs) == 1
+        return "(g$(subgraphs[1].id))"
+    else
+        return "(" * join(["g$(g.id)" for g in subgraphs], " * ") * ")"
+    end
+end
+
 function _to_static(::Type{ComputationalGraphs.Sum}, subgraphs::Vector{FeynmanGraph{F,W}}, subgraph_factors::Vector{F}) where {F,W}
     if length(subgraphs) == 1
         return "(g$(subgraphs[1].id) * $(subgraph_factors[1]))"
@@ -70,46 +86,6 @@ function to_julia_str(graphs::AbstractVector{G}, leafMap::Dict{Int,Int}; root::A
             if isempty(g.subgraphs) #leaf
                 g.name == "compiled" && continue
                 body *= "    $target = leafVal[$(leafMap[g.id])]\n "
-                g.name = "compiled"
-            else
-                body *= "    $target = $(_to_static(g.operator, g.subgraphs, g.subgraph_factors))*$(g.factor)\n "
-            end
-        end
-    end
-    tail = "end"
-    return head * body * tail
-end
-
-"""
-    function to_julia_str(graphs::AbstractVector{FeynmanGraph}, leafMap::Dict{Int,Int}; root::AbstractVector{Int}=[g.id for g in graphs],
-        leaftypes=[ComputationalGraphs.Propagator, ComputationalGraphs.Interaction], name::String="eval_graph!")
-    
-Compile a list of Feynman graphs into a string for a julia static function. The complied function takes two arguments: `root` and `leafVal`. 
-`root` is a vector of the root node ids of the graphs, and `leafVal` is a vector of the leaf nodes' weights of the graphs. 
-
-# Arguments:
-- `graphs` (AbstractVector{FeynmanGraph}): The vector object representing the Feynman graphs,
-- `leafMap (Dict{Int,Int})`: The mapping dictionary from the id of each leaf to the index of the leaf weight's table `leafVal`.
-- `root` (AbstractVector{Int}, optional): The vector of the root node ids of the graphs (defaults to `[g.id for g in graphs]`).
-- `leaftypes (optional)`: The set of `DiagramType` for all the relevant leaves to the weight table. It defaults to `[Propagator, Interaction]`.
-- `name` (String,optional): The name of the complied function (defaults to `"eval_graph!"`).  
-"""
-function to_julia_str(graphs::AbstractVector{FeynmanGraph}, leafMap::Dict{Int,Int}; root::AbstractVector{Int}=[g.id for g in graphs],
-    leaftypes=[ComputationalGraphs.Propagator, ComputationalGraphs.Interaction], name::String="eval_graph!")
-    head = "function $name(root::AbstractVector, leafVal::AbstractVector)\n "
-    body = ""
-    for graph in graphs
-        for g in PostOrderDFS(graph) #leaf first search
-            if g.id in root
-                target = "root[$(findfirst(x -> x == g.id, root))]"
-            else
-                target = "g$(g.id)"
-            end
-            if isempty(g.subgraphs) #leaf
-                g.name == "compiled" && continue
-                if g.type in leaftypes
-                    body *= "    $target = leafVal[$(leafMap[g.id])]\n "
-                end
                 g.name = "compiled"
             else
                 body *= "    $target = $(_to_static(g.operator, g.subgraphs, g.subgraph_factors))*$(g.factor)\n "
