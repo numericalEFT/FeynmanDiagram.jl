@@ -6,7 +6,6 @@ function optimize!(graphs::Union{Tuple,AbstractVector{G}}; verbose=0, normalize=
         leaf_mapping = remove_duplicated_leaves!(graphs, verbose=verbose, normalize=normalize)
         remove_onechild_parents!(graphs, verbose=verbose)
         merge_nodes_prefactors!(graphs, verbose=verbose)
-        remove_onechild_parents!(graphs, verbose=verbose)
         return leaf_mapping
     end
 end

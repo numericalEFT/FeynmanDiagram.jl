@@ -178,15 +178,22 @@ using FeynmanDiagram: ComputationalGraphs as Graphs
             h = Graph([g4,]; subgraph_factors=[7,], operator=Op())
             hvec = repeat([h], 3)
             # Test on a single graph
-            Graphs.removeOneChildParent!(h)
+            Graphs.remove_onechild_parents!(h)
             @test h.operator == Op
             @test h.subgraph_factors == [210,]
             @test isequiv(eldest(h), g1, :id)
             # Test on a vector of graphs
-            Graphs.removeOneChildParent!(hvec)
+            Graphs.remove_onechild_parents!(hvec)
             @test all(h.operator == Op for h in hvec)
             @test all(h.subgraph_factors == [210,] for h in hvec)
             @test all(isequiv(eldest(h), g1, :id) for h in hvec)
+
+            g2 = 2 * g1
+            g3 = Graph([g2,]; subgraph_factors=[3,], operator=Graphs.Prod())
+            g4 = Graph([g3,]; subgraph_factors=[5,], operator=Graphs.Prod())
+            h = Graph([g1, g4]; subgraph_factors=[2, 7], operator=Op())
+            Graphs.remove_onechild_parents!(h)
+            @test h.subgraph_factors == [2, 210]  # bug?
         end
     end
 end
@@ -444,21 +451,15 @@ end
             h = FeynmanGraph([g4,], drop_topology(g4.properties); subgraph_factors=[7,], operator=Opp())
             hvec = repeat([h], 3)
             # Test on a single graph
-            Graphs.removeOneChildParent!(h)
+            Graphs.remove_onechild_parents!(h)
             @test h.operator == Opp
             @test h.subgraph_factors == [210,]
             @test isequiv(eldest(h), g1, :id)
             # Test on a vector of graphs
-            Graphs.removeOneChildParent!(hvec)
+            Graphs.remove_onechild_parents!(hvec)
             @test all(h.operator == Opp for h in hvec)
             @test all(h.subgraph_factors == [210,] for h in hvec)
             @test all(isequiv(eldest(h), g1, :id) for h in hvec)
-        end
-        @testset "Optimize" begin
-            g1 = Graph([])
-            g2 = 2 * g1
-            g2p = Graph([]; factor=2)
-            G = Graph([g1, g2, g2p]) + (g2 + 3 * (-1.0) * g2p)
         end
     end
 
