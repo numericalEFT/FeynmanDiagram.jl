@@ -325,6 +325,15 @@ function merge_prefactors(g::FeynmanGraph{F,W}) where {F,W}
     end
 end
 
+function merge_prefactors!(g::Graph{F,W}) where {F,W}
+    if g.operator == Sum
+        g_merged = merge_prefactors(g)
+        g.subgraphs = g_merged.subgraphs
+        g.subgraph_factors = g_merged.subgraph_factors
+    end
+    return g
+end
+
 function merge_prefactors!(g::FeynmanGraph{F,W}) where {F,W}
     if g.operator == Sum
         g_merged = merge_prefactors(g)

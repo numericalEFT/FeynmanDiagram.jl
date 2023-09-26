@@ -1,28 +1,36 @@
-function optimize!(graphs::Union{Tuple,AbstractVector}; verbose=0, normalize=nothing)
+function optimize!(graphs::Union{Tuple,AbstractVector{G}}; verbose=0, normalize=nothing) where {G<:AbstractGraph}
     if isempty(graphs)
         return nothing
     else
         graphs = collect(graphs)
-        remove_onechild_parent!(graphs, verbose=verbose)
-        mappings = remove_duplicated_leaves!(graphs, verbose=verbose, normalize=normalize)
-        return mappings
+        leaf_mapping = remove_duplicated_leaves!(graphs, verbose=verbose, normalize=normalize)
+        remove_onechild_parents!(graphs, verbose=verbose)
+        merge_nodes_prefactors!(graphs, verbose=verbose)
+        remove_onechild_parents!(graphs, verbose=verbose)
+        return leaf_mapping
     end
 end
 
-function remove_onechild_parent!(g::G; verbose=0) where {G<:AbstractGraph}
+function optimize(graphs::Union{Tuple,AbstractVector{G}}; verbose=0, normalize=nothing) where {G<:AbstractGraph}
+    graphs_new = deepcopy(graphs)
+    leaf_mapping = optimize!(graphs_new)
+    return graphs_new, leaf_mapping
+end
+
+function remove_onechild_parents!(g::G; verbose=0) where {G<:AbstractGraph}
     verbose > 0 && println("remove nodes with only one child.")
     for sub_g in g.subgraphs
-        remove_onechild_parent!(sub_g)
+        remove_onechild_parents!(sub_g)
         inplace_prod!(sub_g)
     end
     inplace_prod!(g)
     return g
 end
 
-function remove_onechild_parent!(graphs::AbstractVector{G}; verbose=0) where {G<:AbstractGraph}
+function remove_onechild_parents!(graphs::AbstractVector{G}; verbose=0) where {G<:AbstractGraph}
     verbose > 0 && println("remove nodes with only one child.")
     for g in graphs
-        remove_onechild_parent!(g.subgraphs)
+        remove_onechild_parents!(g.subgraphs)
         for sub_g in g.subgraphs
             inplace_prod!(sub_g)
         end
@@ -31,22 +39,29 @@ function remove_onechild_parent!(graphs::AbstractVector{G}; verbose=0) where {G<
     return graphs
 end
 
-<<<<<<< HEAD
-function merge_pf(g::G) where {G<:AbstractGraph}
-    g = merge_prefactors(g)
-    for node in PreOrderDFS(g)
-        for sub_g in node.subgraphs
-            new_sub_g = merge_prefactors(sub_g)
-            replace_subgraph!(node, sub_g, new_sub_g)
-        end
+function merge_nodes_prefactors!(g::G; verbose=0) where {G<:AbstractGraph}
+    verbose > 0 && println("merge nodes' subgraphs with multiplicative prefactors.")
+    for sub_g in g.subgraphs
+        merge_nodes_prefactors!(sub_g)
+        merge_prefactors!(sub_g)
     end
+    merge_prefactors!(g)
     return g
 end
 
-function unique_leaves(_graphs::Vector{G}) where {G<:AbstractGraph}
-=======
-function uniqueLeaves(_graphs::AbstractVector{G}) where {G<:AbstractGraph}
->>>>>>> master
+function merge_nodes_prefactors!(graphs::AbstractVector{G}; verbose=0) where {G<:AbstractGraph}
+    verbose > 0 && println("merge nodes' subgraphs with multiplicative prefactors.")
+    for g in graphs
+        merge_nodes_prefactors!(g.subgraphs)
+        for sub_g in g.subgraphs
+            merge_prefactors!(sub_g)
+        end
+        merge_prefactors!(g)
+    end
+    return graphs
+end
+
+function unique_leaves(_graphs::AbstractVector{G}) where {G<:AbstractGraph}
     ############### find the unique Leaves #####################
     uniqueGraph = []
     mapping = Dict{Int,Int}()
@@ -91,13 +106,9 @@ function remove_duplicated_leaves!(graphs::AbstractVector{G}; verbose=0, normali
     for g in graphs
         for n in PreOrderDFS(g)
             for (si, sub_g) in enumerate(n.subgraphs)
-<<<<<<< HEAD
-                n.subgraphs[si] = uniqueLeaf[leafMap[sub_g.id]]
-=======
                 if isleaf(sub_g)
                     n.subgraphs[si] = uniqueLeaf[leafMap[sub_g.id]]
                 end
->>>>>>> master
             end
         end
     end

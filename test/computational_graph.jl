@@ -435,9 +435,9 @@ end
 
     @testset verbose = true "Optimizations" begin
         @testset "Remove one-child parents" begin
-            # h = O(7 * (5 * (3 * (2 * g)))) ↦ O(210 * g)
             g1 = propagator(𝑓⁻(1)𝑓⁺(2))
             g2 = 2 * g1
+            # h = O(7 * (5 * (3 * (2 * g)))) ↦ O(210 * g)
             g3 = FeynmanGraph([g2,], g2.properties; subgraph_factors=[3,], operator=Graphs.Prod())
             g4 = FeynmanGraph([g3,], g3.properties; subgraph_factors=[5,], operator=Graphs.Prod())
             struct Opp <: Graphs.AbstractOperator end
@@ -453,6 +453,12 @@ end
             @test all(h.operator == Opp for h in hvec)
             @test all(h.subgraph_factors == [210,] for h in hvec)
             @test all(isequiv(eldest(h), g1, :id) for h in hvec)
+        end
+        @testset "Optimize" begin
+            g1 = Graph([])
+            g2 = 2 * g1
+            g2p = Graph([]; factor=2)
+            G = Graph([g1, g2, g2p]) + (g2 + 3 * (-1.0) * g2p)
         end
     end
 

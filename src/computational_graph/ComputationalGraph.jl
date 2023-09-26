@@ -41,7 +41,8 @@ export haschildren, onechild, isleaf, isbranch, ischain, isfactorless, eldest
 include("io.jl")
 # plot_tree
 
-# include("eval.jl")
+include("eval.jl")
+export eval!
 
 include("transform.jl")
 export relabel!, standardize_labels!, replace_subgraph!, merge_prodchain_subfactors!, inplace_prod!
@@ -49,6 +50,6 @@ export relabel, standardize_labels, replace_subgraph, merge_prodchain_subfactors
 export prune_trivial_unary, merge_prefactors
 
 include("optimize.jl")
-export optimize!
+export optimize!, optimize
 
 end
