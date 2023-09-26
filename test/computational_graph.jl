@@ -237,7 +237,7 @@ end
 
 @testset verbose = true "Auto Differentiation" begin
     using FeynmanDiagram.ComputationalGraphs:
-        eval!, forwardAD, backAD, node_derivative, count_operation, build_all_derivative
+        eval!, forwardAD, backAD, node_derivative, count_operation, build_all_leaf_derivative, forwardAD_root
     g1 = propagator(𝑓⁻(1)𝑓⁺(2))
     g2 = propagator(𝑓⁻(3)𝑓⁺(4))
     g3 = propagator(𝑓⁻(5)𝑓⁺(6), factor=2.0)
@@ -287,9 +287,62 @@ end
                 @test eval!(value_back) == eval!(value_forward)
             end
         end
-        for (order_vec, graph) in build_all_derivative(G6, 3)
+        for (order_vec, graph) in build_all_leaf_derivative(G6, 3)
             print("$(order_vec), $(eval!(graph)) \n")
         end
+    end
+    @testset "forwardAD_root" begin
+        F3 = g1 + g2
+        F2 = linear_combination([g1, g3, F3], [2, 1, 3])
+        F1 = Graph([g1, F2, F3], operator=Graphs.Prod(), subgraph_factors=[3.0, 1.0, 1.0])
+
+        dual = forwardAD_root(F1)  # auto-differentation!
+        @test dual[F3.id].subgraphs == [dual[g1.id], dual[g2.id]]
+        @test dual[F2.id].subgraphs == [dual[g1.id], dual[g3.id], dual[F3.id]]
+
+        leafmap = Dict{Int,Int}()
+        leafmap[g1.id], leafmap[g2.id], leafmap[g3.id] = 1, 2, 3
+        leafmap[dual[g1.id].id] = 4
+        leafmap[dual[g2.id].id] = 5
+        leafmap[dual[g3.id].id] = 6
+        leaf = [1.0, 1.0, 1.0, 1.0, 0.0, 0.0]   # d F1 / d g1
+        @test eval!(dual[F1.id], leafmap, leaf) == 120.0
+        @test eval!(dual[F2.id], leafmap, leaf) == 5.0
+        @test eval!(dual[F3.id], leafmap, leaf) == 1.0
+
+        leaf = [5.0, -1.0, 2.0, 0.0, 1.0, 0.0]  # d F1 / d g2
+        @test eval!(dual[F1.id], leafmap, leaf) == 570.0
+        @test eval!(dual[F2.id], leafmap, leaf) == 3.0
+        @test eval!(dual[F3.id], leafmap, leaf) == 1.0
+
+        leaf = [5.0, -1.0, 2.0, 0.0, 0.0, 1.0]  # d F1 / d g3
+        @test eval!(dual[F1.id], leafmap, leaf) == 60.0
+        @test eval!(dual[F2.id], leafmap, leaf) == 1.0
+        @test eval!(dual[F3.id], leafmap, leaf) == 0.0
+
+        F0 = F1 * F3
+        dual1 = forwardAD_root(F0)
+        leafmap[dual1[g1.id].id] = 4
+        leafmap[dual1[g2.id].id] = 5
+        leafmap[dual1[g3.id].id] = 6
+
+        leaf = [1.0, 1.0, 1.0, 1.0, 0.0, 0.0]
+        @test eval!(dual1[F0.id], leafmap, leaf) == 300.0
+        leaf = [5.0, -1.0, 2.0, 0.0, 1.0, 0.0]
+        @test eval!(dual1[F0.id], leafmap, leaf) == 3840.0
+        leaf = [5.0, -1.0, 2.0, 0.0, 0.0, 1.0]
+        @test eval!(dual1[F0.id], leafmap, leaf) == 240.0
+        @test isequiv(dual[F1.id], dual1[F1.id], :id, :weight, :vertices)
+
+        F0_r1 = F1 + F3
+        dual = forwardAD_root([F0, F0_r1])
+        leafmap[dual[g1.id].id] = 4
+        leafmap[dual[g2.id].id] = 5
+        leafmap[dual[g3.id].id] = 6
+        @test eval!(dual[F0.id], leafmap, leaf) == 240.0
+        @test eval!(dual[F0_r1.id], leafmap, leaf) == 60.0
+        @test isequiv(dual[F0.id], dual1[F0.id], :id, :weight)
+        @test isequiv(dual[F1.id], dual1[F1.id], :id, :weight)
     end
 end
 

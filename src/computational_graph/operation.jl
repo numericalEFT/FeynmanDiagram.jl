@@ -364,3 +364,66 @@ end
 #     return result
 # end
 
+
+function forwardAD_root(diags::AbstractVector{G}) where {G<:Graph}
+    dual = Dict{Int,G}()
+    # println("rootID: ", diag.id)
+    for diag in diags
+        for node in PreOrderDFS(diag)
+            visited = false
+            if haskey(dual, node.id)
+                dual[node.id].name != "None" && continue
+                visited = true
+            end
+            # println("Node: ", node.id)
+
+            if node.operator == Sum
+                nodes_deriv = G[]
+                for sub_node in node.subgraphs
+                    if haskey(dual, sub_node.id)
+                        # println("subNode haskey: ", sub_node.id)
+                        push!(nodes_deriv, dual[sub_node.id])
+                    else
+                        # println("subNode nokey: ", sub_node.id)
+                        g_dual = Graph(G[]; name="None")
+                        push!(nodes_deriv, g_dual)
+                        dual[sub_node.id] = g_dual
+                    end
+                end
+                if visited
+                    dual[node.id].subgraphs = nodes_deriv
+                    dual[node.id].subgraph_factors = node.subgraph_factors
+                    dual[node.id].name = node.name
+                else
+                    dual[node.id] = Graph(nodes_deriv; subgraph_factors=node.subgraph_factors, factor=node.factor)
+                end
+            elseif node.operator == Prod
+                nodes_deriv = G[]
+                for (i, sub_node) in enumerate(node.subgraphs)
+                    if haskey(dual, sub_node.id)
+                        # println("subNode haskey: ", sub_node.id)
+                        subgraphs = [j == i ? dual[subg.id] : subg for (j, subg) in enumerate(node.subgraphs)]
+                        push!(nodes_deriv, Graph(subgraphs; operator=Prod(), subgraph_factors=node.subgraph_factors))
+                    else
+                        # println("subNode nokey: ", sub_node.id)
+                        g_dual = Graph(G[]; name="None")
+                        dual[sub_node.id] = g_dual
+                        subgraphs = [j == i ? g_dual : subg for (j, subg) in enumerate(node.subgraphs)]
+                        push!(nodes_deriv, Graph(subgraphs; operator=Prod(), subgraph_factors=node.subgraph_factors))
+
+                    end
+                end
+                if visited
+                    dual[node.id].subgraphs = nodes_deriv
+                    dual[node.id].subgraph_factors = one.(eachindex(nodes_deriv))
+                    dual[node.id].name = node.name
+                else
+                    dual[node.id] = Graph(nodes_deriv; factor=node.factor)
+                end
+            end
+        end
+    end
+    return dual
+end
+
+forwardAD_root(diag::Graph) = forwardAD_root([diag])
