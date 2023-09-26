@@ -237,7 +237,7 @@ end
 
 @testset verbose = true "Auto Differentiation" begin
     using FeynmanDiagram.ComputationalGraphs:
-        eval!, frontAD, backAD, node_derivative
+        eval!, forwardAD, backAD, node_derivative, count_operation, build_all_derivative
     g1 = propagator(𝑓⁻(1)𝑓⁺(2))
     g2 = propagator(𝑓⁻(3)𝑓⁺(4))
     g3 = propagator(𝑓⁻(5)𝑓⁺(6), factor=2.0)
@@ -262,29 +262,34 @@ end
     end
     @testset "Eval" begin
         # Current test assign all green's function equal to 1 for simplicity.
-        # print(eval!(frontAD(G5, g1.id)),"\n")
-        # print(eval!(frontAD(G3, g1.id)),"\n")
-        # print(eval!(frontAD(G3, g2.id)),"\n")
-        # print(eval!(frontAD(G6, g1.id)),"\n")
-        # print(eval!(frontAD(frontAD(G6, g1.id), g2.id)),"\n")
-        # print(eval!(frontAD(frontAD(G6, g1.id), g3.id)),"\n")
-        # gs = Compilers.to_julia_str([frontAD(G5, g1.id),], name="eval_graph!")
+        # print(eval!(forwardAD(G5, g1.id)),"\n")
+        # print(eval!(forwardAD(G3, g1.id)),"\n")
+        # print(eval!(forwardAD(G3, g2.id)),"\n")
+        # print(eval!(forwardAD(G6, g1.id)),"\n")
+        # print(eval!(forwardAD(forwardAD(G6, g1.id), g2.id)),"\n")
+        # print(eval!(forwardAD(forwardAD(G6, g1.id), g3.id)),"\n")
+        # gs = Compilers.to_julia_str([forwardAD(G5, g1.id),], name="eval_graph!")
         # println(gs,"\n")
-        @test eval!(frontAD(G3, g1.id)) == 1
-        @test eval!(frontAD(G4, g1.id)) == 8
-        @test eval!(frontAD(G5, g1.id)) == 104
-        @test eval!(frontAD(G6, g1.id)) == 32
-        @test eval!(frontAD(G6, g3.id)) == 5
-        @test eval!(frontAD(frontAD(G6, g1.id), g2.id)) == 12
-        backAD(G5, true)
-        # for (i, G) in enumerate([G5,])#[G3, G4, G5, G6, G7])
-        #     back_deriv = backAD(G)
-        #     for (key, value) in back_deriv
-        #         gs = Compilers.to_julia_str([value,], name="eval_graph!")
-        #         println("id:$(key)", gs, "\n")
-        #         print("Parent:$(i+2)  id:$(key)  $(eval!(value))   $(eval!(frontAD(G,key)))\n")
-        #     end
-        # end
+        @test eval!(forwardAD(G3, g1.id)) == 1
+        @test eval!(forwardAD(G4, g1.id)) == 8
+        @test eval!(forwardAD(G5, g1.id)) == 104
+        @test eval!(forwardAD(G6, g1.id)) == 32
+        @test eval!(forwardAD(G6, g3.id)) == 5
+        @test eval!(forwardAD(forwardAD(G6, g1.id), g2.id)) == 12
+        #backAD(G5, true)
+        for (i, G) in enumerate([G3, G4, G5, G6, G7])
+            back_deriv = backAD(G)
+            for (id_pair, value_back) in back_deriv
+                # gs = Compilers.to_julia_str([value,], name="eval_graph!")
+                # println("id:$(key)", gs, "\n")
+                value_forward = forwardAD(G, id_pair[2])
+                # print("Parent:$(i+2)  id:$(key)  $(eval!(value))   $(eval!(value_AD)) $(count_operation(value)) $(count_operation(value_AD))\n")
+                @test eval!(value_back) == eval!(value_forward)
+            end
+        end
+        for (order_vec, graph) in build_all_derivative(G6, 3)
+            print("$(order_vec), $(eval!(graph)) \n")
+        end
     end
 end
 

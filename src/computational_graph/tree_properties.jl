@@ -129,3 +129,12 @@ function count_operation(g::Graph)
     end
     return [totalsum, totalprod]
 end
+
+function count_operation(g::Number)
+    return [0, 0]
+end
+
+
+function count_operation(nothing)
+    return [0, 0]
+end
