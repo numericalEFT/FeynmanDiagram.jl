@@ -11,7 +11,9 @@ Base.show(io::IO, o::AbstractOperator) = print(io, typeof(o))
 Base.show(io::IO, ::Type{Sum}) = print(io, "⨁")
 Base.show(io::IO, ::Type{Prod}) = print(io, "Ⓧ")
 
-# Is the unary operation trivial (𝓞g = g)?
+# Is the unary form of operator 𝓞 trivial: 𝓞(G) ≡ G?
+# NOTE: this property implies that 𝓞(c * G) = c * G = c * 𝓞(G), so
+#       we may propagate the subgraph factor c up to the parent graph.
 unary_istrivial(::Type{O}) where {O<:AbstractOperator} = false
 unary_istrivial(::Type{O}) where {O<:Union{Sum,Prod}} = true  # (+g) ≡ g and (*g) ≡ g
 
