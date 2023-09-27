@@ -41,15 +41,13 @@ include("operation.jl")
 include("io.jl")
 # plot_tree
 
-# include("eval.jl")
+include("eval.jl")
+export eval!
 
 include("transform.jl")
-export relabel!, standardize_labels!, replace_subgraph!, merge_prodchain_subfactors!, inplace_prod!
-export relabel, standardize_labels, replace_subgraph, merge_prodchain_subfactors, inplace_prod
-export prune_trivial_unary, merge_prefactors
+export relabel!, standardize_labels!, replace_subgraph!, merge_linear_combination!, merge_chains!
+export relabel, standardize_labels, replace_subgraph, merge_linear_combination, merge_chains
 
 include("optimize.jl")
-export optimize!
-include("eval.jl")
-export evalGraph!
+export optimize!, optimize
 end
