@@ -1,6 +1,6 @@
 module Compilers
 using ..ComputationalGraphs
-import ..ComputationalGraphs: Graph
+import ..ComputationalGraphs: FeynmanGraph
 
 using ..AbstractTrees
 using ..RuntimeGeneratedFunctions
