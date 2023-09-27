@@ -42,7 +42,6 @@
 #         return diags
 #     end
 # end
-
 function separate_number_graph(g::Vector{Union{F,Graph{F,W}}}) where {F,W}
     subgraphs = Vector{Graph{F,W}}()
     subnumber = nothing

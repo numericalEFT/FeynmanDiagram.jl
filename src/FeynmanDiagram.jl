@@ -103,12 +103,16 @@ using .ComputationalGraphs
 export ComputationalGraphs
 export labelreset, parity
 # export AbstractOperator, Prod, Sum
-export Graph, isequiv, linear_combination
-# export GraphType, Interaction, ExternalVertex, Propagator, SelfEnergy, VertexDiag, GreenDiag, GenericDiag
-export feynman_diagram, propagator, interaction, external_vertex
+
+export AbstractGraph, AbstractOperator
+export Graph, FeynmanGraph, FeynmanProperties
+
+export isequiv, drop_topology, is_external, is_internal, diagram_type, orders, vertices, topology
+export external_legs, external_indices, external_operators, external_labels
+export linear_combination, feynman_diagram, propagator, interaction, external_vertex
+# export DiagramType, Interaction, ExternalVertex, Propagator, SelfEnergy, VertexDiag, GreenDiag, GenericDiag
+
 # export standardize_order!
-export is_external, is_internal, vertices, external
-export external_labels
 # export reducibility, connectivity
 # export 𝐺ᶠ, 𝐺ᵇ, 𝐺ᵠ, 𝑊, Green2, Interaction
 # export Coupling_yukawa, Coupling_phi3, Coupling_phi4, Coupling_phi6
@@ -116,6 +120,7 @@ export haschildren, onechild, isleaf, isbranch, ischain, isfactorless, eldest
 export relabel!, standardize_labels!, replace_subgraph!, merge_prodchain_subfactors!, inplace_prod!
 export relabel, standardize_labels, replace_subgraph, merge_prodchain_subfactors, inplace_prod
 export prune_trivial_unary, merge_prefactors
+export optimize!
 
 include("backend/compiler.jl")
 using .Compilers

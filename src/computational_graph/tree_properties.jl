@@ -1,73 +1,77 @@
-##################### AbstractTrees interface for Graphs ########################### 
+##################### AbstractTrees interface for AbstracGraphs ########################### 
 
 ## Things that make printing prettier
-AbstractTrees.printnode(io::IO, g::Graph) = print(io, "\u001b[32m$(g.id)\u001b[0m : $g")
+AbstractTrees.printnode(io::IO, g::AbstractGraph) = print(io, "\u001b[32m$(g.id)\u001b[0m : $g")
 
-## Guarantee type-stable tree iteration for Graphs
+## Guarantee type-stable tree iteration for Graphs, StableGraphs, and FeynmanGraphs
 AbstractTrees.NodeType(::Graph) = HasNodeType()
+AbstractTrees.NodeType(::FeynmanGraph) = HasNodeType()
 AbstractTrees.nodetype(::Graph{F,W}) where {F,W} = Graph{F,W}
+AbstractTrees.nodetype(::FeynmanGraph{F,W}) where {F,W} = FeynmanGraph{F,W}
 
 ## Optional enhancements
 # These next two definitions allow inference of the item type in iteration.
 # (They are not sufficient to solve all internal inference issues, however.)
 Base.IteratorEltype(::Type{<:TreeIterator{Graph{F,W}}}) where {F,W} = Base.HasEltype()
 Base.eltype(::Type{<:TreeIterator{Graph{F,W}}}) where {F,W} = Graph{F,W}
+Base.IteratorEltype(::Type{<:TreeIterator{FeynmanGraph{F,W}}}) where {F,W} = Base.HasEltype()
+Base.eltype(::Type{<:TreeIterator{FeynmanGraph{F,W}}}) where {F,W} = FeynmanGraph{F,W}
 
-function AbstractTrees.children(g::Graph)
+function AbstractTrees.children(g::AbstractGraph)
     return g.subgraphs
 end
 
 ##################### Tree properties ########################### 
 
 """
-    function haschildren(g::Graph)
+    function haschildren(g::AbstractGraph)
 
     Returns whether the graph has any children (subgraphs).
 
 # Arguments:
-- `g::Graph`: graph to be analyzed
+- `g::AbstractGraph`: graph to be analyzed
 """
-haschildren(g::Graph) = isempty(g.subgraphs) == false
+haschildren(g::AbstractGraph) = isempty(g.subgraphs) == false
 
 """
-    function onechild(g::Graph)
+    function onechild(g::AbstractGraph)
 
     Returns whether the graph g has only one child (subgraph).
 
 # Arguments:
-- `g::Graph`: graph to be analyzed
+- `g::AbstractGraph`: graph to be analyzed
 """
-onechild(g::Graph) = length(children(g)) == 1
+onechild(g::AbstractGraph) = length(children(g)) == 1
 
 """
-    function isleaf(g::Graph)
+    function isleaf(g::AbstractGraph)
 
     Returns whether the graph g is a leaf (terminating tree node).
 
 # Arguments:
-- `g::Graph`: graph to be analyzed
+- `g::AbstractGraph`: graph to be analyzed
 """
-isleaf(g::Graph) = isempty(g.subgraphs)
+isleaf(g::AbstractGraph) = isempty(g.subgraphs)
 
 """
-    function isbranch(g::Graph)
+    function isbranch(g::AbstractGraph)
 
     Returns whether the graph g is a branch-type (depth-1 and one-child) graph.
 
 # Arguments:
-- `g::Graph`: graph to be analyzed
+- `g::AbstractGraph`: graph to be analyzed
 """
-isbranch(g::Graph) = onechild(g) && isleaf(eldest(g))
+isbranch(g::AbstractGraph) = onechild(g) && isleaf(eldest(g))
 
 """
-    function ischain(g::Graph)
+    function ischain(g::AbstractGraph)
 
     Returns whether the graph g is a chain-type graph.
 
 # Arguments:
-- `g::Graph`: graph to be analyzed
+- `g::AbstractGraph`: graph to be analyzed
 """
-function ischain(g::Graph)
+function ischain(g::AbstractGraph)
     isleaf(g) && return true
     while onechild(g)
         g = eldest(g)
@@ -84,9 +88,9 @@ end
     that one may have, e.g., `isfactorless(g) == true` but `isfactorless(eldest(g)) == false`.
 
 # Arguments:
-- `g::Graph`: graph to be analyzed
+- `g::AbstractGraph`: graph to be analyzed
 """
-function isfactorless(g)
+function isfactorless(g::AbstractGraph)
     if isleaf(g)
         return isapprox_one(g.factor)
     else
@@ -95,14 +99,14 @@ function isfactorless(g)
 end
 
 """
-    function eldest(g::Graph)
+    function eldest(g::AbstractGraph)
 
     Returns the first child (subgraph) of a graph g.
 
 # Arguments:
-- `g::Graph`: graph for which to find the first child
+- `g::AbstractGraph`: graph for which to find the first child
 """
-function eldest(g::Graph)
+function eldest(g::AbstractGraph)
     @assert haschildren(g) "Graph has no children!"
     return children(g)[1]
 end
