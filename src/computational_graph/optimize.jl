@@ -1,37 +1,99 @@
-function optimize!(graphs::Union{Tuple,AbstractVector}; verbose=0, normalize=nothing)
+function optimize!(graphs::Union{Tuple,AbstractVector{G}}; verbose=0, normalize=nothing) where {G<:AbstractGraph}
     if isempty(graphs)
         return nothing
     else
         graphs = collect(graphs)
-        removeOneChildParent!(graphs, verbose=verbose)
-        mappings = removeDuplicatedLeaves!(graphs, verbose=verbose, normalize=normalize)
-        return mappings
+        leaf_mapping = remove_duplicated_leaves!(graphs, verbose=verbose, normalize=normalize)
+        merge_all_chains!(graphs, verbose=verbose)
+        merge_all_linear_combinations!(graphs, verbose=verbose)
+        return leaf_mapping
     end
 end
 
-function removeOneChildParent!(g::G; verbose=0) where {G<:AbstractGraph}
-    verbose > 0 && println("remove nodes with only one child.")
+function optimize(graphs::Union{Tuple,AbstractVector{G}}; verbose=0, normalize=nothing) where {G<:AbstractGraph}
+    graphs_new = deepcopy(graphs)
+    leaf_mapping = optimize!(graphs_new)
+    return graphs_new, leaf_mapping
+end
+
+function merge_all_chain_prefactors!(g::G; verbose=0) where {G<:AbstractGraph}
+    verbose > 0 && println("merge prefactors of all nodes representing trivial unary chains toward root level.")
+    # Post-order DFS
     for sub_g in g.subgraphs
-        removeOneChildParent!(sub_g)
-        inplace_prod!(sub_g)
+        merge_all_chain_prefactors!(sub_g)
+        merge_chain_prefactors!(sub_g)
     end
-    inplace_prod!(g)
+    merge_chain_prefactors!(g)
     return g
 end
 
-function removeOneChildParent!(graphs::AbstractVector{G}; verbose=0) where {G<:AbstractGraph}
-    verbose > 0 && println("remove nodes with only one child.")
+function merge_all_chain_prefactors!(graphs::AbstractVector{G}; verbose=0) where {G<:AbstractGraph}
+    verbose > 0 && println("merge prefactors of all nodes representing trivial unary chains toward root level.")
+    # Post-order DFS
     for g in graphs
-        removeOneChildParent!(g.subgraphs)
-        for sub_g in g.subgraphs
-            inplace_prod!(sub_g)
-        end
-        inplace_prod!(g)
+        merge_all_chain_prefactors!(g.subgraphs)
+        merge_chain_prefactors!(g)
     end
     return graphs
 end
 
-function uniqueLeaves(_graphs::AbstractVector{G}) where {G<:AbstractGraph}
+function merge_all_factorless_chains!(g::G; verbose=0) where {G<:AbstractGraph}
+    verbose > 0 && println("merge all nodes representing factorless trivial unary chains.")
+    # Post-order DFS
+    for sub_g in g.subgraphs
+        merge_all_factorless_chains!(sub_g)
+        merge_factorless_chain!(sub_g)
+    end
+    merge_factorless_chain!(g)
+    return g
+end
+
+function merge_all_factorless_chains!(graphs::AbstractVector{G}; verbose=0) where {G<:AbstractGraph}
+    verbose > 0 && println("merge all nodes representing factorless trivial unary chains.")
+    # Post-order DFS
+    for g in graphs
+        merge_all_factorless_chains!(g.subgraphs)
+        merge_factorless_chain!(g)
+    end
+    return graphs
+end
+
+function merge_all_chains!(g::G; verbose=0) where {G<:AbstractGraph}
+    verbose > 0 && println("merge all nodes representing trivial unary chains.")
+    merge_all_chain_prefactors!(g, verbose=verbose)
+    merge_all_factorless_chains!(g, verbose=verbose)
+    return g
+end
+
+function merge_all_chains!(graphs::AbstractVector{G}; verbose=0) where {G<:AbstractGraph}
+    verbose > 0 && println("merge all nodes representing trivial unary chains.")
+    merge_all_chain_prefactors!(graphs, verbose=verbose)
+    merge_all_factorless_chains!(graphs, verbose=verbose)
+    return graphs
+end
+
+function merge_all_linear_combinations!(g::G; verbose=0) where {G<:AbstractGraph}
+    verbose > 0 && println("merge nodes representing a linear combination of a non-unique list of graphs.")
+    # Post-order DFS
+    for sub_g in g.subgraphs
+        merge_all_linear_combinations!(sub_g)
+        merge_linear_combination!(sub_g)
+    end
+    merge_linear_combination!(g)
+    return g
+end
+
+function merge_all_linear_combinations!(graphs::AbstractVector{G}; verbose=0) where {G<:AbstractGraph}
+    verbose > 0 && println("merge nodes representing a linear combination of a non-unique list of graphs.")
+    # Post-order DFS
+    for g in graphs
+        merge_all_linear_combinations!(g.subgraphs)
+        merge_linear_combination!(g)
+    end
+    return graphs
+end
+
+function unique_leaves(_graphs::AbstractVector{G}) where {G<:AbstractGraph}
     ############### find the unique Leaves #####################
     uniqueGraph = []
     mapping = Dict{Int,Int}()
@@ -55,7 +117,7 @@ function uniqueLeaves(_graphs::AbstractVector{G}) where {G<:AbstractGraph}
     return uniqueGraph, mapping
 end
 
-function removeDuplicatedLeaves!(graphs::AbstractVector{G}; verbose=0, normalize=nothing, kwargs...) where {G<:AbstractGraph}
+function remove_duplicated_leaves!(graphs::AbstractVector{G}; verbose=0, normalize=nothing, kwargs...) where {G<:AbstractGraph}
     verbose > 0 && println("remove duplicated leaves.")
     leaves = Vector{G}()
     for g in graphs
@@ -70,7 +132,7 @@ function removeDuplicatedLeaves!(graphs::AbstractVector{G}; verbose=0, normalize
     sort!(leaves, by=x -> x.id) #sort the id of the leaves in an asscend order
     unique!(x -> x.id, leaves) #filter out the leaves with the same id number
 
-    uniqueLeaf, leafMap = uniqueLeaves(leaves)
+    uniqueLeaf, leafMap = unique_leaves(leaves)
     verbose > 0 && length(leaves) > 0 && println("Number of independent Leaves $(length(leaves)) → $(length(uniqueLeaf))")
 
     for g in graphs

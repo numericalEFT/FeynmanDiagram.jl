@@ -117,10 +117,10 @@ export linear_combination, feynman_diagram, propagator, interaction, external_ve
 # export 𝐺ᶠ, 𝐺ᵇ, 𝐺ᵠ, 𝑊, Green2, Interaction
 # export Coupling_yukawa, Coupling_phi3, Coupling_phi4, Coupling_phi6
 export haschildren, onechild, isleaf, isbranch, ischain, isfactorless, eldest
-export relabel!, standardize_labels!, replace_subgraph!, merge_prodchain_subfactors!, inplace_prod!
-export relabel, standardize_labels, replace_subgraph, merge_prodchain_subfactors, inplace_prod
-export prune_trivial_unary, merge_prefactors
-export optimize!
+export relabel!, standardize_labels!, replace_subgraph!, merge_linear_combination!, merge_chains!
+export relabel, standardize_labels, replace_subgraph, merge_linear_combination, merge_chains
+
+export optimize!, optimize, merge_all_chains!, merge_all_linear_combinations!, remove_duplicated_leaves!
 
 include("backend/compiler.jl")
 using .Compilers
