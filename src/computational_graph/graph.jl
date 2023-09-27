@@ -103,7 +103,6 @@ function Base.:*(c1::C, g2::Graph{F,W}) where {F,W,C}
     g = Graph([g2,]; subgraph_factors=[F(c1),], operator=Prod(), ftype=F, wtype=W)
     # Merge multiplicative link
     if g2.operator == Prod && onechild(g2)
-        ##when prune single child nodes, why the subgraph_factors are merged, but factor is not merged ? 
         g.subgraph_factors[1] *= g2.subgraph_factors[1]
         g.subgraphs = g2.subgraphs
     end
