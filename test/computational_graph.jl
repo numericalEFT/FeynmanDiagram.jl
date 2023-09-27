@@ -1,5 +1,14 @@
 using FeynmanDiagram: ComputationalGraphs as Graphs
 
+# 𝓞 represents a non-trivial unary operation
+struct O <: Graphs.AbstractOperator end
+
+# 𝓞1, 𝓞2, and 𝓞3 represent trivial unary operations
+struct O1 <: Graphs.AbstractOperator end
+struct O2 <: Graphs.AbstractOperator end
+struct O3 <: Graphs.AbstractOperator end
+Graphs.unary_istrivial(::Type{O}) where {O<:Union{O1,O2,O3}} = true
+
 @testset verbose = true "Graph" begin
     @testset verbose = true "Operations" begin
         g1 = Graph([])
@@ -95,16 +104,14 @@ using FeynmanDiagram: ComputationalGraphs as Graphs
             g4p = Graph([g3p,]; operator=Graphs.Sum())
             @test Graphs.unary_istrivial(Graphs.Prod)
             @test Graphs.unary_istrivial(Graphs.Sum)
-            @test prune_trivial_unary(g2) == g1
-            @test prune_trivial_unary(g3) == g1
-            @test prune_trivial_unary(g4) == g1
-            @test prune_trivial_unary(g3p) == g3p
-            @test prune_trivial_unary(g4p) == g3p
-            # 𝓞(g1), where 𝓞 is a non-trivial unary operation
-            struct O <: Graphs.AbstractOperator end
+            @test Graphs.merge_factorless_chain(g2) == g1
+            @test Graphs.merge_factorless_chain(g3) == g1
+            @test Graphs.merge_factorless_chain(g4) == g1
+            @test Graphs.merge_factorless_chain(g3p) == g3p
+            @test Graphs.merge_factorless_chain(g4p) == g3p
             g5 = Graph([g1,]; operator=O())
             @test Graphs.unary_istrivial(O) == false
-            @test prune_trivial_unary(g5) == g5
+            @test Graphs.merge_factorless_chain(g5) == g5
         end
         g1 = Graph([])
         g2 = Graph([g1,]; subgraph_factors=[5,], operator=Graphs.Prod())
@@ -115,53 +122,63 @@ using FeynmanDiagram: ComputationalGraphs as Graphs
         g2p = g1 + g2
         g3p = Graph([g2p,]; subgraph_factors=[3,], operator=Graphs.Prod())
         gp = Graph([g3p,]; subgraph_factors=[2,], operator=Graphs.Prod())
-        @testset "Merge Prod chain subfactors" begin
+        @testset "Merge chains" begin
             # g ↦ 30*(*(*g1))
-            g_merged = merge_prodchain_subfactors(g)
+            g_merged = Graphs.merge_chain_prefactors(g)
             @test g_merged.subgraph_factors == [30,]
             @test all(isfactorless(node) for node in PreOrderDFS(eldest(g_merged)))
             # in-place form
             gc = deepcopy(g)
-            merge_prodchain_subfactors!(gc)
+            Graphs.merge_chain_prefactors!(gc)
             @test isequiv(gc, g_merged, :id)
             # gp ↦ 6*(*(g1 + 5*g1))
-            gp_merged = merge_prodchain_subfactors(gp)
+            gp_merged = Graphs.merge_chain_prefactors(gp)
             @test gp_merged.subgraph_factors == [6,]
             @test isfactorless(eldest(gp)) == false
             @test isfactorless(eldest(gp_merged))
             @test isequiv(eldest(eldest(gp_merged)), g2p, :id)
-        end
-        @testset "In-place product" begin
             # g ↦ 30*g1
-            g_inplace = inplace_prod(g)
-            @test isequiv(g_inplace, 30 * g1, :id)
+            g_merged = merge_chains(g)
+            @test isequiv(g_merged, 30 * g1, :id)
             # in-place form
-            inplace_prod!(g)
+            merge_chains!(g)
             @test isequiv(g, 30 * g1, :id)
             # gp ↦ 6*(g1 + 5*g1)
-            gp_inplace = inplace_prod(gp)
-            @test isequiv(gp_inplace, 6 * g2p, :id)
+            gp_merged = merge_chains(gp)
+            @test isequiv(gp_merged, 6 * g2p, :id)
+            # Test a generic trivial unary chain
+            # *(O3(5 * O2(3 * O1(2 * h)))) ↦ 30 * h
+            h = Graph([])
+            h1 = Graph([h,]; subgraph_factors=[2,], operator=O1())
+            h2 = Graph([h1,]; subgraph_factors=[3,], operator=O2())
+            h3 = Graph([h2,]; subgraph_factors=[5,], operator=O3())
+            h4 = Graph([h3,]; operator=Graphs.Prod())
+            h4_merged = merge_chains(h4)
+            @test isequiv(h4_merged, 30 * h, :id)
+            # in-place form
+            merge_chains!(h4)
+            @test isequiv(h4, 30 * h, :id)
         end
         @testset "Merge prefactors" begin
             g1 = propagator(𝑓⁺(1)𝑓⁻(2))
             h1 = linear_combination(g1, g1, 1, 2)
             @test h1.subgraph_factors == [1, 2]
-            h2 = merge_prefactors(h1)
+            h2 = merge_linear_combination(h1)
             @test h2.subgraph_factors == [3]
             @test length(h2.subgraphs) == 1
             @test isequiv(h2.subgraphs[1], g1, :id)
             g2 = propagator(𝑓⁺(1)𝑓⁻(2), factor=2)
             h3 = linear_combination(g1, g2, 1, 2)
-            h4 = merge_prefactors(h3)
+            h4 = merge_linear_combination(h3)
             @test isequiv(h3, h4, :id)
             h5 = linear_combination([g1, g2, g2, g1], [3, 5, 7, 9])
-            h6 = merge_prefactors(h5)
+            h6 = merge_linear_combination(h5)
             @test length(h6.subgraphs) == 2
             @test h6.subgraphs == [g1, g2]
             @test h6.subgraph_factors == [12, 12]
             g3 = 2 * g1
             h7 = linear_combination([g1, g3, g3, g1], [3, 5, 7, 9])
-            h8 = merge_prefactors(h7)
+            h8 = merge_linear_combination(h7)
             @test length(h8.subgraphs) == 1
             @test h8.subgraphs == [g1]
             @test h8.subgraph_factors == [36]
@@ -174,26 +191,25 @@ using FeynmanDiagram: ComputationalGraphs as Graphs
             g2 = 2 * g1
             g3 = Graph([g2,]; subgraph_factors=[3,], operator=Graphs.Prod())
             g4 = Graph([g3,]; subgraph_factors=[5,], operator=Graphs.Prod())
-            struct Op <: Graphs.AbstractOperator end
-            h = Graph([g4,]; subgraph_factors=[7,], operator=Op())
-            hvec = repeat([h], 3)
+            h = Graph([g4,]; subgraph_factors=[7,], operator=O())
+            hvec = repeat([deepcopy(h)], 3)
             # Test on a single graph
-            Graphs.remove_onechild_parents!(h)
-            @test h.operator == Op
+            Graphs.merge_all_chains!(h)
+            @test h.operator == O
             @test h.subgraph_factors == [210,]
             @test isequiv(eldest(h), g1, :id)
             # Test on a vector of graphs
-            Graphs.remove_onechild_parents!(hvec)
-            @test all(h.operator == Op for h in hvec)
+            Graphs.merge_all_chains!(hvec)
+            @test all(h.operator == O for h in hvec)
             @test all(h.subgraph_factors == [210,] for h in hvec)
             @test all(isequiv(eldest(h), g1, :id) for h in hvec)
 
             g2 = 2 * g1
             g3 = Graph([g2,]; subgraph_factors=[3,], operator=Graphs.Prod())
             g4 = Graph([g3,]; subgraph_factors=[5,], operator=Graphs.Prod())
-            h = Graph([g1, g4]; subgraph_factors=[2, 7], operator=Op())
-            Graphs.remove_onechild_parents!(h)
-            @test h.subgraph_factors == [2, 210]  # bug?
+            h = Graph([g1, g4]; subgraph_factors=[2, 7], operator=O())
+            Graphs.merge_all_chains!(h)
+            @test h.subgraph_factors == [2, 210] # bug?
         end
     end
 end
@@ -367,16 +383,14 @@ end
             g4p = FeynmanGraph([g3p,], drop_topology(g3p.properties); operator=Graphs.Sum())
             @test Graphs.unary_istrivial(Graphs.Prod)
             @test Graphs.unary_istrivial(Graphs.Sum)
-            @test prune_trivial_unary(g2) == g1
-            @test prune_trivial_unary(g3) == g1
-            @test prune_trivial_unary(g4) == g1
-            @test prune_trivial_unary(g3p) == g3p
-            @test prune_trivial_unary(g4p) == g3p
-            # 𝓞(g1), where 𝓞 is a non-trivial unary operation
-            struct O <: Graphs.AbstractOperator end
+            @test Graphs.merge_factorless_chain(g2) == g1
+            @test Graphs.merge_factorless_chain(g3) == g1
+            @test Graphs.merge_factorless_chain(g4) == g1
+            @test Graphs.merge_factorless_chain(g3p) == g3p
+            @test Graphs.merge_factorless_chain(g4p) == g3p
             g5 = FeynmanGraph([g1,], drop_topology(g1.properties); operator=O())
             @test Graphs.unary_istrivial(O) == false
-            @test prune_trivial_unary(g5) == g5
+            @test Graphs.merge_factorless_chain(g5) == g5
         end
         g1 = propagator(𝑓⁻(1)𝑓⁺(2))
         g2 = FeynmanGraph([g1,], g1.properties; subgraph_factors=[5,], operator=Graphs.Prod())
@@ -387,53 +401,63 @@ end
         g2p = g1 + g2
         g3p = FeynmanGraph([g2p,], g2p.properties; subgraph_factors=[3,], operator=Graphs.Prod())
         gp = FeynmanGraph([g3p,], g3p.properties; subgraph_factors=[2,], operator=Graphs.Prod())
-        @testset "Merge Prod chain subfactors" begin
+        @testset "Merge chains" begin
             # g ↦ 30*(*(*g1))
-            g_merged = merge_prodchain_subfactors(g)
+            g_merged = Graphs.merge_chain_prefactors(g)
             @test g_merged.subgraph_factors == [30,]
             @test all(isfactorless(node) for node in PreOrderDFS(eldest(g_merged)))
             # in-place form
             gc = deepcopy(g)
-            merge_prodchain_subfactors!(gc)
+            Graphs.merge_chain_prefactors!(gc)
             @test isequiv(gc, g_merged, :id)
             # gp ↦ 6*(*(g1 + 5*g1))
-            gp_merged = merge_prodchain_subfactors(gp)
+            gp_merged = Graphs.merge_chain_prefactors(gp)
             @test gp_merged.subgraph_factors == [6,]
             @test isfactorless(eldest(gp)) == false
             @test isfactorless(eldest(gp_merged))
             @test isequiv(eldest(eldest(gp_merged)), g2p, :id)
-        end
-        @testset "In-place product" begin
             # g ↦ 30*g1
-            g_inplace = inplace_prod(g)
-            @test isequiv(g_inplace, 30 * g1, :id)
+            g_merged = merge_chains(g)
+            @test isequiv(g_merged, 30 * g1, :id)
             # in-place form
-            inplace_prod!(g)
+            merge_chains!(g)
             @test isequiv(g, 30 * g1, :id)
             # gp ↦ 6*(g1 + 5*g1)
-            gp_inplace = inplace_prod(gp)
-            @test isequiv(gp_inplace, 6 * g2p, :id)
+            gp_merged = merge_chains(gp)
+            @test isequiv(gp_merged, 6 * g2p, :id)
+            # Test a generic trivial unary chain
+            # *(O3(5 * O2(3 * O1(2 * h)))) ↦ 30 * h
+            h = propagator(𝑓⁻(1)𝑓⁺(2))
+            h1 = FeynmanGraph([h,], h.properties; subgraph_factors=[2,], operator=O1())
+            h2 = FeynmanGraph([h1,], h1.properties; subgraph_factors=[3,], operator=O2())
+            h3 = FeynmanGraph([h2,], h2.properties; subgraph_factors=[5,], operator=O3())
+            h4 = FeynmanGraph([h3,], h3.properties; operator=Graphs.Prod())
+            h4_merged = merge_chains(h4)
+            @test isequiv(h4_merged, 30 * h, :id)
+            # in-place form
+            merge_chains!(h4)
+            @test isequiv(h4, 30 * h, :id)
         end
         @testset "Merge prefactors" begin
             g1 = propagator(𝑓⁺(1)𝑓⁻(2))
             h1 = linear_combination(g1, g1, 1, 2)
             @test h1.subgraph_factors == [1, 2]
-            h2 = merge_prefactors(h1)
+            h2 = merge_linear_combination(h1)
             @test h2.subgraph_factors == [3]
             @test length(h2.subgraphs) == 1
             @test isequiv(h2.subgraphs[1], g1, :id)
             g2 = propagator(𝑓⁺(1)𝑓⁻(2), factor=2)
             h3 = linear_combination(g1, g2, 1, 2)
-            h4 = merge_prefactors(h3)
+            h4 = merge_linear_combination(h3)
             @test isequiv(h3, h4, :id)
             h5 = linear_combination([g1, g2, g2, g1], [3, 5, 7, 9])
-            h6 = merge_prefactors(h5)
+            h6 = merge_linear_combination(h5)
             @test length(h6.subgraphs) == 2
             @test h6.subgraphs == [g1, g2]
             @test h6.subgraph_factors == [12, 12]
             g3 = 2 * g1
             h7 = linear_combination([g1, g3, g3, g1], [3, 5, 7, 9])
-            h8 = merge_prefactors(h7)
+            h8 = merge_linear_combination(h7)
             @test length(h8.subgraphs) == 1
             @test h8.subgraphs == [g1]
             @test h8.subgraph_factors == [36]
@@ -447,19 +471,25 @@ end
             # h = O(7 * (5 * (3 * (2 * g)))) ↦ O(210 * g)
             g3 = FeynmanGraph([g2,], g2.properties; subgraph_factors=[3,], operator=Graphs.Prod())
             g4 = FeynmanGraph([g3,], g3.properties; subgraph_factors=[5,], operator=Graphs.Prod())
-            struct Opp <: Graphs.AbstractOperator end
-            h = FeynmanGraph([g4,], drop_topology(g4.properties); subgraph_factors=[7,], operator=Opp())
+            h = FeynmanGraph([g4,], drop_topology(g4.properties); subgraph_factors=[7,], operator=O())
             hvec = repeat([h], 3)
             # Test on a single graph
-            Graphs.remove_onechild_parents!(h)
-            @test h.operator == Opp
+            Graphs.merge_all_chains!(h)
+            @test h.operator == O
             @test h.subgraph_factors == [210,]
             @test isequiv(eldest(h), g1, :id)
             # Test on a vector of graphs
-            Graphs.remove_onechild_parents!(hvec)
-            @test all(h.operator == Opp for h in hvec)
+            Graphs.merge_all_chains!(hvec)
+            @test all(h.operator == O for h in hvec)
             @test all(h.subgraph_factors == [210,] for h in hvec)
             @test all(isequiv(eldest(h), g1, :id) for h in hvec)
+
+            g2 = 2 * g1
+            g3 = FeynmanGraph([g2,], g2.properties; subgraph_factors=[3,], operator=Graphs.Prod())
+            g4 = FeynmanGraph([g3,], g3.properties; subgraph_factors=[5,], operator=Graphs.Prod())
+            h = FeynmanGraph([g1, g4], drop_topology(g4.properties); subgraph_factors=[2, 7], operator=O())
+            Graphs.merge_all_chains!(h)
+            @test h.subgraph_factors == [2, 210] # bug?
         end
     end
 
