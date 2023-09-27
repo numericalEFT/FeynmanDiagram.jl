@@ -152,7 +152,9 @@ function all_parent(diag::Graph{F,W}) where {F,W}
 end
 
 function node_derivative(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W} #return d g1/ d g2 
-    if g1.operator == Sum
+    if isleaf(g1)
+        return nothing
+    elseif g1.operator == Sum
         sum_factor = 0.0
         exist = false #track if g2 exist in g1 subgraphs.
         for i in 1:length(g1.subgraphs)
@@ -240,7 +242,7 @@ function backAD(diag::Graph{F,W}, debug::Bool=false) where {F,W}
     dual = Dict{Int,Union{F,Graph{F,W}}}()
     result = Dict{Tuple{Int,Int},Graph{F,W}}()
     parents = all_parent(diag)
-    for d in PreOrderDFS(diag) # preorder traversal will visit all parents first
+    for d in Leaves(diag)#PreOrderDFS(diag) # preorder traversal will visit all parents first
         #print("type: $(d.type)\n")
         if d.type == Constant || haskey(dual, d.id)
             continue

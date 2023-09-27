@@ -245,7 +245,8 @@ end
     G3 = g1
     G4 = 4 * g1 * g1
     G5 = 4 * (2 * G3 + 3 * G4)
-    G6 = (2 * g1 + 3 * g2) * (4 * g1 + g3)
+    #G6 = (2 * g1 + 3 * g2) * (4 * g1 + g3) * g1
+    G6 = (g1 + g2) * (g1 + g2) * g1
     G7 = (3 * g1 + 4 * g2 + 5 * g3) * 3 * g1
 
     @testset "node_derivative" begin
@@ -273,9 +274,9 @@ end
         @test eval!(forwardAD(G3, g1.id)) == 1
         @test eval!(forwardAD(G4, g1.id)) == 8
         @test eval!(forwardAD(G5, g1.id)) == 104
-        @test eval!(forwardAD(G6, g1.id)) == 32
-        @test eval!(forwardAD(G6, g3.id)) == 5
-        @test eval!(forwardAD(forwardAD(G6, g1.id), g2.id)) == 12
+        #@test eval!(forwardAD(G6, g1.id)) == 32
+        #@test eval!(forwardAD(G6, g3.id)) == 5
+        #@test eval!(forwardAD(forwardAD(G6, g1.id), g2.id)) == 12
         #backAD(G5, true)
         for (i, G) in enumerate([G3, G4, G5, G6, G7])
             back_deriv = backAD(G)
@@ -283,10 +284,23 @@ end
                 # gs = Compilers.to_julia_str([value,], name="eval_graph!")
                 # println("id:$(key)", gs, "\n")
                 value_forward = forwardAD(G, id_pair[2])
-                # print("Parent:$(i+2)  id:$(key)  $(eval!(value))   $(eval!(value_AD)) $(count_operation(value)) $(count_operation(value_AD))\n")
                 @test eval!(value_back) == eval!(value_forward)
+                print("value:$(i+2) $(eval!(value_forward))\n")
             end
         end
+
+        for (id, G) in backAD(G6)
+            gs = Compilers.to_julia_str([G,], name="eval_graph!")
+            println("id:$(id)", gs, "\n")
+            back_deriv = backAD(G)
+            for (id_pair, value_back) in back_deriv
+
+                value_forward = forwardAD(G, id_pair[2])
+                @test eval!(value_back) == eval!(value_forward)
+                print("value:$(id_pair) $(eval!(value_forward))\n")
+            end
+        end
+
         for (order_vec, graph) in build_all_leaf_derivative(G6, 3)
             print("$(order_vec), $(eval!(graph)) \n")
         end
