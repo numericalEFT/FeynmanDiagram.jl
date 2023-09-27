@@ -136,7 +136,7 @@ Graphs.unary_istrivial(::Type{O}) where {O<:Union{O1,O2,O3}} = true
             @test gp_merged.subgraph_factors == [6,]
             @test isfactorless(eldest(gp)) == false
             @test isfactorless(eldest(gp_merged))
-            @test isequiv(eldest(eldest(gp_merged)), g2p, :id)
+            @test eldest(eldest(gp_merged)) == g2p
             # g ↦ 30*g1
             g_merged = merge_chains(g)
             @test isequiv(g_merged, 30 * g1, :id)
@@ -166,7 +166,7 @@ Graphs.unary_istrivial(::Type{O}) where {O<:Union{O1,O2,O3}} = true
             h2 = merge_linear_combination(h1)
             @test h2.subgraph_factors == [3]
             @test length(h2.subgraphs) == 1
-            @test isequiv(h2.subgraphs[1], g1, :id)
+            @test h2.subgraphs[1] == g1
             g2 = propagator(𝑓⁺(1)𝑓⁻(2), factor=2)
             h3 = linear_combination(g1, g2, 1, 2)
             h4 = merge_linear_combination(h3)
@@ -197,19 +197,64 @@ Graphs.unary_istrivial(::Type{O}) where {O<:Union{O1,O2,O3}} = true
             Graphs.merge_all_chains!(h)
             @test h.operator == O
             @test h.subgraph_factors == [210,]
-            @test isequiv(eldest(h), g1, :id)
+            @test eldest(h) == g1
             # Test on a vector of graphs
             Graphs.merge_all_chains!(hvec)
             @test all(h.operator == O for h in hvec)
             @test all(h.subgraph_factors == [210,] for h in hvec)
-            @test all(isequiv(eldest(h), g1, :id) for h in hvec)
+            @test all(eldest(h) == g1 for h in hvec)
 
             g2 = 2 * g1
             g3 = Graph([g2,]; subgraph_factors=[3,], operator=Graphs.Prod())
             g4 = Graph([g3,]; subgraph_factors=[5,], operator=Graphs.Prod())
-            h = Graph([g1, g4]; subgraph_factors=[2, 7], operator=O())
+            h0 = Graph([g1, g4]; subgraph_factors=[2, 7], operator=O())
+            Graphs.merge_all_chains!(h0)
+            @test h0.subgraph_factors == [2, 210]
+            @test h0.subgraphs[2] == g1
+
+            h1 = Graph([h0]; subgraph_factors=[3,], operator=Graphs.Prod())
+            h2 = Graph([h1]; subgraph_factors=[5,], operator=Graphs.Prod())
+            h = Graph([h2]; subgraph_factors=[7,], operator=O())
             Graphs.merge_all_chains!(h)
-            @test h.subgraph_factors == [2, 210] # bug?
+            @test h.subgraph_factors == [105]
+            @test eldest(h) == h0
+        end
+        @testset "merge all linear combinations" begin
+            g1 = Graph([])
+            g2 = 2 * g1
+            g3 = Graph([], factor=3.0)
+            h = Graph([g1, g1, g3], subgraph_factors=[-1, 3, 1])
+            h0 = Graph([deepcopy(h), g2])
+            _h = Graph([g1, g3], subgraph_factors=[2, 1])
+            hvec = repeat([deepcopy(h)], 3)
+            # Test on a single graph
+            Graphs.merge_all_linear_combinations!(h)
+            @test isequiv(h, _h, :id)
+            # Test on a vector of graphs
+            Graphs.merge_all_linear_combinations!(hvec)
+            @test all(isequiv(h, _h, :id) for h in hvec)
+
+            Graphs.merge_all_linear_combinations!(h0)
+            @test isequiv(h0.subgraphs[1], _h, :id)
+        end
+        @testset "optimize" begin
+            g1 = Graph([])
+            g2 = 2 * g1
+            g3 = Graph([g2,]; subgraph_factors=[3,], operator=Graphs.Prod())
+            g4 = Graph([g3,]; subgraph_factors=[5,], operator=Graphs.Prod())
+            g5 = Graph([], factor=3.0)
+            h0 = Graph([g1, g4, g5], subgraph_factors=[2, -1, 1])
+            h1 = Graph([h0], operator=Graphs.Prod(), subgraph_factors=[2])
+            h = Graph([h1, g5])
+            _h = Graph([Graph([g1, g5], subgraph_factors=[-28, 1]), g5], subgraph_factors=[2, 1])
+
+            hvec_op, leafMap = Graphs.optimize(repeat([deepcopy(h)], 3))
+            leaf = rand(2)
+            @test all(isequiv(h, _h, :id) for h in hvec_op)
+            @test Graphs.eval!(hvec_op[1], leafMap, leaf) ≈ Graphs.eval!(h, leafMap, leaf)
+
+            leafMap1 = Graphs.optimize!([h])
+            @test isequiv(h, _h, :id, :weight)
         end
     end
 end
@@ -489,7 +534,26 @@ end
             g4 = FeynmanGraph([g3,], g3.properties; subgraph_factors=[5,], operator=Graphs.Prod())
             h = FeynmanGraph([g1, g4], drop_topology(g4.properties); subgraph_factors=[2, 7], operator=O())
             Graphs.merge_all_chains!(h)
-            @test h.subgraph_factors == [2, 210] # bug?
+            @test h.subgraph_factors == [2, 210]
+        end
+        @testset "optimize" begin
+            g1 = propagator(𝑓⁻(1)𝑓⁺(2))
+            g2 = 2 * g1
+            g3 = FeynmanGraph([g2,], g2.properties; subgraph_factors=[3,], operator=Graphs.Prod())
+            g4 = FeynmanGraph([g3,], g3.properties; subgraph_factors=[5,], operator=Graphs.Prod())
+            g5 = propagator(𝑓⁻(1)𝑓⁺(2), factor=3.0)
+            h0 = FeynmanGraph([g1, g4, g5], subgraph_factors=[2, -1, 1])
+            h1 = FeynmanGraph([h0], operator=Graphs.Prod(), subgraph_factors=[2])
+            h = FeynmanGraph([h1, g5])
+            _h = FeynmanGraph([FeynmanGraph([g1, g5], subgraph_factors=[-28, 1]), g5], subgraph_factors=[2, 1])
+
+            hvec_op, leafMap = Graphs.optimize(repeat([deepcopy(h)], 3))
+            leaf = rand(2)
+            @test all(isequiv(h, _h, :id) for h in hvec_op)
+            @test Graphs.eval!(hvec_op[1], leafMap, leaf) ≈ Graphs.eval!(h, leafMap, leaf)
+
+            leafMap1 = Graphs.optimize!([h])
+            @test isequiv(h, _h, :id, :weight)
         end
     end
 

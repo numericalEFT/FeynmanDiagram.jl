@@ -4,10 +4,8 @@ function optimize!(graphs::Union{Tuple,AbstractVector{G}}; verbose=0, normalize=
     else
         graphs = collect(graphs)
         leaf_mapping = remove_duplicated_leaves!(graphs, verbose=verbose, normalize=normalize)
-        # merge_all_chain_prefactors!(graphs, verbose=verbose)
-        # merge_factorless_chains!(graphs, verbose=verbose)
         merge_all_chains!(graphs, verbose=verbose)
-        merge_linear_combinations!(graphs, verbose=verbose)
+        merge_all_linear_combinations!(graphs, verbose=verbose)
         return leaf_mapping
     end
 end

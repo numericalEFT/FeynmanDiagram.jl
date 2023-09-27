@@ -120,7 +120,7 @@ export haschildren, onechild, isleaf, isbranch, ischain, isfactorless, eldest
 export relabel!, standardize_labels!, replace_subgraph!, merge_linear_combination!, merge_chains!
 export relabel, standardize_labels, replace_subgraph, merge_linear_combination, merge_chains
 
-export optimize!, optimize
+export optimize!, optimize, merge_all_chains!, merge_all_linear_combinations!, remove_duplicated_leaves!
 
 include("backend/compiler.jl")
 using .Compilers
