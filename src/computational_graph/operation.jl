@@ -79,17 +79,6 @@ function forwardAD(diag::Graph{F,W}, ID::Int) where {F,W}
                 if !isnothing(dum)
                     dual[d.id] = dum
                 end
-                # subgraphs, subnumber, subcoeff = linear_combination_number_with_graph(children, coeff)
-                # if isempty(subgraphs) == false
-                #     if !isnothing(subnumber)
-                #         push!(subgraphs, constant_graph(F(subnumber)))     #If both numbers and graphs appear in derivative, convert number to a unity graph, and asign the number to subgraph_factors of parent node.
-                #         push!(subcoeff, 1.0)
-                #     end
-                #     dual[d.id] = linear_combination(subgraphs, subcoeff)
-                #     dual[d.id].factor *= d.factor
-                # elseif !isnothing(subnumber)  #if only numbers appear in derivative, return a number
-                #     dual[d.id] = subnumber * d.factor
-                # end
             elseif d.operator == Prod
                 # d = s1xs2x... = s1'xs2x... + s1xs2'x... + ...
                 factor = 1.0
@@ -111,19 +100,6 @@ function forwardAD(diag::Graph{F,W}, ID::Int) where {F,W}
                 if !isnothing(dum)
                     dual[d.id] = factor * dum
                 end
-
-                #subgraphs, subnumber = linear_combination_number_with_graph(children)
-
-                # if isempty(subgraphs) == false
-                #     if !isnothing(subnumber)
-                #         push!(subgraphs, constant_graph(F(subnumber)))     #If both numbers and graphs appear in derivative, convert number to a constant graph, and asign the number to subgraph_factors of parent node.
-                #     end
-                #     subcoeff = ones(F, length(subgraphs))
-                #     dual[d.id] = linear_combination(subgraphs, subcoeff)
-                #     dual[d.id].factor *= d.factor * factor
-                # elseif !isnothing(subnumber)  #if only numbers appear in derivative, return a number
-                #     dual[d.id] = subnumber * d.factor * factor
-                # end
             else
                 error("not implemented!")
             end
@@ -140,9 +116,11 @@ function all_parent(diag::Graph{F,W}) where {F,W}
     for d in PostOrderDFS(diag)
         if !haskey(result, d.id)
             parents = Vector{Graph{F,W}}()
+            parents_id = Vector{Int}()
             for g in PostOrderDFS(diag)
-                if d.id in [sub.id for sub in g.subgraphs]
+                if !(g.id in parents_id) && d.id in [sub.id for sub in g.subgraphs]
                     push!(parents, g)
+                    push!(parents_id, g.id)
                 end
             end
             result[d.id] = parents
@@ -243,8 +221,7 @@ function backAD(diag::Graph{F,W}, debug::Bool=false) where {F,W}
     result = Dict{Tuple{Int,Int},Graph{F,W}}()
     parents = all_parent(diag)
     for d in Leaves(diag)#PreOrderDFS(diag) # preorder traversal will visit all parents first
-        #print("type: $(d.type)\n")
-        if d.type == Constant || haskey(dual, d.id)
+        if d.operator == Constant || haskey(dual, d.id)
             continue
         end
         recursive_backAD!(d, parents, dual, result, diag.id)
@@ -307,64 +284,6 @@ function build_all_leaf_derivative(diag::Graph{F,W}, max_order::Int) where {F,W}
     return result
 end
 
-# function build_all_variable_derivative(diag::Graph{F,W}, max_order::Int, variable_number::Int) where {F,W}
-#     leaf_derivative = build_all_leaf_derivative(diag, max_order)
-
-
-# end
-
-# function backAD(diag::Graph{F,W}, debug::Bool=false) where {F,W}
-#     # use a dictionary to host the dual diagram of a diagram for a given hash number
-#     # a dual diagram is defined as the derivative of the original diagram
-#     dual = Dict{Int,Union{F,Graph{F,W}}}()
-#     result = Dict{Int,Union{F,Graph{F,W}}}()
-#     parents = all_parent(diag)
-#     for d in reverse([node for node in PostOrderDFS(diag)]) # preorder traversal will visit all parents first
-#         if debug
-#             print("node: $(d.id) $(d.subgraphs) $(d.subgraph_factors)\n")
-#         end
-#         if haskey(dual, d.id)
-#             continue
-#         end
-
-#         if isempty(parents[d.id]) # if d is the root node, the backward derivative is just 1.
-#             dual[d.id] = F(1)
-#         else
-#             derivative_list = Vector{Union{F,Graph{F,W}}}()
-#             for parent in parents[d.id]
-#                 if debug
-#                     print("\t parent: $(parent.id) $(parent.subgraphs) $(parent.subgraph_factors)\n")
-#                 end
-#                 if haskey(dual, parent.id)
-#                     d_node = node_derivative(parent, d)
-#                     if !isnothing(d_node)
-#                         push!(derivative_list, d_node * dual[parent.id])
-#                     end
-#                     if debug
-#                         if isnothing(d_node) || typeof(d_node) <: Number
-#                             print("\tderivative: $(d_node)\n")
-#                         else
-#                             print("\tderivative: $(d_node.id) $(d_node.subgraphs) $(d_node.subgraph_factors)\n")
-#                         end
-#                         if isnothing(dual[parent.id]) || typeof(dual[parent.id]) <: Number
-#                             print("\tparent derivative: $(dual[parent.id])\n")
-#                         else
-#                             print("\tparent derivative: $(dual[parent.id].id) $(dual[parent.id].subgraphs) $(dual[parent.id].subgraph_factors)\n")
-#                         end
-#                     end
-#                 end
-#             end
-#             dum = linear_combination_number_with_graph(derivative_list)
-#             if !isnothing(dum)
-#                 dual[d.id] = dum
-#             end
-#         end
-#         if isleaf(d) && haskey(dual, d.id) # The final result is derivative with respect to each leaf 
-#             result[d.id] = dual[d.id]
-#         end
-#     end
-#     return result
-# end
 
 
 function forwardAD_root(diags::AbstractVector{G}) where {G<:Graph}

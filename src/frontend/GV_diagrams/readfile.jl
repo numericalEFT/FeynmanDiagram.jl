@@ -26,14 +26,14 @@ function _exchange(perm::Vector{Int}, ver4Legs::Vector{Vector{Int}}, index::Int,
     end
     return permu_ex, ver4Legs_ex
 end
-
-function _group(gv::AbstractVector{G}, indices::Vector{Vector{Int}}) where {G<:Graph}
-    l = length(gv[1].external)
-    @assert all(x -> length(x.external) == l, gv)
+ 
+function _group(gv::AbstractVector{G}, indices::Vector{Vector{Int}}) where {G<:FeynmanGraph} 
+    l = length(IR.external_indices(gv[1]))
+    @assert all(x -> length(IR.external_indices(x)) == l, gv)
     @assert length(gv) == length(indices)
     groups = Dict{Vector{Int},Vector{G}}()
     for (i, t) in enumerate(gv)
-        # ext = external(t)
+        # ext = external_operators(t)
         # key = [OperatorProduct(ext[i]) for i in indices]
         key = indices[i]
         if haskey(groups, key)
@@ -52,7 +52,7 @@ end
         keywords::Vector{String}=["Polarization", "DiagNum", "Order", "GNum", "Ver4Num", "LoopNum", "ExtLoopIndex",
             "DummyLoopIndex", "TauNum", "ExtTauIndex", "DummyTauIndex"])
 
-    Reads a GV_diagrams file and returns Graph of diagrams in this file 
+    Reads a GV_diagrams file and returns FeynmanGraph of diagrams in this file 
     and the corresponding `LabelProduct` objects, which are used to keep track of QuantumOperator.label.
 
 # Arguments:
@@ -67,7 +67,7 @@ end
 
 # Returns
 A tuple `(diagrams, fermi_labelProd, bose_labelProd)` where 
-- `diagrams` is a `Graph` object representing the diagrams, 
+- `diagrams` is a `FeynmanGraph` object representing the diagrams, 
 - `fermi_labelProd` is a `LabelProduct` object containing the labels for the fermionic `G` objects in the diagrams, 
 - `bose_labelProd` is a `LabelProduct` object containing the labels for the bosonic `W` objects in the diagrams.
 """
@@ -126,7 +126,7 @@ function read_diagrams(filename::AbstractString; loopPool::Union{LoopPool,Nothin
     end
 
     # Read one diagram at a time
-    diagrams = Graph{_dtype.factor,_dtype.weight}[]
+    diagrams = FeynmanGraph{_dtype.factor,_dtype.weight}[]
     extT_labels = Vector{Int}[]
     for i in 1:diagNum
         diag, loopPool, extTlabel = read_onediagram(IOBuffer(readuntil(io, "\n\n")),
@@ -142,10 +142,10 @@ function read_diagrams(filename::AbstractString; loopPool::Union{LoopPool,Nothin
 
     if diagType == :sigma
         @assert length(extIndex) == 2
-        # Create a GraphVector with keys of external-tau labels
+        # Create a FeynmanGraphVector with keys of external-tau labels
         gr = _group(diagrams, extT_labels)
         unique!(extT_labels)
-        graphvec = Graph[]
+        graphvec = FeynmanGraph[]
         for key in extT_labels
             push!(graphvec, IR.linear_combination(gr[key], ones(_dtype.factor, length(gr[key]))))
         end
@@ -205,7 +205,7 @@ function read_onediagram(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex:
     @assert occursin("SpinFactor", readline(io))
     spinFactors = _StringtoIntVector(readline(io))
 
-    graphs = Graph{Float64,Float64}[]
+    graphs = FeynmanGraph{Float64,Float64}[]
     spinfactors_existed = Float64[]
     if diagType == :sigma
         spinFactors = Int.(spinFactors ./ 2)
