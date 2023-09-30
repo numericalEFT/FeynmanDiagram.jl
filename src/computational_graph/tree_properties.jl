@@ -112,7 +112,7 @@ function eldest(g::AbstractGraph)
 end
 
 """
-    function totaloperation(g::Graph)
+    function count_operation(g::Graph)
 
     Returns the total number of  additions and multiplications in the graph.
 
@@ -132,4 +132,13 @@ function count_operation(g::Graph)
         end
     end
     return [totalsum, totalprod]
+end
+
+function count_operation(g::Number)
+    return [0, 0]
+end
+
+
+function count_operation(nothing)
+    return [0, 0]
 end

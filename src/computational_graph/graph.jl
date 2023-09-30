@@ -83,7 +83,7 @@ end
 function Base.:*(g1::Graph{F,W}, c2::C) where {F,W,C}
     g = Graph([g1,]; subgraph_factors=[F(c2),], operator=Prod(), ftype=F, wtype=W)
     # Merge multiplicative link
-    if g1.operator == Prod && onechild(g1)
+    if unary_istrivial(g1.operator) && onechild(g1)
         g.subgraph_factors[1] *= g1.subgraph_factors[1]
         g.subgraphs = g1.subgraphs
     end
@@ -102,13 +102,12 @@ end
 function Base.:*(c1::C, g2::Graph{F,W}) where {F,W,C}
     g = Graph([g2,]; subgraph_factors=[F(c1),], operator=Prod(), ftype=F, wtype=W)
     # Merge multiplicative link
-    if g2.operator == Prod && onechild(g2)
+    if unary_istrivial(g2.operator) && onechild(g2)
         g.subgraph_factors[1] *= g2.subgraph_factors[1]
         g.subgraphs = g2.subgraphs
     end
     return g
 end
-
 
 """
     function linear_combination(g1::Graph{F,W}, g2::Graph{F,W}, c1::C, c2::C) where {F,W,C}
@@ -124,11 +123,11 @@ end
 function linear_combination(g1::Graph{F,W}, g2::Graph{F,W}, c1::C, c2::C) where {F,W,C}
     g = Graph([g1, g2]; subgraph_factors=[F(c1), F(c2)], operator=Sum(), ftype=F, wtype=W)
     # Convert multiplicative links to in-place form
-    if g1.operator == Prod && onechild(g1)
+    if unary_istrivial(g1.operator) && onechild(g1)
         g.subgraph_factors[1] *= g1.subgraph_factors[1]
         g.subgraphs[1] = g1.subgraphs[1]
     end
-    if g2.operator == Prod && onechild(g2)
+    if unary_istrivial(g2.operator) && onechild(g2)
         g.subgraph_factors[2] *= g2.subgraph_factors[1]
         g.subgraphs[2] = g2.subgraphs[1]
     end
@@ -138,8 +137,7 @@ end
 """
     function linear_combination(graphs::Vector{Graph{F,W}}, constants::Vector{C}) where {F,W,C}
 
-    Given a vector 𝐠 of graphs each with the same type and external/internal
-    vertices and an equally-sized vector 𝐜 of constants, returns a new
+    Given a vector 𝐠 of graphs and an equally-sized vector 𝐜 of constants, returns a new
     graph representing the linear combination (𝐜 ⋅ 𝐠).
 
 # Arguments:
@@ -147,12 +145,10 @@ end
 - `constants`  vector of scalar multiples
 """
 function linear_combination(graphs::Vector{Graph{F,W}}, constants::Vector{C}) where {F,W,C}
-    # parameters = union(getproperty.(graphs, :parameters))
-    g1 = graphs[1]
     g = Graph(graphs; subgraph_factors=constants, operator=Sum(), ftype=F, wtype=W)
     # Convert multiplicative links to in-place form
     for (i, sub_g) in enumerate(g.subgraphs)
-        if sub_g.operator == Prod && onechild(sub_g)
+        if unary_istrivial(sub_g.operator) && onechild(sub_g)
             g.subgraph_factors[i] *= sub_g.subgraph_factors[1]
             g.subgraphs[i] = sub_g.subgraphs[1]
         end
@@ -201,6 +197,55 @@ function Base.:-(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
     return linear_combination(g1, g2, F(1), F(-1))
 end
 
+
+"""
+    function multi_product(g1::Graph{F,W}, g2::Graph{F,W}, c1::C, c2::C) where {F,W,C}
+
+    Returns a graph representing the multi product `c1*g1 * c2*g2`.
+
+# Arguments:
+- `g1`  first computational graph
+- `g2`  second computational graph
+- `c1`  first scalar multiple
+- `c2`  second scalar multiple
+"""
+function multi_product(g1::Graph{F,W}, g2::Graph{F,W}, c1::C=1, c2::C=1) where {F,W,C}
+    g = Graph([g1, g2]; subgraph_factors=[F(c1), F(c2)], operator=Prod(), ftype=F, wtype=W)
+    # Convert multiplicative links to in-place form
+    if unary_istrivial(g1.operator) && onechild(g1)
+        g.subgraph_factors[1] *= g1.subgraph_factors[1]
+        g.subgraphs[1] = g1.subgraphs[1]
+    end
+    if unary_istrivial(g2.operator) && onechild(g2)
+        g.subgraph_factors[2] *= g2.subgraph_factors[1]
+        g.subgraphs[2] = g2.subgraphs[1]
+    end
+    return g
+end
+
+"""
+    function multi_product(graphs::Vector{Graph{F,W}}, constants::Vector{C}) where {F,W,C}
+
+    Given a vector 𝐠 of graphs and an equally-sized vector 𝐜 of constants, returns a new
+    graph representing the linear combination (𝐜 ⋅ 𝐠).
+
+# Arguments:
+- `graphs`  vector of computational graphs
+- `constants`  vector of scalar multiples
+"""
+function multi_product(graphs::Vector{Graph{F,W}}, constants::Vector{C}=ones(C, length(graphs.subgraphs))) where {F,W,C}
+    g = Graph(graphs; subgraph_factors=constants, operator=Prod(), ftype=F, wtype=W)
+    # Convert multiplicative links to in-place form
+    for (i, sub_g) in enumerate(g.subgraphs)
+        if unary_istrivial(sub_g.operator) && onechild(sub_g)
+            g.subgraph_factors[i] *= sub_g.subgraph_factors[1]
+            g.subgraphs[i] = sub_g.subgraphs[1]
+        end
+    end
+    return g
+end
+
+
 """
     function Base.:*(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
 
@@ -210,30 +255,6 @@ end
 - `g1`  first computational graph
 - `g2`  second computational graph
 """
-# function Base.:*(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
-#     @todo
-# end
 function Base.:*(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
-    # Currently Prod of two green's function ignore topology
-    if g1.operator == Prod && onechild(g1)
-        g1_sub = g1.subgraphs[1]
-        subfactor1 = g1.subgraph_factors[1] * g1.factor
-    else
-        g1_sub = g1
-        subfactor1 = F(1.0)
-    end
-
-    if g2.operator == Prod && onechild(g2)
-        g2_sub = g2.subgraphs[1]
-        subfactor2 = g2.subgraph_factors[1] * g2.factor
-    else
-        g2_sub = g2
-        subfactor2 = F(1.0)
-    end
-
-    g = Graph([g1_sub, g2_sub];
-        subgraph_factors=[F(subfactor1), F(subfactor2)], operator=Prod(), ftype=F, wtype=W)
-    # Merge multiplicative link
-
-    return g
+    return multi_product(g1, g2)
 end

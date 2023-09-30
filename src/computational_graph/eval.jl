@@ -20,7 +20,6 @@ function eval!(g::Graph{F,W}, leafmap::Dict{Int,Int}=Dict{Int,Int}(), leaf::Vect
             end
         else
             node.weight = apply(node.operator, node.subgraphs, node.subgraph_factors)
-            #node.weight = add(node.subgraphs) * node.factor
         end
         result = node.weight * node.factor
     end
