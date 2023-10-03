@@ -293,6 +293,21 @@ function insert_dualDict!(dict_kv::Dict{Tk,Tv}, dict_vk::Dict{Tv,Tk}, key::Tk, v
     push!(dict_vk[value], key)
 end
 
+
+"""
+    function forwardAD_root!(graphs::AbstractVector{G}, idx::Int=1,
+        dual::Dict{Tuple{Int,NTuple{N,Bool}},G}=Dict{Tuple{Int,Tuple{Bool}},G}()) where {G<:Graph,N}
+ 
+    Computes the forward automatic differentiation (AD) of the given graphs beginning from the roots.
+
+# Arguments:
+- `graphs`: A vector of graphs.
+- `idx`: Index for differentiation (default: 1).
+- `dual`: A dictionary that holds the result of differentiation.
+
+# Returns:
+- The dual dictionary populated with all differentiated graphs, including the intermediate AD.
+"""
 function forwardAD_root!(graphs::AbstractVector{G}, idx::Int=1,
     dual::Dict{Tuple{Int,NTuple{N,Bool}},G}=Dict{Tuple{Int,Tuple{Bool}},G}()) where {G<:Graph,N}
     # dualinv::Dict{G,Tuple{Int,NTuple{N,Int}}}=Dict{G,Tuple{Int,Tuple{Int}}}()) where {G<:Graph,N}
@@ -380,6 +395,21 @@ end
     end
 end
 
+"""
+    function build_derivative_graph(graphs::AbstractVector{G}, orders::NTuple{N,Int};
+        nodes_id=nothing) where {G<:Graph,N}
+ 
+    Constructs a derivative graph using forward automatic differentiation with given graphs and derivative orders.
+
+# Arguments:
+- `graphs`: A vector of graphs.
+- `orders::NTuple{N,Int}`: A tuple indicating the orders of differentiation. `N` represents the number of independent variables to be differentiated.
+- `nodes_id`: Optional node IDs to indicate saving their derivative graph.
+
+# Returns:
+- A dictionary containing the dual derivative graphs for all indicated nodes. 
+If `isnothing(nodes_id)`, indicated nodes include all leaf and root nodes. Otherwise, indicated nodes include all root nodes and other nodes from `nodes_id`.
+"""
 function build_derivative_graph(graphs::AbstractVector{G}, orders::NTuple{N,Int};
     nodes_id=nothing) where {G<:Graph,N}
 
