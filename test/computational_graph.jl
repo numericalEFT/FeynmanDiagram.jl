@@ -917,3 +917,21 @@ end
         @test count_post == 5
     end
 end
+
+@testset verbose = true "TaylorSeries" begin
+    using FeynmanDiagram.ComputationalGraphs:
+        TaylorSeries
+    N = 3
+    dtype = Float64
+    t1 = TaylorSeries(N, dtype)
+    t2 = TaylorSeries(N, dtype)
+    t1.expansion = Dict{SVector{N,Int},dtype}([0, 0, 0] => 1.0, [1, 2, 1] => 2.0)
+    t2.expansion = Dict{SVector{N,Int},dtype}([0, 0, 1] => 2.0, [1, 2, 1] => 1.0)
+    T1 = 2.0 * t1 + 0.5 * t2
+    T2 = 0.5 * t1 * 0.5 * t2
+    # print(T1.expansion, "\n", T2.expansion)
+    @assert T1.expansion[[0, 0, 0]] == 2.0
+    @assert T1.expansion[[1, 2, 1]] == 4.5
+    @assert T2.expansion[[2, 4, 2]] == 0.5
+    @assert T2.expansion[[1, 2, 2]] == 1.0
+end
