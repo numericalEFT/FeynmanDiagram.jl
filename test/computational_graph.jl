@@ -920,18 +920,18 @@ end
 
 @testset verbose = true "TaylorSeries" begin
     using FeynmanDiagram.ComputationalGraphs:
-        TaylorSeries
-    N = 3
+        TaylorSeries, identityseries
     dtype = Float64
-    t1 = TaylorSeries(N, dtype)
-    t2 = TaylorSeries(N, dtype)
-    t1.expansion = Dict{SVector{N,Int},dtype}([0, 0, 0] => 1.0, [1, 2, 1] => 2.0)
-    t2.expansion = Dict{SVector{N,Int},dtype}([0, 0, 1] => 2.0, [1, 2, 1] => 1.0)
-    T1 = 2.0 * t1 + 0.5 * t2
-    T2 = 0.5 * t1 * 0.5 * t2
-    # print(T1.expansion, "\n", T2.expansion)
-    @assert T1.expansion[[0, 0, 0]] == 2.0
-    @assert T1.expansion[[1, 2, 1]] == 4.5
-    @assert T2.expansion[[2, 4, 2]] == 0.5
-    @assert T2.expansion[[1, 2, 2]] == 1.0
+    x = TaylorSeries(dtype)
+    t = TaylorSeries(dtype)
+    X = identityseries(x, 2.0)
+    T = identityseries(t, 1.0)
+    F1 = 2.0 * X * T
+    F2 = X + 0.5 * T
+    print(F1.expansion, "\n", F2.expansion)
+    @test F1.expansion[Dict(x.id => 0, t.id => 0)] == 4.0
+    @test F1.expansion[Dict(x.id => 1, t.id => 1)] == 2.0
+    @test F2.expansion[Dict(x.id => 0, t.id => 0)] == 2.5
+    @test F2.expansion[Dict(x.id => 1, t.id => 0)] == 1.0
+    @test F2.expansion[Dict(x.id => 0, t.id => 1)] == 0.5
 end

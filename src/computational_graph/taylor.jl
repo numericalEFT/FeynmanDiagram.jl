@@ -24,16 +24,17 @@ julia> g = Graph([g1, g2]; operator=ComputationalGraphs.Sum())
 3=0.0=⨁ (1,2)
 ```
 """
-mutable struct TaylorSeries{N,T}
-    variable_number::Int
-    expansion::Dict{SVector{N,Int},T}
+mutable struct TaylorSeries{T}
+    id::Int
+    expansion::Dict{Dict{Int,Int},T}
+    variables::Set{TaylorSeries}
     """
         function Graph(subgraphs::AbstractVector; name="", operator::AbstractOperator=Sum(),
             ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype)
 
     """
-    function TaylorSeries(N::Int, T::DataType=Float64, expansion=Dict{SVector{N,Int},T}())
-        return new{N,T}(N, expansion)
+    function TaylorSeries(T::DataType=Float64, expansion=Dict{Dict{Int,Int},T}(), variables=Set{TaylorSeries}())
+        return new{T}(uid(), expansion, variables)
     end
 end
 
@@ -49,7 +50,13 @@ end
 #     return Graph([]; operator=Constant(), factor=factor, ftype=_dtype.factor, wtype=_dtype.weight, weight=one(_dtype.weight))
 # end
 
-
+function identityseries(g::TaylorSeries{T}, value::T) where {T}
+    gnew = TaylorSeries(T)
+    push!(gnew.variables, g)
+    gnew.expansion[Dict(g.id => 0)] = value
+    gnew.expansion[Dict(g.id => 1)] = one(T)
+    return gnew
+end
 """
     function Base.:*(g1::TaylorSeries{F,W,N}, c2::C) where {F,W,N,C}
 
@@ -59,11 +66,12 @@ end
 - `g1`  computational graph
 - `c2`  scalar multiple
 """
-function Base.:*(g1::TaylorSeries{N,T}, c2::Number) where {N,T}
-    g = TaylorSeries(N, T)
+function Base.:*(g1::TaylorSeries{T}, c2::Number) where {T}
+    g = TaylorSeries(T)
     for (key, value) in g1.expansion
         g.expansion[key] = c2 * value
     end
+    g.variables = g1.variables
     return g
 end
 
@@ -76,14 +84,14 @@ end
 - `c1`  scalar multiple
 - `g2`  computational graph
 """
-function Base.:*(c1::Number, g2::TaylorSeries{N,T}) where {N,T}
-    g = TaylorSeries(N, T)
+function Base.:*(c1::Number, g2::TaylorSeries{T}) where {T}
+    g = TaylorSeries(T)
     for (key, value) in g2.expansion
         g.expansion[key] = c1 * value
     end
+    g.variables = g2.variables
     return g
 end
-
 
 """
     function Base.:+(g1::TaylorSeries{F,W,N}, g2::TaylorSeries{F,W,N}) where {F,W,N}
@@ -94,16 +102,24 @@ end
 - `g1`  first computational graph
 - `g2`  second computational graph
 """
-function Base.:+(g1::TaylorSeries{N,T}, g2::TaylorSeries{N,T}) where {N,T}
-    g = TaylorSeries(N, T)
+function Base.:+(g1::TaylorSeries{T}, g2::TaylorSeries{T}) where {T}
+    g = TaylorSeries(T)
+    # for (key, value) in g1.expansion
+    #     g.expansion[key] = value
+    # end
+    zero_order1 = Dict(var.id => 0 for var in g1.variables)
+    zero_order2 = Dict(var.id => 0 for var in g2.variables)
+    g.variables = union(g1.variables, g2.variables)
     for (key, value) in g1.expansion
-        g.expansion[key] = value
+        newkey = merge(key, zero_order2)
+        g.expansion[newkey] = value
     end
     for (key, value) in g2.expansion
-        if haskey(g.expansion, key)
-            g.expansion[key] += value
+        newkey = merge(key, zero_order1)
+        if haskey(g.expansion, newkey)
+            g.expansion[newkey] += value
         else
-            g.expansion[key] = value
+            g.expansion[newkey] = value
         end
     end
     return g
@@ -118,10 +134,22 @@ end
 - `g1`  first computational graph
 - `g2`  second computational graph
 """
-function Base.:-(g1::TaylorSeries{N,T}, g2::TaylorSeries{N,T}) where {N,T}
+function Base.:-(g1::TaylorSeries{T}, g2::TaylorSeries{T}) where {T}
     return g1 + (-1 * g2)
 end
 
+
+function merge_order(o1::Dict{Int,Int}, o2::Dict{Int,Int})
+    o = copy(o1)
+    for (id, order) in o2
+        if haskey(o, id)
+            o[id] += order
+        else
+            o[id] = order
+        end
+    end
+    return o
+end
 
 """
     function Base.:*(g1::TaylorSeries{F,W,N}, g2::TaylorSeries{F,W,N}) where {F,W,N}
@@ -132,11 +160,12 @@ end
 - `g1`  first computational graph
 - `g2`  second computational graph
 """
-function Base.:*(g1::TaylorSeries{N,T}, g2::TaylorSeries{N,T}) where {N,T}
-    g = TaylorSeries(N, T)
+function Base.:*(g1::TaylorSeries{T}, g2::TaylorSeries{T}) where {T}
+    g = TaylorSeries(T)
+    g.variables = union(g1.variables, g2.variables)
     for (key1, value1) in g1.expansion
         for (key2, value2) in g2.expansion
-            key = key1 + key2
+            key = merge_order(key1, key2)
             if haskey(g.expansion, key)
                 g.expansion[key] += value1 * value2
             else
