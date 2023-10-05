@@ -6,68 +6,54 @@
 # Members:
 - `id::Int`  the unique hash id to identify the diagram
 - `name::Symbol`  name of the diagram
-- `subgraphs::Vector{TaylorSeries{F,W,N}}`  vector of sub-diagrams 
-- `subgraph_factors::Vector{F}`  scalar multiplicative factors associated with each subgraph. Note that the subgraph factors may be manipulated algebraically. To associate a fixed multiplicative factor with this graph which carries some semantic meaning, use the `factor` argument instead.
-- `operator::DataType`  node operation. Addition and multiplication are natively supported via operators Sum and Prod, respectively. Should be a concrete subtype of `AbstractOperator`.
-- `factor::F`  total scalar multiplicative factor for the diagram
-- `weight::W`  the weight of this node
+- `expansion::Dict{Dict{Int,Int},T}`  The taylor expansion coefficients. The key Dict{Int,Int} labels the order with respect to each variables. 
+- `variables::Set{V}`  Variables of the taylor series. Each variable must have an unique id. 
 
-# Example:
-```julia-repl
-julia> g1 = Graph([])
-1=0.0
-
-julia> g2 = Graph([]; factor=2)
-2⋅2.0=0.0
-
-julia> g = Graph([g1, g2]; operator=ComputationalGraphs.Sum())
-3=0.0=⨁ (1,2)
-```
 """
-mutable struct TaylorSeries{T}
+mutable struct TaylorSeries{T,V}
     id::Int
+    name::String # "" by default
     expansion::Dict{Dict{Int,Int},T}
-    variables::Set{TaylorSeries}
-    """
-        function Graph(subgraphs::AbstractVector; name="", operator::AbstractOperator=Sum(),
-            ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype)
+    variables::Set{V}
 
     """
-    function TaylorSeries(T::DataType=Float64, expansion=Dict{Dict{Int,Int},T}(), variables=Set{TaylorSeries}())
-        return new{T}(uid(), expansion, variables)
+        function TaylorSeries(T::DataType=Float64, name="", expansion=Dict{Dict{Int,Int},T}(), variables=Set{V}())
+            Create a TaylorSeries based on given expansion and variables.
+    """
+    function TaylorSeries(T::DataType=Float64, V::DataType=Float64, name="", expansion=Dict{Dict{Int,Int},T}(), variables=Set{V}())
+        return new{T,V}(uid(), name, expansion, variables)
     end
 end
 
-# """
-#     function constant_graph(factor=one(_dtype.factor))
+"""
+    function  identityseries(g::TaylorSeries{T,V}, value::T) where {T,V}
+        For a given variable g,  create a TaylorSeries equal to f (g) = g. 
+        Assign zero order taylor coefficient with given value, and first order coefficient as one.
 
-#     Returns a graph that represents a constant equal to f, where f is the factor with default value 1.
+# Arguments:
+- 'g'  Variable
+- ' value'  Zero order taylor coefficient of g.    
+"""
 
-# # Arguments:
-# - `f`:  constant factor
-# """
-# function constant_graph(factor=one(_dtype.factor))
-#     return Graph([]; operator=Constant(), factor=factor, ftype=_dtype.factor, wtype=_dtype.weight, weight=one(_dtype.weight))
-# end
-
-function identityseries(g::TaylorSeries{T}, value::T) where {T}
-    gnew = TaylorSeries(T)
+function identityseries(g::V, value::T) where {T,V}
+    gnew = TaylorSeries(T, V)
     push!(gnew.variables, g)
     gnew.expansion[Dict(g.id => 0)] = value
     gnew.expansion[Dict(g.id => 1)] = one(T)
     return gnew
 end
-"""
-    function Base.:*(g1::TaylorSeries{F,W,N}, c2::C) where {F,W,N,C}
 
-    Returns a graph representing the scalar multiplication `g1*c2`.
+"""
+    function Base.:*(g1::TaylorSeries{T}, c2::Number) where {T}
+
+    Returns a TaylorSeries representing the scalar multiplication `g1*c2`.
 
 # Arguments:
-- `g1`  computational graph
+- `g1`  TaylorSeries
 - `c2`  scalar multiple
 """
-function Base.:*(g1::TaylorSeries{T}, c2::Number) where {T}
-    g = TaylorSeries(T)
+function Base.:*(g1::TaylorSeries{T,V}, c2::Number) where {T,V}
+    g = TaylorSeries(T, V)
     for (key, value) in g1.expansion
         g.expansion[key] = c2 * value
     end
@@ -76,16 +62,16 @@ function Base.:*(g1::TaylorSeries{T}, c2::Number) where {T}
 end
 
 """
-    function Base.:*(c1::C, g2::TaylorSeries{F,W,N}) where {F,W,N,C}
+    function Base.:*(c1::Number, g2::TaylorSeries{T}) where {T}
 
-    Returns a graph representing the scalar multiplication `c1*g2`.
+    Returns a TaylorSeries representing the scalar multiplication `g2*c1`.
 
 # Arguments:
+- `g2`  TaylorSeries
 - `c1`  scalar multiple
-- `g2`  computational graph
 """
-function Base.:*(c1::Number, g2::TaylorSeries{T}) where {T}
-    g = TaylorSeries(T)
+function Base.:*(c1::Number, g2::TaylorSeries{T,V}) where {T,V}
+    g = TaylorSeries(T, V)
     for (key, value) in g2.expansion
         g.expansion[key] = c1 * value
     end
@@ -94,16 +80,16 @@ function Base.:*(c1::Number, g2::TaylorSeries{T}) where {T}
 end
 
 """
-    function Base.:+(g1::TaylorSeries{F,W,N}, g2::TaylorSeries{F,W,N}) where {F,W,N}
+    function Base.:+(g1::TaylorSeries{T,V}, g2::TaylorSeries{T,V}) where {T,V}
 
-    Returns a graph `g1 + g2` representing the addition of `g2` with `g1`.
+    Returns a taylor series `g1 + g2` representing the addition of `g2` with `g1`.
 
 # Arguments:
-- `g1`  first computational graph
-- `g2`  second computational graph
+- `g1`  First taylor series
+- `g2`  Second taylor series
 """
-function Base.:+(g1::TaylorSeries{T}, g2::TaylorSeries{T}) where {T}
-    g = TaylorSeries(T)
+function Base.:+(g1::TaylorSeries{T,V}, g2::TaylorSeries{T,V}) where {T,V}
+    g = TaylorSeries(T, V)
     # for (key, value) in g1.expansion
     #     g.expansion[key] = value
     # end
@@ -126,50 +112,67 @@ function Base.:+(g1::TaylorSeries{T}, g2::TaylorSeries{T}) where {T}
 end
 
 """
-    function Base.:-(g1::TaylorSeries{F,W,N}, g2::TaylorSeries{F,W,N}) where {F,W,N}
+    function Base.:-(g1::TaylorSeries{T,V}, g2::TaylorSeries{T,V}) where {T,V}
 
-    Returns a graph `g1 - g2` representing the subtraction of `g2` from `g1`.
+    Returns a taylor series `g1 - g2` representing the difference of `g2` with `g1`.
 
 # Arguments:
-- `g1`  first computational graph
-- `g2`  second computational graph
+- `g1`  First taylor series
+- `g2`  Second taylor series
 """
 function Base.:-(g1::TaylorSeries{T}, g2::TaylorSeries{T}) where {T}
     return g1 + (-1 * g2)
 end
 
+"""
+    function merge_order(o1::Dict{Int,Int}, o2::Dict{Int,Int})
 
+    For two  dictionary representing  order of  two taylor coefficients c1 and c2, generate the order of  c1*c2.
+
+    # Arguments:
+    - `o1`  First order label
+    - `o2`  Second order label
+"""
 function merge_order(o1::Dict{Int,Int}, o2::Dict{Int,Int})
     o = copy(o1)
+    combination = 1.0
     for (id, order) in o2
         if haskey(o, id)
             o[id] += order
+            combination *= binomial(o[id], order)
         else
             o[id] = order
         end
     end
-    return o
+    return o, combination
 end
 
+function taylor_combinatorial(o::Dict{Int,Int})
+    coeff = 1.0
+    for (id, order) in o
+        coeff *= factorial(order)
+    end
+    return 1.0 / coeff
+end
 """
-    function Base.:*(g1::TaylorSeries{F,W,N}, g2::TaylorSeries{F,W,N}) where {F,W,N}
+    function Base.:*(g1::TaylorSeries{T,V}, g2::TaylorSeries{T,V}) where {T,V}
 
-    Returns a graph `g1 * g2` representing the graph product between `g1` and `g2`.
+    Returns a taylor series `g1 * g2` representing the product of `g2` with `g1`.
 
 # Arguments:
-- `g1`  first computational graph
-- `g2`  second computational graph
+- `g1`  First taylor series
+- `g2`  Second taylor series
 """
-function Base.:*(g1::TaylorSeries{T}, g2::TaylorSeries{T}) where {T}
-    g = TaylorSeries(T)
+function Base.:*(g1::TaylorSeries{T,V}, g2::TaylorSeries{T,V}) where {T,V}
+    g = TaylorSeries(T, V)
     g.variables = union(g1.variables, g2.variables)
     for (key1, value1) in g1.expansion
         for (key2, value2) in g2.expansion
-            key = merge_order(key1, key2)
+            key, combination_coeff = merge_order(key1, key2)
             if haskey(g.expansion, key)
-                g.expansion[key] += value1 * value2
+                g.expansion[key] += combination_coeff * value1 * value2
             else
-                g.expansion[key] = value1 * value2
+                g.expansion[key] = combination_coeff * value1 * value2
             end
         end
     end

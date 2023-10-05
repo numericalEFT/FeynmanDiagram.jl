@@ -263,31 +263,23 @@ end
 # end
 
 function build_all_leaf_derivative(diag::Graph{F,W}, max_order::Int) where {F,W}
-    result = Dict{Vector{Int},Graph{F,W}}()
-    current_func = backAD(diag)
-    leave_number = length(current_func)
-    order_dict = Dict{Int,Vector{Int}}()
-
-    leafmap = Dict{Int,Int}()
-    count = 1
-    for (id_pair, func) in current_func
-        leafmap[id_pair[2]] = count
-        order = zeros(Int, leave_number)
-        order[count] += 1
-        order_dict[func.id] = order
-        result[order] = func
-        count += 1
+    result = Dict{Dict{Int,Int},Graph{F,W}}()
+    current_func = Dict((diag.id, diag.id) => diag)
+    order_dict = Dict{Int,Dict{Int,Int}}()
+    order = Dict{Int,Int}()
+    for leaf in Leaves(diag)
+        order[leaf.id] = 0
     end
-
-    for i in 2:max_order
+    order_dict[diag.id] = order
+    result[order] = diag
+    for i in 1:max_order
         new_func = Dict{Tuple{Int,Int},Graph{F,W}}()
         for (id_pair, func) in current_func
             AD = backAD(func)
-            print("$(i) $(AD)\n")
             for (id_pair_AD, func_AD) in AD
                 # print("$(func_AD)\n")
                 order = copy(order_dict[func.id])
-                order[leafmap[id_pair_AD[2]]] += 1
+                order[id_pair_AD[2]] += 1
 
                 if !(order in values(order_dict))
                     new_func[id_pair_AD] = func_AD
