@@ -722,7 +722,7 @@ end
 
 @testset verbose = true "Auto Differentiation" begin
     using FeynmanDiagram.ComputationalGraphs:
-        eval!, forwardAD, node_derivative, backAD, forwardAD_root!, build_all_leaf_derivative, build_derivative_graph
+        eval!, forwardAD, node_derivative, backAD, forwardAD_root!, build_all_leaf_derivative, build_derivative_graph, burn_from_targetleaves!
     g1 = Graph([])
     g2 = Graph([])
     g3 = Graph([], factor=2.0)
@@ -857,15 +857,17 @@ end
         leafmap = Dict{Int,Int}()
         leafmap[g1.id], leafmap[g2.id], leafmap[g3.id] = 1, 2, 3
         orders = (3, 2, 2)
-        dual = build_derivative_graph(F1, orders)
+        dual = Graphs.build_derivative_graph(F1, orders)
 
         leafmap[dual[(g1.id, (1, 0, 0))].id], leafmap[dual[(g2.id, (0, 1, 0))].id], leafmap[dual[(g3.id, (0, 0, 1))].id] = 4, 5, 6
 
+        burnleafs_id = Int[]
         for order in Iterators.product((0:x for x in orders)...)
             order == (0, 0, 0) && continue
             for g in [g1, g2, g3]
                 if !haskey(leafmap, dual[(g.id, order)].id)
                     leafmap[dual[(g.id, order)].id] = 7
+                    push!(burnleafs_id, dual[(g.id, order)].id)
                 end
             end
         end
@@ -874,6 +876,59 @@ end
         @test eval!(dual[(F1.id, (2, 0, 0))], leafmap, leaf) == 426
         @test eval!(dual[(F1.id, (3, 0, 0))], leafmap, leaf) == 90
         @test eval!(dual[(F1.id, (3, 1, 0))], leafmap, leaf) == 0
+
+        # optimize the derivative graph
+        c0_id = burn_from_targetleaves!([dual[(F1.id, (1, 0, 0))], dual[(F1.id, (2, 0, 0))], dual[(F1.id, (3, 0, 0))], dual[(F1.id, (3, 1, 0))]], burnleafs_id)
+        if !isnothing(c0_id)
+            leafmap[c0_id] = 7
+        end
+        @test eval!(dual[(F1.id, (1, 0, 0))], leafmap, leaf) == 1002
+        @test eval!(dual[(F1.id, (2, 0, 0))], leafmap, leaf) == 426
+        @test eval!(dual[(F1.id, (3, 0, 0))], leafmap, leaf) == 90
+        @test eval!(dual[(F1.id, (3, 1, 0))], leafmap, leaf) == 0
+
+        # Test on a vector of graphs
+        F0 = F1 * F3
+        F0_r1 = F1 + F3
+        dual = Graphs.build_derivative_graph([F0, F0_r1], orders)
+
+        leafmap = Dict{Int,Int}()
+        leafmap[g1.id], leafmap[g2.id], leafmap[g3.id] = 1, 2, 3
+        leafmap[dual[(g1.id, (1, 0, 0))].id], leafmap[dual[(g2.id, (0, 1, 0))].id], leafmap[dual[(g3.id, (0, 0, 1))].id] = 4, 5, 6
+        burnleafs_id = Int[]
+        for order in Iterators.product((0:x for x in orders)...)
+            order == (0, 0, 0) && continue
+            for g in [g1, g2, g3]
+                if !haskey(leafmap, dual[(g.id, order)].id)
+                    leafmap[dual[(g.id, order)].id] = 7
+                    push!(burnleafs_id, dual[(g.id, order)].id)
+                end
+            end
+        end
+        @test eval!(dual[(F0.id, (1, 0, 0))], leafmap, leaf) == 5568
+        @test eval!(dual[(F0_r1.id, (1, 0, 0))], leafmap, leaf) == 1003
+        @test eval!(dual[(F0.id, (2, 0, 0))], leafmap, leaf) == 3708
+        @test eval!(dual[(F0_r1.id, (2, 0, 0))], leafmap, leaf) == 426
+        @test eval!(dual[(F0.id, (3, 0, 0))], leafmap, leaf) == 1638
+        @test eval!(dual[(F0_r1.id, (3, 0, 0))], leafmap, leaf) == 90
+        @test eval!(dual[(F0.id, (3, 1, 0))], leafmap, leaf) == 234
+        @test eval!(dual[(F0_r1.id, (3, 1, 0))], leafmap, leaf) == 0
+        @test eval!(dual[(F0.id, (3, 2, 0))], leafmap, leaf) == eval!(dual[(F0_r1.id, (3, 2, 0))], leafmap, leaf) == 0
+
+        c0_id = burn_from_targetleaves!([dual[(F0.id, (1, 0, 0))], dual[(F0.id, (2, 0, 0))], dual[(F0.id, (3, 0, 0))], dual[(F0.id, (3, 1, 0))], dual[(F0.id, (3, 2, 0))],
+                dual[(F0_r1.id, (1, 0, 0))], dual[(F0_r1.id, (2, 0, 0))], dual[(F0_r1.id, (3, 0, 0))], dual[(F0_r1.id, (3, 1, 0))], dual[(F0_r1.id, (3, 2, 0))]], burnleafs_id)
+        if !isnothing(c0_id)
+            leafmap[c0_id] = 7
+        end
+        @test eval!(dual[(F0.id, (1, 0, 0))], leafmap, leaf) == 5568
+        @test eval!(dual[(F0_r1.id, (1, 0, 0))], leafmap, leaf) == 1003
+        @test eval!(dual[(F0.id, (2, 0, 0))], leafmap, leaf) == 3708
+        @test eval!(dual[(F0_r1.id, (2, 0, 0))], leafmap, leaf) == 426
+        @test eval!(dual[(F0.id, (3, 0, 0))], leafmap, leaf) == 1638
+        @test eval!(dual[(F0_r1.id, (3, 0, 0))], leafmap, leaf) == 90
+        @test eval!(dual[(F0.id, (3, 1, 0))], leafmap, leaf) == 234
+        @test eval!(dual[(F0_r1.id, (3, 1, 0))], leafmap, leaf) == 0
+        @test eval!(dual[(F0.id, (3, 2, 0))], leafmap, leaf) == eval!(dual[(F0_r1.id, (3, 2, 0))], leafmap, leaf) == 0
     end
 end
 
