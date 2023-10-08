@@ -365,7 +365,7 @@ function forwardAD_root!(graphs::AbstractVector{G}, idx::Int=1,
             visited = false
             # if haskey(dual, node.id)
             if any(key[1] == node.id && key[2] == key2 for key in keys(dual))
-                dual[(node.id, key2)].name != "None" && continue
+                dual[(node.id, key2)].name != "UNDEFINED" && continue
                 visited = true
             end
             # println("Node: ", node.id)
@@ -380,7 +380,7 @@ function forwardAD_root!(graphs::AbstractVector{G}, idx::Int=1,
                         push!(nodes_deriv, dual[key])
                     else
                         # println("subNode nokey: ", sub_node.id)
-                        subnode_dual = Graph(G[]; name="None")
+                        subnode_dual = Graph(G[]; name="UNDEFINED")
                         push!(nodes_deriv, subnode_dual)
                         dual[key] = subnode_dual
                     end
@@ -404,7 +404,7 @@ function forwardAD_root!(graphs::AbstractVector{G}, idx::Int=1,
                         push!(nodes_deriv, Graph(subgraphs; operator=Prod(), subgraph_factors=node.subgraph_factors))
                     else
                         # println("subNode nokey: ", sub_node.id)
-                        subnode_dual = Graph(G[]; name="None")
+                        subnode_dual = Graph(G[]; name="UNDEFINED")
                         dual[key] = subnode_dual
                         subgraphs = [j == i ? subnode_dual : subg for (j, subg) in enumerate(node.subgraphs)]
                         push!(nodes_deriv, Graph(subgraphs; operator=Prod(), subgraph_factors=node.subgraph_factors))
@@ -425,7 +425,7 @@ function forwardAD_root!(graphs::AbstractVector{G}, idx::Int=1,
                 if haskey(dual, key)
                     push!(nodes_deriv, dual[key])
                 else
-                    subnode_dual = Graph(G[]; name="None")
+                    subnode_dual = Graph(G[]; name="UNDEFINED")
                     push!(nodes_deriv, subnode_dual)
                     dual[key] = subnode_dual
                 end

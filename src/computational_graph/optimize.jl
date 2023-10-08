@@ -327,21 +327,21 @@ function burn_from_targetleaves!(graphs::AbstractVector{G}, targetleaves_id::Abs
 
     for leaf in Leaves(graphs_sum)
         if !isdisjoint(leaf.id, targetleaves_id)
-            leaf.name = "Burn"
+            leaf.name = "BURNING"
         end
     end
 
     for node in PostOrderDFS(graphs_sum)
-        if any(x -> x.name == "Burn", node.subgraphs)
+        if any(x -> x.name == "BURNING", node.subgraphs)
             if node.operator == Prod || node.operator <: Power
                 node.subgraphs = G[]
                 node.subgraph_factors = ftype[]
-                node.name = "Burn"
+                node.name = "BURNING"
             else
                 subgraphs = G[]
                 subgraph_factors = ftype[]
                 for (i, subg) in enumerate(node.subgraphs)
-                    if subg.name != "Burn"
+                    if subg.name != "BURNING"
                         push!(subgraphs, subg)
                         push!(subgraph_factors, node.subgraph_factors[i])
                     end
@@ -349,7 +349,7 @@ function burn_from_targetleaves!(graphs::AbstractVector{G}, targetleaves_id::Abs
                 node.subgraphs = subgraphs
                 node.subgraph_factors = subgraph_factors
                 if isempty(subgraph_factors)
-                    node.name = "Burn"
+                    node.name = "BURNING"
                 end
             end
         end
@@ -358,7 +358,7 @@ function burn_from_targetleaves!(graphs::AbstractVector{G}, targetleaves_id::Abs
     g_c0 = constant_graph(ftype(0))
     has_c0 = false
     for g in graphs
-        if g.name == "Burn"
+        if g.name == "BURNING"
             has_c0 = true
             g.id = g_c0.id
             g.operator = Constant

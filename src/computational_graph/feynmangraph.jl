@@ -113,7 +113,7 @@ mutable struct FeynmanGraph{F,W} <: AbstractGraph # FeynmanGraph
     )
         @assert length(external_indices) == length(external_legs)
         if typeof(operator) <: Power
-            @assert length(subgraphs) == 1 "Graph with Power operator must have one and only one subgraph."
+            @assert length(subgraphs) == 1 "FeynmanGraph with Power operator must have one and only one subgraph."
         end
         # @assert allunique(subgraphs) "all subgraphs must be distinct."
         if isnothing(vertices)
@@ -146,6 +146,9 @@ mutable struct FeynmanGraph{F,W} <: AbstractGraph # FeynmanGraph
         ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype)
     )
         @assert length(properties.external_indices) == length(properties.external_legs)
+        if typeof(operator) <: Power
+            @assert length(subgraphs) == 1 "FeynmanGraph with Power operator must have one and only one subgraph."
+        end
         # @assert allunique(subgraphs) "all subgraphs must be distinct."
         return new{ftype,wtype}(uid(), name, properties, subgraphs, subgraph_factors, typeof(operator), factor, weight)
     end
