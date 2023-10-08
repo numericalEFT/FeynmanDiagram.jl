@@ -333,7 +333,7 @@ function burn_from_targetleaves!(graphs::AbstractVector{G}, targetleaves_id::Abs
 
     for node in PostOrderDFS(graphs_sum)
         if any(x -> x.name == "Burn", node.subgraphs)
-            if node.operator == Prod
+            if node.operator == Prod || node.operator <: Power
                 node.subgraphs = G[]
                 node.subgraph_factors = ftype[]
                 node.name = "Burn"

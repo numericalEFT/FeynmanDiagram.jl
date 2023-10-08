@@ -42,6 +42,7 @@ function linear_combination_number_with_graph(g::Vector{Union{F,Graph{F,W}}}, co
     return result
     #return subgraphs, subnumber, subcoeff
 end
+
 """
     function forwardAD(diag::Graph{F,W}, ID::Int) where {F,W}
     
@@ -100,6 +101,18 @@ function forwardAD(diag::Graph{F,W}, ID::Int) where {F,W}
                 if !isnothing(dum)
                     dual[d.id] = factor * dum
                 end
+            elseif d.operator <: Power
+                !haskey(dual, eldest(d).id) && continue
+                children = [Graph(d.subgraphs; subgraph_factors=[eltype(d.operator)], operator=decrement_power(d.operator))]
+                child = dual[eldest(d).id]
+                if typeof(child) <: Number
+                    push!(children, constant_graph(F(child)))
+                elseif typeof(child) <: Graph{F,W}
+                    push!(children, child)
+                else
+                    error("The type of subgraphs in derivative is incorrect!")
+                end
+                dual[d.id] = Graph(children; subgraph_factors=[d.subgraph_factors[1], 1], operator=Prod())
             else
                 error("not implemented!")
             end
@@ -198,6 +211,12 @@ function node_derivative(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W} #return d g
             g.subgraphs = subgraphs
             g.subgraph_factors = subgraphfactors
             return g
+        end
+    elseif g1.operator <: Power
+        if eldest(g1).id == g2.id
+            return Graph(g1.subgraphs; subgraph_factors=g1.subgraph_factors * eltype(g1.operator), operator=decrement_power(g1.operator))
+        else
+            return nothing
         end
     else
         return nothing
@@ -353,6 +372,7 @@ function forwardAD_root!(graphs::AbstractVector{G}, idx::Int=1,
 
             if node.operator == Sum
                 nodes_deriv = G[]
+                sizehint!(nodes_deriv, length(node.subgraph_factors))
                 for sub_node in node.subgraphs
                     key = (sub_node.id, key2)
                     if haskey(dual, key)
@@ -360,9 +380,9 @@ function forwardAD_root!(graphs::AbstractVector{G}, idx::Int=1,
                         push!(nodes_deriv, dual[key])
                     else
                         # println("subNode nokey: ", sub_node.id)
-                        g_dual = Graph(G[]; name="None")
-                        push!(nodes_deriv, g_dual)
-                        dual[key] = g_dual
+                        subnode_dual = Graph(G[]; name="None")
+                        push!(nodes_deriv, subnode_dual)
+                        dual[key] = subnode_dual
                     end
                 end
                 key_node = (node.id, key2)
@@ -375,6 +395,7 @@ function forwardAD_root!(graphs::AbstractVector{G}, idx::Int=1,
                 end
             elseif node.operator == Prod
                 nodes_deriv = G[]
+                sizehint!(nodes_deriv, length(node.subgraph_factors))
                 for (i, sub_node) in enumerate(node.subgraphs)
                     key = (sub_node.id, key2)
                     if haskey(dual, key)
@@ -383,11 +404,10 @@ function forwardAD_root!(graphs::AbstractVector{G}, idx::Int=1,
                         push!(nodes_deriv, Graph(subgraphs; operator=Prod(), subgraph_factors=node.subgraph_factors))
                     else
                         # println("subNode nokey: ", sub_node.id)
-                        g_dual = Graph(G[]; name="None")
-                        dual[key] = g_dual
-                        subgraphs = [j == i ? g_dual : subg for (j, subg) in enumerate(node.subgraphs)]
+                        subnode_dual = Graph(G[]; name="None")
+                        dual[key] = subnode_dual
+                        subgraphs = [j == i ? subnode_dual : subg for (j, subg) in enumerate(node.subgraphs)]
                         push!(nodes_deriv, Graph(subgraphs; operator=Prod(), subgraph_factors=node.subgraph_factors))
-
                     end
                 end
                 key_node = (node.id, key2)
@@ -397,6 +417,27 @@ function forwardAD_root!(graphs::AbstractVector{G}, idx::Int=1,
                     dual[key_node].name = node.name
                 else
                     dual[key_node] = Graph(nodes_deriv; factor=node.factor)
+                end
+            elseif node.operator <: Power   # node with Power operator has only one subgraph!
+                nodes_deriv = G[]
+                sizehint!(nodes_deriv, 2)
+                key = (eldest(node).id, key2)
+                if haskey(dual, key)
+                    push!(nodes_deriv, dual[key])
+                else
+                    subnode_dual = Graph(G[]; name="None")
+                    push!(nodes_deriv, subnode_dual)
+                    dual[key] = subnode_dual
+                end
+                push!(nodes_deriv, Graph(node.subgraphs; subgraph_factors=[eltype(node.operator)], operator=decrement_power(node.operator)))
+                key_node = (node.id, key2)
+                if visited
+                    dual[key_node].subgraphs = nodes_deriv
+                    dual[key_node].subgraph_factors = [1, node.subgraph_factors[1]]
+                    dual[key_node].name = node.name
+                    dual.operator = Prod
+                else
+                    dual[key_node] = Graph(nodes_deriv; subgraph_factors=[1, node.subgraph_factors[1]], operator=Prod(), factor=node.factor)
                 end
             end
         end

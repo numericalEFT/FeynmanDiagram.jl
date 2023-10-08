@@ -6,10 +6,12 @@ struct Prod <: AbstractOperator end
 struct Constant <: AbstractOperator end
 struct Power{N} <: AbstractOperator
     function Power(N::Real)
+        @assert N ∉ [0, 1] "Power{$N} makes no sense."
         new{N}()
     end
 end
 Base.eltype(::Type{<:Power{N}}) where {N} = N
+decrement_power(::Type{<:Power{N}}) where {N} = N == 2 ? Sum() : Power(N - 1)
 # struct Power <: AbstractOperator
 #     exponent::Real
 # end
