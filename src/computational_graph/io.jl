@@ -17,6 +17,15 @@ function short(factor, ignore=nothing)
     end
 end
 
+function short_orders(orders)
+    orders_no_trailing_zeros = ""
+    idx_last_set = findlast(x -> x != 0, orders)
+    if isnothing(idx_last_set) == false
+        orders_no_trailing_zeros *= string(orders[1:idx_last_set])
+    end
+    return orders_no_trailing_zeros
+end
+
 function _stringrep(graph::AbstractGraph, color=true)
     namestr = isempty(graph.name) ? "" : "-$(graph.name)"
     idstr = "$(graph.id)$namestr"
@@ -25,7 +34,7 @@ function _stringrep(graph::AbstractGraph, color=true)
     end
     fstr = short(graph.factor, one(graph.factor))
     wstr = short(graph.weight)
-    ostr = string(orders(graph))
+    ostr = short_orders(orders(graph))
     # =$(node.weight*(2π)^(3*node.id.para.innerLoopNum))
 
     if length(graph.subgraphs) == 0
