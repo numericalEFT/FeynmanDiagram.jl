@@ -17,7 +17,7 @@ function short(factor, ignore=nothing)
     end
 end
 
-function _stringrep(graph::G, color=true) where {G<:AbstractGraph}
+function _stringrep(graph::AbstractGraph, color=true)
     namestr = isempty(graph.name) ? "" : "-$(graph.name)"
     idstr = "$(graph.id)$namestr"
     if graph isa FeynmanGraph
@@ -25,23 +25,22 @@ function _stringrep(graph::G, color=true) where {G<:AbstractGraph}
     end
     fstr = short(graph.factor, one(graph.factor))
     wstr = short(graph.weight)
+    ostr = string(orders(graph))
     # =$(node.weight*(2π)^(3*node.id.para.innerLoopNum))
 
     if length(graph.subgraphs) == 0
-        return isempty(fstr) ? "$idstr=$wstr" : "$(idstr)⋅$(fstr)=$wstr"
+        return isempty(fstr) ? "$(idstr)$(ostr)=$wstr" : "$(idstr)⋅$(fstr)=$wstr"
     else
-        return "$idstr=$wstr=$(fstr)$(graph.operator) "
+        return "$(idstr)$(ostr)=$wstr=$(fstr)$(graph.operator) "
     end
 end
 
 """
-    show(io::IO, graph::G; kwargs...) where {G<:AbstractGraph}
+    show(io::IO, graph::AbstractGraph; kwargs...)
 
-    Write a text representation of `graph` to the output stream `io`.
-
-    To add support for a user-defined graph type `G`, provide an overload method `Base.show(io::IO, graph::G; kwargs...)` with a custom text representation.
+    Write a text representation of an AbstractGraph `graph` to the output stream `io`.
 """
-function Base.show(io::IO, graph::G; kwargs...) where {G<:AbstractGraph}
+function Base.show(io::IO, graph::AbstractGraph; kwargs...)
     if length(graph.subgraphs) == 0
         typestr = ""
     else
@@ -50,7 +49,7 @@ function Base.show(io::IO, graph::G; kwargs...) where {G<:AbstractGraph}
     end
     print(io, "$(_stringrep(graph, true))$typestr")
 end
-Base.show(io::IO, ::MIME"text/plain", graph::G; kwargs...) where {G<:AbstractGraph} = Base.show(io, graph; kwargs...)
+Base.show(io::IO, ::MIME"text/plain", graph::AbstractGraph; kwargs...) = Base.show(io, graph; kwargs...)
 
 """
     function plot_tree(graph::AbstractGraph; verbose = 0, maxdepth = 6)
@@ -107,7 +106,7 @@ function plot_tree(graph::AbstractGraph; verbose=0, maxdepth=6)
     # t.write(outfile="/home/kun/test.txt", format=8)
     t.show(tree_style=ts)
 end
-function plot_tree(graphs::Vector{G}; kwargs...) where {G<:AbstractGraph}
+function plot_tree(graphs::Vector{<:AbstractGraph}; kwargs...)
     for graph in graphs
         plot_tree(graph; kwargs...)
     end

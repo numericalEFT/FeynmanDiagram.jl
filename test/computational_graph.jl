@@ -278,7 +278,6 @@ end
             @test external_legs(g1) == [false, false, true, true]
             parameters = FeynmanProperties(
                 diagram_type(g1),
-                orders(g1),
                 vertices(g1),
                 topology(g1),
                 external_indices(g1),
@@ -286,7 +285,6 @@ end
             )
             parameters_no_topology = FeynmanProperties(
                 diagram_type(g1),
-                orders(g1),
                 vertices(g1),
                 [],
                 external_indices(g1),
