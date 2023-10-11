@@ -36,18 +36,20 @@ Graphs.unary_istrivial(::Type{O}) where {O<:Union{O1,O2,O3}} = true
         @testset "Addition" begin
             g3 = g1 + g2
             @test g3.factor == 1
-            @test g3.subgraphs == [g1, g1]
-            @test g3.subgraph_factors == [1, 2]
-            @test g3.subgraphs[1].subgraph_factors == g1.subgraph_factors
+            @test g3.subgraphs == [g1]
+            @test g3.subgraph_factors == [3]
+            # @test g3.subgraphs == [g1, g1]
+            # @test g3.subgraph_factors == [1, 2]
             @test g3.operator == Graphs.Sum
         end
         @testset "Subtraction" begin
             g4 = g1 - g2
             @test g4.factor == 1
-            @test g4.subgraphs == [g1, g1]
-            @test g4.subgraph_factors == [1, -2]
-            @test g4.subgraphs[1].subgraph_factors == g1.subgraph_factors
-            @test g4.subgraphs[2].subgraph_factors == g1.subgraph_factors
+            @test g4.subgraphs == [g1]
+            @test g4.subgraph_factors == [-1]
+            @test g4.subgraphs[1] == g1
+            # @test g4.subgraphs == [g1, g1]
+            # @test g4.subgraph_factors == [1, -2]
             @test g4.operator == Graphs.Sum
         end
         @testset "Linear combinations" begin
@@ -55,13 +57,17 @@ Graphs.unary_istrivial(::Type{O}) where {O<:Union{O1,O2,O3}} = true
             # NOTE: since g2 = 2 * g1, 5g2 ↦ 10g1 in final expressions
             g5 = 3g1 + 5g2
             g5lc = linear_combination(g1, g2, 3, 5)
-            @test g5lc.subgraphs == [g1, g1]
-            @test g5lc.subgraph_factors == [3, 10]
+            @test g5lc.subgraphs == [g1,]
+            @test g5lc.subgraph_factors == [13,]
+            # @test g5lc.subgraphs == [g1, g1]
+            # @test g5lc.subgraph_factors == [3, 10]
             @test isequiv(g5, g5lc, :id)
             # Vector form
             g6lc = linear_combination([g1, g2, g5, g2, g1], [3, 5, 7, 9, 11])
-            @test g6lc.subgraphs == [g1, g1, g5, g1, g1]
-            @test g6lc.subgraph_factors == [3, 10, 7, 18, 11]
+            @test g6lc.subgraphs == [g1]
+            @test g6lc.subgraph_factors == [133]  # 3+5*2+7*13+9*2+11 
+            # @test g6lc.subgraphs == [g1, g1, g5, g1, g1]
+            # @test g6lc.subgraph_factors == [3, 10, 7, 18, 11]
             # Test one-level merging of multiplicative chains
             g7lc = g1 + 2 * (3 * g1 + 5 * g2p)
             g7lc_expect = g1 + 2 * linear_combination([g1, g2p], [3, 5])
@@ -88,7 +94,8 @@ Graphs.unary_istrivial(::Type{O}) where {O<:Union{O1,O2,O3}} = true
             replace_subgraph!(groot, g2, g3)
             @test isequiv(gsum.subgraphs[1], gsum.subgraphs[2])
             gnew = replace_subgraph(groot, g2, g3)
-            @test isequiv(gnew, g1 + (g3 + g3), :id)
+            @test isequiv(gnew, g1 + Graph([g3, g3], operator=Graphs.Sum()), :id)
+            # @test isequiv(gnew, g1 + (g3 + g3), :id)  # gnew has repeated subgraphs g3!
         end
         @testset "Prune trivial unary operations" begin
             g1 = Graph([])
@@ -119,7 +126,8 @@ Graphs.unary_istrivial(::Type{O}) where {O<:Union{O1,O2,O3}} = true
         # g = 2*(3*(5*g1))
         g = Graph([g3,]; subgraph_factors=[2,], operator=Graphs.Prod())
         # gp = 2*(3*(g1 + 5*g1))
-        g2p = g1 + g2
+        # g2p = g1 + g2
+        g2p = Graph([g1, g2]; operator=Graphs.Sum())
         g3p = Graph([g2p,]; subgraph_factors=[3,], operator=Graphs.Prod())
         gp = Graph([g3p,]; subgraph_factors=[2,], operator=Graphs.Prod())
         @testset "Merge chains" begin
@@ -161,27 +169,34 @@ Graphs.unary_istrivial(::Type{O}) where {O<:Union{O1,O2,O3}} = true
         end
         @testset "Merge prefactors" begin
             g1 = propagator(𝑓⁺(1)𝑓⁻(2))
-            h1 = linear_combination(g1, g1, 1, 2)
-            @test h1.subgraph_factors == [1, 2]
+            h1 = FeynmanGraph([g1, g1], drop_topology(g1.properties); subgraph_factors=[1, 2], operator=Graphs.Sum())
+            h1_lc = linear_combination(g1, g1, 1, 2)
+            @test h1_lc.subgraph_factors == [3]
             h2 = merge_linear_combination(h1)
             @test h2.subgraph_factors == [3]
             @test length(h2.subgraphs) == 1
             @test h2.subgraphs[1] == g1
+            @test isequiv(h1_lc, h2, :id)
             g2 = propagator(𝑓⁺(1)𝑓⁻(2), factor=2)
             h3 = linear_combination(g1, g2, 1, 2)
             h4 = merge_linear_combination(h3)
             @test isequiv(h3, h4, :id)
-            h5 = linear_combination([g1, g2, g2, g1], [3, 5, 7, 9])
+            h5 = FeynmanGraph([g1, g2, g2, g1], drop_topology(g1.properties); subgraph_factors=[3, 5, 7, 9], operator=Graphs.Sum())
+            h5_lc = linear_combination([g1, g2, g2, g1], [3, 5, 7, 9])
             h6 = merge_linear_combination(h5)
             @test length(h6.subgraphs) == 2
             @test h6.subgraphs == [g1, g2]
             @test h6.subgraph_factors == [12, 12]
+            @test isequiv(h5_lc, h6, :id)
             g3 = 2 * g1
-            h7 = linear_combination([g1, g3, g3, g1], [3, 5, 7, 9])
+            # h7 = FeynmanGraph([g1, g3, g3, g1]; subgraph_factors=[3, 5, 7, 9], operator=Graphs.Sum())
+            h7 = FeynmanGraph([g1, g1, g1, g1], drop_topology(g1.properties); subgraph_factors=[3, 5 * 2, 7 * 2, 9], operator=Graphs.Sum())
+            h7_lc = linear_combination([g1, g3, g3, g1], [3, 5, 7, 9])
             h8 = merge_linear_combination(h7)
             @test length(h8.subgraphs) == 1
             @test h8.subgraphs == [g1]
             @test h8.subgraph_factors == [36]
+            @test isequiv(h7_lc, h8, :id)
         end
     end
     @testset verbose = true "Optimizations" begin
@@ -330,9 +345,10 @@ end
             @test vertices(g3) == vertices(g1)
             @test external_operators(g3) == external_operators(g1)
             @test g3.factor == 1
-            @test g3.subgraphs == [g1, g1]
-            @test g3.subgraph_factors == [1, 2]
-            @test g3.subgraphs[1].subgraph_factors == g1.subgraph_factors
+            @test g3.subgraphs == [g1]
+            @test g3.subgraph_factors == [3]
+            # @test g3.subgraphs == [g1, g1]
+            # @test g3.subgraph_factors == [1, 2]
             @test g3.operator == Graphs.Sum
         end
         @testset "Subtraction" begin
@@ -340,10 +356,10 @@ end
             @test vertices(g4) == vertices(g1)
             @test external_operators(g4) == external_operators(g1)
             @test g4.factor == 1
-            @test g4.subgraphs == [g1, g1]
-            @test g4.subgraph_factors == [1, -2]
-            @test g4.subgraphs[1].subgraph_factors == g1.subgraph_factors
-            @test g4.subgraphs[2].subgraph_factors == g1.subgraph_factors
+            @test g4.subgraphs == [g1,]
+            @test g4.subgraph_factors == [-1,]
+            # @test g4.subgraphs == [g1, g1]
+            # @test g4.subgraph_factors == [1, -2]
             @test g4.operator == Graphs.Sum
         end
         @testset "Linear combinations" begin
@@ -351,13 +367,17 @@ end
             # NOTE: since g2 = 2 * g1, 5g2 ↦ 10g1 in final expressions
             g5 = 3g1 + 5g2
             g5lc = linear_combination(g1, g2, 3, 5)
-            @test g5lc.subgraphs == [g1, g1]
-            @test g5lc.subgraph_factors == [3, 10]
+            @test g5lc.subgraphs == [g1,]
+            @test g5lc.subgraph_factors == [13,]
+            # @test g5lc.subgraphs == [g1, g1]
+            # @test g5lc.subgraph_factors == [3, 10]
             @test isequiv(g5, g5lc, :id)
             # Vector form
             g6lc = linear_combination([g1, g2, g5, g2, g1], [3, 5, 7, 9, 11])
-            @test g6lc.subgraphs == [g1, g1, g5, g1, g1]
-            @test g6lc.subgraph_factors == [3, 10, 7, 18, 11]
+            @test g6lc.subgraphs == [g1,]
+            @test g6lc.subgraph_factors == [133]
+            # @test g6lc.subgraphs == [g1, g1, g5, g1, g1]
+            # @test g6lc.subgraph_factors == [3, 10, 7, 18, 11]
             # Test one-level merging of multiplicative chains
             g7lc = g1 + 2 * (3 * g1 + 5 * g2p)
             g7lc_expect = g1 + 2 * linear_combination([g1, g2p], [3, 5])
@@ -412,7 +432,8 @@ end
             replace_subgraph!(groot, g2, g3)
             @test isequiv(gsum.subgraphs[1], gsum.subgraphs[2])
             gnew = replace_subgraph(groot, g2, g3)
-            @test isequiv(gnew, g1 + (g3 + g3), :id)
+            @test isequiv(gnew, g1 + FeynmanGraph([g3, g3], drop_topology(g3.properties)), :id)
+            # @test isequiv(gnew, g1 + (g3 + g3), :id)
         end
         @testset "Prune trivial unary operations" begin
             g1 = propagator(𝑓⁺(1)𝑓⁻(2))
@@ -443,7 +464,8 @@ end
         # g = 2*(3*(5*g1))
         g = FeynmanGraph([g3,], g3.properties; subgraph_factors=[2,], operator=Graphs.Prod())
         # gp = 2*(3*(g1 + 5*g1))
-        g2p = g1 + g2
+        # g2p = g1 + g2
+        g2p = FeynmanGraph([g1, g2], drop_topology(g1.properties))
         g3p = FeynmanGraph([g2p,], g2p.properties; subgraph_factors=[3,], operator=Graphs.Prod())
         gp = FeynmanGraph([g3p,], g3p.properties; subgraph_factors=[2,], operator=Graphs.Prod())
         @testset "Merge chains" begin
@@ -485,27 +507,34 @@ end
         end
         @testset "Merge prefactors" begin
             g1 = propagator(𝑓⁺(1)𝑓⁻(2))
-            h1 = linear_combination(g1, g1, 1, 2)
-            @test h1.subgraph_factors == [1, 2]
+            h1 = FeynmanGraph([g1, g1], drop_topology(g1.properties), subgraph_factors=[1, 2])
+            h1_lc = linear_combination(g1, g1, 1, 2)
+            @test h1_lc.subgraph_factors == [3]
             h2 = merge_linear_combination(h1)
             @test h2.subgraph_factors == [3]
             @test length(h2.subgraphs) == 1
             @test isequiv(h2.subgraphs[1], g1, :id)
+            @test isequiv(h1_lc, h2, :id)
             g2 = propagator(𝑓⁺(1)𝑓⁻(2), factor=2)
-            h3 = linear_combination(g1, g2, 1, 2)
+            h3 = FeynmanGraph([g1, g2], drop_topology(g1.properties), subgraph_factors=[1, 2])
+            h3_lc = linear_combination(g1, g2, 1, 2)
             h4 = merge_linear_combination(h3)
             @test isequiv(h3, h4, :id)
-            h5 = linear_combination([g1, g2, g2, g1], [3, 5, 7, 9])
+            h5 = FeynmanGraph([g1, g2, g2, g1], drop_topology(g1.properties), subgraph_factors=[3, 5, 7, 9])
+            h5_lc = linear_combination([g1, g2, g2, g1], [3, 5, 7, 9])
             h6 = merge_linear_combination(h5)
             @test length(h6.subgraphs) == 2
             @test h6.subgraphs == [g1, g2]
             @test h6.subgraph_factors == [12, 12]
+            @test isequiv(h5_lc, h6, :id)
             g3 = 2 * g1
-            h7 = linear_combination([g1, g3, g3, g1], [3, 5, 7, 9])
+            h7 = FeynmanGraph([g1, g1, g1, g1], drop_topology(g1.properties), subgraph_factors=[3, 5 * 2, 7 * 2, 9])
+            h7_lc = linear_combination([g1, g3, g3, g1], [3, 5, 7, 9])
             h8 = merge_linear_combination(h7)
             @test length(h8.subgraphs) == 1
             @test h8.subgraphs == [g1]
             @test h8.subgraph_factors == [36]
+            @test isequiv(h7_lc, h8, :id)
         end
     end
 

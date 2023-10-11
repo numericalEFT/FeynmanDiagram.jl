@@ -1,33 +1,52 @@
 function _to_static(::Type{ComputationalGraphs.Sum}, subgraphs::Vector{Graph{F,W}}, subgraph_factors::Vector{F}) where {F,W}
     if length(subgraphs) == 1
-        return "(g$(subgraphs[1].id) * $(subgraph_factors[1]))"
+        factor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
+        return "(g$(subgraphs[1].id)$factor_str)"
     else
-        return "(" * join(["g$(g.id) * $gfactor" for (g, gfactor) in zip(subgraphs, subgraph_factors)], " + ") * ")"
+        terms = ["g$(g.id)" * (gfactor == 1 ? "" : " * $gfactor") for (g, gfactor) in zip(subgraphs, subgraph_factors)]
+        return "(" * join(terms, " + ") * ")"
     end
 end
 
 function _to_static(::Type{ComputationalGraphs.Prod}, subgraphs::Vector{Graph{F,W}}, subgraph_factors::Vector{F}) where {F,W}
     if length(subgraphs) == 1
-        return "(g$(subgraphs[1].id))"
+        factor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
+        return "(g$(subgraphs[1].id)$factor_str)"
     else
-        return "(" * join(["g$(g.id)" for g in subgraphs], " * ") * ")"
+        terms = ["g$(g.id)" * (gfactor == 1 ? "" : " * $gfactor") for (g, gfactor) in zip(subgraphs, subgraph_factors)]
+        return "(" * join(terms, " * ") * ")"
+        # return "(" * join(["g$(g.id)" for g in subgraphs], " * ") * ")"
     end
+end
+
+function _to_static(::Type{ComputationalGraphs.Power{N}}, subgraphs::Vector{Graph{F,W}}, subgraph_factors::Vector{F}) where {N,F,W}
+    factor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
+    return "((g$(subgraphs[1].id))^$N$factor_str)"
 end
 
 function _to_static(::Type{ComputationalGraphs.Sum}, subgraphs::Vector{FeynmanGraph{F,W}}, subgraph_factors::Vector{F}) where {F,W}
     if length(subgraphs) == 1
-        return "(g$(subgraphs[1].id) * $(subgraph_factors[1]))"
+        factor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
+        return "(g$(subgraphs[1].id)$factor_str)"
     else
-        return "(" * join(["g$(g.id) * $gfactor" for (g, gfactor) in zip(subgraphs, subgraph_factors)], " + ") * ")"
+        terms = ["g$(g.id)" * (gfactor == 1 ? "" : " * $gfactor") for (g, gfactor) in zip(subgraphs, subgraph_factors)]
+        return "(" * join(terms, " + ") * ")"
     end
 end
 
 function _to_static(::Type{ComputationalGraphs.Prod}, subgraphs::Vector{FeynmanGraph{F,W}}, subgraph_factors::Vector{F}) where {F,W}
     if length(subgraphs) == 1
-        return "(g$(subgraphs[1].id))"
+        factor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
+        return "(g$(subgraphs[1].id)$factor_str)"
     else
-        return "(" * join(["g$(g.id)" for g in subgraphs], " * ") * ")"
+        terms = ["g$(g.id)" * (gfactor == 1 ? "" : " * $gfactor") for (g, gfactor) in zip(subgraphs, subgraph_factors)]
+        return "(" * join(terms, " * ") * ")"
     end
+end
+
+function _to_static(::Type{ComputationalGraphs.Power{N}}, subgraphs::Vector{FeynmanGraph{F,W}}, subgraph_factors::Vector{F}) where {N,F,W}
+    factor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
+    return "((g$(subgraphs[1].id))^$N$factor_str)"
 end
 
 """
@@ -40,6 +59,8 @@ function to_julia_str(graphs::AbstractVector{G}; root::AbstractVector{Int}=[g.id
     head = "function $name(root::AbstractVector, leaf::AbstractVector)\n "
     body = ""
     leafidx = 1
+    inds_visitedleaf = Int[]
+    inds_visitednode = Int[]
     for graph in graphs
         for g in PostOrderDFS(graph) #leaf first search
             if g.id in root
@@ -48,10 +69,16 @@ function to_julia_str(graphs::AbstractVector{G}; root::AbstractVector{Int}=[g.id
                 target = "g$(g.id)"
             end
             if isempty(g.subgraphs) #leaf
-                body *= "    $target = leaf[$leafidx]\n "
+                g.id in inds_visitedleaf && continue
+                factor_str = g.factor == 1 ? "" : " * $(g.factor)"
+                body *= "    $target = leaf[$leafidx]$factor_str\n "
                 leafidx += 1
+                push!(inds_visitedleaf, g.id)
             else
-                body *= "    $target = $(_to_static(g.operator, g.subgraphs, g.subgraph_factors))*$(g.factor)\n "
+                g.id in inds_visitednode && continue
+                factor_str = g.factor == 1 ? "" : " * $(g.factor)"
+                body *= "    $target = $(_to_static(g.operator, g.subgraphs, g.subgraph_factors))$factor_str\n "
+                push!(inds_visitednode, g.id)
             end
         end
     end
@@ -76,6 +103,8 @@ function to_julia_str(graphs::AbstractVector{G}, leafMap::Dict{Int,Int}; root::A
     name::String="eval_graph!") where {G<:AbstractGraph}
     head = "function $name(root::AbstractVector, leafVal::AbstractVector)\n "
     body = ""
+    inds_visitedleaf = Int[]
+    inds_visitednode = Int[]
     for graph in graphs
         for g in PostOrderDFS(graph) #leaf first search
             if g.id in root
@@ -84,11 +113,15 @@ function to_julia_str(graphs::AbstractVector{G}, leafMap::Dict{Int,Int}; root::A
                 target = "g$(g.id)"
             end
             if isempty(g.subgraphs) #leaf
-                g.name == "compiled" && continue
-                body *= "    $target = leafVal[$(leafMap[g.id])]\n "
-                g.name = "compiled"
+                g.id in inds_visitedleaf && continue
+                factor_str = g.factor == 1 ? "" : " * $(g.factor)"
+                body *= "    $target = leafVal[$(leafMap[g.id])]$factor_str\n "
+                push!(inds_visitedleaf, g.id)
             else
-                body *= "    $target = $(_to_static(g.operator, g.subgraphs, g.subgraph_factors))*$(g.factor)\n "
+                g.id in inds_visitednode && continue
+                factor_str = g.factor == 1 ? "" : " * $(g.factor)"
+                body *= "    $target = $(_to_static(g.operator, g.subgraphs, g.subgraph_factors))$factor_str\n "
+                push!(inds_visitednode, g.id)
             end
         end
     end
