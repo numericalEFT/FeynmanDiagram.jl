@@ -35,7 +35,6 @@ export linear_combination, feynman_diagram, propagator, interaction, external_ve
 # export standardize_order!
 # export 𝐺ᶠ, 𝐺ᵇ, 𝐺ᵠ, 𝑊, Green2, Interaction
 
-include("taylor.jl")
 
 include("tree_properties.jl")
 export haschildren, onechild, isleaf, isbranch, ischain, isfactorless, eldest, count_operation

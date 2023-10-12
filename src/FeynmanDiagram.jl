@@ -200,4 +200,8 @@ if ccall(:jl_generating_output, Cint, ()) == 1   # if we're precompiling the pac
     end
 end
 
+include("TaylorSeries/TaylorSeries.jl")
+using .Taylor
+export Taylor
+export TaylorSeries, set_variables
 end
