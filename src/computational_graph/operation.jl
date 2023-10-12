@@ -42,6 +42,7 @@ function linear_combination_number_with_graph(g::Vector{Union{F,Graph{F,W}}}, co
     return result
     #return subgraphs, subnumber, subcoeff
 end
+
 """
     function forwardAD(diag::Graph{F,W}, ID::Int) where {F,W}
     
@@ -100,6 +101,18 @@ function forwardAD(diag::Graph{F,W}, ID::Int) where {F,W}
                 if !isnothing(dum)
                     dual[d.id] = factor * dum
                 end
+            elseif d.operator <: Power
+                !haskey(dual, eldest(d).id) && continue
+                children = [Graph(d.subgraphs; subgraph_factors=[eltype(d.operator)], operator=decrement_power(d.operator))]
+                child = dual[eldest(d).id]
+                if typeof(child) <: Number
+                    push!(children, constant_graph(F(child)))
+                elseif typeof(child) <: Graph{F,W}
+                    push!(children, child)
+                else
+                    error("The type of subgraphs in derivative is incorrect!")
+                end
+                dual[d.id] = Graph(children; subgraph_factors=[d.subgraph_factors[1], 1], operator=Prod())
             else
                 error("not implemented!")
             end
@@ -198,6 +211,12 @@ function node_derivative(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W} #return d g
             g.subgraphs = subgraphs
             g.subgraph_factors = subgraphfactors
             return g
+        end
+    elseif g1.operator <: Power
+        if eldest(g1).id == g2.id
+            return Graph(g1.subgraphs; subgraph_factors=g1.subgraph_factors * eltype(g1.operator), operator=decrement_power(g1.operator))
+        else
+            return nothing
         end
     else
         return nothing
@@ -302,61 +321,115 @@ end
 #     end
 # end
 
+function insert_dualDict!(dict_kv::Dict{Tk,Tv}, dict_vk::Dict{Tv,Tk}, key::Tk, value::Tv) where {Tk,Tv}
+    dict_kv[key] = value
+    if !haskey(dict_vk, value)
+        dict_vk[value] = Set()
+    end
+    push!(dict_vk[value], key)
+end
 
-function forwardAD_root(diags::AbstractVector{G}) where {G<:Graph}
-    dual = Dict{Int,G}()
+
+"""
+    function forwardAD_root!(graphs::AbstractVector{G}, idx::Int=1,
+        dual::Dict{Tuple{Int,NTuple{N,Bool}},G}=Dict{Tuple{Int,Tuple{Bool}},G}()) where {G<:Graph,N}
+ 
+    Computes the forward automatic differentiation (AD) of the given graphs beginning from the roots.
+
+# Arguments:
+- `graphs`: A vector of graphs.
+- `idx`: Index for differentiation (default: 1).
+- `dual`: A dictionary that holds the result of differentiation.
+
+# Returns:
+- The dual dictionary populated with all differentiated graphs, including the intermediate AD.
+"""
+function forwardAD_root!(graphs::AbstractVector{G}, idx::Int=1,
+    dual::Dict{Tuple{Int,NTuple{N,Bool}},G}=Dict{Tuple{Int,Tuple{Bool}},G}()) where {G<:Graph,N}
+    # dualinv::Dict{G,Tuple{Int,NTuple{N,Int}}}=Dict{G,Tuple{Int,Tuple{Int}}}()) where {G<:Graph,N}
+
+    @assert idx <= N "the differential variable's index must be described by the key of dual."
+    # dual = Dict{Int,G}()
     # println("rootID: ", diag.id)
-    for diag in diags
+    key2 = Tuple(i == idx ? true : false for i in 1:N)
+    for diag in graphs
         for node in PreOrderDFS(diag)
             visited = false
-            if haskey(dual, node.id)
-                dual[node.id].name != "None" && continue
+            # if haskey(dual, node.id)
+            if any(key[1] == node.id && key[2] == key2 for key in keys(dual))
+                dual[(node.id, key2)].name != "UNDEFINED" && continue
                 visited = true
             end
             # println("Node: ", node.id)
 
             if node.operator == Sum
                 nodes_deriv = G[]
+                sizehint!(nodes_deriv, length(node.subgraph_factors))
                 for sub_node in node.subgraphs
-                    if haskey(dual, sub_node.id)
+                    key = (sub_node.id, key2)
+                    if haskey(dual, key)
                         # println("subNode haskey: ", sub_node.id)
-                        push!(nodes_deriv, dual[sub_node.id])
+                        push!(nodes_deriv, dual[key])
                     else
                         # println("subNode nokey: ", sub_node.id)
-                        g_dual = Graph(G[]; name="None")
-                        push!(nodes_deriv, g_dual)
-                        dual[sub_node.id] = g_dual
+                        subnode_dual = Graph(G[]; name="UNDEFINED")
+                        push!(nodes_deriv, subnode_dual)
+                        dual[key] = subnode_dual
                     end
                 end
+                key_node = (node.id, key2)
                 if visited
-                    dual[node.id].subgraphs = nodes_deriv
-                    dual[node.id].subgraph_factors = node.subgraph_factors
-                    dual[node.id].name = node.name
+                    dual[key_node].subgraphs = nodes_deriv
+                    dual[key_node].subgraph_factors = node.subgraph_factors
+                    dual[key_node].name = node.name
                 else
-                    dual[node.id] = Graph(nodes_deriv; subgraph_factors=node.subgraph_factors, factor=node.factor)
+                    dual[key_node] = Graph(nodes_deriv; subgraph_factors=node.subgraph_factors, factor=node.factor)
                 end
             elseif node.operator == Prod
                 nodes_deriv = G[]
+                sizehint!(nodes_deriv, length(node.subgraph_factors))
                 for (i, sub_node) in enumerate(node.subgraphs)
-                    if haskey(dual, sub_node.id)
+                    key = (sub_node.id, key2)
+                    if haskey(dual, key)
                         # println("subNode haskey: ", sub_node.id)
-                        subgraphs = [j == i ? dual[subg.id] : subg for (j, subg) in enumerate(node.subgraphs)]
+                        subgraphs = [j == i ? dual[key] : subg for (j, subg) in enumerate(node.subgraphs)]
                         push!(nodes_deriv, Graph(subgraphs; operator=Prod(), subgraph_factors=node.subgraph_factors))
                     else
                         # println("subNode nokey: ", sub_node.id)
-                        g_dual = Graph(G[]; name="None")
-                        dual[sub_node.id] = g_dual
-                        subgraphs = [j == i ? g_dual : subg for (j, subg) in enumerate(node.subgraphs)]
+                        subnode_dual = Graph(G[]; name="UNDEFINED")
+                        dual[key] = subnode_dual
+                        subgraphs = [j == i ? subnode_dual : subg for (j, subg) in enumerate(node.subgraphs)]
                         push!(nodes_deriv, Graph(subgraphs; operator=Prod(), subgraph_factors=node.subgraph_factors))
-
                     end
                 end
+                key_node = (node.id, key2)
                 if visited
-                    dual[node.id].subgraphs = nodes_deriv
-                    dual[node.id].subgraph_factors = one.(eachindex(nodes_deriv))
-                    dual[node.id].name = node.name
+                    dual[key_node].subgraphs = nodes_deriv
+                    dual[key_node].subgraph_factors = one.(eachindex(nodes_deriv))
+                    dual[key_node].name = node.name
                 else
-                    dual[node.id] = Graph(nodes_deriv; factor=node.factor)
+                    dual[key_node] = Graph(nodes_deriv; factor=node.factor)
+                end
+            elseif node.operator <: Power   # node with Power operator has only one subgraph!
+                nodes_deriv = G[]
+                sizehint!(nodes_deriv, 2)
+                key = (eldest(node).id, key2)
+                if haskey(dual, key)
+                    push!(nodes_deriv, dual[key])
+                else
+                    subnode_dual = Graph(G[]; name="UNDEFINED")
+                    push!(nodes_deriv, subnode_dual)
+                    dual[key] = subnode_dual
+                end
+                push!(nodes_deriv, Graph(node.subgraphs; subgraph_factors=[eltype(node.operator)], operator=decrement_power(node.operator)))
+                key_node = (node.id, key2)
+                if visited
+                    dual[key_node].subgraphs = nodes_deriv
+                    dual[key_node].subgraph_factors = [1, node.subgraph_factors[1]]
+                    dual[key_node].name = node.name
+                    dual.operator = Prod
+                else
+                    dual[key_node] = Graph(nodes_deriv; subgraph_factors=[1, node.subgraph_factors[1]], operator=Prod(), factor=node.factor)
                 end
             end
         end
@@ -364,4 +437,99 @@ function forwardAD_root(diags::AbstractVector{G}) where {G<:Graph}
     return dual
 end
 
-forwardAD_root(diag::Graph) = forwardAD_root([diag])
+function forwardAD_root!(diag::G, idx::Int=1,
+    dual::Dict{Tuple{Int,NTuple{N,Bool}},G}=Dict{Tuple{Int,Tuple{Bool}},G}()) where {G<:Graph,N}
+    return forwardAD_root!([diag], idx, dual)
+end
+
+
+@inline function find_last_neighbor(item)
+    # loc = findfirst(val -> val > 0, item)
+    loc = findlast(val -> val > 0, item)
+    if isnothing(loc)
+        return nothing
+    else
+        return ntuple(j -> j == loc ? item[j] - 1 : item[j], length(item))
+    end
+end
+
+"""
+    function build_derivative_graph(graphs::AbstractVector{G}, orders::NTuple{N,Int};
+        nodes_id=nothing) where {G<:Graph,N}
+ 
+    Constructs a derivative graph using forward automatic differentiation with given graphs and derivative orders.
+
+# Arguments:
+- `graphs`: A vector of graphs.
+- `orders::NTuple{N,Int}`: A tuple indicating the orders of differentiation. `N` represents the number of independent variables to be differentiated.
+- `nodes_id`: Optional node IDs to indicate saving their derivative graph.
+
+# Returns:
+- A dictionary containing the dual derivative graphs for all indicated nodes. 
+If `isnothing(nodes_id)`, indicated nodes include all leaf and root nodes. Otherwise, indicated nodes include all root nodes and other nodes from `nodes_id`.
+"""
+function build_derivative_graph(graphs::AbstractVector{G}, orders::NTuple{N,Int};
+    nodes_id=nothing) where {G<:Graph,N}
+
+    roots_id = Set{Int}()
+    for g in graphs
+        push!(roots_id, g.id)
+    end
+    if isnothing(nodes_id)
+        nodes_id = Set{Int}()
+        for g in graphs
+            for leaf in Leaves(g)
+                push!(nodes_id, leaf.id)
+            end
+        end
+    end
+
+    dual_oneorder = Dict{Tuple{Int,NTuple{N,Bool}},G}()
+    cumsum_orders = cumsum(orders)
+    idx0 = findfirst(val -> 1 <= val, cumsum_orders)
+    first_order = ntuple(j -> j == idx0 ? 1 : 0, N)
+
+    # generate dual 1-order derivative graph 
+    dual_oneorder = forwardAD_root!(graphs, idx0, dual_oneorder)
+    dual_graphs = [dual_oneorder[(g.id, first_order)] for g in graphs]
+    for x in 2:sum(orders)
+        idx = findfirst(val -> x <= val, cumsum_orders)
+        dual_oneorder = forwardAD_root!(dual_graphs, idx, dual_oneorder)
+        dual_graphs = [dual_oneorder[(g.id, ntuple(j -> j == idx, N))] for g in dual_graphs]
+    end
+
+    dual = Dict{Tuple{Int,NTuple{N,Int}},G}()
+    # generate dual derivative graph Dict for all nodes (except for root nodes)
+    iter_orders = Tuple(0:x for x in orders)
+    for node_id in nodes_id
+        for order in Iterators.product(iter_orders...)
+            order == ntuple(j -> 0, N) && continue
+            prev_order = find_last_neighbor(order)
+            if prev_order == ntuple(j -> 0, N)
+                dual[(node_id, order)] = dual_oneorder[(node_id, prev_order .!= order)]
+            else
+                dual[(node_id, order)] = dual_oneorder[(dual[(node_id, prev_order)].id, prev_order .!= order)]
+            end
+        end
+    end
+
+    # generate dual derivative graph Dict for all root nodes
+    _cum = pushfirst!(collect(cumsum_orders), 0)
+    for root_id in roots_id
+        dual[(root_id, first_order)] = dual_oneorder[(root_id, first_order)]
+        prev_order = first_order
+        for x in 2:sum(orders)
+            idx = findfirst(val -> x <= val, cumsum_orders)
+            order = ntuple(j -> j == idx ? x - _cum[idx] : (j < idx ? orders[j] : 0), N)
+            dual[(root_id, order)] = dual_oneorder[(dual[(root_id, prev_order)].id, prev_order .!= order)]
+            prev_order = order
+        end
+    end
+
+    return dual
+end
+
+function build_derivative_graph(graph::G, orders::NTuple{N,Int};
+    nodes_id=nothing) where {G<:Graph,N}
+    return build_derivative_graph([graph], orders; nodes_id=nodes_id)
+end
