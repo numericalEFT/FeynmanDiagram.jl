@@ -198,6 +198,19 @@ Graphs.unary_istrivial(::Type{O}) where {O<:Union{O1,O2,O3}} = true
             @test h8.subgraph_factors == [36]
             @test isequiv(h7_lc, h8, :id)
         end
+        @testset "Merge multi prodict" begin
+            g1 = Graph([])
+            g2 = Graph([], factor=2)
+            g3 = Graph([], factor=3)
+            h1 = Graph([g1, g2, g1, g1, g3, g2]; subgraph_factors=[3, 2, 5, 1, 1, 3], operator=Graphs.Prod())
+            h1_mp = merge_multi_product(h1)
+            h1_s1 = Graph([g1], operator=Graphs.Power(3))
+            h1_s2 = Graph([g2], operator=Graphs.Power(2))
+            h1_r = Graph([h1_s1, h1_s2, g3], subgraph_factors=[15, 6, 1], operator=Graphs.Prod())
+            @test isequiv(h1_r, h1_mp, :id)
+            merge_multi_product!(h1)
+            @test isequiv(h1, h1_mp, :id)
+        end
     end
     @testset verbose = true "Optimizations" begin
         @testset "Remove one-child parents" begin
