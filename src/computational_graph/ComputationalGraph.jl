@@ -45,8 +45,8 @@ include("eval.jl")
 export eval!
 
 include("transform.jl")
-export relabel!, standardize_labels!, replace_subgraph!, merge_linear_combination!, merge_chains!
-export relabel, standardize_labels, replace_subgraph, merge_linear_combination, merge_chains
+export relabel!, standardize_labels!, replace_subgraph!, merge_linear_combination!, merge_multi_product!, merge_chains!
+export relabel, standardize_labels, replace_subgraph, merge_linear_combination, merge_multi_product, merge_chains
 
 include("optimize.jl")
 export optimize!, optimize

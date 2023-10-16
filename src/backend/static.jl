@@ -63,10 +63,11 @@ function to_julia_str(graphs::AbstractVector{G}; root::AbstractVector{Int}=[g.id
     inds_visitednode = Int[]
     for graph in graphs
         for g in PostOrderDFS(graph) #leaf first search
+            target = "g$(g.id)"
+            isroot = false
             if g.id in root
-                target = "root[$(findfirst(x -> x == g.id, root))]"
-            else
-                target = "g$(g.id)"
+                target_root = "root[$(findfirst(x -> x == g.id, root))]"
+                isroot = true
             end
             if isempty(g.subgraphs) #leaf
                 g.id in inds_visitedleaf && continue
@@ -79,6 +80,9 @@ function to_julia_str(graphs::AbstractVector{G}; root::AbstractVector{Int}=[g.id
                 factor_str = g.factor == 1 ? "" : " * $(g.factor)"
                 body *= "    $target = $(_to_static(g.operator, g.subgraphs, g.subgraph_factors))$factor_str\n "
                 push!(inds_visitednode, g.id)
+            end
+            if isroot
+                body *= "    $target_root = $target\n "
             end
         end
     end
@@ -107,10 +111,11 @@ function to_julia_str(graphs::AbstractVector{G}, leafMap::Dict{Int,Int}; root::A
     inds_visitednode = Int[]
     for graph in graphs
         for g in PostOrderDFS(graph) #leaf first search
+            target = "g$(g.id)"
+            isroot = false
             if g.id in root
-                target = "root[$(findfirst(x -> x == g.id, root))]"
-            else
-                target = "g$(g.id)"
+                target_root = "root[$(findfirst(x -> x == g.id, root))]"
+                isroot = true
             end
             if isempty(g.subgraphs) #leaf
                 g.id in inds_visitedleaf && continue
@@ -122,6 +127,9 @@ function to_julia_str(graphs::AbstractVector{G}, leafMap::Dict{Int,Int}; root::A
                 factor_str = g.factor == 1 ? "" : " * $(g.factor)"
                 body *= "    $target = $(_to_static(g.operator, g.subgraphs, g.subgraph_factors))$factor_str\n "
                 push!(inds_visitednode, g.id)
+            end
+            if isroot
+                body *= "    $target_root = $target\n "
             end
         end
     end
