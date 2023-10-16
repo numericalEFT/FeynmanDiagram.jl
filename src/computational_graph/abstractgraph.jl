@@ -14,11 +14,11 @@ Base.show(io::IO, ::Type{Prod}) = print(io, "Ⓧ")
 # Is the unary form of operator 𝓞 trivial: 𝓞(G) ≡ G?
 # NOTE: this property implies that 𝓞(c * G) = c * G = c * 𝓞(G), so
 #       we may propagate the subgraph factor c up to the parent graph.
-unary_istrivial(::Type{O}) where {O<:AbstractOperator} = false
-unary_istrivial(::Type{O}) where {O<:Union{Sum,Prod}} = true  # (+g) ≡ g and (*g) ≡ g
+unary_istrivial(::Type{<:AbstractOperator}) = false
+unary_istrivial(::Type{<:Union{Sum,Prod}}) = true  # (+g) ≡ g and (*g) ≡ g
 
 # Is the operation associative: a 𝓞 (b 𝓞 c) = (a 𝓞 b) 𝓞 c = a 𝓞 b 𝓞 c?
-isassociative(::Type{O}) where {O<:AbstractOperator} = false
+isassociative(::Type{<:AbstractOperator}) = false
 isassociative(::Type{Sum}) = true
 # NOTE: Associativity of Prod (graph composition)
 #       requires Base.*(g1, g2) and Base./(g1, g2)
