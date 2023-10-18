@@ -134,6 +134,28 @@ function count_operation(g::Graph)
     return [totalsum, totalprod]
 end
 
+function count_operation(g::Array{G}) where {G<:Graph}
+    visited = Set{Int}()
+    totalsum = 0
+    totalprod = 0
+    for graph in g
+        for node in PreOrderDFS(graph)
+            if !(node.id in visited)
+                push!(visited, node.id)
+                if length(node.subgraphs) > 0
+                    if node.operator == Prod
+                        totalprod += length(node.subgraphs) - 1
+                    elseif node.operator == Sum
+                        totalsum += length(node.subgraphs) - 1
+                    end
+                end
+            end
+        end
+    end
+    return [totalsum, totalprod]
+end
+
+
 function count_operation(g::Number)
     return [0, 0]
 end

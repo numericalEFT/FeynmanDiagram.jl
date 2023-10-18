@@ -25,7 +25,8 @@ export get_order, get_numvars,
     set_variables, get_variables,
     get_variable_names, get_variable_symbols,
     # jacobian, hessian, jacobian!, hessian!,
-    displayBigO, use_show_default
+    displayBigO, use_show_default,
+    findidx, getcoeff
 # function __init__()
 #     @static if !isdefined(Base, :get_extension)
 #         @require IntervalArithmetic = "d1acc4aa-44c8-5952-acd4-ba5d80a2a253" begin

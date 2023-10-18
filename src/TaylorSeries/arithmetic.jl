@@ -179,3 +179,44 @@ function getcoeff(a::TaylorSeries, o::Array{Int,1})
         return a.coeffs[idx] / taylor_factorial(o)
     end
 end
+
+function Base.one(x::TaylorSeries{T}) where {T}
+    g = TaylorSeries{T}()
+    push!(g.coeffs, one(T))
+    push!(g.order, zeros(Int, get_numvars))
+    return g
+end
+function Base.:^(x::TaylorSeries, p::Integer)
+    p == 1 && return copy(x)
+    p == 0 && return one(x)
+    p == 2 && return square(x)
+    p < 0 && throw(DomainError())
+    return power_by_squaring(x, p)
+end
+
+function square(x::TaylorSeries)
+    return x * x
+end
+function power_by_squaring(x::TaylorSeries, p::Integer)
+    p == 1 && return copy(x)
+    p == 0 && return one(x)
+    p == 2 && return square(x)
+    t = trailing_zeros(p) + 1
+    p >>= t
+
+    while (t -= 1) > 0
+        x = square(x)
+    end
+
+    y = x
+    while p > 0
+        t = trailing_zeros(p) + 1
+        p >>= t
+        while (t -= 1) ≥ 0
+            x = square(x)
+        end
+        y *= x
+    end
+
+    return y
+end

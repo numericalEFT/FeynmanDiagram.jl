@@ -98,6 +98,12 @@ export fermionic_annihilation, fermionic_creation, majorana
 export bosonic_annihilation, bosonic_creation, real_classic
 export correlator_order, normal_order
 
+include("TaylorSeries/TaylorSeries.jl")
+using .Taylor
+export Taylor
+export TaylorSeries, set_variables
+
+
 include("computational_graph/ComputationalGraph.jl")
 using .ComputationalGraphs
 export ComputationalGraphs
@@ -169,6 +175,7 @@ export addpropagator!, addnode!
 export setroot!, addroot!
 export evalNaive, showTree
 
+
 ##################### precompile #######################
 # precompile as the final step of the module definition:
 if ccall(:jl_generating_output, Cint, ()) == 1   # if we're precompiling the package
@@ -200,8 +207,5 @@ if ccall(:jl_generating_output, Cint, ()) == 1   # if we're precompiling the pac
     end
 end
 
-include("TaylorSeries/TaylorSeries.jl")
-using .Taylor
-export Taylor
-export TaylorSeries, set_variables
+
 end

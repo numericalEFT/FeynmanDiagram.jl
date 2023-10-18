@@ -164,7 +164,7 @@ where duplicate graphs in the input `graphs` are combined by summing their assoc
 # Example:
     Given graphs `g1`, `g2`, `g1` and constants `c1`, `c2`, `c3`, the function computes `(c1+c3)*g1 + c2*g2`.
 """
-function linear_combination(graphs::Vector{Graph{F,W}}, constants::Vector{C}=ones(C, length(graphs))) where {F,W,C}
+function linear_combination(graphs::Vector{Graph{F,W}}, constants::Vector{C}=ones(length(graphs))) where {F,W,C<:Number}
     subgraphs, subgraph_factors = graphs, constants
     # Convert multiplicative links to in-place form
     for (i, sub_g) in enumerate(graphs)

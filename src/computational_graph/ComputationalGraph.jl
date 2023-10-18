@@ -3,7 +3,7 @@ module ComputationalGraphs
 using AbstractTrees
 using StaticArrays
 using Printf, PyCall, DataFrames
-
+using ..Taylor
 macro todo()
     return :(error("Not yet implemented!"))
 end
