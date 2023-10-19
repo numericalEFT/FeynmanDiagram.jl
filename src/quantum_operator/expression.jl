@@ -190,7 +190,7 @@ end
 The parity of a permutation P is +1 if the number of 2-cycles (swaps) in an n-cycle
 decomposition with n ≤ 2 is even, and -1 if the number of 2-cycles is odd.
 """
-function parity(p::W) where {W<:AbstractVector{Int}}
+function parity(p::AbstractVector{Int})
     count = 0
     p_swap = copy(p)
     for i in eachindex(p)
