@@ -12,14 +12,14 @@
 """
 mutable struct TaylorSeries{T}
     name::String # "" by default
-    coeffs::Array{T,1}
-    order::Array{Array{Int,1},1}
+    coeffs::Dict{Array{Int,1},T}
+
     """
         function TaylorSeries(T::DataType=Float64, name="", expansion=Dict{Dict{Int,Int},T}(), variables=Set{V}())
             Create a TaylorSeries based on given expansion and variables.
     """
-    function TaylorSeries{T}(coeffs::Array{T,1}=Array{T,1}(), order::Array{Array{Int,1},1}=Array{Array{Int,1},1}(), name::String="") where {T}
-        return new{T}(name, coeffs, order)
+    function TaylorSeries{T}(coeffs::Dict{Array{Int,1},T}=Dict{Array{Int,1},T}(), name::String="") where {T}
+        return new{T}(name, coeffs)
     end
 end
 
@@ -28,7 +28,7 @@ function TaylorSeries(::Type{T}, nv::Int) where {T}
     @assert 0 < nv ≤ get_numvars()
     v = zeros(Int, get_numvars())
     @inbounds v[nv] = 1
-    return TaylorSeries{T}([one(T)], [v])
+    return TaylorSeries{T}(Dict{Array{Int,1},T}(v => one(T)))
 end
 TaylorSeries(nv::Int) = TaylorSeries(Float64, nv)
 

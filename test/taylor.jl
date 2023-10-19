@@ -19,4 +19,5 @@ using FeynmanDiagram: Taylor as Taylor
     @test getcoeff(F1, [1, 2, 0, 0, 0]) == 3.0
     @test getcoeff(F1, [3, 0, 0, 0, 0]) == 1.0
     @test getcoeff(F1, [0, 3, 0, 0, 0]) == 1.0
+    print("$(F1)")
 end

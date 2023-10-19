@@ -9,8 +9,9 @@
 """
 function Base.:*(g1::TaylorSeries{T}, c2::Number) where {T}
     g = TaylorSeries{T}()
-    g.coeffs = c2 * g1.coeffs
-    g.order = copy(g1.order)
+    for (order, coeff) in g1.coeffs
+        g.coeffs[order] = c2 * coeff
+    end
     return g
 end
 
@@ -25,9 +26,9 @@ end
 """
 function Base.:*(c1::Number, g2::TaylorSeries{T}) where {T}
     g = TaylorSeries{T}()
-    g.coeffs = c1 * g2.coeffs
-    g.order = copy(g2.order)
-
+    for (order, coeff) in g2.coeffs
+        g.coeffs[order] = c1 * coeff
+    end
     return g
 end
 
@@ -43,15 +44,12 @@ end
 function Base.:+(g1::TaylorSeries{T}, g2::TaylorSeries{T}) where {T}
     g = TaylorSeries{T}()
     g.coeffs = copy(g1.coeffs)
-    g.order = copy(g1.order)
 
-    for (i, coeff) in enumerate(g2.coeffs)
-        idx = findfirst(isequal(g2.order[i]), g.order)
-        if isnothing(idx)
-            push!(g.order, g2.order[i])
-            push!(g.coeffs, coeff)
+    for (order, coeff) in g2.coeffs
+        if haskey(g.coeffs, order)
+            g.coeffs[order] += coeff
         else
-            g.coeffs[idx] += coeff
+            g.coeffs[order] = coeff
         end
     end
     return g
@@ -67,35 +65,30 @@ end
 - `g1`  First taylor series
 - `g2`  Second taylor series
 """
-function Base.:+(g1::TaylorSeries{T}, c::S) where {T,S}
+function Base.:+(g1::TaylorSeries{T}, c::S) where {T,S<:Number}
     g = TaylorSeries{T}()
     g.coeffs = copy(g1.coeffs)
-    g.order = copy(g1.order)
+
     zero_order = zeros(Int, get_numvars())
-    idx = findfirst(isequal(zero_order), g.order)
-    if isnothing(idx)
-        push!(g.order, zero_order)
-        push!(g.coeffs, T(c))
+    if haskey(g.coeffs, zero_order)
+        g.coeffs[order] += T(c)
     else
-        g.coeffs[idx] += T(c)
+        g.coeffs[order] = T(c)
     end
 
     return g
 end
 
-function Base.:+(c::S, g1::TaylorSeries{T}) where {S,T}
+function Base.:+(c::S, g1::TaylorSeries{T}) where {S<:Number,T}
     g = TaylorSeries{T}()
     g.coeffs = copy(g1.coeffs)
-    g.order = copy(g1.order)
-    zero_order = zeros(Int, get_numvars())
-    idx = findfirst(isequal(zero_order), g.order)
-    if isnothing(idx)
-        push!(g.order, zero_order)
-        push!(g.coeffs, T(c))
-    else
-        g.coeffs[idx] += T(c)
-    end
 
+    zero_order = zeros(Int, get_numvars())
+    if haskey(g.coeffs, zero_order)
+        g.coeffs[zero_order] += T(c)
+    else
+        g.coeffs[zero_order] = T(c)
+    end
     return g
 end
 """
@@ -110,10 +103,10 @@ end
 function Base.:-(g1::TaylorSeries{T}, g2::TaylorSeries{T}) where {T}
     return g1 + (-1 * g2)
 end
-function Base.:-(c::T, g2::TaylorSeries{T}) where {T}
+function Base.:-(c::S, g2::TaylorSeries{T}) where {T,S<:Number}
     return c + (-1 * g2)
 end
-function Base.:-(g1::TaylorSeries{T}, c::T) where {T}
+function Base.:-(g1::TaylorSeries{T}, c::S) where {T,S<:Number}
     return g1 + (-1 * c)
 end
 
@@ -148,17 +141,15 @@ end
 """
 function Base.:*(g1::TaylorSeries{T}, g2::TaylorSeries{T}) where {T}
     g = TaylorSeries{T}()
-    for (i1, coeff1) in enumerate(g1.coeffs)
-        for (i2, coeff2) in enumerate(g2.coeffs)
-            order = g1.order[i1] + g2.order[i2]
+    for (order1, coeff1) in g1.coeffs
+        for (order2, coeff2) in g2.coeffs
+            order = order1 + order2
             if sum(order) <= _params_Taylor_.order
-                idx = findfirst(isequal(order), g.order)
-                combination_coeff = taylor_binomial(g1.order[i1], g2.order[i2])
-                if isnothing(idx)
-                    push!(g.order, order)
-                    push!(g.coeffs, combination_coeff * coeff1 * coeff2)
+                combination_coeff = taylor_binomial(order1, order2)
+                if haskey(g.coeffs, order)
+                    g.coeffs[order] += combination_coeff * coeff1 * coeff2
                 else
-                    g.coeffs[idx] += combination_coeff * coeff1 * coeff2
+                    g.coeffs[order] = combination_coeff * coeff1 * coeff2
                 end
             end
         end
@@ -166,24 +157,22 @@ function Base.:*(g1::TaylorSeries{T}, g2::TaylorSeries{T}) where {T}
     return g
 end
 
-function findidx(a::TaylorSeries, o::Array{Int,1})
-    @assert length(o) == get_numvars()
-    return findfirst(isequal(o), a.order)
-end
+# function findidx(a::TaylorSeries, o::Array{Int,1})
+#     @assert length(o) == get_numvars()
+#     return findfirst(isequal(o), a.order)
+# end
 
-function getcoeff(a::TaylorSeries, o::Array{Int,1})
-    idx = findidx(a, o)
-    if isnothing(idx)
-        return nothing
+function getcoeff(g::TaylorSeries, order::Array{Int,1})
+    if haskey(g.coeffs, order)
+        return 1 / taylor_factorial(order) * g.coeffs[order]
     else
-        return a.coeffs[idx] / taylor_factorial(o)
+        return nothing
     end
 end
 
 function Base.one(x::TaylorSeries{T}) where {T}
     g = TaylorSeries{T}()
-    push!(g.coeffs, one(T))
-    push!(g.order, zeros(Int, get_numvars))
+    g.coeffs[zeros(Int, get_numvars)] = one(T)
     return g
 end
 function Base.:^(x::TaylorSeries, p::Integer)

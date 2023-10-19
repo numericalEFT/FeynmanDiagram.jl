@@ -336,21 +336,18 @@ function build_derivative_backAD!(g::G, leaftaylor::Dict{Int,TaylorSeries{G}}=Di
     current_func = Dict(zeros(Int, get_numvars()) => g)
 
     result = TaylorSeries{G}()
-    push!(result.order, zeros(Int, get_numvars()))
-    push!(result.coeffs, g)
+    result.coeffs[zeros(Int, get_numvars())] = g
     for i in 1:get_order()
         new_func = Dict{Array{Int,1},G}()
         for (order, func) in current_func
             for idx in 1:get_numvars()
                 ordernew = copy(order)
                 ordernew[idx] += 1
-                if !(ordernew in result.order)
+                if !haskey(result.coeffs, ordernew)
                     funcAD = forwardAD_taylor(func, idx, chainrule_map, chainrule_map_leaf, leaftaylor)
-
                     if !isnothing(funcAD)
                         new_func[ordernew] = funcAD
-                        push!(result.order, ordernew)
-                        push!(result.coeffs, funcAD)
+                        result.coeffs[ordernew] = funcAD
                     end
                 end
             end
@@ -364,6 +361,7 @@ function forwardAD_taylor(g::G, varidx::Int, chainrule_map::Dict{Int,Array{G,1}}
     if haskey(chainrule_map, g.id)
         return chainrule!(varidx, chainrule_map[g.id], leaftaylor)
     elseif haskey(chainrule_map_leaf, g.id)
+        #if haskey(chainrule_map_leaf, g.id)
         map = chainrule_map_leaf[g.id]
         if haskey(map, varidx)
             return map[varidx]
@@ -381,7 +379,7 @@ function forwardAD_taylor(g::G, varidx::Int, chainrule_map::Dict{Int,Array{G,1}}
         if isempty(children)
             return nothing
         else
-            return linear_combination(children)
+            return linear_combination(children, g.subgraph_factors)
         end
     elseif g.operator == Prod
         children = Array{G,1}()
@@ -419,9 +417,8 @@ function chainrule!(varidx::Int, dg::Array{G,1}, leaftaylor::Dict{Int,TaylorSeri
     order[varidx] += 1
     for i in 1:length(dg)÷2
         taylor = leaftaylor[dg[2*i-1].id]
-        idx = findidx(taylor, order)
-        if !isnothing(idx)
-            coeff = taylor.coeffs[idx]
+        if haskey(taylor.coeffs, order)
+            coeff = taylor.coeffs[order]
             push!(children, coeff * dg[2*i])
         end
     end
@@ -655,9 +652,8 @@ function graph_to_taylor(graph::G, varidx::Array{Int,1}=collect(1:get_numvars())
     for order in collect(Iterators.product(ordtuple...)) #varidx specifies the variables graph depends on. Iterate over all taylor coefficients of those variables.
         o = collect(order)
         if sum(o) <= get_order()
-            push!(result.order, o)
             coeff = Graph([]; operator=Sum(), factor=graph.factor)
-            push!(result.coeffs, coeff)
+            result.coeffs[o] = coeff
         end
     end
     return result
@@ -669,8 +665,8 @@ function graph_to_taylor_withmap!(g::G; varidx::Array{Int,1}=collect(1:get_numva
     maxorder = get_order()
     current_func = Dict(zeros(Int, get_numvars()) => g)
     result = TaylorSeries{G}()
-    push!(result.order, zeros(Int, get_numvars()))
-    push!(result.coeffs, g)
+    result.coeffs[zeros(Int, get_numvars())] = g
+
     for i in 1:get_order()
         new_func = Dict{Array{Int,1},G}()
         for (order, func) in current_func
@@ -680,14 +676,13 @@ function graph_to_taylor_withmap!(g::G; varidx::Array{Int,1}=collect(1:get_numva
             for idx in varidx
                 ordernew = copy(order)
                 ordernew[idx] += 1
-                if !(ordernew in result.order)
+                if !haskey(result.coeffs, ordernew)
                     funcAD = Graph([]; operator=Sum(), factor=g.factor)
                     new_func[ordernew] = funcAD
-                    push!(result.order, ordernew)
-                    push!(result.coeffs, funcAD)
+                    result.coeffs[ordernew] = funcAD
                     chainrule_map_leaf[func.id][idx] = funcAD
                 else
-                    chainrule_map_leaf[func.id][idx] = result.coeffs[findidx(result, ordernew)]
+                    chainrule_map_leaf[func.id][idx] = result.coeffs[ordernew]
                 end
             end
         end

@@ -150,7 +150,7 @@ function homogPol2str(a::TaylorSeries{T}) where {T<:Number}
     space = string(" ")
     strout::String = space
     ifirst = true
-    for (pos, order) in enumerate(a.order)
+    for (order, coeff) in a.coeffs
         monom::String = string("")
         factor = 1
         for ivar = 1:numVars
@@ -162,7 +162,7 @@ function homogPol2str(a::TaylorSeries{T}) where {T<:Number}
                 factor *= factorial(powivar)
             end
         end
-        @inbounds c = a.coeffs[pos]
+        @inbounds c = coeff
         iszero(c) && continue
         cadena = numbr2str(c / factor, ifirst)
         strout = string(strout, cadena, monom, space)
