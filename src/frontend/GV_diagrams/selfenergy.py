@@ -90,32 +90,32 @@ class selfenergy():
             jp_0 = Permutation.index(0)
             if jp_0 > 2:
                 if jp_0 % 2 == 0:
-                    neighbor = jp_0 +1
+                    neighbor = jp_0 + 1
                 else:
-                    neighbor = jp_0 -1
+                    neighbor = jp_0 - 1
                 Permutation = diag.SwapTwoVertex(Permutation, jp_0, 2)
                 if neighbor != 2:
                     Permutation = diag.SwapTwoVertex(Permutation, neighbor, 3)
                 swap_ver = (jp_0, neighbor)
-            print Diag.LoopBasis
+            # print "newPermu: {0}".format(Permutation)
+
+            # print Diag.LoopBasis
             loopBasis = np.copy(Diag.LoopBasis)
             gtype_temp = np.copy(GType)
             if len(swap_ver) > 0:
-                # for i in range(0, basis_temp.shape[0]):
-                    # Diag.LoopBasis[i, :] = Diag.LoopBasis[i,inv_OldPermu][list(Permutation)]
                 loopBasis[:, swap_ver[0]], loopBasis[:, 2] = Diag.LoopBasis[:,2], Diag.LoopBasis[:, swap_ver[0]]
                 GType[swap_ver[0]], GType[2] = gtype_temp[2], gtype_temp[swap_ver[0]]
                 if swap_ver[1] != 2:
                     loopBasis[:, swap_ver[1]], loopBasis[:, 3] = Diag.LoopBasis[:,3], Diag.LoopBasis[:, swap_ver[1]]
                     GType[swap_ver[1]], GType[3] = gtype_temp[3], gtype_temp[swap_ver[1]]
+            if jp_0 >= 2:
                 loc_extloop = np.where(abs(loopBasis[:, 0]) == 1 & (loopBasis[:, 0] == loopBasis[:,2]))[0][0]
             else:
                 loc_extloop = np.where(abs(loopBasis[:, 0]) == 1 & (loopBasis[:, 0] == loopBasis[:,1]))[0][0]
-
+        
             if self.__IsReducibile(Permutation, loopBasis, VerType, GType):
                 print "Skip reducible diagram"
                 continue
-            print loopBasis
 
             print "Save {0}".format(Permutation)
 
@@ -135,12 +135,6 @@ class selfenergy():
 
             Body += "\n"
 
-            # iseqTime = False
-            # if IsSelfEnergy:
-            #     idx = np.where(np.array(Permutation) == 0)[0][0]
-            #     if Permutation[1] == idx or Permutation[1] == idx+1-idx % 2*2:
-            #         iseqTime = True
-                    # exit(-1)
             Body += "# VertexBasis\n"
             for i in range(self.GNum):
                 Body += "{0:2d} ".format(self.__VerBasis(i, Permutation))
@@ -185,14 +179,22 @@ class selfenergy():
 
             Body += "# SpinFactor\n"
 
+            FeynList = self.HugenToFeyn(Permutation)
+            FactorList = []
+
             for idx, FeynPermu in enumerate(FeynList):
+                if self.__IsHartree(FeynPermu, basis_temp, vertype, gtype):
+                    prefactor = 0
+                else:
+                    prefactor = 1
                 Path = diag.FindAllLoops(FeynPermu)
                 nloop = len(Path) - 1
                 Sign = (-1)**nloop*(-1)**(self.Order-1) / \
                     (Diag.SymFactor/abs(Diag.SymFactor))
 
                 # make sure the sign of the Spin factor of the first diagram is positive
-                spinfactor = SPIN**(nloop) * int(Sign)*FactorList[idx] 
+                # spinfactor = SPIN**(nloop) * int(Sign)*FactorList[idx] 
+                spinfactor = SPIN**(nloop) * int(Sign)* prefactor
                 Body += "{0:2d} ".format(spinfactor)
             #   Body += "{0:2d} ".format(-(-1)**nloop*Factor)
 
@@ -247,7 +249,7 @@ class selfenergy():
         return FeynList
 
     def __VerBasis(self, index, Permutation):
-        return int(index/2)+1
+        return int(index/2)
 
     def __IsHartree(self, Permutation, LoopBasis, vertype, gtype):
         ExterLoop = [0, ]*self.LoopNum

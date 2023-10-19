@@ -60,10 +60,8 @@ def Generate(Order, VerOrder, SigmaOrder, SPIN):
 
     SelfEnergy = selfenergy(Order)
 
-    # if IsSelfEnergy:
-        # fname = "./groups_sigma/{0}{1}_{2}_{3}.diag".format(
-            # "Sigma", Order, VerOrder, SigmaOrder)
-    fname = "./output/{0}{1}_{2}_{3}.diag".format(
+    # fname = "./output/{0}{1}_{2}_{3}.diag".format(
+    fname = "./groups_sigma/{0}{1}_{2}_{3}.diag".format(
         "Sigma", Order, VerOrder, SigmaOrder)
     # with open(fname, "w") as f:
     with open(fname, "w") as f:
@@ -78,7 +76,7 @@ def Generate(Order, VerOrder, SigmaOrder, SPIN):
 if __name__ == "__main__":
     # print "Input Diagram Order: "
     # Order = int(sys.argv[1])
-    Order = 3
+    Order = 6
     SPIN = 2
     for o in range(2, Order+1):
         for v in range(0, Order):
@@ -88,4 +86,4 @@ if __name__ == "__main__":
                 if o+v+g > Order:
                     continue
                 Generate(o, v, g,  SPIN)
-    # Generate(2, 0, 1, SPIN)
+    # Generate(5, 0, 0, SPIN)
