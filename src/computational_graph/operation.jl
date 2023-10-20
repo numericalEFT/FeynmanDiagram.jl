@@ -445,24 +445,6 @@ function forwardAD_root!(graphs::AbstractVector{G}, idx::Int=1,
     return dual
 end
 
-<<<<<<< HEAD
-forwardAD_root(diag::Graph) = forwardAD_root([diag])
-
-
-function burn_graph(diag::G, target_node::G) where {G<:Graph}
-    for node in PostOrderDFS(diag)
-        isleaf(node) && continue
-        node.operator != Prod && continue
-        if target_node in children(node)
-
-        end
-    end
-end
-
-
-function burn_graph(diags::AbstractVector{G}, target_node::G) where {G<:Graph}
-
-=======
 function forwardAD_root!(diag::G, idx::Int=1,
     dual::Dict{Tuple{Int,NTuple{N,Bool}},G}=Dict{Tuple{Int,Tuple{Bool}},G}()) where {G<:Graph,N}
     return forwardAD_root!([diag], idx, dual)
@@ -558,5 +540,4 @@ end
 function build_derivative_graph(graph::G, orders::NTuple{N,Int};
     nodes_id=nothing) where {G<:Graph,N}
     return build_derivative_graph([graph], orders; nodes_id=nodes_id)
->>>>>>> computgraph_pchou
 end
