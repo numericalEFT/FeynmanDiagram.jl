@@ -227,6 +227,53 @@ function merge_all_linear_combinations!(graphs::Union{Tuple,AbstractVector{G}}; 
 end
 
 """
+    function merge_all_multi_products!(g::Graph; verbose=0)
+
+    In-place merge all nodes representing a multi product of a non-unique list of subgraphs within a single graph.
+
+# Arguments:
+- `g::Graph`: A Graph.
+- `verbose`: Level of verbosity (default: 0).
+
+# Returns:
+- Optimized graph.
+# 
+"""
+function merge_all_multi_products!(g::Graph; verbose=0)
+    verbose > 0 && println("merge nodes representing a multi product of a non-unique list of graphs.")
+    # Post-order DFS
+    for sub_g in g.subgraphs
+        merge_all_multi_products!(sub_g)
+        merge_multi_product!(sub_g)
+    end
+    merge_multi_product!(g)
+    return g
+end
+
+"""
+    function merge_all_multi_products!(graphs::Union{Tuple,AbstractVector{Graph}}; verbose=0)
+
+    In-place merge all nodes representing a multi product of a non-unique list of subgraphs in given graphs. 
+
+# Arguments:
+- `graphs::Union{Tuple,AbstractVector{Graph}}`: A tuple or vector of graphs.
+- `verbose`: Level of verbosity (default: 0).
+
+# Returns:
+- Optimized graphs.
+# 
+"""
+function merge_all_multi_products!(graphs::Union{Tuple,AbstractVector{Graph}}; verbose=0)
+    verbose > 0 && println("merge nodes representing a multi product of a non-unique list of graphs.")
+    # Post-order DFS
+    for g in graphs
+        merge_all_multi_products!(g.subgraphs)
+        merge_multi_product!(g)
+    end
+    return graphs
+end
+
+"""
     function unique_leaves(_graphs::Union{Tuple,AbstractVector{G}};) where {G<:AbstractGraph}
 
     Identify and retrieve unique leaf nodes from a set of graphs.

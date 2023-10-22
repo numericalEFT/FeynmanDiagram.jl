@@ -368,3 +368,63 @@ function merge_linear_combination!(g::FeynmanGraph{F,W}) where {F,W}
     end
     return g
 end
+
+"""
+    function merge_multi_product(g::Graph{F,W}) where {F,W}
+
+    Merge multiple products within a computational graph `g` if they share the same operator (`Prod`).
+    If `g.operator == Prod`, this function will merge `N` identical subgraphs into a single subgraph with a power operator `Power(N)`. 
+    The function ensures each unique subgraph is counted and merged appropriately, preserving any distinct subgraph_factors associated with them.
+
+# Arguments:
+- `g::Graph`: graph to be modified
+
+# Returns
+- A merged computational graph with potentially fewer subgraphs if there were repeating subgraphs 
+  with the `Prod` operator. If the input graph's operator isn't `Prod`, the function returns the input graph unchanged.
+"""
+function merge_multi_product(g::Graph{F,W}) where {F,W}
+    if g.operator == Prod
+        unique_graphs = Vector{Graph{F,W}}()
+        unique_factors = F[]
+        repeated_counts = Int[]
+        for (idx, subg) in enumerate(g.subgraphs)
+            loc = findfirst(isequal(subg), unique_graphs)
+            if isnothing(loc)
+                push!(unique_graphs, subg)
+                push!(unique_factors, g.subgraph_factors[idx])
+                push!(repeated_counts, 1)
+            else
+                unique_factors[loc] *= g.subgraph_factors[idx]
+                repeated_counts[loc] += 1
+            end
+        end
+
+        if length(unique_factors) == 1
+            g_merged = Graph(unique_graphs; subgraph_factors=unique_factors, operator=Power(repeated_counts[1]), ftype=F, wtype=W)
+        else
+            subgraphs = Vector{Graph{F,W}}()
+            for (idx, g) in enumerate(unique_graphs)
+                if repeated_counts[idx] == 1
+                    push!(subgraphs, g)
+                else
+                    push!(subgraphs, Graph([g], operator=Power(repeated_counts[idx]), ftype=F, wtype=W))
+                end
+            end
+            g_merged = Graph(subgraphs; subgraph_factors=unique_factors, operator=Prod(), ftype=F, wtype=W)
+        end
+        return g_merged
+    else
+        return g
+    end
+end
+
+function merge_multi_product!(g::Graph{F,W}) where {F,W}
+    if g.operator == Prod
+        g_merged = merge_multi_product(g)
+        g.subgraphs = g_merged.subgraphs
+        g.subgraph_factors = g_merged.subgraph_factors
+        g.operator = g_merged.operator
+    end
+    return g
+end
