@@ -85,7 +85,7 @@ class selfenergy():
             inv_OldPermu = np.argsort(Permutation)
             Permutation = list(Permutation)
 
-            print Permutation
+            print "Original Polar Permu: {0}".format(Permutation)
             swap_ver = ()
             jp_0 = Permutation.index(0)
             if jp_0 > 2:
@@ -109,13 +109,24 @@ class selfenergy():
                     loopBasis[:, swap_ver[1]], loopBasis[:, 3] = Diag.LoopBasis[:,3], Diag.LoopBasis[:, swap_ver[1]]
                     GType[swap_ver[1]], GType[3] = gtype_temp[3], gtype_temp[swap_ver[1]]
             if jp_0 >= 2:
-                loc_extloop = np.where(abs(loopBasis[:, 0]) == 1 & (loopBasis[:, 0] == loopBasis[:,2]))[0][0]
+                locs_extloop = np.where(abs(loopBasis[:, 0]) == 1 & (loopBasis[:, 0] == loopBasis[:,2]))[0]
+                loc_extloop=locs_extloop[0]
+                # loc_extloop = np.where(abs(loopBasis[:, 0]) == 1 & (loopBasis[:, 0] == loopBasis[:,2]))[0][0]
             else:
-                loc_extloop = np.where(abs(loopBasis[:, 0]) == 1 & (loopBasis[:, 0] == loopBasis[:,1]))[0][0]
-        
+                # loc_extloop = np.where(abs(loopBasis[:, 0]) == 1 & (loopBasis[:, 0] == loopBasis[:,1]))[0][0]
+                locs_extloop = np.where(abs(loopBasis[:, 0]) == 1 & (loopBasis[:, 0] == loopBasis[:,1]))[0]
+                loc_extloop=locs_extloop[0]
             if self.__IsReducibile(Permutation, loopBasis, VerType, GType):
                 print "Skip reducible diagram"
                 continue
+            if len(locs_extloop)>1:
+                print yellow("{0}".format(loopBasis))
+                for loc in locs_extloop[1:]:
+                    if loopBasis[loc, 0] ==  loopBasis[loc_extloop, 0]:
+                        loopBasis[loc, :] = loopBasis[loc, :] - loopBasis[loc_extloop, :]
+                    else:
+                        loopBasis[loc, :] = loopBasis[loc, :] + loopBasis[loc_extloop, :]
+                print blue("{0}".format(loopBasis))
 
             print "Save {0}".format(Permutation)
 
@@ -158,6 +169,7 @@ class selfenergy():
                 for j in range(self.GNum):
                     Body += "{0:2d} ".format(basis_temp[i, j])
                 Body += "\n"
+            # print basis_temp
 
             Body += "# Ver4Legs(InL,OutL,InR,OutR)\n"
             for i in range(0, self.Ver4Num):
