@@ -21,6 +21,7 @@ export unary_istrivial, isassociative, isequiv
 
 include("graph.jl")
 include("feynmangraph.jl")
+include("conversions.jl")
 
 export Graph, FeynmanGraph, FeynmanProperties
 # export DiagramType

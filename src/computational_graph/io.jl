@@ -27,20 +27,20 @@ function short_orders(orders)
 end
 
 function _stringrep(graph::AbstractGraph, color=true)
-    namestr = isempty(graph.name) ? "" : "-$(graph.name)"
-    idstr = "$(graph.id)$namestr"
+    namestr = isempty(name(graph)) ? "" : "-$(name(graph))"
+    idstr = "$(id(graph))$namestr"
     if graph isa FeynmanGraph
         idstr *= ":$(_ops_to_str(vertices(graph)))"
     end
-    fstr = short(graph.factor, one(graph.factor))
-    wstr = short(graph.weight)
+    fstr = short(factor(graph), one(factor(graph)))
+    wstr = short(weight(graph))
     ostr = short_orders(orders(graph))
     # =$(node.weight*(2π)^(3*node.id.para.innerLoopNum))
 
-    if length(graph.subgraphs) == 0
+    if length(subgraphs(graph)) == 0
         return isempty(fstr) ? "$(idstr)$(ostr)=$wstr" : "$(idstr)⋅$(fstr)=$wstr"
     else
-        return "$(idstr)$(ostr)=$wstr=$(fstr)$(graph.operator) "
+        return "$(idstr)$(ostr)=$wstr=$(fstr)$(operator(graph)) "
     end
 end
 
@@ -50,10 +50,10 @@ end
     Write a text representation of an AbstractGraph `graph` to the output stream `io`.
 """
 function Base.show(io::IO, graph::AbstractGraph; kwargs...)
-    if length(graph.subgraphs) == 0
+    if length(subgraphs(graph)) == 0
         typestr = ""
     else
-        typestr = join(["$(g.id)" for g in graph.subgraphs], ",")
+        typestr = join(["$(g.id)" for g in subgraphs(graph)], ",")
         typestr = "($typestr)"
     end
     print(io, "$(_stringrep(graph, true))$typestr")
@@ -82,10 +82,10 @@ function plot_tree(graph::AbstractGraph; verbose=0, maxdepth=6)
         name = "$(_stringrep(node, false))"
         nt = t.add_child(name=name)
 
-        if length(node.subgraphs) > 0
+        if length(subgraphs(node)) > 0
             name_face = ete.TextFace(nt.name, fgcolor="black", fsize=10)
             nt.add_face(name_face, column=0, position="branch-top")
-            for child in node.subgraphs
+            for child in subgraphs(node)
                 treeview(child, level + 1, nt)
             end
         end

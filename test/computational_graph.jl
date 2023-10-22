@@ -9,6 +9,103 @@ struct O2 <: Graphs.AbstractOperator end
 struct O3 <: Graphs.AbstractOperator end
 Graphs.unary_istrivial(::Type{O}) where {O<:Union{O1,O2,O3}} = true
 
+@testset verbose=true "AbstractGraph interface" begin
+    mutable struct ConcreteGraph <: Graphs.AbstractGraph
+        id::Int
+        name::String
+        orders::Vector{Int}
+        operator::DataType
+        subgraphs::Vector{ConcreteGraph}
+        subgraph_factors::Vector{Float64}
+        factor::Float64
+        weight::Float64
+        function ConcreteGraph(subgraphs=[]; name="", orders=zeros(Int, 0), operator=O, subgraph_factors=[], factor=1.0, weight=1.0)
+            return new(Graphs.uid(), name, orders, operator, subgraphs, subgraph_factors, factor, weight)
+        end
+    end
+
+    Graphs.uidreset()
+    g1 = ConcreteGraph(; operator=O1)
+    g2 = ConcreteGraph(; operator=O2)
+    g3 = ConcreteGraph(; operator=O3)
+    g = ConcreteGraph([g1, g2, g3]; subgraph_factors=[2, 3, 5], operator=O)
+    gp = ConcreteGraph([g1, g2, g3]; subgraph_factors=[2, 3, 5], operator=O)
+    h = ConcreteGraph([g1, g2, g3]; name="h", subgraph_factors=[2, 3, 5], operator=O)
+    @test isnothing(Graphs.weight(ConcreteGraph()))  # weight(g::AbstractGraph) is an abstract method
+
+    ### AbstractGraph interface for ConcreteGraph ###
+
+    # Getters
+    Graphs.id(g::ConcreteGraph) = g.id
+    Graphs.name(g::ConcreteGraph) = g.name
+    Graphs.orders(g::ConcreteGraph) = g.orders
+    Graphs.operator(g::ConcreteGraph) = g.operator
+    Graphs.factor(g::ConcreteGraph) = g.factor
+    Graphs.weight(g::ConcreteGraph) = g.weight
+    Graphs.subgraph(g::ConcreteGraph, i=1) = g.subgraphs[i]
+    Graphs.subgraphs(g::ConcreteGraph) = g.subgraphs
+    Graphs.subgraph_factor(g::ConcreteGraph, i=1) = g.subgraph_factors[i]
+    Graphs.subgraph_factors(g::ConcreteGraph) = g.subgraph_factors
+
+    # Setters
+    Graphs.set_name!(g::ConcreteGraph, name::AbstractString) = (g.name = name)
+    Graphs.set_subgraph!(g::ConcreteGraph, subgraph::ConcreteGraph, i=1) = (g.subgraphs[i] = subgraph)
+    Graphs.set_subgraphs!(g::ConcreteGraph, subgraphs::Vector{ConcreteGraph}) = (g.subgraphs = subgraphs)
+    Graphs.set_subgraph_factor!(g::ConcreteGraph, subgraph_factor::Float64, i=1) = (g.subgraph_factors[i] = subgraph_factor)
+    Graphs.set_subgraph_factors!(g::ConcreteGraph, subgraph_factors::AbstractVector) = (g.subgraph_factors = subgraph_factors)
+
+    ###############################
+
+    @testset "Traits" begin
+        @test Graphs.unary_istrivial(g1) == true
+        @test Graphs.unary_istrivial(g2) == true
+        @test Graphs.unary_istrivial(g3) == true
+        @test Graphs.unary_istrivial(g) == false
+    end
+    @testset "Getters" begin
+        @test Graphs.id(g) == 4
+        @test Graphs.name(g) == ""
+        @test Graphs.orders(g) == zeros(Int, 0)
+        @test Graphs.operator(g) == O
+        @test Graphs.factor(g) == 1.0
+        @test Graphs.weight(g) == 1.0
+        @test Graphs.subgraph(g) == g1
+        @test Graphs.subgraph(g, 2) == g2
+        @test Graphs.subgraphs(g) == [g1, g2, g3]
+        @test Graphs.subgraphs(g, [2, 1]) == [g2, g1]  # default method
+        @test Graphs.subgraph_factor(g) == 2.0
+        @test Graphs.subgraph_factor(g, 2) == 3.0
+        @test Graphs.subgraph_factors(g) == [2.0, 3.0, 5.0]
+        @test Graphs.subgraph_factors(g, [2, 1]) == [3.0, 2.0]  # default method
+    end
+    @testset "Setters" begin
+        Graphs.set_name!(g, "g")
+        @test Graphs.name(g) == "g"
+        Graphs.set_subgraph!(g, g2, 1)
+        @test Graphs.subgraph(g) == g2
+        Graphs.set_subgraphs!(g, [g1, g2, g3])
+        @test Graphs.subgraphs(g) == [g1, g2, g3]
+        Graphs.set_subgraphs!(g, [g3, g1, g2], [3, 1, 2])  # default method
+        @test Graphs.subgraphs(g) == [g1, g2, g3]
+        Graphs.set_subgraph_factor!(g, 0.0, 1)
+        @test Graphs.subgraph_factor(g) == 0.0
+        Graphs.set_subgraph_factors!(g, [2.0, 3.0, 5.0])
+        @test Graphs.subgraph_factors(g) == [2.0, 3.0, 5.0]
+        Graphs.set_subgraph_factors!(g, [5.0, 2.0, 3.0], [3, 1, 2])  # default method
+        @test Graphs.subgraph_factors(g) == [2.0, 3.0, 5.0]
+    end
+    @testset "Equivalence" begin
+        Graphs.set_name!(g, Graphs.name(gp))
+        @test g == g
+        @test g != gp
+        @test Graphs.isequal(g, g)
+        @test Graphs.isequal(g, gp) == false
+        @test Graphs.isequiv(g, gp, :id)
+        @test Graphs.isequiv(g, h, :id) == false
+        @test Graphs.isequiv(g, h, :id, :name) == true
+    end
+end
+
 @testset verbose = true "Graph" begin
     @testset verbose = true "Operations" begin
         g1 = Graph([])
@@ -276,35 +373,35 @@ end
             @test external_indices(g1) == [1, 5, 9, 10]
             @test external_operators(g1) == 𝑓⁺(1)𝑓⁺(5)𝑓⁺(9)𝑓⁺(10)
             @test external_legs(g1) == [false, false, true, true]
-            parameters = FeynmanProperties(
+            properties = FeynmanProperties(
                 diagram_type(g1),
                 vertices(g1),
                 topology(g1),
                 external_indices(g1),
                 external_legs(g1),
             )
-            parameters_no_topology = FeynmanProperties(
+            properties_no_topology = FeynmanProperties(
                 diagram_type(g1),
                 vertices(g1),
                 [],
                 external_indices(g1),
                 external_legs(g1),
             )
-            @test parameters == g1.properties
-            @test parameters != parameters_no_topology
-            @test parameters_no_topology == drop_topology(g1.properties)
+            @test properties == g1.properties
+            @test properties != properties_no_topology
+            @test properties_no_topology == drop_topology(g1.properties)
         end
         @testset "Equivalence" begin
             g1_new_instance = FeynmanGraph(V; topology=[[2, 6], [3, 7], [4, 9], [8, 10]],
                 external_indices=[1, 5, 9, 10], external_legs=[false, false, true, true])
-            g1_from_parameters = FeynmanGraph(V, g1.properties)
+            g1_from_properties = FeynmanGraph(V, g1.properties)
             # Test equivalence modulo fields id/factor
             @test isequiv(g1, g1_new_instance) == false
-            @test isequiv(g1, g1_from_parameters) == false
+            @test isequiv(g1, g1_from_properties) == false
             @test isequiv(g1, g2p, :id) == false
             @test isequiv(g1, g2p, :factor) == false
             @test isequiv(g1, g1_new_instance, :id)
-            @test isequiv(g1, g1_from_parameters, :id)
+            @test isequiv(g1, g1_from_properties, :id)
             @test isequiv(g1, g2p, :id, :factor)
             # Test inequivalence when subgraph lengths are different
             t = g1 + g1
