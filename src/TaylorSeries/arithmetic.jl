@@ -145,11 +145,13 @@ function Base.:*(g1::TaylorSeries{T}, g2::TaylorSeries{T}) where {T}
         for (order2, coeff2) in g2.coeffs
             order = order1 + order2
             if sum(order) <= _params_Taylor_.order
-                combination_coeff = taylor_binomial(order1, order2)
+                #combination_coeff = taylor_binomial(order1, order2)
                 if haskey(g.coeffs, order)
-                    g.coeffs[order] += combination_coeff * coeff1 * coeff2
+                    #g.coeffs[order] += combination_coeff * coeff1 * coeff2
+                    g.coeffs[order] += coeff1 * coeff2
                 else
-                    g.coeffs[order] = combination_coeff * coeff1 * coeff2
+                    #g.coeffs[order] = combination_coeff * coeff1 * coeff2
+                    g.coeffs[order] = coeff1 * coeff2
                 end
             end
         end
@@ -164,7 +166,17 @@ end
 
 function getcoeff(g::TaylorSeries, order::Array{Int,1})
     if haskey(g.coeffs, order)
-        return 1 / taylor_factorial(order) * g.coeffs[order]
+        return g.coeffs[order]
+        #return 1 / taylor_factorial(order) * g.coeffs[order]
+    else
+        return nothing
+    end
+end
+
+function getderivative(g::TaylorSeries, order::Array{Int,1})
+    if haskey(g.coeffs, order)
+        #return g.coeffs[order]
+        return taylor_factorial(order) * g.coeffs[order]
     else
         return nothing
     end

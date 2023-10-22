@@ -164,7 +164,39 @@ function homogPol2str(a::TaylorSeries{T}) where {T<:Number}
         end
         @inbounds c = coeff
         iszero(c) && continue
-        cadena = numbr2str(c / factor, ifirst)
+        #cadena = numbr2str(c / factor, ifirst)
+        cadena = numbr2str(c, ifirst)
+        strout = string(strout, cadena, monom, space)
+        ifirst = false
+    end
+    return strout[1:prevind(strout, end)]
+end
+
+function homogPol2str(a::TaylorSeries{T}) where {T<:AbstractGraph}
+    numVars = get_numvars()
+    #z = zero(a.coeffs[1])
+    space = string(" ")
+    strout::String = space
+    ifirst = true
+    for (order, coeff) in a.coeffs
+        monom::String = string("")
+        factor = 1
+        for ivar = 1:numVars
+            powivar = order[ivar]
+            if powivar == 1
+                monom = string(monom, name_taylorvar(ivar))
+            elseif powivar > 1
+                monom = string(monom, name_taylorvar(ivar), superscriptify(powivar))
+                factor *= factorial(powivar)
+            end
+        end
+        c = coeff
+        if ifirst
+            cadena = "g$(coeff.id)"
+            ifirst = false
+        else
+            cadena = "+ g$(coeff.id)"
+        end
         strout = string(strout, cadena, monom, space)
         ifirst = false
     end

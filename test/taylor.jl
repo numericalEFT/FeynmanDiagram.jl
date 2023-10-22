@@ -5,6 +5,7 @@ using FeynmanDiagram: Taylor as Taylor
         getcoeff
     a, b, c, d, e = set_variables("a b c d e", order=3)
     F1 = (a + b) * (a + b) * (a + b)
+    print("$(F1)")
     @test getcoeff(F1, [2, 1, 0, 0, 0]) == 3.0
     @test getcoeff(F1, [1, 2, 0, 0, 0]) == 3.0
     @test getcoeff(F1, [3, 0, 0, 0, 0]) == 1.0
@@ -19,5 +20,5 @@ using FeynmanDiagram: Taylor as Taylor
     @test getcoeff(F1, [1, 2, 0, 0, 0]) == 3.0
     @test getcoeff(F1, [3, 0, 0, 0, 0]) == 1.0
     @test getcoeff(F1, [0, 3, 0, 0, 0]) == 1.0
-    print("$(F1)")
+
 end
