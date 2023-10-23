@@ -1,4 +1,5 @@
 using FeynmanDiagram
+using FeynmanDiagram.Taylor
 using FeynmanDiagram.ComputationalGraphs:
     eval!, forwardAD, node_derivative, backAD, build_all_leaf_derivative, count_operation
 using FeynmanDiagram.Utility:
@@ -24,24 +25,28 @@ using FeynmanDiagram.Taylor:
 # set_variables("x y", order=3)
 # @time T5 = taylorexpansion!(G5)
 # print(T5)
-set_variables("x", order=3)
+set_variables("x y z a", order=7)
 @time T5 = taylorexpansion!(G6)
 #order = [0, 0, 0, 0, 0, 0]
 #@time print(T5.coeffs[order])
 print("$(count_operation(T5.coeffs))\n")
-for (order, coeff) in (T5.coeffs)
-    #gs = Compilers.to_julia_str([coeff,], name="eval_graph!")
-    #println("$(order)  ", gs, "\n")
-    print("$(order) $(eval!(coeff)) $(eval!(getcoeff(T5,order))) $(coeff.id) $(count_operation(coeff))\n")
-end
+# for (order, coeff) in (T5.coeffs)
+#     #gs = Compilers.to_julia_str([coeff,], name="eval_graph!")
+#     #println("$(order)  ", gs, "\n")
+#     print("$(order) $(eval!(coeff)) $(eval!(getcoeff(T5,order))) $(coeff.id) $(count_operation(coeff))\n")
+# end
+
+print("TaylorSeries $(T5)\n")
 
 @time T5_compare = build_derivative_backAD!(G6)
 print("$(count_operation(T5_compare.coeffs))\n")
 for (order, coeff) in (T5_compare.coeffs)
-    gs = Compilers.to_julia_str([coeff,], name="eval_graph!")
-    println("$(order)  ", gs, "\n")
-    print("$(order) $(eval!(coeff)) $(eval!(getderivative(T5,order))) $(count_operation(coeff))\n")
+    @assert (eval!(coeff)) == (eval!(Taylor.taylor_factorial(order) * T5.coeffs[order]))
+    # gs = Compilers.to_julia_str([coeff,], name="eval_graph!")
+    # println("$(order)  ", gs, "\n")
+    # print("$(order) $(eval!(coeff)) $(eval!(getderivative(T5,order))) $(count_operation(coeff))\n")
 end
+
 
 
 

@@ -1,7 +1,8 @@
 """
     ParamsTaylor
 
-DataType holding the current parameters for `TaylorSeries`. This part of code 
+    DataType holding the current parameters for `TaylorSeries`. 
+    This part of code is adopted from TaylorSeries.jl (https://github.com/JuliaDiff/TaylorSeries.jl)
 
 **Fields:**
 
@@ -39,11 +40,10 @@ end
 """
     set_variables([T::Type], names::String; [order=get_order(), numvars=-1])
 
-Return a `Taylor{T}` vector with each entry representing an
+Return a `TaylorSeries{T}` vector with each entry representing an
 independent variable. `names` defines the output for each variable
 (separated by a space). The default type `T` is `Float64`,
 and the default for `order` is the one defined globally.
-Changing the `order` or `numvars` resets the hash_tables.
 
 If `numvars` is not specified, it is inferred from `names`. If only
 one variable name is defined and `numvars>1`, it uses this name with

@@ -1,18 +1,26 @@
 module Utility
 using ..ComputationalGraphs
-using ..ComputationalGraphs: Sum, Prod, Power
+using ..ComputationalGraphs: Sum, Prod, Power, decrement_power
 using ..ComputationalGraphs: build_all_leaf_derivative, eval!
 using ..ComputationalGraphs.AbstractTrees
+
 using ..Taylor
 
 
 """
-    function graph_to_taylor(graph::G, varidx::Array{Int,1}=collect(1:get_numvars())) where {G<:Graph}
+    function graph_to_taylor(graph::G, var::Array{Bool,1}=fill(true, get_numvars())) where {G<:Graph}
+
+    Return a taylor series of graph g. If not provided, by default, assume that g depends on all variables. 
+
+#Arguments
+
+- `graph` Target graph. Must be a leaf.
+- `var` The variables graph depends on.
 """
-function graph_to_taylor(graph::G, varidx::Array{Int,1}=collect(1:get_numvars())) where {G<:Graph}
+function graph_to_taylor(graph::G, var::Array{Bool,1}=fill(true, get_numvars())) where {G<:Graph}
     @assert isleaf(graph)
     maxorder = get_order()
-    ordtuple = ((idx in varidx) ? (0:maxorder) : (0:0) for idx in 1:get_numvars())
+    ordtuple = ((var[idx]) ? (0:maxorder) : (0:0) for idx in 1:get_numvars())
     result = TaylorSeries{G}()
     for order in collect(Iterators.product(ordtuple...)) #varidx specifies the variables graph depends on. Iterate over all taylor coefficients of those variables.
         o = collect(order)
@@ -24,9 +32,20 @@ function graph_to_taylor(graph::G, varidx::Array{Int,1}=collect(1:get_numvars())
     return result
 end
 
-
-function graph_to_taylor_withmap!(g::G; coeffmode=true, varidx::Array{Int,1}=collect(1:get_numvars()), chainrule_map_leaf::Dict{Int,Dict{Int,G}}=Dict{Int,Dict{Int,G}}()) where {G<:Graph}
+"""
+    graph_to_taylor_withmap!(g::G; coeffmode=true, var::Array{Int,1}=collect(1:get_numvars())) where {G<:Graph}
+    
+    Return a taylor series of graph g, together with a map of chain relation ship between generated derivatives.
+    This function is only internally used for constructing high order derivatives by naive nested forward AD.
+    It is only for banch mark purpose and not exported.
+# Arguments:
+- `g`  Target graph 
+- `coeffmode` If true, the generated taylor series saves taylor coefficietnts with the factorial prefactor. If false, the taylor series saves derivatives instead
+- `var` The index of variables graph depends on
+"""
+function graph_to_taylor_withmap!(g::G; coeffmode=true, var::Array{Bool,1}=fill(true, get_numvars())) where {G<:Graph}
     @assert isleaf(g)
+    chainrule_map_leaf = Dict{Int,Dict{Int,G}}()
     maxorder = get_order()
     current_func = Dict(zeros(Int, get_numvars()) => g)
     result = TaylorSeries{G}()
@@ -38,40 +57,51 @@ function graph_to_taylor_withmap!(g::G; coeffmode=true, varidx::Array{Int,1}=col
             if !haskey(chainrule_map_leaf, func.id)
                 chainrule_map_leaf[func.id] = Dict{Int,G}()
             end
-            for idx in varidx
-                ordernew = copy(order)
-                ordernew[idx] += 1
-                if !haskey(result.coeffs, ordernew)
-                    if coeffmode
-                        funcAD = Graph([]; operator=Sum(), factor=g.factor)
+            for idx in eachindex(var)
+                if var[idx]
+                    ordernew = copy(order)
+                    ordernew[idx] += 1
+                    if !haskey(result.coeffs, ordernew)
+                        if coeffmode
+                            funcAD = Graph([]; operator=Sum(), factor=g.factor)
+                        else
+                            #funcAD = taylor_factorial(ordernew) * Graph([]; operator=Sum(), factor=g.factor)
+                            funcAD = Graph([]; operator=Sum(), factor=taylor_factorial(ordernew) * g.factor)
+                        end
+                        new_func[ordernew] = funcAD
+                        result.coeffs[ordernew] = funcAD
+                        chainrule_map_leaf[func.id][idx] = funcAD
                     else
-                        #funcAD = taylor_factorial(ordernew) * Graph([]; operator=Sum(), factor=g.factor)
-                        funcAD = Graph([]; operator=Sum(), factor=taylor_factorial(ordernew) * g.factor)
+                        chainrule_map_leaf[func.id][idx] = result.coeffs[ordernew]
                     end
-                    new_func[ordernew] = funcAD
-                    result.coeffs[ordernew] = funcAD
-                    chainrule_map_leaf[func.id][idx] = funcAD
-                else
-                    chainrule_map_leaf[func.id][idx] = result.coeffs[ordernew]
                 end
             end
         end
         current_func = new_func
     end
 
-    return result
+    return result, chainrule_map_leaf
 end
 
 @inline apply(::Type{Sum}, diags::Vector{T}, factors::Vector{F}) where {T<:TaylorSeries,F<:Number} = sum(d * f for (d, f) in zip(diags, factors))
 @inline apply(::Type{Prod}, diags::Vector{T}, factors::Vector{F}) where {T<:TaylorSeries,F<:Number} = prod(d * f for (d, f) in zip(diags, factors))
 @inline apply(::Type{Power{N}}, diags::Vector{T}, factors::Vector{F}) where {N,T<:TaylorSeries,F<:Number} = (diags[1])^N * factors[1]
 
+"""
+    function taylorexpansion!(graph::G, taylormap::Dict{Int,T}=Dict{Int,TaylorSeries{G}}()) where {G<:Graph,T<:TaylorSeries}
+    
+    Return the taylor Series of a graph. If taylor series of the leaves of this graph is not provided, by default we assume the leaves depend on all variables.
+    
+# Arguments:
+- `graph`  Target graph 
+- `taylormap` The taylor series corresponding to each node of graphs. The taylor series of leafs can be provided as input
+- `varidx` The index of variables graph depends on
+"""
 function taylorexpansion!(graph::G, taylormap::Dict{Int,T}=Dict{Int,TaylorSeries{G}}()) where {G<:Graph,T<:TaylorSeries}
     if isempty(taylormap)
         for g in Leaves(graph)
             if !haskey(taylormap, g.id)
-                #taylormap[g.id] = graph_to_taylor(g)
-                taylormap[g.id] = graph_to_taylor_withmap!(g)
+                taylormap[g.id] = graph_to_taylor(g)
             end
         end
     end
@@ -86,19 +116,19 @@ function taylorexpansion!(graph::G, taylormap::Dict{Int,T}=Dict{Int,TaylorSeries
     return taylormap[rootid]
 end
 
+
+#Functions below generate high order derivatives with naive nested forward AD. This part would be significantly refactored later with 
+# Taylor Series API.
+
 function build_derivative_backAD!(g::G, leaftaylor::Dict{Int,TaylorSeries{G}}=Dict{Int,TaylorSeries{G}}()) where {G<:Graph}
     chainrule_map_leaf = Dict{Int,Dict{Int,G}}()
     for leaf in Leaves(g)
         if !haskey(leaftaylor, leaf.id)
-            leaftaylor[leaf.id] = graph_to_taylor_withmap!(leaf; coeffmode=false, chainrule_map_leaf=chainrule_map_leaf)
+            leaftaylor[leaf.id], map = graph_to_taylor_withmap!(leaf; coeffmode=false)
+            chainrule_map_leaf = merge(chainrule_map_leaf, map)
         end
     end
-    for (i, leaf) in chainrule_map_leaf
-        for (j, coeff) in leaf
-            print("test $(i) $(j) $(coeff) $(eval!(coeff))\n")
-        end
-        print("\n")
-    end
+
     leafAD, chainrule_map = build_all_leaf_derivative(g)
     current_func = Dict(zeros(Int, get_numvars()) => g)
 

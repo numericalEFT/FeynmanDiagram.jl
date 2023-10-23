@@ -1,4 +1,4 @@
-# This file is part of the TaylorSeries.jl Julia package, MIT license
+#This part of code is adopted from https://github.com/JuliaDiff/TaylorSeries.jl
 
 # Control the display of the big 𝒪 notation
 const bigOnotation = Bool[true]

@@ -33,7 +33,7 @@ function Base.:*(c1::Number, g2::TaylorSeries{T}) where {T}
 end
 
 """
-    function Base.:+(g1::TaylorSeries{T,V}, g2::TaylorSeries{T,V}) where {T,V}
+    function Base.:+(g1::TaylorSeries{T}, g2::TaylorSeries{T}) where {T}
 
     Returns a taylor series `g1 + g2` representing the addition of `g2` with `g1`.
 
@@ -57,13 +57,13 @@ end
 
 
 """
-    function Base.:+(g1::TaylorSeries{T,V}, g2::TaylorSeries{T,V}) where {T,V}
+    function Base.:+(g1::TaylorSeries{T}, c::S) where {T,S<:Number}
 
-    Returns a taylor series `g1 + g2` representing the addition of `g2` with `g1`.
-
+    Returns a taylor series `g1 + c` representing the addition of constant `c` with `g1`.
+    
 # Arguments:
-- `g1`  First taylor series
-- `g2`  Second taylor series
+- `g1`  Taylor series
+- `c`  Constant
 """
 function Base.:+(g1::TaylorSeries{T}, c::S) where {T,S<:Number}
     g = TaylorSeries{T}()
@@ -79,6 +79,16 @@ function Base.:+(g1::TaylorSeries{T}, c::S) where {T,S<:Number}
     return g
 end
 
+
+"""
+    function Base.:+(c::S, g1::TaylorSeries{T}) where {S<:Number,T}
+
+    Returns a taylor series `g1 + c` representing the addition of constant `c` with `g1`.
+    
+# Arguments:
+- `g1`  Taylor series
+- `c`  Constant
+"""
 function Base.:+(c::S, g1::TaylorSeries{T}) where {S<:Number,T}
     g = TaylorSeries{T}()
     g.coeffs = copy(g1.coeffs)
@@ -110,7 +120,15 @@ function Base.:-(g1::TaylorSeries{T}, c::S) where {T,S<:Number}
     return g1 + (-1 * c)
 end
 
+"""
+    function taylor_binomial(o1::Array{Int,1}, o2::Array{Int,1})
 
+    Return the taylor binomial prefactor when product two high-order derivatives with order o1 and o2.
+
+    # Arguments:
+    - `o1`  Order of first derivative
+    - `o2`  Order of second derivative
+"""
 function taylor_binomial(o1::Array{Int,1}, o2::Array{Int,1})
     @assert length(o1) == length(o2)
     result = 1
@@ -123,6 +141,15 @@ function taylor_binomial(o1::Array{Int,1}, o2::Array{Int,1})
     return result
 end
 
+
+"""
+    function taylor_factorial(o::Array{Int,1})
+
+    Return the taylor factorial prefactor with order o.
+
+    # Arguments:
+    - `o`  Order of the taylor coefficient
+"""
 function taylor_factorial(o::Array{Int,1})
     result = 1
     for i in eachindex(o)
@@ -130,8 +157,9 @@ function taylor_factorial(o::Array{Int,1})
     end
     return result
 end
+
 """
-    function Base.:*(g1::TaylorSeries{T,V}, g2::TaylorSeries{T,V}) where {T,V}
+    function Base.:*(g1::TaylorSeries{T}, g2::TaylorSeries{T}) where {T}
 
     Returns a taylor series `g1 * g2` representing the product of `g2` with `g1`.
 
@@ -159,34 +187,66 @@ function Base.:*(g1::TaylorSeries{T}, g2::TaylorSeries{T}) where {T}
     return g
 end
 
-# function findidx(a::TaylorSeries, o::Array{Int,1})
-#     @assert length(o) == get_numvars()
-#     return findfirst(isequal(o), a.order)
-# end
 
+"""
+    function getcoeff(g::TaylorSeries, order::Array{Int,1})
+
+    Return the taylor coefficients with given order in taylor series g.
+
+# Arguments:
+- `g`  Taylor series
+- `order`  Order of target coefficients
+"""
 function getcoeff(g::TaylorSeries, order::Array{Int,1})
     if haskey(g.coeffs, order)
         return g.coeffs[order]
-        #return 1 / taylor_factorial(order) * g.coeffs[order]
     else
         return nothing
     end
 end
 
+"""
+    function getderivative(g::TaylorSeries, order::Array{Int,1})
+
+    Return the derivative with given order in taylor series g.
+
+# Arguments:
+- `g`  Taylor series
+- `order`  Order of derivative
+"""
 function getderivative(g::TaylorSeries, order::Array{Int,1})
     if haskey(g.coeffs, order)
-        #return g.coeffs[order]
         return taylor_factorial(order) * g.coeffs[order]
     else
         return nothing
     end
 end
 
-function Base.one(x::TaylorSeries{T}) where {T}
-    g = TaylorSeries{T}()
-    g.coeffs[zeros(Int, get_numvars)] = one(T)
-    return g
+
+"""
+    function  Base.one(g::TaylorSeries{T}) where {T}
+
+    Return a constant one for a given taylor series.
+
+# Arguments:
+- `g`  Taylor series
+"""
+function Base.one(g::TaylorSeries{T}) where {T}
+    unity = TaylorSeries{T}()
+    unity.coeffs[zeros(Int, get_numvars)] = one(T)
+    return unity
 end
+
+
+"""
+    function Base.:^(x::TaylorSeries, p::Integer)
+
+    Return the power of taylor series x^p, where p is an integer. 
+
+# Arguments:
+- `x`  Taylor series
+- 'p' Power index
+"""
 function Base.:^(x::TaylorSeries, p::Integer)
     p == 1 && return copy(x)
     p == 0 && return one(x)
@@ -198,6 +258,8 @@ end
 function square(x::TaylorSeries)
     return x * x
 end
+
+# power_by_squaring; slightly modified from base/intfuncs.jl
 function power_by_squaring(x::TaylorSeries, p::Integer)
     p == 1 && return copy(x)
     p == 0 && return one(x)

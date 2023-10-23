@@ -20,5 +20,26 @@ using FeynmanDiagram: Taylor as Taylor
     @test getcoeff(F1, [1, 2, 0, 0, 0]) == 3.0
     @test getcoeff(F1, [3, 0, 0, 0, 0]) == 1.0
     @test getcoeff(F1, [0, 3, 0, 0, 0]) == 1.0
+    using FeynmanDiagram.ComputationalGraphs:
+        eval!, forwardAD, node_derivative, backAD, build_all_leaf_derivative, count_operation
+    using FeynmanDiagram.Utility:
+        taylorexpansion!, build_derivative_backAD!
+    g1 = Graph([])
+    g2 = Graph([])
+    g3 = Graph([], factor=2.0)
+    G3 = g1
+    G4 = 1.0 * g1 * g1
+    G5 = 1.0 * (3.0 * G3 + 0.5 * G4)
+    G6 = (1.0 * g1 + 2.0 * g2) * (g1 + g3)
+    using FeynmanDiagram.Taylor:
+        TaylorSeries, getcoeff, set_variables
 
+    set_variables("x y z", order=5)
+    for G in [G3, G4, G5, G6]
+        T = taylorexpansion!(G)
+        T_compare = build_derivative_backAD!(G)
+        for (order, coeff) in T_compare.coeffs
+            @test eval!(coeff) == eval!(taylor_factorial(order) * T.coeffs[order])
+        end
+    end
 end
