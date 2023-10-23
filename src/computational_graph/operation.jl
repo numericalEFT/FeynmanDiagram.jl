@@ -281,53 +281,53 @@ end
 #     end
 # end
 
-function build_all_leaf_derivative(diag::Graph{F,W}, max_order::Int) where {F,W}
-    result = Dict{Vector{Int},Graph{F,W}}()
-    current_func = backAD(diag)
-    leave_number = length(current_func)
-    order_dict = Dict{Int,Vector{Int}}()
-
-    leafmap = Dict{Int,Int}()
-    count = 1
-    for (id_pair, func) in current_func
-        leafmap[id_pair[2]] = count
-        order = zeros(Int, leave_number)
-        order[count] += 1
-        order_dict[func.id] = order
-        result[order] = func
-        count += 1
+function build_all_leaf_derivative(diag::Graph{F,W}, maxorder=Inf) where {F,W}
+    result = Dict{Dict{Int,Int},Graph{F,W}}()
+    chainrule_map = Dict{Int,Array{Graph{F,W},1}}()
+    current_func = Dict((diag.id, diag.id) => diag)
+    order_dict = Dict{Int,Dict{Int,Int}}()
+    order = Dict{Int,Int}()
+    leafmap = Dict{Int,Graph{F,W}}()
+    for leaf in Leaves(diag)
+        leafmap[leaf.id] = leaf
+        order[leaf.id] = 0
     end
-
-    for i in 2:max_order
+    order_dict[diag.id] = order
+    result[order] = diag
+    i = 1
+    while !isempty(current_func) && i <= maxorder
         new_func = Dict{Tuple{Int,Int},Graph{F,W}}()
         for (id_pair, func) in current_func
+            if !haskey(chainrule_map, func.id)
+                chainrule_map[func.id] = []
+            end
             AD = backAD(func)
-            print("$(i) $(AD)\n")
             for (id_pair_AD, func_AD) in AD
+                push!(chainrule_map[func.id], leafmap[id_pair_AD[2]])
+
                 # print("$(func_AD)\n")
                 order = copy(order_dict[func.id])
-                order[leafmap[id_pair_AD[2]]] += 1
+                order[id_pair_AD[2]] += 1
 
                 if !(order in values(order_dict))
                     new_func[id_pair_AD] = func_AD
                     order_dict[func_AD.id] = order
                     result[order] = func_AD
+                    push!(chainrule_map[func.id], func_AD)
+                else
+                    push!(chainrule_map[func.id], result[order])
                 end
             end
         end
         current_func = new_func
+        i += 1
     end
-    return result
+    return result, chainrule_map
 end
 
-# function build_all_variable_derivative(diag::Graph{F,W}, max_order::Int, variable_number::Int) where {F,W}
-#     leaf_derivative, leafmap = build_all_leaf_derivative(diag, max_order)
-#     for (id, idx) in leafmap
-#         for order in max_order
-#             for 
-#         end
-#     end
-# end
+
+
+
 
 function insert_dualDict!(dict_kv::Dict{Tk,Tv}, dict_vk::Dict{Tv,Tk}, key::Tk, value::Tv) where {Tk,Tv}
     dict_kv[key] = value
@@ -537,7 +537,9 @@ function build_derivative_graph(graphs::AbstractVector{G}, orders::NTuple{N,Int}
     return dual
 end
 
+
 function build_derivative_graph(graph::G, orders::NTuple{N,Int};
     nodes_id=nothing) where {G<:Graph,N}
     return build_derivative_graph([graph], orders; nodes_id=nodes_id)
 end
+

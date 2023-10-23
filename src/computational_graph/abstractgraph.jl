@@ -27,7 +27,7 @@ Base.show(io::IO, ::Type{Power{N}}) where {N} = print(io, "^$N")
 
 # Is the unary form of operator 𝓞 trivial: 𝓞(G) ≡ G?
 # NOTE: this property implies that 𝓞(c * G) = c * G = c * 𝓞(G), so
-#       we may propagate the subgraph factor c up to the parent graph.
+#       we may propagate the subgraphs factor c up to the parent graph.
 unary_istrivial(::Type{O}) where {O<:AbstractOperator} = false
 unary_istrivial(::Type{O}) where {O<:Union{Sum,Prod}} = true  # (+g) ≡ g and (*g) ≡ g
 

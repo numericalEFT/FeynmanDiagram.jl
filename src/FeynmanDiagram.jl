@@ -98,6 +98,9 @@ export fermionic_annihilation, fermionic_creation, majorana
 export bosonic_annihilation, bosonic_creation, real_classic
 export correlator_order, normal_order
 
+
+
+
 include("computational_graph/ComputationalGraph.jl")
 using .ComputationalGraphs
 export ComputationalGraphs
@@ -121,6 +124,12 @@ export relabel!, standardize_labels!, replace_subgraph!, merge_linear_combinatio
 export relabel, standardize_labels, replace_subgraph, merge_linear_combination, merge_multi_product, merge_chains
 
 export optimize!, optimize, merge_all_chains!, merge_all_linear_combinations!, remove_duplicated_leaves!
+
+include("TaylorSeries/TaylorSeries.jl")
+using .Taylor
+export Taylor
+export TaylorSeries, set_variables, taylor_factorial, getcoeff
+
 
 include("backend/compiler.jl")
 using .Compilers
@@ -169,6 +178,10 @@ export addpropagator!, addnode!
 export setroot!, addroot!
 export evalNaive, showTree
 
+include("utility.jl")
+using .Utility
+export Utility
+export taylorexpansion!
 ##################### precompile #######################
 # precompile as the final step of the module definition:
 if ccall(:jl_generating_output, Cint, ()) == 1   # if we're precompiling the package
@@ -199,5 +212,6 @@ if ccall(:jl_generating_output, Cint, ()) == 1   # if we're precompiling the pac
         ExprTree.build(ver4.diagram)
     end
 end
+
 
 end
