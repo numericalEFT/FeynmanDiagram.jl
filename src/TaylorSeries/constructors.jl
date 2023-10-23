@@ -1,29 +1,34 @@
 """
-    mutable struct TaylorSeries{F,W,N}
+    mutable struct TaylorSeries{T}
     
-    A representation of a computational graph, e.g., an expression tree, with type stable node data.
+    A representation of a taylor series. 
 
 # Members:
-- `id::Int`  the unique hash id to identify the diagram
 - `name::Symbol`  name of the diagram
-- `expansion::Dict{Dict{Int,Int},T}`  The taylor expansion coefficients. The key Dict{Int,Int} labels the order with respect to each variables. 
-- `variables::Set{V}`  Variables of the taylor series. Each variable must have an unique id. 
-- `truncate::Dict{Int, Int}` For each variable, the taylor series is truncated to certain order. If empty, the function must be a polinomial, with all none-zero partial derivatives saved. 
+- `coeffs::Dict{Array{Int,1},T}`  The taylor expansion coefficients. The integer array define the order of corresponding coefficient. 
 """
 mutable struct TaylorSeries{T}
     name::String # "" by default
     coeffs::Dict{Array{Int,1},T}
 
     """
-        function TaylorSeries(T::DataType=Float64, name="", expansion=Dict{Dict{Int,Int},T}(), variables=Set{V}())
-            Create a TaylorSeries based on given expansion and variables.
+        function TaylorSeries{T}(coeffs::Dict{Array{Int,1},T}=Dict{Array{Int,1},T}(), name::String="") where {T}
+            Create a TaylorSeries based on given coefficients.
     """
     function TaylorSeries{T}(coeffs::Dict{Array{Int,1},T}=Dict{Array{Int,1},T}(), name::String="") where {T}
         return new{T}(name, coeffs)
     end
 end
 
+"""
+    function TaylorSeries(::Type{T}, nv::Int) where {T}
+    
+    Create a taylor series equal to variable with index nv. For example, if global variables are "x y", in put nv=2 generate series t=y.
 
+# Arguments:
+- `::Type{T}`  DataType of coefficients in taylor series.
+- `nv::Int`  Index of variable. 
+"""
 function TaylorSeries(::Type{T}, nv::Int) where {T}
     @assert 0 < nv ≤ get_numvars()
     v = zeros(Int, get_numvars())
