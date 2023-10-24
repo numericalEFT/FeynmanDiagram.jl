@@ -43,6 +43,11 @@ function Base.isequal(a::AbstractGraph, b::AbstractGraph)
     for field in fieldnames(typeof(a))
         if field == :weight
             (getproperty(a, :weight) ≈ getproperty(b, :weight)) == false && return false
+        elseif field == :parent_graphs
+            length(a.parent_graphs) != length(b.parent_graphs) && return false
+            ids_a = [pg.id for pg in a.parent_graphs]
+            ids_b = [pg.id for pg in b.parent_graphs]
+            Set(ids_a) != Set(ids_b) && return false
         else
             getproperty(a, field) != getproperty(b, field) && return false
         end
@@ -65,6 +70,12 @@ function isequiv(a::AbstractGraph, b::AbstractGraph, args...)
         elseif field == :subgraphs
             length(a.subgraphs) != length(b.subgraphs) && return false
             !all(isequiv.(getproperty(a, field), getproperty(b, field), args...)) && return false
+        elseif field == :parent_graphs
+            length(a.parent_graphs) != length(b.parent_graphs) && return false
+            !all(isequiv.(getproperty(a, field), getproperty(b, field), :subgraphs, args...)) && return false
+            # ids_a = [pg.id for pg in a.parent_graphs]
+            # ids_b = [pg.id for pg in b.parent_graphs]
+            # Set(ids_a) != Set(ids_b) && return false
         else
             getproperty(a, field) != getproperty(b, field) && return false
         end

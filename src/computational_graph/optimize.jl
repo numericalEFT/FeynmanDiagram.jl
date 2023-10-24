@@ -153,10 +153,19 @@ end
 """
 function merge_all_chains!(g::AbstractGraph; verbose=0)
     verbose > 0 && println("merge all nodes representing trivial unary chains.")
-    merge_all_chain_prefactors!(g, verbose=verbose)
-    merge_all_factorless_chains!(g, verbose=verbose)
+    for sub_g in g.subgraphs
+        merge_all_chains!(sub_g)
+        merge_chains!(sub_g)
+    end
+    merge_chains!(g)
     return g
 end
+# function merge_all_chains!(g::AbstractGraph; verbose=0)
+#     verbose > 0 && println("merge all nodes representing trivial unary chains.")
+#     merge_all_chain_prefactors!(g, verbose=verbose)
+#     merge_all_factorless_chains!(g, verbose=verbose)
+#     return g
+# end
 
 """
     function merge_all_chains!(graphs::AbstractVector{<:AbstractGraph}; verbose=0) where {G<:AbstractGraph}
@@ -174,10 +183,20 @@ end
 """
 function merge_all_chains!(graphs::AbstractVector{<:AbstractGraph}; verbose=0)
     verbose > 0 && println("merge all nodes representing trivial unary chains.")
-    merge_all_chain_prefactors!(graphs, verbose=verbose)
-    merge_all_factorless_chains!(graphs, verbose=verbose)
+    # Post-order DFS
+    for g in graphs
+        merge_all_chains!(g.subgraphs)
+        merge_chains!(g)
+    end
     return graphs
 end
+# function merge_all_chains!(graphs::AbstractVector{<:AbstractGraph}; verbose=0)
+#     verbose > 0 && println("merge all nodes representing trivial unary chains.")
+#     merge_all_chain_prefactors!(graphs, verbose=verbose)
+#     merge_all_factorless_chains!(graphs, verbose=verbose)
+#     return graphs
+# end
+
 
 """
     function merge_all_linear_combinations!(g::AbstractGraph; verbose=0)
@@ -345,6 +364,7 @@ function remove_duplicated_leaves!(graphs::AbstractVector{<:AbstractGraph}; verb
             for (si, sub_g) in enumerate(n.subgraphs)
                 if isleaf(sub_g)
                     n.subgraphs[si] = uniqueLeaf[leafMap[sub_g.id]]
+                    n ∉ n.subgraphs[si].parent_graphs && push!(n.subgraphs[si].parent_graphs, n)
                 end
             end
         end

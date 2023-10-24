@@ -17,9 +17,10 @@ Base.eltype(::Type{<:TreeIterator{Graph{F,W}}}) where {F,W} = Graph{F,W}
 Base.IteratorEltype(::Type{<:TreeIterator{FeynmanGraph{F,W}}}) where {F,W} = Base.HasEltype()
 Base.eltype(::Type{<:TreeIterator{FeynmanGraph{F,W}}}) where {F,W} = FeynmanGraph{F,W}
 
-function AbstractTrees.children(g::AbstractGraph)
-    return g.subgraphs
-end
+AbstractTrees.children(g::AbstractGraph) = g.subgraphs
+
+AbstractTrees.ParentLinks(::Type{<:AbstractGraph}) = StoredParents()
+AbstractTrees.parent(g::AbstractGraph) = g.parent_graphs
 
 ##################### Tree properties ########################### 
 
@@ -42,6 +43,26 @@ haschildren(g::AbstractGraph) = isempty(g.subgraphs) == false
 - `g::AbstractGraph`: graph to be analyzed
 """
 onechild(g::AbstractGraph) = length(children(g)) == 1
+
+"""
+    function oneparent(g::AbstractGraph)
+
+    Returns whether the graph g has only one parent (parent_graph).
+
+# Arguments:
+- `g::AbstractGraph`: graph to be analyzed
+"""
+oneparent(g::AbstractGraph) = length(AbstractTrees.parent(g)) == 1
+
+"""
+    function isroot(g::AbstractGraph)
+
+    Returns whether the graph g is a root (terminating tree node).
+
+# Arguments:
+- `g::AbstractGraph`: graph to be analyzed
+"""
+isroot(g::AbstractGraph) = isempty(AbstractTrees.parent(g))
 
 """
     function isleaf(g::AbstractGraph)

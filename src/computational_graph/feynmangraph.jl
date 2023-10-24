@@ -79,6 +79,7 @@ mutable struct FeynmanGraph{F,W} <: AbstractGraph # FeynmanGraph
 
     subgraphs::Vector{FeynmanGraph{F,W}}
     subgraph_factors::Vector{F}
+    parent_graphs::Vector{FeynmanGraph{F,W}}
 
     operator::DataType
     factor::F
@@ -108,8 +109,9 @@ mutable struct FeynmanGraph{F,W} <: AbstractGraph # FeynmanGraph
     - `weight`  weight of the diagram
     """
     function FeynmanGraph(subgraphs::AbstractVector; topology=[], vertices::Union{Vector{OperatorProduct},Nothing}=nothing, external_indices=[], external_legs=[],
-        subgraph_factors=one.(eachindex(subgraphs)), name="", diagtype::DiagramType=GenericDiag(), operator::AbstractOperator=Sum(),
-        orders=zeros(Int, 16), ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype)
+        subgraph_factors=one.(eachindex(subgraphs)), parent_graphs::AbstractVector=eltype(subgraphs)[],
+        name="", diagtype::DiagramType=GenericDiag(), operator::AbstractOperator=Sum(), orders=zeros(Int, 16),
+        ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype)
     )
         @assert length(external_indices) == length(external_legs)
         if typeof(operator) <: Power
@@ -120,7 +122,11 @@ mutable struct FeynmanGraph{F,W} <: AbstractGraph # FeynmanGraph
             vertices = [external_operators(g) for g in subgraphs if diagram_type(g) != Propagator]
         end
         properties = FeynmanProperties(typeof(diagtype), vertices, topology, external_indices, external_legs)
-        return new{ftype,wtype}(uid(), name, orders, properties, subgraphs, subgraph_factors, typeof(operator), factor, weight)
+        g = new{ftype,wtype}(uid(), name, orders, properties, subgraphs, subgraph_factors, parent_graphs, typeof(operator), factor, weight)
+        for sub_g in subgraphs
+            g ∉ sub_g.parent_graphs && push!(sub_g.parent_graphs, g)
+        end
+        return g
     end
 
     """
@@ -142,15 +148,20 @@ mutable struct FeynmanGraph{F,W} <: AbstractGraph # FeynmanGraph
     - `weight`  weight of the diagram
     """
     function FeynmanGraph(subgraphs::AbstractVector, properties::FeynmanProperties;
-        subgraph_factors=one.(eachindex(subgraphs)), name="", operator::AbstractOperator=Sum(),
-        orders=zeros(Int, 16), ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype)
+        subgraph_factors=one.(eachindex(subgraphs)), parent_graphs::AbstractVector=eltype(subgraphs)[],
+        name="", operator::AbstractOperator=Sum(), orders=zeros(Int, 16),
+        ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype)
     )
         @assert length(properties.external_indices) == length(properties.external_legs)
         if typeof(operator) <: Power
             @assert length(subgraphs) == 1 "FeynmanGraph with Power operator must have one and only one subgraph."
         end
         # @assert allunique(subgraphs) "all subgraphs must be distinct."
-        return new{ftype,wtype}(uid(), name, orders, properties, subgraphs, subgraph_factors, typeof(operator), factor, weight)
+        g = new{ftype,wtype}(uid(), name, orders, properties, subgraphs, subgraph_factors, parent_graphs, typeof(operator), factor, weight)
+        for sub_g in subgraphs
+            g ∉ sub_g.parent_graphs && push!(sub_g.parent_graphs, g)
+        end
+        return g
     end
 end
 
@@ -248,9 +259,11 @@ end
 function Base.:*(g1::FeynmanGraph{F,W}, c2::C) where {F,W,C}
     g = FeynmanGraph([g1,], g1.properties; subgraph_factors=[F(c2),], operator=Prod(), orders=orders(g1), ftype=F, wtype=W)
     # Merge multiplicative link
-    if g1.operator == Prod && onechild(g1)
+    if unary_istrivial(g1.operator) && onechild(g1)
         g.subgraph_factors[1] *= g1.subgraph_factors[1]
         g.subgraphs = g1.subgraphs
+        pop!(g1.parent_graphs)
+        push!(g1.subgraphs[1].parent_graphs, g)
     end
     return g
 end
@@ -267,9 +280,11 @@ end
 function Base.:*(c1::C, g2::FeynmanGraph{F,W}) where {F,W,C}
     g = FeynmanGraph([g2,], g2.properties; subgraph_factors=[F(c1),], operator=Prod(), orders=orders(g2), ftype=F, wtype=W)
     # Merge multiplicative link
-    if g2.operator == Prod && onechild(g2)
+    if unary_istrivial(g2.operator) && onechild(g2)
         g.subgraph_factors[1] *= g2.subgraph_factors[1]
         g.subgraphs = g2.subgraphs
+        pop!(g2.parent_graphs)
+        push!(g2.subgraphs[1].parent_graphs, g)
     end
     return g
 end
@@ -305,7 +320,6 @@ function linear_combination(g1::FeynmanGraph{F,W}, g2::FeynmanGraph{F,W}, c1::C=
         subgraph_factors[2] *= g2.subgraph_factors[1]
         subgraphs[2] = g2.subgraphs[1]
     end
-    # g = FeynmanGraph([g1, g2], properties; subgraph_factors=[F(c1), F(c2)], operator=Sum(), ftype=F, wtype=W)
 
     if subgraphs[1] == subgraphs[2]
         g = FeynmanGraph([subgraphs[1]], properties; subgraph_factors=[sum(subgraph_factors)], operator=Sum(), ftype=F, wtype=W)

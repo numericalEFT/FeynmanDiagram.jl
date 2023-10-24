@@ -120,6 +120,9 @@ function replace_subgraph!(g::AbstractGraph, w::AbstractGraph, m::AbstractGraph)
         for (i, child) in enumerate(children(node))
             if isequiv(child, w, :id)
                 node.subgraphs[i] = m
+                node ∉ m.parent_graphs && push!(m.parent_graphs, node)
+                loc = findfirst(isequal(node), child.parent_graphs)
+                popat!(child.parent_graphs, loc)
                 return
             end
         end
@@ -150,6 +153,9 @@ function replace_subgraph(g::AbstractGraph, w::AbstractGraph, m::AbstractGraph)
         for (i, child) in enumerate(children(node))
             if isequiv(child, w, :id)
                 node.subgraphs[i] = m
+                node ∉ m.parent_graphs && push!(m.parent_graphs, node)
+                loc = findfirst(isequal(node), child.parent_graphs)
+                popat!(child.parent_graphs, loc)
                 break
             end
         end
@@ -170,9 +176,18 @@ end
 - `g::AbstractGraph`: graph to be modified
 """
 function merge_factorless_chain!(g::AbstractGraph)
-    while unary_istrivial(g.operator) && onechild(g) && isfactorless(g)
+    if unary_istrivial(g.operator) && onechild(g) && isfactorless(g)
         child = eldest(g)
         for field in fieldnames(typeof(g))
+            field == :parent_graphs && continue
+            value = getproperty(child, field)
+            setproperty!(g, field, value)
+        end
+    end
+    while unary_istrivial(g.operator) && onechild(g) && oneparent(g) && isfactorless(g)
+        child = eldest(g)
+        for field in fieldnames(typeof(g))
+            field == :parent_graphs && continue
             value = getproperty(child, field)
             setproperty!(g, field, value)
         end
@@ -194,10 +209,17 @@ end
 - `g::AbstractGraph`: graph to be modified
 """
 function merge_factorless_chain(g::AbstractGraph)
-    while unary_istrivial(g.operator) && onechild(g) && isfactorless(g)
+    parent_g = g.parent_graphs
+    if unary_istrivial(g.operator) && onechild(g) && isfactorless(g)
+        g = eldest(g)
+    end
+    while unary_istrivial(g.operator) && onechild(g) && oneparent(g) && isfactorless(g)
         g = eldest(g)
     end
     return g
+    # g_new = deepcopy(g)
+    # g_new.parent_graphs = parent_g
+    # return g_new
 end
 
 """
@@ -215,7 +237,7 @@ end
 function merge_chain_prefactors!(g::AbstractGraph)
     for (i, child) in enumerate(g.subgraphs)
         total_chain_factor = 1
-        while onechild(child)
+        while onechild(child) && oneparent(child)
             # Break case: end of trivial unary chain
             unary_istrivial(child.operator) == false && break
             # Move this subfactor to running total
@@ -244,6 +266,21 @@ end
 """
 merge_chain_prefactors(g::AbstractGraph) = merge_chain_prefactors!(deepcopy(g))
 
+# function merge_chain!(g::AbstractGraph)
+#     # while unary_istrivial(g.operator) && onechild(g)
+#     # !onechild(eldest(g)) && break
+#     while onechild(g) && onechild(eldest(g)) && unary_istrivial(eldest(g).operator)
+#         merge_chain!(eldest(g))
+
+#         loc = findfirst(isequal(g), eldest(g).parent_graphs)
+#         popat!(eldest(g).parent_graphs, loc)
+#         g.subgraph_factors[1] *= eldest(g).subgraph_factors[1]
+#         g.subgraphs = eldest(g).subgraphs
+#         push!(eldest(g).parent_graphs, g)
+#     end
+#     return g
+# end
+
 """
     function merge_chains!(g::AbstractGraph)
 
@@ -257,12 +294,26 @@ merge_chain_prefactors(g::AbstractGraph) = merge_chain_prefactors!(deepcopy(g))
 - `g::AbstractGraph`: graph to be modified
 """
 function merge_chains!(g::AbstractGraph)
-    merge_chain_prefactors!(g)  # shift chain subgraph factors towards root level
-    for sub_g in g.subgraphs    # prune factorless chain subgraphs
-        merge_factorless_chain!(sub_g)
+    for (i, sub_g) in enumerate(g.subgraphs)
+        if onechild(sub_g) && unary_istrivial(sub_g.operator)
+            merge_chains!(sub_g)
+
+            loc = findfirst(isequal(g), sub_g.parent_graphs)
+            popat!(sub_g.parent_graphs, loc)
+            g.subgraph_factors[i] *= sub_g.subgraph_factors[1]
+            g.subgraphs[i] = eldest(sub_g)
+            push!(eldest(sub_g).parent_graphs, g)
+        end
     end
     return g
 end
+# function merge_chains!(g::AbstractGraph)
+#     merge_chain_prefactors!(g)  # shift chain subgraph factors towards root level
+#     for sub_g in g.subgraphs    # prune factorless chain subgraphs
+#         merge_factorless_chain!(sub_g)
+#     end
+#     return g
+# end
 
 """
     function merge_chains(g::AbstractGraph)
@@ -277,6 +328,7 @@ end
 - `g::AbstractGraph`: graph to be modified
 """
 merge_chains(g::AbstractGraph) = merge_chains!(deepcopy(g))
+
 
 """
     function merge_linear_combination(g::Graph)
@@ -356,6 +408,13 @@ function merge_linear_combination!(g::Graph{F,W}) where {F,W}
         g_merged = merge_linear_combination(g)
         g.subgraphs = g_merged.subgraphs
         g.subgraph_factors = g_merged.subgraph_factors
+        for sub_g in g.subgraphs
+            if g in sub_g.parent_graphs
+                pop!(sub_g.parent_graphs)   # delete the parent graph for g_merged.
+            else
+                sub_g.parent_graphs[end] = g
+            end
+        end
     end
     return g
 end
@@ -365,6 +424,13 @@ function merge_linear_combination!(g::FeynmanGraph{F,W}) where {F,W}
         g_merged = merge_linear_combination(g)
         g.subgraphs = g_merged.subgraphs
         g.subgraph_factors = g_merged.subgraph_factors
+        for sub_g in g.subgraphs
+            if g in sub_g.parent_graphs
+                pop!(sub_g.parent_graphs)   # delete the parent graph for g_merged.
+            else
+                sub_g.parent_graphs[end] = g
+            end
+        end
     end
     return g
 end
@@ -425,6 +491,13 @@ function merge_multi_product!(g::Graph{F,W}) where {F,W}
         g.subgraphs = g_merged.subgraphs
         g.subgraph_factors = g_merged.subgraph_factors
         g.operator = g_merged.operator
+        for sub_g in g.subgraphs
+            if g in sub_g.parent_graphs
+                pop!(sub_g.parent_graphs)   # delete the parent graph for g_merged.
+            else
+                sub_g.parent_graphs[end] = g
+            end
+        end
     end
     return g
 end
