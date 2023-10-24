@@ -9,7 +9,7 @@ struct O2 <: Graphs.AbstractOperator end
 struct O3 <: Graphs.AbstractOperator end
 Graphs.unary_istrivial(::Type{O}) where {O<:Union{O1,O2,O3}} = true
 
-@testset verbose=true "AbstractGraph interface" begin
+@testset verbose = true "AbstractGraph interface" begin
     mutable struct ConcreteGraph <: Graphs.AbstractGraph
         id::Int
         name::String
@@ -31,7 +31,18 @@ Graphs.unary_istrivial(::Type{O}) where {O<:Union{O1,O2,O3}} = true
     g = ConcreteGraph([g1, g2, g3]; subgraph_factors=[2, 3, 5], operator=O)
     gp = ConcreteGraph([g1, g2, g3]; subgraph_factors=[2, 3, 5], operator=O)
     h = ConcreteGraph([g1, g2, g3]; name="h", subgraph_factors=[2, 3, 5], operator=O)
-    @test isnothing(Graphs.weight(ConcreteGraph()))  # weight(g::AbstractGraph) is an abstract method
+
+    # weight(g::AbstractGraph) is an abstract method
+    @test isnothing(Graphs.weight(ConcreteGraph()))
+
+    # Base.:+(g1::AbstractGraph, g2::AbstractGraph) is an abstract method
+    err = AssertionError()
+    try
+        g1 + g2
+    catch err
+    end
+    @test err isa ErrorException
+    @test err.msg == "Method not yet implemented for user-defined graph type ConcreteGraph."
 
     ### AbstractGraph interface for ConcreteGraph ###
 
@@ -133,18 +144,20 @@ end
         @testset "Addition" begin
             g3 = g1 + g2
             @test g3.factor == 1
-            @test g3.subgraphs == [g1, g1]
-            @test g3.subgraph_factors == [1, 2]
-            @test g3.subgraphs[1].subgraph_factors == g1.subgraph_factors
+            @test g3.subgraphs == [g1]
+            @test g3.subgraph_factors == [3]
+            # @test g3.subgraphs == [g1, g1]
+            # @test g3.subgraph_factors == [1, 2]
             @test g3.operator == Graphs.Sum
         end
         @testset "Subtraction" begin
             g4 = g1 - g2
             @test g4.factor == 1
-            @test g4.subgraphs == [g1, g1]
-            @test g4.subgraph_factors == [1, -2]
-            @test g4.subgraphs[1].subgraph_factors == g1.subgraph_factors
-            @test g4.subgraphs[2].subgraph_factors == g1.subgraph_factors
+            @test g4.subgraphs == [g1]
+            @test g4.subgraph_factors == [-1]
+            @test g4.subgraphs[1] == g1
+            # @test g4.subgraphs == [g1, g1]
+            # @test g4.subgraph_factors == [1, -2]
             @test g4.operator == Graphs.Sum
         end
         @testset "Linear combinations" begin
@@ -152,13 +165,17 @@ end
             # NOTE: since g2 = 2 * g1, 5g2 ↦ 10g1 in final expressions
             g5 = 3g1 + 5g2
             g5lc = linear_combination(g1, g2, 3, 5)
-            @test g5lc.subgraphs == [g1, g1]
-            @test g5lc.subgraph_factors == [3, 10]
+            @test g5lc.subgraphs == [g1,]
+            @test g5lc.subgraph_factors == [13,]
+            # @test g5lc.subgraphs == [g1, g1]
+            # @test g5lc.subgraph_factors == [3, 10]
             @test isequiv(g5, g5lc, :id)
             # Vector form
             g6lc = linear_combination([g1, g2, g5, g2, g1], [3, 5, 7, 9, 11])
-            @test g6lc.subgraphs == [g1, g1, g5, g1, g1]
-            @test g6lc.subgraph_factors == [3, 10, 7, 18, 11]
+            @test g6lc.subgraphs == [g1]
+            @test g6lc.subgraph_factors == [133]  # 3+5*2+7*13+9*2+11 
+            # @test g6lc.subgraphs == [g1, g1, g5, g1, g1]
+            # @test g6lc.subgraph_factors == [3, 10, 7, 18, 11]
             # Test one-level merging of multiplicative chains
             g7lc = g1 + 2 * (3 * g1 + 5 * g2p)
             g7lc_expect = g1 + 2 * linear_combination([g1, g2p], [3, 5])
@@ -185,7 +202,8 @@ end
             replace_subgraph!(groot, g2, g3)
             @test isequiv(gsum.subgraphs[1], gsum.subgraphs[2])
             gnew = replace_subgraph(groot, g2, g3)
-            @test isequiv(gnew, g1 + (g3 + g3), :id)
+            @test isequiv(gnew, g1 + Graph([g3, g3], operator=Graphs.Sum()), :id)
+            # @test isequiv(gnew, g1 + (g3 + g3), :id)  # gnew has repeated subgraphs g3!
         end
         @testset "Prune trivial unary operations" begin
             g1 = Graph([])
@@ -216,7 +234,8 @@ end
         # g = 2*(3*(5*g1))
         g = Graph([g3,]; subgraph_factors=[2,], operator=Graphs.Prod())
         # gp = 2*(3*(g1 + 5*g1))
-        g2p = g1 + g2
+        # g2p = g1 + g2
+        g2p = Graph([g1, g2]; operator=Graphs.Sum())
         g3p = Graph([g2p,]; subgraph_factors=[3,], operator=Graphs.Prod())
         gp = Graph([g3p,]; subgraph_factors=[2,], operator=Graphs.Prod())
         @testset "Merge chains" begin
@@ -258,27 +277,47 @@ end
         end
         @testset "Merge prefactors" begin
             g1 = propagator(𝑓⁺(1)𝑓⁻(2))
-            h1 = linear_combination(g1, g1, 1, 2)
-            @test h1.subgraph_factors == [1, 2]
+            h1 = FeynmanGraph([g1, g1], drop_topology(g1.properties); subgraph_factors=[1, 2], operator=Graphs.Sum())
+            h1_lc = linear_combination(g1, g1, 1, 2)
+            @test h1_lc.subgraph_factors == [3]
             h2 = merge_linear_combination(h1)
             @test h2.subgraph_factors == [3]
             @test length(h2.subgraphs) == 1
             @test h2.subgraphs[1] == g1
+            @test isequiv(h1_lc, h2, :id)
             g2 = propagator(𝑓⁺(1)𝑓⁻(2), factor=2)
             h3 = linear_combination(g1, g2, 1, 2)
             h4 = merge_linear_combination(h3)
             @test isequiv(h3, h4, :id)
-            h5 = linear_combination([g1, g2, g2, g1], [3, 5, 7, 9])
+            h5 = FeynmanGraph([g1, g2, g2, g1], drop_topology(g1.properties); subgraph_factors=[3, 5, 7, 9], operator=Graphs.Sum())
+            h5_lc = linear_combination([g1, g2, g2, g1], [3, 5, 7, 9])
             h6 = merge_linear_combination(h5)
             @test length(h6.subgraphs) == 2
             @test h6.subgraphs == [g1, g2]
             @test h6.subgraph_factors == [12, 12]
+            @test isequiv(h5_lc, h6, :id)
             g3 = 2 * g1
-            h7 = linear_combination([g1, g3, g3, g1], [3, 5, 7, 9])
+            # h7 = FeynmanGraph([g1, g3, g3, g1]; subgraph_factors=[3, 5, 7, 9], operator=Graphs.Sum())
+            h7 = FeynmanGraph([g1, g1, g1, g1], drop_topology(g1.properties); subgraph_factors=[3, 5 * 2, 7 * 2, 9], operator=Graphs.Sum())
+            h7_lc = linear_combination([g1, g3, g3, g1], [3, 5, 7, 9])
             h8 = merge_linear_combination(h7)
             @test length(h8.subgraphs) == 1
             @test h8.subgraphs == [g1]
             @test h8.subgraph_factors == [36]
+            @test isequiv(h7_lc, h8, :id)
+        end
+        @testset "Merge multi prodict" begin
+            g1 = Graph([])
+            g2 = Graph([], factor=2)
+            g3 = Graph([], factor=3)
+            h1 = Graph([g1, g2, g1, g1, g3, g2]; subgraph_factors=[3, 2, 5, 1, 1, 3], operator=Graphs.Prod())
+            h1_mp = merge_multi_product(h1)
+            h1_s1 = Graph([g1], operator=Graphs.Power(3))
+            h1_s2 = Graph([g2], operator=Graphs.Power(2))
+            h1_r = Graph([h1_s1, h1_s2, g3], subgraph_factors=[15, 6, 1], operator=Graphs.Prod())
+            @test isequiv(h1_r, h1_mp, :id)
+            merge_multi_product!(h1)
+            @test isequiv(h1, h1_mp, :id)
         end
     end
     @testset verbose = true "Optimizations" begin
@@ -425,9 +464,10 @@ end
             @test vertices(g3) == vertices(g1)
             @test external_operators(g3) == external_operators(g1)
             @test g3.factor == 1
-            @test g3.subgraphs == [g1, g1]
-            @test g3.subgraph_factors == [1, 2]
-            @test g3.subgraphs[1].subgraph_factors == g1.subgraph_factors
+            @test g3.subgraphs == [g1]
+            @test g3.subgraph_factors == [3]
+            # @test g3.subgraphs == [g1, g1]
+            # @test g3.subgraph_factors == [1, 2]
             @test g3.operator == Graphs.Sum
         end
         @testset "Subtraction" begin
@@ -435,10 +475,10 @@ end
             @test vertices(g4) == vertices(g1)
             @test external_operators(g4) == external_operators(g1)
             @test g4.factor == 1
-            @test g4.subgraphs == [g1, g1]
-            @test g4.subgraph_factors == [1, -2]
-            @test g4.subgraphs[1].subgraph_factors == g1.subgraph_factors
-            @test g4.subgraphs[2].subgraph_factors == g1.subgraph_factors
+            @test g4.subgraphs == [g1,]
+            @test g4.subgraph_factors == [-1,]
+            # @test g4.subgraphs == [g1, g1]
+            # @test g4.subgraph_factors == [1, -2]
             @test g4.operator == Graphs.Sum
         end
         @testset "Linear combinations" begin
@@ -446,13 +486,17 @@ end
             # NOTE: since g2 = 2 * g1, 5g2 ↦ 10g1 in final expressions
             g5 = 3g1 + 5g2
             g5lc = linear_combination(g1, g2, 3, 5)
-            @test g5lc.subgraphs == [g1, g1]
-            @test g5lc.subgraph_factors == [3, 10]
+            @test g5lc.subgraphs == [g1,]
+            @test g5lc.subgraph_factors == [13,]
+            # @test g5lc.subgraphs == [g1, g1]
+            # @test g5lc.subgraph_factors == [3, 10]
             @test isequiv(g5, g5lc, :id)
             # Vector form
             g6lc = linear_combination([g1, g2, g5, g2, g1], [3, 5, 7, 9, 11])
-            @test g6lc.subgraphs == [g1, g1, g5, g1, g1]
-            @test g6lc.subgraph_factors == [3, 10, 7, 18, 11]
+            @test g6lc.subgraphs == [g1,]
+            @test g6lc.subgraph_factors == [133]
+            # @test g6lc.subgraphs == [g1, g1, g5, g1, g1]
+            # @test g6lc.subgraph_factors == [3, 10, 7, 18, 11]
             # Test one-level merging of multiplicative chains
             g7lc = g1 + 2 * (3 * g1 + 5 * g2p)
             g7lc_expect = g1 + 2 * linear_combination([g1, g2p], [3, 5])
@@ -507,7 +551,8 @@ end
             replace_subgraph!(groot, g2, g3)
             @test isequiv(gsum.subgraphs[1], gsum.subgraphs[2])
             gnew = replace_subgraph(groot, g2, g3)
-            @test isequiv(gnew, g1 + (g3 + g3), :id)
+            @test isequiv(gnew, g1 + FeynmanGraph([g3, g3], drop_topology(g3.properties)), :id)
+            # @test isequiv(gnew, g1 + (g3 + g3), :id)
         end
         @testset "Prune trivial unary operations" begin
             g1 = propagator(𝑓⁺(1)𝑓⁻(2))
@@ -538,7 +583,8 @@ end
         # g = 2*(3*(5*g1))
         g = FeynmanGraph([g3,], g3.properties; subgraph_factors=[2,], operator=Graphs.Prod())
         # gp = 2*(3*(g1 + 5*g1))
-        g2p = g1 + g2
+        # g2p = g1 + g2
+        g2p = FeynmanGraph([g1, g2], drop_topology(g1.properties))
         g3p = FeynmanGraph([g2p,], g2p.properties; subgraph_factors=[3,], operator=Graphs.Prod())
         gp = FeynmanGraph([g3p,], g3p.properties; subgraph_factors=[2,], operator=Graphs.Prod())
         @testset "Merge chains" begin
@@ -580,27 +626,34 @@ end
         end
         @testset "Merge prefactors" begin
             g1 = propagator(𝑓⁺(1)𝑓⁻(2))
-            h1 = linear_combination(g1, g1, 1, 2)
-            @test h1.subgraph_factors == [1, 2]
+            h1 = FeynmanGraph([g1, g1], drop_topology(g1.properties), subgraph_factors=[1, 2])
+            h1_lc = linear_combination(g1, g1, 1, 2)
+            @test h1_lc.subgraph_factors == [3]
             h2 = merge_linear_combination(h1)
             @test h2.subgraph_factors == [3]
             @test length(h2.subgraphs) == 1
             @test isequiv(h2.subgraphs[1], g1, :id)
+            @test isequiv(h1_lc, h2, :id)
             g2 = propagator(𝑓⁺(1)𝑓⁻(2), factor=2)
-            h3 = linear_combination(g1, g2, 1, 2)
+            h3 = FeynmanGraph([g1, g2], drop_topology(g1.properties), subgraph_factors=[1, 2])
+            h3_lc = linear_combination(g1, g2, 1, 2)
             h4 = merge_linear_combination(h3)
             @test isequiv(h3, h4, :id)
-            h5 = linear_combination([g1, g2, g2, g1], [3, 5, 7, 9])
+            h5 = FeynmanGraph([g1, g2, g2, g1], drop_topology(g1.properties), subgraph_factors=[3, 5, 7, 9])
+            h5_lc = linear_combination([g1, g2, g2, g1], [3, 5, 7, 9])
             h6 = merge_linear_combination(h5)
             @test length(h6.subgraphs) == 2
             @test h6.subgraphs == [g1, g2]
             @test h6.subgraph_factors == [12, 12]
+            @test isequiv(h5_lc, h6, :id)
             g3 = 2 * g1
-            h7 = linear_combination([g1, g3, g3, g1], [3, 5, 7, 9])
+            h7 = FeynmanGraph([g1, g1, g1, g1], drop_topology(g1.properties), subgraph_factors=[3, 5 * 2, 7 * 2, 9])
+            h7_lc = linear_combination([g1, g3, g3, g1], [3, 5, 7, 9])
             h8 = merge_linear_combination(h7)
             @test length(h8.subgraphs) == 1
             @test h8.subgraphs == [g1]
             @test h8.subgraph_factors == [36]
+            @test isequiv(h7_lc, h8, :id)
         end
     end
 
@@ -800,22 +853,252 @@ end
     end
 end
 
+@testset verbose = true "Evaluation" begin
+    using FeynmanDiagram.ComputationalGraphs:
+        eval!
+    g1 = Graph([])
+    g2 = Graph([], factor=2)
+    g3 = 2 * (3 * g1 + 5 * g2)
+    g4 = g1 + 2 * (3 * g1 + 5 * g2)
+    g5 = g4 * g3
+    @testset "Eval" begin
+        @test eval!(g3) == 26
+        @test eval!(g4) == 27
+        @test eval!(g5) == 27 * 26
+    end
+end
+
+@testset verbose = true "Auto Differentiation" begin
+    using FeynmanDiagram.ComputationalGraphs:
+        eval!, forwardAD, node_derivative, backAD, forwardAD_root!, build_all_leaf_derivative, build_derivative_graph, burn_from_targetleaves!
+    g1 = Graph([])
+    g2 = Graph([])
+    g3 = Graph([], factor=2.0)
+    G3 = g1
+    G4 = 4 * g1 * g1
+    G5 = 4 * (2 * G3 + 3 * G4)
+    G6 = (2 * g1 + 3 * g2) * (4 * g1 + g3) * g1
+    #G6 = (g1 + g2) * (g1 + g2) * g1
+    G7 = (3 * g1 + 4 * g2 + 5 * g3) * 3 * g1
+
+    @testset "node_derivative" begin
+        F1 = g1 * g1
+        F2 = (3 * g1) * (4 * g1)
+        F3 = (2 * g1 * g2) * (3 * g1)
+        F4 = (2 * g1 + 3 * g2) + g1
+        @test eval!(node_derivative(F1, g1)) == 2
+        @test eval!(node_derivative(F2, g1)) == 24
+        @test eval!(node_derivative(F1, g2)) == nothing
+        @test eval!(node_derivative(F3, g1)) == 6 #The derivative is local, and only considers the children at root 
+        print(node_derivative(F4, g1), "\n")
+        @test eval!(node_derivative(F4, g1)) == 1
+    end
+    @testset "Eval" begin
+        # Current test assign all green's function equal to 1 for simplicity.
+        # print(eval!(forwardAD(G5, g1.id)),"\n")
+        # print(eval!(forwardAD(G3, g1.id)),"\n")
+        # print(eval!(forwardAD(G3, g2.id)),"\n")
+        # print(eval!(forwardAD(G6, g1.id)),"\n")
+        # print(eval!(forwardAD(forwardAD(G6, g1.id), g2.id)),"\n")
+        # print(eval!(forwardAD(forwardAD(G6, g1.id), g3.id)),"\n")
+        # gs = Compilers.to_julia_str([forwardAD(G5, g1.id),], name="eval_graph!")
+        # println(gs,"\n")
+        @test eval!(forwardAD(G3, g1.id)) == 1
+        @test eval!(forwardAD(G4, g1.id)) == 8
+        @test eval!(forwardAD(G5, g1.id)) == 104
+        @test eval!(forwardAD(G6, g1.id)) == 62
+        @test eval!(forwardAD(G6, g3.id)) == 5
+        @test eval!(forwardAD(forwardAD(G6, g1.id), g2.id)) == 30
+        #backAD(G5, true)
+        for (i, G) in enumerate([G3, G4, G5, G6, G7])
+            back_deriv = backAD(G)
+            for (id_pair, value_back) in back_deriv
+                # gs = Compilers.to_julia_str([value,], name="eval_graph!")
+                # println("id:$(key)", gs, "\n")
+                value_forward = forwardAD(G, id_pair[2])
+                @test eval!(value_back) == eval!(value_forward)
+                # print("value:$(i+2) $(eval!(value_forward))\n")
+            end
+        end
+        # gs = Compilers.to_julia_str([G6,], name="eval_graph!")
+        # println("G6  ", gs, "\n")
+        # for (id, G) in backAD(G6)
+        #     gs = Compilers.to_julia_str([G,], name="eval_graph!")
+        #     println("first order derive id:$(id)", gs, "\n")
+        #     back_deriv = backAD(G)
+        #     for (id_pair, value_back) in back_deriv
+        #         gs = Compilers.to_julia_str([value_back,], name="eval_graph!")
+        #         println("second order derive id:$(id_pair)", gs, "\n")
+        #         value_forward = forwardAD(G, id_pair[2])
+        #         @test eval!(value_back) == eval!(value_forward)
+        #         print("value:$(id_pair) $(eval!(value_forward))\n")
+        #     end
+        # end
+
+        # for (order_vec, graph) in build_all_leaf_derivative(G6, 3)
+        #     print("$(order_vec), $(eval!(graph)) \n")
+        # end
+    end
+    @testset "forwardAD_root!" begin
+        F3 = g1 + g2
+        F2 = linear_combination([g1, g3, F3], [2, 1, 3])
+        F1 = Graph([g1, F2, F3], operator=Graphs.Prod(), subgraph_factors=[3.0, 1.0, 1.0])
+
+        kg1, kg2, kg3 = (g1.id, (1,)), (g2.id, (1,)), (g3.id, (1,))
+        kF1, kF2, kF3 = (F1.id, (1,)), (F2.id, (1,)), (F3.id, (1,))
+
+        dual = forwardAD_root!(F1)  # auto-differentation!
+        @test dual[kF3].subgraphs == [dual[kg1], dual[kg2]]
+        @test dual[kF2].subgraphs == [dual[kg1], dual[kg3], dual[kF3]]
+
+        leafmap = Dict{Int,Int}()
+        leafmap[g1.id], leafmap[g2.id], leafmap[g3.id] = 1, 2, 3
+        leafmap[dual[kg1].id] = 4
+        leafmap[dual[kg2].id] = 5
+        leafmap[dual[kg3].id] = 6
+        leaf = [1.0, 1.0, 1.0, 1.0, 0.0, 0.0]   # d F1 / d g1
+        @test eval!(dual[kF1], leafmap, leaf) == 120.0
+        @test eval!(dual[kF2], leafmap, leaf) == 5.0
+        @test eval!(dual[kF3], leafmap, leaf) == 1.0
+
+        leaf = [5.0, -1.0, 2.0, 0.0, 1.0, 0.0]  # d F1 / d g2
+        @test eval!(dual[kF1], leafmap, leaf) == 570.0
+        @test eval!(dual[kF2], leafmap, leaf) == 3.0
+        @test eval!(dual[kF3], leafmap, leaf) == 1.0
+
+        leaf = [5.0, -1.0, 2.0, 0.0, 0.0, 1.0]  # d F1 / d g3
+        @test eval!(dual[kF1], leafmap, leaf) == 60.0
+        @test eval!(dual[kF2], leafmap, leaf) == 1.0
+        @test eval!(dual[kF3], leafmap, leaf) == 0.0
+
+        F0 = F1 * F3
+        kF0 = (F0.id, (1,))
+        dual1 = forwardAD_root!(F0)
+        leafmap[dual1[kg1].id] = 4
+        leafmap[dual1[kg2].id] = 5
+        leafmap[dual1[kg3].id] = 6
+
+        leaf = [1.0, 1.0, 1.0, 1.0, 0.0, 0.0]
+        @test eval!(dual1[kF0], leafmap, leaf) == 300.0
+        leaf = [5.0, -1.0, 2.0, 0.0, 1.0, 0.0]
+        @test eval!(dual1[kF0], leafmap, leaf) == 3840.0
+        leaf = [5.0, -1.0, 2.0, 0.0, 0.0, 1.0]
+        @test eval!(dual1[kF0], leafmap, leaf) == 240.0
+        @test isequiv(dual[kF1], dual1[kF1], :id, :weight, :vertices)
+
+        F0_r1 = F1 + F3
+        kF0_r1 = (F0_r1.id, (1,))
+        dual = forwardAD_root!([F0, F0_r1])
+        leafmap[dual[kg1].id] = 4
+        leafmap[dual[kg2].id] = 5
+        leafmap[dual[kg3].id] = 6
+        @test eval!(dual[kF0], leafmap, leaf) == 240.0
+        @test eval!(dual[kF0_r1], leafmap, leaf) == 60.0
+        @test isequiv(dual[kF0], dual1[kF0], :id, :weight)
+        @test isequiv(dual[kF1], dual1[kF1], :id, :weight)
+    end
+    @testset "build_derivative_graph" begin
+        F3 = g1 + g2
+        F2 = linear_combination([g1, g3, F3], [2, 1, 3])
+        F1 = Graph([g1, F2, F3], operator=Graphs.Prod(), subgraph_factors=[3.0, 1.0, 1.0])
+
+        leafmap = Dict{Int,Int}()
+        leafmap[g1.id], leafmap[g2.id], leafmap[g3.id] = 1, 2, 3
+        orders = (3, 2, 2)
+        dual = Graphs.build_derivative_graph(F1, orders)
+
+        leafmap[dual[(g1.id, (1, 0, 0))].id], leafmap[dual[(g2.id, (0, 1, 0))].id], leafmap[dual[(g3.id, (0, 0, 1))].id] = 4, 5, 6
+
+        burnleafs_id = Int[]
+        for order in Iterators.product((0:x for x in orders)...)
+            order == (0, 0, 0) && continue
+            for g in [g1, g2, g3]
+                if !haskey(leafmap, dual[(g.id, order)].id)
+                    leafmap[dual[(g.id, order)].id] = 7
+                    push!(burnleafs_id, dual[(g.id, order)].id)
+                end
+            end
+        end
+        leaf = [5.0, -1.0, 2.0, 1.0, 1.0, 1.0, 0.0]
+        @test eval!(dual[(F1.id, (1, 0, 0))], leafmap, leaf) == 1002
+        @test eval!(dual[(F1.id, (2, 0, 0))], leafmap, leaf) == 426
+        @test eval!(dual[(F1.id, (3, 0, 0))], leafmap, leaf) == 90
+        @test eval!(dual[(F1.id, (3, 1, 0))], leafmap, leaf) == 0
+
+        # optimize the derivative graph
+        c0_id = burn_from_targetleaves!([dual[(F1.id, (1, 0, 0))], dual[(F1.id, (2, 0, 0))], dual[(F1.id, (3, 0, 0))], dual[(F1.id, (3, 1, 0))]], burnleafs_id)
+        if !isnothing(c0_id)
+            leafmap[c0_id] = 7
+        end
+        @test eval!(dual[(F1.id, (1, 0, 0))], leafmap, leaf) == 1002
+        @test eval!(dual[(F1.id, (2, 0, 0))], leafmap, leaf) == 426
+        @test eval!(dual[(F1.id, (3, 0, 0))], leafmap, leaf) == 90
+        @test eval!(dual[(F1.id, (3, 1, 0))], leafmap, leaf) == 0
+
+        # Test on a vector of graphs
+        F0 = F1 * F3
+        F0_r1 = F1 + F3
+        dual = Graphs.build_derivative_graph([F0, F0_r1], orders)
+
+        leafmap = Dict{Int,Int}()
+        leafmap[g1.id], leafmap[g2.id], leafmap[g3.id] = 1, 2, 3
+        leafmap[dual[(g1.id, (1, 0, 0))].id], leafmap[dual[(g2.id, (0, 1, 0))].id], leafmap[dual[(g3.id, (0, 0, 1))].id] = 4, 5, 6
+        burnleafs_id = Int[]
+        for order in Iterators.product((0:x for x in orders)...)
+            order == (0, 0, 0) && continue
+            for g in [g1, g2, g3]
+                if !haskey(leafmap, dual[(g.id, order)].id)
+                    leafmap[dual[(g.id, order)].id] = 7
+                    push!(burnleafs_id, dual[(g.id, order)].id)
+                end
+            end
+        end
+        @test eval!(dual[(F0.id, (1, 0, 0))], leafmap, leaf) == 5568
+        @test eval!(dual[(F0_r1.id, (1, 0, 0))], leafmap, leaf) == 1003
+        @test eval!(dual[(F0.id, (2, 0, 0))], leafmap, leaf) == 3708
+        @test eval!(dual[(F0_r1.id, (2, 0, 0))], leafmap, leaf) == 426
+        @test eval!(dual[(F0.id, (3, 0, 0))], leafmap, leaf) == 1638
+        @test eval!(dual[(F0_r1.id, (3, 0, 0))], leafmap, leaf) == 90
+        @test eval!(dual[(F0.id, (3, 1, 0))], leafmap, leaf) == 234
+        @test eval!(dual[(F0_r1.id, (3, 1, 0))], leafmap, leaf) == 0
+        @test eval!(dual[(F0.id, (3, 2, 0))], leafmap, leaf) == eval!(dual[(F0_r1.id, (3, 2, 0))], leafmap, leaf) == 0
+
+        c0_id = burn_from_targetleaves!([dual[(F0.id, (1, 0, 0))], dual[(F0.id, (2, 0, 0))], dual[(F0.id, (3, 0, 0))], dual[(F0.id, (3, 1, 0))], dual[(F0.id, (3, 2, 0))],
+                dual[(F0_r1.id, (1, 0, 0))], dual[(F0_r1.id, (2, 0, 0))], dual[(F0_r1.id, (3, 0, 0))], dual[(F0_r1.id, (3, 1, 0))], dual[(F0_r1.id, (3, 2, 0))]], burnleafs_id)
+        if !isnothing(c0_id)
+            leafmap[c0_id] = 7
+        end
+        @test eval!(dual[(F0.id, (1, 0, 0))], leafmap, leaf) == 5568
+        @test eval!(dual[(F0_r1.id, (1, 0, 0))], leafmap, leaf) == 1003
+        @test eval!(dual[(F0.id, (2, 0, 0))], leafmap, leaf) == 3708
+        @test eval!(dual[(F0_r1.id, (2, 0, 0))], leafmap, leaf) == 426
+        @test eval!(dual[(F0.id, (3, 0, 0))], leafmap, leaf) == 1638
+        @test eval!(dual[(F0_r1.id, (3, 0, 0))], leafmap, leaf) == 90
+        @test eval!(dual[(F0.id, (3, 1, 0))], leafmap, leaf) == 234
+        @test eval!(dual[(F0_r1.id, (3, 1, 0))], leafmap, leaf) == 0
+        @test eval!(dual[(F0.id, (3, 2, 0))], leafmap, leaf) == eval!(dual[(F0_r1.id, (3, 2, 0))], leafmap, leaf) == 0
+    end
+end
+
 @testset verbose = true "Tree properties" begin
     using FeynmanDiagram.ComputationalGraphs:
-        haschildren, onechild, isleaf, isbranch, ischain, isfactorless, eldest
+        haschildren, onechild, isleaf, isbranch, ischain, isfactorless, eldest, count_operation
     # Leaves: gᵢ
-    g1 = propagator(𝑓⁻(1)𝑓⁺(2))
-    g2 = propagator(𝑓⁻(1)𝑓⁺(2), factor=2)
+    g1 = Graph([])
+    g2 = Graph([], factor=2)
     # Branches: Ⓧ --- gᵢ
     g3 = 1 * g1
     g4 = 1 * g2
     g5 = 2 * g1
     # Chains: Ⓧ --- Ⓧ --- gᵢ (simplified by default)
-    g6 = FeynmanGraph([g5,], g5.properties; subgraph_factors=[1,], operator=Graphs.Prod())
-    g7 = FeynmanGraph([g3,], g3.properties; subgraph_factors=[2,], operator=Graphs.Prod())
+    g6 = Graph([g5,]; subgraph_factors=[1,], operator=Graphs.Prod())
+    g7 = Graph([g3,]; subgraph_factors=[2,], operator=Graphs.Prod())
     # General trees
     g8 = 2 * (3 * g1 + 5 * g2)
-    g9 = g1 + 2 * (3 * g1 + 5 * g2)  # ↦ g1 + 2 * linear_combination([g1, g2], [3, 5])
+    g9 = g1 + 2 * (3 * g1 + 5 * g2)
+    g10 = g1 * g2 + g8 * g9
+    glist = [g1, g2, g8, g9, g10]
+
     @testset "Leaves" begin
         @test haschildren(g1) == false
         @test onechild(g1) == false
@@ -825,6 +1108,8 @@ end
         @test isfactorless(g1)
         @test isfactorless(g2) == false
         @test_throws AssertionError eldest(g1)
+        @test count_operation(g1) == [0, 0]
+        @test count_operation(g2) == [0, 0]
     end
     @testset "Branches" begin
         @test haschildren(g3)
@@ -855,6 +1140,9 @@ end
         @test ischain(g8) == false
         @test isfactorless(g8) == false
         @test onechild(eldest(g8)) == false
+        @test count_operation(g8) == [1, 0]
+        @test count_operation(g9) == [2, 0]
+        @test count_operation(g10) == [4, 2]
     end
     @testset "Iteration" begin
         count_pre = sum(1 for node in PreOrderDFS(g9))

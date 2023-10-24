@@ -36,9 +36,9 @@ export linear_combination, feynman_diagram, propagator, interaction, external_ve
 # export 𝐺ᶠ, 𝐺ᵇ, 𝐺ᵠ, 𝑊, Green2, Interaction
 
 include("tree_properties.jl")
-export haschildren, onechild, isleaf, isbranch, ischain, isfactorless, eldest
+export haschildren, onechild, isleaf, isbranch, ischain, isfactorless, eldest, count_operation
 
-# include("operation.jl")
+include("operation.jl")
 include("io.jl")
 # plot_tree
 
@@ -46,10 +46,9 @@ include("eval.jl")
 export eval!
 
 include("transform.jl")
-export relabel!, standardize_labels!, replace_subgraph!, merge_linear_combination!, merge_chains!
-export relabel, standardize_labels, replace_subgraph, merge_linear_combination, merge_chains
+export relabel!, standardize_labels!, replace_subgraph!, merge_linear_combination!, merge_multi_product!, merge_chains!
+export relabel, standardize_labels, replace_subgraph, merge_linear_combination, merge_multi_product, merge_chains
 
 include("optimize.jl")
 export optimize!, optimize
-
 end

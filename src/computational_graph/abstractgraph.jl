@@ -3,6 +3,15 @@ abstract type AbstractGraph end
 abstract type AbstractOperator end
 struct Sum <: AbstractOperator end
 struct Prod <: AbstractOperator end
+struct Constant <: AbstractOperator end
+struct Power{N} <: AbstractOperator
+    function Power(N::Real)
+        @assert N ∉ [0, 1] "Power{$N} makes no sense."
+        new{N}()
+    end
+end
+Base.eltype(::Type{<:Power{N}}) where {N} = N
+decrement_power(::Type{<:Power{N}}) where {N} = N == 2 ? Sum() : Power(N - 1)
 Base.isequal(a::AbstractOperator, b::AbstractOperator) = (typeof(a) == typeof(b))
 Base.:(==)(a::AbstractOperator, b::AbstractOperator) = Base.isequal(a, b)
 apply(o::AbstractOperator, diags) = error("not implemented!")
@@ -10,6 +19,8 @@ apply(o::AbstractOperator, diags) = error("not implemented!")
 Base.show(io::IO, o::AbstractOperator) = print(io, typeof(o))
 Base.show(io::IO, ::Type{Sum}) = print(io, "⨁")
 Base.show(io::IO, ::Type{Prod}) = print(io, "Ⓧ")
+Base.show(io::IO, ::Type{Constant}) = print(io, "C")
+Base.show(io::IO, ::Type{Power{N}}) where {N} = print(io, "^$N")
 
 # Is the unary form of operator 𝓞 trivial: 𝓞(G) ≡ G?
 # NOTE: this property implies that 𝓞(c * G) = c * G = c * 𝓞(G), so
@@ -126,7 +137,7 @@ function subgraph_factors(g::AbstractGraph)
 function subgraph_factors(g::AbstractGraph) end
 
 """
-function subgraphs(g::AbstractGraph, indices::AbstractVector{Int})
+function subgraph_factors(g::AbstractGraph, indices::AbstractVector{Int})
 
     Returns the subgraph factors of computational graph `g` at indices `indices`.
     By default, calls `subgraph_factor(g, i)` for each `i` in `indices`. 
@@ -139,11 +150,53 @@ end
 ### Setters ###
 
 """
+function set_id!(g::AbstractGraph, id)
+
+    Update the id of graph `g` to `id`.
+"""
+function set_id!(g::AbstractGraph, id) end
+
+"""
 function set_name!(g::AbstractGraph, name::AbstractString)
 
     Update the name of graph `g` to `name`.
 """
 function set_name!(g::AbstractGraph, name::AbstractString) end
+
+"""
+function set_orders!(g::AbstractGraph, orders::AbstractVector)
+
+    Update the orders of graph `g` to `orders`.
+"""
+function set_orders!(g::AbstractGraph, orders::AbstractVector) end
+
+"""
+function set_operator!(g::AbstractGraph, operator::AbstractOperator)
+
+    Update the operator of graph `g` to `typeof(operator)`.
+"""
+function set_operator!(g::AbstractGraph, operator::AbstractOperator) end
+
+"""
+function set_operator!(g::AbstractGraph, operator::Type{<:AbstractOperator})
+
+    Update the operator of graph `g` to `operator`.
+"""
+function set_operator!(g::AbstractGraph, operator::Type{<:AbstractOperator}) end
+
+"""
+function set_factor!(g::AbstractGraph, factor)
+
+    Update the factor of graph `g` to `factor`.
+"""
+function set_factor!(g::AbstractGraph, factor) end
+
+"""
+function set_weight!(g::AbstractGraph, weight)
+
+    Update the weight of graph `g` to `weight`.
+"""
+function set_weight!(g::AbstractGraph, weight) end
 
 """
 function set_subgraph!(g::AbstractGraph, subgraph::AbstractGraph, i=1)
@@ -201,6 +254,7 @@ function set_subgraph_factors!(g::AbstractGraph, subgraph_factors::AbstractVecto
     end
 end
 
+
 ### Methods ###
 
 # Tests for exact equality between two abstract graphs
@@ -241,3 +295,15 @@ function isequiv(a::AbstractGraph, b::AbstractGraph, args...)
     end
     return true
 end
+
+
+### Arithmetic operations ###
+
+errmsg(G::Type) = "Method not yet implemented for user-defined graph type $G."
+linear_combination(g1::G, g2::G, c1, c2) where {G<:AbstractGraph} = error(errmsg(G))
+linear_combination(graphs::AbstractVector{G}, constants::AbstractVector) where {G<:AbstractGraph} = error(errmsg(G))
+Base.:*(c1, g2::G) where {G<:AbstractGraph} = error(errmsg(G))
+Base.:*(g1::G, c2) where {G<:AbstractGraph} = error(errmsg(G))
+Base.:*(g1::G, g2::G) where {G<:AbstractGraph} = error(errmsg(G))
+Base.:+(g1::G, g2::G) where {G<:AbstractGraph} = error(errmsg(G))
+Base.:-(g1::G, g2::G) where {G<:AbstractGraph} = error(errmsg(G))

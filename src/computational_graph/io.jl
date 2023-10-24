@@ -26,12 +26,20 @@ function short_orders(orders)
     return orders_no_trailing_zeros
 end
 
+function _namestr(graph::AbstractGraph)
+    return isempty(name(graph)) ? "" : "-$(name(graph))"
+end
+
+function _idstring(graph::AbstractGraph)
+    return string(id(graph), _namestr(graph))
+end
+
+function _idstring(graph::FeynmanGraph)    
+    return string(id(graph), _namestr(graph), ":", _ops_to_str(vertices(graph)))
+end
+
 function _stringrep(graph::AbstractGraph, color=true)
-    namestr = isempty(name(graph)) ? "" : "-$(name(graph))"
-    idstr = "$(id(graph))$namestr"
-    if graph isa FeynmanGraph
-        idstr *= ":$(_ops_to_str(vertices(graph)))"
-    end
+    idstr = _idstring(graph)
     fstr = short(factor(graph), one(factor(graph)))
     wstr = short(weight(graph))
     ostr = short_orders(orders(graph))
@@ -53,7 +61,7 @@ function Base.show(io::IO, graph::AbstractGraph; kwargs...)
     if length(subgraphs(graph)) == 0
         typestr = ""
     else
-        typestr = join(["$(g.id)" for g in subgraphs(graph)], ",")
+        typestr = join(["$(id(g))" for g in subgraphs(graph)], ",")
         typestr = "($typestr)"
     end
     print(io, "$(_stringrep(graph, true))$typestr")
