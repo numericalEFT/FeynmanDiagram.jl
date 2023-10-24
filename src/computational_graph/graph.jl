@@ -170,7 +170,7 @@ function linear_combination(g1::Graph{F,W}, g2::Graph{F,W}, c1::C=1, c2::C=1) wh
 end
 
 """
-    function linear_combination(graphs::Vector{Graph{F,W}}, constants::Vector{C}) where {F,W,C}
+    function linear_combination(graphs::Vector{Graph{F,W}}, constants::Vector{C}=ones(length(graphs))) where {F,W,C<:Number}
 
     Given a vector 𝐠 of graphs and an equally-sized vector 𝐜 of constants, returns a new
     graph representing the linear combination (𝐜 ⋅ 𝐠). 
@@ -179,7 +179,7 @@ end
 
 # Arguments:
 - `graphs`  vector of computational graphs
-- `constants`  vector of scalar multiples (defaults to ones(C, length(graphs))).
+- `constants`  vector of scalar multiples (defaults to ones(length(graphs))).
 
 # Returns:
 - A new `Graph{F,W}` object representing the linear combination of the unique input `graphs` weighted by the constants, 
@@ -188,7 +188,7 @@ where duplicate graphs in the input `graphs` are combined by summing their assoc
 # Example:
     Given graphs `g1`, `g2`, `g1` and constants `c1`, `c2`, `c3`, the function computes `(c1+c3)*g1 + c2*g2`.
 """
-function linear_combination(graphs::Vector{Graph{F,W}}, constants::Vector{C}=ones(C, length(graphs))) where {F,W,C}
+function linear_combination(graphs::Vector{Graph{F,W}}, constants::Vector{C}=ones(length(graphs))) where {F,W,C<:Number}
     @assert alleq(orders.(graphs)) "Graphs do not all have the same order."
     subgraphs, subgraph_factors = graphs, constants
     # parameters = union(getproperty.(graphs, :parameters))
@@ -295,7 +295,7 @@ function multi_product(g1::Graph{F,W}, g2::Graph{F,W}, c1::C=1, c2::C=1) where {
 end
 
 """
-    multi_product(graphs::Vector{Graph{F,W}}, constants::Vector{C}=ones(C, length(graphs.subgraphs))) where {F,W,C}
+    function multi_product(graphs::Vector{Graph{F,W}}, constants::Vector{C}=ones(length(graphs))) where {F,W,C<:Number}
 
     Construct a product graph from multiple input graphs, where each graph can be weighted by a constant. 
     For graphs that are repeated more than once, it adds a power operator to the subgraph to represent the repetition.
@@ -311,7 +311,7 @@ Returns:
 # Example:
     Given graphs `g1`, `g2`, `g1` and constants `c1`, `c2`, `c3`, the function computes `(c1*c3)*(g1)^2 * c2*g2`.
 """
-function multi_product(graphs::Vector{Graph{F,W}}, constants::Vector{C}=ones(C, length(graphs))) where {F,W,C}
+function multi_product(graphs::Vector{Graph{F,W}}, constants::Vector{C}=ones(length(graphs))) where {F,W,C<:Number}
     subgraphs, subgraph_factors = graphs, constants
     # Convert multiplicative links to in-place form
     for (i, sub_g) in enumerate(graphs)
