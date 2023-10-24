@@ -165,6 +165,7 @@ function linear_combination(g1::Graph{F,W}, g2::Graph{F,W}, c1::C=1, c2::C=1) wh
     else
         g = Graph(subgraphs; subgraph_factors=subgraph_factors, operator=Sum(), orders=orders(g1), ftype=F, wtype=W)
     end
+
     return g
 end
 
@@ -333,6 +334,10 @@ function multi_product(graphs::Vector{Graph{F,W}}, constants::Vector{C}=ones(C, 
             unique_factors[loc] *= subgraph_factors[idx]
             repeated_counts[loc] += 1
         end
+    end
+
+    if isempty(unique_graphs)
+        return nothing
     end
 
     if length(unique_factors) == 1
