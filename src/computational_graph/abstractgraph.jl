@@ -260,7 +260,7 @@ end
 # Tests for exact equality between two abstract graphs
 function Base.isequal(a::AbstractGraph, b::AbstractGraph)
     typeof(a) != typeof(b) && return false
-    (weight(a) ≈ weight(b)) == false && return false  # graph weights approximately equal
+    (weight(a) ≈ weight(b)) == false && return false  # check graph weights for approximate equality
     for field in fieldnames(typeof(a))
         if field == :weight && getproperty(a, :weight) == weight(a) && getproperty(b, :weight) == weight(b)
             continue  # skip graph weights if already accounted for
@@ -279,7 +279,10 @@ Base.:(==)(a::AbstractGraph, b::AbstractGraph) = Base.isequal(a, b)
 """
 function isequiv(a::AbstractGraph, b::AbstractGraph, args...)
     typeof(a) != typeof(b) && return false
-    (weight(a) ≈ weight(b)) == false && return false  # graph weights approximately equal
+    # Check graph weights for approximate equality where applicable
+    if :weight ∉ args
+        (weight(a) ≈ weight(b)) == false && return false
+    end
     # Check that all subgraphs are equivalent modulo `args`
     length(subgraphs(a)) != length(subgraphs(b)) && return false
     !all(isequiv.(subgraphs(a), subgraphs(b), args...)) && return false

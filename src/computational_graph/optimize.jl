@@ -354,19 +354,19 @@ function remove_duplicated_leaves!(graphs::Union{Tuple,AbstractVector{<:Abstract
 end
 
 """
-    function burn_from_targetleaves!(graphs::AbstractVector{<:AbstractGraph}, targetleaves_id::AbstractVector{Int}; verbose=0)
+    function burn_from_targetleaves!(graphs::AbstractVector{G}, targetleaves_id::AbstractVector{Int}; verbose=0) where {G <: AbstractGraph}
 
     In-place remove all nodes connected to the target leaves via "Prod" operators.
 
 # Arguments:
-- `graphs::AbstractVector{<:AbstractGraph}`: A vector of graphs.
+- `graphs::AbstractVector{G}`: A vector of graphs.
 - `targetleaves_id::AbstractVector{Int}`: Vector of target leafs' id.
 - `verbose`: Level of verbosity (default: 0).
 
 # Returns:
 - The id of a constant graph with a zero factor if any graph in `graphs` was completely burnt; otherwise, `nothing`.
 """
-function burn_from_targetleaves!(graphs::AbstractVector{<:AbstractGraph}, targetleaves_id::AbstractVector{Int}; verbose=0)
+function burn_from_targetleaves!(graphs::AbstractVector{G}, targetleaves_id::AbstractVector{Int}; verbose=0) where {G<:AbstractGraph}
     verbose > 0 && println("remove all nodes connected to the target leaves via Prod operators.")
 
     graphs_sum = linear_combination(graphs, one.(eachindex(graphs)))

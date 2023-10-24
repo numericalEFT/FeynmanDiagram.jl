@@ -271,7 +271,7 @@ end
 - `c2`:  second scalar multiple (defaults to 1).
 """
 function multi_product(g1::Graph{F,W}, g2::Graph{F,W}, c1=F(1), c2=F(1)) where {F,W}
-    @assert alleq(orders.(graphs)) "Graphs do not all have the same order."
+    @assert orders(g1) == orders(g2) "g1 and g2 have different orders."
     f1 = typeof(c1) == F ? c1 : F(c1)
     f2 = typeof(c2) == F ? c2 : F(c2)
     subgraphs = [g1, g2]
