@@ -1,6 +1,6 @@
 
 """
-    function Base.convert(Graph, g::FeynmanGraph)
+    function Base.convert(::Type{G}, g::FeynmanGraph{F,W}) where {F,W,G<:Graph}
     
     Converts a FeynmanGraph `g` into a Graph, discarding its Feynman properties.
     After conversion, graph `g` is no longer guaranteed to be a valid (group of) Feynman diagram(s).
@@ -8,11 +8,11 @@
     # Arguments:
     - `g`  computational graph
 """
-function Base.convert(::Type{Graph{F,W}}, g::FeynmanGraph{F,W}) where {F,W}
-    return Graph{F,W}(g.subgraphs; subgraph_factors=g.subgraph_factors, name=g.name, operator=g.operator, orders=g.orders, factor=g.factor, weight=g.weight)
+function Base.convert(::Type{G}, g::FeynmanGraph{F,W}) where {F,W,G<:Graph}
+    return Graph(g.subgraphs; subgraph_factors=g.subgraph_factors, name=g.name, operator=g.operator(), orders=g.orders, ftype=F, wtype=W, factor=g.factor, weight=g.weight)
 end
 
-function Base.convert(::Type{FeynmanGraph{F,W}}, g::Graph{F,W}) where {F,W}
+function Base.convert(::Type{FeynmanGraph}, g::Graph{F,W}) where {F,W}
     error(
         "A set of Feynman properties (operator vertices, topology, etc.) must be specified to convert an object of type Graph to FeynmanGraph. " *
         "Please use constructor `FeynmanGraph(g::Graph, properties::FeynmanProperties)` instead."
@@ -33,5 +33,5 @@ Base.:*(g1::Graph, g2::FeynmanGraph) = error("Multiplication of Feynman graphs i
 Base.:*(g1::FeynmanGraph, g2::Graph) = error("Multiplication of Feynman graphs is not well defined!")
 Base.:+(g1::Graph{F,W}, g2::FeynmanGraph{F,W}) where {F,W} = Base.:+(Base.promote(g1, g2)...)
 Base.:+(g1::FeynmanGraph{F,W}, g2::Graph{F,W}) where {F,W} = Base.:+(Base.promote(g1, g2)...)
-Base.:-(g1::Graph{F,W}, g2::FeynmanGraph{F,W}) where {F,W} = Base.:+(Base.promote(g1, g2)...)
-Base.:-(g1::FeynmanGraph{F,W}, g2::Graph{F,W}) where {F,W} = Base.:+(Base.promote(g1, g2)...)
+Base.:-(g1::Graph{F,W}, g2::FeynmanGraph{F,W}) where {F,W} = Base.:-(Base.promote(g1, g2)...)
+Base.:-(g1::FeynmanGraph{F,W}, g2::Graph{F,W}) where {F,W} = Base.:-(Base.promote(g1, g2)...)

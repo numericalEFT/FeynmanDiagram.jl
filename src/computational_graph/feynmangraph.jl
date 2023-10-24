@@ -162,10 +162,10 @@ mutable struct FeynmanGraph{F,W} <: AbstractGraph # FeynmanGraph
     - `g`  computational graph
     - `properties::FeynmanProperties`  diagrammatic properties, e.g., the operator vertices and topology 
     """
-    function FeynmanGraph(g::Graph, properties::FeynmanProperties)
+    function FeynmanGraph(g::Graph{F,W}, properties::FeynmanProperties) where {F,W}
         @assert length(properties.external_indices) == length(properties.external_legs)
         # @assert allunique(subgraphs) "all subgraphs must be distinct."
-        return new{ftype,wtype}(uid(), g.name, g.orders, properties, g.subgraphs, g.subgraph_factors, typeof(g.operator), g.factor, g.weight)
+        return new{F,W}(uid(), g.name, g.orders, properties, g.subgraphs, g.subgraph_factors, g.operator, g.factor, g.weight)
     end
 end
 

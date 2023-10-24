@@ -19,18 +19,18 @@ Graphs.unary_istrivial(::Type{O}) where {O<:Union{O1,O2,O3}} = true
         subgraph_factors::Vector{Float64}
         factor::Float64
         weight::Float64
-        function ConcreteGraph(subgraphs=[]; name="", orders=zeros(Int, 0), operator=O, subgraph_factors=[], factor=1.0, weight=1.0)
-            return new(Graphs.uid(), name, orders, operator, subgraphs, subgraph_factors, factor, weight)
+        function ConcreteGraph(subgraphs=[]; name="", orders=zeros(Int, 0), operator=O(), subgraph_factors=[], factor=1.0, weight=1.0)
+            return new(Graphs.uid(), name, orders, typeof(operator), subgraphs, subgraph_factors, factor, weight)
         end
     end
 
     Graphs.uidreset()
-    g1 = ConcreteGraph(; operator=O1)
-    g2 = ConcreteGraph(; operator=O2)
-    g3 = ConcreteGraph(; operator=O3)
-    g = ConcreteGraph([g1, g2, g3]; subgraph_factors=[2, 3, 5], operator=O)
-    gp = ConcreteGraph([g1, g2, g3]; subgraph_factors=[2, 3, 5], operator=O)
-    h = ConcreteGraph([g1, g2, g3]; name="h", subgraph_factors=[2, 3, 5], operator=O)
+    g1 = ConcreteGraph(; operator=O1())
+    g2 = ConcreteGraph(; operator=O2())
+    g3 = ConcreteGraph(; operator=O3())
+    g = ConcreteGraph([g1, g2, g3]; subgraph_factors=[2, 3, 5], operator=O())
+    gp = ConcreteGraph([g1, g2, g3]; subgraph_factors=[2, 3, 5], operator=O())
+    h = ConcreteGraph([g1, g2, g3]; name="h", subgraph_factors=[2, 3, 5], operator=O())
 
     # weight(g::AbstractGraph) is an abstract method
     @test isnothing(Graphs.weight(ConcreteGraph()))
@@ -851,6 +851,67 @@ end
             @test external_operators(g) == reduce(*, V3)
         end
     end
+end
+
+@testset verbose = true "Conversions" begin
+    # Test constructor for FeynmanGraph from Graph and FeynmanProperties
+    g = Graph([]; factor=-1.0, operator=Graphs.Sum())
+    g1 = Graph([]; operator=O1())
+    g2 = Graph([]; operator=O2())
+    g_feyn = propagator(𝑓⁺(1)𝑓⁻(2))  # equivalent to g after conversion
+    g_feyn_conv = FeynmanGraph(g, g_feyn.properties)
+    @test isequiv(g_feyn, g_feyn_conv, :id)
+
+    # Test automatic FeynmanGraph -> Graph conversion
+    g_conv::Graph = g_feyn
+    @test isequiv(g, g_conv, :id)
+
+    # Test automatic FeynmanGraph -> Graph promotion in arithmetic operations
+    conversion_successful = true
+    local l1, l2, l3, l4, l5, l6, l7, r7, l8, r8
+    try
+        l1 = g_feyn + g1
+        l2 = g_feyn - g1
+        l3 = linear_combination(g_feyn, g1, 2, 3)
+        l4 = linear_combination(g_feyn, g, 2, 3)
+        l5 = linear_combination([g_feyn, g, g1, g2], [2, 5, 3, 9])
+        l6 = multi_product(g_feyn, g1, 2, 3)
+        l7 = multi_product(g_feyn, g, 2, 3)
+        l8 = multi_product([g_feyn, g, g1, g2], [2, 5, 3, 9])
+        r7 = multi_product(g, g, 2, 3)
+        r8 = multi_product([g, g, g1, g2], [2, 5, 3, 9])
+    catch
+        conversion_successful = false
+    end
+    @test conversion_successful
+    Graphs.optimize!([l1, l2, l3, l4, l5, l6, l7, r7, l8, r8])  # cache unique leaves
+
+    @test isequiv(l1, g + g1, :id)
+    @test isequiv(l2, g - g1, :id)
+    @test isequiv(l3, 2 * g + 3 * g1, :id)
+    @test isequiv(l4, linear_combination([g], [5]), :id)
+    @test isequiv(l5, linear_combination([g, g1, g2], [7, 3, 9]), :id)
+    @test isequiv(l6, multi_product(g, g1, 2, 3), :id)
+    
+    # TODO: Refine multiple Prod -> Power conversion
+    @test_broken isequiv(l7, r7, :id)
+    @test_broken isequiv(l8, r8, :id)
+
+    # FeynmanGraph multiplication is undefined
+    err1 = AssertionError()
+    err2 = AssertionError()
+    try
+        g * g_feyn
+    catch err1
+    end
+    try
+        g_feyn * g
+    catch err2
+    end
+    @test err1 isa ErrorException
+    @test err2 isa ErrorException
+    @test err1.msg == "Multiplication of Feynman graphs is not well defined!"
+    @test err2.msg == "Multiplication of Feynman graphs is not well defined!"
 end
 
 @testset verbose = true "Evaluation" begin
