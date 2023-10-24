@@ -360,7 +360,6 @@ function linear_combination(g1::FeynmanGraph{F,W}, g2::FeynmanGraph{F,W}, c1=F(1
         # subgraph_factors[2] *= g2.subgraph_factors[1] * g2.factor
         subgraphs[2] = g2.subgraphs[1]
     end
-    # g = FeynmanGraph([g1, g2], properties; subgraph_factors=[F(c1), F(c2)], operator=Sum(), ftype=F, wtype=W)
 
     if subgraphs[1] == subgraphs[2]
         g = FeynmanGraph([subgraphs[1]], properties; subgraph_factors=[sum(subgraph_factors)], operator=Sum(), orders=orders(g1), ftype=F, wtype=W)

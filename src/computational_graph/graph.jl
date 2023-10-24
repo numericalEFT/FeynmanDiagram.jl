@@ -124,6 +124,7 @@ function Base.:*(g1::Graph{F,W}, c2) where {F,W}
     # Convert trivial unary link to in-place form
     if unary_istrivial(g1) && onechild(g1)
         g.subgraph_factors[1] *= g1.subgraph_factors[1]
+        # g.subgraph_factors[1] *= g1.subgraph_factors[1] * g1.factor
         g.subgraphs = g1.subgraphs
     end
     return g
@@ -143,6 +144,7 @@ function Base.:*(c1, g2::Graph{F,W}) where {F,W}
     # Convert trivial unary link to in-place form
     if unary_istrivial(g2) && onechild(g2)
         g.subgraph_factors[1] *= g2.subgraph_factors[1]
+        # g.subgraph_factors[1] *= g2.subgraph_factors[1] * g2.factor
         g.subgraphs = g2.subgraphs
     end
     return g
@@ -169,10 +171,12 @@ function linear_combination(g1::Graph{F,W}, g2::Graph{F,W}, c1=F(1), c2=F(1)) wh
     # Convert trivial unary links to in-place form
     if unary_istrivial(g1) && onechild(g1)
         subgraph_factors[1] *= g1.subgraph_factors[1]
+        # subgraph_factors[1] *= g1.subgraph_factors[1] * g1.factor
         subgraphs[1] = g1.subgraphs[1]
     end
     if unary_istrivial(g2) && onechild(g2)
         subgraph_factors[2] *= g2.subgraph_factors[1]
+        # subgraph_factors[2] *= g2.subgraph_factors[1] * g2.factor
         subgraphs[2] = g2.subgraphs[1]
     end
 
@@ -211,6 +215,7 @@ function linear_combination(graphs::Vector{Graph{F,W}}, constants::AbstractVecto
     for (i, sub_g) in enumerate(graphs)
         if unary_istrivial(sub_g) && onechild(sub_g)
             subgraph_factors[i] *= sub_g.subgraph_factors[1]
+            # subgraph_factors[i] *= sub_g.subgraph_factors[1] * sub_g.factor
             subgraphs[i] = sub_g.subgraphs[1]
         end
     end
@@ -283,10 +288,12 @@ function multi_product(g1::Graph{F,W}, g2::Graph{F,W}, c1=F(1), c2=F(1)) where {
     # Convert trivial unary links to in-place form
     if unary_istrivial(g1) && onechild(g1)
         subgraph_factors[1] *= g1.subgraph_factors[1]
+        # subgraph_factors[1] *= g1.subgraph_factors[1] * g1.factor
         subgraphs[1] = g1.subgraphs[1]
     end
     if unary_istrivial(g2) && onechild(g2)
         subgraph_factors[2] *= g2.subgraph_factors[1]
+        # subgraph_factors[2] *= g2.subgraph_factors[1] * g2.factor
         subgraphs[2] = g2.subgraphs[1]
     end
 
@@ -324,6 +331,7 @@ function multi_product(graphs::Vector{Graph{F,W}}, constants::AbstractVector=one
     for (i, sub_g) in enumerate(graphs)
         if unary_istrivial(sub_g) && onechild(sub_g)
             subgraph_factors[i] *= sub_g.subgraph_factors[1]
+            # subgraph_factors[i] *= sub_g.subgraph_factors[1] * sub_g.factor
             subgraphs[i] = sub_g.subgraphs[1]
         end
     end
