@@ -44,7 +44,7 @@ Base.:(==)(a::FeynmanProperties, b::FeynmanProperties) = Base.isequal(a, b)
 drop_topology(p::FeynmanProperties) = FeynmanProperties(p.diagtype, p.vertices, [], p.external_indices, p.external_legs)
 
 """
-    mutable struct FeynmanGraph{F,W}
+    mutable struct FeynmanGraph{F<:Number,W}
     
     Computational graph representation of a (collection of) Feynman diagram(s). All Feynman diagrams should share the same set of external and internal vertices.
 
@@ -56,7 +56,7 @@ drop_topology(p::FeynmanProperties) = FeynmanProperties(p.diagtype, p.vertices, 
 - `subgraphs::Vector{FeynmanGraph{F,W}}`  vector of sub-diagrams 
 - `subgraph_factors::Vector{F}`  scalar multiplicative factors associated with each subdiagram
 - `operator::DataType`  node operation (Sum, Prod, etc.)
-- `factor::F`  total scalar multiplicative factor for the diagram
+- `factor::F`  a number representing the total scalar multiplicative factor for the diagram.
 - `weight::W`  weight of the diagram
 
 # Example:
@@ -71,7 +71,7 @@ julia> g = FeynmanGraph([g1,g2]; vertices=[𝑓⁺(1),𝑓⁻(2),𝑓⁺(3),𝑓
 3:f⁺(1)|f⁻(2)|f⁺(3)|f⁻(4)=0.0=Ⓧ (1,2)
 ```
 """
-mutable struct FeynmanGraph{F,W} <: AbstractGraph # FeynmanGraph
+mutable struct FeynmanGraph{F<:Number,W} <: AbstractGraph # FeynmanGraph
     id::Int
     name::String # "" by default
     orders::Vector{Int}

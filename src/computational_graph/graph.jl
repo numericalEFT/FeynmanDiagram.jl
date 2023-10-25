@@ -1,5 +1,5 @@
 """
-    mutable struct Graph{F,W}
+    mutable struct Graph{F<:Number,W}
     
     A representation of a computational graph, e.g., an expression tree, with type stable node data.
 
@@ -10,7 +10,7 @@
 - `subgraphs::Vector{Graph{F,W}}`  vector of sub-diagrams 
 - `subgraph_factors::Vector{F}`  scalar multiplicative factors associated with each subgraph. Note that the subgraph factors may be manipulated algebraically. To associate a fixed multiplicative factor with this graph which carries some semantic meaning, use the `factor` argument instead.
 - `operator::DataType`  node operation. Addition and multiplication are natively supported via operators Sum and Prod, respectively. Should be a concrete subtype of `AbstractOperator`.
-- `factor::F`  total scalar multiplicative factor for the diagram
+- `factor::F`  a number representing the total scalar multiplicative factor for the diagram.
 - `weight::W`  the weight of this node
 
 # Example:
@@ -25,7 +25,7 @@ julia> g = Graph([g1, g2]; operator=ComputationalGraphs.Sum())
 3=0.0=⨁ (1,2)
 ```
 """
-mutable struct Graph{F,W} <: AbstractGraph # Graph
+mutable struct Graph{F<:Number,W} <: AbstractGraph # Graph
     id::Int
     name::String # "" by default
     orders::Vector{Int}
