@@ -1,8 +1,9 @@
 module ComputationalGraphs
 
 using AbstractTrees
+using StaticArrays
 using Printf, PyCall, DataFrames
-
+#using ..Taylor
 macro todo()
     return :(error("Not yet implemented!"))
 end
@@ -34,6 +35,7 @@ export linear_combination, feynman_diagram, propagator, interaction, external_ve
 # export standardize_order!
 # export 𝐺ᶠ, 𝐺ᵇ, 𝐺ᵠ, 𝑊, Green2, Interaction
 
+
 include("tree_properties.jl")
 export haschildren, onechild, isleaf, isbranch, ischain, isfactorless, eldest, count_operation
 
@@ -50,4 +52,5 @@ export relabel, standardize_labels, replace_subgraph, merge_linear_combination, 
 
 include("optimize.jl")
 export optimize!, optimize
+
 end

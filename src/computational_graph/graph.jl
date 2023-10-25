@@ -154,6 +154,7 @@ function linear_combination(g1::Graph{F,W}, g2::Graph{F,W}, c1::C=1, c2::C=1) wh
     else
         g = Graph(subgraphs; subgraph_factors=subgraph_factors, operator=Sum(), orders=orders(g1), ftype=F, wtype=W)
     end
+
     return g
 end
 
@@ -176,7 +177,7 @@ where duplicate graphs in the input `graphs` are combined by summing their assoc
 # Example:
     Given graphs `g1`, `g2`, `g1` and constants `c1`, `c2`, `c3`, the function computes `(c1+c3)*g1 + c2*g2`.
 """
-function linear_combination(graphs::Vector{Graph{F,W}}, constants::Vector{C}=ones(C, length(graphs))) where {F,W,C}
+function linear_combination(graphs::Vector{Graph{F,W}}, constants::Vector{C}=ones(F, length(graphs))) where {F,W,C<:Number}
     @assert alleq(orders.(graphs)) "Graphs do not all have the same order."
     subgraphs, subgraph_factors = graphs, constants
     # parameters = union(getproperty.(graphs, :parameters))
@@ -199,8 +200,11 @@ function linear_combination(graphs::Vector{Graph{F,W}}, constants::Vector{C}=one
             unique_factors[i] += subgraph_factors[idx]
         end
     end
-    g = Graph(unique_graphs; subgraph_factors=unique_factors, operator=Sum(), orders=orders(graphs[1]), ftype=F, wtype=W)
 
+    if isempty(unique_graphs)
+        return nothing
+    end
+    g = Graph(unique_graphs; subgraph_factors=unique_factors, operator=Sum(), orders=orders(graphs[1]), ftype=F, wtype=W)
     return g
 end
 
@@ -322,6 +326,10 @@ function multi_product(graphs::Vector{Graph{F,W}}, constants::Vector{C}=ones(C, 
             unique_factors[loc] *= subgraph_factors[idx]
             repeated_counts[loc] += 1
         end
+    end
+
+    if isempty(unique_graphs)
+        return nothing
     end
 
     if length(unique_factors) == 1
