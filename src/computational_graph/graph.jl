@@ -6,6 +6,7 @@
 # Members:
 - `id::Int`  the unique hash id to identify the diagram
 - `name::Symbol`  name of the diagram
+- `orders::Vector{Int}`  orders associated with the graph, e.g., derivative orders
 - `subgraphs::Vector{Graph{F,W}}`  vector of sub-diagrams 
 - `subgraph_factors::Vector{F}`  scalar multiplicative factors associated with each subgraph. Note that the subgraph factors may be manipulated algebraically. To associate a fixed multiplicative factor with this graph which carries some semantic meaning, use the `factor` argument instead.
 - `operator::DataType`  node operation. Addition and multiplication are natively supported via operators Sum and Prod, respectively. Should be a concrete subtype of `AbstractOperator`.
@@ -27,6 +28,7 @@ julia> g = Graph([g1, g2]; operator=ComputationalGraphs.Sum())
 mutable struct Graph{F,W} <: AbstractGraph # Graph
     id::Int
     name::String # "" by default
+    orders::Vector{Int}
 
     subgraphs::Vector{Graph{F,W}}
     subgraph_factors::Vector{F}
@@ -45,6 +47,7 @@ mutable struct Graph{F,W} <: AbstractGraph # Graph
     - `subgraphs`  vector of sub-diagrams 
     - `subgraph_factors`  scalar multiplicative factors associated with each subgraph. Note that the subgraph factors may be manipulated algebraically. To associate a fixed multiplicative factor with this graph which carries some semantic meaning, use the `factor` argument instead.
     - `name`  name of the diagram
+    - `orders`  orders associated with the graph, e.g., derivative orders
     - `operator`  node operation, i.e., Sum, Prod, or a user-defined operator `Op <: AbstractOperator`
     - `ftype`  typeof(factor)
     - `wtype`  typeof(weight)
@@ -52,13 +55,13 @@ mutable struct Graph{F,W} <: AbstractGraph # Graph
     - `weight`  the weight of this node
     """
     function Graph(subgraphs::AbstractVector; subgraph_factors=one.(eachindex(subgraphs)), name="", operator::AbstractOperator=Sum(),
-        ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype)
+        orders=zeros(Int, 16), ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype)
     )
         if typeof(operator) <: Power
             @assert length(subgraphs) == 1 "Graph with Power operator must have one and only one subgraph."
         end
         # @assert allunique(subgraphs) "all subgraphs must be distinct."
-        return new{ftype,wtype}(uid(), name, subgraphs, subgraph_factors, typeof(operator), factor, weight)
+        return new{ftype,wtype}(uid(), name, orders, subgraphs, subgraph_factors, typeof(operator), factor, weight)
     end
 end
 
@@ -74,6 +77,12 @@ function constant_graph(factor=one(_dtype.factor))
     return Graph([]; operator=Constant(), factor=factor, ftype=_dtype.factor, wtype=_dtype.weight, weight=one(_dtype.weight))
 end
 
+"""
+    function orders(g::Graph)
+
+    Returns the derivative orders (::Vector{Int}) of Graph `g`.
+"""
+orders(g::Graph) = g.orders
 
 """
     function Base.:*(g1::Graph{F,W}, c2::C) where {F,W,C}
@@ -85,7 +94,7 @@ end
 - `c2`  scalar multiple
 """
 function Base.:*(g1::Graph{F,W}, c2::C) where {F,W,C}
-    g = Graph([g1,]; subgraph_factors=[F(c2),], operator=Prod(), ftype=F, wtype=W)
+    g = Graph([g1,]; subgraph_factors=[F(c2),], operator=Prod(), orders=orders(g1), ftype=F, wtype=W)
     # Merge multiplicative link
     if unary_istrivial(g1.operator) && onechild(g1)
         g.subgraph_factors[1] *= g1.subgraph_factors[1]
@@ -104,7 +113,7 @@ end
 - `g2`  computational graph
 """
 function Base.:*(c1::C, g2::Graph{F,W}) where {F,W,C}
-    g = Graph([g2,]; subgraph_factors=[F(c1),], operator=Prod(), ftype=F, wtype=W)
+    g = Graph([g2,]; subgraph_factors=[F(c1),], operator=Prod(), orders=orders(g2), ftype=F, wtype=W)
     # Merge multiplicative link
     if unary_istrivial(g2.operator) && onechild(g2)
         g.subgraph_factors[1] *= g2.subgraph_factors[1]
@@ -118,6 +127,7 @@ end
 
     Returns a graph representing the linear combination `c1*g1 + c2*g2`.
     If `g1 == g2`, it will return a graph representing `(c1+c2)*g1`.
+    Graphs `g1` and `g2` must have the same orders.
 
 # Arguments:
 - `g1`  first computational graph
@@ -126,6 +136,7 @@ end
 - `c2`  second scalar multiple
 """
 function linear_combination(g1::Graph{F,W}, g2::Graph{F,W}, c1::C=1, c2::C=1) where {F,W,C}
+    @assert orders(g1) == orders(g2) "g1 and g2 have different orders."
     subgraphs = [g1, g2]
     subgraph_factors = [F(c1), F(c2)]
     # Convert multiplicative links to in-place form
@@ -139,9 +150,9 @@ function linear_combination(g1::Graph{F,W}, g2::Graph{F,W}, c1::C=1, c2::C=1) wh
     end
 
     if subgraphs[1] == subgraphs[2]
-        g = Graph([subgraphs[1]]; subgraph_factors=[sum(subgraph_factors)], operator=Sum(), ftype=F, wtype=W)
+        g = Graph([subgraphs[1]]; subgraph_factors=[sum(subgraph_factors)], operator=Sum(), orders=orders(g1), ftype=F, wtype=W)
     else
-        g = Graph(subgraphs; subgraph_factors=subgraph_factors, operator=Sum(), ftype=F, wtype=W)
+        g = Graph(subgraphs; subgraph_factors=subgraph_factors, operator=Sum(), orders=orders(g1), ftype=F, wtype=W)
     end
 
     return g
@@ -153,6 +164,7 @@ end
     Given a vector 𝐠 of graphs and an equally-sized vector 𝐜 of constants, returns a new
     graph representing the linear combination (𝐜 ⋅ 𝐠). 
     The function identifies unique graphs from the input `graphs` and sums their associated `constants`.
+    All input graphs must have the same orders.
 
 # Arguments:
 - `graphs`  vector of computational graphs
@@ -165,8 +177,10 @@ where duplicate graphs in the input `graphs` are combined by summing their assoc
 # Example:
     Given graphs `g1`, `g2`, `g1` and constants `c1`, `c2`, `c3`, the function computes `(c1+c3)*g1 + c2*g2`.
 """
-function linear_combination(graphs::Vector{Graph{F,W}}, constants::Vector{C}=ones(length(graphs))) where {F,W,C<:Number}
+function linear_combination(graphs::Vector{Graph{F,W}}, constants::Vector{C}=ones(F, length(graphs))) where {F,W,C<:Number}
+    @assert alleq(orders.(graphs)) "Graphs do not all have the same order."
     subgraphs, subgraph_factors = graphs, constants
+    # parameters = union(getproperty.(graphs, :parameters))
     # Convert multiplicative links to in-place form
     for (i, sub_g) in enumerate(graphs)
         if unary_istrivial(sub_g.operator) && onechild(sub_g)
@@ -186,11 +200,11 @@ function linear_combination(graphs::Vector{Graph{F,W}}, constants::Vector{C}=one
             unique_factors[i] += subgraph_factors[idx]
         end
     end
+
     if isempty(unique_graphs)
         return nothing
     end
-    g = Graph(unique_graphs; subgraph_factors=unique_factors, operator=Sum(), ftype=F, wtype=W)
-
+    g = Graph(unique_graphs; subgraph_factors=unique_factors, operator=Sum(), orders=orders(graphs[1]), ftype=F, wtype=W)
     return g
 end
 
@@ -213,6 +227,7 @@ end
     function Base.:+(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
 
     Returns a graph `g1 + g2` representing the addition of `g2` with `g1`.
+    Graphs `g1` and `g2` must have the same orders.
 
 # Arguments:
 - `g1`  first computational graph
@@ -226,6 +241,7 @@ end
     function Base.:-(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
 
     Returns a graph `g1 - g2` representing the subtraction of `g2` from `g1`.
+    Graphs `g1` and `g2` must have the same orders.
 
 # Arguments:
 - `g1`  first computational graph
