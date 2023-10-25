@@ -17,7 +17,8 @@ function optimize!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose
     else
         graphs = collect(graphs)
         leaf_mapping = remove_duplicated_leaves!(graphs, verbose=verbose, normalize=normalize)
-        merge_all_chains!(graphs, verbose=verbose)
+        # merge_all_chains!(graphs, verbose=verbose)
+        flatten_all_chains!(graphs, verbose=verbose)
         merge_all_linear_combinations!(graphs, verbose=verbose)
         return leaf_mapping
     end
@@ -180,6 +181,50 @@ function merge_all_chains!(graphs::AbstractVector{<:AbstractGraph}; verbose=0)
 end
 
 """
+    function flatten_all_chains!(g::AbstractGraph; verbose=0)
+
+    In-place flattens all nodes representing trivial unary chains in the given graph `g`. 
+
+# Arguments:
+- `graphs`: The graph to be processed.
+- `verbose`: Level of verbosity (default: 0).
+
+# Returns:
+- The mutated graph `g` with all chains flattened.
+"""
+function flatten_all_chains!(g::AbstractGraph; verbose=0)
+    verbose > 0 && println("flatten all nodes representing trivial unary chains.")
+    for sub_g in g.subgraphs
+        flatten_all_chains!(sub_g)
+        flatten_chains!(sub_g)
+    end
+    flatten_chains!(g)
+    return g
+end
+
+"""
+    function flatten_all_chains!(graphs::AbstractVector{<:AbstractGraph}; verbose=0)
+
+    In-place flattens all nodes representing trivial unary chains in given graphs.
+
+# Arguments:
+- `graphs`: A collection of graphs to be processed.
+- `verbose`: Level of verbosity (default: 0).
+
+# Returns:
+- The mutated collection `graphs` with all chains in each graph flattened.
+"""
+function flatten_all_chains!(graphs::AbstractVector{<:AbstractGraph}; verbose=0)
+    verbose > 0 && println("flatten all nodes representing trivial unary chains.")
+    # Post-order DFS
+    for g in graphs
+        flatten_all_chains!(g.subgraphs)
+        flatten_chains!(g)
+    end
+    return graphs
+end
+
+"""
     function merge_all_linear_combinations!(g::AbstractGraph; verbose=0)
 
     In-place merge all nodes representing a linear combination of a non-unique list of subgraphs within a single graph.
@@ -263,7 +308,7 @@ end
 - Optimized graphs.
 # 
 """
-function merge_all_multi_products!(graphs::Union{Tuple,AbstractVector{Graph}}; verbose=0)
+function merge_all_multi_products!(graphs::AbstractVector{<:Graph}; verbose=0)
     verbose > 0 && println("merge nodes representing a multi product of a non-unique list of graphs.")
     # Post-order DFS
     for g in graphs

@@ -211,6 +211,32 @@ Graphs.unary_istrivial(::Type{O}) where {O<:Union{O1,O2,O3}} = true
             merge_multi_product!(h1)
             @test isequiv(h1, h1_mp, :id)
         end
+        @testset "Flatten chains" begin
+            l0 = Graph([])
+            l1 = Graph([l0]; subgraph_factors=[2])
+            g1 = Graph([l1]; subgraph_factors=[-1], operator=O())
+            g1c = deepcopy(g1)
+            g2 = 2 * g1
+            g3 = Graph([g2,]; subgraph_factors=[3,], operator=Graphs.Prod())
+            g4 = Graph([g3,]; subgraph_factors=[5,], operator=Graphs.Prod())
+            r1 = Graph([g4,]; subgraph_factors=[7,], operator=Graphs.Prod())
+            r2 = Graph([g4,]; subgraph_factors=[-1,], operator=Graphs.Prod())
+            r3 = Graph([g3, g4,]; subgraph_factors=[2, 7], operator=O())
+            rvec = deepcopy([r1, r2, r3])
+            Graphs.flatten_chains!(r1)
+            @test isequiv(g1, g1c, :id)
+            @test isequiv(r1, 210g1, :id)
+            @test isequiv(g2, 2g1, :id)
+            @test isequiv(g3, 6g1, :id)
+            @test isequiv(g4, 30g1, :id)
+            Graphs.flatten_chains!(r2)
+            @test isequiv(r2, -30g1, :id)
+            Graphs.flatten_chains!(r3)
+            @test isequiv(r3, Graph([g1, g1,]; subgraph_factors=[12, 210], operator=O()), :id)
+            @test r1 == Graphs.flatten_chains(rvec[1])
+            @test r2 == Graphs.flatten_chains(rvec[2])
+            @test r3 == Graphs.flatten_chains(rvec[3])
+        end
     end
     @testset verbose = true "Optimizations" begin
         @testset "Remove one-child parents" begin
@@ -247,6 +273,40 @@ Graphs.unary_istrivial(::Type{O}) where {O<:Union{O1,O2,O3}} = true
             @test h.subgraph_factors == [105]
             @test eldest(h) == h0
         end
+        @testset "Flatten all chains" begin
+            l0 = Graph([])
+            l1 = Graph([l0]; subgraph_factors=[2])
+            l2 = Graph([]; factor=3)
+            g1 = Graph([l1, l2]; subgraph_factors=[-1, 1])
+            g2 = 2 * g1
+            g3 = Graph([g2,]; subgraph_factors=[3,], operator=Graphs.Prod())
+            g4 = Graph([g3,]; subgraph_factors=[5,], operator=Graphs.Prod())
+            r1 = Graph([g4,]; subgraph_factors=[7,], operator=Graphs.Prod())
+            r2 = Graph([g4,]; subgraph_factors=[-1,], operator=Graphs.Prod())
+            r3 = Graph([g3, g4,]; subgraph_factors=[2, 7], operator=O())
+            rvec = deepcopy([r1, r2, r3])
+            rvec1 = deepcopy([r1, r2, r3])
+            Graphs.flatten_all_chains!(r1)
+            @test isequiv(g1, Graph([l0, l2]; subgraph_factors=[-2, 1]), :id)
+            @test isequiv(r1, 210g1, :id)
+            @test isequiv(g2, 2g1, :id)
+            @test isequiv(g3, 6g1, :id)
+            @test isequiv(g4, 30g1, :id)
+            Graphs.flatten_all_chains!(r2)
+            @test isequiv(r2, -30g1, :id)
+            Graphs.flatten_all_chains!(r3)
+            @test isequiv(r3, Graph([g1, g1,]; subgraph_factors=[12, 210], operator=O()), :id)
+            Graphs.flatten_all_chains!(rvec)
+            @test rvec == [r1, r2, r3]
+
+            Graphs.merge_all_chains!(rvec1)
+            @test rvec1[1].subgraph_factors == [210]
+            @test eldest(rvec1[1]) == g1
+            @test rvec1[2].subgraph_factors == [-1]
+            @test eldest(rvec1[2]) == g1    #  BUG!
+            @test rvec1[3].subgraph_factors == [2, 7]
+            @test rvec1[3].subgraphs == [g1, g1]  #  BUG!
+        end
         @testset "merge all linear combinations" begin
             g1 = Graph([])
             g2 = 2 * g1
@@ -263,6 +323,26 @@ Graphs.unary_istrivial(::Type{O}) where {O<:Union{O1,O2,O3}} = true
             @test all(isequiv(h, _h, :id) for h in hvec)
 
             Graphs.merge_all_linear_combinations!(h0)
+            @test isequiv(h0.subgraphs[1], _h, :id)
+        end
+        @testset "Merge all multi prodicts" begin
+            g1 = Graph([])
+            g2 = Graph([], factor=2)
+            g3 = Graph([], factor=3)
+            h = Graph([g1, g2, g1, g1, g3, g2]; subgraph_factors=[3, 2, 5, 1, 1, 3], operator=Graphs.Prod())
+            hvec = repeat([deepcopy(h)], 3)
+            h0 = Graph([deepcopy(h), g2])
+            h_s1 = Graph([g1], operator=Graphs.Power(3))
+            h_s2 = Graph([g2], operator=Graphs.Power(2))
+            _h = Graph([h_s1, h_s2, g3], subgraph_factors=[15, 6, 1], operator=Graphs.Prod())
+            # Test on a single graph
+            Graphs.merge_all_multi_products!(h)
+            @test isequiv(h, _h, :id)
+            # Test on a vector of graphs
+            Graphs.merge_all_multi_products!(hvec)
+            @test all(isequiv(h, _h, :id) for h in hvec)
+
+            Graphs.merge_all_multi_products!(h0)
             @test isequiv(h0.subgraphs[1], _h, :id)
         end
         @testset "optimize" begin

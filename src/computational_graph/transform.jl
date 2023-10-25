@@ -170,6 +170,13 @@ end
 - `g::AbstractGraph`: graph to be modified
 """
 function merge_factorless_chain!(g::AbstractGraph)
+    if unary_istrivial(g.operator) && onechild(g) && isfactorless(g)
+        child = eldest(g)
+        for field in fieldnames(typeof(g))
+            value = getproperty(child, field)
+            setproperty!(g, field, value)
+        end
+    end
     while unary_istrivial(g.operator) && onechild(g) && isfactorless(g)
         child = eldest(g)
         for field in fieldnames(typeof(g))
@@ -277,6 +284,41 @@ end
 - `g::AbstractGraph`: graph to be modified
 """
 merge_chains(g::AbstractGraph) = merge_chains!(deepcopy(g))
+
+"""
+    function flatten_chains!(g::AbstractGraph)
+
+    Recursively flattens chains of subgraphs within the given graph `g` by merging certain trivial unary subgraphs 
+    into their parent graphs in the in-place form.
+
+    Acts only on subgraphs of g with the following structure: 𝓞 --- 𝓞' --- ⋯ --- 𝓞'' ⋯ (!),
+    where the stop-case (!) represents a leaf, a non-trivial unary operator 𝓞'''(g) != g, or a non-unary operation.
+
+# Arguments:
+- `g::AbstractGraph`: graph to be modified
+"""
+function flatten_chains!(g::AbstractGraph)
+    for (i, sub_g) in enumerate(g.subgraphs)
+        if onechild(sub_g) && unary_istrivial(sub_g.operator)
+            flatten_chains!(sub_g)
+
+            g.subgraph_factors[i] *= sub_g.subgraph_factors[1]
+            g.subgraphs[i] = eldest(sub_g)
+        end
+    end
+    return g
+end
+
+"""
+    function flatten_chains(g::AbstractGraph) 
+
+    Recursively flattens chains of subgraphs within a given graph `g` by merging certain trivial unary subgraphs into their parent graphs,
+    This function returns a new graph with flatten chains, dervied from the input graph `g` remaining unchanged.
+
+# Arguments:
+- `g::AbstractGraph`: graph to be modified
+"""
+flatten_chains(g::AbstractGraph) = flatten_chains!(deepcopy(g))
 
 """
     function merge_linear_combination(g::Graph)
