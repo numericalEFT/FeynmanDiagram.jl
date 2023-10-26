@@ -263,7 +263,7 @@ end
             @test h8.subgraph_factors == [36]
             @test isequiv(h7_lc, h8, :id)
         end
-        @testset "Merge multi prodict" begin
+        @testset "Merge multi-pproduct" begin
             g1 = Graph([])
             g2 = Graph([], factor=2)
             g3 = Graph([], factor=3)
@@ -330,7 +330,7 @@ end
             Graphs.flatten_all_chains!(rvec)
             @test rvec == [r1, r2, r3]
         end
-        @testset "merge all linear combinations" begin
+        @testset "Merge all linear combinations" begin
             g1 = Graph([])
             g2 = 2 * g1
             g3 = Graph([], factor=3.0)
@@ -348,7 +348,7 @@ end
             Graphs.merge_all_linear_combinations!(h0)
             @test isequiv(h0.subgraphs[1], _h, :id)
         end
-        @testset "Merge all multi prodicts" begin
+        @testset "Merge all multi-products" begin
             g1 = Graph([])
             g2 = Graph([], factor=2)
             g3 = Graph([], factor=3)
