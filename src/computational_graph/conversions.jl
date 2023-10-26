@@ -19,19 +19,19 @@ function Base.convert(::Type{FeynmanGraph}, g::Graph{F,W}) where {F,W}
     )
 end
 
-# Automatically promote FeynmanGraph to Graph for vectors v::Vector{Union{Graph,FeynmanGraph}} and arithmetic operations
-Base.promote_rule(::Type{Graph{F,W}}, ::Type{FeynmanGraph{F,W}}) where {F,W} = Graph{F,W}
+# # Automatically promote FeynmanGraph to Graph for vectors v::Vector{Union{Graph,FeynmanGraph}} and arithmetic operations
+# Base.promote_rule(::Type{Graph{F,W}}, ::Type{FeynmanGraph{F,W}}) where {F,W} = Graph{F,W}
 
-# Arithmetic operations for mixed Graph/FeynmanGraph types
-linear_combination(g1::Graph{F,W}, g2::FeynmanGraph{F,W}, c1=F(1), c2=F(1)) where {F,W} = linear_combination(Base.promote(g1, g2)..., c1, c2)
-linear_combination(g1::FeynmanGraph{F,W}, g2::Graph{F,W}, c1=F(1), c2=F(1)) where {F,W} = linear_combination(Base.promote(g1, g2)..., c1, c2)
-Base.:+(g1::Graph{F,W}, g2::FeynmanGraph{F,W}) where {F,W} = Base.:+(Base.promote(g1, g2)...)
-Base.:+(g1::FeynmanGraph{F,W}, g2::Graph{F,W}) where {F,W} = Base.:+(Base.promote(g1, g2)...)
-Base.:-(g1::Graph{F,W}, g2::FeynmanGraph{F,W}) where {F,W} = Base.:-(Base.promote(g1, g2)...)
-Base.:-(g1::FeynmanGraph{F,W}, g2::Graph{F,W}) where {F,W} = Base.:-(Base.promote(g1, g2)...)
+# # Arithmetic operations for mixed Graph/FeynmanGraph types
+# linear_combination(g1::Graph{F,W}, g2::FeynmanGraph{F,W}, c1=F(1), c2=F(1)) where {F,W} = linear_combination(Base.promote(g1, g2)..., c1, c2)
+# linear_combination(g1::FeynmanGraph{F,W}, g2::Graph{F,W}, c1=F(1), c2=F(1)) where {F,W} = linear_combination(Base.promote(g1, g2)..., c1, c2)
+# Base.:+(g1::Graph{F,W}, g2::FeynmanGraph{F,W}) where {F,W} = Base.:+(Base.promote(g1, g2)...)
+# Base.:+(g1::FeynmanGraph{F,W}, g2::Graph{F,W}) where {F,W} = Base.:+(Base.promote(g1, g2)...)
+# Base.:-(g1::Graph{F,W}, g2::FeynmanGraph{F,W}) where {F,W} = Base.:-(Base.promote(g1, g2)...)
+# Base.:-(g1::FeynmanGraph{F,W}, g2::Graph{F,W}) where {F,W} = Base.:-(Base.promote(g1, g2)...)
 
-# No auto-promotion for graph products
-multi_product(g1::Graph{F,W}, g2::FeynmanGraph{F,W}, c1=F(1), c2=F(1)) where {F,W} = error("Multiplication of Feynman graphs is not well defined!")
-multi_product(g1::FeynmanGraph{F,W}, g2::Graph{F,W}, c1=F(1), c2=F(1)) where {F,W} = error("Multiplication of Feynman graphs is not well defined!")
-Base.:*(g1::Graph{F,W}, g2::FeynmanGraph{F,W}) where {F,W} = error("Multiplication of Feynman graphs is not well defined!")
-Base.:*(g1::FeynmanGraph{F,W}, g2::Graph{F,W}) where {F,W} = error("Multiplication of Feynman graphs is not well defined!")
+# # No auto-promotion for graph products
+# multi_product(g1::Graph{F,W}, g2::FeynmanGraph{F,W}, c1=F(1), c2=F(1)) where {F,W} = error("Multiplication of Feynman graphs is not well defined!")
+# multi_product(g1::FeynmanGraph{F,W}, g2::Graph{F,W}, c1=F(1), c2=F(1)) where {F,W} = error("Multiplication of Feynman graphs is not well defined!")
+# Base.:*(g1::Graph{F,W}, g2::FeynmanGraph{F,W}) where {F,W} = error("Multiplication of Feynman graphs is not well defined!")
+# Base.:*(g1::FeynmanGraph{F,W}, g2::Graph{F,W}) where {F,W} = error("Multiplication of Feynman graphs is not well defined!")

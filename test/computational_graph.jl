@@ -854,64 +854,22 @@ end
 end
 
 @testset verbose = true "Conversions" begin
-    # Test constructor for FeynmanGraph from Graph and FeynmanProperties
     g = Graph([]; factor=-1.0, operator=Graphs.Sum())
     g1 = Graph([]; operator=O1())
     g2 = Graph([]; operator=O2())
     g_feyn = propagator(𝑓⁺(1)𝑓⁻(2))  # equivalent to g after conversion
+    # Test constructor for FeynmanGraph from Graph and FeynmanProperties
     g_feyn_conv = FeynmanGraph(g, g_feyn.properties)
     @test isequiv(g_feyn, g_feyn_conv, :id)
-
-    # Test automatic FeynmanGraph -> Graph conversion
-    g_conv::Graph = g_feyn
-    @test isequiv(g, g_conv, :id)
-
-    # Test automatic FeynmanGraph -> Graph promotion in arithmetic operations
-    conversion_successful = true
-    local l1, l2, l3, l4, l5
-    try
-        l1 = g_feyn + g1
-        l2 = g_feyn - g1
-        l3 = linear_combination(g_feyn, g1, 2, 3)
-        l4 = linear_combination(g_feyn, g, 2, 3)
-        l5 = linear_combination([g_feyn, g, g1, g2], [2, 5, 3, 9])
-    catch
-        conversion_successful = false
-    end
-    @test conversion_successful
-
-    Graphs.optimize!([l1, l2, l3, l4, l5])  # cache unique leaves
-    @test isequiv(l1, g + g1, :id)
-    @test isequiv(l2, g - g1, :id)
-    @test isequiv(l3, 2 * g + 3 * g1, :id)
-    @test isequiv(l4, linear_combination([g], [5]), :id)
-    @test isequiv(l5, linear_combination([g, g1, g2], [7, 3, 9]), :id)
-
-    # FeynmanGraph multiplication is undefined
-    err1 = AssertionError()
-    err2 = AssertionError()
-    err3 = AssertionError()
-    err4 = AssertionError()
-    try
-        g * g_feyn
-    catch err1
-    end
-    try
-        g_feyn * g
-    catch err2
-    end
-    try
-        multi_product(g_feyn, g1, 2, 3)
-    catch err3
-    end
-    try
-        multi_product(g, g_feyn, 2, 3)
-    catch err4
-    end
-    errs = [err1, err2, err3, err4]
-    errmsg = "Multiplication of Feynman graphs is not well defined!"
-    @test all(err isa ErrorException for err in errs)
-    @test all(err.msg == errmsg for err in errs)
+    # Test implicit and explicit FeynmanGraph -> Graph conversion
+    g_conv_implicit_v1::Graph = g_feyn
+    g_conv_implicit_v2::Graph{Float64,Float64} = g_feyn
+    g_conv_explicit_v1 = convert(Graph, g_feyn)
+    g_conv_explicit_v2 = convert(Graph{Float64,Float64}, g_feyn)
+    @test isequiv(g, g_conv_implicit_v1, :id)
+    @test isequiv(g, g_conv_implicit_v2, :id)
+    @test isequiv(g, g_conv_explicit_v1, :id)
+    @test isequiv(g, g_conv_explicit_v2, :id)
 end
 
 @testset verbose = true "Evaluation" begin
