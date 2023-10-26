@@ -155,6 +155,7 @@ end
 
     Returns a graph representing the linear combination `c1*g1 + c2*g2`.
     If `g1 == g2`, it will return a graph representing `(c1+c2)*g1`.
+    Graphs `g1` and `g2` must have the same orders.
 
 # Arguments:
 - `g1`  first computational graph
@@ -195,6 +196,7 @@ end
     Given a vector 𝐠 of graphs and an equally-sized vector 𝐜 of constants, returns a new
     graph representing the linear combination (𝐜 ⋅ 𝐠). 
     The function identifies unique graphs from the input `graphs` and sums their associated `constants`.
+    All input graphs must have the same orders.
 
 # Arguments:
 - `graphs`  vector of computational graphs
@@ -231,11 +233,11 @@ function linear_combination(graphs::Vector{Graph{F,W}}, constants::AbstractVecto
             unique_factors[i] += subgraph_factors[idx]
         end
     end
+
     if isempty(unique_graphs)
         return nothing
     end
     g = Graph(unique_graphs; subgraph_factors=unique_factors, operator=Sum(), orders=orders(graphs[1]), ftype=F, wtype=W)
-
     return g
 end
 

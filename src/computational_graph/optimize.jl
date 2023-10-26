@@ -4,7 +4,7 @@
     In-place optimization of given `graphs`. Removes duplicated leaves, merges chains, and merges linear combinations.
 
 # Arguments:
-- `graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}`: A tuple or vector of graphs.
+- `graphs`: A tuple or vector of graphs.
 - `verbose`: Level of verbosity (default: 0).
 - `normalize`: Optional function to normalize the graphs (default: nothing).
 
@@ -17,7 +17,7 @@ function optimize!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose
     else
         graphs = collect(graphs)
         leaf_mapping = remove_duplicated_leaves!(graphs, verbose=verbose, normalize=normalize)
-        merge_all_chains!(graphs, verbose=verbose)
+        flatten_all_chains!(graphs, verbose=verbose)
         merge_all_linear_combinations!(graphs, verbose=verbose)
         return leaf_mapping
     end
@@ -26,10 +26,10 @@ end
 """
     function optimize(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0, normalize=nothing)
 
-    Optimize a copy of given `graphs`. Removes duplicated leaves, merges chains, and merges linear combinations.
+    Optimizes a copy of given `graphs`. Removes duplicated leaves, merges chains, and merges linear combinations.
 
 # Arguments:
-- `graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}`: A tuple or vector of graphs.
+- `graphs`: A tuple or vector of graphs.
 - `verbose`: Level of verbosity (default: 0).
 - `normalize`: Optional function to normalize the graphs (default: nothing).
 
@@ -44,148 +44,56 @@ function optimize(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=
 end
 
 """
-    function merge_all_chain_prefactors!(g::AbstractGraph; verbose=0)
-
-    In-place merge prefactors of all nodes representing trivial unary chains towards the root level for a single graph.
+    function flatten_all_chains!(g::AbstractGraph; verbose=0)
+F
+    Flattens all nodes representing trivial unary chains in-place in the given graph `g`. 
 
 # Arguments:
-- `g::AbstractGraph`: An AbstractGraph.
+- `graphs`: The graph to be processed.
 - `verbose`: Level of verbosity (default: 0).
 
 # Returns:
-- Optimized graph.
-# 
+- The mutated graph `g` with all chains flattened.
 """
-function merge_all_chain_prefactors!(g::AbstractGraph; verbose=0)
-    verbose > 0 && println("merge prefactors of all nodes representing trivial unary chains toward root level.")
-    # Post-order DFS
-    for sub_g in subgraphs(g)
-        merge_all_chain_prefactors!(sub_g)
-        merge_chain_prefactors!(sub_g)
+function flatten_all_chains!(g::AbstractGraph; verbose=0)
+    verbose > 0 && println("flatten all nodes representing trivial unary chains.")
+    for sub_g in g.subgraphs
+        flatten_all_chains!(sub_g)
+        flatten_chains!(sub_g)
     end
-    merge_chain_prefactors!(g)
+    flatten_chains!(g)
     return g
 end
 
 """
-    function merge_all_chain_prefactors!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0)
+    function flatten_all_chains!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0)
 
-    In-place merge prefactors of all nodes representing trivial unary chains towards the root level for given graphs.
+    Flattens all nodes representing trivial unary chains in-place in given graphs.
 
 # Arguments:
-- `graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}`: A tuple or vector of graphs.
+- `graphs`: A collection of graphs to be processed.
 - `verbose`: Level of verbosity (default: 0).
 
 # Returns:
-- Optimized graphs.
-# 
+- The mutated collection `graphs` with all chains in each graph flattened.
 """
-function merge_all_chain_prefactors!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0)
-    verbose > 0 && println("merge prefactors of all nodes representing trivial unary chains toward root level.")
+function flatten_all_chains!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0)
+    verbose > 0 && println("flatten all nodes representing trivial unary chains.")
     # Post-order DFS
     for g in graphs
-        merge_all_chain_prefactors!(subgraphs(g))
-        merge_chain_prefactors!(g)
+        flatten_all_chains!(g.subgraphs)
+        flatten_chains!(g)
     end
-    return graphs
-end
-
-"""
-    function merge_all_factorless_chains!(g::AbstractGraph; verbose=0)
-
-    In-place merge all nodes representing factorless trivial unary chains within a single graph.
-
-# Arguments:
-- `g::AbstractGraph`: An AbstractGraph.
-- `verbose`: Level of verbosity (default: 0).
-
-# Returns:
-- Optimized graph.
-# 
-"""
-function merge_all_factorless_chains!(g::AbstractGraph; verbose=0)
-    verbose > 0 && println("merge all nodes representing factorless trivial unary chains.")
-    # Post-order DFS
-    for sub_g in subgraphs(g)
-        merge_all_factorless_chains!(sub_g)
-        merge_factorless_chain!(sub_g)
-    end
-    merge_factorless_chain!(g)
-    return g
-end
-
-"""
-    function merge_all_factorless_chains!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0)
-
-    In-place merge all nodes representing factorless trivial unary chains within given graphs.
-
-# Arguments:
-- `graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}`: A tuple or vector of graphs.
-- `verbose`: Level of verbosity (default: 0).
-
-# Returns:
-- Optimized graphs.
-# 
-"""
-function merge_all_factorless_chains!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0)
-    verbose > 0 && println("merge all nodes representing factorless trivial unary chains.")
-    # Post-order DFS
-    for g in graphs
-        merge_all_factorless_chains!(subgraphs(g))
-        merge_factorless_chain!(g)
-    end
-    return graphs
-end
-
-"""
-    function merge_all_chains!(g::AbstractGraph; verbose=0)
-
-    In-place merge all nodes representing trivial unary chains within a single graph.
-    This function consolidates both chain prefactors and factorless chains.
-
-# Arguments:
-- `g::AbstractGraph`: An AbstractGraph.
-- `verbose`: Level of verbosity (default: 0).
-
-# Returns:
-- Optimized graph.
-# 
-"""
-function merge_all_chains!(g::AbstractGraph; verbose=0)
-    verbose > 0 && println("merge all nodes representing trivial unary chains.")
-    merge_all_chain_prefactors!(g, verbose=verbose)
-    merge_all_factorless_chains!(g, verbose=verbose)
-    return g
-end
-
-"""
-    function merge_all_chains!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0)
-
-    In-place merge all nodes representing trivial unary chains in given graphs. 
-    This function consolidates both chain prefactors and factorless chains.
-
-# Arguments:
-- `graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}`: A tuple or vector of graphs.
-- `verbose`: Level of verbosity (default: 0).
-
-# Returns:
-- Optimized graphs.
-# 
-"""
-function merge_all_chains!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0)
-    verbose > 0 && println("merge all nodes representing trivial unary chains.")
-    merge_all_chain_prefactors!(graphs, verbose=verbose)
-    merge_all_factorless_chains!(graphs, verbose=verbose)
     return graphs
 end
 
 """
     function merge_all_linear_combinations!(g::AbstractGraph; verbose=0)
 
-    In-place merge all nodes representing a linear combination of a non-unique list of subgraphs within a single graph.
+    Merges all nodes representing a linear combination of a non-unique list of subgraphs in-place within a single graph.
 
 # Arguments:
-- `g::AbstractGraph`: An AbstractGraph.
+- `g`: An AbstractGraph.
 - `verbose`: Level of verbosity (default: 0).
 
 # Returns:
@@ -206,10 +114,10 @@ end
 """
     function merge_all_linear_combinations!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0)
 
-    In-place merge all nodes representing a linear combination of a non-unique list of subgraphs in given graphs. 
+    Merges all nodes representing a linear combination of a non-unique list of subgraphs in-place in given graphs. 
 
 # Arguments:
-- `graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}`: A tuple or vector of graphs.
+- `graphs`: A collection of graphs to be processed.
 - `verbose`: Level of verbosity (default: 0).
 
 # Returns:
@@ -229,7 +137,7 @@ end
 """
     function merge_all_multi_products!(g::Graph; verbose=0)
 
-    In-place merge all nodes representing a multi product of a non-unique list of subgraphs within a single graph.
+    Merges all nodes representing a multi product of a non-unique list of subgraphs in-place within a single graph.
 
 # Arguments:
 - `g::Graph`: A Graph.
@@ -251,19 +159,19 @@ function merge_all_multi_products!(g::Graph; verbose=0)
 end
 
 """
-    function merge_all_multi_products!(graphs::Union{Tuple,AbstractVector{Graph}}; verbose=0)
+    function merge_all_multi_products!(graphs::Union{Tuple,AbstractVector{<:Graph}}; verbose=0)
 
-    In-place merge all nodes representing a multi product of a non-unique list of subgraphs in given graphs. 
+    Merges all nodes representing a multi product of a non-unique list of subgraphs in-place in given graphs. 
 
 # Arguments:
-- `graphs::Union{Tuple,AbstractVector{Graph}}`: A tuple or vector of graphs.
+- `graphs`: A collection of graphs to be processed.
 - `verbose`: Level of verbosity (default: 0).
 
 # Returns:
 - Optimized graphs.
 # 
 """
-function merge_all_multi_products!(graphs::Union{Tuple,AbstractVector{Graph}}; verbose=0)
+function merge_all_multi_products!(graphs::Union{Tuple,AbstractVector{<:Graph}}; verbose=0)
     verbose > 0 && println("merge nodes representing a multi product of a non-unique list of graphs.")
     # Post-order DFS
     for g in graphs
@@ -274,18 +182,18 @@ function merge_all_multi_products!(graphs::Union{Tuple,AbstractVector{Graph}}; v
 end
 
 """
-    function unique_leaves(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}})
+    function unique_leaves(graphs::AbstractVector{<:AbstractGraph})
 
-    Identify and retrieve unique leaf nodes from a set of graphs.
+    Identifies and retrieves unique leaf nodes from a set of graphs.
 
 # Arguments:
-- `graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}`: A tuple or vector of graphs.
+- `graphs`: A collection of graphs to be processed.
 
 # Returns:
 - The vector of unique leaf nodes.
 - A mapping dictionary from the id of each unique leaf node to its index in collect(1:length(leafs)).
 """
-function unique_leaves(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}})
+function unique_leaves(graphs::AbstractVector{<:AbstractGraph})
     ############### find the unique Leaves #####################
     unique_graphs = []
     mapping = Dict{Int,Int}()
@@ -312,10 +220,10 @@ end
 """
     function remove_duplicated_leaves!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0, normalize=nothing, kwargs...)
 
-    In-place remove duplicated leaf nodes from a collection of graphs. It also provides optional normalization for these leaves.
+    Removes duplicated leaf nodes in-place from a collection of graphs. It also provides optional normalization for these leaves.
 
 # Arguments:
-- `graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}`: A tuple or vector of graphs.
+- `graphs`: A collection of graphs to be processed.
 - `verbose`: Level of verbosity (default: 0).
 - `normalize`: Optional function to normalize the graphs (default: nothing).
 
@@ -356,10 +264,10 @@ end
 """
     function burn_from_targetleaves!(graphs::AbstractVector{G}, targetleaves_id::AbstractVector{Int}; verbose=0) where {G <: AbstractGraph}
 
-    In-place remove all nodes connected to the target leaves via "Prod" operators.
+    Removes all nodes connected to the target leaves in-place via "Prod" operators.
 
 # Arguments:
-- `graphs::AbstractVector{G}`: A vector of graphs.
+- `graphs`: A vector of graphs.
 - `targetleaves_id::AbstractVector{Int}`: Vector of target leafs' id.
 - `verbose`: Level of verbosity (default: 0).
 
