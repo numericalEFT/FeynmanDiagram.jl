@@ -158,125 +158,39 @@ function replace_subgraph(g::AbstractGraph, w::AbstractGraph, m::AbstractGraph)
 end
 
 """
-    function merge_factorless_chain!(g::AbstractGraph)
+    function flatten_chains!(g::AbstractGraph)
 
-    Simplifies `g` in-place if it represents a factorless trivial unary chain. For example, +(+(+g)) ↦ g.
+    Recursively flattens chains of subgraphs within the given graph `g` by merging certain trivial unary subgraphs 
+    into their parent graphs in the in-place form.
 
-    Does nothing unless g has the following structure: 𝓞 --- 𝓞' --- ⋯ --- 𝓞'' ⋯ (!),
-    where the stop-case (!) represents a leaf, a non-trivial unary operator 𝓞'''(g) != g,
-    a node with non-unity multiplicative prefactor, or a non-unary operation.
+    Acts only on subgraphs of g with the following structure: 𝓞 --- 𝓞' --- ⋯ --- 𝓞'' ⋯ (!),
+    where the stop-case (!) represents a leaf, a non-trivial unary operator 𝓞'''(g) != g, or a non-unary operation.
 
 # Arguments:
 - `g::AbstractGraph`: graph to be modified
 """
-function merge_factorless_chain!(g::AbstractGraph)
-    while unary_istrivial(g.operator) && onechild(g) && isfactorless(g)
-        child = eldest(g)
-        for field in fieldnames(typeof(g))
-            value = getproperty(child, field)
-            setproperty!(g, field, value)
+function flatten_chains!(g::AbstractGraph)
+    for (i, sub_g) in enumerate(g.subgraphs)
+        if onechild(sub_g) && unary_istrivial(sub_g.operator)
+            flatten_chains!(sub_g)
+
+            g.subgraph_factors[i] *= sub_g.subgraph_factors[1]
+            g.subgraphs[i] = eldest(sub_g)
         end
     end
     return g
 end
 
 """
-    function merge_factorless_chain(g::AbstractGraph)
+    function flatten_chains(g::AbstractGraph) 
 
-    Returns a simplified copy of `g` if it represents a factorless trivial unary chain.
-    Otherwise, returns the original graph. For example, +(+(+g)) ↦ g.
-
-    Does nothing unless g has the following structure: 𝓞 --- 𝓞' --- ⋯ --- 𝓞'' ⋯ (!),
-    where the stop-case (!) represents a leaf, a non-trivial unary operator 𝓞'''(g) != g,
-    a node with non-unity multiplicative prefactor, or a non-unary operation.
+    Recursively flattens chains of subgraphs within a given graph `g` by merging certain trivial unary subgraphs into their parent graphs,
+    This function returns a new graph with flatten chains, dervied from the input graph `g` remaining unchanged.
 
 # Arguments:
 - `g::AbstractGraph`: graph to be modified
 """
-function merge_factorless_chain(g::AbstractGraph)
-    while unary_istrivial(g.operator) && onechild(g) && isfactorless(g)
-        g = eldest(g)
-    end
-    return g
-end
-
-"""
-    function merge_chain_prefactors!(g::AbstractGraph)
-
-    Simplifies subgraphs of g representing trivial unary chains by merging their 
-    subgraph factors toward root level, e.g., 2*(3*(5*g)) + 7*(9*(h)) ↦ 30*(*(*g)) + 63*(*h). 
-
-    Acts only on subgraphs of g with the following structure: 𝓞 --- 𝓞' --- ⋯ --- 𝓞'' ⋯ (!),
-    where the stop-case (!) represents a leaf, a non-trivial unary operator 𝓞'''(g) != g, or a non-unary operation.
-
-# Arguments:
-- `g::AbstractGraph`: graph to be modified
-"""
-function merge_chain_prefactors!(g::AbstractGraph)
-    for (i, child) in enumerate(g.subgraphs)
-        total_chain_factor = 1
-        while onechild(child)
-            # Break case: end of trivial unary chain
-            unary_istrivial(child.operator) == false && break
-            # Move this subfactor to running total
-            total_chain_factor *= child.subgraph_factors[1]
-            child.subgraph_factors[1] = 1
-            # Descend one level
-            child = eldest(child)
-        end
-        # Update g subfactor with total factors from children
-        g.subgraph_factors[i] *= total_chain_factor
-    end
-    return g
-end
-
-"""
-    function merge_chain_prefactors(g::AbstractGraph)
-
-    Returns a copy of g with subgraphs representing trivial unary chains simplified by merging 
-    their subgraph factors toward root level, e.g., 2*(3*(5*g)) + 7*(9*(h)) ↦ 30*(*(*g)) + 63*(*h).
-
-    Acts only on subgraphs of g with the following structure: 𝓞 --- 𝓞' --- ⋯ --- 𝓞'' ⋯ (!),
-    where the stop-case (!) represents a leaf, a non-trivial unary operator 𝓞'''(g) != g, or a non-unary operation.
-
-# Arguments:
-- `g::AbstractGraph`: graph to be modified
-"""
-merge_chain_prefactors(g::AbstractGraph) = merge_chain_prefactors!(deepcopy(g))
-
-"""
-    function merge_chains!(g::AbstractGraph)
-
-    Converts subgraphs of g representing trivial unary chains
-    to in-place form, e.g., 2*(3*(5*g)) + 7*(9*(h)) ↦ 30*g + 63*h.
-
-    Acts only on subgraphs of g with the following structure: 𝓞 --- 𝓞' --- ⋯ --- 𝓞'' ⋯ (!),
-    where the stop-case (!) represents a leaf, a non-trivial unary operator 𝓞'''(g) != g, or a non-unary operation.
-
-# Arguments:
-- `g::AbstractGraph`: graph to be modified
-"""
-function merge_chains!(g::AbstractGraph)
-    merge_chain_prefactors!(g)  # shift chain subgraph factors towards root level
-    for sub_g in g.subgraphs    # prune factorless chain subgraphs
-        merge_factorless_chain!(sub_g)
-    end
-    return g
-end
-
-"""
-    function merge_chains(g::AbstractGraph)
-
-    Returns a copy of a graph g with subgraphs representing trivial unary chain
-    simplified to in-place form, e.g., 2*(3*(5*g)) + 7*(9*(h)) ↦ 30*g + 63*h.
-
-    Acts only on subgraphs of g with the following structure: 𝓞 --- 𝓞' --- ⋯ --- 𝓞'' ⋯ (!),
-    where the stop-case (!) represents a leaf, a non-trivial unary operator 𝓞'''(g) != g, or a non-unary operation.
-
-# Arguments:
-- `g::AbstractGraph`: graph to be modified
-"""
-merge_chains(g::AbstractGraph) = merge_chains!(deepcopy(g))
+flatten_chains(g::AbstractGraph) = flatten_chains!(deepcopy(g))
 
 """
     function merge_linear_combination(g::Graph)
