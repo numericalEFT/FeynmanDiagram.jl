@@ -305,6 +305,8 @@ end
 errmsg(G::Type) = "Method not yet implemented for user-defined graph type $G."
 linear_combination(g1::G, g2::G, c1, c2) where {G<:AbstractGraph} = error(errmsg(G))
 linear_combination(graphs::AbstractVector{G}, constants::AbstractVector) where {G<:AbstractGraph} = error(errmsg(G))
+multi_product(g1::G, g2::G, c1, c2) where {G<:AbstractGraph} = error(errmsg(G))
+multi_product(graphs::AbstractVector{G}, constants::AbstractVector) where {G<:AbstractGraph} = error(errmsg(G))
 Base.:*(c1, g2::G) where {G<:AbstractGraph} = error(errmsg(G))
 Base.:*(g1::G, c2) where {G<:AbstractGraph} = error(errmsg(G))
 Base.:*(g1::G, g2::G) where {G<:AbstractGraph} = error(errmsg(G))

@@ -868,38 +868,30 @@ end
 
     # Test automatic FeynmanGraph -> Graph promotion in arithmetic operations
     conversion_successful = true
-    local l1, l2, l3, l4, l5, l6, l7, r7, l8, r8
+    local l1, l2, l3, l4, l5
     try
         l1 = g_feyn + g1
         l2 = g_feyn - g1
         l3 = linear_combination(g_feyn, g1, 2, 3)
         l4 = linear_combination(g_feyn, g, 2, 3)
         l5 = linear_combination([g_feyn, g, g1, g2], [2, 5, 3, 9])
-        l6 = multi_product(g_feyn, g1, 2, 3)
-        l7 = multi_product(g_feyn, g, 2, 3)
-        l8 = multi_product([g_feyn, g, g1, g2], [2, 5, 3, 9])
-        r7 = multi_product(g, g, 2, 3)
-        r8 = multi_product([g, g, g1, g2], [2, 5, 3, 9])
     catch
         conversion_successful = false
     end
     @test conversion_successful
-    Graphs.optimize!([l1, l2, l3, l4, l5, l6, l7, r7, l8, r8])  # cache unique leaves
 
+    Graphs.optimize!([l1, l2, l3, l4, l5])  # cache unique leaves
     @test isequiv(l1, g + g1, :id)
     @test isequiv(l2, g - g1, :id)
     @test isequiv(l3, 2 * g + 3 * g1, :id)
     @test isequiv(l4, linear_combination([g], [5]), :id)
     @test isequiv(l5, linear_combination([g, g1, g2], [7, 3, 9]), :id)
-    @test isequiv(l6, multi_product(g, g1, 2, 3), :id)
-    
-    # TODO: Refine multiple Prod -> Power conversion
-    @test_broken isequiv(l7, r7, :id)
-    @test_broken isequiv(l8, r8, :id)
 
     # FeynmanGraph multiplication is undefined
     err1 = AssertionError()
     err2 = AssertionError()
+    err3 = AssertionError()
+    err4 = AssertionError()
     try
         g * g_feyn
     catch err1
@@ -908,10 +900,18 @@ end
         g_feyn * g
     catch err2
     end
-    @test err1 isa ErrorException
-    @test err2 isa ErrorException
-    @test err1.msg == "Multiplication of Feynman graphs is not well defined!"
-    @test err2.msg == "Multiplication of Feynman graphs is not well defined!"
+    try
+        multi_product(g_feyn, g1, 2, 3)
+    catch err3
+    end
+    try
+        multi_product(g, g_feyn, 2, 3)
+    catch err4
+    end
+    errs = [err1, err2, err3, err4]
+    errmsg = "Multiplication of Feynman graphs is not well defined!"
+    @test all(err isa ErrorException for err in errs)
+    @test all(err.msg == errmsg for err in errs)
 end
 
 @testset verbose = true "Evaluation" begin
