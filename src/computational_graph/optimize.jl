@@ -26,7 +26,7 @@ end
 """
     function optimize(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0, normalize=nothing)
 
-    Optimize a copy of given `graphs`. Removes duplicated leaves, merges chains, and merges linear combinations.
+    Optimizes a copy of given `graphs`. Removes duplicated leaves, merges chains, and merges linear combinations.
 
 # Arguments:
 - `graphs`: A tuple or vector of graphs.
@@ -66,9 +66,9 @@ function flatten_all_chains!(g::AbstractGraph; verbose=0)
 end
 
 """
-    function flatten_all_chains!(graphs::AbstractVector{<:AbstractGraph}; verbose=0)
+    function flatten_all_chains!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0)
 
-    In-place flattens all nodes representing trivial unary chains in given graphs.
+    Flattens all nodes representing trivial unary chains in-place in given graphs.
 
 # Arguments:
 - `graphs`: A collection of graphs to be processed.
@@ -77,7 +77,7 @@ end
 # Returns:
 - The mutated collection `graphs` with all chains in each graph flattened.
 """
-function flatten_all_chains!(graphs::AbstractVector{<:AbstractGraph}; verbose=0)
+function flatten_all_chains!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0)
     verbose > 0 && println("flatten all nodes representing trivial unary chains.")
     # Post-order DFS
     for g in graphs
@@ -90,7 +90,7 @@ end
 """
     function merge_all_linear_combinations!(g::AbstractGraph; verbose=0)
 
-    In-place merge all nodes representing a linear combination of a non-unique list of subgraphs within a single graph.
+    Merges all nodes representing a linear combination of a non-unique list of subgraphs in-place within a single graph.
 
 # Arguments:
 - `g`: An AbstractGraph.
@@ -112,19 +112,19 @@ function merge_all_linear_combinations!(g::AbstractGraph; verbose=0)
 end
 
 """
-    function merge_all_linear_combinations!(graphs::AbstractVector{<:AbstractGraph}; verbose=0)
+    function merge_all_linear_combinations!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0)
 
-    In-place merge all nodes representing a linear combination of a non-unique list of subgraphs in given graphs. 
+    Merges all nodes representing a linear combination of a non-unique list of subgraphs in-place in given graphs. 
 
 # Arguments:
-- `graphs`: An AbstractVector of graphs.
+- `graphs`: A collection of graphs to be processed.
 - `verbose`: Level of verbosity (default: 0).
 
 # Returns:
 - Optimized graphs.
 # 
 """
-function merge_all_linear_combinations!(graphs::AbstractVector{<:AbstractGraph}; verbose=0)
+function merge_all_linear_combinations!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0)
     verbose > 0 && println("merge nodes representing a linear combination of a non-unique list of graphs.")
     # Post-order DFS
     for g in graphs
@@ -137,7 +137,7 @@ end
 """
     function merge_all_multi_products!(g::Graph; verbose=0)
 
-    In-place merge all nodes representing a multi product of a non-unique list of subgraphs within a single graph.
+    Merges all nodes representing a multi product of a non-unique list of subgraphs in-place within a single graph.
 
 # Arguments:
 - `g::Graph`: A Graph.
@@ -159,19 +159,19 @@ function merge_all_multi_products!(g::Graph; verbose=0)
 end
 
 """
-    function merge_all_multi_products!(graphs::Union{Tuple,AbstractVector{Graph}}; verbose=0)
+    function merge_all_multi_products!(graphs::Union{Tuple,AbstractVector{<:Graph}}; verbose=0)
 
-    In-place merge all nodes representing a multi product of a non-unique list of subgraphs in given graphs. 
+    Merges all nodes representing a multi product of a non-unique list of subgraphs in-place in given graphs. 
 
 # Arguments:
-- `graphs::Union{Tuple,AbstractVector{Graph}}`: A tuple or vector of graphs.
+- `graphs`: A collection of graphs to be processed.
 - `verbose`: Level of verbosity (default: 0).
 
 # Returns:
 - Optimized graphs.
 # 
 """
-function merge_all_multi_products!(graphs::AbstractVector{<:Graph}; verbose=0)
+function merge_all_multi_products!(graphs::Union{Tuple,AbstractVector{<:Graph}}; verbose=0)
     verbose > 0 && println("merge nodes representing a multi product of a non-unique list of graphs.")
     # Post-order DFS
     for g in graphs
@@ -184,10 +184,10 @@ end
 """
     function unique_leaves(_graphs::AbstractVector{<:AbstractGraph})
 
-    Identify and retrieve unique leaf nodes from a set of graphs.
+    Identifies and retrieves unique leaf nodes from a set of graphs.
 
 # Arguments:
-- `_graphs`: A tuple or vector of graphs.
+- `_graphs`: A collection of graphs to be processed.
 
 # Returns:
 - The vector of unique leaf nodes.
@@ -218,19 +218,19 @@ function unique_leaves(_graphs::AbstractVector{<:AbstractGraph})
 end
 
 """
-    function remove_duplicated_leaves!(graphs::AbstractVector{<:AbstractGraph}; verbose=0, normalize=nothing, kwargs...)
+    function remove_duplicated_leaves!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0, normalize=nothing, kwargs...)
 
-    In-place remove duplicated leaf nodes from a collection of graphs. It also provides optional normalization for these leaves.
+    Removes duplicated leaf nodes in-place from a collection of graphs. It also provides optional normalization for these leaves.
 
 # Arguments:
-- `graphs`: An AbstractVector of graphs.
+- `graphs`: A collection of graphs to be processed.
 - `verbose`: Level of verbosity (default: 0).
 - `normalize`: Optional function to normalize the graphs (default: nothing).
 
 # Returns:
 - A mapping dictionary from the id of each unique leaf node to its index in collect(1:length(leafs)).
 """
-function remove_duplicated_leaves!(graphs::AbstractVector{<:AbstractGraph}; verbose=0, normalize=nothing, kwargs...)
+function remove_duplicated_leaves!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0, normalize=nothing, kwargs...)
     verbose > 0 && println("remove duplicated leaves.")
     leaves = Vector{eltype(graphs)}()
     for g in graphs
@@ -264,7 +264,7 @@ end
 """
     function burn_from_targetleaves!(graphs::AbstractVector{G}, targetleaves_id::AbstractVector{Int}; verbose=0) where {G<:AbstractGraph}
 
-    In-place remove all nodes connected to the target leaves via "Prod" operators.
+    Removes all nodes connected to the target leaves in-place via "Prod" operators.
 
 # Arguments:
 - `graphs`: An AbstractVector of graphs.
