@@ -17,7 +17,6 @@ function optimize!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose
     else
         graphs = collect(graphs)
         leaf_mapping = remove_duplicated_leaves!(graphs, verbose=verbose, normalize=normalize)
-        # merge_all_chains!(graphs, verbose=verbose)
         flatten_all_chains!(graphs, verbose=verbose)
         merge_all_linear_combinations!(graphs, verbose=verbose)
         return leaf_mapping
@@ -45,145 +44,9 @@ function optimize(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=
 end
 
 """
-    function merge_all_chain_prefactors!(g::AbstractGraph; verbose=0)
-
-    In-place merge prefactors of all nodes representing trivial unary chains towards the root level for a single graph.
-
-# Arguments:
-- `g`: An AbstractGraph.
-- `verbose`: Level of verbosity (default: 0).
-
-# Returns:
-- Optimized graph.
-# 
-"""
-function merge_all_chain_prefactors!(g::AbstractGraph; verbose=0)
-    verbose > 0 && println("merge prefactors of all nodes representing trivial unary chains toward root level.")
-    # Post-order DFS
-    for sub_g in g.subgraphs
-        merge_all_chain_prefactors!(sub_g)
-        merge_chain_prefactors!(sub_g)
-    end
-    merge_chain_prefactors!(g)
-    return g
-end
-
-"""
-    function merge_all_chain_prefactors!(graphs::AbstractVector{<:AbstractGraph}; verbose=0)
-
-    In-place merge prefactors of all nodes representing trivial unary chains towards the root level for given graphs.
-
-# Arguments:
-- `graphs`: An AbstractVector of graphs.
-- `verbose`: Level of verbosity (default: 0).
-
-# Returns:
-- Optimized graphs.
-# 
-"""
-function merge_all_chain_prefactors!(graphs::AbstractVector{<:AbstractGraph}; verbose=0)
-    verbose > 0 && println("merge prefactors of all nodes representing trivial unary chains toward root level.")
-    # Post-order DFS
-    for g in graphs
-        merge_all_chain_prefactors!(g.subgraphs)
-        merge_chain_prefactors!(g)
-    end
-    return graphs
-end
-
-"""
-    function merge_all_factorless_chains!(g::AbstractGraph; verbose=0)
-
-    In-place merge all nodes representing factorless trivial unary chains within a single graph.
-
-# Arguments:
-- `g`: An AbstractGraph.
-- `verbose`: Level of verbosity (default: 0).
-
-# Returns:
-- Optimized graph.
-# 
-"""
-function merge_all_factorless_chains!(g::AbstractGraph; verbose=0)
-    verbose > 0 && println("merge all nodes representing factorless trivial unary chains.")
-    # Post-order DFS
-    for sub_g in g.subgraphs
-        merge_all_factorless_chains!(sub_g)
-        merge_factorless_chain!(sub_g)
-    end
-    merge_factorless_chain!(g)
-    return g
-end
-
-"""
-    function merge_all_factorless_chains!(graphs::AbstractVector{<:AbstractGraph}; verbose=0)
-
-    In-place merge all nodes representing factorless trivial unary chains within given graphs.
-
-# Arguments:
-- `graphs`: An AbstractVector of graphs.
-- `verbose`: Level of verbosity (default: 0).
-
-# Returns:
-- Optimized graphs.
-# 
-"""
-function merge_all_factorless_chains!(graphs::AbstractVector{<:AbstractGraph}; verbose=0)
-    verbose > 0 && println("merge all nodes representing factorless trivial unary chains.")
-    # Post-order DFS
-    for g in graphs
-        merge_all_factorless_chains!(g.subgraphs)
-        merge_factorless_chain!(g)
-    end
-    return graphs
-end
-
-"""
-    function merge_all_chains!(g::AbstractGraph; verbose=0)
-
-    In-place merge all nodes representing trivial unary chains within a single graph.
-    This function consolidates both chain prefactors and factorless chains.
-
-# Arguments:
-- `g`: An AbstractGraph.
-- `verbose`: Level of verbosity (default: 0).
-
-# Returns:
-- Optimized graph.
-# 
-"""
-function merge_all_chains!(g::AbstractGraph; verbose=0)
-    verbose > 0 && println("merge all nodes representing trivial unary chains.")
-    merge_all_chain_prefactors!(g, verbose=verbose)
-    merge_all_factorless_chains!(g, verbose=verbose)
-    return g
-end
-
-"""
-    function merge_all_chains!(graphs::AbstractVector{<:AbstractGraph}; verbose=0) where {G<:AbstractGraph}
-
-    In-place merge all nodes representing trivial unary chains in given graphs. 
-    This function consolidates both chain prefactors and factorless chains.
-
-# Arguments:
-- `graphs`: An AbstractVector of graphs.
-- `verbose`: Level of verbosity (default: 0).
-
-# Returns:
-- Optimized graphs.
-# 
-"""
-function merge_all_chains!(graphs::AbstractVector{<:AbstractGraph}; verbose=0)
-    verbose > 0 && println("merge all nodes representing trivial unary chains.")
-    merge_all_chain_prefactors!(graphs, verbose=verbose)
-    merge_all_factorless_chains!(graphs, verbose=verbose)
-    return graphs
-end
-
-"""
     function flatten_all_chains!(g::AbstractGraph; verbose=0)
-
-    In-place flattens all nodes representing trivial unary chains in the given graph `g`. 
+F
+    Flattens all nodes representing trivial unary chains in-place in the given graph `g`. 
 
 # Arguments:
 - `graphs`: The graph to be processed.
