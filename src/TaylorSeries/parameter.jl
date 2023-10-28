@@ -14,7 +14,7 @@
 These parameters can be changed using [`set_variables`](@ref)
 """
 mutable struct ParamsTaylor
-    order::Int
+    order::Vector{Int}
     num_vars::Int
     variable_names::Vector{String}
     variable_symbols::Vector{Symbol}
@@ -23,10 +23,11 @@ end
 
 ParamsTaylor(order, num_vars, variable_names) = ParamsTaylor(order, num_vars, variable_names, Symbol.(variable_names))
 
-const _params_Taylor_ = ParamsTaylor(6, 2, ["x₁", "x₂"])
+const _params_Taylor_ = ParamsTaylor([2, 2], 2, ["x₁", "x₂"])
 
 ## Utilities to get the maximum order, number of variables, their names and symbols
 get_order() = _params_Taylor_.order
+get_order(idx::Int) = _params_Taylor_.order[idx]
 get_numvars() = _params_Taylor_.num_vars
 get_variable_names() = _params_Taylor_.variable_names
 get_variable_symbols() = _params_Taylor_.variable_symbols
@@ -69,9 +70,9 @@ julia> set_variables("x", order=6, numvars=2)
 """
 function set_variables(::Type{R}, names::Vector{T}; order=get_order()) where
 {R,T<:AbstractString}
-
-    order ≥ 1 || error("Order must be at least 1")
-
+    for o in order
+        o ≥ 1 || error("Order must be at least 1")
+    end
     num_vars = length(names)
     num_vars ≥ 1 || error("Number of variables must be at least 1")
 

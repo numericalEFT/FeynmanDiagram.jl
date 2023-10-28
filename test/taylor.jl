@@ -3,7 +3,7 @@ using FeynmanDiagram: Taylor as Taylor
 @testset verbose = true "TaylorSeries" begin
     using FeynmanDiagram.Taylor:
         getcoeff
-    a, b, c, d, e = set_variables("a b c d e", order=3)
+    a, b, c, d, e = set_variables("a b c d e", order=[3, 3, 3, 3, 3])
     F1 = (a + b) * (a + b) * (a + b)
     print("$(F1)")
     @test getcoeff(F1, [2, 1, 0, 0, 0]) == 3.0
@@ -23,7 +23,7 @@ using FeynmanDiagram: Taylor as Taylor
     using FeynmanDiagram.ComputationalGraphs:
         eval!, forwardAD, node_derivative, backAD, build_all_leaf_derivative, count_operation
     using FeynmanDiagram.Utility:
-        taylorexpansion!, build_derivative_backAD!
+        taylorexpansion, build_derivative_backAD!
     g1 = Graph([])
     g2 = Graph([])
     g3 = Graph([], factor=2.0)
@@ -34,9 +34,9 @@ using FeynmanDiagram: Taylor as Taylor
     using FeynmanDiagram.Taylor:
         TaylorSeries, getcoeff, set_variables
 
-    set_variables("x y z", order=5)
+    set_variables("x y z", order=[2, 3, 2])
     for G in [G3, G4, G5, G6]
-        T = taylorexpansion!(G)
+        T = taylorexpansion(G)
         T_compare = build_derivative_backAD!(G)
         for (order, coeff) in T_compare.coeffs
             @test eval!(coeff) == eval!(taylor_factorial(order) * T.coeffs[order])

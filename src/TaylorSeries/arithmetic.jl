@@ -121,7 +121,7 @@ function Base.:-(g1::TaylorSeries{T}, c::S) where {T,S<:Number}
 end
 
 """
-    function taylor_binomial(o1::Array{Int,1}, o2::Array{Int,1})
+    function taylor_binomial(o1::Vector{Int}, o2::Vector{Int})
 
     Return the taylor binomial prefactor when product two high-order derivatives with order o1 and o2.
 
@@ -129,7 +129,7 @@ end
     - `o1`  Order of first derivative
     - `o2`  Order of second derivative
 """
-function taylor_binomial(o1::Array{Int,1}, o2::Array{Int,1})
+function taylor_binomial(o1::Vector{Int}, o2::Vector{Int})
     @assert length(o1) == length(o2)
     result = 1
     for i in eachindex(o1)
@@ -143,14 +143,14 @@ end
 
 
 """
-    function taylor_factorial(o::Array{Int,1})
+    function taylor_factorial(o::Vector{Int})
 
     Return the taylor factorial prefactor with order o.
 
     # Arguments:
     - `o`  Order of the taylor coefficient
 """
-function taylor_factorial(o::Array{Int,1})
+function taylor_factorial(o::Vector{Int})
     result = 1
     for i in eachindex(o)
         result *= factorial(o[i])
@@ -172,7 +172,7 @@ function Base.:*(g1::TaylorSeries{T}, g2::TaylorSeries{T}) where {T}
     for (order1, coeff1) in g1.coeffs
         for (order2, coeff2) in g2.coeffs
             order = order1 + order2
-            if sum(order) <= _params_Taylor_.order
+            if all(order .<= get_order())
                 #combination_coeff = taylor_binomial(order1, order2)
                 if haskey(g.coeffs, order)
                     #g.coeffs[order] += combination_coeff * coeff1 * coeff2
@@ -187,9 +187,38 @@ function Base.:*(g1::TaylorSeries{T}, g2::TaylorSeries{T}) where {T}
     return g
 end
 
+# """
+#     function Base.:*(g1::TaylorSeries{T}, g2::TaylorSeries{T}) where {T}
+
+#     Returns a taylor series `g1 * g2` representing the product of `g2` with `g1`.
+
+# # Arguments:
+# - `g1`  First taylor series
+# - `g2`  Second taylor series
+# """
+# function multi_product(glist::Vector{TaylorSeries{T}}) where {T}
+#     result = TaylorSeries{T}()
+#     idxtuple = (keys(glist.coeffs) for g in glist)
+#     for idx in collect(Iterators.product(idxtuple...))
+#         orderidx = collect(orderidx)
+#         totalorder = sum(glist[i].coeffs[orderidx[i]] for i in eachindex(glist))
+#         if all(totalorder .<= get_order())
+#             #combination_coeff = taylor_binomial(order1, order2)
+#             if haskey(g.coeffs, order)
+#                 #g.coeffs[order] += combination_coeff * coeff1 * coeff2
+#                 g.coeffs[order] += coeff1 * coeff2
+#             else
+#                 #g.coeffs[order] = combination_coeff * coeff1 * coeff2
+#                 g.coeffs[order] = coeff1 * coeff2
+#             end
+
+#         end
+#     end
+#     return g
+# end
 
 """
-    function getcoeff(g::TaylorSeries, order::Array{Int,1})
+    function getcoeff(g::TaylorSeries, order::Vector{Int})
 
     Return the taylor coefficients with given order in taylor series g.
 
@@ -197,7 +226,7 @@ end
 - `g`  Taylor series
 - `order`  Order of target coefficients
 """
-function getcoeff(g::TaylorSeries, order::Array{Int,1})
+function getcoeff(g::TaylorSeries, order::Vector{Int})
     if haskey(g.coeffs, order)
         return g.coeffs[order]
     else
@@ -206,7 +235,7 @@ function getcoeff(g::TaylorSeries, order::Array{Int,1})
 end
 
 """
-    function getderivative(g::TaylorSeries, order::Array{Int,1})
+    function getderivative(g::TaylorSeries, order::Vector{Int})
 
     Return the derivative with given order in taylor series g.
 
@@ -214,7 +243,7 @@ end
 - `g`  Taylor series
 - `order`  Order of derivative
 """
-function getderivative(g::TaylorSeries, order::Array{Int,1})
+function getderivative(g::TaylorSeries, order::Vector{Int})
     if haskey(g.coeffs, order)
         return taylor_factorial(order) * g.coeffs[order]
     else

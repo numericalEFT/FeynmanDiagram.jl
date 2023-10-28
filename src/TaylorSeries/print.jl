@@ -124,8 +124,11 @@ end
 function pretty_print(a::TaylorSeries{T}) where {T}
     #z = zero(a[0])
     space = string("")
+    # bigO::String = bigOnotation[end] ?
+    #                string(" + 𝒪(‖x‖", superscriptify(_params_Taylor_.order + 1), ")") :
+    #                string("")
     bigO::String = bigOnotation[end] ?
-                   string(" + 𝒪(‖x‖", superscriptify(_params_Taylor_.order + 1), ")") :
+                   string(" + 𝒪(", [_params_Taylor_.variable_names[i] * superscriptify(_params_Taylor_.order[i] + 1) for i in eachindex(_params_Taylor_.order)]..., ")") :
                    string("")
     # iszero(a) && return string(space, z, space, bigO)
     # strout::String = space
