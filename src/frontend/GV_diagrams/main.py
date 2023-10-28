@@ -58,7 +58,7 @@ def Generate(Order, VerOrder, SigmaOrder, IsSelfEnergy, IsGreen, IsSpinPolar, Is
     print "Save diagrams ..."
 
     if IsSelfEnergy:
-        fname = "./groups_sigma/{0}{1}_{2}_{3}.diag".format(
+        fname = "./groups_sigma_old/{0}{1}_{2}_{3}.diag".format(
             "Sigma", Order-1, VerOrder, SigmaOrder)
     elif IsGreen:
         fname = "./groups_green/{0}{1}_{2}_{3}.diag0".format(

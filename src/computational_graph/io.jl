@@ -17,40 +17,56 @@ function short(factor, ignore=nothing)
     end
 end
 
-function _stringrep(graph::G, color=true) where {G<:AbstractGraph}
-    namestr = isempty(graph.name) ? "" : "-$(graph.name)"
-    idstr = "$(graph.id)$namestr"
-    if graph isa FeynmanGraph
-        idstr *= ":$(_ops_to_str(vertices(graph)))"
+function short_orders(orders)
+    orders_no_trailing_zeros = ""
+    idx_last_set = findlast(x -> x != 0, orders)
+    if isnothing(idx_last_set) == false
+        orders_no_trailing_zeros *= string(orders[1:idx_last_set])
     end
-    fstr = short(graph.factor, one(graph.factor))
-    wstr = short(graph.weight)
+    return orders_no_trailing_zeros
+end
+
+function _namestr(graph::AbstractGraph)
+    return isempty(name(graph)) ? "" : "-$(name(graph))"
+end
+
+function _idstring(graph::AbstractGraph)
+    return string(id(graph), _namestr(graph))
+end
+
+function _idstring(graph::FeynmanGraph)    
+    return string(id(graph), _namestr(graph), ":", _ops_to_str(vertices(graph)))
+end
+
+function _stringrep(graph::AbstractGraph, color=true)
+    idstr = _idstring(graph)
+    fstr = short(factor(graph), one(factor(graph)))
+    wstr = short(weight(graph))
+    ostr = short_orders(orders(graph))
     # =$(node.weight*(2π)^(3*node.id.para.innerLoopNum))
 
-    if length(graph.subgraphs) == 0
-        return isempty(fstr) ? "$idstr=$wstr" : "$(idstr)⋅$(fstr)=$wstr"
+    if length(subgraphs(graph)) == 0
+        return isempty(fstr) ? "$(idstr)$(ostr)=$wstr" : "$(idstr)⋅$(fstr)=$wstr"
     else
-        return "$idstr=$wstr=$(fstr)$(graph.operator) "
+        return "$(idstr)$(ostr)=$wstr=$(fstr)$(operator(graph)) "
     end
 end
 
 """
-    show(io::IO, graph::G; kwargs...) where {G<:AbstractGraph}
+    show(io::IO, graph::AbstractGraph; kwargs...)
 
-    Write a text representation of `graph` to the output stream `io`.
-
-    To add support for a user-defined graph type `G`, provide an overload method `Base.show(io::IO, graph::G; kwargs...)` with a custom text representation.
+    Write a text representation of an AbstractGraph `graph` to the output stream `io`.
 """
-function Base.show(io::IO, graph::G; kwargs...) where {G<:AbstractGraph}
-    if length(graph.subgraphs) == 0
+function Base.show(io::IO, graph::AbstractGraph; kwargs...)
+    if length(subgraphs(graph)) == 0
         typestr = ""
     else
-        typestr = join(["$(g.id)" for g in graph.subgraphs], ",")
+        typestr = join(["$(id(g))" for g in subgraphs(graph)], ",")
         typestr = "($typestr)"
     end
     print(io, "$(_stringrep(graph, true))$typestr")
 end
-Base.show(io::IO, ::MIME"text/plain", graph::G; kwargs...) where {G<:AbstractGraph} = Base.show(io, graph; kwargs...)
+Base.show(io::IO, ::MIME"text/plain", graph::AbstractGraph; kwargs...) = Base.show(io, graph; kwargs...)
 
 """
     function plot_tree(graph::AbstractGraph; verbose = 0, maxdepth = 6)
@@ -74,10 +90,10 @@ function plot_tree(graph::AbstractGraph; verbose=0, maxdepth=6)
         name = "$(_stringrep(node, false))"
         nt = t.add_child(name=name)
 
-        if length(node.subgraphs) > 0
+        if length(subgraphs(node)) > 0
             name_face = ete.TextFace(nt.name, fgcolor="black", fsize=10)
             nt.add_face(name_face, column=0, position="branch-top")
-            for child in node.subgraphs
+            for child in subgraphs(node)
                 treeview(child, level + 1, nt)
             end
         end
@@ -107,7 +123,7 @@ function plot_tree(graph::AbstractGraph; verbose=0, maxdepth=6)
     # t.write(outfile="/home/kun/test.txt", format=8)
     t.show(tree_style=ts)
 end
-function plot_tree(graphs::Vector{G}; kwargs...) where {G<:AbstractGraph}
+function plot_tree(graphs::Vector{<:AbstractGraph}; kwargs...)
     for graph in graphs
         plot_tree(graph; kwargs...)
     end
