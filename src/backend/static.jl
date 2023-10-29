@@ -31,12 +31,12 @@ function to_static(::Type{ComputationalGraphs.Prod}, subgraphs::Vector{Graph{F,W
     end
 end
 
-function _to_static(::Type{ComputationalGraphs.Power{N}}, subgraphs::Vector{Graph{F,W}}, subgraph_factors::Vector{F}) where {N,F,W}
+function to_static(::Type{ComputationalGraphs.Power{N}}, subgraphs::Vector{Graph{F,W}}, subgraph_factors::Vector{F}) where {N,F,W}
     factor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
     return "((g$(subgraphs[1].id))^$N$factor_str)"
 end
 
-function _to_static(::Type{ComputationalGraphs.Sum}, subgraphs::Vector{FeynmanGraph{F,W}}, subgraph_factors::Vector{F}) where {F,W}
+function to_static(::Type{ComputationalGraphs.Sum}, subgraphs::Vector{FeynmanGraph{F,W}}, subgraph_factors::Vector{F}) where {F,W}
     if length(subgraphs) == 1
         factor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
         return "(g$(subgraphs[1].id)$factor_str)"
@@ -56,7 +56,7 @@ function to_static(::Type{ComputationalGraphs.Prod}, subgraphs::Vector{FeynmanGr
     end
 end
 
-function _to_static(::Type{ComputationalGraphs.Power{N}}, subgraphs::Vector{FeynmanGraph{F,W}}, subgraph_factors::Vector{F}) where {N,F,W}
+function to_static(::Type{ComputationalGraphs.Power{N}}, subgraphs::Vector{FeynmanGraph{F,W}}, subgraph_factors::Vector{F}) where {N,F,W}
     factor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
     return "((g$(subgraphs[1].id))^$N$factor_str)"
 end
@@ -91,7 +91,7 @@ function to_julia_str(graphs::AbstractVector{<:AbstractGraph}; root::AbstractVec
             else
                 g_id in inds_visitednode && continue
                 factor_str = factor(g) == 1 ? "" : " * $(factor(g))"
-                body *= "    $target = $(_to_static(operator(g), subgraphs(g), subgraph_factors(g)))$factor_str\n "
+                body *= "    $target = $(to_static(operator(g), subgraphs(g), subgraph_factors(g)))$factor_str\n "
                 push!(inds_visitednode, g_id)
             end
             if isroot
@@ -139,7 +139,7 @@ function to_julia_str(graphs::AbstractVector{<:AbstractGraph}, leafMap::Dict{Int
             else
                 g_id in inds_visitednode && continue
                 factor_str = factor(g) == 1 ? "" : " * $(factor(g))"
-                body *= "    $target = $(_to_static(operator(g), subgraphs(g), subgraph_factors(g)))$factor_str\n "
+                body *= "    $target = $(to_static(operator(g), subgraphs(g), subgraph_factors(g)))$factor_str\n "
                 push!(inds_visitednode, g_id)
             end
             if isroot
