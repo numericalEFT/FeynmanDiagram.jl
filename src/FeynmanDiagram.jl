@@ -134,17 +134,6 @@ include("backend/compiler.jl")
 using .Compilers
 export Compilers
 
-include("frontend/frontends.jl")
-using .FrontEnds
-export FrontEnds
-export LabelProduct
-
-include("frontend/GV.jl")
-using .GV
-export GV
-export diagdictGV, leafstates
-# export read_onediagram, read_diagrams
-
 include("diagram_tree/DiagTree.jl")
 using .DiagTree
 export DiagTree
@@ -181,6 +170,18 @@ include("utility.jl")
 using .Utility
 export Utility
 export taylorexpansion!
+
+include("frontend/frontends.jl")
+using .FrontEnds
+export FrontEnds
+export LabelProduct
+
+include("frontend/GV.jl")
+using .GV
+export GV
+export diagdictGV, leafstates
+# export read_onediagram, read_diagrams
+
 ##################### precompile #######################
 # precompile as the final step of the module definition:
 if ccall(:jl_generating_output, Cint, ()) == 1   # if we're precompiling the package
