@@ -2,7 +2,7 @@ using FeynmanDiagram: Taylor as Taylor
 
 @testset verbose = true "TaylorSeries" begin
     using FeynmanDiagram.Taylor:
-        getcoeff
+        getcoeff, set_variables, taylor_factorial
     a, b, c, d, e = set_variables("a b c d e", order=3)
     F1 = (a + b) * (a + b) * (a + b)
     print("$(F1)")

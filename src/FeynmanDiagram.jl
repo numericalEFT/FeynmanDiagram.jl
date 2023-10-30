@@ -128,7 +128,6 @@ export optimize!, optimize, merge_all_chains!, merge_all_linear_combinations!, r
 include("TaylorSeries/TaylorSeries.jl")
 using .Taylor
 export Taylor
-export TaylorSeries, set_variables, taylor_factorial, getcoeff
 
 
 include("backend/compiler.jl")
