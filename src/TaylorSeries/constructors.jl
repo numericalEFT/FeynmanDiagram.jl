@@ -5,17 +5,17 @@
 
 # Members:
 - `name::Symbol`  name of the diagram
-- `coeffs::Dict{Array{Int,1},T}`  The taylor expansion coefficients. The integer array define the order of corresponding coefficient. 
+- `coeffs::Dict{Vector{Int},T}`  The taylor expansion coefficients. The integer array define the order of corresponding coefficient. 
 """
 mutable struct TaylorSeries{T}
     name::String # "" by default
-    coeffs::Dict{Array{Int,1},T}
+    coeffs::Dict{Vector{Int},T}
 
     """
-        function TaylorSeries{T}(coeffs::Dict{Array{Int,1},T}=Dict{Array{Int,1},T}(), name::String="") where {T}
+        function TaylorSeries{T}(coeffs::Dict{Vector{Int},T}=Dict{Vector{Int},T}(), name::String="") where {T}
             Create a TaylorSeries based on given coefficients.
     """
-    function TaylorSeries{T}(coeffs::Dict{Array{Int,1},T}=Dict{Array{Int,1},T}(), name::String="") where {T}
+    function TaylorSeries{T}(coeffs::Dict{Vector{Int},T}=Dict{Vector{Int},T}(), name::String="") where {T}
         return new{T}(name, coeffs)
     end
 end
@@ -33,7 +33,7 @@ function TaylorSeries(::Type{T}, nv::Int) where {T}
     @assert 0 < nv ≤ get_numvars()
     v = zeros(Int, get_numvars())
     @inbounds v[nv] = 1
-    return TaylorSeries{T}(Dict{Array{Int,1},T}(v => one(T)))
+    return TaylorSeries{T}(Dict{Vector{Int},T}(v => one(T)))
 end
 TaylorSeries(nv::Int) = TaylorSeries(Float64, nv)
 
