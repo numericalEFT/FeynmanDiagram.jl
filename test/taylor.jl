@@ -2,7 +2,7 @@ using FeynmanDiagram: Taylor as Taylor
 
 @testset verbose = true "TaylorSeries" begin
     using FeynmanDiagram.Taylor:
-        getcoeff
+        getcoeff, set_variables, taylor_factorial
     a, b, c, d, e = set_variables("a b c d e", order=[3, 3, 3, 3, 3])
     F1 = (a + b) * (a + b) * (a + b)
     print("$(F1)")
@@ -31,8 +31,6 @@ using FeynmanDiagram: Taylor as Taylor
     G4 = 1.0 * g1 * g1
     G5 = 1.0 * (3.0 * G3 + 0.5 * G4)
     G6 = (1.0 * g1 + 2.0 * g2) * (g1 + g3)
-    using FeynmanDiagram.Taylor:
-        TaylorSeries, getcoeff, set_variables
 
     set_variables("x y z", order=[2, 3, 2])
     for G in [G3, G4, G5, G6]
