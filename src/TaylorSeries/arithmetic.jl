@@ -172,7 +172,7 @@ function Base.:*(g1::TaylorSeries{T}, g2::TaylorSeries{T}) where {T}
     for (order1, coeff1) in g1.coeffs
         for (order2, coeff2) in g2.coeffs
             order = order1 + order2
-            if all(order .<= get_order())
+            if all(order .<= get_orders())
                 #combination_coeff = taylor_binomial(order1, order2)
                 if haskey(g.coeffs, order)
                     #g.coeffs[order] += combination_coeff * coeff1 * coeff2
@@ -202,7 +202,7 @@ end
 #     for idx in collect(Iterators.product(idxtuple...))
 #         orderidx = collect(orderidx)
 #         totalorder = sum(glist[i].coeffs[orderidx[i]] for i in eachindex(glist))
-#         if all(totalorder .<= get_order())
+#         if all(totalorder .<= get_orders())
 #             #combination_coeff = taylor_binomial(order1, order2)
 #             if haskey(g.coeffs, order)
 #                 #g.coeffs[order] += combination_coeff * coeff1 * coeff2

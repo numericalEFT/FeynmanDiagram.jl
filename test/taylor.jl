@@ -3,7 +3,7 @@ using FeynmanDiagram: Taylor as Taylor
 @testset verbose = true "TaylorSeries" begin
     using FeynmanDiagram.Taylor:
         getcoeff, set_variables, taylor_factorial
-    a, b, c, d, e = set_variables("a b c d e", order=[3, 3, 3, 3, 3])
+    a, b, c, d, e = set_variables("a b c d e", orders=[3, 3, 3, 3, 3])
     F1 = (a + b) * (a + b) * (a + b)
     print("$(F1)")
     @test getcoeff(F1, [2, 1, 0, 0, 0]) == 3.0
@@ -32,7 +32,7 @@ using FeynmanDiagram: Taylor as Taylor
     G5 = 1.0 * (3.0 * G3 + 0.5 * G4)
     G6 = (1.0 * g1 + 2.0 * g2) * (g1 + g3)
 
-    set_variables("x y z", order=[2, 3, 2])
+    set_variables("x y z", orders=[2, 3, 2])
     for G in [G3, G4, G5, G6]
         T = taylorexpansion(G)
         T_compare = build_derivative_backAD!(G)

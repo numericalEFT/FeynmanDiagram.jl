@@ -15,17 +15,18 @@ using ..Taylor
 #Arguments
 
 - `graph` Target graph.
-- `var_dependence` The variables graph leaves depend on.
+- `var_dependence::Dict{Int,Vector{Bool}}` The variables graph leaves depend on. Should map each leaf ID of g to a Vector{Bool},
+    indicating the taylor variables it depends on. By default, assumes all leaves depend on all variables.
 """
 function taylorexpansion(graph::G, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}()) where {G<:Graph}
     if isleaf(graph)
-        maxorder = get_order()
+        maxorder = get_orders()
         if haskey(var_dependence, graph.id)
             var = var_dependence[graph.id]
         else
             var = fill(true, get_numvars()) #if dependence not provided, assume the graph depends on all variables
         end
-        ordtuple = ((var[idx]) ? (0:get_order(idx)) : (0:0) for idx in 1:get_numvars())
+        ordtuple = ((var[idx]) ? (0:get_orders(idx)) : (0:0) for idx in 1:get_numvars())
         result = TaylorSeries{G}()
         for order in collect(Iterators.product(ordtuple...)) #varidx specifies the variables graph depends on. Iterate over all taylor coefficients of those variables.
             o = collect(order)
@@ -56,23 +57,23 @@ end
 """
     taylorexpansion_withmap(g::G; coeffmode=true, var::Vector{Int}=collect(1:get_numvars())) where {G<:Graph}
     
-    Return a taylor series of graph g, together with a map of chain relation ship between generated derivatives.
+    Return a taylor series of graph g, together with a map of chain relationships between generated derivatives.
     This function is only internally used for constructing high order derivatives by naive nested forward AD.
     It is only for banch mark purpose and not exported.
 # Arguments:
 - `g`  Target graph 
-- `coeffmode` If true, the generated taylor series saves taylor coefficietnts with the factorial prefactor. If false, the taylor series saves derivatives instead
+- `coeffmode` If true, the generated taylor series saves taylor coefficients with the factorial prefactor. If false, the taylor series saves derivatives instead
 - `var` The index of variables graph depends on
 """
 function taylorexpansion_withmap(g::G; coeffmode=true, var::Vector{Bool}=fill(true, get_numvars())) where {G<:Graph}
     @assert isleaf(g)
     chainrule_map_leaf = Dict{Int,Dict{Int,G}}()
-    maxorder = get_order()
+    maxorder = get_orders()
     current_func = Dict(zeros(Int, get_numvars()) => g)
     result = TaylorSeries{G}()
     result.coeffs[zeros(Int, get_numvars())] = g
 
-    for i in 1:sum(get_order())
+    for i in 1:sum(get_orders())
         new_func = Dict{Vector{Int},G}()
         for (order, func) in current_func
             if !haskey(chainrule_map_leaf, func.id)
@@ -82,7 +83,7 @@ function taylorexpansion_withmap(g::G; coeffmode=true, var::Vector{Bool}=fill(tr
                 if var[idx]
                     ordernew = copy(order)
                     ordernew[idx] += 1
-                    if ordernew[idx] <= get_order(idx)
+                    if ordernew[idx] <= get_orders(idx)
                         if !haskey(result.coeffs, ordernew)
                             if coeffmode
                                 funcAD = Graph([]; operator=Sum(), factor=g.factor)
@@ -129,13 +130,13 @@ function build_derivative_backAD!(g::G, leaftaylor::Dict{Int,TaylorSeries{G}}=Di
 
     result = TaylorSeries{G}()
     result.coeffs[zeros(Int, get_numvars())] = g
-    for i in 1:sum(get_order())
+    for i in 1:sum(get_orders())
         new_func = Dict{Vector{Int},G}()
         for (order, func) in current_func
             for idx in 1:get_numvars()
                 ordernew = copy(order)
                 ordernew[idx] += 1
-                if ordernew[idx] <= get_order(idx)
+                if ordernew[idx] <= get_orders(idx)
                     if !haskey(result.coeffs, ordernew)
                         funcAD = forwardAD_taylor(func, idx, chainrule_map, chainrule_map_leaf, leaftaylor)
                         if !isnothing(funcAD)
