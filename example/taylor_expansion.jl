@@ -10,9 +10,9 @@ function banchmark_AD(glist::Vector{T}) where {T<:Graph}
     totaloperation = [0, 0]
     taylorlist = Vector{TaylorSeries{T}}()
     for g in glist
-        @time taylorexpansion!(g, taylormap)
+        @time t, taylormap = taylorexpansion!(g; taylormap=taylormap)
 
-        t = taylormap[g.id]
+
         operation = count_operation(t)
         totaloperation = totaloperation + operation
         push!(taylorlist, t)
@@ -60,6 +60,8 @@ set_variables("x y", orders=[3, 2])
 
 
 banchmark_AD([G3, G4, G5, G6])
+
+
 # T5 = taylormap[G6.id]
 # #order = [0, 0, 0, 0, 0, 0]
 # #@time print(T5.coeffs[order])
