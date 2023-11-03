@@ -65,9 +65,9 @@ end
 # Arguments:
 - `map::Dict{Int,DiagTree.DiagramId}`:  A dictionary mapping graph ids to DiagramIds. DiagramId stores the diagram information of the corresponding graph. 
 - `ID`:  The particular type of ID that has the given variable dependence. 
-- `numvars`: The number of varibles which the diagram depends on.
+- `numvars`: The number of variables which the diagram depends on.
 """
-function extract_var_dependence(map::Dict{Int,DiagTree.DiagramId}, ::Type{ID}, numvars::Int) where {ID<:PropagatorId}
+function extract_var_dependence(map::Dict{Int,DiagTree.DiagramId}, ::Type{ID}; numvars::Int=1) where {ID<:PropagatorId}
     var_dependence = Dict{Int,Vector{Bool}}()
     for (id, diagID) in map
         if diagID isa ID

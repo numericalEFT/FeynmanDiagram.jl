@@ -23,7 +23,7 @@ using FeynmanDiagram: Taylor as Taylor
     using FeynmanDiagram.ComputationalGraphs:
         eval!, forwardAD, node_derivative, backAD, build_all_leaf_derivative, count_operation
     using FeynmanDiagram.Utility:
-        taylorexpansion, build_derivative_backAD!
+        taylorexpansion!, build_derivative_backAD!
     g1 = Graph([])
     g2 = Graph([])
     g3 = Graph([], factor=2.0)
@@ -34,7 +34,7 @@ using FeynmanDiagram: Taylor as Taylor
 
     set_variables("x y z", orders=[2, 3, 2])
     for G in [G3, G4, G5, G6]
-        T, taylormap = taylorexpansion(G)
+        T, taylormap = taylorexpansion!(G)
         T_compare = build_derivative_backAD!(G)
         for (order, coeff) in T_compare.coeffs
             @test eval!(coeff) == eval!(taylor_factorial(order) * T.coeffs[order])
@@ -122,17 +122,17 @@ end
 
     set_variables("x"; orders=[2])
     g, map = FrontEnds.Graph!(root)
-    var_dependence = FrontEnds.extract_var_dependence(map, BareGreenId, 1)
-    t, taylormap = taylorexpansion(g, var_dependence)
+    var_dependence = FrontEnds.extract_var_dependence(map, BareGreenId)
+    t, taylormap = taylorexpansion!(g, var_dependence)
     order = [0]
     @test eval!(taylormap[g.id].coeffs[order]) ≈ (-2 + spin) * factor
 
     order = [1]
     @test eval!(taylormap[g.id].coeffs[order]) ≈ (-2 + spin) * factor * 2 * taylor_factorial(order)
 
-    var_dependence = FrontEnds.extract_var_dependence(map, BareInteractionId, 1)
+    var_dependence = FrontEnds.extract_var_dependence(map, BareInteractionId)
 
-    t, taylormap = taylorexpansion(g, var_dependence)
+    t, taylormap = taylorexpansion!(g, var_dependence)
     order = [0]
     @test eval!(taylormap[g.id].coeffs[order]) ≈ (-2 + spin) * factor
 
