@@ -56,3 +56,25 @@ function Graph!(d::DiagTree.Diagram{W}; map=Dict{Int,DiagTree.DiagramId}()) wher
 
     return root, map
 end
+
+"""
+    function extract_var_dependence(map::Dict{Int,DiagTree.DiagramId}, ::Type{ID}, numvars::Int)
+    
+    Given a map between graph id and DiagramId, extract the variable dependence of all graphs.
+
+# Arguments:
+- `map::Dict{Int,DiagTree.DiagramId}`:  A dictionary mapping graph ids to DiagramIds. DiagramId stores the diagram information of the corresponding graph. 
+- `ID`:  The particular type of ID that has the given variable dependence. 
+- `numvars`: The number of variables which the diagram depends on.
+"""
+function extract_var_dependence(map::Dict{Int,DiagTree.DiagramId}, ::Type{ID}; numvars::Int=1) where {ID<:PropagatorId}
+    var_dependence = Dict{Int,Vector{Bool}}()
+    for (id, diagID) in map
+        if diagID isa ID
+            var_dependence[id] = [true for _ in 1:numvars]
+        else
+            var_dependence[id] = [false for _ in 1:numvars]
+        end
+    end
+    return var_dependence
+end

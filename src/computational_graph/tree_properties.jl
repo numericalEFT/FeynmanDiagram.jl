@@ -156,7 +156,7 @@ function count_operation(g::Array{G}) where {G<:Graph}
 end
 
 
-function count_operation(g::Dict{Array{Int,1},G}) where {G<:Graph}
+function count_operation(g::Dict{Vector{Int},G}) where {G<:Graph}
     visited = Set{Int}()
     totalsum = 0
     totalprod = 0
