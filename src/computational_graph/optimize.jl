@@ -191,11 +191,13 @@ end
 
 # Returns:
 - The vector of unique leaf nodes.
+- The vector of unique leaf nodes' index.
 - A mapping dictionary from the id of each unique leaf node to its index in collect(1:length(leafs)).
 """
 function unique_leaves(_graphs::AbstractVector{<:AbstractGraph})
     ############### find the unique Leaves #####################
     uniqueGraph = []
+    uniqueGraphs_id = Int[]
     mapping = Dict{Int,Int}()
 
     idx = 1
@@ -210,11 +212,12 @@ function unique_leaves(_graphs::AbstractVector{<:AbstractGraph})
         end
         if flag
             push!(uniqueGraph, g)
+            push!(uniqueGraphs_id, g.id)
             mapping[g.id] = idx
             idx += 1
         end
     end
-    return uniqueGraph, mapping
+    return uniqueGraph, uniqueGraphs_id, mapping
 end
 
 """
@@ -245,14 +248,18 @@ function remove_duplicated_leaves!(graphs::Union{Tuple,AbstractVector{<:Abstract
     sort!(leaves, by=x -> x.id) #sort the id of the leaves in an asscend order
     unique!(x -> x.id, leaves) #filter out the leaves with the same id number
 
-    uniqueLeaf, leafMap = unique_leaves(leaves)
+    uniqueLeaf, uniqueleaves_id, leaf_mapping = unique_leaves(leaves)
     verbose > 0 && length(leaves) > 0 && println("Number of independent Leaves $(length(leaves)) → $(length(uniqueLeaf))")
 
+    leafMap = Dict{Int,Int}()
     for g in graphs
         for n in PreOrderDFS(g)
             for (si, sub_g) in enumerate(n.subgraphs)
                 if isleaf(sub_g)
-                    n.subgraphs[si] = uniqueLeaf[leafMap[sub_g.id]]
+                    n.subgraphs[si] = uniqueLeaf[leaf_mapping[sub_g.id]]
+                    if sub_g.id ∈ uniqueleaves_id
+                        leafMap[sub_g.id] = leaf_mapping[sub_g.id]
+                    end
                 end
             end
         end

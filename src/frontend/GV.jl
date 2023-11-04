@@ -38,9 +38,9 @@ A tuple `(diagrams, fermi_labelProd, bose_labelProd, extT_labels)` where
 - `bose_labelProd` is a `LabelProduct` object containing the labels for the bosonic `W` objects in the diagrams.
 - `extT_labels` is a `Vector{Vector{Int}}` object containing the external tau labels for each `FeynmanGraph` in `diagrams`.
 """
-function eachorder_diag(type::Symbol, order::Int, GOrder::Int=0, VerOrder::Int=0; dim::Int=3, spinPolarPara::Float64=0.0,
-    loopPool::Union{LoopPool,Nothing}=nothing, tau_labels::Union{Nothing,Vector{Int}}=nothing,
-    GTypes::Union{Nothing,Vector{Int}}=nothing, VTypes::Union{Nothing,Vector{Int}}=nothing)
+function eachorder_diag(type::Symbol, labelProd::LabelProduct, order::Int,
+    GOrder::Int=0, VerOrder::Int=0; spinPolarPara::Float64=0.0, tau_labels::Union{Nothing,Vector{Int}}=nothing)
+    # GTypes::Union{Nothing,Vector{Int}}=nothing, VTypes::Union{Nothing,Vector{Int}}=nothing)
     diagtype = :polar
     if type == :spinPolar
         filename = string(@__DIR__, "/GV_diagrams/groups_spin/Polar$(order)_$(VerOrder)_$(GOrder).diag")
@@ -61,15 +61,14 @@ function eachorder_diag(type::Symbol, order::Int, GOrder::Int=0, VerOrder::Int=0
     end
     # println("Reading ", filename)
 
-    if isnothing(GTypes)
-        GTypes = collect(0:GOrder)
-        type == :sigma_old && append!(GTypes, [-2, -3])
-        # type == :green && push!(GTypes, -2)
-        type in [:green, :sigma] && push!(GTypes, -2)
-    end
-    isnothing(VTypes) && (VTypes = collect(0:VerOrder))
-    return read_diagrams(filename; dim=dim, loopPool=loopPool, tau_labels=tau_labels, GTypes=GTypes, VTypes=VTypes,
-        diagType=diagtype, spinPolarPara=spinPolarPara)
+    Gorders = collect(0:GOrder)
+    # type == :sigma_old && append!(Gorders, [-2, -3])
+    type in [:green, :sigma] && pushfirst!(Gorders, -2)
+    Vorders = collect(0:VerOrder)
+    # isnothing(VTypes) && (VTypes = collect(0:VerOrder))
+    GVorders = [Gorders, Vorders]
+
+    return read_diagrams(filename, GVorders; labelProd=labelProd, tau_labels=tau_labels, diagType=diagtype, spinPolarPara=spinPolarPara)
 end
 
 """
@@ -116,7 +115,12 @@ function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, di
     else
         error("no support for $type diagram")
     end
-    loopPool = LoopPool(:K, dim, MaxLoopNum, Float64)
+    # loopPool = LoopPool(:K, dim, MaxLoopNum, Float64)
+    loopbasis = [vcat([1.0], [0.0 for _ in 2:MaxLoopNum])]
+    # Create label product
+    fermi_labelProd = LabelProduct(tau_labels, GTypes, loopbasis)
+    bose_labelProd = LabelProduct(tau_labels, VTypes, loopbasis)
+
 
     leafMap = Dict{Tuple{Int,Int,Int},Dict{Int,Int}}()
     if has_counterterm
@@ -132,10 +136,10 @@ function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, di
                 for GOrder in collect(0:MaxOrder-MinOrder)
                     order + VerOrder + GOrder > MaxOrder && continue
                     gvec, fermi_labelProd, bose_labelProd, extT_labels = eachorder_diag(type, order, GOrder, VerOrder;
-                        dim=dim, loopPool=loopPool, tau_labels=tau_labels, GTypes=GTypes, VTypes=VTypes, spinPolarPara=spinPolarPara)
+                        tau_labels=tau_labels, GTypes=GTypes, VTypes=VTypes, spinPolarPara=spinPolarPara)
                     key = (order, GOrder, VerOrder)
                     dict_graphs[key] = (gvec, extT_labels)
-                    loopPool = fermi_labelProd.labels[3]
+                    # loopPool = fermi_labelProd.labels[3]
                     leafMap[key] = IR.optimize!(gvec)
                 end
             end
@@ -146,15 +150,15 @@ function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, di
         type in [:green, :sigma] && push!(GTypes, -2)
         for order in 1:MaxOrder
             gvec, fermi_labelProd, bose_labelProd, extT_labels = eachorder_diag(type, order;
-                loopPool=loopPool, tau_labels=tau_labels, GTypes=GTypes, VTypes=VTypes, spinPolarPara=spinPolarPara)
+                tau_labels=tau_labels, GTypes=GTypes, VTypes=VTypes, spinPolarPara=spinPolarPara)
             key = (order, 0, 0)
             dict_graphs[key] = (gvec, extT_labels)
-            loopPool = fermi_labelProd.labels[3]
+            # loopPool = fermi_labelProd.labels[3]
             leafMap[key] = IR.optimize!(gvec)
         end
     end
-    fermi_labelProd = LabelProduct(tau_labels, GTypes, loopPool)
-    bose_labelProd = LabelProduct(tau_labels, VTypes, loopPool)
+    # fermi_labelProd = LabelProduct(tau_labels, GTypes, loopPool)
+    # bose_labelProd = LabelProduct(tau_labels, VTypes, loopPool)
 
     return dict_graphs, fermi_labelProd, bose_labelProd, leafMap
 end

@@ -433,7 +433,8 @@ julia> g.subgraphs
 ```
 """
 function feynman_diagram(subgraphs::Vector{FeynmanGraph{F,W}}, topology::Vector{Vector{Int}}, perm_noleg::Union{Vector{Int},Nothing}=nothing;
-    factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", diagtype::DiagramType=GenericDiag(), is_signed::Bool=false) where {F,W}
+    contraction_orders::Union{Nothing,Vector{Vector{Int}}}=nothing, factor=one(F), weight=zero(W),
+    name="", diagtype::DiagramType=GenericDiag(), is_signed::Bool=false) where {F,W}
 
     # external_ops = OperatorProduct(operators[external]) # the external operators for the building diagram after contractions
     contraction = collect(Iterators.flatten(topology))
@@ -442,7 +443,11 @@ function feynman_diagram(subgraphs::Vector{FeynmanGraph{F,W}}, topology::Vector{
     vertices, all_external_legs = OperatorProduct[], Bool[]
     external_leg, external_noleg = Int[], Int[] # index all leg/nonleg external operators
     ind = 0
+
+    orders_length = length(orders(subgraphs[1]))
+    diag_orders = zeros(Int, orders_length)
     for g in subgraphs
+        diag_orders += orders(g)
         diagram_type(g) == Propagator && continue  # exclude propagator subgraph to avoid double counting.
         push!(vertices, external_operators(g))
         append!(all_external_legs, external_legs(g))
@@ -478,13 +483,20 @@ function feynman_diagram(subgraphs::Vector{FeynmanGraph{F,W}}, topology::Vector{
         sign = 1
     end
 
-    for connection in topology
-        push!(subgraphs, propagator(operators[connection]))
+    if isnothing(contraction_orders)
+        for (i, connection) in enumerate(topology)
+            push!(subgraphs, propagator(operators[connection]; orders=zeros(Int, orders_length)))
+        end
+    else
+        for (i, connection) in enumerate(topology)
+            push!(subgraphs, propagator(operators[connection]; orders=contraction_orders[i]))
+            diag_orders += contraction_orders[i]
+        end
     end
     _external_indices = union(external_leg, external_noleg)
     _external_legs = append!([true for i in eachindex(external_leg)], [false for i in eachindex(external_noleg)])
     return FeynmanGraph(subgraphs; topology=topology, external_indices=_external_indices, external_legs=_external_legs, vertices=vertices,
-        name=name, diagtype=diagtype, operator=Prod(), factor=factor * sign, weight=weight)
+        orders=diag_orders, name=name, diagtype=diagtype, operator=Prod(), factor=factor * sign, weight=weight)
 end
 
 # do nothing when already a OperatorProduct; 
@@ -498,13 +510,18 @@ _extract_vertex(::Type{<:FeynmanGraph}, g) = OperatorProduct(external_operators(
 
     Create a Propagator-type FeynmanGraph from given OperatorProduct or Vector{QuantumOperator} `ops`, including two quantum operators.
 """
-function propagator(ops::Union{OperatorProduct,Vector{QuantumOperator}};
+function propagator(ops::Union{OperatorProduct,Vector{QuantumOperator}}; orders::Union{Nothing,Vector{Int}}=nothing,
     name="", factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
     @assert length(ops) == 2
     @assert adjoint(ops[1].operator) == ops[2].operator
     sign, perm = correlator_order(OperatorProduct(ops))
-    return FeynmanGraph(FeynmanGraph[]; topology=[[1, 2]], external_indices=perm, external_legs=[true, true], vertices=OperatorProduct.(ops),
-        diagtype=Propagator(), name=name, operator=operator, factor=factor * sign, weight=weight)
+    if isnothing(orders)
+        return FeynmanGraph(FeynmanGraph[]; topology=[[1, 2]], external_indices=perm, external_legs=[true, true], vertices=OperatorProduct.(ops),
+            diagtype=Propagator(), name=name, operator=operator, factor=factor * sign, weight=weight)
+    else
+        return FeynmanGraph(FeynmanGraph[]; topology=[[1, 2]], external_indices=perm, external_legs=[true, true], vertices=OperatorProduct.(ops),
+            orders=orders, diagtype=Propagator(), name=name, operator=operator, factor=factor * sign, weight=weight)
+    end
 end
 
 """
