@@ -93,7 +93,7 @@ A tuple `(dict_graphs, fermi_labelProd, bose_labelProd, leafMap)` where
 - `bose_labelProd` is a `LabelProduct` object containing the labels for the bosonic `W` objects in the diagrams.
 - `leafMap` maps `g.id` to the index of unique leaf. 
 """
-function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, dim::Int=3;
+function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false;
     MinOrder::Int=1, spinPolarPara::Float64=0.0)
     dict_graphs = Dict{Tuple{Int,Int,Int},Tuple{Vector{FeynmanGraph{_dtype.factor,_dtype.weight}},Vector{Vector{Int}}}}()
     if type == :sigma_old
@@ -118,14 +118,12 @@ function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, di
     # loopPool = LoopPool(:K, dim, MaxLoopNum, Float64)
     loopbasis = [vcat([1.0], [0.0 for _ in 2:MaxLoopNum])]
     # Create label product
-    fermi_labelProd = LabelProduct(tau_labels, GTypes, loopbasis)
-    bose_labelProd = LabelProduct(tau_labels, VTypes, loopbasis)
-
+    labelProd = LabelProduct(tau_labels, loopbasis)
 
     leafMap = Dict{Tuple{Int,Int,Int},Dict{Int,Int}}()
     if has_counterterm
         GTypes = collect(0:MaxOrder-MinOrder)
-        type == :sigma_old && append!(GTypes, [-2, -3])
+        # type == :sigma_old && append!(GTypes, [-2, -3])
         type in [:green, :sigma] && push!(GTypes, -2)
         type == :freeEnergy && push!(GTypes, -1)
         VTypes = collect(0:MaxOrder-1)
@@ -135,8 +133,8 @@ function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, di
                 order == 0 && VerOrder > 0 && continue
                 for GOrder in collect(0:MaxOrder-MinOrder)
                     order + VerOrder + GOrder > MaxOrder && continue
-                    gvec, fermi_labelProd, bose_labelProd, extT_labels = eachorder_diag(type, order, GOrder, VerOrder;
-                        tau_labels=tau_labels, GTypes=GTypes, VTypes=VTypes, spinPolarPara=spinPolarPara)
+                    gvec, labelProd, extT_labels = eachorder_diag(type, labelProd, order, GOrder, VerOrder;
+                        tau_labels=tau_labels, spinPolarPara=spinPolarPara)
                     key = (order, GOrder, VerOrder)
                     dict_graphs[key] = (gvec, extT_labels)
                     # loopPool = fermi_labelProd.labels[3]
@@ -149,8 +147,8 @@ function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, di
         type == :sigma_old && append!(GTypes, [-2, -3])
         type in [:green, :sigma] && push!(GTypes, -2)
         for order in 1:MaxOrder
-            gvec, fermi_labelProd, bose_labelProd, extT_labels = eachorder_diag(type, order;
-                tau_labels=tau_labels, GTypes=GTypes, VTypes=VTypes, spinPolarPara=spinPolarPara)
+            gvec, labelProd, extT_labels = eachorder_diag(type, labelProd, order;
+                tau_labels=tau_labels, spinPolarPara=spinPolarPara)
             key = (order, 0, 0)
             dict_graphs[key] = (gvec, extT_labels)
             # loopPool = fermi_labelProd.labels[3]
@@ -160,7 +158,7 @@ function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, di
     # fermi_labelProd = LabelProduct(tau_labels, GTypes, loopPool)
     # bose_labelProd = LabelProduct(tau_labels, VTypes, loopPool)
 
-    return dict_graphs, fermi_labelProd, bose_labelProd, leafMap
+    return dict_graphs, labelProd, leafMap
 end
 
 """
@@ -184,7 +182,7 @@ A tuple `(dict_graphs, fermi_labelProd, bose_labelProd, leafMap)` where
 - `bose_labelProd` is a `LabelProduct` object containing the labels for the bosonic `W` objects in the diagrams.
 - `leafMap` maps `g.id` to the index of unique leaf. 
 """
-function diagdictGV(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}, dim::Int=3; spinPolarPara::Float64=0.0)
+function diagdictGV(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}; spinPolarPara::Float64=0.0)
     dict_graphs = Dict{Tuple{Int,Int,Int},Tuple{Vector{FeynmanGraph{_dtype.factor,_dtype.weight}},Vector{Vector{Int}}}}()
     if type == :sigma_old
         MaxLoopNum = maximum([key[1] for key in gkeys]) + 2
@@ -208,28 +206,32 @@ function diagdictGV(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}, dim::Int=3;
     MaxGOrder = maximum([key[2] for key in gkeys])
     MaxVerOrder = maximum([key[3] for key in gkeys])
 
-    loopPool = LoopPool(:K, dim, MaxLoopNum, Float64)
+    # loopPool = LoopPool(:K, dim, MaxLoopNum, Float64)
     GTypes = collect(0:MaxGOrder)
     type == :sigma_old && append!(GTypes, [-2, -3])
     type in [:green, :sigma] && push!(GTypes, -2)
     type == :freeEnergy && push!(GTypes, -1)
     VTypes = collect(0:MaxVerOrder)
 
+    loopbasis = [vcat([1.0], [0.0 for _ in 2:MaxLoopNum])]
+    # Create label product
+    labelProd = LabelProduct(tau_labels, loopbasis)
+
     # graphvector = Vector{_dtype.factor,_dtype.weight}()
     leafMap = Dict{eltype(gkeys),Dict{Int,Int}}()
     for key in gkeys
-        gvec, fermi_labelProd, bose_labelProd, extT_labels = eachorder_diag(type, key...;
-            dim=dim, loopPool=loopPool, tau_labels=tau_labels, GTypes=GTypes, VTypes=VTypes, spinPolarPara=spinPolarPara)
+        gvec, labelProd, extT_labels = eachorder_diag(type, labelProd, key...;
+            tau_labels=tau_labels, spinPolarPara=spinPolarPara)
         dict_graphs[key] = (gvec, extT_labels)
-        loopPool = fermi_labelProd.labels[3]
+        # loopPool = fermi_labelProd.labels[3]
         leafMap[key] = IR.optimize!(gvec)
         # append!(graphvector, gvec)
     end
     # IR.optimize!(graphvector)
 
-    fermi_labelProd = LabelProduct(tau_labels, GTypes, loopPool)
-    bose_labelProd = LabelProduct(tau_labels, VTypes, loopPool)
-    return dict_graphs, fermi_labelProd, bose_labelProd, leafMap
+    # fermi_labelProd = LabelProduct(tau_labels, GTypes, loopPool)
+    # bose_labelProd = LabelProduct(tau_labels, VTypes, loopPool)
+    return dict_graphs, labelProd, leafMap
 end
 
 """

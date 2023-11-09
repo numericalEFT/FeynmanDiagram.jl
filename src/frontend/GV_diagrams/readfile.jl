@@ -246,7 +246,7 @@ function read_onediagram!(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex
         for (ind1, ind2) in enumerate(permu)
             # current_index = _current_to_index(currentBasis[ind1, :])
             # current_index = FrontEnds.append(loopPool, currentBasis[ind1, :])
-            current_index = FrontEnds.push_labelat!(fermi_labelProd, currentBasis[ind1, :], 3)
+            current_index = FrontEnds.push_labelat!(labelProd, currentBasis[ind1, :], 3)
             # ind_GType = findfirst(p -> p == opGType[ind1], GTypes)
 
             # label1 = index_to_linear(fermi_labelProd, tau_labels[ind1], ind_GType, current_index)
@@ -338,5 +338,5 @@ function read_onediagram!(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex
         extT = tau_labels[extIndex]
     end
     # return IR.linear_combination(graphs, spinfactors_existed), loopPool, extT
-    return IR.linear_combination(graphs, spinfactors_existed), fermi_labelProd, bose_labelProd, extT
+    return IR.linear_combination(graphs, spinfactors_existed), labelProd, extT
 end
