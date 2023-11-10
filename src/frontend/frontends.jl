@@ -1,10 +1,15 @@
 module FrontEnds
 
+import ..ComputationalGraphs
 using LinearAlgebra
 import ..QuantumOperators as Op
 import ..ComputationalGraphs as IR
-import ..ComputationalGraphs: Graph
+import ..ComputationalGraphs: FeynmanGraph
+# import ..ComputationalGraphs: Graph
 import ..ComputationalGraphs: _dtype
+
+using ..DiagTree
+
 
 include("pool.jl")
 export LoopPool
@@ -15,5 +20,7 @@ export LabelProduct
 include("parquet.jl")
 using .Parquet
 # export Parquet
+
+include("diagtree.jl")
 
 end

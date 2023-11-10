@@ -37,6 +37,7 @@ abstract type GndDiag <: DiagType end
     NoFock
     NoBubble  # true to remove all bubble subdiagram
     Proper  #ver4, ver3, and polarization diagrams may require to be irreducible along the transfer momentum/frequency
+    DirectOnly # only direct interaction, this can be useful for debug purpose
 end
 
 Base.length(r::Filter) = 1
@@ -70,7 +71,7 @@ function Base.iterate(r::AnalyticProperty, ::Nothing) end
 
 export SigmaDiag, PolarDiag, Ver3Diag, Ver4Diag, GreenDiag
 export VacuumDiag, GnDiag, GcDiag
-export Wirreducible, Girreducible, NoBubble, NoHartree, NoFock, Proper
+export Wirreducible, Girreducible, NoBubble, NoHartree, NoFock, Proper, DirectOnly
 export Response, ChargeCharge, SpinSpin, UpUp, UpDown
 export AnalyticProperty, Instant, Dynamic, D_Instant, D_Dynamic
 
@@ -97,39 +98,41 @@ export fermionic_annihilation, fermionic_creation, majorana
 export bosonic_annihilation, bosonic_creation, real_classic
 export correlator_order, normal_order
 
+
+
+
 include("computational_graph/ComputationalGraph.jl")
 using .ComputationalGraphs
 export ComputationalGraphs
 export labelreset, parity
 # export AbstractOperator, Prod, Sum
-export Graph, isequiv, linear_combination
-# export GraphType, Interaction, ExternalVertex, Propagator, SelfEnergy, VertexDiag, GreenDiag, GenericDiag
-export feynman_diagram, propagator, interaction, external_vertex
+
+export AbstractGraph, AbstractOperator
+export Graph, FeynmanGraph, FeynmanProperties
+
+export isequiv, drop_topology, is_external, is_internal, diagram_type, orders, vertices, topology
+export external_legs, external_indices, external_operators, external_labels
+export multi_product, linear_combination, feynman_diagram, propagator, interaction, external_vertex
+# export DiagramType, Interaction, ExternalVertex, Propagator, SelfEnergy, VertexDiag, GreenDiag, GenericDiag
+
 # export standardize_order!
-export is_external, is_internal, vertices, external
-export external_labels
 # export reducibility, connectivity
 # export 𝐺ᶠ, 𝐺ᵇ, 𝐺ᵠ, 𝑊, Green2, Interaction
 # export Coupling_yukawa, Coupling_phi3, Coupling_phi4, Coupling_phi6
 export haschildren, onechild, isleaf, isbranch, ischain, isfactorless, eldest
-export relabel!, standardize_labels!, replace_subgraph!, merge_prodchain_subfactors!, inplace_prod!
-export relabel, standardize_labels, replace_subgraph, merge_prodchain_subfactors, inplace_prod
-export prune_trivial_unary, merge_prefactors
+export relabel!, standardize_labels!, replace_subgraph!, merge_linear_combination!, merge_multi_product!, merge_chains!
+export relabel, standardize_labels, replace_subgraph, merge_linear_combination, merge_multi_product, merge_chains
+
+export optimize!, optimize, merge_all_chains!, merge_all_linear_combinations!, remove_duplicated_leaves!
+
+include("TaylorSeries/TaylorSeries.jl")
+using .Taylor
+export Taylor
+
 
 include("backend/compiler.jl")
 using .Compilers
 export Compilers
-
-include("frontend/frontends.jl")
-using .FrontEnds
-export FrontEnds
-export LabelProduct
-
-include("frontend/GV.jl")
-using .GV
-export GV
-export PolarEachOrder, PolarDiagrams
-# export read_onediagram, read_diagrams
 
 include("diagram_tree/DiagTree.jl")
 using .DiagTree
@@ -163,6 +166,22 @@ export addpropagator!, addnode!
 export setroot!, addroot!
 export evalNaive, showTree
 
+include("utility.jl")
+using .Utility
+export Utility
+export taylorexpansion!
+
+include("frontend/frontends.jl")
+using .FrontEnds
+export FrontEnds
+export LabelProduct
+
+include("frontend/GV.jl")
+using .GV
+export GV
+export diagdictGV, leafstates
+# export read_onediagram, read_diagrams
+
 ##################### precompile #######################
 # precompile as the final step of the module definition:
 if ccall(:jl_generating_output, Cint, ()) == 1   # if we're precompiling the package
@@ -193,5 +212,6 @@ if ccall(:jl_generating_output, Cint, ()) == 1   # if we're precompiling the pac
         ExprTree.build(ver4.diagram)
     end
 end
+
 
 end

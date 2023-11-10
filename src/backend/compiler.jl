@@ -1,6 +1,6 @@
 module Compilers
 using ..ComputationalGraphs
-import ..ComputationalGraphs: Graph
+import ..ComputationalGraphs: id, name, set_name!, operator, subgraphs, subgraph_factors, factor
 
 using ..AbstractTrees
 using ..RuntimeGeneratedFunctions

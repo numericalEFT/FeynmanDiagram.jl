@@ -2,6 +2,7 @@ using FeynmanDiagram
 using Lehmann
 using Test, LinearAlgebra, Random, StaticArrays, Printf, Parameters, Documenter
 using AbstractTrees
+using DataFrames
 
 """
 Skip a testset
@@ -45,6 +46,7 @@ if isempty(ARGS)
     include("parquet_builder.jl")
     include("compiler.jl")
     include("front_end.jl")
+    include("taylor.jl")
 else
     include(ARGS[1])
 end

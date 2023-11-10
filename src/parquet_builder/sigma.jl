@@ -1,8 +1,8 @@
 """
     function sigma(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = false; name = :Σ, resetuid = false, blocks::ParquetBlocks=ParquetBlocks())
     
-    Build sigma diagram. 
-    When sigma is created as a subdiagram, then no Fock diagram is generated if para.filter contains NoFock, and no sigma diagram is generated if para.filter contains Girreducible
+Build sigma diagram. 
+When sigma is created as a subdiagram, then no Fock diagram is generated if para.filter contains NoFock, and no sigma diagram is generated if para.filter contains Girreducible
 
 # Arguments
 - `para`            : parameters. It should provide internalLoopNum, interactionTauNum, firstTauIdx
@@ -16,7 +16,9 @@
 - A DataFrame with fields `:type`, `:extT`, `:diagram`, `:hash`
 - All sigma share the same incoming Tau index, but not the outgoing one
 """
-function sigma(para::DiagPara{W}, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false; name=:Σ, resetuid=false, blocks::ParquetBlocks=ParquetBlocks()) where {W}
+function sigma(para::DiagPara{W}, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false;
+    name=:Σ, resetuid=false, blocks::ParquetBlocks=ParquetBlocks()
+) where {W}
     resetuid && uidreset()
     (para.type == SigmaDiag) || error("$para is not for a sigma diagram")
     (para.innerLoopNum >= 1) || error("sigma must has more than one inner loop")
@@ -60,11 +62,8 @@ function sigma(para::DiagPara{W}, extK=DiagTree.getK(para.totalLoopNum, 1), subd
         # Sigma = G*(2 W↑↑ - W↑↓)
         # ! The sign of ↑↓ is from the spin symmetry, not from the fermionic statistics!
         spinfactor = (response == UpUp) ? 2 : -1
-        # spinfactor = (response == UpUp) ? 0 : 1
-        if oW > 0 # oW are composte Sigma, there is a symmetry factor 1/2
+        if (oW > 0) # oW are composte Sigma, there is a symmetry factor 1/2
             spinfactor *= 0.5
-            # elseif oW == 0 # the Fock diagram requires an additional minus sign, because the interaction is currently a direct one, but is expected to be exchange.
-            #     spinfactor *= paraG.isFermi ? -1.0 : 1.0
         end
         # plot_tree(mergeby(DataFrame(group)), maxdepth = 7)
         sigmadiag = Diagram{W}(sid, Prod(), [g, group[:diagram]], factor=spinfactor, name=name)
@@ -102,8 +101,12 @@ function sigma(para::DiagPara{W}, extK=DiagTree.getK(para.totalLoopNum, 1), subd
                 # println(ver4)
             else # composite Σ
                 # paraW0 = reconstruct(paraW, filter=union(paraW.filter, Proper), transferLoop=extK-K)
-                ver4 = vertex4(paraW, legK, [PHr,], true; blocks=blocks, blockstoplevel=ParquetBlocks(phi=[], Γ4=[PHr, PHEr, PPr]))
                 # plot_tree(mergeby(ver4).diagram[1])
+                # if compact
+                #     ver4 = ep_coupling(paraW; extK=legK, subdiagram=true, name=:W, blocks=blocks)
+                # else
+                ver4 = vertex4(paraW, legK, [PHr,], true; blocks=blocks, blockstoplevel=ParquetBlocks(phi=[], Γ4=[PHr, PHEr, PPr]))
+                # end
             end
             #transform extT coloum intwo extT for Σ and extT for G
             # plot_tree(ver4)

@@ -175,6 +175,8 @@ function innerTauNum(type::DiagramType, innerLoopNum, interactionTauNum)
         return innerLoopNum * interactionTauNum
     elseif type == GreenDiag
         return innerLoopNum * interactionTauNum
+    elseif type == VacuumDiag
+        return (innerLoopNum - 1) * interactionTauNum
     elseif type == PolarDiag
         return 1 + innerTauNum(Ver3Diag, innerLoopNum - 1, interactionTauNum)
     elseif type == Ver3Diag
@@ -219,6 +221,8 @@ function firstLoopIdx(type::DiagramType, offset::Int=0)
         return 2 + offset
     elseif type == Ver3Diag #two extK
         return 3 + offset
+    elseif type == VacuumDiag #no extK
+        return 1 + offset
     else
         error("not implemented!")
     end

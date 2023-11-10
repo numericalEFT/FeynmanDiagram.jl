@@ -33,7 +33,7 @@ end
 - ID        : DiagramId to apply the differentiation
 - index     : index of the id.order array element to increase the order
 """
-function derivative(diags::Union{Tuple,AbstractVector}, ::Type{ID}; index::Int=index(ID)) where {W,ID<:PropagatorId}
+function derivative(diags::Union{Tuple,AbstractVector}, ::Type{ID}; index::Int=index(ID)) where {ID<:PropagatorId}
     if isempty(diags)
         return diags
     else

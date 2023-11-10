@@ -4,7 +4,7 @@ import copy
 import sys
 
 
-def Generate(Order, VerOrder, SigmaOrder, IsSelfEnergy, IsSpinPolar, IsSysPolar, SPIN):
+def Generate(Order, VerOrder, SigmaOrder, IsSelfEnergy, IsGreen, IsSpinPolar, IsSysPolar, SPIN):
     LnZOrder = Order-1
     DiagFile = "./Diagram/HugenDiag{0}.diag".format(LnZOrder)
     LnZ = free_energy(LnZOrder)
@@ -57,27 +57,35 @@ def Generate(Order, VerOrder, SigmaOrder, IsSelfEnergy, IsSpinPolar, IsSysPolar,
 
     print "Save diagrams ..."
 
-    fname = "./output/{0}{1}_{2}_{3}.diag".format(
-        "Polar", Order, VerOrder, SigmaOrder)
+    if IsSelfEnergy:
+        fname = "./groups_sigma_old/{0}{1}_{2}_{3}.diag".format(
+            "Sigma", Order-1, VerOrder, SigmaOrder)
+    elif IsGreen:
+        fname = "./groups_green/{0}{1}_{2}_{3}.diag0".format(
+            "Green", Order, VerOrder, SigmaOrder)
+    else:
+        fname = "./output/{0}{1}_{2}_{3}.diag".format(
+            "Polar", Order, VerOrder, SigmaOrder)
     # with open(fname, "w") as f:
     with open(fname, "w") as f:
         str_polar = Polar.ToString(UniqueUnLabelDiagList,
-                                   VerOrder, SigmaOrder, IsSelfEnergy, IsSpinPolar, IsSysPolar, SPIN)
+                                   VerOrder, SigmaOrder, IsSelfEnergy, IsGreen, IsSpinPolar, IsSysPolar, SPIN)
         if not(str_polar is None):
             f.write(Polar.ToString(UniqueUnLabelDiagList,
-                                   VerOrder, SigmaOrder, IsSelfEnergy, IsSpinPolar, IsSysPolar, SPIN))
+                                   VerOrder, SigmaOrder, IsSelfEnergy, IsGreen, IsSpinPolar, IsSysPolar, SPIN))
 
 
 if __name__ == "__main__":
     # print "Input Diagram Order: "
     # Order = int(sys.argv[1])
-    Order = 5
+    Order = 6
+    IsGreen = False
+    # IsGreen = True
     IsSelfEnergy = False
     # IsSelfEnergy = True
-    IsSpinPolar = False
+    IsSpinPolar = True
     IsSymPolar = True
     SPIN = 2
-    # for o in range(2, Order+1):
     for o in range(2, Order+1):
         for v in range(0, Order):
             # for g in range(0, (Order-1)/2+1):
@@ -85,5 +93,7 @@ if __name__ == "__main__":
                 # if o+v+2*g > Order:
                 if o+v+g > Order:
                     continue
-                Generate(o, v, g, IsSelfEnergy,
+                Generate(o, v, g, IsSelfEnergy, IsGreen,
                          IsSpinPolar, IsSymPolar, SPIN)
+    # Generate(6, 0, 0, IsSelfEnergy, IsGreen,
+    #          IsSpinPolar, IsSymPolar, SPIN)

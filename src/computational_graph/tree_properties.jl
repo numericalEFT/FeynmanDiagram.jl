@@ -1,73 +1,77 @@
-##################### AbstractTrees interface for Graphs ########################### 
+##################### AbstractTrees interface for AbstractGraphs ########################### 
 
 ## Things that make printing prettier
-AbstractTrees.printnode(io::IO, g::Graph) = print(io, "\u001b[32m$(g.id)\u001b[0m : $g")
+AbstractTrees.printnode(io::IO, g::AbstractGraph) = print(io, "\u001b[32m$(id(g))\u001b[0m : $g")
 
-## Guarantee type-stable tree iteration for Graphs
+## Guarantee type-stable tree iteration for Graphs and FeynmanGraphs
 AbstractTrees.NodeType(::Graph) = HasNodeType()
+AbstractTrees.NodeType(::FeynmanGraph) = HasNodeType()
 AbstractTrees.nodetype(::Graph{F,W}) where {F,W} = Graph{F,W}
+AbstractTrees.nodetype(::FeynmanGraph{F,W}) where {F,W} = FeynmanGraph{F,W}
 
 ## Optional enhancements
 # These next two definitions allow inference of the item type in iteration.
 # (They are not sufficient to solve all internal inference issues, however.)
 Base.IteratorEltype(::Type{<:TreeIterator{Graph{F,W}}}) where {F,W} = Base.HasEltype()
 Base.eltype(::Type{<:TreeIterator{Graph{F,W}}}) where {F,W} = Graph{F,W}
+Base.IteratorEltype(::Type{<:TreeIterator{FeynmanGraph{F,W}}}) where {F,W} = Base.HasEltype()
+Base.eltype(::Type{<:TreeIterator{FeynmanGraph{F,W}}}) where {F,W} = FeynmanGraph{F,W}
 
-function AbstractTrees.children(g::Graph)
-    return g.subgraphs
+function AbstractTrees.children(g::AbstractGraph)
+    return subgraphs(g)
 end
 
 ##################### Tree properties ########################### 
 
 """
-    function haschildren(g::Graph)
+    function haschildren(g::AbstractGraph)
 
     Returns whether the graph has any children (subgraphs).
 
 # Arguments:
-- `g::Graph`: graph to be analyzed
+- `g::AbstractGraph`: graph to be analyzed
 """
-haschildren(g::Graph) = isempty(g.subgraphs) == false
+haschildren(g::AbstractGraph) = isempty(subgraphs(g)) == false
 
 """
-    function onechild(g::Graph)
+    function onechild(g::AbstractGraph)
 
     Returns whether the graph g has only one child (subgraph).
 
 # Arguments:
-- `g::Graph`: graph to be analyzed
+- `g::AbstractGraph`: graph to be analyzed
 """
-onechild(g::Graph) = length(children(g)) == 1
+onechild(g::AbstractGraph) = length(children(g)) == 1
 
 """
-    function isleaf(g::Graph)
+    function isleaf(g::AbstractGraph)
 
     Returns whether the graph g is a leaf (terminating tree node).
 
 # Arguments:
-- `g::Graph`: graph to be analyzed
+- `g::AbstractGraph`: graph to be analyzed
 """
-isleaf(g::Graph) = isempty(g.subgraphs)
+isleaf(g::AbstractGraph) = isempty(subgraphs(g))
 
 """
-    function isbranch(g::Graph)
+    function isbranch(g::AbstractGraph)
 
     Returns whether the graph g is a branch-type (depth-1 and one-child) graph.
 
 # Arguments:
-- `g::Graph`: graph to be analyzed
+- `g::AbstractGraph`: graph to be analyzed
 """
-isbranch(g::Graph) = onechild(g) && isleaf(eldest(g))
+isbranch(g::AbstractGraph) = onechild(g) && isleaf(eldest(g))
 
 """
-    function ischain(g::Graph)
+    function ischain(g::AbstractGraph)
 
-    Returns whether the graph g is a chain-type graph.
+    Returns whether the graph g is a chain-type graph (i.e., a unary string).
 
 # Arguments:
-- `g::Graph`: graph to be analyzed
+- `g::AbstractGraph`: graph to be analyzed
 """
-function ischain(g::Graph)
+function ischain(g::AbstractGraph)
     isleaf(g) && return true
     while onechild(g)
         g = eldest(g)
@@ -84,25 +88,100 @@ end
     that one may have, e.g., `isfactorless(g) == true` but `isfactorless(eldest(g)) == false`.
 
 # Arguments:
-- `g::Graph`: graph to be analyzed
+- `g::AbstractGraph`: graph to be analyzed
 """
-function isfactorless(g)
+function isfactorless(g::AbstractGraph)
     if isleaf(g)
-        return isapprox_one(g.factor)
+        return isapprox_one(factor(g))
     else
-        return all(isapprox_one.([g.factor; g.subgraph_factors]))
+        return all(isapprox_one.([factor(g); subgraph_factors(g)]))
     end
 end
 
 """
-    function eldest(g::Graph)
+    function eldest(g::AbstractGraph)
 
     Returns the first child (subgraph) of a graph g.
 
 # Arguments:
-- `g::Graph`: graph for which to find the first child
+- `g::AbstractGraph`: graph for which to find the first child
 """
-function eldest(g::Graph)
+function eldest(g::AbstractGraph)
     @assert haschildren(g) "Graph has no children!"
-    return children(g)[1]
+    return subgraph(g)
+end
+
+"""
+    function count_operation(g::Graph)
+
+    Returns the total number of  additions and multiplications in the graph.
+
+# Arguments:
+- `g::Graph`: graph for which to find the total number of  operations.
+"""
+function count_operation(g::Graph)
+    totalsum = 0
+    totalprod = 0
+    for node in PreOrderDFS(g)
+        if length(node.subgraphs) > 0
+            if node.operator == Prod
+                totalprod += length(node.subgraphs) - 1
+            elseif node.operator == Sum
+                totalsum += length(node.subgraphs) - 1
+            end
+        end
+    end
+    return [totalsum, totalprod]
+end
+
+function count_operation(g::Array{G}) where {G<:Graph}
+    visited = Set{Int}()
+    totalsum = 0
+    totalprod = 0
+    for graph in g
+        for node in PreOrderDFS(graph)
+            if !(node.id in visited)
+                push!(visited, node.id)
+                if length(node.subgraphs) > 0
+                    if node.operator == Prod
+                        totalprod += length(node.subgraphs) - 1
+                    elseif node.operator == Sum
+                        totalsum += length(node.subgraphs) - 1
+                    end
+                end
+            end
+        end
+    end
+    return [totalsum, totalprod]
+end
+
+
+function count_operation(g::Dict{Vector{Int},G}) where {G<:Graph}
+    visited = Set{Int}()
+    totalsum = 0
+    totalprod = 0
+    for (order, graph) in g
+        for node in PreOrderDFS(graph)
+            if !(node.id in visited)
+                push!(visited, node.id)
+                if length(node.subgraphs) > 0
+                    if node.operator == Prod
+                        totalprod += length(node.subgraphs) - 1
+                    elseif node.operator == Sum
+                        totalsum += length(node.subgraphs) - 1
+                    end
+                end
+            end
+        end
+    end
+    return [totalsum, totalprod]
+end
+
+function count_operation(g::Number)
+    return [0, 0]
+end
+
+
+function count_operation(nothing)
+    return [0, 0]
 end
