@@ -30,12 +30,17 @@ function eval!(g::Graph{F,W}, leafmap::Dict{Int,Int}=Dict{Int,Int}(), leaf::Vect
     return result
 end
 
+
 function eval!(g::FeynmanGraph{F,W}, leafmap::Dict{Int,Int}=Dict{Int,Int}(), leaf::Vector{W}=Vector{W}()) where {F,W}
     result = nothing
 
     for node in PostOrderDFS(g)
         if isleaf(node)
-            node.weight = leaf[leafmap[node.id]]
+            if isempty(leafmap)
+                node.weight = 1.0
+            else
+                node.weight = leaf[leafmap[node.id]]
+            end
         else
             node.weight = apply(node.operator, node.subgraphs, node.subgraph_factors)
         end

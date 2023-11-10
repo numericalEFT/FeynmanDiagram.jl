@@ -1,8 +1,9 @@
+using FeynmanDiagram
 using FeynmanDiagram: Taylor as Taylor
 
 @testset verbose = true "TaylorSeries" begin
     using FeynmanDiagram.Taylor:
-        getcoeff, set_variables, taylor_factorial
+        getcoeff, set_variables, taylor_factorial, get_numvars
     a, b, c, d, e = set_variables("a b c d e", orders=[3, 3, 3, 3, 3])
     F1 = (a + b) * (a + b) * (a + b)
     print("$(F1)")
@@ -33,14 +34,43 @@ using FeynmanDiagram: Taylor as Taylor
     G6 = (1.0 * g1 + 2.0 * g2) * (g1 + g3)
 
     set_variables("x y z", orders=[2, 3, 2])
+    var_dependence = Dict{Int,Vector{Bool}}()
     for G in [G3, G4, G5, G6]
-        T, taylormap = taylorexpansion!(G)
+        for leaf in Leaves(G)
+            if !haskey(var_dependence, leaf.id)
+                var_dependence[leaf.id] = [true for _ in 1:get_numvars()]
+            end
+        end
+        T, taylormap = taylorexpansion!(G, var_dependence)
         T_compare = build_derivative_backAD!(G)
         for (order, coeff) in T_compare.coeffs
             @test eval!(coeff) == eval!(taylor_factorial(order) * T.coeffs[order])
         end
     end
 
+end
+
+
+
+
+@testset "Taylor AD of Sigma FeynmanGraph" begin
+    dict_g, fl, bl, leafmap = diagdictGV(:sigma, [(2, 0, 0), (2, 0, 1), (2, 0, 2), (2, 1, 0), (2, 1, 1), (2, 2, 0), (2, 1, 2), (2, 2, 2)], 3)
+
+    g = dict_g[(2, 0, 0)]
+
+    set_variables("x y", orders=[2, 2])
+    propagator_var = ([true, false], [false, true]) # Specify variable dependence of fermi (first element) and bose (second element) particles.
+    t, taylormap = taylorexpansion!(g[1][1], propagator_var, (fl, bl))
+
+    for (order, graph) in dict_g
+        if graph[2][1] == g[2][1]
+            idx = 1
+        else
+            idx = 2
+        end
+        #print("$(order) $(eval!(graph[1][idx])) $(eval!(t.coeffs[[order[2],order[3]]]))\n")
+        @test eval!(graph[1][idx]) == eval!(t.coeffs[[order[2], order[3]]])
+    end
 end
 
 
@@ -92,7 +122,26 @@ function getdiagram(spin=2.0, D=3, Nk=4, Nt=2)
     return root, gK, gT, vdK, veK
 end
 
+function assign_leaves(g::Diagram, taylormap) #This should be written more generic later. 
+    #For bench mark purpose, currently it assigns taylor coefficients of leaves with 1.0 / taylor_factorial(order)) so that it corresponds to assign all derivatives with 1.
+    leafmap = Dict{Int,Int}()
+    leafvec = Vector{Float64}()
+    idx = 0
+    for leaf in Leaves(g)
+        taylor = taylormap[leaf.hash]
+        for (order, coeff) in taylor.coeffs
+            idx += 1
+            push!(leafvec, 1.0 / taylor_factorial(order))
+            leafmap[coeff.id] = idx
+            #print("assign $(order) $(coeff.id)  $(taylor_factorial(order)) $(leafvec[idx])\n")
+        end
+    end
+    return leafmap, leafvec
+end
+
+
 @testset "Taylor AD of DiagTree" begin
+
 
     DiagTree.uidreset()
     # We only consider the direct part of the above diagram
@@ -109,6 +158,9 @@ end
     # autodiff
     droot_dg = DiagTree.derivative([root,], BareGreenId)[1]
     droot_dv = DiagTree.derivative([root,], BareInteractionId)[1]
+    droot_dvdg = DiagTree.derivative([droot_dg,], BareInteractionId)[1]
+    droot_dvdv = DiagTree.derivative([droot_dv,], BareInteractionId)[1]
+    droot_dgdg = DiagTree.derivative([droot_dg,], BareGreenId)[1]
     # plot_tree(droot_dg)
     factor = 1 / (2π)^D
     DiagTree.eval!(root; eval=(x -> 1.0))
@@ -120,22 +172,25 @@ end
     DiagTree.eval!(droot_dv; eval=(x -> 1.0))
     @test droot_dv.weight ≈ (-2 + spin) * 2 * factor
 
-    set_variables("x"; orders=[2])
-    g, map = FrontEnds.Graph!(root)
-    var_dependence = FrontEnds.extract_var_dependence(map, BareGreenId)
-    t, taylormap = taylorexpansion!(g, var_dependence)
-    order = [0]
-    @test eval!(taylormap[g.id].coeffs[order]) ≈ (-2 + spin) * factor
+    DiagTree.eval!(droot_dvdv; eval=(x -> 1.0))
+    @test droot_dv.weight ≈ (-2 + spin) * 2 * factor
 
-    order = [1]
-    @test eval!(taylormap[g.id].coeffs[order]) ≈ (-2 + spin) * factor * 2 * taylor_factorial(order)
+    DiagTree.eval!(droot_dvdg; eval=(x -> 1.0))
+    @test droot_dv.weight ≈ (-2 + spin) * 2 * factor
 
-    var_dependence = FrontEnds.extract_var_dependence(map, BareInteractionId)
+    DiagTree.eval!(droot_dgdg; eval=(x -> 1.0))
+    @test droot_dv.weight ≈ (-2 + spin) * 2 * factor
 
-    t, taylormap = taylorexpansion!(g, var_dependence)
-    order = [0]
-    @test eval!(taylormap[g.id].coeffs[order]) ≈ (-2 + spin) * factor
+    set_variables("x y"; orders=[2, 2])
 
-    order = [1]
-    @test eval!(taylormap[g.id].coeffs[order]) ≈ (-2 + spin) * factor * 2 * taylor_factorial(order)
+    propagator_var = ([true, false], [false, true]) # Specify variable dependence of fermi (first element) and bose (second element) particles.
+    t, taylormap = taylorexpansion!(root, propagator_var)
+    taylorleafmap, taylorleafvec = assign_leaves(root, taylormap)
+    @test eval!(t.coeffs[[0, 0]], taylorleafmap, taylorleafvec) ≈ root.weight
+    @test eval!(t.coeffs[[0, 1]], taylorleafmap, taylorleafvec) ≈ droot_dv.weight / taylor_factorial([0, 1])
+    @test eval!(t.coeffs[[1, 0]], taylorleafmap, taylorleafvec) ≈ droot_dg.weight / taylor_factorial([1, 0])
+    @test eval!(t.coeffs[[1, 1]], taylorleafmap, taylorleafvec) ≈ droot_dvdg.weight / taylor_factorial([1, 1])
+    @test eval!(t.coeffs[[2, 0]], taylorleafmap, taylorleafvec) ≈ droot_dgdg.weight / taylor_factorial([2, 0])
+    @test eval!(t.coeffs[[0, 2]], taylorleafmap, taylorleafvec) ≈ droot_dvdv.weight / taylor_factorial([0, 2])
 end
+
