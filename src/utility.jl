@@ -18,7 +18,16 @@ using ..Taylor
 @inline apply(::Type{DiagTree.Prod}, diags::Vector{T}, factors::Vector{F}) where {T<:TaylorSeries,F<:Number} = prod(d * f for (d, f) in zip(diags, factors))
 
 
-# Internal function that performs taylor expansion on a single graph node recursively.
+"""
+    function taylorexpansion!(graph::G, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}(); taylormap::Dict{Int,TaylorSeries{G}}=Dict{Int,TaylorSeries{G}}()) where {G<:Graph}
+    
+    Return a taylor series of graph g, together with a map of between nodes of g and correponding taylor series.
+# Arguments:
+- `graph`  Target graph 
+- `var_dependence::Dict{Int,Vector{Bool}}` A dictionary that specifies the variable dependence of target graph leaves. Should map the id of each leaf to a Bool vector. 
+    The length of the vector should be the same as number of variables.
+- `taylormap::Dict{Int,TaylorSeries}` A dicitonary that maps id of each node of target graph to its correponding taylor series.
+"""
 function taylorexpansion!(graph::G, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}(); taylormap::Dict{Int,TaylorSeries{G}}=Dict{Int,TaylorSeries{G}}()) where {G<:Graph}
     if haskey(taylormap, graph.id) #If already exist, use taylor series in taylormap.
         return taylormap[graph.id], taylormap
@@ -48,6 +57,16 @@ function taylorexpansion!(graph::G, var_dependence::Dict{Int,Vector{Bool}}=Dict{
     end
 end
 
+"""
+    function taylorexpansion!(graph::FeynmanGraph{F,W}, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}(); taylormap::Dict{Int,TaylorSeries{G}}=Dict{Int,TaylorSeries{G}}()) where {F,W}
+    
+    Return a taylor series of FeynmanGraph g, together with a map of between nodes of g and correponding taylor series.
+# Arguments:
+- `graph`  Target FeynmanGraph 
+- `var_dependence::Dict{Int,Vector{Bool}}` A dictionary that specifies the variable dependence of target graph leaves. Should map the id of each leaf to a Bool vector. 
+    The length of the vector should be the same as number of variables.
+- `taylormap::Dict{Int,TaylorSeries}` A dicitonary that maps id of each node of target graph to its correponding taylor series.
+"""
 function taylorexpansion!(graph::FeynmanGraph{F,W}, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}(); taylormap::Dict{Int,TaylorSeries{Graph{F,W}}}=Dict{Int,TaylorSeries{Graph{F,W}}}()) where {F,W}
     if haskey(taylormap, graph.id) #If already exist, use taylor series in taylormap.
         return taylormap[graph.id], taylormap
@@ -73,8 +92,16 @@ function taylorexpansion!(graph::FeynmanGraph{F,W}, var_dependence::Dict{Int,Vec
     end
 end
 
-
-
+"""
+    function taylorexpansion!(graph::Diagram{W}, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}(); taylormap::Dict{Int,TaylorSeries{G}}=Dict{Int,TaylorSeries{G}}()) where {W}
+    
+    Return a taylor series of Diagram g, together with a map of between nodes of g and correponding taylor series.
+# Arguments:
+- `graph`  Target diagram 
+- `var_dependence::Dict{Int,Vector{Bool}}` A dictionary that specifies the variable dependence of target diagram leaves. Should map the id of each leaf to a Bool vector. 
+    The length of the vector should be the same as number of variables.
+- `taylormap::Dict{Int,TaylorSeries}` A dicitonary that maps id of each node of target diagram to its correponding taylor series.
+"""
 function taylorexpansion!(graph::Diagram{W}, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}(); taylormap::Dict{Int,TaylorSeries{Graph{W,W}}}=Dict{Int,TaylorSeries{Graph{W,W}}}()) where {W}
     if haskey(taylormap, graph.hash) #If already exist, use taylor series in taylormap.
         return taylormap[graph.hash], taylormap
@@ -100,13 +127,25 @@ function taylorexpansion!(graph::Diagram{W}, var_dependence::Dict{Int,Vector{Boo
     end
 end
 
+"""
+    function taylorexpansion!(graph::FeynmanGraph{F,W}, propagator_var::Tuple{Vector{Bool},Vector{Bool}}, label::Tuple{LabelProduct,LabelProduct}; taylormap::Dict{Int,TaylorSeries{Graph{F,W}}}=Dict{Int,TaylorSeries{Graph{F,W}}}()) where {F,W}
+    
+    Return a taylor series of FeynmanGraph g, together with a map of between nodes of g and correponding taylor series. In this set up, the leaves that are the same type of propagators (fermi or bose) depend on the same set of variables, 
+    whereas other types of Feynman diagrams (such as vertices) depends on no variables that need to be differentiated (for AD purpose, they are just constants).
+# Arguments:
+- `graph`  Target FeynmanGraph
+- `propagator_var::Tuple{Vector{Bool},Vector{Bool}}` A Tuple that specifies the variable dependence of fermi (first element) and bose propagator (second element).
+    The dependence is given by a vector of the length same as the number of variables.
+- `label::Tuple{LabelProduct,LabelProduct}` A Tuple fermi (first element) and bose LabelProduct (second element).
+- `taylormap::Dict{Int,TaylorSeries}` A dicitonary that maps id of each node of target diagram to its correponding taylor series.
+"""
 function taylorexpansion!(graph::FeynmanGraph{F,W}, propagator_var::Tuple{Vector{Bool},Vector{Bool}}, label::Tuple{LabelProduct,LabelProduct}; taylormap::Dict{Int,TaylorSeries{Graph{F,W}}}=Dict{Int,TaylorSeries{Graph{F,W}}}()) where {F,W}
     var_dependence = Dict{Int,Vector{Bool}}()
     for leaf in Leaves(graph)
         if ComputationalGraphs.diagram_type(leaf) == ComputationalGraphs.Propagator
             In = leaf.properties.vertices[2][1].label
             if isfermionic(leaf.properties.vertices[1])
-                if label[1][In][2] >= 0
+                if label[1][In][2] >= 0 #For fake propagator, this label is smaller than zero, and those propagators should not be differentiated.
                     var_dependence[leaf.id] = [propagator_var[1][idx] ? true : false for idx in 1:get_numvars()]
                 end
             else
@@ -117,13 +156,22 @@ function taylorexpansion!(graph::FeynmanGraph{F,W}, propagator_var::Tuple{Vector
     return taylorexpansion!(graph, var_dependence; taylormap=taylormap)
 end
 
-function taylorexpansion!(graph::Diagram{W}, propagator_var::Tuple{Vector{Bool},Vector{Bool}}; taylormap::Dict{Int,TaylorSeries{Graph{W,W}}}=Dict{Int,TaylorSeries{Graph{W,W}}}()) where {W}
+"""
+    function taylorexpansion!(graph::Diagram{W}, propagator_var::Dict{DataType,Vector{Bool}}; taylormap::Dict{Int,TaylorSeries{Graph{W,W}}}=Dict{Int,TaylorSeries{Graph{W,W}}}()) where {W}
+    
+    Return a taylor series of Diagram g, together with a map of between nodes of g and correponding taylor series. In this set up, the leaves that are the same type of diagrams (such as Green functions) depend on the same set of variables.
+    
+# Arguments:
+- `graph`  Target Diagram
+- `propagator_var::Dict{DataType,Vector{Bool}}` A dictionary that specifies the variable dependence of different types of diagrams. Should be a map between DataTypes in DiagramID and Bool vectors.
+    The dependence is given by a vector of the length same as the number of variables.
+- `taylormap::Dict{Int,TaylorSeries}` A dicitonary that maps id of each node of target diagram to its correponding taylor series.
+"""
+function taylorexpansion!(graph::Diagram{W}, propagator_var::Dict{DataType,Vector{Bool}}; taylormap::Dict{Int,TaylorSeries{Graph{W,W}}}=Dict{Int,TaylorSeries{Graph{W,W}}}()) where {W}
     var_dependence = Dict{Int,Vector{Bool}}()
     for leaf in Leaves(graph)
-        if leaf.id isa BareGreenId
-            var_dependence[leaf.hash] = [propagator_var[1][idx] ? true : false for idx in 1:get_numvars()]
-        elseif leaf.id isa BareInteractionId
-            var_dependence[leaf.hash] = [propagator_var[2][idx] ? true : false for idx in 1:get_numvars()]
+        if haskey(propagator_var, typeof(leaf.id))
+            var_dependence[leaf.hash] = [propagator_var[typeof(leaf.id)][idx] ? true : false for idx in 1:get_numvars()]
         end
     end
     return taylorexpansion!(graph, var_dependence; taylormap=taylormap)
@@ -230,7 +278,7 @@ function build_derivative_backAD!(g::G, leaftaylor::Dict{Int,TaylorSeries{G}}=Di
         end
         current_func = new_func
     end
-    return result
+    return result, leaftaylor
 end
 
 
