@@ -91,7 +91,7 @@ end
 
     DiagTree.uidreset()
     # We only consider the direct part of the above diagram
-    spin = 2.0
+    spin = 1.0
     D = 3
     kF, β, mass2 = 1.919, 0.5, 1.0
     Nk, Nt = 4, 2
@@ -107,13 +107,14 @@ end
     # plot_tree(droot_dg)
 
     DiagTree.eval!(root; eval=(x -> 1.0))
-    @test root.weight ≈ -2 + spin
+    factor = 1 / (2π)^D
+    @test root.weight ≈ (-2 + spin) * factor
 
     DiagTree.eval!(droot_dg; eval=(x -> 1.0))
-    @test root.weight ≈ (-2 + spin) * 2
+    @test droot_dg.weight ≈ (-2 + spin) * 2 * factor
 
     DiagTree.eval!(droot_dv; eval=(x -> 1.0))
-    @test root.weight ≈ (-2 + spin) * 2
+    @test droot_dv.weight ≈ (-2 + spin) * 2 * factor
 
     # #more sophisticated test of the weight evaluation
     varK = rand(D, Nk)

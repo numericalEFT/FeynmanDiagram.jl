@@ -112,7 +112,7 @@ export Graph, FeynmanGraph, FeynmanProperties
 
 export isequiv, drop_topology, is_external, is_internal, diagram_type, orders, vertices, topology
 export external_legs, external_indices, external_operators, external_labels
-export linear_combination, feynman_diagram, propagator, interaction, external_vertex
+export multi_product, linear_combination, feynman_diagram, propagator, interaction, external_vertex
 # export DiagramType, Interaction, ExternalVertex, Propagator, SelfEnergy, VertexDiag, GreenDiag, GenericDiag
 
 # export standardize_order!
@@ -128,23 +128,11 @@ export optimize!, optimize, merge_all_chains!, merge_all_linear_combinations!, r
 include("TaylorSeries/TaylorSeries.jl")
 using .Taylor
 export Taylor
-export TaylorSeries, set_variables, taylor_factorial, getcoeff
 
 
 include("backend/compiler.jl")
 using .Compilers
 export Compilers
-
-include("frontend/frontends.jl")
-using .FrontEnds
-export FrontEnds
-export LabelProduct
-
-include("frontend/GV.jl")
-using .GV
-export GV
-export diagdictGV, leafstates
-# export read_onediagram, read_diagrams
 
 include("diagram_tree/DiagTree.jl")
 using .DiagTree
@@ -158,6 +146,7 @@ export DiagramId, GenericId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId
 export PropagatorId, BareGreenId, BareInteractionId
 export BareGreenNId, BareHoppingId, GreenNId, ConnectedGreenNId
 export uidreset, toDataFrame, mergeby, plot_tree
+
 
 include("parquet_builder/parquet.jl")
 using .Parquet
@@ -178,10 +167,24 @@ export addpropagator!, addnode!
 export setroot!, addroot!
 export evalNaive, showTree
 
+
+
+include("frontend/frontends.jl")
+using .FrontEnds
+export FrontEnds
+export LabelProduct
+
+include("frontend/GV.jl")
+using .GV
+export GV
+export diagdictGV, leafstates
+
 include("utility.jl")
 using .Utility
 export Utility
 export taylorexpansion!
+# export read_onediagram, read_diagrams
+
 ##################### precompile #######################
 # precompile as the final step of the module definition:
 if ccall(:jl_generating_output, Cint, ()) == 1   # if we're precompiling the package

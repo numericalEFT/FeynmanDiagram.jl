@@ -20,7 +20,7 @@ include("print.jl")
 include("arithmetic.jl")
 export TaylorSeries
 
-export get_order, get_numvars,
+export get_orders, get_numvars,
     set_variables, get_variables,
     get_variable_names, get_variable_symbols,
     displayBigO, use_show_default,

@@ -103,7 +103,7 @@ end
 function merge_all_linear_combinations!(g::AbstractGraph; verbose=0)
     verbose > 0 && println("merge nodes representing a linear combination of a non-unique list of graphs.")
     # Post-order DFS
-    for sub_g in g.subgraphs
+    for sub_g in subgraphs(g)
         merge_all_linear_combinations!(sub_g)
         merge_linear_combination!(sub_g)
     end
@@ -128,7 +128,7 @@ function merge_all_linear_combinations!(graphs::Union{Tuple,AbstractVector{<:Abs
     verbose > 0 && println("merge nodes representing a linear combination of a non-unique list of graphs.")
     # Post-order DFS
     for g in graphs
-        merge_all_linear_combinations!(g.subgraphs)
+        merge_all_linear_combinations!(subgraphs(g))
         merge_linear_combination!(g)
     end
     return graphs
@@ -182,42 +182,42 @@ function merge_all_multi_products!(graphs::Union{Tuple,AbstractVector{<:Graph}};
 end
 
 """
-    function unique_leaves(_graphs::AbstractVector{<:AbstractGraph})
+    function unique_leaves(graphs::AbstractVector{<:AbstractGraph})
 
     Identifies and retrieves unique leaf nodes from a set of graphs.
 
 # Arguments:
-- `_graphs`: A collection of graphs to be processed.
+- `graphs`: A collection of graphs to be processed.
 
 # Returns:
 - The vector of unique leaf nodes.
 - The vector of unique leaf nodes' index.
 - A mapping dictionary from the id of each unique leaf node to its index in collect(1:length(leafs)).
 """
-function unique_leaves(_graphs::AbstractVector{<:AbstractGraph})
+function unique_leaves(graphs::AbstractVector{<:AbstractGraph})
     ############### find the unique Leaves #####################
-    uniqueGraph = []
-    uniqueGraphs_id = Int[]
+    unique_graphs = []
+    unique_graphs_id = Int[]
     mapping = Dict{Int,Int}()
 
     idx = 1
-    for g in _graphs
+    for g in graphs
         flag = true
-        for (ie, e) in enumerate(uniqueGraph)
+        for (ie, e) in enumerate(unique_graphs)
             if isequiv(e, g, :id)
-                mapping[g.id] = ie
+                mapping[id(g)] = ie
                 flag = false
                 break
             end
         end
         if flag
-            push!(uniqueGraph, g)
-            push!(uniqueGraphs_id, g.id)
+            push!(unique_graphs, g)
+            push!(unique_graphs_id, g.id)
             mapping[g.id] = idx
             idx += 1
         end
     end
-    return uniqueGraph, uniqueGraphs_id, mapping
+    return unique_graphs, unique_graphs_id, mapping
 end
 
 """
@@ -242,39 +242,39 @@ function remove_duplicated_leaves!(graphs::Union{Tuple,AbstractVector{<:Abstract
     if isnothing(normalize) == false
         @assert normalize isa Function "a function call is expected for normalize"
         for leaf in leaves
-            normalize(leaf.id)
+            normalize(id(leaf))
         end
     end
-    sort!(leaves, by=x -> x.id) #sort the id of the leaves in an asscend order
-    unique!(x -> x.id, leaves) #filter out the leaves with the same id number
+    sort!(leaves, by=x -> id(x)) #sort the id of the leaves in an asscend order
+    unique!(x -> id(x), leaves) #filter out the leaves with the same id number
 
-    uniqueLeaf, uniqueleaves_id, leaf_mapping = unique_leaves(leaves)
-    verbose > 0 && length(leaves) > 0 && println("Number of independent Leaves $(length(leaves)) → $(length(uniqueLeaf))")
+    _unique_leaves, uniqueleaves_id, mapping = unique_leaves(leaves)
+    verbose > 0 && length(leaves) > 0 && println("Number of independent Leaves $(length(leaves)) → $(length(_unique_leaves))")
 
-    leafMap = Dict{Int,Int}()
+    leafmap = Dict{Int,Int}()
     for g in graphs
         for n in PreOrderDFS(g)
-            for (si, sub_g) in enumerate(n.subgraphs)
+            for (si, sub_g) in enumerate(subgraphs(n))
                 if isleaf(sub_g)
-                    n.subgraphs[si] = uniqueLeaf[leaf_mapping[sub_g.id]]
+                    set_subgraph!(n, _unique_leaves[mapping[id(sub_g)]], si)
                     if sub_g.id ∈ uniqueleaves_id
-                        leafMap[sub_g.id] = leaf_mapping[sub_g.id]
+                        leafmap[sub_g.id] = mapping[sub_g.id]
                     end
                 end
             end
         end
     end
 
-    return leafMap
+    return leafmap
 end
 
 """
-    function burn_from_targetleaves!(graphs::AbstractVector{G}, targetleaves_id::AbstractVector{Int}; verbose=0) where {G<:AbstractGraph}
+    function burn_from_targetleaves!(graphs::AbstractVector{G}, targetleaves_id::AbstractVector{Int}; verbose=0) where {G <: AbstractGraph}
 
     Removes all nodes connected to the target leaves in-place via "Prod" operators.
 
 # Arguments:
-- `graphs`: An AbstractVector of graphs.
+- `graphs`: A vector of graphs.
 - `targetleaves_id::AbstractVector{Int}`: Vector of target leafs' id.
 - `verbose`: Level of verbosity (default: 0).
 
@@ -285,33 +285,33 @@ function burn_from_targetleaves!(graphs::AbstractVector{G}, targetleaves_id::Abs
     verbose > 0 && println("remove all nodes connected to the target leaves via Prod operators.")
 
     graphs_sum = linear_combination(graphs, one.(eachindex(graphs)))
-    ftype = typeof(graphs[1].factor)
+    ftype = typeof(factor(graphs[1]))
 
     for leaf in Leaves(graphs_sum)
-        if !isdisjoint(leaf.id, targetleaves_id)
-            leaf.name = "BURNING"
+        if !isdisjoint(id(leaf), targetleaves_id)
+            set_name!(leaf, "BURNING")
         end
     end
 
     for node in PostOrderDFS(graphs_sum)
-        if any(x -> x.name == "BURNING", node.subgraphs)
-            if node.operator == Prod || node.operator <: Power
-                node.subgraphs = G[]
-                node.subgraph_factors = ftype[]
-                node.name = "BURNING"
+        if any(x -> name(x) == "BURNING", subgraphs(node))
+            if operator(node) == Prod || operator(node) <: Power
+                set_subgraphs!(node, G[])
+                set_subgraph_factors!(node, ftype[])
+                set_name!(node, "BURNING")
             else
-                subgraphs = G[]
-                subgraph_factors = ftype[]
-                for (i, subg) in enumerate(node.subgraphs)
-                    if subg.name != "BURNING"
-                        push!(subgraphs, subg)
-                        push!(subgraph_factors, node.subgraph_factors[i])
+                _subgraphs = G[]
+                _subgraph_factors = ftype[]
+                for (i, subg) in enumerate(subgraphs(node))
+                    if name(subg) != "BURNING"
+                        push!(_subgraphs, subg)
+                        push!(_subgraph_factors, subgraph_factor(node, i))
                     end
                 end
-                node.subgraphs = subgraphs
-                node.subgraph_factors = subgraph_factors
-                if isempty(subgraph_factors)
-                    node.name = "BURNING"
+                set_subgraphs!(node, _subgraphs)
+                set_subgraph_factors!(node, _subgraph_factors)
+                if isempty(_subgraph_factors)
+                    set_name!(node, "BURNING")
                 end
             end
         end
@@ -320,13 +320,13 @@ function burn_from_targetleaves!(graphs::AbstractVector{G}, targetleaves_id::Abs
     g_c0 = constant_graph(ftype(0))
     has_c0 = false
     for g in graphs
-        if g.name == "BURNING"
+        if name(g) == "BURNING"
             has_c0 = true
-            g.id = g_c0.id
-            g.operator = Constant
-            g.factor = ftype(0)
+            set_id!(g, id(g_c0))
+            set_operator!(g, Constant)
+            set_factor!(g, ftype(0))
         end
     end
 
-    has_c0 ? (return g_c0.id) : (return nothing)
+    has_c0 ? (return id(g_c0)) : (return nothing)
 end

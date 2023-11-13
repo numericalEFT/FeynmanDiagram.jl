@@ -44,7 +44,7 @@ Base.:(==)(a::FeynmanProperties, b::FeynmanProperties) = Base.isequal(a, b)
 drop_topology(p::FeynmanProperties) = FeynmanProperties(p.diagtype, p.vertices, [], p.external_indices, p.external_legs)
 
 """
-    mutable struct FeynmanGraph{F,W}
+    mutable struct FeynmanGraph{F<:Number,W}
     
     Computational graph representation of a (collection of) Feynman diagram(s). All Feynman diagrams should share the same set of external and internal vertices.
 
@@ -55,8 +55,8 @@ drop_topology(p::FeynmanProperties) = FeynmanProperties(p.diagtype, p.vertices, 
 - `properties::FeynmanProperties`  diagrammatic properties, e.g., the operator vertices and topology
 - `subgraphs::Vector{FeynmanGraph{F,W}}`  vector of sub-diagrams 
 - `subgraph_factors::Vector{F}`  scalar multiplicative factors associated with each subdiagram
-- `operator::DataType`  node operation, support Sum and Prod
-- `factor::F`  total scalar multiplicative factor for the diagram
+- `operator::DataType`  node operation (Sum, Prod, etc.)
+- `factor::F`  a number representing the total scalar multiplicative factor for the diagram.
 - `weight::W`  weight of the diagram
 
 # Example:
@@ -71,7 +71,7 @@ julia> g = FeynmanGraph([g1,g2]; vertices=[𝑓⁺(1),𝑓⁻(2),𝑓⁺(3),𝑓
 3:f⁺(1)|f⁻(2)|f⁺(3)|f⁻(4)=0.0=Ⓧ (1,2)
 ```
 """
-mutable struct FeynmanGraph{F,W} <: AbstractGraph # FeynmanGraph
+mutable struct FeynmanGraph{F<:Number,W} <: AbstractGraph # FeynmanGraph
     id::Int
     name::String # "" by default
     orders::Vector{Int}
@@ -87,7 +87,7 @@ mutable struct FeynmanGraph{F,W} <: AbstractGraph # FeynmanGraph
     """
         function FeynmanGraph(subgraphs::AbstractVector; topology=[], vertices::Union{Vector{OperatorProduct},Nothing}=nothing, external_indices=[], external_legs=[],
             subgraph_factors=one.(eachindex(subgraphs)), name="", diagtype::DiagramType=GenericDiag(), operator::AbstractOperator=Sum(),
-            orders=zeros(Int, 16), ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype)
+            orders=zeros(Int, 16), ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype))
         
         Create a FeynmanGraph struct from a set of subgraphs, vertices and external indices.
 
@@ -100,7 +100,7 @@ mutable struct FeynmanGraph{F,W} <: AbstractGraph # FeynmanGraph
     - `subgraph_factors`  scalar multiplicative factors associated with each subdiagram
     - `name`  name of the diagram
     - `diagtype::DiagramType`  type of the diagram
-    - `operator::AbstractOperator`  node operation, Sum, Prod, etc.
+    - `operator::AbstractOperator`  node operation (Sum, Prod, etc.)
     - `orders`  orders associated with the Feynman graph, e.g., loop/derivative orders
     - `ftype`  typeof(factor)
     - `wtype`  typeof(weight)
@@ -126,16 +126,16 @@ mutable struct FeynmanGraph{F,W} <: AbstractGraph # FeynmanGraph
     """
         function FeynmanGraph(subgraphs::AbstractVector, properties::FeynmanProperties;
             subgraph_factors=one.(eachindex(subgraphs)), name="", operator::AbstractOperator=Sum(),
-            ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype)
+            ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype))
         
-        Create a FeynmanGraph struct from a given set of subgraphs and FeynmanProperties.
+        Create a FeynmanGraph struct from a given set of subgraphs and Feynman properties.
 
     # Arguments:
     - `subgraphs`  vector of sub-diagram
-    - `properties::FeynmanProperties`  diagrammatic properties, e.g., the operator vertices and topologys 
+    - `properties::FeynmanProperties`  diagrammatic properties, e.g., the operator vertices and topology 
     - `subgraph_factors`  scalar multiplicative factors associated with each subdiagram
     - `name`  name of the diagram
-    - `operator::AbstractOperator`  node operation, Sum, Prod, etc.
+    - `operator::AbstractOperator`  node operation (Sum, Prod, etc.)
     - `ftype`  typeof(factor)
     - `wtype`  typeof(weight)
     - `factor`  overall scalar multiplicative factor for this diagram (e.g., permutation sign)
@@ -152,21 +152,69 @@ mutable struct FeynmanGraph{F,W} <: AbstractGraph # FeynmanGraph
         # @assert allunique(subgraphs) "all subgraphs must be distinct."
         return new{ftype,wtype}(uid(), name, orders, properties, subgraphs, subgraph_factors, typeof(operator), factor, weight)
     end
+
+    """
+        function FeynmanGraph(g::Graph, properties::FeynmanProperties)
+
+        Create a Feynman graph given a graph `g` and the Feynman properties (external vertices, topology, etc.) to endow it with.
+
+    # Arguments:
+    - `g`  computational graph
+    - `properties::FeynmanProperties`  diagrammatic properties, e.g., the operator vertices and topology 
+    """
+    function FeynmanGraph(g::Graph{F,W}, properties::FeynmanProperties) where {F,W}
+        @assert length(properties.external_indices) == length(properties.external_legs)
+        # @assert allunique(subgraphs) "all subgraphs must be distinct."
+        return new{F,W}(uid(), g.name, g.orders, properties, g.subgraphs, g.subgraph_factors, g.operator, g.factor, g.weight)
+    end
 end
 
-"""
-    function is_external_operators(g::FeynmanGraph, i::Int) 
+### AbstractGraph interface for FeynmanGraph ###
 
-    Check if `i::Int` in the external indices of FeynmanGraph `g`.
-"""
-is_external(g::FeynmanGraph, i::Int) = i in g.properties.external_indices
+# Getters
+id(g::FeynmanGraph) = g.id
+name(g::FeynmanGraph) = g.name
+orders(g::FeynmanGraph) = g.orders
+operator(g::FeynmanGraph) = g.operator
+factor(g::FeynmanGraph) = g.factor
+weight(g::FeynmanGraph) = g.weight
+subgraph(g::FeynmanGraph, i=1) = g.subgraphs[i]
+subgraphs(g::FeynmanGraph) = g.subgraphs
+subgraphs(g::FeynmanGraph, indices::AbstractVector{Int}) = g.subgraphs[indices]
+subgraph_factor(g::FeynmanGraph, i=1) = g.subgraph_factors[i]
+subgraph_factors(g::FeynmanGraph) = g.subgraph_factors
+subgraph_factors(g::FeynmanGraph, indices::AbstractVector{Int}) = g.subgraph_factors[indices]
+
+# Setters
+set_id!(g::FeynmanGraph, id::Int) = (g.id = id)
+set_name!(g::FeynmanGraph, name::String) = (g.name = name)
+set_orders!(g::FeynmanGraph, orders::Vector{Int}) = (g.orders = orders)
+set_operator!(g::FeynmanGraph, operator::Type{<:AbstractOperator}) = (g.operator = operator)
+set_operator!(g::FeynmanGraph, operator::AbstractOperator) = (g.operator = typeof(operator))
+set_factor!(g::FeynmanGraph{F,W}, factor) where {F,W} = (g.factor = F(factor))
+set_weight!(g::FeynmanGraph{F,W}, weight) where {F,W} = (g.weight = W(weight))
+set_subgraph!(g::FeynmanGraph{F,W}, subgraph::FeynmanGraph{F,W}, i=1) where {F,W} = (g.subgraphs[i] = subgraph)
+set_subgraphs!(g::FeynmanGraph{F,W}, subgraphs::Vector{FeynmanGraph{F,W}}) where {F,W} = (g.subgraphs = subgraphs)
+set_subgraphs!(g::FeynmanGraph{F,W}, subgraphs::Vector{FeynmanGraph{F,W}}, indices::AbstractVector{Int}) where {F,W} = (g.subgraphs[indices] = subgraphs)
+set_subgraph_factor!(g::FeynmanGraph{F,W}, subgraph_factor, i=1) where {F,W} = (g.subgraph_factors[i] = F(subgraph_factor))
+set_subgraph_factors!(g::FeynmanGraph{F,W}, subgraph_factors::AbstractVector) where {F,W} = (g.subgraph_factors = Vector{F}(subgraph_factors))
+set_subgraph_factors!(g::FeynmanGraph{F,W}, subgraph_factors::AbstractVector, indices::AbstractVector{Int}) where {F,W} = (g.subgraph_factors[indices] = Vector{F}(subgraph_factors))
+
+###############################
 
 """
-    function is_internal(g::FeynmanGraph, i::Int) 
+function is_external_operators(g::FeynmanGraph, i) 
 
-    Check if `i::Int` in the internal indices of FeynmanGraph `g`.
+    Check if `i` in the external indices of FeynmanGraph `g`.
 """
-is_internal(g::FeynmanGraph, i::Int) = (i in g.properties.external_indices) == false
+is_external(g::FeynmanGraph, i) = i in g.properties.external_indices
+
+"""
+    function is_internal(g::FeynmanGraph, i) 
+
+    Check if `i` in the internal indices of FeynmanGraph `g`.
+"""
+is_internal(g::FeynmanGraph, i) = (i in g.properties.external_indices) == false
 
 """
     function diagram_type(g::FeynmanGraph)
@@ -176,18 +224,19 @@ is_internal(g::FeynmanGraph, i::Int) = (i in g.properties.external_indices) == f
 diagram_type(g::FeynmanGraph) = g.properties.diagtype
 
 """
-    function orders(g::FeynmanGraph)
-
-    Returns the loop/derivative orders (::Vector{Int}) of FeynmanGraph `g`.
-"""
-orders(g::FeynmanGraph) = g.orders
-
-"""
     function vertices(g::FeynmanGraph)
 
     Returns all vertices (::Vector{OperatorProduct}) of FeynmanGraph `g`.
 """
 vertices(g::FeynmanGraph) = g.properties.vertices
+
+"""
+    function vertex(g::FeynmanGraph, i=1)
+
+    Returns the `i`th vertex (::OperatorProduct) of FeynmanGraph `g`.
+    Defaults to the first vertex if an index `i` is not supplied.
+"""
+vertex(g::FeynmanGraph, i=1) = g.properties.vertices[i]
 
 """
     function topology(g::FeynmanGraph)
@@ -237,7 +286,7 @@ function connectivity(g::FeynmanGraph)
 end
 
 """
-    function Base.:*(g1::Graph{F,W}, c2::C) where {F,W,C}
+    function Base.:*(g1::Graph{F,W}, c2) where {F,W}
 
     Returns a graph representing the scalar multiplication `g1*c2`.
 
@@ -245,18 +294,19 @@ end
 - `g1`  Feynman graph
 - `c2`  scalar multiple
 """
-function Base.:*(g1::FeynmanGraph{F,W}, c2::C) where {F,W,C}
+function Base.:*(g1::FeynmanGraph{F,W}, c2) where {F,W}
     g = FeynmanGraph([g1,], g1.properties; subgraph_factors=[F(c2),], operator=Prod(), orders=orders(g1), ftype=F, wtype=W)
-    # Merge multiplicative link
-    if g1.operator == Prod && onechild(g1)
+    # Convert trivial unary link to in-place form
+    if unary_istrivial(g1) && onechild(g1)
         g.subgraph_factors[1] *= g1.subgraph_factors[1]
+        # g.subgraph_factors[1] *= g1.subgraph_factors[1] * g1.factor
         g.subgraphs = g1.subgraphs
     end
     return g
 end
 
 """
-    function Base.:*(c1::C, g2::Graph{F,W}) where {F,W,C}
+    function Base.:*(c1, g2::Graph{F,W}) where {F,W}
 
     Returns a graph representing the scalar multiplication `c1*g2`.
 
@@ -264,18 +314,19 @@ end
 - `c1`  scalar multiple
 - `g2`  Feynman graph
 """
-function Base.:*(c1::C, g2::FeynmanGraph{F,W}) where {F,W,C}
+function Base.:*(c1, g2::FeynmanGraph{F,W}) where {F,W}
     g = FeynmanGraph([g2,], g2.properties; subgraph_factors=[F(c1),], operator=Prod(), orders=orders(g2), ftype=F, wtype=W)
-    # Merge multiplicative link
-    if g2.operator == Prod && onechild(g2)
+    # Convert trivial unary link to in-place form
+    if unary_istrivial(g2) && onechild(g2)
         g.subgraph_factors[1] *= g2.subgraph_factors[1]
+        # g.subgraph_factors[1] *= g2.subgraph_factors[1] * g2.factor
         g.subgraphs = g2.subgraphs
     end
     return g
 end
 
 """
-    function linear_combination(g1::FeynmanGraph{F,W}, g2::FeynmanGraph{F,W}, c1::C, c2::C) where {F,W,C}
+    function linear_combination(g1::FeynmanGraph{F,W}, g2::FeynmanGraph{F,W}, c1, c2) where {F,W}
 
     Returns a graph representing the linear combination `c1*g1 + c2*g2`. If `g1 == g2`, it will return a graph representing `(c1+c2)*g1`
     Feynman Graphs `g1` and `g2` must have the same diagram type, orders, and external vertices.
@@ -286,29 +337,32 @@ end
 - `c1`:  first scalar multiple (defaults to 1).
 - `c2`:  second scalar multiple (defaults to 1).
 """
-function linear_combination(g1::FeynmanGraph{F,W}, g2::FeynmanGraph{F,W}, c1::C=1, c2::C=1) where {F,W,C}
+function linear_combination(g1::FeynmanGraph{F,W}, g2::FeynmanGraph{F,W}, c1=F(1), c2=F(1)) where {F,W}
     @assert diagram_type(g1) == diagram_type(g2) "g1 and g2 are not of the same graph type."
     @assert orders(g1) == orders(g2) "g1 and g2 have different orders."
     @assert Set(external_operators(g1)) == Set(external_operators(g2)) "g1 and g2 have different external vertices."
     empty_topology = []  # No topology for Sum nodes
     total_vertices = union(vertices(g1), vertices(g2))
     properties = FeynmanProperties(diagram_type(g1), total_vertices, empty_topology, external_indices(g1), external_legs(g1))
-
+    
+    f1 = typeof(c1) == F ? c1 : F(c1)
+    f2 = typeof(c2) == F ? c2 : F(c2)
     subgraphs = [g1, g2]
-    subgraph_factors = [F(c1), F(c2)]
-    # Convert multiplicative links to in-place form
-    if unary_istrivial(g1.operator) && onechild(g1)
+    subgraph_factors = [f1, f2]
+    # Convert trivial unary links to in-place form
+    if unary_istrivial(g1) && onechild(g1)
         subgraph_factors[1] *= g1.subgraph_factors[1]
+        # subgraph_factors[1] *= g1.subgraph_factors[1] * g1.factor
         subgraphs[1] = g1.subgraphs[1]
     end
-    if unary_istrivial(g2.operator) && onechild(g2)
+    if unary_istrivial(g2) && onechild(g2)
         subgraph_factors[2] *= g2.subgraph_factors[1]
+        # subgraph_factors[2] *= g2.subgraph_factors[1] * g2.factor
         subgraphs[2] = g2.subgraphs[1]
     end
-    # g = FeynmanGraph([g1, g2], properties; subgraph_factors=[F(c1), F(c2)], operator=Sum(), ftype=F, wtype=W)
 
     if subgraphs[1] == subgraphs[2]
-        g = FeynmanGraph([subgraphs[1]], properties; subgraph_factors=[sum(subgraph_factors)], operator=Sum(), ftype=F, wtype=W)
+        g = FeynmanGraph([subgraphs[1]], properties; subgraph_factors=[sum(subgraph_factors)], operator=Sum(), orders=orders(g1), ftype=F, wtype=W)
     else
         g = FeynmanGraph(subgraphs, properties; subgraph_factors=subgraph_factors, operator=Sum(), orders=orders(g1), ftype=F, wtype=W)
     end
@@ -316,7 +370,7 @@ function linear_combination(g1::FeynmanGraph{F,W}, g2::FeynmanGraph{F,W}, c1::C=
 end
 
 """
-    function linear_combination(graphs::Vector{FeynmanGraph{F,W}}, constants::Vector{C}) where {F,W,C}
+    function linear_combination(graphs::Vector{FeynmanGraph{F,W}}, constants::AbstractVector=ones(F, length(graphs))) where {F,W}
 
     Given a vector 𝐠 of graphs each with the same type and external/internal vertices and 
     an equally-sized vector 𝐜 of constants, returns a new graph representing the linear combination (𝐜 ⋅ 𝐠). 
@@ -325,7 +379,7 @@ end
 
 # Arguments:
 - `graphs`  vector of input FeymanGraphs
-- `constants`  vector of scalar multiples (defaults to ones(C, length(graphs))).
+- `constants`  vector of scalar multiples (defaults to ones(F, length(graphs))).
 
 # Returns:
 - A new `FeynmanGraph{F,W}` object representing the linear combination of the unique input `graphs` weighted by the constants, 
@@ -334,7 +388,7 @@ where duplicate graphs in the input `graphs` are combined by summing their assoc
 # Example:
     Given graphs `g1`, `g2`, `g1` and constants `c1`, `c2`, `c3`, the function computes `(c1+c3)*g1 + c2*g2`.
 """
-function linear_combination(graphs::Vector{FeynmanGraph{F,W}}, constants::Vector{C}=ones(C, length(graphs))) where {F,W,C}
+function linear_combination(graphs::Vector{FeynmanGraph{F,W}}, constants::AbstractVector=ones(F, length(graphs))) where {F,W}
     @assert alleq(diagram_type.(graphs)) "Graphs are not all of the same graph type."
     @assert alleq(orders.(graphs)) "Graphs do not all have the same order."
     @assert alleq(Set.(external_operators.(graphs))) "Graphs do not share the same set of external vertices."
@@ -342,12 +396,14 @@ function linear_combination(graphs::Vector{FeynmanGraph{F,W}}, constants::Vector
     empty_topology = []  # No topology for Sum nodes
     total_vertices = union(Iterators.flatten(vertices.(graphs)))
     properties = FeynmanProperties(diagram_type(g1), total_vertices, empty_topology, external_indices(g1), external_legs(g1))
-
-    subgraphs, subgraph_factors = graphs, constants
-    # Convert multiplicative links to in-place form
+    
+    subgraphs = graphs
+    subgraph_factors = eltype(constants) == F ? constants : Vector{F}(constants)
+    # Convert trivial unary links to in-place form
     for (i, sub_g) in enumerate(graphs)
-        if unary_istrivial(sub_g.operator) && onechild(sub_g)
+        if unary_istrivial(sub_g) && onechild(sub_g)
             subgraph_factors[i] *= sub_g.subgraph_factors[1]
+            # subgraph_factors[i] *= sub_g.subgraph_factors[1] * sub_g.factor
             subgraphs[i] = sub_g.subgraphs[1]
         end
     end
@@ -370,8 +426,8 @@ end
 """
     function Base.:+(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
 
-    Returns a graph `g1 + g2` representing the addition of `g2` with `g1`.
-    Feynman Graphs `g1` and `g2` must have the same diagram type, orders, and external vertices.
+    Returns a graph `g1 + g2` representing the addition of two Feynman diagrams `g2` with `g1`.
+    Diagrams `g1` and `g2` must have the same diagram type, orders, and external vertices.
 
 # Arguments:
 - `g1`  first Feynman graph
@@ -385,7 +441,7 @@ end
     function Base.:-(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
 
     Returns a graph `g1 - g2` representing the subtraction of `g2` from `g1`.
-    Feynman Graphs `g1` and `g2` must have the same diagram type, orders, and external vertices.
+    Diagrams `g1` and `g2` must have the same diagram type, orders, and external vertices.
 
 # Arguments:
 - `g1`  first Feynman graph
@@ -396,7 +452,7 @@ function Base.:-(g1::FeynmanGraph{F,W}, g2::FeynmanGraph{F,W}) where {F,W}
 end
 
 function Base.:*(g1::FeynmanGraph, g2::FeynmanGraph)
-    error("Not implemented!")
+    error("Multiplication of Feynman graphs is not well defined!")
 end
 
 """
