@@ -119,6 +119,9 @@ function read_diagrams(filename::AbstractString; labelProd::Union{Nothing,LabelP
         loopbasis = [vcat([1.0], [0.0 for _ in 2:loopNum])]
         # Create label product
         labelProd = LabelProduct(tau_labels, loopbasis)
+        maxloopNum = loopNum
+    else
+        maxloopNum = length(labelProd[1][end])
     end
 
     # Create loop pool if not provided
@@ -130,9 +133,9 @@ function read_diagrams(filename::AbstractString; labelProd::Union{Nothing,LabelP
     diagrams = FeynmanGraph{_dtype.factor,_dtype.weight}[]
     extT_labels = Vector{Int}[]
     offset_ver4 = diagType == :sigma ? 1 : 0
-    for i in 1:diagNum
+    for _ in 1:diagNum
         diag, labelProd, extTlabel = read_onediagram!(IOBuffer(readuntil(io, "\n\n")),
-            GNum, verNum, loopNum, extIndex, labelProd, spinPolarPara; offset_ver4=offset_ver4, diagType=diagType)
+            GNum, verNum, loopNum, extIndex, labelProd, spinPolarPara; maxLoopNum=maxloopNum, offset_ver4=offset_ver4, diagType=diagType)
         push!(diagrams, diag)
         push!(extT_labels, extTlabel)
     end
@@ -160,7 +163,7 @@ function read_diagrams(filename::AbstractString; labelProd::Union{Nothing,LabelP
 end
 
 function read_onediagram!(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex::Vector{Int},
-    labelProd::LabelProduct, spinPolarPara::Float64=0.0; diagType=:polar,
+    labelProd::LabelProduct, spinPolarPara::Float64=0.0; diagType=:polar, maxLoopNum::Int=loopNum,
     splitter="|", offset::Int=-1, offset_ver4::Int=0, staticBose::Bool=true)
 
     extIndex = extIndex .- offset
@@ -185,7 +188,8 @@ function read_onediagram!(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex
     readline(io)
 
     @assert occursin("LoopBasis", readline(io))
-    currentBasis = zeros(Int, (GNum, loopNum))
+    # currentBasis = zeros(Int, (GNum, loopNum))
+    currentBasis = zeros(Int, (GNum, maxLoopNum))
     for i in 1:loopNum
         x = parse.(Int, split(readline(io)))
         @assert length(x) == GNum
@@ -296,7 +300,8 @@ function read_onediagram!(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex
 
         # add external operators in each external vertices
         if extNum > 0 && diagType != :sigma
-            external_current = append!([1], zeros(Int, loopNum - 1))
+            # external_current = append!([1], zeros(Int, loopNum - 1))
+            external_current = append!([1], zeros(Int, maxLoopNum - 1))
             # extcurrent_index = FrontEnds.append(loopPool, external_current)
             extcurrent_index = FrontEnds.push_labelat!(labelProd, external_current, 2)
             # if diagType == :sigma
