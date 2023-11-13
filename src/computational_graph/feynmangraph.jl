@@ -489,8 +489,10 @@ function feynman_diagram(subgraphs::Vector{FeynmanGraph{F,W}}, topology::Vector{
         end
     else
         for (i, connection) in enumerate(topology)
-            push!(subgraphs, propagator(operators[connection]; orders=contraction_orders[i]))
-            diag_orders += contraction_orders[i]
+            propagator_orders = zeros(Int, orders_length)
+            propagator_orders[eachindex(contraction_orders[i])] = contraction_orders[i]
+            push!(subgraphs, propagator(operators[connection]; orders=propagator_orders))
+            diag_orders += propagator_orders
         end
     end
     _external_indices = union(external_leg, external_noleg)
