@@ -15,27 +15,23 @@ include("GV_diagrams/readfile.jl")
     function eachorder_diag(type::Symbol, order::Int, VerOrder::Int=0, GOrder::Int=0; loopPool::Union{LoopPool,Nothing}=nothing,
         tau_labels::Union{Nothing,Vector{Int}}=nothing, GTypes::Union{Nothing,Vector{Int}}=nothing, VTypes::Union{Nothing,Vector{Int}}=nothing)
  
-    Generates a `Vector{FeynmanGraph}`: the polarization diagrams with static interactions of a given order, where the actual order of diagrams equals to `order + VerOrder + 2 * GOrder`.
-    Generates fermionic/bosonic `LabelProduct`: `fermi_labelProd`/`bose_labelProd` with inputs `tau_labels`, `GTypes`/`VTypes`, and updated `loopPool`. 
+    Generates a `Vector{FeynmanGraph}`: the given-`type` diagrams with static interactions of a given order, where the actual order of diagrams equals to `order + VerOrder + 2 * GOrder`.
+    Generates a `LabelProduct`: `labelProd` with inputs `tau_labels` and all the possible momenta-loop basis. 
     Generates external tau labels Vector{Vector{Int}}. The i-th labels (Vector{Int}) corresponds to the i-th `FeynmanGraph` in `Vector{FeynmanGraph}`.
 
 # Arguments:
 - `type` (Symbol): The type of the diagrams, including `:spinPolar`, `:chargePolar`, `:sigma`, `:green`, or `:freeEnergy`.
 - `order` (Int): The order of the diagrams without counterterms.
-- `VerOrder` (Int, optional): The order of interaction counterterms (defaults to 0).
 - `GOrder` (Int, optional): The order of self-energy counterterms (defaults to 0).
-- `dim` (Int, optional): The dimension of the system (defaults to 3).
+- `VerOrder` (Int, optional): The order of interaction counterterms (defaults to 0).
+- `labelProd` (Union{Nothing,LabelProduct}=nothing, optional): The initial cartesian QuantumOperator.label product (defaults to `nothing`).
 - `spinPolarPara` (Float64, optional): The spin-polarization parameter (n_up - n_down) / (n_up + n_down) (defaults to `0.0`).
-- `loopPool` (Union{LoopPool,Nothing}=nothing, optional): The initial pool of loop momenta (defaults to `nothing`).
 - `tau_labels`(Union{Nothing, Vector{Int}}, optional): The labels for the discrete time of each vertex. (defaults to `nothing`).
-- `GTypes`: The types of fermion propagators `G` in the diagrams (defaults to `collect(0:GOrder)`).
-- `VTypes`: The types of boson static interaction `V` in the diagrams (defaults to `collect(0:VerOrder)`).
 
 # Returns
 A tuple `(diagrams, fermi_labelProd, bose_labelProd, extT_labels)` where 
 - `diagrams` is a `Vector{FeynmanGraph}` object representing the diagrams, 
-- `fermi_labelProd` is a `LabelProduct` object containing the labels for the fermionic `G` objects in the diagrams, 
-- `bose_labelProd` is a `LabelProduct` object containing the labels for the bosonic `W` objects in the diagrams.
+- `labelProd` is a `LabelProduct` object containing the labels for the leaves of graphs, 
 - `extT_labels` is a `Vector{Vector{Int}}` object containing the external tau labels for each `FeynmanGraph` in `diagrams`.
 """
 function eachorder_diag(type::Symbol, order::Int, GOrder::Int=0, VerOrder::Int=0;
@@ -60,12 +56,6 @@ function eachorder_diag(type::Symbol, order::Int, GOrder::Int=0, VerOrder::Int=0
     end
     # println("Reading ", filename)
 
-    # Gorders = collect(0:GOrder)
-    # # type == :sigma_old && append!(Gorders, [-2, -3])
-    # type in [:green, :sigma] && pushfirst!(Gorders, -2)
-    # Vorders = collect(0:VerOrder)
-    # # isnothing(VTypes) && (VTypes = collect(0:VerOrder))
-    # GVorders = [Gorders, Vorders]
     if isnothing(labelProd)
         return read_diagrams(filename; tau_labels=tau_labels, diagType=diagtype, spinPolarPara=spinPolarPara)
     else
@@ -74,25 +64,26 @@ function eachorder_diag(type::Symbol, order::Int, GOrder::Int=0, VerOrder::Int=0
 end
 
 """
-    function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, dim::Int=3)
+    function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false;
+        MinOrder::Int=1, spinPolarPara::Float64=0.0)
 
-    Generates a FeynmanGraph Dict: the `dim`-dimensional spin/charge polarization or self-energy diagrams with static interactions in a given `type`, to a given maximum order `MaxOrder`, with switchable couterterms. 
-    Generates fermionic/bosonic `LabelProduct`: `fermi_labelProd`/`bose_labelProd` for these FeynmanGraphs.
+    Generates a FeynmanGraph Dict: the Feynman diagrams with static interactions in a given `type`, and 
+    spin-polarizaition parameter `spinPolarPara`, to given minmimum/maximum orders `MinOrder/MaxOrder`, with switchable couterterms. 
+    Generates a `LabelProduct`: `labelProd` for these FeynmanGraphs.
     Generates a leafMap for mapping `g.id` to the index of unique leaf.
 
 # Arguments:
 - `type` (Symbol): The type of the Feynman diagrams, including `:spinPolar`, `:chargePolar`, `:sigma_old`, `:green`, or `:freeEnergy`.
 - `Maxorder` (Int): The maximum actual order of the diagrams.
 - `has_counterterm` (Bool): `false` for G0W0, `true` for GW with self-energy and interaction counterterms (defaults to `false`).
-- `dim` (Int): The dimension of the system (defaults to 3).
+- `MinOrder` (Int, optional): The minmimum actual order of the diagrams (defaults to `1`).
 - `spinPolarPara` (Float64, optional): The spin-polarization parameter (n_up - n_down) / (n_up + n_down) (defaults to `0.0`).
 
 # Returns
 A tuple `(dict_graphs, fermi_labelProd, bose_labelProd, leafMap)` where 
 - `dict_graphs` is a `Dict{Tuple{Int,Int,Int},Tuple{Vector{FeynmanGraph},Vector{Vector{Int}}}}` object representing the diagrams. 
    The key is (order, Gorder, Vorder). The element is a Tuple (graphVector, extT_labels).
-- `fermi_labelProd` is a `LabelProduct` object containing the labels for the fermionic `G` objects in the diagrams, 
-- `bose_labelProd` is a `LabelProduct` object containing the labels for the bosonic `W` objects in the diagrams.
+- `labelProd` is a `LabelProduct` object containing the labels for the leaves of graphs, 
 - `leafMap` maps `g.id` to the index of unique leaf. 
 """
 function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false;
@@ -117,7 +108,6 @@ function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false;
     else
         error("no support for $type diagram")
     end
-    # loopPool = LoopPool(:K, dim, MaxLoopNum, Float64)
     loopbasis = [vcat([1.0], [0.0 for _ in 2:MaxLoopNum])]
     # Create label product
     labelProd = LabelProduct(tau_labels, loopbasis)
@@ -136,7 +126,6 @@ function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false;
                         labelProd=labelProd, spinPolarPara=spinPolarPara)
                     key = (order, GOrder, VerOrder)
                     dict_graphs[key] = (gvec, extT_labels)
-                    # loopPool = fermi_labelProd.labels[3]
                     leafMap[key] = IR.optimize!(gvec)
                 end
             end
@@ -147,7 +136,6 @@ function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false;
                 labelProd=labelProd, spinPolarPara=spinPolarPara)
             key = (order, 0, 0)
             dict_graphs[key] = (gvec, extT_labels)
-            # loopPool = fermi_labelProd.labels[3]
             leafMap[key] = IR.optimize!(gvec)
         end
     end
@@ -156,24 +144,23 @@ function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false;
 end
 
 """
-    function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false, dim::Int=3)
+    function diagdictGV(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}; spinPolarPara::Float64=0.0)
 
-    Generates a FeynmanGraph Dict: the `dim`-dimensional spin/charge polarization or self-energy diagrams with static interactions in a given `type`, to a given maximum order `MaxOrder`, with switchable couterterms. 
-    Generates fermionic/bosonic `LabelProduct`: `fermi_labelProd`/`bose_labelProd` for these FeynmanGraphs.
+    Generates a FeynmanGraph Dict: the Feynman diagrams with static interactions in the given `type` and 
+    spin-polarizaition parameter `spinPolarPara`, with given couterterm-orders (from `gkeys`). 
+    Generates a `LabelProduct`: `labelProd` for these FeynmanGraphs.
     Generates a leafMap for mapping `g.id` to the index of unique leaf.
 
 # Arguments:
 - `type` (Symbol): The type of the Feynman diagrams, including `:spinPolar`, `:chargePolar`, `:sigma_old`, `:green`, or `:freeEnergy`.
 - `gkeys` (Vector{Tuple{Int,Int,Int}}): The (order, Gorder, Vorder) of the diagrams. Gorder is the order of self-energy counterterms, and Vorder is the order of interaction counterterms. 
-- `dim` (Int): The dimension of the system (defaults to 3).
 - `spinPolarPara` (Float64, optional): The spin-polarization parameter (n_up - n_down) / (n_up + n_down) (defaults to `0.0`).
 
 # Returns
 A tuple `(dict_graphs, fermi_labelProd, bose_labelProd, leafMap)` where 
 - `dict_graphs` is a `Dict{Tuple{Int,Int,Int},Tuple{Vector{FeynmanGraph},Vector{Vector{Int}}}}` object representing the diagrams. 
    The key is (order, Gorder, Vorder). The element is a Tuple (graphVector, extT_labels).
-- `fermi_labelProd` is a `LabelProduct` object containing the labels for the fermionic `G` objects in the diagrams, 
-- `bose_labelProd` is a `LabelProduct` object containing the labels for the bosonic `W` objects in the diagrams.
+- `labelProd` is a `LabelProduct` object containing the labels for the leaves of graphs, 
 - `leafMap` maps `g.id` to the index of unique leaf. 
 """
 function diagdictGV(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}; spinPolarPara::Float64=0.0)
@@ -197,7 +184,6 @@ function diagdictGV(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}; spinPolarPa
     else
         error("no support for $type diagram")
     end
-    # loopPool = LoopPool(:K, dim, MaxLoopNum, Float64)
 
     loopbasis = [vcat([1.0], [0.0 for _ in 2:MaxLoopNum])]
     # Create label product
@@ -219,24 +205,20 @@ function diagdictGV(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}; spinPolarPa
 end
 
 """
-    function leafstates(
-        FeynGraphs::Dict{T, Tuple{Vector{G}, Vector{Vector{Int}}}},
-        labelProd::LabelProduct, labelProd::LabelProduct,
-        graph_keys::Vector{T}
-    ) where {T, G<:FeynmanGraph}
+    function leafstates(FeynGraphs::Dict{T,Tuple{Vector{G},Vector{Vector{Int}}}},
+        labelProd::LabelProduct, graph_keys::Vector{T}) where {T,G<:FeynmanGraph}
 
     Extracts leaf information from a Dict collection of Feynman graphs (`FeynGraphs` with its keys `graph_keys`)
-    and their associated LabelProduct data (`labelProd` and `labelProd`). 
+    and their associated LabelProduct data (`labelProd`). 
     The information includes their initial value, type, in/out time, and loop momenta.
     
 # Arguments:
 - `FeynGraphs`: A dictionary mapping keys of type T to tuples containing a vector of `FeynmanGraph` objects and a vector of external time labels.
-- `labelProd`: A LabelProduct used to label the fermionic `G` objects in the graphs.
-- `labelProd`: A LabelProduct used to label bosonic `W` objects in the graphs.
+- `labelProd`: A LabelProduct used to label the leaves of graphs.
 - `graph_keys`: A vector containing keys of type `T`, specifying which graphs to analyze.
 
 # Returns
-- A tuple of vectors containing information about the leaves in the graphs, including their initial values, types, input and output time indexes, and loop-momenta indexes.
+- A tuple of vectors containing information about the leaves of graphs, including their initial values, types, input and output time indexes, and loop-momenta indexes.
 - A Vector{Vector{Int}} representing the external tau variables of each vector of graph corresponding to each key of type `T`.
 """
 function leafstates(FeynGraphs::Dict{T,Tuple{Vector{G},Vector{Vector{Int}}}},
@@ -274,14 +256,8 @@ function leafstates(FeynGraphs::Dict{T,Tuple{Vector{G},Vector{Vector{Int}}}},
             elseif IR.diagram_type(g) == IR.Propagator
                 if (Op.isfermionic(vertices[1]))
                     In, Out = vertices[2][1].label, vertices[1][1].label
-                    # if labelProd[In][2] in [-2, -3]
-                    #     push!(leafType[ikey], 0)
-                    #     push!(leafLoopIndex[ikey], 1)
-                    # else
-                    # push!(leafType[ikey], labelProd[In][2] * 2 + 1)
                     push!(leafType[ikey], g.orders[1] * 2 + 1)
                     push!(leafLoopIndex[ikey], FrontEnds.linear_to_index(labelProd, In)[end]) #the label of LoopPool for each fermionic leaf
-                    # end
                     push!(leafInTau[ikey], labelProd[In][1])
                     push!(leafOutTau[ikey], labelProd[Out][1])
                 else

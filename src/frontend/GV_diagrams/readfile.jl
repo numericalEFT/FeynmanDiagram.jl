@@ -84,7 +84,6 @@ function read_diagrams(filename::AbstractString; labelProd::Union{Nothing,LabelP
     extIndex = Int[]
     GNum = 2
     lineNum = 1
-    # filename[1:5] == "Sigma" && keywords[1] = "SelfEnergy"
     while true
         line = readline(io)
         length(line) == 0 && break
@@ -109,12 +108,6 @@ function read_diagrams(filename::AbstractString; labelProd::Union{Nothing,LabelP
     if isnothing(tau_labels)
         tau_labels = collect(1:tauNum)
     end
-    # current_labels = CurrentLabels(loopNum)
-    # innerlabels = []
-    # GTypeNum >1 && push!(innerlabels, collect(1:GTypeNum))
-    # WTypeNum >1 && push!(innerlabels, collect(1:WTypeNum))
-    # labelProd = LabelProduct(tau_labels, current_labels, innerlabels...)
-
     if isnothing(labelProd)
         loopbasis = [vcat([1.0], [0.0 for _ in 2:loopNum])]
         # Create label product
@@ -123,11 +116,6 @@ function read_diagrams(filename::AbstractString; labelProd::Union{Nothing,LabelP
     else
         maxloopNum = length(labelProd[1][end])
     end
-
-    # Create loop pool if not provided
-    # if isnothing(loopPool)
-    #     loopPool = LoopPool(:K, dim, loopNum, Float64)
-    # end
 
     # Read one diagram at a time
     diagrams = FeynmanGraph{_dtype.factor,_dtype.weight}[]
@@ -139,11 +127,7 @@ function read_diagrams(filename::AbstractString; labelProd::Union{Nothing,LabelP
         push!(diagrams, diag)
         push!(extT_labels, extTlabel)
     end
-
-    # Create new label products with loop pool
     close(io)
-    # fermi_labelProd = LabelProduct(tau_labels, GTypes, loopPool)
-    # bose_labelProd = LabelProduct(tau_labels, VTypes, loopPool)
 
     if diagType in [:sigma, :sigma_old]
         @assert length(extIndex) == 2
@@ -182,13 +166,9 @@ function read_onediagram!(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex
 
     @assert occursin("VertexBasis", readline(io))
     tau_labels = _StringtoIntVector(readline(io)) .- offset
-    # tau_labels = _StringtoIntVector(readline(io))
-    # unique_values = sort(unique(tau_labels))
-    # tau_labels = [findfirst(x -> x == tau, unique_values) for tau in tau_labels] .- (1 + offset)
     readline(io)
 
     @assert occursin("LoopBasis", readline(io))
-    # currentBasis = zeros(Int, (GNum, loopNum))
     currentBasis = zeros(Int, (GNum, maxLoopNum))
     for i in 1:loopNum
         x = parse.(Int, split(readline(io)))
@@ -230,31 +210,14 @@ function read_onediagram!(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex
         permu, ver4Legs_ex = _exchange(permutation, ver4Legs, iex, extNum, offset_ver4=offset_ver4)
 
         ######################## Create Feynman diagram #########################
-        # current_labels = labelProd.labels[dim]
         vertices = [𝜙(0) for i in 1:GNum]
         connected_operators = Op.OperatorProduct[]
         connected_operators_orders = Vector{Vector{Int}}()
 
-        # GTypes = fermi_labelProd.labels[2]
-        # VTypes = bose_labelProd.labels[2]
-        # fermi_dims = fermi_labelProd.dims
-        # bose_dims = bose_labelProd.dims
-        # if staticBose
-        #     tau_labels = [collect(eachindex(extIndex)); repeat(extIndex+1:tauNum, inner=2)]
-        # else
-        #     @assert tauNum == GNum
-        #     tau_labels = collect(1:GNum)
-        # end
-
         # create all fermionic operators
         for (ind1, ind2) in enumerate(permu)
-            # current_index = _current_to_index(currentBasis[ind1, :])
-            # current_index = FrontEnds.append(loopPool, currentBasis[ind1, :])
             current_index = FrontEnds.push_labelat!(labelProd, currentBasis[ind1, :], 2)
-            # ind_GType = findfirst(p -> p == opGType[ind1], GTypes)
 
-            # label1 = index_to_linear(fermi_labelProd, tau_labels[ind1], ind_GType, current_index)
-            # label2 = index_to_linear(fermi_labelProd, tau_labels[ind2], ind_GType, current_index)
             label1 = FrontEnds.index_to_linear(labelProd, tau_labels[ind1], current_index)
             label2 = FrontEnds.index_to_linear(labelProd, tau_labels[ind2], current_index)
 
@@ -276,19 +239,9 @@ function read_onediagram!(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex
         for (iVer, verLeg) in enumerate(ver4Legs_ex)
             current = currentBasis[verLeg[1]-offset, :] - currentBasis[verLeg[2]-offset, :]
             @assert current == currentBasis[verLeg[4]-offset, :] - currentBasis[verLeg[3]-offset, :] # momentum conservation
-            # current_index = _current_to_index(current)
-            # current_index = FrontEnds.append(loopPool, current)
             current_index = FrontEnds.push_labelat!(labelProd, current, 2)
 
             ind1, ind2 = 2 * (iVer - offset_ver4) - 1 + extNum, 2 * (iVer - offset_ver4) + extNum
-            # ind1_WType = findfirst(p -> p == opWType[2iVer-1], VTypes)
-            # ind2_WType = findfirst(p -> p == opWType[2iVer], VTypes)
-
-            # label1 = index_to_linear(bose_labelProd, tau_labels[ind1], ind1_WType, current_index)
-            # label2 = index_to_linear(bose_labelProd, tau_labels[ind2], ind2_WType, current_index)
-            # labelProd_size = (bose_dims..., length(loopPool))
-            # label1 = LinearIndices(labelProd_size)[tau_labels[ind1], ind1_WType, current_index]
-            # label2 = LinearIndices(labelProd_size)[tau_labels[ind2], ind2_WType, current_index]
             label1 = FrontEnds.index_to_linear(labelProd, tau_labels[ind1], current_index)
             label2 = FrontEnds.index_to_linear(labelProd, tau_labels[ind2], current_index)
 
@@ -300,23 +253,9 @@ function read_onediagram!(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex
 
         # add external operators in each external vertices
         if extNum > 0 && diagType != :sigma
-            # external_current = append!([1], zeros(Int, loopNum - 1))
             external_current = append!([1], zeros(Int, maxLoopNum - 1))
-            # extcurrent_index = FrontEnds.append(loopPool, external_current)
             extcurrent_index = FrontEnds.push_labelat!(labelProd, external_current, 2)
-            # if diagType == :sigma
-            #     for (i, ind) in enumerate(extIndex)
-            #         labelProd_size = (fermi_dims..., length(loopPool))
-            #         label = LinearIndices(labelProd_size)[tau_labels[ind], 1, extcurrent_index]
-            #         if i == 1
-            #             vertices[ind] *= 𝑎⁻(label)
-            #         else
-            #             vertices[ind] *= 𝑎⁺(label)
-            #         end
-            #     end
             for ind in extIndex
-                # labelProd_size = (bose_dims..., length(loopPool))
-                # label = LinearIndices(labelProd_size)[tau_labels[ind], 1, extcurrent_index]
                 label = FrontEnds.index_to_linear(labelProd, tau_labels[ind], 1, extcurrent_index)
                 vertices[ind] *= 𝜙(label)
             end
@@ -330,7 +269,6 @@ function read_onediagram!(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex
         end
 
         push!(graphs, IR.feynman_diagram(IR.interaction.(vertices), contraction, contraction_orders=connected_operators_orders, factor=symfactor, is_signed=true))
-        # return IR.feynman_diagram(IR.interaction.(vertices), contraction, factor=symfactor * spinFactor), loopPool
     end
 
     # create a graph as a linear combination from all subgraphs and subgraph_factors (spinFactors), loopPool, and external-tau variables
@@ -344,6 +282,5 @@ function read_onediagram!(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex
     else
         extT = tau_labels[extIndex]
     end
-    # return IR.linear_combination(graphs, spinfactors_existed), loopPool, extT
     return IR.linear_combination(graphs, spinfactors_existed), labelProd, extT
 end

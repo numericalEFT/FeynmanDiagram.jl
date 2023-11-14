@@ -76,13 +76,13 @@ end
 
 
 @testset "Taylor AD of Sigma FeynmanGraph" begin
-    dict_g, fl, bl, leafmap = diagdictGV(:sigma, [(2, 0, 0), (2, 0, 1), (2, 0, 2), (2, 1, 0), (2, 1, 1), (2, 2, 0), (2, 1, 2), (2, 2, 2)], 3)
+    dict_g, lp, leafmap = diagdictGV(:sigma, [(2, 0, 0), (2, 0, 1), (2, 0, 2), (2, 1, 0), (2, 1, 1), (2, 2, 0), (2, 1, 2), (2, 2, 2)])
 
     g = dict_g[(2, 0, 0)]
 
     set_variables("x y", orders=[2, 2])
     propagator_var = ([true, false], [false, true]) # Specify variable dependence of fermi (first element) and bose (second element) particles.
-    t, taylormap = taylorexpansion!(g[1][1], propagator_var, (fl, bl))
+    t, taylormap = taylorexpansion!(g[1][1], propagator_var)
 
     for (order, graph) in dict_g
         if graph[2][1] == g[2][1]
