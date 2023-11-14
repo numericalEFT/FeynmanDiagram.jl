@@ -279,14 +279,14 @@ function leafstates(FeynGraphs::Dict{T,Tuple{Vector{G},Vector{Vector{Int}}}},
                     #     push!(leafLoopIndex[ikey], 1)
                     # else
                     # push!(leafType[ikey], labelProd[In][2] * 2 + 1)
-                    push!(leafType[ikey], orders(g)[1] * 2 + 1)
+                    push!(leafType[ikey], g.orders[1] * 2 + 1)
                     push!(leafLoopIndex[ikey], labelProd[In][end]) #the label of LoopPool for each fermionic leaf
                     # end
                     push!(leafInTau[ikey], labelProd[In][1])
                     push!(leafOutTau[ikey], labelProd[Out][1])
                 else
                     In, Out = vertices[2][1].label, vertices[1][1].label
-                    push!(leafType[ikey], orders(g)[2] * 2 + 2)
+                    push!(leafType[ikey], g.orders[2] * 2 + 2)
                     push!(leafLoopIndex[ikey], labelProd[In][end]) #the label of LoopPool for each bosonic leaf
                     push!(leafInTau[ikey], labelProd[In][1])
                     push!(leafOutTau[ikey], labelProd[Out][1])

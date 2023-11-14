@@ -13,11 +13,11 @@
     basis1 = [1.0, 0.0, 0.0, 1.0]
     basis2 = [1.0, 1.0, 0.0, 0.0]
     basis3 = [1.0, 0.0, -1.0, 1.0]
-    idx1 = FrontEnds.append(loopPool, basis1)
-    idx2 = FrontEnds.append(loopPool, basis2)
-    idx3 = FrontEnds.append(loopPool, basis2)
-    idx4 = FrontEnds.append(loopPool, basis1)
-    idx5 = FrontEnds.append(loopPool, basis3)
+    idx1 = FrontEnds.append!(loopPool, basis1)
+    idx2 = FrontEnds.append!(loopPool, basis2)
+    idx3 = FrontEnds.append!(loopPool, basis2)
+    idx4 = FrontEnds.append!(loopPool, basis1)
+    idx5 = FrontEnds.append!(loopPool, basis3)
     @test length(loopPool) == 3
     @test idx1 == idx4
     @test idx2 == idx3
