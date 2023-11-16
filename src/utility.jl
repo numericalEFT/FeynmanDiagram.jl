@@ -186,7 +186,14 @@ function taylorexpansion!(graphs::Vector{G}, var_dependence::Dict{Int,Vector{Boo
     return result, taylormap
 end
 
-
+function taylorexpansion!(graphs::Vector{Diagram{W}}, propagator_var::Dict{DataType,Vector{Bool}}; taylormap::Dict{Int,TaylorSeries{Graph{W,W}}}=Dict{Int,TaylorSeries{Graph{W,W}}}()) where {W}
+    result = Vector{TaylorSeries{Graph{W,W}}}()
+    for graph in graphs
+        taylor, _ = taylorexpansion!(graph, propagator_var; taylormap=taylormap)
+        push!(result, taylor)
+    end
+    return result, taylormap
+end
 """
     taylorexpansion_withmap(g::G; coeffmode=true, var::Vector{Int}=collect(1:get_numvars())) where {G<:Graph}
     
@@ -367,6 +374,18 @@ function count_operation(graphs::Vector{TaylorSeries{G}}) where {G<:Graph}
             for (order, coeffs) in g.coeffs
                 push!(allcoeffs, coeffs)
             end
+        end
+        return count_operation(allcoeffs)
+    end
+end
+
+function count_operation(graphs::Vector{TaylorSeries{G}}, order::Vector{Int}) where {G<:Graph}
+    if length(graphs) == 0
+        return [0, 0]
+    else
+        allcoeffs = Vector{G}()
+        for g in graphs
+            push!(allcoeffs, g.coeffs[order])
         end
         return count_operation(allcoeffs)
     end

@@ -236,3 +236,40 @@ AbstractTrees.nodetype(::Diagram{W}) where {W} = Diagram{W}
 # (They are not sufficient to solve all internal inference issues, however.)
 Base.eltype(::Type{<:TreeIterator{Diagram{W}}}) where {W} = Diagram{W}
 Base.IteratorEltype(::Type{<:TreeIterator{Diagram{W}}}) where {W} = Base.HasEltype()
+
+function count_operation(g::T) where {T<:Diagram}
+    totalsum = 0
+    totalprod = 0
+    for node in PreOrderDFS(g)
+        #print(node.hash)
+        if length(node.subdiagram) > 0
+            if node.operator isa Prod
+                totalprod += length(node.subdiagram) - 1
+            elseif node.operator isa Sum
+                totalsum += length(node.subdiagram) - 1
+            end
+        end
+    end
+    return [totalsum, totalprod]
+end
+
+function count_operation(g::Vector{T}) where {T<:Diagram}
+    visited = Set{Int}()
+    totalsum = 0
+    totalprod = 0
+    for graph in g
+        for node in PreOrderDFS(graph)
+            if !(node.hash in visited)
+                push!(visited, node.hash)
+                if length(node.subdiagram) > 0
+                    if node.operator isa Prod
+                        totalprod += length(node.subdiagram) - 1
+                    elseif node.operator isa Sum
+                        totalsum += length(node.subdiagram) - 1
+                    end
+                end
+            end
+        end
+    end
+    return [totalsum, totalprod]
+end

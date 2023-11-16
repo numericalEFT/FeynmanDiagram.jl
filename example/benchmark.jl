@@ -22,11 +22,11 @@ function assign_leaves(g::FeynmanGraph, taylormap)
     return leafmap, leafvec
 end
 
-dict_g, fl, bl, leafmap = diagdictGV(:sigma, [(2, 0, 0), (2, 0, 1), (2, 0, 2), (2, 1, 0), (2, 1, 1), (2, 2, 0), (2, 1, 2), (2, 2, 2)], 3)
+#dict_g, fl, bl, leafmap = diagdictGV(:sigma, [(2, 0, 0), (2, 0, 1), (2, 0, 2), (2, 1, 0), (2, 1, 1), (2, 2, 0), (2, 1, 2), (2, 2, 2)], 3)
+dict_g, fl, bl, leafmap = diagdictGV(:sigma, [(3, 0, 0), (3, 0, 3), (3, 0, 2), (3, 0, 1)], 3)
+g = dict_g[(3, 0, 0)]
 
-g = dict_g[(2, 0, 0)]
-
-set_variables("x y", orders=[2, 2])
+set_variables("x y", orders=[1, 3])
 propagator_var = ([true, false], [false, true]) # Specify variable dependence of fermi (first element) and bose (second element) particles.
 t, taylormap = taylorexpansion!(g[1][1], propagator_var, (fl, bl))
 
@@ -36,6 +36,8 @@ for (order, graph) in dict_g
     else
         idx = 2
     end
+    print("$(count_operation(t.coeffs[[order[2],order[3]]]))\n")
+    print("$(count_operation(graph[1][idx]))\n")
     print("$(order) $(eval!(graph[1][idx])) $(eval!(t.coeffs[[order[2],order[3]]]))\n")
 end
 
