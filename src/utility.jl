@@ -139,15 +139,15 @@ end
 - `label::Tuple{LabelProduct,LabelProduct}` A Tuple fermi (first element) and bose LabelProduct (second element).
 - `taylormap::Dict{Int,TaylorSeries}` A dicitonary that maps id of each node of target diagram to its correponding taylor series.
 """
-function taylorexpansion!(graph::FeynmanGraph{F,W}, propagator_var::Tuple{Vector{Bool},Vector{Bool}}, label::Tuple{LabelProduct,LabelProduct}; taylormap::Dict{Int,TaylorSeries{Graph{F,W}}}=Dict{Int,TaylorSeries{Graph{F,W}}}()) where {F,W}
+function taylorexpansion!(graph::FeynmanGraph{F,W}, propagator_var::Tuple{Vector{Bool},Vector{Bool}}; taylormap::Dict{Int,TaylorSeries{Graph{F,W}}}=Dict{Int,TaylorSeries{Graph{F,W}}}()) where {F,W}
     var_dependence = Dict{Int,Vector{Bool}}()
     for leaf in Leaves(graph)
         if ComputationalGraphs.diagram_type(leaf) == ComputationalGraphs.Propagator
-            In = leaf.properties.vertices[2][1].label
+            # In = leaf.properties.vertices[2][1].label
             if isfermionic(leaf.properties.vertices[1])
-                if label[1][In][2] >= 0 #For fake propagator, this label is smaller than zero, and those propagators should not be differentiated.
-                    var_dependence[leaf.id] = [propagator_var[1][idx] ? true : false for idx in 1:get_numvars()]
-                end
+                # if label[1][In][2] >= 0 #For fake propagator, this label is smaller than zero, and those propagators should not be differentiated.
+                var_dependence[leaf.id] = [propagator_var[1][idx] ? true : false for idx in 1:get_numvars()]
+                # end
             else
                 var_dependence[leaf.id] = [propagator_var[2][idx] ? true : false for idx in 1:get_numvars()]
             end
