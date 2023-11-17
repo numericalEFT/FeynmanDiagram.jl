@@ -13,14 +13,14 @@ The cartesian QuantumOperator.label product:
 - 'labels' : The list of labels in the LabelProduct
 - 'dims' : A tuple of the length of the label factors
 """
-struct LabelProduct{LT,N}
+mutable struct LabelProduct{LT,N}
     labels::LT
     dims::NTuple{N,Int}
     function LabelProduct(vargs...)
-        #@assert all(v -> (v isa Mesh), vargs) "all arguments should variables"
-        mprod = Tuple(v for v in vargs)
-        mnew = new{typeof(mprod),length(mprod)}(mprod, Tuple(length(v) for v in vargs))
-        return mnew
+        @assert all(v -> (v isa AbstractVector || v isa Tuple), vargs) "all arguments should be vectors or tuples."
+        # labels = Tuple(unique(v) for v in vargs)
+        labels = Tuple(v for v in vargs)
+        return new{typeof(labels),length(labels)}(labels, Tuple(length(v) for v in vargs))
     end
 end
 
@@ -52,29 +52,32 @@ Base.eachindex(obj::LabelProduct) = Base.eachindex(obj.labels)
 # rank(obj::LabelProduct{LT,N}) where {LT,N} = N
 
 """
-    function index_to_linear(obj::LabelProduct, index...)
-Convert a tuple of the indexes of each label to a single linear index of the LabelProduct.
+    @generated function index_to_linear(obj::LabelProduct{LT,N}, I...) where {LT,N}
+
+    Convert a tuple of the indexes of each label to a single linear index of the LabelProduct.
 
 # Argument:
 - 'obj': The LabelProduct object
 - 'index...': N indexes of the label factor, where N is the number of label factor
 """
-function index_to_linear(obj::LabelProduct{LT,N}, I...) where {LT,N}
-    return LinearIndices(obj.dims)[I...]
+@generated function index_to_linear(obj::LabelProduct{LT,N}, I...) where {LT,N}
+    ex = :(I[$N] - 1)
+    for i = (N-1):-1:1
+        ex = :(I[$i] - 1 + obj.dims[$i] * $ex)
+    end
+    return :($ex + 1)
 end
-# @generated function index_to_linear(obj::LabelProduct{LT,N}, I...) where {LT,N}
-#     ex = :(I[$N] - 1)
-#     for i = (N-1):-1:1
-#         ex = :(I[$i] - 1 + obj.dims[$i] * $ex)
-#     end
-#     return :($ex + 1)
-# end
-# @generated function index_to_linear(dims::NTuple{N,Int}, I...) where {N}
-#     ex = :(I[$N] - 1)
-#     for i = (N-1):-1:1
-#         ex = :(I[$i] - 1 + dims[$i] * $ex)
-#     end
-#     return :($ex + 1)
+
+@generated function index_to_linear(dims::NTuple{N,Int}, I...) where {N}
+    ex = :(I[$N] - 1)
+    for i = (N-1):-1:1
+        ex = :(I[$i] - 1 + dims[$i] * $ex)
+    end
+    return :($ex + 1)
+end
+
+# function index_to_linear(obj::LabelProduct{LT,N}, I...) where {LT,N}
+#     return LinearIndices(obj.dims)[I...]
 # end
 
 """
@@ -133,6 +136,38 @@ Base.eltype(::Type{LabelProduct{LT,N}}) where {LT,N} = tuple(eltype.(fieldtypes(
 Print the LabelProduct.
 """
 Base.show(io::IO, obj::LabelProduct) = print(io, "LabelProduct of: $(obj.labels)")
+
+function push_labelat!(lp::LabelProduct{LT,N}, new_label, dim::Int) where {LT,N}
+    @assert dim <= N
+    loc = findfirst(isequal(new_label), lp.labels[dim])
+    if isnothing(loc)
+        push!(lp.labels[dim], new_label)
+        lp.dims = Tuple(i == dim ? d + 1 : d for (i, d) in enumerate(lp.dims))
+        return size(lp, dim)
+    end
+    return loc
+end
+
+function append_label!(lp::LabelProduct{LT,N}, new_label::Union{Tuple,AbstractVector}) where {LT,N}
+    # Ensure that the length of new_label matches the existing dimensions
+    if length(new_label) != N
+        throw(ArgumentError("Length of new_label must match the existing number of dimensions (N)"))
+    end
+
+    locs = collect(lp.dims)
+    # Update the labels field by appending the new_label
+    for (dim, label) in enumerate(new_label)
+        loc = findfirst(isequal(label), lp.labels[dim])
+        if isnothing(loc)
+            push!(lp.labels[dim], label)
+            locs[dim] += 1
+        else
+            locs[dim] = loc
+        end
+    end
+    lp.dims = Tuple(d > lp.dims[i] ? d : lp.dims[i] for (i, d) in enumerate(locs))
+    return Tuple(locs)
+end
 
 @generated function _find_label(::Type{LT}, ::Type{M}) where {LT,M}
     for (i, t) in enumerate(fieldtypes(LT))

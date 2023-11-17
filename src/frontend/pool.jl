@@ -79,7 +79,7 @@ loop(pool::LoopPool, idx) = view(pool.loops, :, idx)
 
 hasloop(pool::LoopPool) = (pool.dim > 0) && (pool.loopNum > 0)
 
-function append(pool::LoopPool, basis::AbstractVector)
+function append!(pool::LoopPool, basis::AbstractVector)
     @assert pool.loopNum >= length(basis)
     if pool.loopNum > length(basis)
         append!(basis, zeros(eltype(basis), pool.loopNum - length(basis)))
