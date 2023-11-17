@@ -19,18 +19,18 @@ using ..Taylor
 
 
 """
-    function taylorexpansion!(graph::G, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}(); taylormap::Dict{Int,TaylorSeries{G}}=Dict{Int,TaylorSeries{G}}()) where {G<:Graph}
+    function taylorexpansion!(graph::G, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}(); to_coeff_map::Dict{Int,TaylorSeries{G}}=Dict{Int,TaylorSeries{G}}()) where {G<:Graph}
     
     Return a taylor series of graph g, together with a map of between nodes of g and correponding taylor series.
 # Arguments:
 - `graph`  Target graph 
 - `var_dependence::Dict{Int,Vector{Bool}}` A dictionary that specifies the variable dependence of target graph leaves. Should map the id of each leaf to a Bool vector. 
     The length of the vector should be the same as number of variables.
-- `taylormap::Dict{Int,TaylorSeries}` A dicitonary that maps id of each node of target graph to its correponding taylor series.
+- `to_coeff_map::Dict{Int,TaylorSeries}` A dicitonary that maps id of each node of target graph to its correponding taylor series.
 """
-function taylorexpansion!(graph::G, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}(); taylormap::Dict{Int,TaylorSeries{G}}=Dict{Int,TaylorSeries{G}}()) where {G<:Graph}
-    if haskey(taylormap, graph.id) #If already exist, use taylor series in taylormap.
-        return taylormap[graph.id], taylormap
+function taylorexpansion!(graph::G, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}(); to_coeff_map::Dict{Int,TaylorSeries{G}}=Dict{Int,TaylorSeries{G}}()) where {G<:Graph}
+    if haskey(to_coeff_map, graph.id) #If already exist, use taylor series in to_coeff_map.
+        return to_coeff_map[graph.id], to_coeff_map
 
     elseif isleaf(graph)
         if haskey(var_dependence, graph.id)
@@ -49,27 +49,37 @@ function taylorexpansion!(graph::G, var_dependence::Dict{Int,Vector{Bool}}=Dict{
                 result.coeffs[o] = coeff
             end
         end
-        taylormap[graph.id] = result
-        return result, taylormap
+        to_coeff_map[graph.id] = result
+        return result, to_coeff_map
     else
-        taylormap[graph.id] = graph.factor * apply(graph.operator, [taylorexpansion!(sub, var_dependence; taylormap=taylormap)[1] for sub in graph.subgraphs], graph.subgraph_factors)
-        return taylormap[graph.id], taylormap
+        to_coeff_map[graph.id] = graph.factor * apply(graph.operator, [taylorexpansion!(sub, var_dependence; to_coeff_map=to_coeff_map)[1] for sub in graph.subgraphs], graph.subgraph_factors)
+        return to_coeff_map[graph.id], to_coeff_map
     end
 end
 
 """
-    function taylorexpansion!(graph::FeynmanGraph{F,W}, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}(); taylormap::Dict{Int,TaylorSeries{G}}=Dict{Int,TaylorSeries{G}}()) where {F,W}
+    function taylorexpansion!(graph::FeynmanGraph{F,W}, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}(); to_coeff_map::Dict{Int,TaylorSeries{G}}=Dict{Int,TaylorSeries{G}}()) where {F,W}
     
     Return a taylor series of FeynmanGraph g, together with a map of between nodes of g and correponding taylor series.
 # Arguments:
 - `graph`  Target FeynmanGraph 
 - `var_dependence::Dict{Int,Vector{Bool}}` A dictionary that specifies the variable dependence of target graph leaves. Should map the id of each leaf to a Bool vector. 
     The length of the vector should be the same as number of variables.
-- `taylormap::Dict{Int,TaylorSeries}` A dicitonary that maps id of each node of target graph to its correponding taylor series.
+- `to_coeff_map::Dict{Int,TaylorSeries}` A dicitonary that maps id of each node of target graph to its correponding taylor series.
+- `from_coeff_map::Dict{Int,Tuple{Int,Vector{Bool}}}` A dicitonary that maps a taylor coefficient to its owner FeynmanGraph. The key should be the id of coefficient graph, and value should be a tuple of (feynmangraph.id, order).
 """
-function taylorexpansion!(graph::FeynmanGraph{F,W}, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}(); taylormap::Dict{Int,TaylorSeries{Graph{F,W}}}=Dict{Int,TaylorSeries{Graph{F,W}}}()) where {F,W}
-    if haskey(taylormap, graph.id) #If already exist, use taylor series in taylormap.
-        return taylormap[graph.id], taylormap
+function taylorexpansion!(graph::FeynmanGraph{F,W}, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}(); to_coeff_map::Dict{Int,TaylorSeries{Graph{F,W}}}=Dict{Int,TaylorSeries{Graph{F,W}}}(), from_coeff_map::Dict{Int,Tuple{Int,Vector{Int}}}=Dict{Int,Tuple{Int,Vector{Int}}}()) where {F,W}
+    if haskey(to_coeff_map, graph.id) #If already exist, use taylor series in to_coeff_map.
+        if isleaf(graph)
+            for (order, coeff) in to_coeff_map[graph.id].coeffs
+                if haskey(from_coeff_map, coeff.id)
+                    @assert from_coeff_map[coeff.id] == (graph.id, order) "The graph g$(graph.id) is mapped to two different leaf taylor series!"
+                else
+                    from_coeff_map[coeff.id] = (graph.id, order)
+                end
+            end
+        end
+        return to_coeff_map[graph.id], to_coeff_map, from_coeff_map
 
     elseif isleaf(graph)
         if haskey(var_dependence, graph.id)
@@ -83,28 +93,29 @@ function taylorexpansion!(graph::FeynmanGraph{F,W}, var_dependence::Dict{Int,Vec
             o = collect(order)
             coeff = Graph([]; operator=ComputationalGraphs.Sum(), factor=graph.factor)
             result.coeffs[o] = coeff
+            from_coeff_map[coeff.id] = (graph.id, o)
         end
-        taylormap[graph.id] = result
-        return result, taylormap
+        to_coeff_map[graph.id] = result
+        return result, to_coeff_map, from_coeff_map
     else
-        taylormap[graph.id] = graph.factor * apply(graph.operator, [taylorexpansion!(sub, var_dependence; taylormap=taylormap)[1] for sub in graph.subgraphs], graph.subgraph_factors)
-        return taylormap[graph.id], taylormap
+        to_coeff_map[graph.id] = graph.factor * apply(graph.operator, [taylorexpansion!(sub, var_dependence; to_coeff_map=to_coeff_map, from_coeff_map=from_coeff_map)[1] for sub in graph.subgraphs], graph.subgraph_factors)
+        return to_coeff_map[graph.id], to_coeff_map, from_coeff_map
     end
 end
 
 """
-    function taylorexpansion!(graph::Diagram{W}, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}(); taylormap::Dict{Int,TaylorSeries{G}}=Dict{Int,TaylorSeries{G}}()) where {W}
+    function taylorexpansion!(graph::Diagram{W}, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}(); to_coeff_map::Dict{Int,TaylorSeries{G}}=Dict{Int,TaylorSeries{G}}()) where {W}
     
     Return a taylor series of Diagram g, together with a map of between nodes of g and correponding taylor series.
 # Arguments:
 - `graph`  Target diagram 
 - `var_dependence::Dict{Int,Vector{Bool}}` A dictionary that specifies the variable dependence of target diagram leaves. Should map the id of each leaf to a Bool vector. 
     The length of the vector should be the same as number of variables.
-- `taylormap::Dict{Int,TaylorSeries}` A dicitonary that maps id of each node of target diagram to its correponding taylor series.
+- `to_coeff_map::Dict{Int,TaylorSeries}` A dicitonary that maps id of each node of target diagram to its correponding taylor series.
 """
-function taylorexpansion!(graph::Diagram{W}, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}(); taylormap::Dict{Int,TaylorSeries{Graph{W,W}}}=Dict{Int,TaylorSeries{Graph{W,W}}}()) where {W}
-    if haskey(taylormap, graph.hash) #If already exist, use taylor series in taylormap.
-        return taylormap[graph.hash], taylormap
+function taylorexpansion!(graph::Diagram{W}, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}(); to_coeff_map::Dict{Int,TaylorSeries{Graph{W,W}}}=Dict{Int,TaylorSeries{Graph{W,W}}}()) where {W}
+    if haskey(to_coeff_map, graph.hash) #If already exist, use taylor series in to_coeff_map.
+        return to_coeff_map[graph.hash], to_coeff_map
 
     elseif isempty(graph.subdiagram)
         if haskey(var_dependence, graph.hash)
@@ -119,16 +130,16 @@ function taylorexpansion!(graph::Diagram{W}, var_dependence::Dict{Int,Vector{Boo
             coeff = Graph([]; operator=ComputationalGraphs.Sum(), factor=graph.factor)
             result.coeffs[o] = coeff
         end
-        taylormap[graph.hash] = result
-        return result, taylormap
+        to_coeff_map[graph.hash] = result
+        return result, to_coeff_map
     else
-        taylormap[graph.hash] = graph.factor * apply(typeof(graph.operator), [taylorexpansion!(sub, var_dependence; taylormap=taylormap)[1] for sub in graph.subdiagram], ones(W, length(graph.subdiagram)))
-        return taylormap[graph.hash], taylormap
+        to_coeff_map[graph.hash] = graph.factor * apply(typeof(graph.operator), [taylorexpansion!(sub, var_dependence; to_coeff_map=to_coeff_map)[1] for sub in graph.subdiagram], ones(W, length(graph.subdiagram)))
+        return to_coeff_map[graph.hash], to_coeff_map
     end
 end
 
 """
-    function taylorexpansion!(graph::FeynmanGraph{F,W}, propagator_var::Tuple{Vector{Bool},Vector{Bool}}, label::Tuple{LabelProduct,LabelProduct}; taylormap::Dict{Int,TaylorSeries{Graph{F,W}}}=Dict{Int,TaylorSeries{Graph{F,W}}}()) where {F,W}
+    function taylorexpansion!(graph::FeynmanGraph{F,W}, propagator_var::Tuple{Vector{Bool},Vector{Bool}}, label::Tuple{LabelProduct,LabelProduct}; to_coeff_map::Dict{Int,TaylorSeries{Graph{F,W}}}=Dict{Int,TaylorSeries{Graph{F,W}}}()) where {F,W}
     
     Return a taylor series of FeynmanGraph g, together with a map of between nodes of g and correponding taylor series. In this set up, the leaves that are the same type of propagators (fermi or bose) depend on the same set of variables, 
     whereas other types of Feynman diagrams (such as vertices) depends on no variables that need to be differentiated (for AD purpose, they are just constants).
@@ -137,9 +148,9 @@ end
 - `propagator_var::Tuple{Vector{Bool},Vector{Bool}}` A Tuple that specifies the variable dependence of fermi (first element) and bose propagator (second element).
     The dependence is given by a vector of the length same as the number of variables.
 - `label::Tuple{LabelProduct,LabelProduct}` A Tuple fermi (first element) and bose LabelProduct (second element).
-- `taylormap::Dict{Int,TaylorSeries}` A dicitonary that maps id of each node of target diagram to its correponding taylor series.
+- `to_coeff_map::Dict{Int,TaylorSeries}` A dicitonary that maps id of each node of target diagram to its correponding taylor series.
 """
-function taylorexpansion!(graph::FeynmanGraph{F,W}, propagator_var::Tuple{Vector{Bool},Vector{Bool}}; taylormap::Dict{Int,TaylorSeries{Graph{F,W}}}=Dict{Int,TaylorSeries{Graph{F,W}}}()) where {F,W}
+function taylorexpansion!(graph::FeynmanGraph{F,W}, propagator_var::Tuple{Vector{Bool},Vector{Bool}}; to_coeff_map::Dict{Int,TaylorSeries{Graph{F,W}}}=Dict{Int,TaylorSeries{Graph{F,W}}}(), from_coeff_map::Dict{Int,Tuple{Int,Vector{Int}}}=Dict{Int,Tuple{Int,Vector{Int}}}()) where {F,W}
     var_dependence = Dict{Int,Vector{Bool}}()
     for leaf in Leaves(graph)
         if ComputationalGraphs.diagram_type(leaf) == ComputationalGraphs.Propagator
@@ -153,11 +164,11 @@ function taylorexpansion!(graph::FeynmanGraph{F,W}, propagator_var::Tuple{Vector
             end
         end
     end
-    return taylorexpansion!(graph, var_dependence; taylormap=taylormap)
+    return taylorexpansion!(graph, var_dependence; to_coeff_map=to_coeff_map, from_coeff_map=from_coeff_map)
 end
 
 """
-    function taylorexpansion!(graph::Diagram{W}, propagator_var::Dict{DataType,Vector{Bool}}; taylormap::Dict{Int,TaylorSeries{Graph{W,W}}}=Dict{Int,TaylorSeries{Graph{W,W}}}()) where {W}
+    function taylorexpansion!(graph::Diagram{W}, propagator_var::Dict{DataType,Vector{Bool}}; to_coeff_map::Dict{Int,TaylorSeries{Graph{W,W}}}=Dict{Int,TaylorSeries{Graph{W,W}}}()) where {W}
     
     Return a taylor series of Diagram g, together with a map of between nodes of g and correponding taylor series. In this set up, the leaves that are the same type of diagrams (such as Green functions) depend on the same set of variables.
     
@@ -165,34 +176,34 @@ end
 - `graph`  Target Diagram
 - `propagator_var::Dict{DataType,Vector{Bool}}` A dictionary that specifies the variable dependence of different types of diagrams. Should be a map between DataTypes in DiagramID and Bool vectors.
     The dependence is given by a vector of the length same as the number of variables.
-- `taylormap::Dict{Int,TaylorSeries}` A dicitonary that maps id of each node of target diagram to its correponding taylor series.
+- `to_coeff_map::Dict{Int,TaylorSeries}` A dicitonary that maps id of each node of target diagram to its correponding taylor series.
 """
-function taylorexpansion!(graph::Diagram{W}, propagator_var::Dict{DataType,Vector{Bool}}; taylormap::Dict{Int,TaylorSeries{Graph{W,W}}}=Dict{Int,TaylorSeries{Graph{W,W}}}()) where {W}
+function taylorexpansion!(graph::Diagram{W}, propagator_var::Dict{DataType,Vector{Bool}}; to_coeff_map::Dict{Int,TaylorSeries{Graph{W,W}}}=Dict{Int,TaylorSeries{Graph{W,W}}}()) where {W}
     var_dependence = Dict{Int,Vector{Bool}}()
     for leaf in Leaves(graph)
         if haskey(propagator_var, typeof(leaf.id))
             var_dependence[leaf.hash] = [propagator_var[typeof(leaf.id)][idx] ? true : false for idx in 1:get_numvars()]
         end
     end
-    return taylorexpansion!(graph, var_dependence; taylormap=taylormap)
+    return taylorexpansion!(graph, var_dependence; to_coeff_map=to_coeff_map)
 end
 
-function taylorexpansion!(graphs::Vector{G}, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}(); taylormap::Dict{Int,TaylorSeries{G}}=Dict{Int,TaylorSeries{G}}()) where {G<:Graph}
+function taylorexpansion!(graphs::Vector{G}, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}(); to_coeff_map::Dict{Int,TaylorSeries{G}}=Dict{Int,TaylorSeries{G}}()) where {G<:Graph}
     result = Vector{TaylorSeries{G}}()
     for graph in graphs
-        taylor, _ = taylorexpansion!(graph, var_dependence; taylormap=taylormap)
+        taylor, _ = taylorexpansion!(graph, var_dependence; to_coeff_map=to_coeff_map)
         push!(result, taylor)
     end
-    return result, taylormap
+    return result, to_coeff_map
 end
 
-function taylorexpansion!(graphs::Vector{Diagram{W}}, propagator_var::Dict{DataType,Vector{Bool}}; taylormap::Dict{Int,TaylorSeries{Graph{W,W}}}=Dict{Int,TaylorSeries{Graph{W,W}}}()) where {W}
+function taylorexpansion!(graphs::Vector{Diagram{W}}, propagator_var::Dict{DataType,Vector{Bool}}; to_coeff_map::Dict{Int,TaylorSeries{Graph{W,W}}}=Dict{Int,TaylorSeries{Graph{W,W}}}()) where {W}
     result = Vector{TaylorSeries{Graph{W,W}}}()
     for graph in graphs
-        taylor, _ = taylorexpansion!(graph, propagator_var; taylormap=taylormap)
+        taylor, _ = taylorexpansion!(graph, propagator_var; to_coeff_map=to_coeff_map)
         push!(result, taylor)
     end
-    return result, taylormap
+    return result, to_coeff_map
 end
 """
     taylorexpansion_withmap(g::G; coeffmode=true, var::Vector{Int}=collect(1:get_numvars())) where {G<:Graph}
