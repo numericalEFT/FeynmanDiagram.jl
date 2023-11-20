@@ -8,5 +8,6 @@ using ..RuntimeGeneratedFunctions
 RuntimeGeneratedFunctions.init(Compilers)
 
 include("static.jl")
+include("mindspore.jl")
 
 end
