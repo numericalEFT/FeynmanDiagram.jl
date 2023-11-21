@@ -275,4 +275,69 @@ function leafstates(FeynGraphs::Dict{T,Tuple{Vector{G},Vector{Vector{Int}}}},
     return (leafValue, leafType, leafInTau, leafOutTau, leafLoopIndex), ExtT_index
 end
 
+
+function leafstates(FeynGraphs::Dict{T,Tuple{Vector{G},Vector{Vector{Int}}}},
+    labelProd::LabelProduct, leafmap::Dict{Int,Int}, graph_keys::Vector{T}) where {T,G<:FeynmanGraph}
+    #read information of each leaf from the generated graph and its LabelProduct, the information include type, loop momentum, imaginary time.
+    num_g = length(graph_keys)
+    len_leaves = length(values(leafmap))
+
+    ExtT_index = [Vector{Vector{Int}}() for _ in 1:num_g]
+
+    # leafType = [Vector{Int}() for _ in 1:num_g]
+    # leafInTau = [Vector{Int}() for _ in 1:num_g]
+    # leafOutTau = [Vector{Int}() for _ in 1:num_g]
+    # leafLoopIndex = [Vector{Int}() for _ in 1:num_g]
+    # leafValue = [Vector{Float64}() for _ in 1:num_g]
+
+
+    leafType = zeros(Int, len_leaves)
+    leafInTau = ones(Int, len_leaves)
+    leafOutTau = ones(Int, len_leaves)
+    leafLoopIndex = ones(Int, len_leaves)
+    leafValue = ones(Float64, len_leaves)
+
+    leaves = Vector{G}()
+    for (ikey, key) in enumerate(graph_keys)
+        ExtT_index[ikey] = FeynGraphs[key][2]  # external tau variables
+        for graph in FeynGraphs[key][1]
+            append!(leaves, collect(Leaves(graph)))
+        end
+    end
+    sort!(leaves, by=x -> x.id) #sort the id of the leaves in an asscend order
+    unique!(x -> x.id, leaves) #filter out the leaves with the same id number  
+    @assert length(leaves) == len_leaves
+
+    for g in leaves
+        # g.name == "visited" && continue
+        vertices = IR.vertices(g)
+        # if IR.diagram_type(g) == IR.Interaction
+        # push!(leafType[ikey], 0)
+        # In = Out = vertices[1][1].label
+        # push!(leafLoopIndex[ikey], 1)
+        # push!(leafInTau[ikey], labelProd[In][1])
+        # push!(leafOutTau[ikey], labelProd[Out][1])
+        # push!(leafValue[ikey], 1.0)
+        if IR.diagram_type(g) == IR.Propagator
+            idx = leafmap[g.id]
+            if (Op.isfermionic(vertices[1]))
+                In, Out = vertices[2][1].label, vertices[1][1].label
+                leafType[idx] = g.orders[1] * 2 + 1
+                leafLoopIndex[idx] = FrontEnds.linear_to_index(labelProd, In)[end] #the label of LoopPool for each fermionic leaf
+                leafInTau[idx] = labelProd[In][1]
+                leafOutTau[idx] = labelProd[Out][1]
+            else
+                In, Out = vertices[2][1].label, vertices[1][1].label
+                push!(leafType[ikey], g.orders[2] * 2 + 2)
+                push!(leafLoopIndex[ikey], FrontEnds.linear_to_index(labelProd, In)[end]) #the label of LoopPool for each bosonic leaf
+                push!(leafInTau[ikey], labelProd[In][1])
+                push!(leafOutTau[ikey], labelProd[Out][1])
+            end
+            push!(leafValue[ikey], 1.0)
+        end
+        # g.name = "visited"
+    end
+    return (leafValue, leafType, leafInTau, leafOutTau, leafLoopIndex), ExtT_index
+end
+
 end

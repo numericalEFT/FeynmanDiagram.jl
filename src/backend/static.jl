@@ -61,47 +61,47 @@ function to_static(::Type{ComputationalGraphs.Power{N}}, subgraphs::Vector{Feynm
     return "((g$(subgraphs[1].id))^$N$factor_str)"
 end
 
-"""
-    function to_julia_str(graphs::AbstractVector{<:AbstractGraph}; root::AbstractVector{Int}=[id(g) for g in graphs], name::String="eval_graph!")
-    
-Compile a list of graphs into a string for a julia static function. The function takes two arguments: `root` and `leaf`. 
-`root` is a vector of the root node ids of the graphs, and `leaf` is a vector of the leaf nodes' weights of the graphs. 
-"""
-function to_julia_str(graphs::AbstractVector{<:AbstractGraph}; root::AbstractVector{Int}=[id(g) for g in graphs], name::String="eval_graph!")
-    head = "function $name(root::AbstractVector, leaf::AbstractVector)\n "
-    body = ""
-    leafidx = 1
-    inds_visitedleaf = Int[]
-    inds_visitednode = Int[]
-    for graph in graphs
-        for g in PostOrderDFS(graph) #leaf first search
-            g_id = id(g)
-            target = "g$(g_id)"
-            isroot = false
-            if g_id in root
-                target_root = "root[$(findfirst(x -> x == g_id, root))]"
-                isroot = true
-            end
-            if isempty(subgraphs(g)) #leaf
-                g_id in inds_visitedleaf && continue
-                factor_str = factor(g) == 1 ? "" : " * $(factor(g))"
-                body *= "    $target = leaf[$leafidx]$factor_str\n "
-                leafidx += 1
-                push!(inds_visitedleaf, g_id)
-            else
-                g_id in inds_visitednode && continue
-                factor_str = factor(g) == 1 ? "" : " * $(factor(g))"
-                body *= "    $target = $(to_static(operator(g), subgraphs(g), subgraph_factors(g)))$factor_str\n "
-                push!(inds_visitednode, g_id)
-            end
-            if isroot
-                body *= "    $target_root = $target\n "
-            end
-        end
-    end
-    tail = "end"
-    return head * body * tail
-end
+# """
+#     function to_julia_str(graphs::AbstractVector{<:AbstractGraph}; root::AbstractVector{Int}=[id(g) for g in graphs], name::String="eval_graph!")
+
+# Compile a list of graphs into a string for a julia static function. The function takes two arguments: `root` and `leaf`. 
+# `root` is a vector of the root node ids of the graphs, and `leaf` is a vector of the leaf nodes' weights of the graphs. 
+# """
+# function to_julia_str(graphs::AbstractVector{<:AbstractGraph}; root::AbstractVector{Int}=[id(g) for g in graphs], name::String="eval_graph!")
+#     head = "function $name(root::AbstractVector, leaf::AbstractVector)\n "
+#     body = ""
+#     leafidx = 1
+#     inds_visitedleaf = Int[]
+#     inds_visitednode = Int[]
+#     for graph in graphs
+#         for g in PostOrderDFS(graph) #leaf first search
+#             g_id = id(g)
+#             target = "g$(g_id)"
+#             isroot = false
+#             if g_id in root
+#                 target_root = "root[$(findfirst(x -> x == g_id, root))]"
+#                 isroot = true
+#             end
+#             if isempty(subgraphs(g)) #leaf
+#                 g_id in inds_visitedleaf && continue
+#                 factor_str = factor(g) == 1 ? "" : " * $(factor(g))"
+#                 body *= "    $target = leaf[$leafidx]$factor_str\n "
+#                 leafidx += 1
+#                 push!(inds_visitedleaf, g_id)
+#             else
+#                 g_id in inds_visitednode && continue
+#                 factor_str = factor(g) == 1 ? "" : " * $(factor(g))"
+#                 body *= "    $target = $(to_static(operator(g), subgraphs(g), subgraph_factors(g)))$factor_str\n "
+#                 push!(inds_visitednode, g_id)
+#             end
+#             if isroot
+#                 body *= "    $target_root = $target\n "
+#             end
+#         end
+#     end
+#     tail = "end"
+#     return head * body * tail
+# end
 
 """
     function to_julia_str(graphs::AbstractVector{<:AbstractGraph}, leafMap::Dict{Int,Int}; root::AbstractVector{Int}=[id(g) for g in graphs],
@@ -116,12 +116,15 @@ Compile a list of Feynman graphs into a string for a julia static function. The 
 - `root` (AbstractVector{Int}, optional): The vector of the root node ids of the graphs (defaults to `[id(g) for g in graphs]`).
 - `name` (String,optional): The name of the complied function (defaults to `"eval_graph!"`).  
 """
-function to_julia_str(graphs::AbstractVector{<:AbstractGraph}, leafMap::Dict{Int,Int}; root::AbstractVector{Int}=[id(g) for g in graphs],
+function to_julia_str(graphs::AbstractVector{<:AbstractGraph}; root::AbstractVector{Int}=[id(g) for g in graphs],
     name::String="eval_graph!")
     head = "function $name(root::AbstractVector, leafVal::AbstractVector)\n "
     body = ""
     inds_visitedleaf = Int[]
     inds_visitednode = Int[]
+    idx_leafVal = 1
+    # map_leafVal2id = Dict{Int,Int}()  # mapping from the index of the leafVal to the leaf.id
+    map_leafid_validx = Dict{Int,Int}()  # mapping from the leaf.id to the index of the leafVal 
     for graph in graphs
         for g in PostOrderDFS(graph) #leaf first search
             g_id = id(g)
@@ -134,7 +137,11 @@ function to_julia_str(graphs::AbstractVector{<:AbstractGraph}, leafMap::Dict{Int
             if isempty(subgraphs(g)) #leaf
                 g_id in inds_visitedleaf && continue
                 factor_str = factor(g) == 1 ? "" : " * $(factor(g))"
-                body *= "    $target = leafVal[$(leafMap[g_id])]$factor_str\n "
+                # body *= "    $target = leafVal[$(leafMap[g_id])]$factor_str\n "
+                body *= "    $target = leafVal[$idx_leafVal]$factor_str\n "
+                # map_leafVal2id[idx_leafVal] = g_id
+                map_leafid_validx[g_id] = idx_leafVal
+                idx_leafVal += 1
                 push!(inds_visitedleaf, g_id)
             else
                 g_id in inds_visitednode && continue
@@ -148,7 +155,8 @@ function to_julia_str(graphs::AbstractVector{<:AbstractGraph}, leafMap::Dict{Int
         end
     end
     tail = "end"
-    return head * body * tail
+    # return head * body * tail, map_leafVal2id
+    return head * body * tail, map_leafid_validx
 end
 
 """
@@ -176,15 +184,15 @@ leaf = [1.0, 2.0]
 function compile(graphs::AbstractVector{<:AbstractGraph};
     root::AbstractVector{Int}=[id(g) for g in graphs])
     # this function return a runtime generated function defined by compile()
-    func_string = to_julia_str(graphs; root=root, name="func_name!")
+    func_string, leafmap = to_julia_str(graphs; root=root, name="func_name!")
     func_expr = Meta.parse(func_string)
     return @RuntimeGeneratedFunction(func_expr)
 end
 
-function compile(graphs::AbstractVector{<:AbstractGraph}, leafMap::Dict{Int,Int};
-    root::AbstractVector{Int}=[id(g) for g in graphs])
-    # this function return a runtime generated function defined by compile()
-    func_string = to_julia_str(graphs, leafMap; root=root, name="func_name!")
-    func_expr = Meta.parse(func_string)
-    return @RuntimeGeneratedFunction(func_expr)
-end
+# function compile(graphs::AbstractVector{<:AbstractGraph}, leafMap::Dict{Int,Int};
+#     root::AbstractVector{Int}=[id(g) for g in graphs])
+#     # this function return a runtime generated function defined by compile()
+#     func_string = to_julia_str(graphs, leafMap; root=root, name="func_name!")
+#     func_expr = Meta.parse(func_string)
+#     return @RuntimeGeneratedFunction(func_expr)
+# end

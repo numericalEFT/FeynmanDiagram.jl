@@ -16,10 +16,13 @@ function optimize!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose
         return nothing
     else
         graphs = collect(graphs)
-        leaf_mapping = remove_duplicated_leaves!(graphs, verbose=verbose, normalize=normalize)
+        # leaf_mapping = remove_duplicated_leaves!(graphs, verbose=verbose, normalize=normalize)
+        remove_duplicated_leaves!(graphs, verbose=verbose, normalize=normalize)
         flatten_all_chains!(graphs, verbose=verbose)
         merge_all_linear_combinations!(graphs, verbose=verbose)
-        return leaf_mapping
+
+        return graphs
+        # return leaf_mapping
     end
 end
 
@@ -197,27 +200,30 @@ end
 function unique_leaves(graphs::AbstractVector{<:AbstractGraph})
     ############### find the unique Leaves #####################
     unique_graphs = []
-    unique_graphs_id = Int[]
-    mapping = Dict{Int,Int}()
+    # unique_graphs_id = Int[]
+    mapping = Dict{Int,eltype{graphs}}()
 
     idx = 1
     for g in graphs
         flag = true
         for (ie, e) in enumerate(unique_graphs)
             if isequiv(e, g, :id)
-                mapping[id(g)] = ie
+                # mapping[id(g)] = ie
+                mapping[id(g)] = e
                 flag = false
                 break
             end
         end
         if flag
             push!(unique_graphs, g)
-            push!(unique_graphs_id, g.id)
-            mapping[g.id] = idx
-            idx += 1
+            # push!(unique_graphs_id, g.id)
+            # mapping[g.id] = idx
+            # idx += 1
+            mapping[id(g)] = g
         end
     end
-    return unique_graphs, unique_graphs_id, mapping
+    # return unique_graphs, unique_graphs_id, mapping
+    return mapping
 end
 
 """
@@ -248,24 +254,27 @@ function remove_duplicated_leaves!(graphs::Union{Tuple,AbstractVector{<:Abstract
     sort!(leaves, by=x -> id(x)) #sort the id of the leaves in an asscend order
     unique!(x -> id(x), leaves) #filter out the leaves with the same id number
 
-    _unique_leaves, uniqueleaves_id, mapping = unique_leaves(leaves)
+    # _unique_leaves, uniqueleaves_id, mapping = unique_leaves(leaves)
+    mapping = unique_leaves(leaves)
     verbose > 0 && length(leaves) > 0 && println("Number of independent Leaves $(length(leaves)) → $(length(_unique_leaves))")
 
-    leafmap = Dict{Int,Int}()
+    # leafmap = Dict{Int,Int}()
     for g in graphs
         for n in PreOrderDFS(g)
             for (si, sub_g) in enumerate(subgraphs(n))
                 if isleaf(sub_g)
-                    set_subgraph!(n, _unique_leaves[mapping[id(sub_g)]], si)
-                    if sub_g.id ∈ uniqueleaves_id
-                        leafmap[sub_g.id] = mapping[sub_g.id]
-                    end
+                    # set_subgraph!(n, _unique_leaves[mapping[id(sub_g)]], si)
+                    set_subgraph!(n, mapping[id(sub_g)], si)
+                    # if sub_g.id ∈ uniqueleaves_id
+                    # leafmap[sub_g.id] = mapping[sub_g.id]
+                    # end
                 end
             end
         end
     end
 
-    return leafmap
+    return graphs
+    # return leafmap
 end
 
 """
