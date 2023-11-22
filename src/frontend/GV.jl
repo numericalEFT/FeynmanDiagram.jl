@@ -70,7 +70,6 @@ end
     Generates a FeynmanGraph Dict: the Feynman diagrams with static interactions in a given `type`, and 
     spin-polarizaition parameter `spinPolarPara`, to given minmimum/maximum orders `MinOrder/MaxOrder`, with switchable couterterms. 
     Generates a `LabelProduct`: `labelProd` for these FeynmanGraphs.
-    Generates a leafMap for mapping `g.id` to the index of unique leaf.
 
 # Arguments:
 - `type` (Symbol): The type of the Feynman diagrams, including `:spinPolar`, `:chargePolar`, `:sigma_old`, `:green`, or `:freeEnergy`.
@@ -84,7 +83,6 @@ A tuple `(dict_graphs, fermi_labelProd, bose_labelProd, leafMap)` where
 - `dict_graphs` is a `Dict{Tuple{Int,Int,Int},Tuple{Vector{FeynmanGraph},Vector{Vector{Int}}}}` object representing the diagrams. 
    The key is (order, Gorder, Vorder). The element is a Tuple (graphVector, extT_labels).
 - `labelProd` is a `LabelProduct` object containing the labels for the leaves of graphs, 
-- `leafMap` maps `g.id` to the index of unique leaf. 
 """
 function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false;
     MinOrder::Int=1, spinPolarPara::Float64=0.0)
@@ -112,7 +110,6 @@ function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false;
     # Create label product
     labelProd = LabelProduct(tau_labels, loopbasis)
 
-    leafMap = Dict{Tuple{Int,Int,Int},Dict{Int,Int}}()
     if has_counterterm
         Gorders = 0:MaxOrder-MinOrder
         Vorders = 0:MaxOrder-1
@@ -126,7 +123,7 @@ function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false;
                         labelProd=labelProd, spinPolarPara=spinPolarPara)
                     key = (order, GOrder, VerOrder)
                     dict_graphs[key] = (gvec, extT_labels)
-                    leafMap[key] = IR.optimize!(gvec)
+                    IR.optimize!(gvec)
                 end
             end
         end
@@ -136,11 +133,11 @@ function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false;
                 labelProd=labelProd, spinPolarPara=spinPolarPara)
             key = (order, 0, 0)
             dict_graphs[key] = (gvec, extT_labels)
-            leafMap[key] = IR.optimize!(gvec)
+            IR.optimize!(gvec)
         end
     end
 
-    return dict_graphs, labelProd, leafMap
+    return dict_graphs, labelProd
 end
 
 """
@@ -149,7 +146,6 @@ end
     Generates a FeynmanGraph Dict: the Feynman diagrams with static interactions in the given `type` and 
     spin-polarizaition parameter `spinPolarPara`, with given couterterm-orders (from `gkeys`). 
     Generates a `LabelProduct`: `labelProd` for these FeynmanGraphs.
-    Generates a leafMap for mapping `g.id` to the index of unique leaf.
 
 # Arguments:
 - `type` (Symbol): The type of the Feynman diagrams, including `:spinPolar`, `:chargePolar`, `:sigma_old`, `:green`, or `:freeEnergy`.
@@ -161,7 +157,6 @@ A tuple `(dict_graphs, fermi_labelProd, bose_labelProd, leafMap)` where
 - `dict_graphs` is a `Dict{Tuple{Int,Int,Int},Tuple{Vector{FeynmanGraph},Vector{Vector{Int}}}}` object representing the diagrams. 
    The key is (order, Gorder, Vorder). The element is a Tuple (graphVector, extT_labels).
 - `labelProd` is a `LabelProduct` object containing the labels for the leaves of graphs, 
-- `leafMap` maps `g.id` to the index of unique leaf. 
 """
 function diagdictGV(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}; spinPolarPara::Float64=0.0)
     dict_graphs = Dict{Tuple{Int,Int,Int},Tuple{Vector{FeynmanGraph{_dtype.factor,_dtype.weight}},Vector{Vector{Int}}}}()
@@ -190,18 +185,16 @@ function diagdictGV(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}; spinPolarPa
     labelProd = LabelProduct(tau_labels, loopbasis)
 
     # graphvector = Vector{_dtype.factor,_dtype.weight}()
-    leafMap = Dict{eltype(gkeys),Dict{Int,Int}}()
     for key in gkeys
         gvec, labelProd, extT_labels = eachorder_diag(type, key...;
             labelProd=labelProd, spinPolarPara=spinPolarPara)
         dict_graphs[key] = (gvec, extT_labels)
-        # loopPool = fermi_labelProd.labels[3]
-        leafMap[key] = IR.optimize!(gvec)
+        IR.optimize!(gvec)
         # append!(graphvector, gvec)
     end
     # IR.optimize!(graphvector)
 
-    return dict_graphs, labelProd, leafMap
+    return dict_graphs, labelProd
 end
 
 """
@@ -275,69 +268,65 @@ function leafstates(FeynGraphs::Dict{T,Tuple{Vector{G},Vector{Vector{Int}}}},
     return (leafValue, leafType, leafInTau, leafOutTau, leafLoopIndex), ExtT_index
 end
 
+"""
+    function leafstates(leaf_maps::Vector{Dict{Int,G}}, labelProd::LabelProduct) where {T,G<:FeynmanGraph}
 
-function leafstates(FeynGraphs::Dict{T,Tuple{Vector{G},Vector{Vector{Int}}}},
-    labelProd::LabelProduct, leafmap::Dict{Int,Int}, graph_keys::Vector{T}) where {T,G<:FeynmanGraph}
+    Extracts leaf information from the leaf mapping from the leaf value's index to the leaf node for all graph partitions
+    and their associated LabelProduct data (`labelProd`). 
+    The information includes their initial value, type, in/out time, and loop momenta.
+    
+# Arguments:
+- `leaf_maps`: A vector of the dictionary mapping the leaf value's index to the FeynmanGraph of this leaf. 
+               Each dict corresponds to a graph partition, such as (order, Gorder, Vorder).
+- `labelProd`: A LabelProduct used to label the leaves of graphs.
+
+# Returns
+- A tuple of vectors containing information about the leaves of graphs, including their initial values, types, input and output time indexes, and loop-momenta indexes.
+"""
+function leafstates(leaf_maps::Vector{Dict{Int,G}}, labelProd::LabelProduct) where {G<:FeynmanGraph}
     #read information of each leaf from the generated graph and its LabelProduct, the information include type, loop momentum, imaginary time.
-    num_g = length(graph_keys)
-    len_leaves = length(values(leafmap))
+    num_g = length(leaf_maps)
+    leafType = [Vector{Int}() for _ in 1:num_g]
+    leafInTau = [Vector{Int}() for _ in 1:num_g]
+    leafOutTau = [Vector{Int}() for _ in 1:num_g]
+    leafLoopIndex = [Vector{Int}() for _ in 1:num_g]
+    leafValue = [Vector{Float64}() for _ in 1:num_g]
 
-    ExtT_index = [Vector{Vector{Int}}() for _ in 1:num_g]
+    for (ikey, leafmap) in enumerate(leaf_maps)
+        len_leaves = length(keys(leafmap))
+        sizehint!(leafType[ikey], len_leaves)
+        sizehint!(leafInTau[ikey], len_leaves)
+        sizehint!(leafOutTau[ikey], len_leaves)
+        sizehint!(leafLoopIndex[ikey], len_leaves)
+        leafValue[ikey] = ones(Float64, len_leaves)
 
-    # leafType = [Vector{Int}() for _ in 1:num_g]
-    # leafInTau = [Vector{Int}() for _ in 1:num_g]
-    # leafOutTau = [Vector{Int}() for _ in 1:num_g]
-    # leafLoopIndex = [Vector{Int}() for _ in 1:num_g]
-    # leafValue = [Vector{Float64}() for _ in 1:num_g]
-
-
-    leafType = zeros(Int, len_leaves)
-    leafInTau = ones(Int, len_leaves)
-    leafOutTau = ones(Int, len_leaves)
-    leafLoopIndex = ones(Int, len_leaves)
-    leafValue = ones(Float64, len_leaves)
-
-    leaves = Vector{G}()
-    for (ikey, key) in enumerate(graph_keys)
-        ExtT_index[ikey] = FeynGraphs[key][2]  # external tau variables
-        for graph in FeynGraphs[key][1]
-            append!(leaves, collect(Leaves(graph)))
-        end
-    end
-    sort!(leaves, by=x -> x.id) #sort the id of the leaves in an asscend order
-    unique!(x -> x.id, leaves) #filter out the leaves with the same id number  
-    @assert length(leaves) == len_leaves
-
-    for g in leaves
-        # g.name == "visited" && continue
-        vertices = IR.vertices(g)
-        # if IR.diagram_type(g) == IR.Interaction
-        # push!(leafType[ikey], 0)
-        # In = Out = vertices[1][1].label
-        # push!(leafLoopIndex[ikey], 1)
-        # push!(leafInTau[ikey], labelProd[In][1])
-        # push!(leafOutTau[ikey], labelProd[Out][1])
-        # push!(leafValue[ikey], 1.0)
-        if IR.diagram_type(g) == IR.Propagator
-            idx = leafmap[g.id]
-            if (Op.isfermionic(vertices[1]))
-                In, Out = vertices[2][1].label, vertices[1][1].label
-                leafType[idx] = g.orders[1] * 2 + 1
-                leafLoopIndex[idx] = FrontEnds.linear_to_index(labelProd, In)[end] #the label of LoopPool for each fermionic leaf
-                leafInTau[idx] = labelProd[In][1]
-                leafOutTau[idx] = labelProd[Out][1]
-            else
-                In, Out = vertices[2][1].label, vertices[1][1].label
-                push!(leafType[ikey], g.orders[2] * 2 + 2)
-                push!(leafLoopIndex[ikey], FrontEnds.linear_to_index(labelProd, In)[end]) #the label of LoopPool for each bosonic leaf
+        for idx in 1:len_leaves
+            g = leafmap[idx]
+            vertices = IR.vertices(g)
+            if IR.diagram_type(g) == IR.Interaction
+                push!(leafType[ikey], 0)
+                In = Out = vertices[1][1].label
+                push!(leafLoopIndex[ikey], 1)
                 push!(leafInTau[ikey], labelProd[In][1])
                 push!(leafOutTau[ikey], labelProd[Out][1])
+            elseif IR.diagram_type(g) == IR.Propagator
+                if (Op.isfermionic(vertices[1]))
+                    In, Out = vertices[2][1].label, vertices[1][1].label
+                    push!(leafType[ikey], g.orders[1] * 2 + 1)
+                    push!(leafLoopIndex[ikey], FrontEnds.linear_to_index(labelProd, In)[end]) #the label of LoopPool for each fermionic leaf
+                    push!(leafInTau[ikey], labelProd[In][1])
+                    push!(leafOutTau[ikey], labelProd[Out][1])
+                else
+                    In, Out = vertices[2][1].label, vertices[1][1].label
+                    push!(leafType[ikey], g.orders[2] * 2 + 2)
+                    push!(leafLoopIndex[ikey], FrontEnds.linear_to_index(labelProd, In)[end]) #the label of LoopPool for each bosonic leaf
+                    push!(leafInTau[ikey], labelProd[In][1])
+                    push!(leafOutTau[ikey], labelProd[Out][1])
+                end
             end
-            push!(leafValue[ikey], 1.0)
         end
-        # g.name = "visited"
     end
-    return (leafValue, leafType, leafInTau, leafOutTau, leafLoopIndex), ExtT_index
+    return (leafValue, leafType, leafInTau, leafOutTau, leafLoopIndex)
 end
 
 end

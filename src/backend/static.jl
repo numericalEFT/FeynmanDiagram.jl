@@ -123,8 +123,7 @@ function to_julia_str(graphs::AbstractVector{<:AbstractGraph}; root::AbstractVec
     inds_visitedleaf = Int[]
     inds_visitednode = Int[]
     idx_leafVal = 1
-    # map_leafVal2id = Dict{Int,Int}()  # mapping from the index of the leafVal to the leaf.id
-    map_leafid_validx = Dict{Int,Int}()  # mapping from the leaf.id to the index of the leafVal 
+    map_validx_leaf = Dict{Int,eltype(graphs)}()  # mapping from the index of the leafVal to the leaf graph 
     for graph in graphs
         for g in PostOrderDFS(graph) #leaf first search
             g_id = id(g)
@@ -137,10 +136,8 @@ function to_julia_str(graphs::AbstractVector{<:AbstractGraph}; root::AbstractVec
             if isempty(subgraphs(g)) #leaf
                 g_id in inds_visitedleaf && continue
                 factor_str = factor(g) == 1 ? "" : " * $(factor(g))"
-                # body *= "    $target = leafVal[$(leafMap[g_id])]$factor_str\n "
                 body *= "    $target = leafVal[$idx_leafVal]$factor_str\n "
-                # map_leafVal2id[idx_leafVal] = g_id
-                map_leafid_validx[g_id] = idx_leafVal
+                map_validx_leaf[idx_leafVal] = g
                 idx_leafVal += 1
                 push!(inds_visitedleaf, g_id)
             else
@@ -155,8 +152,7 @@ function to_julia_str(graphs::AbstractVector{<:AbstractGraph}; root::AbstractVec
         end
     end
     tail = "end"
-    # return head * body * tail, map_leafVal2id
-    return head * body * tail, map_leafid_validx
+    return head * body * tail, map_validx_leaf
 end
 
 """
@@ -186,7 +182,7 @@ function compile(graphs::AbstractVector{<:AbstractGraph};
     # this function return a runtime generated function defined by compile()
     func_string, leafmap = to_julia_str(graphs; root=root, name="func_name!")
     func_expr = Meta.parse(func_string)
-    return @RuntimeGeneratedFunction(func_expr)
+    return @RuntimeGeneratedFunction(func_expr), leafmap
 end
 
 # function compile(graphs::AbstractVector{<:AbstractGraph}, leafMap::Dict{Int,Int};

@@ -7,22 +7,17 @@
 - `graphs`: A tuple or vector of graphs.
 - `verbose`: Level of verbosity (default: 0).
 - `normalize`: Optional function to normalize the graphs (default: nothing).
-
-# Returns:
-- A mapping dictionary from the id of each unique leaf node to its index in collect(1:length(leafs)).
 """
 function optimize!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0, normalize=nothing)
     if isempty(graphs)
         return nothing
     else
         graphs = collect(graphs)
-        # leaf_mapping = remove_duplicated_leaves!(graphs, verbose=verbose, normalize=normalize)
         remove_duplicated_leaves!(graphs, verbose=verbose, normalize=normalize)
         flatten_all_chains!(graphs, verbose=verbose)
         merge_all_linear_combinations!(graphs, verbose=verbose)
 
         return graphs
-        # return leaf_mapping
     end
 end
 
@@ -38,12 +33,11 @@ end
 
 # Returns:
 - A tuple/vector of optimized graphs.
-- A mapping dictionary from the id of each unique leaf node to its index in collect(1:length(leafs)).
 """
 function optimize(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0, normalize=nothing)
     graphs_new = deepcopy(graphs)
-    leaf_mapping = optimize!(graphs_new, verbose=verbose, normalize=normalize)
-    return graphs_new, leaf_mapping
+    optimize!(graphs_new, verbose=verbose, normalize=normalize)
+    return graphs_new
 end
 
 """
@@ -193,22 +187,17 @@ end
 - `graphs`: A collection of graphs to be processed.
 
 # Returns:
-- The vector of unique leaf nodes.
-- The vector of unique leaf nodes' index.
-- A mapping dictionary from the id of each unique leaf node to its index in collect(1:length(leafs)).
+- A mapping dictionary from the id of each leaf to the unique leaf node.
 """
 function unique_leaves(graphs::AbstractVector{<:AbstractGraph})
     ############### find the unique Leaves #####################
     unique_graphs = []
-    # unique_graphs_id = Int[]
-    mapping = Dict{Int,eltype{graphs}}()
+    mapping = Dict{Int,eltype(graphs)}()
 
-    idx = 1
     for g in graphs
         flag = true
-        for (ie, e) in enumerate(unique_graphs)
+        for e in unique_graphs
             if isequiv(e, g, :id)
-                # mapping[id(g)] = ie
                 mapping[id(g)] = e
                 flag = false
                 break
@@ -216,13 +205,9 @@ function unique_leaves(graphs::AbstractVector{<:AbstractGraph})
         end
         if flag
             push!(unique_graphs, g)
-            # push!(unique_graphs_id, g.id)
-            # mapping[g.id] = idx
-            # idx += 1
             mapping[id(g)] = g
         end
     end
-    # return unique_graphs, unique_graphs_id, mapping
     return mapping
 end
 
@@ -235,9 +220,6 @@ end
 - `graphs`: A collection of graphs to be processed.
 - `verbose`: Level of verbosity (default: 0).
 - `normalize`: Optional function to normalize the graphs (default: nothing).
-
-# Returns:
-- A mapping dictionary from the id of each unique leaf node to its index in collect(1:length(leafs)).
 """
 function remove_duplicated_leaves!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0, normalize=nothing, kwargs...)
     verbose > 0 && println("remove duplicated leaves.")
@@ -254,27 +236,20 @@ function remove_duplicated_leaves!(graphs::Union{Tuple,AbstractVector{<:Abstract
     sort!(leaves, by=x -> id(x)) #sort the id of the leaves in an asscend order
     unique!(x -> id(x), leaves) #filter out the leaves with the same id number
 
-    # _unique_leaves, uniqueleaves_id, mapping = unique_leaves(leaves)
     mapping = unique_leaves(leaves)
     verbose > 0 && length(leaves) > 0 && println("Number of independent Leaves $(length(leaves)) → $(length(_unique_leaves))")
 
-    # leafmap = Dict{Int,Int}()
     for g in graphs
         for n in PreOrderDFS(g)
             for (si, sub_g) in enumerate(subgraphs(n))
                 if isleaf(sub_g)
-                    # set_subgraph!(n, _unique_leaves[mapping[id(sub_g)]], si)
                     set_subgraph!(n, mapping[id(sub_g)], si)
-                    # if sub_g.id ∈ uniqueleaves_id
-                    # leafmap[sub_g.id] = mapping[sub_g.id]
-                    # end
                 end
             end
         end
     end
 
     return graphs
-    # return leafmap
 end
 
 """
