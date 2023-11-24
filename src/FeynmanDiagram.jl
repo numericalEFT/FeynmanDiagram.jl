@@ -147,6 +147,7 @@ export PropagatorId, BareGreenId, BareInteractionId
 export BareGreenNId, BareHoppingId, GreenNId, ConnectedGreenNId
 export uidreset, toDataFrame, mergeby, plot_tree
 
+
 include("parquet_builder/parquet.jl")
 using .Parquet
 export Parquet
@@ -166,10 +167,7 @@ export addpropagator!, addnode!
 export setroot!, addroot!
 export evalNaive, showTree
 
-include("utility.jl")
-using .Utility
-export Utility
-export taylorexpansion!
+
 
 include("frontend/frontends.jl")
 using .FrontEnds
@@ -180,6 +178,11 @@ include("frontend/GV.jl")
 using .GV
 export GV
 export diagdictGV, leafstates
+
+include("utility.jl")
+using .Utility
+export Utility
+export taylorexpansion!
 # export read_onediagram, read_diagrams
 
 ##################### precompile #######################

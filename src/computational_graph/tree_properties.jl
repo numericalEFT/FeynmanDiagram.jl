@@ -119,7 +119,7 @@ end
 # Arguments:
 - `g::Graph`: graph for which to find the total number of  operations.
 """
-function count_operation(g::Graph)
+function count_operation(g::G) where {G<:AbstractGraph}
     totalsum = 0
     totalprod = 0
     for node in PreOrderDFS(g)
@@ -134,7 +134,7 @@ function count_operation(g::Graph)
     return [totalsum, totalprod]
 end
 
-function count_operation(g::Array{G}) where {G<:Graph}
+function count_operation(g::Vector{G}) where {G<:AbstractGraph}
     visited = Set{Int}()
     totalsum = 0
     totalprod = 0
@@ -156,7 +156,7 @@ function count_operation(g::Array{G}) where {G<:Graph}
 end
 
 
-function count_operation(g::Dict{Vector{Int},G}) where {G<:Graph}
+function count_operation(g::Dict{Vector{Int},G}) where {G<:AbstractGraph}
     visited = Set{Int}()
     totalsum = 0
     totalprod = 0

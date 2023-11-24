@@ -6,18 +6,22 @@ using FeynmanDiagram.Utility:
     taylorexpansion!, build_derivative_backAD!, count_operation
 
 function benchmark_AD(glist::Vector{T}) where {T<:Graph}
-    taylormap = Dict{Int,TaylorSeries{T}}()
+    #taylormap = Dict{Int,TaylorSeries{T}}()
     totaloperation = [0, 0]
     taylorlist = Vector{TaylorSeries{T}}()
     for g in glist
-        @time t, taylormap = taylorexpansion!(g; taylormap=taylormap)
+        var_dependence = Dict{Int,Vector{Bool}}()
+        for leaf in FeynmanDiagram.Leaves(g)
+            var_dependence[leaf.id] = [true for _ in 1:get_numvars()]
+        end
+        @time t, taylormap, from_coeff_map = taylorexpansion!(g, var_dependence)
 
 
         operation = count_operation(t)
         totaloperation = totaloperation + operation
         push!(taylorlist, t)
         print("operation number: $(operation)\n")
-        t_compare = build_derivative_backAD!(g)
+        t_compare, leaftaylor = build_derivative_backAD!(g)
         for (order, coeff) in (t_compare.coeffs)
             @assert (eval!(coeff)) == (eval!(Taylor.taylor_factorial(order) * t.coeffs[order]))
         end
