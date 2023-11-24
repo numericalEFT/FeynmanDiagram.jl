@@ -109,7 +109,7 @@ function to_python_str_ms(graphs::AbstractVector{<:AbstractGraph})
     input = join(input,",")
     output = ["out$(i)" for i in 1:rootidx-1]
     output = join(output,",")
-    head *="def graphfunc($input)\n"
+    head *="def graphfunc($input):\n"
     tail = "    return $output\n"
     # tail*= "def to_StaticGraph(leaf):\n"
     # tail*= "    output = graphfunc(leaf)\n"
