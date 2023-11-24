@@ -103,7 +103,7 @@ function to_python_str_ms(graphs::AbstractVector{<:AbstractGraph})
         end
     end
     tail = "    return graph_list\n"
-    tail*= "def to_StaticGraph(leaf)\n"
+    tail*= "def to_StaticGraph(leaf):\n"
     tail*= "    output = graphfunc(leaf)\n"
     tail*= "    return output"
     expr = head * body * tail
