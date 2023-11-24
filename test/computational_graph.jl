@@ -379,12 +379,13 @@ end
             h = Graph([h1, g5])
             _h = Graph([Graph([g1, g5], subgraph_factors=[-28, 1]), g5], subgraph_factors=[2, 1])
 
-            hvec_op, leafMap = Graphs.optimize(repeat([deepcopy(h)], 3))
-            leaf = rand(2)
+            hvec_op = Graphs.optimize(repeat([deepcopy(h)], 3))
+            # leaf = rand(2)
             @test all(isequiv(h, _h, :id) for h in hvec_op)
-            @test Graphs.eval!(hvec_op[1], leafMap, leaf) ≈ Graphs.eval!(h, leafMap, leaf)
+            # @test Graphs.eval!(hvec_op[1], leafMap, leaf) ≈ Graphs.eval!(h, leafMap, leaf)
+            @test Graphs.eval!(hvec_op[1]) ≈ Graphs.eval!(h)
 
-            leafMap1 = Graphs.optimize!([h])
+            Graphs.optimize!([h])
             @test isequiv(h, _h, :id, :weight)
         end
     end
@@ -621,12 +622,13 @@ end
             h = FeynmanGraph([h1, g5])
             _h = FeynmanGraph([FeynmanGraph([g1, g5], subgraph_factors=[-28, 1]), g5], subgraph_factors=[2, 1])
 
-            hvec_op, leafMap = Graphs.optimize(repeat([deepcopy(h)], 3))
-            leaf = rand(2)
+            hvec_op = Graphs.optimize(repeat([deepcopy(h)], 3))
+            # leaf = rand(2)
             @test all(isequiv(h, _h, :id) for h in hvec_op)
-            @test Graphs.eval!(hvec_op[1], leafMap, leaf) ≈ Graphs.eval!(h, leafMap, leaf)
+            # @test Graphs.eval!(hvec_op[1], leafMap, leaf) ≈ Graphs.eval!(h, leafMap, leaf)
+            @test Graphs.eval!(hvec_op[1]) ≈ Graphs.eval!(h)
 
-            leafMap1 = Graphs.optimize!([h])
+            Graphs.optimize!([h])
             @test isequiv(h, _h, :id, :weight)
         end
     end
