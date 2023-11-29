@@ -79,7 +79,7 @@ Compile a list of Feynman graphs into a string for a julia static function. The 
 """
 function to_julia_str(graphs::AbstractVector{<:AbstractGraph}; root::AbstractVector{Int}=[id(g) for g in graphs],
     name::String="eval_graph!")
-    head = "\nfunction $name(root::AbstractVector, leafVal::AbstractVector)\n "
+    head = "\nfunction $name(root::AbstractVector, leafVal::AbstractVector)\n"
     body = ""
     inds_visitedleaf = Int[]
     inds_visitednode = Int[]
@@ -97,24 +97,89 @@ function to_julia_str(graphs::AbstractVector{<:AbstractGraph}; root::AbstractVec
             if isempty(subgraphs(g)) #leaf
                 g_id in inds_visitedleaf && continue
                 factor_str = factor(g) == 1 ? "" : " * $(factor(g))"
-                body *= "    $target = leafVal[$idx_leafVal]$factor_str\n "
+                body *= "    $target = leafVal[$idx_leafVal]$factor_str\n"
                 map_validx_leaf[idx_leafVal] = g
                 idx_leafVal += 1
                 push!(inds_visitedleaf, g_id)
             else
                 g_id in inds_visitednode && continue
                 factor_str = factor(g) == 1 ? "" : " * $(factor(g))"
-                body *= "    $target = $(to_static(operator(g), subgraphs(g), subgraph_factors(g)))$factor_str\n "
+                body *= "    $target = $(to_static(operator(g), subgraphs(g), subgraph_factors(g)))$factor_str\n"
                 push!(inds_visitednode, g_id)
             end
             if isroot
-                body *= "    $target_root = $target\n "
+                body *= "    $target_root = $target\n"
             end
         end
     end
-    # tail = "end\n "
-    tail = "end "
+    tail = "end"
     return head * body * tail, map_validx_leaf
+end
+
+function julia_to_C_typestr(type::DataType)
+    if type == Float64
+        return "double "
+    elseif type == Float32
+        return "float "
+    elseif type == Int64
+        return "long long "
+    elseif type == Int32
+        return "int "
+    elseif type == ComplexF32
+        return "complex float "
+    elseif type == ComplexF64
+        return "complex double "
+    elseif type <: Array
+        return julia_to_C_typestr(eltype(type)) * "*"
+    else
+        error("Unsupported type")
+    end
+end
+
+function to_Cstr(graphs::AbstractVector{<:AbstractGraph}; root::AbstractVector{Int}=[id(g) for g in graphs],
+    datatype::DataType=_dtype.weight, name::String="eval_graph")
+    # head = "#include <stdio.h>"
+    ctype_str = julia_to_C_typestr(datatype)
+    head = "\nvoid $name($ctype_str*root, $ctype_str*leafVal)\n{\n"
+
+    declare = "    $ctype_str"
+    body = ""
+    inds_visitedleaf = Int[]
+    inds_visitednode = Int[]
+    idx_leafVal = 0
+    map_validx_leaf = Dict{Int,eltype(graphs)}()  # mapping from the index of the leafVal to the leaf graph 
+    for graph in graphs
+        for g in PostOrderDFS(graph) #leaf first search
+            g_id = id(g)
+            target = "g$(g_id)"
+            isroot = false
+            if g_id in root
+                target_root = "root[$(findfirst(x -> x == g_id, root)-1)]"
+                isroot = true
+            end
+            if isempty(subgraphs(g)) #leaf
+                g_id in inds_visitedleaf && continue
+                declare *= " g$g_id,"
+                factor_str = factor(g) == 1 ? "" : " * $(factor(g))"
+                body *= "    $target = leafVal[$idx_leafVal]$factor_str;\n"
+                idx_leafVal += 1
+                map_validx_leaf[idx_leafVal] = g
+                push!(inds_visitedleaf, g_id)
+            else
+                g_id in inds_visitednode && continue
+                declare *= " g$g_id,"
+                factor_str = factor(g) == 1 ? "" : " * $(factor(g))"
+                body *= "    $target = $(to_static(operator(g), subgraphs(g), subgraph_factors(g)))$factor_str;\n"
+                push!(inds_visitednode, g_id)
+            end
+            if isroot
+                body *= "    $target_root = $target;\n"
+            end
+        end
+    end
+    declare = chop(declare) * ";\n"
+    tail = "}"
+    return head * declare * body * tail, map_validx_leaf
 end
 
 """
@@ -148,9 +213,10 @@ function compile(graphs::AbstractVector{<:AbstractGraph};
 end
 
 """
-    compile_code(graphs::AbstractVector{<:AbstractGraph}, filename::String; root::AbstractVector{Int}=[id(g) for g in graphs], func_name="eval_graph!") -> Dict
+    function compile_Julia(graphs::AbstractVector{<:AbstractGraph}, filename::String; 
+        root::AbstractVector{Int}=[id(g) for g in graphs], func_name="eval_graph!")
 
-    Compiles a set of graphs into Julia code and append the generated code to a file. 
+    Compiles a set of graphs into Julia code and append the generated code to a specified file. 
 
 # Arguments
 - `graphs::AbstractVector{<:AbstractGraph}`: An array of graph objects. These graphs are processed to generate Julia code.
@@ -161,10 +227,34 @@ end
 # Returns
 - A dictionary (`leafmap`) that maps the index of the leaf weight's table `leafVal` to the leaf graph.
 """
-function compile_code(graphs::AbstractVector{<:AbstractGraph}, filename::String;
+function compile_Julia(graphs::AbstractVector{<:AbstractGraph}, filename::String;
     root::AbstractVector{Int}=[id(g) for g in graphs], func_name="eval_graph!")
-    # this function return a runtime generated function defined by compile()
     func_string, leafmap = to_julia_str(graphs; root=root, name=func_name)
+    open(filename, "a") do f
+        write(f, func_string)
+    end
+    return leafmap
+end
+
+"""
+    function compile_C(graphs::AbstractVector{<:AbstractGraph}, filename::String; 
+        datatype::DataType=_dtype.weight, root::AbstractVector{Int}=[id(g) for g in graphs], func_name="eval_graph")
+
+    Compiles a set of graphs into C language code and append the generated code to a specified file. 
+
+# Arguments
+- `datatype::DataType`: This type is used for variables types in the generated C code.
+- `graphs::AbstractVector{<:AbstractGraph}`: An array of graph objects. These graphs are processed to generate Julia code.
+- `filename::String`: The name of the file to which the generated code will be appended. The file is created if it does not exist.
+- `root::AbstractVector{Int}` (keyword): An array of integers representing root nodes for each graph in `graphs`. By default, it is an array of IDs obtained by calling `id(g)` for each graph `g` in `graphs`.
+- `func_name::String` (keyword): The base name for the function(s) to be generated. Defaults to `"eval_graph"`.
+
+# Returns
+- A dictionary (`leafmap`) that maps the index of the leaf weight's table `leafVal` to the leaf graph.
+"""
+function compile_C(graphs::AbstractVector{<:AbstractGraph}, filename::String;
+    datatype::DataType=_dtype.weight, root::AbstractVector{Int}=[id(g) for g in graphs], func_name="eval_graph")
+    func_string, leafmap = to_Cstr(graphs; datatype=datatype, root=root, name=func_name)
     open(filename, "a") do f
         write(f, func_string)
     end
