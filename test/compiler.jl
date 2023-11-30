@@ -6,7 +6,7 @@
         subgraphs = [external_vertex(V1[1]), external_vertex(V1[2])]
         g = FeynmanGraph(subgraphs; factor=factor)
         # println(g)
-        gs = Compilers.to_julia_str([g,], name="eval_graph!")
+        gs, leafmap = Compilers.to_julia_str([g,], name="eval_graph!")
         # println(gs)
         gexpr = Meta.parse(gs) # parse string to julia expression
         eval(gexpr) #create the function eval_graph!
@@ -22,7 +22,7 @@
         subgraphs = [external_vertex(V1[1]), external_vertex(V1[2])]
         g = FeynmanGraph(subgraphs; factor=factor)
         # println(g)
-        eval_graph! = Compilers.compile([g,])
+        eval_graph!, leafmap = Compilers.compile([g,])
         root = [0.0,]
         leaf = [1.0, 2.0]
         @test eval_graph!(root, leaf) ≈ (leaf[1] + leaf[2]) * factor
@@ -34,7 +34,7 @@
         function graph_compile(g; name="eval_graph!")
             # the name is not contained inside this function
             # it can leak out to the global scope if the name is not defined outside
-            gs = Compilers.to_julia_str([g,], name=name)
+            gs, leafmap = Compilers.to_julia_str([g,], name=name)
             gexpr = Meta.parse(gs) # parse string to julia expression
             eval(gexpr) #create the function eval_graph!
             return eval_graph!
