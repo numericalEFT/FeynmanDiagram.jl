@@ -1,9 +1,9 @@
-##################### AbstractTrees interface for AbstracGraphs ########################### 
+##################### AbstractTrees interface for AbstractGraphs ########################### 
 
 ## Things that make printing prettier
-AbstractTrees.printnode(io::IO, g::AbstractGraph) = print(io, "\u001b[32m$(g.id)\u001b[0m : $g")
+AbstractTrees.printnode(io::IO, g::AbstractGraph) = print(io, "\u001b[32m$(id(g))\u001b[0m : $g")
 
-## Guarantee type-stable tree iteration for Graphs, StableGraphs, and FeynmanGraphs
+## Guarantee type-stable tree iteration for Graphs and FeynmanGraphs
 AbstractTrees.NodeType(::Graph) = HasNodeType()
 AbstractTrees.NodeType(::FeynmanGraph) = HasNodeType()
 AbstractTrees.nodetype(::Graph{F,W}) where {F,W} = Graph{F,W}
@@ -18,7 +18,7 @@ Base.IteratorEltype(::Type{<:TreeIterator{FeynmanGraph{F,W}}}) where {F,W} = Bas
 Base.eltype(::Type{<:TreeIterator{FeynmanGraph{F,W}}}) where {F,W} = FeynmanGraph{F,W}
 
 function AbstractTrees.children(g::AbstractGraph)
-    return g.subgraphs
+    return subgraphs(g)
 end
 
 ##################### Tree properties ########################### 
@@ -31,7 +31,7 @@ end
 # Arguments:
 - `g::AbstractGraph`: graph to be analyzed
 """
-haschildren(g::AbstractGraph) = isempty(g.subgraphs) == false
+haschildren(g::AbstractGraph) = isempty(subgraphs(g)) == false
 
 """
     function onechild(g::AbstractGraph)
@@ -51,7 +51,7 @@ onechild(g::AbstractGraph) = length(children(g)) == 1
 # Arguments:
 - `g::AbstractGraph`: graph to be analyzed
 """
-isleaf(g::AbstractGraph) = isempty(g.subgraphs)
+isleaf(g::AbstractGraph) = isempty(subgraphs(g))
 
 """
     function isbranch(g::AbstractGraph)
@@ -92,9 +92,9 @@ end
 """
 function isfactorless(g::AbstractGraph)
     if isleaf(g)
-        return isapprox_one(g.factor)
+        return isapprox_one(factor(g))
     else
-        return all(isapprox_one.([g.factor; g.subgraph_factors]))
+        return all(isapprox_one.([factor(g); subgraph_factors(g)]))
     end
 end
 
@@ -108,5 +108,80 @@ end
 """
 function eldest(g::AbstractGraph)
     @assert haschildren(g) "Graph has no children!"
-    return children(g)[1]
+    return subgraph(g)
+end
+
+"""
+    function count_operation(g::Graph)
+
+    Returns the total number of  additions and multiplications in the graph.
+
+# Arguments:
+- `g::Graph`: graph for which to find the total number of  operations.
+"""
+function count_operation(g::G) where {G<:AbstractGraph}
+    totalsum = 0
+    totalprod = 0
+    for node in PreOrderDFS(g)
+        if length(node.subgraphs) > 0
+            if node.operator == Prod
+                totalprod += length(node.subgraphs) - 1
+            elseif node.operator == Sum
+                totalsum += length(node.subgraphs) - 1
+            end
+        end
+    end
+    return [totalsum, totalprod]
+end
+
+function count_operation(g::Vector{G}) where {G<:AbstractGraph}
+    visited = Set{Int}()
+    totalsum = 0
+    totalprod = 0
+    for graph in g
+        for node in PreOrderDFS(graph)
+            if !(node.id in visited)
+                push!(visited, node.id)
+                if length(node.subgraphs) > 0
+                    if node.operator == Prod
+                        totalprod += length(node.subgraphs) - 1
+                    elseif node.operator == Sum
+                        totalsum += length(node.subgraphs) - 1
+                    end
+                end
+            end
+        end
+    end
+    return [totalsum, totalprod]
+end
+
+
+function count_operation(g::Dict{Vector{Int},G}) where {G<:AbstractGraph}
+    visited = Set{Int}()
+    totalsum = 0
+    totalprod = 0
+    for (order, graph) in g
+        for node in PreOrderDFS(graph)
+            if !(node.id in visited)
+                push!(visited, node.id)
+                if length(node.subgraphs) > 0
+                    if node.operator == Prod
+                        totalprod += length(node.subgraphs) - 1
+                    elseif node.operator == Sum
+                        totalsum += length(node.subgraphs) - 1
+                    end
+                end
+            end
+        end
+    end
+    return [totalsum, totalprod]
+end
+
+function count_operation(g::Number)
+    return [0, 0]
+end
+
+
+function count_operation(nothing)
+    return [0, 0]
 end

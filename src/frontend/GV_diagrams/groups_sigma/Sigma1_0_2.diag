@@ -1,32 +1,30 @@
 #Type: SelfEnergy
 #DiagNum: 1
-#Order: 2
-#GNum: 4
+#Order: 1
+#GNum: 2
 #Ver4Num: 1
-#LoopNum: 3
+#LoopNum: 2
 #ExtLoopIndex: 0
 #DummyLoopIndex: 
-#TauNum: 3
+#TauNum: 1
 #ExtTauIndex: 0 1
 #DummyTauIndex: 
 
 # Permutation
- 1  3  2  0 
+ 1  0 
 # SymFactor
 -1.0
 # GType
--2 -2  2 -3 
+ 2 -2
 # VertexBasis
- 0  1  2  2 
- 1  2  2  0 
+ 0  0
+ 0  0
 # LoopBasis
- 1  1  0  1 
- 0  0  1  0 
- 1  0  0  0 
+ 1  1 
+ 1  0 
 # Ver4Legs(InL,OutL,InR,OutR)
- 2  2  1  3 |
+ 1  0  0  1 |
 # WType(Direct,Exchange)
  0  0 |
 # SpinFactor
- 0 -2 
-
+-1

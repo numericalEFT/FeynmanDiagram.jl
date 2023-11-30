@@ -41,5 +41,6 @@ export DiagramId, GenericId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId
 export PropagatorId, BareGreenId, BareInteractionId
 export BareGreenNId, BareHoppingId, GreenNId, ConnectedGreenNId
 export uidreset, toDataFrame, mergeby, plot_tree
+export isleaf
 
 end

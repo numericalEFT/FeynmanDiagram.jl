@@ -98,6 +98,9 @@ export fermionic_annihilation, fermionic_creation, majorana
 export bosonic_annihilation, bosonic_creation, real_classic
 export correlator_order, normal_order
 
+
+
+
 include("computational_graph/ComputationalGraph.jl")
 using .ComputationalGraphs
 export ComputationalGraphs
@@ -109,7 +112,7 @@ export Graph, FeynmanGraph, FeynmanProperties
 
 export isequiv, drop_topology, is_external, is_internal, diagram_type, orders, vertices, topology
 export external_legs, external_indices, external_operators, external_labels
-export linear_combination, feynman_diagram, propagator, interaction, external_vertex
+export multi_product, linear_combination, feynman_diagram, propagator, interaction, external_vertex
 # export DiagramType, Interaction, ExternalVertex, Propagator, SelfEnergy, VertexDiag, GreenDiag, GenericDiag
 
 # export standardize_order!
@@ -117,25 +120,19 @@ export linear_combination, feynman_diagram, propagator, interaction, external_ve
 # export 𝐺ᶠ, 𝐺ᵇ, 𝐺ᵠ, 𝑊, Green2, Interaction
 # export Coupling_yukawa, Coupling_phi3, Coupling_phi4, Coupling_phi6
 export haschildren, onechild, isleaf, isbranch, ischain, isfactorless, eldest
-export relabel!, standardize_labels!, replace_subgraph!, merge_linear_combination!, merge_chains!
-export relabel, standardize_labels, replace_subgraph, merge_linear_combination, merge_chains
+export relabel!, standardize_labels!, replace_subgraph!, merge_linear_combination!, merge_multi_product!, merge_chains!
+export relabel, standardize_labels, replace_subgraph, merge_linear_combination, merge_multi_product, merge_chains
 
 export optimize!, optimize, merge_all_chains!, merge_all_linear_combinations!, remove_duplicated_leaves!
+
+include("TaylorSeries/TaylorSeries.jl")
+using .Taylor
+export Taylor
+
 
 include("backend/compiler.jl")
 using .Compilers
 export Compilers
-
-include("frontend/frontends.jl")
-using .FrontEnds
-export FrontEnds
-export LabelProduct
-
-include("frontend/GV.jl")
-using .GV
-export GV
-export diagdictGV, leafstates
-# export read_onediagram, read_diagrams
 
 include("diagram_tree/DiagTree.jl")
 using .DiagTree
@@ -149,6 +146,7 @@ export DiagramId, GenericId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId
 export PropagatorId, BareGreenId, BareInteractionId
 export BareGreenNId, BareHoppingId, GreenNId, ConnectedGreenNId
 export uidreset, toDataFrame, mergeby, plot_tree
+
 
 include("parquet_builder/parquet.jl")
 using .Parquet
@@ -168,6 +166,24 @@ export Component, ExpressionTree
 export addpropagator!, addnode!
 export setroot!, addroot!
 export evalNaive, showTree
+
+
+
+include("frontend/frontends.jl")
+using .FrontEnds
+export FrontEnds
+export LabelProduct
+
+include("frontend/GV.jl")
+using .GV
+export GV
+export diagdictGV, leafstates
+
+include("utility.jl")
+using .Utility
+export Utility
+export taylorexpansion!
+# export read_onediagram, read_diagrams
 
 ##################### precompile #######################
 # precompile as the final step of the module definition:
@@ -199,5 +215,6 @@ if ccall(:jl_generating_output, Cint, ()) == 1   # if we're precompiling the pac
         ExprTree.build(ver4.diagram)
     end
 end
+
 
 end
