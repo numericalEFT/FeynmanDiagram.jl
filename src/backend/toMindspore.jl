@@ -68,7 +68,6 @@ end
     
 Compile a list of graphs into a string for a python static function and output a python script which support the static graph representation in mindspore framework.
 """
-
 function to_python_str_ms(graphs::AbstractVector{<:AbstractGraph})
     head = "import mindspore as ms\n@ms.jit\n"
     # head *= "def graphfunc(leaf):\n"
@@ -78,6 +77,7 @@ function to_python_str_ms(graphs::AbstractVector{<:AbstractGraph})
     root = [id(g) for g in graphs]
     inds_visitedleaf = Int[]
     inds_visitednode = Int[]
+    gid_to_leafid = Dict{String, Int64}()
     rootidx = 1
     for graph in graphs
         for g in PostOrderDFS(graph) #leaf first search
@@ -91,6 +91,7 @@ function to_python_str_ms(graphs::AbstractVector{<:AbstractGraph})
                 g_id in inds_visitedleaf && continue
                 factor_str = factor(g) == 1 ? "" : " * $(factor(g))"
                 body *= "    $target = l$(leafidx)$factor_str\n"
+                gid_to_leafid[target] = leafidx
                 leafidx += 1
                 push!(inds_visitedleaf, g_id)
             else
@@ -119,16 +120,6 @@ function to_python_str_ms(graphs::AbstractVector{<:AbstractGraph})
     # return head * body * tail
     f = open("GraphFunc.py", "w")
     write(f, expr)
-    return expr
+    return expr, leafidx-1, gid_to_leafid
 end
 
-# function to_mindspore_graph(graphs::AbstractVector{<:AbstractGraph})
-#     pyexpr = to_python_str_ms(graphs)
-#     py"""
-#         import mindspore as ms
-#         exec($pyexpr)
-#         ms_graph = jit(fn=graphfunc)
-#         out = ms_graph()
-#     """
-#     return py"out"
-# end
