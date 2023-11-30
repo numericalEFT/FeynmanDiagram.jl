@@ -82,7 +82,7 @@ end
 
 
 @testset "Taylor AD of Sigma FeynmanGraph" begin
-    dict_g, lp, leafmap = diagdictGV(:sigma, [(2, 0, 0), (2, 0, 1), (2, 0, 2), (2, 1, 0), (2, 1, 1), (2, 2, 0), (2, 1, 2), (2, 2, 2)])
+    dict_g, lp = diagdictGV(:sigma, [(2, 0, 0), (2, 0, 1), (2, 0, 2), (2, 1, 0), (2, 1, 1), (2, 2, 0), (2, 1, 2), (2, 2, 2)])
 
     g = dict_g[(2, 0, 0)]
 
