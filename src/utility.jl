@@ -29,14 +29,14 @@ using ..Taylor
 - `to_coeff_map::Dict{Int,TaylorSeries}` A dicitonary that maps id of each node of target graph to its correponding taylor series.
 `from_coeff_map::Dict{Int,Tuple{Int,Vector{Bool}}}` A dicitonary that maps a taylor coefficient to its owner FeynmanGraph. The key should be the id of coefficient graph, and value should be a tuple of (feynmangraph.id, order).
 """
-function taylorexpansion!(graph::G, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}(); to_coeff_map::Dict{Int,TaylorSeries{G}}=Dict{Int,TaylorSeries{G}}(), from_coeff_map::Dict{Int,Tuple{Int,Vector{Int}}}=Dict{Int,Tuple{Int,Vector{Int}}}()) where {G<:Graph}
+function taylorexpansion!(graph::G, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}(); to_coeff_map::Dict{Int,TaylorSeries{G}}=Dict{Int,TaylorSeries{G}}(), from_coeff_map::Dict{Int,Tuple{Int,Vector{Int}}}=Dict{Int,Tuple{G,Vector{Int}}}()) where {G<:Graph}
     if haskey(to_coeff_map, graph.id) #If already exist, use taylor series in to_coeff_map.
         if isleaf(graph)
             for (order, coeff) in to_coeff_map[graph.id].coeffs
                 if haskey(from_coeff_map, coeff.id)
-                    @assert from_coeff_map[coeff.id] == (graph.id, order) "The graph g$(graph.id) is mapped to two different leaf taylor series!"
+                    @assert from_coeff_map[coeff.id] == (graph, order) "The graph g$(graph.id) is mapped to two different leaf taylor series!"
                 else
-                    from_coeff_map[coeff.id] = (graph.id, order)
+                    from_coeff_map[coeff.id] = (graph, order)
                 end
             end
         end
@@ -58,7 +58,7 @@ function taylorexpansion!(graph::G, var_dependence::Dict{Int,Vector{Bool}}=Dict{
                 coeff = Graph([]; operator=ComputationalGraphs.Sum(), factor=graph.factor)
                 result.coeffs[o] = coeff
             end
-            from_coeff_map[result.coeffs[o].id] = (graph.id, o)
+            from_coeff_map[result.coeffs[o].id] = (graph, o)
         end
         to_coeff_map[graph.id] = result
         return result, to_coeff_map, from_coeff_map
@@ -84,9 +84,9 @@ function taylorexpansion!(graph::FeynmanGraph{F,W}, var_dependence::Dict{Int,Vec
         if isleaf(graph)
             for (order, coeff) in to_coeff_map[graph.id].coeffs
                 if haskey(from_coeff_map, coeff.id)
-                    @assert from_coeff_map[coeff.id] == (graph.id, order) "The graph g$(graph.id) is mapped to two different leaf taylor series!"
+                    @assert from_coeff_map[coeff.id] == (graph, order) "The graph g$(graph.id) is mapped to two different leaf taylor series!"
                 else
-                    from_coeff_map[coeff.id] = (graph.id, order)
+                    from_coeff_map[coeff.id] = (graph, order)
                 end
             end
         end
@@ -104,7 +104,7 @@ function taylorexpansion!(graph::FeynmanGraph{F,W}, var_dependence::Dict{Int,Vec
             o = collect(order)
             coeff = Graph([]; operator=ComputationalGraphs.Sum(), factor=graph.factor)
             result.coeffs[o] = coeff
-            from_coeff_map[coeff.id] = (graph.id, o)
+            from_coeff_map[coeff.id] = (graph, o)
         end
         to_coeff_map[graph.id] = result
         return result, to_coeff_map, from_coeff_map
@@ -130,9 +130,9 @@ function taylorexpansion!(graph::Diagram{W}, var_dependence::Dict{Int,Vector{Boo
         if isempty(graph.subdiagram)
             for (order, coeff) in to_coeff_map[graph.hash].coeffs
                 if haskey(from_coeff_map, coeff.id)
-                    @assert from_coeff_map[coeff.id] == (graph.hash, order) "The graph g$(graph.hash) is mapped to two different leaf taylor series!"
+                    @assert from_coeff_map[coeff.id] == (graph, order) "The graph g$(graph.hash) is mapped to two different leaf taylor series!"
                 else
-                    from_coeff_map[coeff.id] = (graph.hash, order)
+                    from_coeff_map[coeff.id] = (graph, order)
                 end
             end
         end
@@ -150,7 +150,7 @@ function taylorexpansion!(graph::Diagram{W}, var_dependence::Dict{Int,Vector{Boo
             o = collect(order)
             coeff = Graph([]; operator=ComputationalGraphs.Sum(), factor=graph.factor)
             result.coeffs[o] = coeff
-            from_coeff_map[coeff.id] = (graph.hash, o)
+            from_coeff_map[coeff.id] = (graph, o)
         end
         to_coeff_map[graph.hash] = result
         return result, to_coeff_map, from_coeff_map
