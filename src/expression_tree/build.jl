@@ -1,20 +1,20 @@
-function build(diags::Union{Diagram,Tuple,AbstractVector}, hasLoop=true; verbose::Int=0, normalize=nothing)
+function build(diags::Union{Diagram,Tuple,AbstractVector}, loopDim::Int, hasLoop=true; verbose::Int=0, normalize=nothing)
     if isempty(diags)
         return nothing
     else
         diags = collect(diags)
         @assert eltype(diags) <: Diagram "Diagram struct expected for $diags"
-        return _build(diags, hasLoop; verbose=verbose, normalize=normalize)
+        return _build(diags, loopDim, hasLoop; verbose=verbose, normalize=normalize)
     end
 end
 
-function _build(diags::Vector{Diagram{W}}, hasLoop=true; verbose::Int=0, normalize=nothing) where {W}
+function _build(diags::Vector{Diagram{W}}, loopDim::Int, hasLoop=true; verbose::Int=0, normalize=nothing) where {W}
     # println(diags)
     @assert all(d -> (d.id.para == diags[1].id.para), diags) "Parameters of all diagrams shoud be the same!"
 
     DiagTree.optimize!(diags, verbose=verbose, normalize=normalize)
 
-    tree = newExprTree(diags[1].id.para::DiagPara{W}, :none, hasLoop)
+    tree = newExprTree(diags[1].id.para::DiagPara{W}, loopDim, :none, hasLoop)
 
     # nodepool = CachedPool(:node, Node{DiagramId,W}, W)
 
@@ -54,9 +54,9 @@ function operator(op::Operator)
     end
 end
 
-function newExprTree(para::DiagPara{W}, name::Symbol=:none, hasLoop=true) where {W}
+function newExprTree(para::DiagPara{W}, loopDim::Int, name::Symbol=:none, hasLoop=true) where {W}
     if hasLoop
-        Kpool = LoopPool(:K, para.loopDim, para.totalLoopNum, Float64)
+        Kpool = LoopPool(:K, loopDim, para.totalLoopNum, Float64)
     else
         Kpool = LoopPool(:K, 0, para.totalLoopNum, Float64)
     end

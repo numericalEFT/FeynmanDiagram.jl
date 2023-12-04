@@ -66,7 +66,7 @@ end
         for leaf in Leaves(G)
             t = taylormap[leaf.id]
             for (order, coeff) in t.coeffs
-                @test from_coeff_map[coeff.id] == (leaf.id, order)
+                @test from_coeff_map[coeff.id] == (leaf, order)
             end
         end
         T_compare, taylormap_compare = build_derivative_backAD!(G)
@@ -92,7 +92,7 @@ end
     for leaf in Leaves(g[1][1])
         taylor = taylormap[leaf.id]
         for (order, coeff) in taylor.coeffs
-            @test from_coeff_map[coeff.id] == (leaf.id, order)
+            @test from_coeff_map[coeff.id] == (leaf, order)
         end
     end
     for (order, graph) in dict_g
@@ -126,7 +126,7 @@ function getdiagram(spin=2.0, D=3, Nk=4, Nt=2)
     # We only consider the direct part of the above diagram
 
     paraG = DiagParaF64(type=GreenDiag,
-        innerLoopNum=0, totalLoopNum=Nk, loopDim=D,
+        innerLoopNum=0, totalLoopNum=Nk,
         hasTau=true, totalTauNum=Nt)
     paraV = paraG
 
@@ -222,7 +222,7 @@ end
         if isempty(leaf.subdiagram)
             taylor = taylormap[leaf.hash]
             for (order, coeff) in taylor.coeffs
-                @test from_coeff_map[coeff.id] == (leaf.hash, order)
+                @test from_coeff_map[coeff.id] == (leaf, order)
             end
         end
     end

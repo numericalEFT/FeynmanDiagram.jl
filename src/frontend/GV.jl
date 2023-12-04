@@ -41,9 +41,6 @@ function eachorder_diag(type::Symbol, order::Int, GOrder::Int=0, VerOrder::Int=0
         filename = string(@__DIR__, "/GV_diagrams/groups_spin/Polar$(order)_$(VerOrder)_$(GOrder).diag")
     elseif type == :chargePolar
         filename = string(@__DIR__, "/GV_diagrams/groups_charge/Polar$(order)_$(VerOrder)_$(GOrder).diag")
-    elseif type == :sigma_old
-        diagtype = type
-        filename = string(@__DIR__, "/GV_diagrams/groups_sigma_old/Sigma$(order)_$(VerOrder)_$(GOrder).diag")
     elseif type == :sigma
         diagtype = type
         filename = string(@__DIR__, "/GV_diagrams/groups_sigma/Sigma$(order)_$(VerOrder)_$(GOrder).diag")
@@ -87,10 +84,7 @@ A tuple `(dict_graphs, fermi_labelProd, bose_labelProd, leafMap)` where
 function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false;
     MinOrder::Int=1, spinPolarPara::Float64=0.0)
     dict_graphs = Dict{Tuple{Int,Int,Int},Tuple{Vector{FeynmanGraph{_dtype.factor,_dtype.weight}},Vector{Vector{Int}}}}()
-    if type == :sigma_old
-        MaxLoopNum = MaxOrder + 2
-        tau_labels = collect(1:MaxLoopNum)
-    elseif type == :sigma
+    if type == :sigma
         MaxLoopNum = MaxOrder + 1
         tau_labels = collect(1:MaxLoopNum-1)
     elseif type in [:chargePolar, :spinPolar, :green]
@@ -160,10 +154,7 @@ A tuple `(dict_graphs, fermi_labelProd, bose_labelProd, leafMap)` where
 """
 function diagdictGV(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}; spinPolarPara::Float64=0.0)
     dict_graphs = Dict{Tuple{Int,Int,Int},Tuple{Vector{FeynmanGraph{_dtype.factor,_dtype.weight}},Vector{Vector{Int}}}}()
-    if type == :sigma_old
-        MaxLoopNum = maximum([key[1] for key in gkeys]) + 2
-        tau_labels = collect(1:MaxLoopNum)
-    elseif type == :sigma
+    if type == :sigma
         MaxLoopNum = maximum([key[1] for key in gkeys]) + 1
         tau_labels = collect(1:MaxLoopNum-1)
     elseif type in [:chargePolar, :spinPolar, :green]
@@ -256,6 +247,71 @@ function leafstates(leaf_maps::Vector{Dict{Int,G}}, labelProd::LabelProduct) whe
         end
     end
     return (leafValue, leafType, leafInTau, leafOutTau, leafLoopIndex)
+end
+
+
+function diagPara(type, isDynamic, spin, order, filter, transferLoop)
+    inter = [FeynmanDiagram.Interaction(ChargeCharge, isDynamic ? [Instant, Dynamic] : [Instant,]),]  #instant charge-charge interaction
+    return DiagParaF64(
+        type=type,
+        innerLoopNum=order - 1,
+        hasTau=true,
+        spin=spin,
+        # firstLoopIdx=4,
+        interaction=inter,
+        filter=filter,
+        transferLoop=transferLoop
+    )
+end
+
+# function parquet(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}; spinPolarPara::Float64=0.0,
+function parquet(type::Symbol, MaxOrder::Int, has_counterterm::Bool=true; MinOrder::Int=1,
+    spinPolarPara::Float64=0.0, isDynamic=false, filter=[NoHartree])
+    # spinPolarPara::Float64=0.0, isDynamic=false, channel=[PHr, PHEr, PPr], filter=[NoHartree])
+
+    if type == :freeEnergy
+        diagtype = VaccumDiag
+    elseif type == :sigma
+        diagtype = SigmaDiag
+    elseif type == :green
+        diagtype = :GreenDiag
+    elseif type == :chargePolar
+        diagtype = PolarDiag
+    end
+
+    spin = 2.0 / (spinPolarPara + 1)
+    diagpara = Vector{DiagParaF64}()
+    dict_graphs = Dict{Tuple{Int,Int,Int},Tuple{Vector{Graph{_dtype.factor,_dtype.weight}},Vector{Vector{Int}}}}()
+
+    KinL, KoutL, KinR = zeros(16), zeros(16), zeros(16)
+    KinL[1], KoutL[2], KinR[3] = 1.0, 1.0, 1.0
+
+    if has_counterterm
+        set_variables("x y"; orders=[0, 0])
+        for order in MinOrder:MaxOrder
+            para = diagpara(isDynamic, spin, order, filter, KinL - KoutL)
+            # legK = [DiagTree.getK(para.totalLoopNum + 3, 1), DiagTree.getK(para.totalLoopNum + 3, 2), DiagTree.getK(para.totalLoopNum + 3, 3)]
+            # d::Vector{Diagram{Float64}} = Parquet.vertex4(para, legK, channel).diagram
+            d::Vector{Diagram{Float64}} = Parquet.build(para).diagram
+            propagator_var = Dict(DiagTree.BareGreenId => [true, false], DiagTree.BareInteractionId => [false, true]) # Specify variable dependence of fermi (first element) and bose (second element) particles.
+            t, taylormap, from_coeff_map = taylorexpansion!(root, propagator_var)
+            # t, taylormap = taylorexpansion!(root, propagator_var)
+        end
+    else
+        for order in MinOrder:MaxOrder
+            set_variables("x y"; orders=[MaxOrder - order, MaxOrder - order])
+            para = diagpara(isDynamic, spin, order, filter, KinL - KoutL)
+            # diagpara = Vector{DiagParaF64}()
+            # legK = [DiagTree.getK(para.totalLoopNum + 3, 1), DiagTree.getK(para.totalLoopNum + 3, 2), DiagTree.getK(para.totalLoopNum + 3, 3)]
+            # d::Vector{Diagram{Float64}} = Parquet.vertex4(para, legK, channel).diagram
+            d::Vector{Diagram{Float64}} = Parquet.vertex4(para).diagram
+
+            propagator_var = Dict(DiagTree.BareGreenId => [true, false], DiagTree.BareInteractionId => [false, true]) # Specify variable dependence of fermi (first element) and bose (second element) particles.
+            t, taylormap, from_coeff_map = taylorexpansion!(root, propagator_var)
+        end
+    end
+
+    return t, taylormap, from_coeff_map
 end
 
 end

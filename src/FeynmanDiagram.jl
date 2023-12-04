@@ -212,7 +212,7 @@ if ccall(:jl_generating_output, Cint, ()) == 1   # if we're precompiling the pac
         DiagTree.derivative(ver4.diagram, BareGreenId)
         DiagTree.derivative(ver4.diagram, BareInteractionId)
         # DiagTree.removeHartreeFock!(ver4.diagram)
-        ExprTree.build(ver4.diagram)
+        ExprTree.build(ver4.diagram, 3)
     end
 end
 
