@@ -12,6 +12,7 @@
 - `operator::DataType`  node operation. Addition and multiplication are natively supported via operators Sum and Prod, respectively. Should be a concrete subtype of `AbstractOperator`.
 - `factor::F`  a number representing the total scalar multiplicative factor for the diagram.
 - `weight::W`  the weight of this node
+- `properties::Any` extra information of Green's functions.
 
 # Example:
 ```julia-repl
@@ -37,6 +38,7 @@ mutable struct Graph{F<:Number,W} <: AbstractGraph # Graph
     factor::F
     weight::W
 
+    properties::Any
     """
         function Graph(subgraphs::AbstractVector; name="", operator::AbstractOperator=Sum(),
             ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype))
@@ -55,13 +57,13 @@ mutable struct Graph{F<:Number,W} <: AbstractGraph # Graph
     - `weight`  the weight of this node
     """
     function Graph(subgraphs::AbstractVector; subgraph_factors=one.(eachindex(subgraphs)), name="", operator::AbstractOperator=Sum(),
-        orders=zeros(Int, 16), ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype)
+        orders=zeros(Int, 16), ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype), properties=nothing
     )
         if typeof(operator) <: Power
             @assert length(subgraphs) == 1 "Graph with Power operator must have one and only one subgraph."
         end
         # @assert allunique(subgraphs) "all subgraphs must be distinct."
-        return new{ftype,wtype}(uid(), name, orders, subgraphs, subgraph_factors, typeof(operator), factor, weight)
+        return new{ftype,wtype}(uid(), name, orders, subgraphs, subgraph_factors, typeof(operator), factor, weight, properties)
     end
 end
 
@@ -74,6 +76,7 @@ orders(g::Graph) = g.orders
 operator(g::Graph) = g.operator
 factor(g::Graph) = g.factor
 weight(g::Graph) = g.weight
+properties(g::Graph) = g.properties
 subgraph(g::Graph, i=1) = g.subgraphs[i]
 subgraphs(g::Graph) = g.subgraphs
 subgraphs(g::Graph, indices::AbstractVector{Int}) = g.subgraphs[indices]
@@ -89,6 +92,7 @@ set_operator!(g::Graph, operator::Type{<:AbstractOperator}) = (g.operator = oper
 set_operator!(g::Graph, operator::AbstractOperator) = (g.operator = typeof(operator))
 set_factor!(g::Graph{F,W}, factor) where {F,W} = (g.factor = F(factor))
 set_weight!(g::Graph{F,W}, weight) where {F,W} = (g.weight = W(weight))
+set_properties!(g::Graph, properties) = (g.properties = properties)
 set_subgraph!(g::Graph{F,W}, subgraph::Graph{F,W}, i=1) where {F,W} = (g.subgraphs[i] = subgraph)
 set_subgraphs!(g::Graph{F,W}, subgraphs::Vector{Graph{F,W}}) where {F,W} = (g.subgraphs = subgraphs)
 set_subgraphs!(g::Graph{F,W}, subgraphs::Vector{Graph{F,W}}, indices::AbstractVector{Int}) where {F,W} = (g.subgraphs[indices] = subgraphs)

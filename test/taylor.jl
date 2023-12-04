@@ -62,13 +62,7 @@ end
                 var_dependence[leaf.id] = [true for _ in 1:get_numvars()]
             end
         end
-        T, taylormap, from_coeff_map = taylorexpansion!(G, var_dependence)
-        for leaf in Leaves(G)
-            t = taylormap[leaf.id]
-            for (order, coeff) in t.coeffs
-                @test from_coeff_map[coeff.id] == (leaf.id, order)
-            end
-        end
+        T, taylormap = taylorexpansion!(G, var_dependence)
         T_compare, taylormap_compare = build_derivative_backAD!(G)
         leafmap1, leafvec1, leafmap2, leafvec2 = assign_random_numbers(G, taylormap, taylormap_compare)
         for (order, coeff) in T_compare.coeffs
@@ -88,13 +82,8 @@ end
 
     set_variables("x y", orders=[2, 2])
     propagator_var = ([true, false], [false, true]) # Specify variable dependence of fermi (first element) and bose (second element) particles.
-    t, taylormap, from_coeff_map = taylorexpansion!(g[1][1], propagator_var)
-    for leaf in Leaves(g[1][1])
-        taylor = taylormap[leaf.id]
-        for (order, coeff) in taylor.coeffs
-            @test from_coeff_map[coeff.id] == (leaf.id, order)
-        end
-    end
+    t, taylormap = taylorexpansion!(g[1][1], propagator_var)
+
     for (order, graph) in dict_g
         if graph[2][1] == g[2][1]
             idx = 1
@@ -217,15 +206,8 @@ end
     set_variables("x y"; orders=[2, 2])
 
     propagator_var = Dict(DiagTree.BareGreenId => [true, false], DiagTree.BareInteractionId => [false, true]) # Specify variable dependence of fermi (first element) and bose (second element) particles.
-    t, taylormap, from_coeff_map = taylorexpansion!(root, propagator_var)
-    for leaf in PostOrderDFS(root)
-        if isempty(leaf.subdiagram)
-            taylor = taylormap[leaf.hash]
-            for (order, coeff) in taylor.coeffs
-                @test from_coeff_map[coeff.id] == (leaf.hash, order)
-            end
-        end
-    end
+    t, taylormap = taylorexpansion!(root, propagator_var)
+
     taylorleafmap, taylorleafvec = assign_leaves(root, taylormap)
     @test eval!(t.coeffs[[0, 0]], taylorleafmap, taylorleafvec) ≈ root.weight
     @test eval!(t.coeffs[[0, 1]], taylorleafmap, taylorleafvec) ≈ droot_dv.weight / taylor_factorial([0, 1])
