@@ -65,14 +65,20 @@ end
 
 """
     function to_python_str(graphs::AbstractVector{<:AbstractGraph})
-    
-Compile a list of graphs into a string for a python static function and output a python script which support the mindspore and jax framework.
+    Compile a list of graphs into a string for a python static function and output a python script which support the mindspore and jax framework.
+
+    # Arguments:
+    - `graphs`  vector of computational graphs
+    - `framework`  the type of the python frameworks, including `:jax` and `mindspore`.
 """
-function to_python_str(graphs::AbstractVector{<:AbstractGraph})
-    head = ""
-    # head *= "import mindspore as ms\n@ms.jit\n"
-    # head *= "def graphfunc(leaf):\n"
-    # body = "    graph_list = []\n"
+function to_python_str(graphs::AbstractVector{<:AbstractGraph}, framework::Symbol=:jax)
+    if framework == :jax
+        head = ""
+    elseif framework == :mindspore
+        head = "import mindspore as ms\n@ms.jit\n"
+    else 
+        error("no support for $type framework")
+    end
     body = ""
     leafidx = 1
     root = [id(g) for g in graphs]
