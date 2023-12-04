@@ -167,7 +167,10 @@ export addpropagator!, addnode!
 export setroot!, addroot!
 export evalNaive, showTree
 
-
+include("utility.jl")
+using .Utility
+export Utility
+export taylorexpansion!
 
 include("frontend/frontends.jl")
 using .FrontEnds
@@ -177,13 +180,8 @@ export LabelProduct
 include("frontend/GV.jl")
 using .GV
 export GV
-export diagdictGV, leafstates
+export diagdictGV, diagdict_parquet, leafstates, leafstates_diagtree
 
-include("utility.jl")
-using .Utility
-export Utility
-export taylorexpansion!
-# export read_onediagram, read_diagrams
 
 ##################### precompile #######################
 # precompile as the final step of the module definition:

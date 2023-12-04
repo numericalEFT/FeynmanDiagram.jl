@@ -7,7 +7,6 @@ import ..ComputationalGraphs: count_operation
 using ..ComputationalGraphs.AbstractTrees
 using ..DiagTree
 using ..DiagTree: Diagram, PropagatorId, BareGreenId, BareInteractionId
-using ..FrontEnds: LabelProduct
 using ..Taylor
 
 @inline apply(::Type{ComputationalGraphs.Sum}, diags::Vector{T}, factors::Vector{F}) where {T<:TaylorSeries,F<:Number} = sum(d * f for (d, f) in zip(diags, factors))
