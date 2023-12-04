@@ -64,12 +64,13 @@ function to_pystatic(::Type{ComputationalGraphs.Power{N}}, subgraphs::Vector{Fey
 end
 
 """
-    function to_julia_str(graphs::AbstractVector{<:AbstractGraph})
+    function to_python_str(graphs::AbstractVector{<:AbstractGraph})
     
-Compile a list of graphs into a string for a python static function and output a python script which support the static graph representation in mindspore framework.
+Compile a list of graphs into a string for a python static function and output a python script which support the mindspore and jax framework.
 """
-function to_python_str_ms(graphs::AbstractVector{<:AbstractGraph})
-    head = "import mindspore as ms\n@ms.jit\n"
+function to_python_str(graphs::AbstractVector{<:AbstractGraph})
+    head = ""
+    # head *= "import mindspore as ms\n@ms.jit\n"
     # head *= "def graphfunc(leaf):\n"
     # body = "    graph_list = []\n"
     body = ""
