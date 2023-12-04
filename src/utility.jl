@@ -45,7 +45,7 @@ function taylorexpansion!(graph::G, var_dependence::Dict{Int,Vector{Bool}}=Dict{
             if sum(o) == 0      # For a graph the zero order taylor coefficient is just itself.
                 result.coeffs[o] = graph
             else
-                coeff = Graph([]; operator=ComputationalGraphs.Sum(), factor=graph.factor, properties=(graph.properties, o))
+                coeff = Graph([]; operator=ComputationalGraphs.Sum(), factor=graph.factor, properties=graph.properties, orders=o)
                 result.coeffs[o] = coeff
             end
         end
@@ -81,7 +81,7 @@ function taylorexpansion!(graph::FeynmanGraph{F,W}, var_dependence::Dict{Int,Vec
         result = TaylorSeries{Graph{F,W}}()
         for order in collect(Iterators.product(ordtuple...)) #varidx specifies the variables graph depends on. Iterate over all taylor coefficients of those variables.
             o = collect(order)
-            coeff = Graph([]; operator=ComputationalGraphs.Sum(), factor=graph.factor, properties=(graph.properties, o))
+            coeff = Graph([]; operator=ComputationalGraphs.Sum(), factor=graph.factor, properties=graph.properties, orders=o)
             result.coeffs[o] = coeff
         end
         to_coeff_map[graph.id] = result
@@ -116,7 +116,7 @@ function taylorexpansion!(graph::Diagram{W}, var_dependence::Dict{Int,Vector{Boo
         result = TaylorSeries{Graph{W,W}}()
         for order in collect(Iterators.product(ordtuple...)) #varidx specifies the variables graph depends on. Iterate over all taylor coefficients of those variables.
             o = collect(order)
-            coeff = Graph([]; operator=ComputationalGraphs.Sum(), factor=graph.factor, properties=(graph.id, o))
+            coeff = Graph([]; operator=ComputationalGraphs.Sum(), factor=graph.factor, properties=graph.id, orders=o)
             result.coeffs[o] = coeff
         end
         to_coeff_map[graph.hash] = result
