@@ -10,5 +10,6 @@ RuntimeGeneratedFunctions.init(Compilers)
 
 include("static.jl")
 include("compiler_python.jl")
+include("to_dot.jl")
 
 end

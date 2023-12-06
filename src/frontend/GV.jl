@@ -124,6 +124,7 @@ function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false;
                     key = (order, GOrder, VerOrder)
                     dict_graphs[key] = (gvec, extT_labels)
                     IR.optimize!(gvec)
+                    IR.optimize!(gvec)
                 end
             end
         end
@@ -189,6 +190,7 @@ function diagdictGV(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}; spinPolarPa
         gvec, labelProd, extT_labels = eachorder_diag(type, key...;
             labelProd=labelProd, spinPolarPara=spinPolarPara)
         dict_graphs[key] = (gvec, extT_labels)
+        IR.optimize!(gvec)
         IR.optimize!(gvec)
         # append!(graphvector, gvec)
     end
