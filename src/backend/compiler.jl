@@ -9,6 +9,6 @@ using ..RuntimeGeneratedFunctions
 RuntimeGeneratedFunctions.init(Compilers)
 
 include("static.jl")
-include("toMindspore.jl")
+include("compiler_python.jl")
 
 end
