@@ -181,7 +181,7 @@ end
 
         para = DiagParaF64(
             type=Ver4Diag,
-            loopDim=Kdim,
+            # loopDim=Kdim,
             isFermi=isFermi,
             hasTau=true,
             innerLoopNum=loopNum,
@@ -206,7 +206,7 @@ end
         # DiagTreeNew.plot_tree(diags[2])
 
         ################### ExprTree ###################################
-        tree = ExprTree.build(diags.diagram)
+        tree = ExprTree.build(diags.diagram, Kdim)
         # println("root", root)
 
         ################### original Parquet builder ###################################
@@ -234,7 +234,7 @@ end
 
 
             # optdiags = DiagTree.optimize!(diags.diagram)
-            opttree = ExprTree.build(diags.diagram)
+            opttree = ExprTree.build(diags.diagram, Kdim)
             ExprTree.evalKT!(opttree, varK, varT; eval=evalPropagator)
             w1eopt = [opttree[1], opttree[2]]
 
@@ -301,7 +301,7 @@ end
 
         para = DiagParaF64(
             type=SigmaDiag,
-            loopDim=Kdim,
+            # loopDim=Kdim,
             hasTau=true,
             innerLoopNum=loopNum,
             totalLoopNum=loopNum + 1,
@@ -358,7 +358,7 @@ end
     function buildG(loopNum, extT; Kdim=3, spin=2, interactionTauNum=1, filter=[NoHartree,], isFermi=true)
         para = DiagParaF64(
             type=GreenDiag,
-            loopDim=Kdim,
+            # loopDim=Kdim,
             hasTau=true,
             innerLoopNum=loopNum,
             isFermi=isFermi,
@@ -403,7 +403,7 @@ end
 
         para = DiagParaF64(
             type=Ver3Diag,
-            loopDim=Kdim,
+            # loopDim=Kdim,
             innerLoopNum=loopNum,
             isFermi=isFermi,
             hasTau=true,
@@ -460,7 +460,7 @@ end
 
         para = DiagParaF64(
             type=PolarDiag,
-            loopDim=Kdim,
+            # loopDim=Kdim,
             innerLoopNum=loopNum,
             isFermi=isFermi,
             hasTau=true,

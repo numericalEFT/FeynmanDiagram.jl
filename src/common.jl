@@ -59,7 +59,7 @@ end
 
     isFermi::Bool = true
     spin::Int = 2
-    loopDim::Int = 3
+    # loopDim::Int = 3
     interaction::Vector{Interaction} = [Interaction(ChargeCharge, [Instant,]),] # :ChargeCharge, :SpinSpin, ...
 
     firstLoopIdx::Int = firstLoopIdx(type)
@@ -95,7 +95,7 @@ function Parameters.reconstruct(::Type{DiagPara{W}}, p::DiagPara{W}, di) where {
         innerLoopNum=get(p, di, :innerLoopNum),
         isFermi=get(p, di, :isFermi),
         spin=get(p, di, :spin),
-        loopDim=get(p, di, :loopDim),
+        # loopDim=get(p, di, :loopDim),
         interaction=get(p, di, :interaction),
         firstLoopIdx=get(p, di, :firstLoopIdx),
         totalLoopNum=get(p, di, :totalLoopNum),
@@ -118,7 +118,7 @@ function derivepara(p::DiagPara{W}; kwargs...) where {W}
         innerLoopNum=get(p, di, :innerLoopNum),
         isFermi=get(p, di, :isFermi),
         spin=get(p, di, :spin),
-        loopDim=get(p, di, :loopDim),
+        # loopDim=get(p, di, :loopDim),
         interaction=get(p, di, :interaction),
         firstLoopIdx=get(p, di, :firstLoopIdx),
         totalLoopNum=get(p, di, :totalLoopNum),
