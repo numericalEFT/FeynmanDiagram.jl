@@ -167,7 +167,10 @@ export addpropagator!, addnode!
 export setroot!, addroot!
 export evalNaive, showTree
 
-
+include("utility.jl")
+using .Utility
+export Utility
+export taylorexpansion!
 
 include("frontend/frontends.jl")
 using .FrontEnds
@@ -177,13 +180,8 @@ export LabelProduct
 include("frontend/GV.jl")
 using .GV
 export GV
-export diagdictGV, leafstates
+export diagdictGV, diagdict_parquet, leafstates, leafstates_diagtree
 
-include("utility.jl")
-using .Utility
-export Utility
-export taylorexpansion!
-# export read_onediagram, read_diagrams
 
 ##################### precompile #######################
 # precompile as the final step of the module definition:
@@ -212,7 +210,7 @@ if ccall(:jl_generating_output, Cint, ()) == 1   # if we're precompiling the pac
         DiagTree.derivative(ver4.diagram, BareGreenId)
         DiagTree.derivative(ver4.diagram, BareInteractionId)
         # DiagTree.removeHartreeFock!(ver4.diagram)
-        ExprTree.build(ver4.diagram)
+        ExprTree.build(ver4.diagram, 3)
     end
 end
 
