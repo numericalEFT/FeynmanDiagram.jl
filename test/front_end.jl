@@ -60,3 +60,9 @@ end
     @test eltype(typeof(labelProd)) == (eltype(typeof(flavors)), eltype(typeof(tau_labels)), eltype(typeof(loopbasis)))
     @test FrontEnds._find_label(typeof(labelProd.labels), typeof(loopbasis)) == 3
 end
+
+@testset "Parquet Builder for Vertex4 with spin convention" begin
+    partition = [(1, 0, 0), (1, 0, 1), (1, 1, 0), (2, 0, 0)]
+    fgs = FeynmanDiagram.GV.diagdict_parquet_ver4(:vertex4, partition)
+    @test fgs[(1, 0, 0)][3] == Response[UpUp, UpDown]
+end

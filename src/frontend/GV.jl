@@ -238,7 +238,6 @@ function eachorder_diag(type::Symbol, order::Int, GOrder::Int=0, VerOrder::Int=0
     end
 end
 
-
 function diagdict_parquet(type::Symbol, MaxOrder::Int, has_counterterm::Bool=true; MinOrder::Int=1,
     spinPolarPara::Float64=0.0, isDynamic=false, filter=[NoHartree])
     # spinPolarPara::Float64=0.0, isDynamic=false, channel=[PHr, PHEr, PPr], filter=[NoHartree])
@@ -333,6 +332,48 @@ function diagdict_parquet(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}};
                     push!(dict_graphs[key][1], graph)
                 else
                     dict_graphs[key] = ([graph,], collect.(extT))
+                end
+            end
+        end
+    end
+
+    for gvec in values(dict_graphs)
+        IR.optimize!(gvec[1])
+    end
+    return dict_graphs
+end
+function diagdict_parquet_ver4(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}};
+    # spinPolarPara::Float64=0.0, isDynamic=false, filter=[NoHartree])
+    spinPolarPara::Float64=0.0, isDynamic=false, channel=[PHr, PHEr, PPr], filter=[NoHartree])
+
+    @assert type == :vertex4
+    diagtype = _diagtype(type)
+    spin = 2.0 / (spinPolarPara + 1)
+    dict_graphs = Dict{Tuple{Int,Int,Int},Tuple{Vector{Graph},Vector{Vector{Int}},Vector{Response}}}()
+
+    KinL, KoutL, KinR = zeros(16), zeros(16), zeros(16)
+    KinL[1], KoutL[2], KinR[3] = 1.0, 1.0, 1.0
+
+    MinOrder = minimum([p[1] for p in gkeys])
+    MaxOrder = maximum([p[1] for p in gkeys])
+    for order in MinOrder:MaxOrder
+        Taylor.set_variables("x y"; orders=[MaxOrder - order, MaxOrder - order])
+        para = diagPara(diagtype, isDynamic, spin, order, filter, KinL - KoutL)
+        parquet_builder = Parquet.build(para; channel=channel)
+        diags, extT = parquet_builder.diagram, parquet_builder.extT
+        spin_convention = [d.id.response for d in diags]
+
+        propagator_var = Dict(BareGreenId => [true, false], BareInteractionId => [false, true]) # Specify variable dependence of fermi (first element) and bose (second element) particles.
+        taylor_vec, taylormap = taylorexpansion!(diags, propagator_var)
+
+        for t in taylor_vec
+            for (o, graph) in t.coeffs
+                key = (order, o...)
+                key ∉ gkeys && continue
+                if haskey(dict_graphs, key)
+                    push!(dict_graphs[key][1], graph)
+                else
+                    dict_graphs[key] = ([graph,], collect.(extT), spin_convention)
                 end
             end
         end
