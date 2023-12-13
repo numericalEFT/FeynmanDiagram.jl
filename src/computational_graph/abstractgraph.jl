@@ -5,7 +5,7 @@ struct Sum <: AbstractOperator end
 struct Prod <: AbstractOperator end
 struct Constant <: AbstractOperator end
 struct Power{N} <: AbstractOperator
-    function Power(N::Real)
+    function Power(N::Int)
         @assert N ∉ [0, 1] "Power{$N} makes no sense."
         new{N}()
     end

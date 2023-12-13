@@ -168,7 +168,13 @@ end
 - `c2`  second scalar multiple
 """
 function linear_combination(g1::Graph{F,W}, g2::Graph{F,W}, c1=F(1), c2=F(1)) where {F,W}
+    if length(g1.orders) > length(g2.orders)
+        g2.orders = [orders(g2); zeros(Int, length(g1.orders) - length(g2.orders))]
+    else
+        g1.orders = [orders(g1); zeros(Int, length(g2.orders) - length(g1.orders))]
+    end
     @assert orders(g1) == orders(g2) "g1 and g2 have different orders."
+
     f1 = typeof(c1) == F ? c1 : F(c1)
     f2 = typeof(c2) == F ? c2 : F(c2)
     subgraphs = [g1, g2]
@@ -214,7 +220,12 @@ where duplicate graphs in the input `graphs` are combined by summing their assoc
     Given graphs `g1`, `g2`, `g1` and constants `c1`, `c2`, `c3`, the function computes `(c1+c3)*g1 + c2*g2`.
 """
 function linear_combination(graphs::Vector{Graph{F,W}}, constants::AbstractVector=ones(F, length(graphs))) where {F,W}
+    maxlen_orders = maximum(length.(orders.(graphs)))
+    for g in graphs
+        g.orders = [orders(g); zeros(Int, maxlen_orders - length(orders(g)))]
+    end
     @assert alleq(orders.(graphs)) "Graphs do not all have the same order."
+
     subgraphs = graphs
     subgraph_factors = eltype(constants) == F ? constants : Vector{F}(constants)
     # Convert trivial unary links to in-place form
@@ -286,7 +297,7 @@ end
 - `c2`:  second scalar multiple (defaults to 1).
 """
 function multi_product(g1::Graph{F,W}, g2::Graph{F,W}, c1=F(1), c2=F(1)) where {F,W}
-    @assert orders(g1) == orders(g2) "g1 and g2 have different orders."
+    # @assert orders(g1) == orders(g2) "g1 and g2 have different orders."
     f1 = typeof(c1) == F ? c1 : F(c1)
     f2 = typeof(c2) == F ? c2 : F(c2)
     subgraphs = [g1, g2]
@@ -304,9 +315,14 @@ function multi_product(g1::Graph{F,W}, g2::Graph{F,W}, c1=F(1), c2=F(1)) where {
     end
 
     if subgraphs[1] == subgraphs[2]
-        g = Graph([subgraphs[1]]; subgraph_factors=[prod(subgraph_factors)], operator=Power(2), ftype=F, wtype=W)
+        g = Graph([subgraphs[1]]; subgraph_factors=[prod(subgraph_factors)], operator=Power(2), orders=2 * orders(g1), ftype=F, wtype=W)
     else
-        g = Graph(subgraphs; subgraph_factors=subgraph_factors, operator=Prod(), orders=orders(g1), ftype=F, wtype=W)
+        if length(g1.orders) > length(g2.orders)
+            g2.orders = [orders(g2); zeros(Int, length(g1.orders) - length(g2.orders))]
+        else
+            g1.orders = [orders(g1); zeros(Int, length(g2.orders) - length(g1.orders))]
+        end
+        g = Graph(subgraphs; subgraph_factors=subgraph_factors, operator=Prod(), orders=orders(g1) + orders(g2), ftype=F, wtype=W)
     end
     return g
 end
@@ -329,10 +345,13 @@ Returns:
     Given graphs `g1`, `g2`, `g1` and constants `c1`, `c2`, `c3`, the function computes `(c1*c3)*(g1)^2 * c2*g2`.
 """
 function multi_product(graphs::Vector{Graph{F,W}}, constants::AbstractVector=ones(F, length(graphs))) where {F,W}
-    @assert alleq(orders.(graphs)) "Graphs do not all have the same order."
+    # @assert alleq(orders.(graphs)) "Graphs do not all have the same order."
     g1 = graphs[1]
     subgraphs = graphs
     subgraph_factors = eltype(constants) == F ? constants : Vector{F}(constants)
+
+    maxlen_orders = maximum(length.(orders.(graphs)))
+    g_orders = zeros(Int, maxlen_orders)
     # Convert trivial unary links to in-place form
     for (i, sub_g) in enumerate(graphs)
         if unary_istrivial(sub_g) && onechild(sub_g)
@@ -340,6 +359,8 @@ function multi_product(graphs::Vector{Graph{F,W}}, constants::AbstractVector=one
             # subgraph_factors[i] *= sub_g.subgraph_factors[1] * sub_g.factor
             subgraphs[i] = sub_g.subgraphs[1]
         end
+        sub_g.orders = [orders(sub_g); zeros(Int, maxlen_orders - length(orders(sub_g)))]
+        g_orders += orders(sub_g)
     end
 
     unique_graphs = Vector{Graph{F,W}}()
@@ -362,17 +383,17 @@ function multi_product(graphs::Vector{Graph{F,W}}, constants::AbstractVector=one
     end
 
     if length(unique_factors) == 1
-        g = Graph(unique_graphs; subgraph_factors=unique_factors, operator=Power(repeated_counts[1]), orders=orders(g1), ftype=F, wtype=W)
+        g = Graph(unique_graphs; subgraph_factors=unique_factors, operator=Power(repeated_counts[1]), orders=g_orders, ftype=F, wtype=W)
     else
         subgraphs = Vector{Graph{F,W}}()
         for (idx, g) in enumerate(unique_graphs)
             if repeated_counts[idx] == 1
                 push!(subgraphs, g)
             else
-                push!(subgraphs, Graph([g], operator=Power(repeated_counts[idx]), orders=orders(g1), ftype=F, wtype=W))
+                push!(subgraphs, Graph([g], operator=Power(repeated_counts[idx]), orders=orders(g1) * repeated_counts[idx], ftype=F, wtype=W))
             end
         end
-        g = Graph(subgraphs; subgraph_factors=unique_factors, operator=Prod(), orders=orders(g1), ftype=F, wtype=W)
+        g = Graph(subgraphs; subgraph_factors=unique_factors, operator=Prod(), orders=g_orders, ftype=F, wtype=W)
     end
     return g
 end
@@ -388,4 +409,8 @@ end
 """
 function Base.:*(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
     return multi_product(g1, g2)
+end
+
+function Base.:^(g::Graph{F,W}, exponent::Int) where {F,W}
+    return g = Graph([g]; operator=Power(exponent), orders=orders(g) * exponent, ftype=F, wtype=W)
 end

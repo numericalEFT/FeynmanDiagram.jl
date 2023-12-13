@@ -3,6 +3,8 @@ using InteractiveUtils, LinearAlgebra
 using Lehmann
 # using Profile
 
+const dim = 3
+
 function evalG(K, τin, τout)
     # println(τBasis, ", ", varT)
     kF, β = 1.0, 1.0
@@ -25,7 +27,7 @@ para = DiagPara(type=Ver4Diag, innerLoopNum=3, filter=[Girreducible,], hasTau=tr
 ver4 = Parquet.vertex4(para)
 ver4 = mergeby(ver4, :response)
 println(ver4)
-tree = ExprTree.build(ver4.diagram)
+tree = ExprTree.build(ver4.diagram, dim)
 
 varK = rand(3, para.totalLoopNum)
 varT = [rand() for i in 1:para.totalTauNum]

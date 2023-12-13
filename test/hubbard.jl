@@ -26,7 +26,7 @@ using MCIntegration
             push!(sigma, _s)
             # plot_tree(_s, maxdepth=15)
         end
-        diag = [ExprTree.build(s.diagram) for s in sigma]
+        diag = [ExprTree.build(s.diagram, 3) for s in sigma]
         root = [d.root for d in diag] #get the list of root nodes
         #assign the external Tau to the corresponding diagrams
         extT = [[diag[ri].node.object[idx].para.extT for idx in r] for (ri, r) in enumerate(root)]

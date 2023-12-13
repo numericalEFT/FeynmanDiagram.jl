@@ -60,9 +60,9 @@ julia> set_variables(Int, "x y z", orders=[4,4,4])
 """
 function set_variables(::Type{R}, names::Vector{T}; orders=get_orders()) where
 {R,T<:AbstractString}
-    for o in orders
-        o ≥ 1 || error("Order must be at least 1")
-    end
+    # for o in orders
+    #     o ≥ 1 || error("Order must be at least 1")
+    # end
     num_vars = length(names)
     num_vars ≥ 1 || error("Number of variables must be at least 1")
     @assert length(orders) == num_vars "Input orders should have same length as number of variables."

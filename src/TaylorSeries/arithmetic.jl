@@ -176,6 +176,9 @@ function Base.:*(g1::TaylorSeries{T}, g2::TaylorSeries{T}) where {T}
                 #combination_coeff = taylor_binomial(order1, order2)
                 if haskey(g.coeffs, order)
                     #g.coeffs[order] += combination_coeff * coeff1 * coeff2
+                    # println(coeff1, coeff1.orders)
+                    # println(coeff2, coeff2.orders)
+                    # println(g.coeffs[order], g.coeffs[order].orders)
                     g.coeffs[order] += coeff1 * coeff2
                 else
                     #g.coeffs[order] = combination_coeff * coeff1 * coeff2
