@@ -218,12 +218,13 @@ function to_dot_str(graphs::AbstractVector{<:AbstractGraph}, name::String="Compu
             end
             if isempty(subgraphs(g)) #leaf
                 g_id in inds_visitedleaf && continue
+                leafname = getname(g.properties, leafidx)
                 if factor(g) == 1
-                    gnode_str = "g$g_id[label=l$(leafidx), style=filled, fillcolor=paleturquoise]\n"
+                    gnode_str = "g$g_id[label=$leafname, style=filled, fillcolor=paleturquoise]\n"
                     body_node *= gnode_str
                 else
                     factor_str = "factor$(leafidx)_inp[label=$(factor(g)), style=filled, fillcolor=lavender]\n" 
-                    leaf_node = "l$(leafidx)[label=l$(leafidx), style=filled, fillcolor=paleturquoise]\n"
+                    leaf_node = "l$(leafidx)[label=$leafname, style=filled, fillcolor=paleturquoise]\n"
                     gnode_str = "g$g_id[shape=box, label = \"Mul\", style=filled, fillcolor=cornsilk,]\n"
                     body_node *= factor_str * leaf_node * gnode_str
                     body_arrow *= "factor$(leafidx)_inp->g$g_id[arrowhead=vee,]\nl$(leafidx)->g$g_id[arrowhead=vee,]\n"
@@ -254,5 +255,20 @@ function compile_dot(graphs::AbstractVector{<:AbstractGraph}, filename::String; 
     open(filename, "w") do f
         write(f, dot_string)
     end
+end
+
+function getname(properties,leafidx)
+    if properties isa BareGreenId
+        lfname = "G$leafidx"
+    elseif properties isa BareInteractionId
+        lfname = "V$leafidx"
+    elseif typeof(properties) == FeynmanProperties && properties.diagtype == ComputationalGraphs.Propagator
+        lfname = "G$leafidx"
+    elseif typeof(properties) == FeynmanProperties && properties.diagtype == ComputationalGraphs.Interaction
+        lfname = "V$leafidx"
+    else
+        lfname = "L$leafidx"
+    end
+    return lfname
 end
 

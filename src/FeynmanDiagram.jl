@@ -129,11 +129,6 @@ include("TaylorSeries/TaylorSeries.jl")
 using .Taylor
 export Taylor
 
-
-include("backend/compiler.jl")
-using .Compilers
-export Compilers
-
 include("diagram_tree/DiagTree.jl")
 using .DiagTree
 export DiagTree
@@ -181,6 +176,10 @@ include("frontend/GV.jl")
 using .GV
 export GV
 export diagdictGV, diagdict_parquet, leafstates, leafstates_diagtree
+
+include("backend/compiler.jl")
+using .Compilers
+export Compilers
 
 
 ##################### precompile #######################
