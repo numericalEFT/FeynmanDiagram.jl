@@ -1,7 +1,10 @@
 module Compilers
 using PyCall
 using ..ComputationalGraphs
-import ..ComputationalGraphs: id, name, set_name!, operator, subgraphs, subgraph_factors, factor
+import ..ComputationalGraphs: id, name, set_name!, operator, subgraphs, subgraph_factors, factor, FeynmanProperties
+
+using ..DiagTree
+using ..DiagTree: Diagram, PropagatorId, BareGreenId, BareInteractionId
 
 using ..AbstractTrees
 using ..RuntimeGeneratedFunctions
