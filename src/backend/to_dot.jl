@@ -259,15 +259,15 @@ end
 
 function getname(properties,leafidx)
     if properties isa BareGreenId
-        lfname = "G$leafidx"
+        lfname = "<<i>G</i><sub>$leafidx</sub>>"
     elseif properties isa BareInteractionId
-        lfname = "V$leafidx"
+        lfname = "<<i>V</i><sub>$leafidx</sub>>"
     elseif typeof(properties) == FeynmanProperties && properties.diagtype == ComputationalGraphs.Propagator
-        lfname = "G$leafidx"
+        lfname = "<<i>G</i><sub>$leafidx</sub>>"
     elseif typeof(properties) == FeynmanProperties && properties.diagtype == ComputationalGraphs.Interaction
-        lfname = "V$leafidx"
+        lfname = "<<i>V</i><sub>$leafidx</sub>>"
     else
-        lfname = "L$leafidx"
+        lfname = "<L<sub>$leafidx</sub>>"
     end
     return lfname
 end
