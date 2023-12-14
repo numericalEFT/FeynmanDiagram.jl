@@ -18,13 +18,13 @@ function to_dotstatic(::Type{ComputationalGraphs.Sum}, id::Int, factor::F,subgra
     end
     opr_node = opr_name * "[shape=box, label = \"Add\", style=filled, fillcolor=cyan,]\n"
     node_temp *= opr_node
-    for (g, gfactor) in zip(subgraphs, subgraph_factors)
+    for (gix,(g, gfactor)) in enumerate(zip(subgraphs, subgraph_factors))
         if gfactor!= 1
-            factor_str = "factor$(g.id)_$(id)[label=$(gfactor), style=filled, fillcolor=lavender]\n" 
-            subg_str = "g$(g.id)_$(id)[shape=box, label = \"Mul\", style=filled, fillcolor=cornsilk,]\n"
+            factor_str = "factor$(g.id)_$(id)_$gix[label=$(gfactor), style=filled, fillcolor=lavender]\n" 
+            subg_str = "g$(g.id)_$(id)_$gix[shape=box, label = \"Mul\", style=filled, fillcolor=cornsilk,]\n"
             node_temp *= factor_str * subg_str
-            arrow_temp *= "factor$(g.id)_$(id)->g$(g.id)_$(id)[arrowhead=vee,]\ng$(g.id)->g$(g.id)_$(id)[arrowhead=vee,]\n"
-            arrow_temp *= "g$(g.id)_$(id)->$opr_name[arrowhead=vee,]\n"
+            arrow_temp *= "factor$(g.id)_$(id)_$gix->g$(g.id)_$(id)_$gix[arrowhead=vee,]\ng$(g.id)->g$(g.id)_$(id)_$gix[arrowhead=vee,]\n"
+            arrow_temp *= "g$(g.id)_$(id)_$gix->$opr_name[arrowhead=vee,]\n"
         else
             arrow_temp *= "g$(g.id)->$opr_name[arrowhead=vee,]\n"
         end
@@ -55,13 +55,13 @@ function to_dotstatic(::Type{ComputationalGraphs.Prod}, id::Int, factor::F, subg
             arrow_temp *= "factor$(subgraphs[1].id)_$(id)->$opr_name[arrowhead=vee,]\ng$(subgraphs[1].id)->$opr_name[arrowhead=vee,]\n"
         end
     else
-        for (g, gfactor) in zip(subgraphs, subgraph_factors)
+        for (gix,(g, gfactor)) in enumerate(zip(subgraphs, subgraph_factors))
             if gfactor!= 1
-                factor_str = "factor$(g.id)_$(id)[label=$(gfactor), style=filled, fillcolor=lavender]\n" 
-                subg_str = "g$(g.id)_$(id)[shape=box, label = \"Mul\", style=filled, fillcolor=cornsilk,]\n"
+               factor_str = "factor$(g.id)_$(id)_$gix[label=$(gfactor), style=filled, fillcolor=lavender]\n" 
+                subg_str = "g$(g.id)_$(id)_$gix[shape=box, label = \"Mul\", style=filled, fillcolor=cornsilk,]\n"
                 node_temp *= factor_str * subg_str
-                arrow_temp *= "factor$(g.id)_$(id)->g$(g.id)_$(id)[arrowhead=vee,]\ng$(g.id)->g$(g.id)_$(id)[arrowhead=vee,]\n"
-                arrow_temp *= "g$(g.id)_$(id)->$opr_name[arrowhead=vee,]\n"
+                arrow_temp *= "factor$(g.id)_$(id)_$gix->g$(g.id)_$(id)_$gix[arrowhead=vee,]\ng$(g.id)->g$(g.id)_$(id)_$gix[arrowhead=vee,]\n"
+                arrow_temp *= "g$(g.id)_$(id)_$gix->$opr_name[arrowhead=vee,]\n"
             else
                 arrow_temp *= "g$(g.id)->$opr_name[arrowhead=vee,]\n"
             end
@@ -112,13 +112,13 @@ function to_dotstatic(::Type{ComputationalGraphs.Sum},  id::Int, factor::F,subgr
     end
     opr_node = opr_name * "[shape=box, label = \"Add\", style=filled, fillcolor=cyan,]\n"
     node_temp *= opr_node
-    for (g, gfactor) in zip(subgraphs, subgraph_factors)
-        if gfactor!= 1
-            factor_str = "factor$(g.id)_$(id)[label=$(gfactor), style=filled, fillcolor=lavender]\n" 
-            subg_str = "g$(g.id)_$(id)[shape=box, label = \"Mul\", style=filled, fillcolor=cornsilk,]\n"
+    for (gix, (g, gfactor)) in enumerate(zip(subgraphs, subgraph_factors))
+        if gfactor != 1
+            factor_str = "factor$(g.id)_$(id)_$gix[label=$(gfactor), style=filled, fillcolor=lavender]\n"
+            subg_str = "g$(g.id)_$(id)_$gix[shape=box, label = \"Mul\", style=filled, fillcolor=cornsilk,]\n"
             node_temp *= factor_str * subg_str
-            arrow_temp *= "factor$(g.id)_$(id)->g$(g.id)_$(id)[arrowhead=vee,]\ng$(g.id)->g$(g.id)_$(id)[arrowhead=vee,]\n"
-            arrow_temp *= "g$(g.id)_$(id)->$opr_name[arrowhead=vee,]\n"
+            arrow_temp *= "factor$(g.id)_$(id)_$gix->g$(g.id)_$(id)_$gix[arrowhead=vee,]\ng$(g.id)->g$(g.id)_$(id)_$gix[arrowhead=vee,]\n"
+            arrow_temp *= "g$(g.id)_$(id)_$gix->$opr_name[arrowhead=vee,]\n"
         else
             arrow_temp *= "g$(g.id)->$opr_name[arrowhead=vee,]\n"
         end
@@ -149,13 +149,13 @@ function to_dotstatic(::Type{ComputationalGraphs.Prod}, id::Int, factor::F, subg
             arrow_temp *= "factor$(subgraphs[1].id)_$(id)->$opr_name[arrowhead=vee,]\ng$(subgraphs[1].id)->$opr_name[arrowhead=vee,]\n"
         end
     else
-        for (g, gfactor) in zip(subgraphs, subgraph_factors)
-            if gfactor!= 1
-                factor_str = "factor$(g.id)_$(id)[label=$(gfactor), style=filled, fillcolor=lavender]\n" 
-                subg_str = "g$(g.id)_$(id)[shape=box, label = \"Mul\", style=filled, fillcolor=cornsilk,]\n"
+        for (gix, (g, gfactor)) in enumerate(zip(subgraphs, subgraph_factors))
+            if gfactor != 1
+                factor_str = "factor$(g.id)_$(id)_$gix[label=$(gfactor), style=filled, fillcolor=lavender]\n"
+                subg_str = "g$(g.id)_$(id)_$gix[shape=box, label = \"Mul\", style=filled, fillcolor=cornsilk,]\n"
                 node_temp *= factor_str * subg_str
-                arrow_temp *= "factor$(g.id)_$(id)->g$(g.id)_$(id)[arrowhead=vee,]\ng$(g.id)->g$(g.id)_$(id)[arrowhead=vee,]\n"
-                arrow_temp *= "g$(g.id)_$(id)->$opr_name[arrowhead=vee,]\n"
+                arrow_temp *= "factor$(g.id)_$(id)_$gix->g$(g.id)_$(id)_$gix[arrowhead=vee,]\ng$(g.id)->g$(g.id)_$(id)_$gix[arrowhead=vee,]\n"
+                arrow_temp *= "g$(g.id)_$(id)_$gix->$opr_name[arrowhead=vee,]\n"
             else
                 arrow_temp *= "g$(g.id)->$opr_name[arrowhead=vee,]\n"
             end
