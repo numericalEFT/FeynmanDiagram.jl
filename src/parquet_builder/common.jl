@@ -63,13 +63,14 @@ import ..uidreset
 import ..toDataFrame
 import ..mergeby
 
-function build(para::DiagPara{W}, extK=nothing, subdiagram=false; channel=nothing) where {W}
+function build(para::DiagPara{W}, extK=nothing, subdiagram=false; channel=nothing, koffset=0) where {W}
     if para.type == Ver4Diag
         if isnothing(extK)
-            extK = [DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)]
+            # extK = [DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)]
+            extK = [DiagTree.getK(para.totalLoopNum + koffset, 1), DiagTree.getK(para.totalLoopNum + koffset, 2), DiagTree.getK(para.totalLoopNum + koffset, 3)]
         end
         if isnothing(channel)
-            channel= [PHr, PHEr, PPr, Alli]
+            channel = [PHr, PHEr, PPr, Alli]
         end
         return vertex4(para, extK, channel, subdiagram)
     elseif para.type == SigmaDiag

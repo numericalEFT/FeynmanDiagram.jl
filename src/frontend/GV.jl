@@ -344,7 +344,7 @@ function diagdict_parquet(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}};
 end
 function diagdict_parquet_ver4(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}};
     # spinPolarPara::Float64=0.0, isDynamic=false, filter=[NoHartree])
-    spinPolarPara::Float64=0.0, isDynamic=false, channel=[PHr, PHEr, PPr], filter=[NoHartree])
+    spinPolarPara::Float64=0.0, isDynamic=false, channel=[PHr, PHEr, PPr], filter=[NoHartree], koffset=0)
 
     @assert type == :vertex4
     diagtype = _diagtype(type)
@@ -358,8 +358,9 @@ function diagdict_parquet_ver4(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}};
     MaxOrder = maximum([p[1] for p in gkeys])
     for order in MinOrder:MaxOrder
         Taylor.set_variables("x y"; orders=[MaxOrder - order, MaxOrder - order])
-        para = diagPara(diagtype, isDynamic, spin, order, filter, KinL - KoutL)
-        parquet_builder = Parquet.build(para; channel=channel)
+        # para = diagPara(diagtype, isDynamic, spin, order, filter, KinL - KoutL)
+        para = diagParaVer4(isDynamic, spin, order, filter, KinL - KoutL)
+        parquet_builder = Parquet.build(para; channel=channel, koffset=koffset)
         diags, extT = parquet_builder.diagram, parquet_builder.extT
         spin_convention = [d.id.response for d in diags]
 
@@ -407,6 +408,21 @@ function diagPara(type, isDynamic::Bool, spin, order, filter, transferLoop)
         transferLoop=transferLoop
     )
 end
+
+function diagParaVer4(isDynamic, spin, order, filter, transferLoop)
+    inter = [Interaction(ChargeCharge, isDynamic ? [Instant, Dynamic] : [Instant,]),]  #instant charge-charge interaction
+    return DiagParaF64(
+        type=Ver4Diag,
+        innerLoopNum=order - 1,
+        hasTau=true,
+        spin=spin,
+        firstLoopIdx=4,
+        interaction=inter,
+        filter=filter,
+        transferLoop=transferLoop
+    )
+end
+
 
 function _diagtype(type::Symbol)
     if type == :freeEnergy
