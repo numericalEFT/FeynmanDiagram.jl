@@ -73,7 +73,7 @@ end
 """
 function to_python_str(graphs::AbstractVector{<:AbstractGraph}, framework::Symbol=:jax)
     if framework == :jax
-        head = "from jax import jit"
+        head = "from jax import jit\n"
     elseif framework == :mindspore
         head = "import mindspore as ms\n@ms.jit\n"
     else
@@ -85,7 +85,7 @@ function to_python_str(graphs::AbstractVector{<:AbstractGraph}, framework::Symbo
     inds_visitedleaf = Int[]
     inds_visitednode = Int[]
     gid_to_leafid = Dict{String,Int64}()
-    rootidx = 1
+    rootidx = 0
     for graph in graphs
         for g in PostOrderDFS(graph) #leaf first search
             g_id = id(g)
