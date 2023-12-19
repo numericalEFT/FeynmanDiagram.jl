@@ -108,7 +108,7 @@ function to_python_str(graphs::AbstractVector{<:AbstractGraph}, framework::Symbo
                 push!(inds_visitednode, g_id)
             end
             if isroot
-                body *= "    out[$(rootidx)]=$target\n"
+                body *= "    root[$(rootidx)]=$target\n"
                 rootidx += 1
             end
         end
