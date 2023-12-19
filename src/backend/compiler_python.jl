@@ -126,8 +126,6 @@ function to_python_str(graphs::AbstractVector{<:AbstractGraph}, framework::Symbo
     expr = head * body * tail
     # println(expr)
     # return head * body * tail
-    f = open("GraphFunc.py", "w")
-    write(f, expr)
     return expr, leafidx , gid_to_leafid
 end
 function compile_python(graphs::AbstractVector{<:AbstractGraph}, framework::Symbol=:jax, filename::String="GraphFunc.py")
