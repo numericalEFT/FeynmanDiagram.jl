@@ -115,13 +115,12 @@ function to_python_str(graphs::AbstractVector{<:AbstractGraph}, framework::Symbo
     end
     head *= "def graphfunc(root,leaf):\n"
     tail = "\n"
-    
+
     if framework == :jax
         tail *="graphfunc_jit = jit(graphfunc)"
     end
     expr = head * body * tail
-    # println(expr)
-    # return head * body * tail
+
     return expr, leafidx , gid_to_leafid
 end
 function compile_python(graphs::AbstractVector{<:AbstractGraph}, framework::Symbol=:jax, filename::String="GraphFunc.py")
