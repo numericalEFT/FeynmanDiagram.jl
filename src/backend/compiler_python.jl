@@ -85,7 +85,7 @@ function to_python_str(graphs::AbstractVector{<:AbstractGraph}, framework::Symbo
     inds_visitedleaf = Int[]
     inds_visitednode = Int[]
     gid_to_leafid = Dict{String,Int64}()
-    rootidx = 1
+    rootidx = 0
     for graph in graphs
         for g in PostOrderDFS(graph) #leaf first search
             g_id = id(g)
