@@ -115,11 +115,7 @@ function to_python_str(graphs::AbstractVector{<:AbstractGraph}, framework::Symbo
     end
     head *= "def graphfunc(root,leaf):\n"
     tail = "\n"
-
-    # tail = "    return $output\n"
-    # tail*= "def to_StaticGraph(leaf):\n"
-    # tail*= "    output = graphfunc(leaf)\n"
-    # tail*= "    return output"
+    
     if framework == :jax
         tail *="graphfunc_jit = jit(graphfunc)"
     end
