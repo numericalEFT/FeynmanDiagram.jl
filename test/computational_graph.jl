@@ -105,6 +105,12 @@ Graphs.unary_istrivial(::Type{O}) where {O<:Union{O1,O2,O3}} = true
         Graphs.set_subgraph_factors!(g, [5.0, 2.0, 3.0], [3, 1, 2])  # default method
         @test Graphs.subgraph_factors(g) == [2.0, 3.0, 5.0]
     end
+    @testset "Disconnect subgraphs" begin
+        g_dc = deepcopy(g)
+        Graphs.disconnect_subgraphs!(g_dc)
+        @test isempty(Graphs.subgraphs(g_dc))
+        @test isempty(Graphs.subgraph_factors(g_dc))
+    end
     @testset "Equivalence" begin
         Graphs.set_name!(g, Graphs.name(gp))
         @test g == g

@@ -254,6 +254,16 @@ function set_subgraph_factors!(g::AbstractGraph, subgraph_factors::AbstractVecto
     end
 end
 
+"""
+function disconnect_subgraphs!(g::G) where {G<:AbstractGraph}
+
+    Empty the subgraphs and subgraph_factors of graph `g`. Any child nodes of g
+    not referenced elsewhere in the full computational graph are effectively deleted.
+"""
+function disconnect_subgraphs!(g::AbstractGraph)
+    empty!(subgraphs(g))
+    empty!(subgraph_factors(g))
+end
 
 ### Methods ###
 
