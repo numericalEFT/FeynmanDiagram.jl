@@ -73,7 +73,7 @@ end
 """
 function to_python_str(graphs::AbstractVector{<:AbstractGraph}, framework::Symbol=:jax)
     if framework == :jax
-        head = "from jax import jit"
+        head = "from jax import jit\n"
     elseif framework == :mindspore
         head = "import mindspore as ms\n@ms.jit\n"
     else
