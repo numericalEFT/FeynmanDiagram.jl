@@ -108,13 +108,15 @@ function to_python_str(graphs::AbstractVector{<:AbstractGraph}, framework::Symbo
                 push!(inds_visitednode, g_id)
             end
             if isroot
-                body *= "    root[$(rootidx)]=$target\n"
+                body *= "    root$(rootidx) = $target\n"
                 rootidx += 1
             end
         end
     end
-    head *= "def graphfunc(root,leaf):\n"
-    tail = "\n"
+    head *= "def graphfunc(leaf):\n"
+    output = ["root$(i)" for i in 0:rootidx-1]
+    output = join(output,",")
+    tail = "    return $output\n\n"
 
     if framework == :jax
         tail *="graphfunc_jit = jit(graphfunc)"
