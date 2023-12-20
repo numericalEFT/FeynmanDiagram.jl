@@ -191,7 +191,49 @@ end
 flatten_chains(g::AbstractGraph) = flatten_chains!(deepcopy(g))
 
 """
-    function merge_linear_combination(g::AbstractGraph)
+    function remove_zero_valued_subgraphs!(g::AbstractGraph)
+
+    Removes zero-valued (zero subgraph_factor) subgraph(s) of a computational graph `g`. If all subgraphs are zero-valued, the first one (`eldest(g)`) will be retained.
+
+# Arguments:
+- `g::AbstractGraph`: graph to be modified
+"""
+function remove_zero_valued_subgraphs!(g::AbstractGraph)
+    if isleaf(g) || isbranch(g)  # we must retain at least one subgraph
+        return g
+    end
+    subg = collect(subgraphs(g))
+    subg_fac = collect(subgraph_factors(g))
+    zero_sgf = zero(subg_fac[1])  # F(0)
+    # Find subgraphs with all-zero subgraph_factors and propagate subfactor one level up
+    for (i, sub_g) in enumerate(subg)
+        if has_zero_subfactors(sub_g)
+            subg_fac[i] = zero_sgf
+        end
+    end
+    # Remove marked zero subgraph factor subgraph(s) of g
+    mask_zeros = findall(x -> x != zero(x), subg_fac)
+    if isempty(mask_zeros)
+        mask_zeros = [1]  # retain eldest(g) if all subfactors are zero
+    end
+    set_subgraphs!(g, subg[mask_zeros])
+    set_subgraph_factors!(g, subg_fac[mask_zeros])
+    return g
+end
+
+"""
+    function remove_zero_valued_subgraphs(g::AbstractGraph)
+
+    Returns a copy of graph `g` with zero-valued (zero subgraph_factor) subgraph(s) removed.
+    If all subgraphs are zero-valued, the first one (`eldest(g)`) will be retained.
+
+# Arguments:
+- `g::AbstractGraph`: graph to be modified
+"""
+remove_zero_valued_subgraphs(g::AbstractGraph) = remove_zero_valued_subgraphs!(deepcopy(g))
+
+"""
+    function merge_linear_combination!(g::AbstractGraph)
    
     Modifies a computational graph `g` by factorizing multiplicative prefactors, e.g.,
     3*g1 + 5*g2 + 7*g1 + 9*g2 ↦ 10*g1 + 14*g2 = linear_combination(g1, g2, 10, 14).
