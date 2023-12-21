@@ -99,6 +99,25 @@ function isfactorless(g::AbstractGraph)
 end
 
 """
+    function has_zero_subfactors(g)
+
+    Returns whether the graph g has only zero-valued subgraph factor(s). 
+    Note that this function does not recurse through subgraphs of g, so that one may have, e.g.,
+    `isfactorless(g) == true` but `isfactorless(eldest(g)) == false`.
+    By convention, returns `false` if g is a leaf.
+
+# Arguments:
+- `g::AbstractGraph`: graph to be analyzed
+"""
+function has_zero_subfactors(g::AbstractGraph)
+    if isleaf(g)
+        return false  # convention: subgraph_factors = [] ⟹ subfactorless = false
+    else
+        return iszero(subgraph_factors(g))
+    end
+end
+
+"""
     function eldest(g::AbstractGraph)
 
     Returns the first child (subgraph) of a graph g.

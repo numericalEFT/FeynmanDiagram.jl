@@ -16,7 +16,7 @@ function optimize!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose
         remove_duplicated_leaves!(graphs, verbose=verbose, normalize=normalize)
         flatten_all_chains!(graphs, verbose=verbose)
         merge_all_linear_combinations!(graphs, verbose=verbose)
-
+        remove_all_zero_valued_subgraphs!(graphs, verbose=verbose)
         return graphs
     end
 end
@@ -65,7 +65,7 @@ end
 """
     function flatten_all_chains!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0)
 
-    Flattens all nodes representing trivial unary chains in-place in given graphs.
+    Flattens all nodes representing trivial unary chains in-place in the given graphs.
 
 # Arguments:
 - `graphs`: A collection of graphs to be processed.
@@ -85,9 +85,56 @@ function flatten_all_chains!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}
 end
 
 """
+    function remove_all_zero_valued_subgraphs!(g::AbstractGraph; verbose=0)
+
+    Recursively removes all zero-valued subgraph(s) in-place in the given graph `g`.
+
+# Arguments:
+- `g`: An AbstractGraph.
+- `verbose`: Level of verbosity (default: 0).
+
+# Returns:
+- Optimized graph.
+# 
+"""
+function remove_all_zero_valued_subgraphs!(g::AbstractGraph; verbose=0)
+    verbose > 0 && println("merge nodes representing a linear combination of a non-unique list of graphs.")
+    # Post-order DFS
+    for sub_g in subgraphs(g)
+        remove_all_zero_valued_subgraphs!(sub_g)
+        remove_zero_valued_subgraphs!(sub_g)
+    end
+    remove_zero_valued_subgraphs!(g)
+    return g
+end
+
+"""
+    function remove_all_zero_valued_subgraphs!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0)
+
+    Recursively removes all zero-valued subgraph(s) in-place in the given graphs.
+
+# Arguments:
+- `graphs`: A collection of graphs to be processed.
+- `verbose`: Level of verbosity (default: 0).
+
+# Returns:
+- Optimized graphs.
+# 
+"""
+function remove_all_zero_valued_subgraphs!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0)
+    verbose > 0 && println("merge nodes representing a linear combination of a non-unique list of graphs.")
+    # Post-order DFS
+    for g in graphs
+        remove_all_zero_valued_subgraphs!(subgraphs(g))
+        remove_zero_valued_subgraphs!(g)
+    end
+    return graphs
+end
+
+"""
     function merge_all_linear_combinations!(g::AbstractGraph; verbose=0)
 
-    Merges all nodes representing a linear combination of a non-unique list of subgraphs in-place within a single graph.
+    Merges all nodes representing a linear combination of a non-unique list of subgraphs in-place in the given graph `g`.
 
 # Arguments:
 - `g`: An AbstractGraph.
@@ -111,7 +158,7 @@ end
 """
     function merge_all_linear_combinations!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0)
 
-    Merges all nodes representing a linear combination of a non-unique list of subgraphs in-place in given graphs. 
+    Merges all nodes representing a linear combination of a non-unique list of subgraphs in-place in the given graphs. 
 
 # Arguments:
 - `graphs`: A collection of graphs to be processed.
@@ -134,7 +181,7 @@ end
 """
     function merge_all_multi_products!(g::Graph; verbose=0)
 
-    Merges all nodes representing a multi product of a non-unique list of subgraphs in-place within a single graph.
+    Merges all nodes representing a multi product of a non-unique list of subgraphs in-place in the given graph `g`.
 
 # Arguments:
 - `g::Graph`: A Graph.
@@ -158,7 +205,7 @@ end
 """
     function merge_all_multi_products!(graphs::Union{Tuple,AbstractVector{<:Graph}}; verbose=0)
 
-    Merges all nodes representing a multi product of a non-unique list of subgraphs in-place in given graphs. 
+    Merges all nodes representing a multi product of a non-unique list of subgraphs in-place in the given graphs. 
 
 # Arguments:
 - `graphs`: A collection of graphs to be processed.

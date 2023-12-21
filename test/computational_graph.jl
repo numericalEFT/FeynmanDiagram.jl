@@ -105,6 +105,12 @@ Graphs.unary_istrivial(::Type{O}) where {O<:Union{O1,O2,O3}} = true
         Graphs.set_subgraph_factors!(g, [5.0, 2.0, 3.0], [3, 1, 2])  # default method
         @test Graphs.subgraph_factors(g) == [2.0, 3.0, 5.0]
     end
+    @testset "Disconnect subgraphs" begin
+        g_dc = deepcopy(g)
+        Graphs.disconnect_subgraphs!(g_dc)
+        @test isempty(Graphs.subgraphs(g_dc))
+        @test isempty(Graphs.subgraph_factors(g_dc))
+    end
     @testset "Equivalence" begin
         Graphs.set_name!(g, Graphs.name(gp))
         @test g == g
@@ -302,6 +308,32 @@ end
             @test r2 == Graphs.flatten_chains(rvec[2])
             @test r3 == Graphs.flatten_chains(rvec[3])
         end
+        @testset "Remove zero-valued subgraphs" begin
+            # leaves
+            l1 = Graph([]; factor=1)
+            l2 = Graph([]; factor=2)
+            l3 = Graph([]; factor=3)
+            l4 = Graph([]; factor=4)
+            l5 = Graph([]; factor=5)
+            l6 = Graph([]; factor=6)
+            l7 = Graph([]; factor=7)
+            l8 = Graph([]; factor=8)
+            # subgraphs
+            sg1 = l1
+            sg2 = Graph([l2, l3]; subgraph_factors=[1.0, 0.0], operator=O1())
+            sg3 = Graph([l4]; subgraph_factors=[0], operator=O2())
+            sg4 = Graph([l5, l6, l7]; subgraph_factors=[0, 0, 0], operator=O3())
+            sg5 = l8
+            # graphs
+            g = Graph([sg1, sg2, sg3, sg4, sg5]; subgraph_factors=[1, 1, 1, 1, 0], operator=O())
+            g_test = Graph([sg1, sg2]; subgraph_factors=[1, 1], operator=O())
+            gp = Graph([sg3, sg4, sg5]; subgraph_factors=[1, 1, 0], operator=O())
+            gp_test = Graph([sg3]; subgraph_factors=[0], operator=O())
+            Graphs.remove_zero_valued_subgraphs!(g)
+            Graphs.remove_zero_valued_subgraphs!(gp)
+            @test isequiv(g, g_test, :id)
+            @test isequiv(gp, gp_test, :id)
+        end
     end
     @testset verbose = true "Optimizations" begin
         @testset "Flatten all chains" begin
@@ -329,6 +361,35 @@ end
             @test isequiv(r3, Graph([g1, g1,]; subgraph_factors=[12, 210], operator=O()), :id)
             Graphs.flatten_all_chains!(rvec)
             @test rvec == [r1, r2, r3]
+        end
+        @testset "Remove all zero-valued subgraphs" begin
+            # leaves
+            l1 = Graph([]; factor=1)
+            l2 = Graph([]; factor=2)
+            l3 = Graph([]; factor=3)
+            l4 = Graph([]; factor=4)
+            l5 = Graph([]; factor=5)
+            l6 = Graph([]; factor=6)
+            l7 = Graph([]; factor=7)
+            l8 = Graph([]; factor=8)
+            # sub-subgraph
+            ssg1 = Graph([l7]; subgraph_factors=[0], operator=O())
+            # subgraphs
+            sg1 = l1
+            sg2 = Graph([l2, l3]; subgraph_factors=[1.0, 0.0], operator=O1())
+            sg2_test = Graph([l2]; subgraph_factors=[1.0], operator=O1())
+            sg3 = Graph([l4]; subgraph_factors=[0], operator=O2())
+            sg4 = Graph([l5, l6, ssg1]; subgraph_factors=[0, 0, 1], operator=O3())
+            sg5 = l8
+            # graphs
+            g = Graph([sg1, sg2, sg3, sg4, sg5]; subgraph_factors=[1, 1, 1, 1, 0], operator=O())
+            g_test = Graph([sg1, sg2_test]; subgraph_factors=[1, 1], operator=O())
+            gp = Graph([sg3, sg4, sg5]; subgraph_factors=[1, 1, 0], operator=O())
+            gp_test = Graph([sg3]; subgraph_factors=[0], operator=O())
+            Graphs.remove_all_zero_valued_subgraphs!(g)
+            Graphs.remove_all_zero_valued_subgraphs!(gp)
+            @test isequiv(g, g_test, :id)
+            @test isequiv(gp, gp_test, :id)
         end
         @testset "Merge all linear combinations" begin
             g1 = Graph([])
@@ -1037,6 +1098,7 @@ end
     g3 = 1 * g1
     g4 = 1 * g2
     g5 = 2 * g1
+    h1 = 0 * g1
     # Chains: Ⓧ --- Ⓧ --- gᵢ (simplified by default)
     g6 = Graph([g5,]; subgraph_factors=[1,], operator=Graphs.Prod())
     g7 = Graph([g3,]; subgraph_factors=[2,], operator=Graphs.Prod())
@@ -1044,6 +1106,8 @@ end
     g8 = 2 * (3 * g1 + 5 * g2)
     g9 = g1 + 2 * (3 * g1 + 5 * g2)
     g10 = g1 * g2 + g8 * g9
+    h2 = Graph([g1, g2]; subgraph_factors=[0, 0], operator=Graphs.Sum())
+    h3 = Graph([g1, g2]; subgraph_factors=[1, 0], operator=Graphs.Sum())
     glist = [g1, g2, g8, g9, g10]
 
     @testset "Leaves" begin
@@ -1068,6 +1132,7 @@ end
         @test isfactorless(g4)
         @test isfactorless(g5) == false
         @test isleaf(eldest(g3))
+        @test has_zero_subfactors(h1)
     end
     @testset "Chains" begin
         @test haschildren(g6)
@@ -1090,6 +1155,8 @@ end
         @test count_operation(g8) == [1, 0]
         @test count_operation(g9) == [2, 0]
         @test count_operation(g10) == [4, 2]
+        @test has_zero_subfactors(h2)
+        @test has_zero_subfactors(h3) == false
     end
     @testset "Iteration" begin
         count_pre = sum(1 for node in PreOrderDFS(g9))
