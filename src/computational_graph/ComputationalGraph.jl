@@ -38,7 +38,7 @@ export multi_product, linear_combination, feynman_diagram, propagator, interacti
 
 
 include("tree_properties.jl")
-export haschildren, onechild, isleaf, isbranch, ischain, isfactorless, eldest, count_operation
+export haschildren, onechild, isleaf, isbranch, ischain, isfactorless, has_zero_subfactors, eldest, count_operation
 
 include("operation.jl")
 include("io.jl")

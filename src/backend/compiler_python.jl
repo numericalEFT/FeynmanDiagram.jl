@@ -73,19 +73,19 @@ end
 """
 function to_python_str(graphs::AbstractVector{<:AbstractGraph}, framework::Symbol=:jax)
     if framework == :jax
-        head = ""
+        head = "from jax import jit\n"
     elseif framework == :mindspore
         head = "import mindspore as ms\n@ms.jit\n"
-    else 
+    else
         error("no support for $type framework")
     end
     body = ""
-    leafidx = 1
+    leafidx = 0
     root = [id(g) for g in graphs]
     inds_visitedleaf = Int[]
     inds_visitednode = Int[]
-    gid_to_leafid = Dict{String, Int64}()
-    rootidx = 1
+    gid_to_leafid = Dict{String,Int64}()
+    rootidx = 0
     for graph in graphs
         for g in PostOrderDFS(graph) #leaf first search
             g_id = id(g)
@@ -97,7 +97,7 @@ function to_python_str(graphs::AbstractVector{<:AbstractGraph}, framework::Symbo
             if isempty(subgraphs(g)) #leaf
                 g_id in inds_visitedleaf && continue
                 factor_str = factor(g) == 1 ? "" : " * $(factor(g))"
-                body *= "    $target = l$(leafidx)$factor_str\n"
+                body *= "    $target = leaf[$(leafidx)]$factor_str\n"
                 gid_to_leafid[target] = leafidx
                 leafidx += 1
                 push!(inds_visitedleaf, g_id)
@@ -108,25 +108,88 @@ function to_python_str(graphs::AbstractVector{<:AbstractGraph}, framework::Symbo
                 push!(inds_visitednode, g_id)
             end
             if isroot
-                body *= "    out$(rootidx)=$target\n"
-                rootidx +=1
+                body *= "    root$(rootidx) = $target\n"
+                rootidx += 1
             end
         end
     end
-    input = ["l$(i)" for i in 1:leafidx-1]
-    input = join(input,",")
-    output = ["out$(i)" for i in 1:rootidx-1]
+    head *= "def graphfunc(leaf):\n"
+    output = ["root$(i)" for i in 0:rootidx-1]
     output = join(output,",")
-    head *="def graphfunc($input):\n"
-    tail = "    return $output\n"
-    # tail*= "def to_StaticGraph(leaf):\n"
-    # tail*= "    output = graphfunc(leaf)\n"
-    # tail*= "    return output"
+    tail = "    return $output\n\n"
+
+    if framework == :jax
+        tail *="graphfunc_jit = jit(graphfunc)"
+    end
     expr = head * body * tail
-    println(expr)
-    # return head * body * tail
-    f = open("GraphFunc.py", "w")
-    write(f, expr)
-    return expr, leafidx-1, gid_to_leafid
+
+    return expr, leafidx , gid_to_leafid
 end
+function compile_python(graphs::AbstractVector{<:AbstractGraph}, framework::Symbol=:jax, filename::String="GraphFunc.py")
+    py_string, leafnum, leafmap = to_python_str(graphs,framework)
+    println("The number of leaves: $leafnum")
+    open(filename, "w") do f
+        write(f, py_string)
+    end
+    return leafnum, leafmap
+end
+
+# function to_python_str(graphs::AbstractVector{<:AbstractGraph}, framework::Symbol=:jax)
+#     if framework == :jax
+#         head = ""
+#     elseif framework == :mindspore
+#         head = "import mindspore as ms\n@ms.jit\n"
+#     else 
+#         error("no support for $type framework")
+#     end
+#     body = ""
+#     leafidx = 1
+#     root = [id(g) for g in graphs]
+#     inds_visitedleaf = Int[]
+#     inds_visitednode = Int[]
+#     gid_to_leafid = Dict{String, Int64}()
+#     rootidx = 1
+#     for graph in graphs
+#         for g in PostOrderDFS(graph) #leaf first search
+#             g_id = id(g)
+#             target = "g$(g_id)"
+#             isroot = false
+#             if g_id in root
+#                 isroot = true
+#             end
+#             if isempty(subgraphs(g)) #leaf
+#                 g_id in inds_visitedleaf && continue
+#                 factor_str = factor(g) == 1 ? "" : " * $(factor(g))"
+#                 body *= "    $target = l$(leafidx)$factor_str\n"
+#                 gid_to_leafid[target] = leafidx
+#                 leafidx += 1
+#                 push!(inds_visitedleaf, g_id)
+#             else
+#                 g_id in inds_visitednode && continue
+#                 factor_str = factor(g) == 1 ? "" : " * $(factor(g))"
+#                 body *= "    $target = $(to_pystatic(operator(g), subgraphs(g), subgraph_factors(g)))$factor_str\n"
+#                 push!(inds_visitednode, g_id)
+#             end
+#             if isroot
+#                 body *= "    out$(rootidx)=$target\n"
+#                 rootidx +=1
+#             end
+#         end
+#     end
+#     input = ["l$(i)" for i in 1:leafidx-1]
+#     input = join(input,",")
+#     output = ["out$(i)" for i in 1:rootidx-1]
+#     output = join(output,",")
+#     head *="def graphfunc($input):\n"
+#     tail = "    return $output\n"
+#     # tail*= "def to_StaticGraph(leaf):\n"
+#     # tail*= "    output = graphfunc(leaf)\n"
+#     # tail*= "    return output"
+#     expr = head * body * tail
+#     println(expr)
+#     # return head * body * tail
+#     f = open("GraphFunc.py", "w")
+#     write(f, expr)
+#     return expr, leafidx-1, gid_to_leafid
+# end
 
