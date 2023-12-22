@@ -221,13 +221,16 @@ Base.show(io::IO, v::ConnectedGreenNId) = print(io, "($(vstr(v.site, "ᵣ"))|$(v
 
 function Base.isequal(a::DiagramId, b::DiagramId)
     if typeof(a) != typeof(b)
+        println("type diff!")
         return false
     end
     for field in fieldnames(typeof(a))
+        field in [:para, :permutation] && continue
         if field == :extK
-            if (getproperty(a, :extK) ≈ getproperty(b, :extK)) == false
+            if !(getproperty(a, :extK) ≈ getproperty(b, :extK)) && !(getproperty(a, :extK) ≈ -getproperty(b, :extK))
                 return false
             end
+            continue
         end
         if getproperty(a, field) != getproperty(b, field)
             return false

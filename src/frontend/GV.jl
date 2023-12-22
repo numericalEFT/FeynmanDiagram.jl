@@ -130,6 +130,7 @@ function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false;
             key = (order, 0, 0)
             dict_graphs[key] = (gvec, extT_labels)
             IR.optimize!(gvec)
+            IR.optimize!(gvec)
         end
     end
 
@@ -261,7 +262,7 @@ end
    The key is (order, Gorder, Vorder). The element is a Tuple (graphVector, extT_labels).
 """
 function diagdict_parquet(type::Symbol, MaxOrder::Int, has_counterterm::Bool=true; MinOrder::Int=1,
-    spinPolarPara::Float64=0.0, isDynamic=false, filter=[NoHartree])
+    spinPolarPara::Float64=0.0, isDynamic=false, filter=[NoHartree], transferLoop=nothing)
     # spinPolarPara::Float64=0.0, isDynamic=false, channel=[PHr, PHEr, PPr], filter=[NoHartree])
 
     diagtype = _diagtype(type)
@@ -269,13 +270,10 @@ function diagdict_parquet(type::Symbol, MaxOrder::Int, has_counterterm::Bool=tru
     dict_graphs = Dict{Tuple{Int,Int,Int},Tuple{Vector{Graph},Vector{Vector{Int}}}}()
     # dict_graphs = Dict{Tuple{Int,Int,Int},Tuple{Vector{Graph},Vector{Tuple{Vararg{Int}}}}}()
 
-    KinL, KoutL, KinR = zeros(16), zeros(16), zeros(16)
-    KinL[1], KoutL[2], KinR[3] = 1.0, 1.0, 1.0
-
     if has_counterterm
         for order in MinOrder:MaxOrder
             Taylor.set_variables("x y"; orders=[MaxOrder - order, MaxOrder - order])
-            para = diagPara(diagtype, isDynamic, spin, order, filter, KinL - KoutL)
+            para = diagPara(diagtype, isDynamic, spin, order, filter, transferLoop)
             # legK = [DiagTree.getK(para.totalLoopNum + 3, 1), DiagTree.getK(para.totalLoopNum + 3, 2), DiagTree.getK(para.totalLoopNum + 3, 3)]
             # d::Vector{Diagram{Float64}} = Parquet.vertex4(para, legK, channel).diagram
             # diags::Vector{Diagram{Float64}} = Parquet.build(para).diagram
@@ -300,7 +298,7 @@ function diagdict_parquet(type::Symbol, MaxOrder::Int, has_counterterm::Bool=tru
     else
         Taylor.set_variables("x y"; orders=[0, 0])
         for order in MinOrder:MaxOrder
-            para = diagPara(diagtype, isDynamic, spin, order, filter, KinL - KoutL)
+            para = diagPara(diagtype, isDynamic, spin, order, filter, transferLoop)
             parquet_builder = Parquet.build(para)
             diags, extT = parquet_builder.diagram, parquet_builder.extT
 

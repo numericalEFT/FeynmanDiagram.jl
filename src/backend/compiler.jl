@@ -6,6 +6,9 @@ import ..ComputationalGraphs: id, name, set_name!, operator, subgraphs, subgraph
 using ..DiagTree
 using ..DiagTree: Diagram, PropagatorId, BareGreenId, BareInteractionId
 
+using ..QuantumOperators
+import ..QuantumOperators: isfermionic
+
 using ..AbstractTrees
 using ..RuntimeGeneratedFunctions
 
