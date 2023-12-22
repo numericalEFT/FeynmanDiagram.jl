@@ -242,39 +242,6 @@ end
 function flatten_prod(graph::AbstractGraph)
     flatten_prod!(deepcopy(graph))
 end
-# function flatten_prod(graph::AbstractGraph)
-#     if isempty(graph.subgraphs)
-#         return deepcopy(graph)
-#     else
-#         children = []
-#         for sub in graph.subgraphs
-#             push!(children, merge_prod(sub))
-#         end
-#         newnode = Graph([]; operator=Sum())
-#         if graph.operator == Sum
-#             for (child_idx, child) in enumerate(children)
-#                 push!(newnode.subgraphs, child)
-#                 push!(newnode.subgraph_factors, graph.subgraph_factors[child_idx])
-#             end
-#         elseif graph.operator == Prod
-#             newnode.operator = Prod()
-#             for (child_idx, child) in enumerate(children)
-#                 if isempty(child.subgraphs) || child.operator == Sum
-#                     push!(newnode.subgraphs, child)
-#                     push!(newnode.subgraph_factors, graph.subgraph_factors[child_idx])
-#                 else
-#                     for (grandchild_idx, grandchild) in enumerate(child.subgraphs)
-#                         push!(newnode.subgraphs, grandchild)
-#                         push!(newnode.subgraph_factors, graph.subgraph_factors[child_idx] * child.subgraph_factors[grandchild_idx])
-#                     end
-#                 end
-#             end
-#         end
-#         return newnode
-#     end
-# end
-
-
 
 """
     function flatten_chains!(g::AbstractGraph)

@@ -165,7 +165,7 @@ export evalNaive, showTree
 include("utility.jl")
 using .Utility
 export Utility
-export taylorexpansion!, flatten
+export taylorexpansion!
 
 include("frontend/frontends.jl")
 using .FrontEnds
