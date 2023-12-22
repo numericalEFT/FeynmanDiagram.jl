@@ -13,7 +13,12 @@ function optimize!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose
         return nothing
     else
         graphs = collect(graphs)
-        remove_duplicated_leaves!(graphs, verbose=verbose, normalize=normalize)
+        # remove_duplicated_leaves!(graphs, verbose=verbose, normalize=normalize)
+        while true
+            g_copy = deepcopy(graphs)
+            remove_duplicated_nodes!(graphs, verbose=verbose)
+            g_copy == graphs && break
+        end
         flatten_all_chains!(graphs, verbose=verbose)
         merge_all_linear_combinations!(graphs, verbose=verbose)
         remove_all_zero_valued_subgraphs!(graphs, verbose=verbose)
@@ -284,7 +289,6 @@ function remove_duplicated_leaves!(graphs::Union{Tuple,AbstractVector{<:Abstract
     unique!(x -> id(x), leaves) #filter out the leaves with the same id number
 
     mapping = unique_leaves(leaves)
-    verbose > 0 && length(leaves) > 0 && println("Number of independent Leaves $(length(leaves)) → $(length(_unique_leaves))")
 
     for g in graphs
         for n in PreOrderDFS(g)
@@ -292,6 +296,32 @@ function remove_duplicated_leaves!(graphs::Union{Tuple,AbstractVector{<:Abstract
                 if isleaf(sub_g)
                     set_subgraph!(n, mapping[id(sub_g)], si)
                 end
+            end
+        end
+    end
+
+    return graphs
+end
+
+function remove_duplicated_nodes!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0, kwargs...)
+    verbose > 0 && println("remove duplicated leaves.")
+
+    nodes_all = Vector{eltype(graphs)}()
+    for g in graphs
+        for node in PostOrderDFS(g)
+            push!(nodes_all, node)
+        end
+    end
+
+    sort!(nodes_all, by=x -> id(x)) #sort the id of the leaves in an asscend order
+    unique!(x -> id(x), nodes_all) #filter out the leaves with the same id number
+
+    mapping = unique_leaves(nodes_all)
+
+    for g in graphs
+        for n in PreOrderDFS(g)
+            for (si, sub_g) in enumerate(subgraphs(n))
+                set_subgraph!(n, mapping[id(sub_g)], si)
             end
         end
     end

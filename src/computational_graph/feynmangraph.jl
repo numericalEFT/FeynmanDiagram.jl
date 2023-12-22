@@ -344,7 +344,7 @@ function linear_combination(g1::FeynmanGraph{F,W}, g2::FeynmanGraph{F,W}, c1=F(1
     empty_topology = []  # No topology for Sum nodes
     total_vertices = union(vertices(g1), vertices(g2))
     properties = FeynmanProperties(diagram_type(g1), total_vertices, empty_topology, external_indices(g1), external_legs(g1))
-    
+
     f1 = typeof(c1) == F ? c1 : F(c1)
     f2 = typeof(c2) == F ? c2 : F(c2)
     subgraphs = [g1, g2]
@@ -396,7 +396,7 @@ function linear_combination(graphs::Vector{FeynmanGraph{F,W}}, constants::Abstra
     empty_topology = []  # No topology for Sum nodes
     total_vertices = union(Iterators.flatten(vertices.(graphs)))
     properties = FeynmanProperties(diagram_type(g1), total_vertices, empty_topology, external_indices(g1), external_legs(g1))
-    
+
     subgraphs = graphs
     subgraph_factors = eltype(constants) == F ? constants : Vector{F}(constants)
     # Convert trivial unary links to in-place form
@@ -539,21 +539,25 @@ function feynman_diagram(subgraphs::Vector{FeynmanGraph{F,W}}, topology::Vector{
         sign = 1
     end
 
+    subgraphs_noVer = FeynmanGraph{F,W}[]
     if isnothing(contraction_orders)
         for (i, connection) in enumerate(topology)
-            push!(subgraphs, propagator(operators[connection]; orders=zeros(Int, orders_length)))
+            # push!(subgraphs, propagator(operators[connection]; orders=zeros(Int, orders_length)))
+            push!(subgraphs_noVer, propagator(operators[connection]; orders=zeros(Int, orders_length)))
         end
     else
         for (i, connection) in enumerate(topology)
             propagator_orders = zeros(Int, orders_length)
             propagator_orders[eachindex(contraction_orders[i])] = contraction_orders[i]
-            push!(subgraphs, propagator(operators[connection]; orders=propagator_orders))
+            # push!(subgraphs, propagator(operators[connection]; orders=propagator_orders))
+            push!(subgraphs_noVer, propagator(operators[connection]; orders=propagator_orders))
             diag_orders += propagator_orders
         end
     end
     _external_indices = union(external_leg, external_noleg)
     _external_legs = append!([true for i in eachindex(external_leg)], [false for i in eachindex(external_noleg)])
-    return FeynmanGraph(subgraphs; topology=topology, external_indices=_external_indices, external_legs=_external_legs, vertices=vertices,
+    # return FeynmanGraph(subgraphs; topology=topology, external_indices=_external_indices, external_legs=_external_legs, vertices=vertices,
+    return FeynmanGraph(subgraphs_noVer; topology=topology, external_indices=_external_indices, external_legs=_external_legs, vertices=vertices,
         orders=diag_orders, name=name, diagtype=diagtype, operator=Prod(), factor=factor * sign, weight=weight)
 end
 

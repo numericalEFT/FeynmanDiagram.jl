@@ -40,21 +40,21 @@ function Graph!(d::DiagTree.Diagram{W}) where {W}
         end
     end
 
-    subgraph = ComputationalGraphs.Graph{W,W}[]
+    subgraphs = ComputationalGraphs.Graph{W,W}[]
     for g in d.subdiagram
         # res, map = Graph!(g; map=map)
         res = Graph!(g)
-        push!(subgraph, res)
+        push!(subgraphs, res)
     end
 
-    if isempty(subgraph)
-        root = ComputationalGraphs.Graph(subgraph; subgraph_factors=ones(W, length(d.subdiagram)), factor=d.factor, name=String(d.name),
+    if isempty(subgraphs)
+        root = ComputationalGraphs.Graph(subgraphs; subgraph_factors=ones(W, length(d.subdiagram)), factor=d.factor, name=String(d.name),
             operator=op(d.operator), orders=d.id.order, ftype=W, wtype=W, weight=d.weight, properties=d.id)
     else
-        tree = ComputationalGraphs.Graph(subgraph; subgraph_factors=ones(W, length(d.subdiagram)), name=String(d.name),
-            operator=op(d.operator), orders=d.id.order, ftype=W, wtype=W, weight=d.weight, properties=d.id)
-        root = ComputationalGraphs.Graph([tree,]; subgraph_factors=[d.factor,], name=tree.name, orders=tree.orders,
-            ftype=W, wtype=W, weight=d.weight * d.factor, properties=d.id)
+        tree = ComputationalGraphs.Graph(subgraphs; subgraph_factors=ones(W, length(d.subdiagram)),
+            operator=op(d.operator), orders=d.id.order, ftype=W, wtype=W, weight=d.weight)
+        root = ComputationalGraphs.Graph([tree,]; subgraph_factors=[d.factor,], orders=tree.orders,
+            ftype=W, wtype=W, weight=d.weight * d.factor)
     end
 
     return root
