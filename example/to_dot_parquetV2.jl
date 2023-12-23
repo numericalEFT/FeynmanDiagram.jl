@@ -24,8 +24,8 @@ function main()
     KinL, KoutL, KinR = zeros(16), zeros(16), zeros(16)
     KinL[1], KoutL[2], KinR[3] = 1.0, 1.0, 1.0
     # para = GV.diagPara(SigmaDiag, false, spin, order, [NoHartree], KinL - KoutL)
-    # para = DiagParaF64(type=SigmaDiag, innerLoopNum=order, interaction=[Interaction(UpUp, [Instant,])], hasTau=true)
-    para = DiagParaF64(type=SigmaDiag, innerLoopNum=2, interaction=[Interaction(ChargeCharge, [Instant,])], hasTau=true)
+    para = DiagParaF64(type=SigmaDiag, innerLoopNum=order, interaction=[Interaction(UpUp, [Instant,])], hasTau=true)
+    # para = DiagParaF64(type=SigmaDiag, innerLoopNum=2, interaction=[Interaction(ChargeCharge, [Instant,])], hasTau=true)
     parquet_builder = Parquet.build(para)
     diag = parquet_builder.diagram
     # for eachd in diag
@@ -33,7 +33,7 @@ function main()
     #     recursive_print(eachd)
     # end
     # mergeby version
-    d = mergeby(diag)
+    d = mergeby(diag[2:end])
     # for eachd in [d[1]]
     #     print("new diag2\n")
     #     recursive_print(eachd)
