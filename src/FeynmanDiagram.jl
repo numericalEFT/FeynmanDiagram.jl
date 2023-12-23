@@ -122,7 +122,7 @@ export multi_product, linear_combination, feynman_diagram, propagator, interacti
 export haschildren, onechild, isleaf, isbranch, ischain, isfactorless, has_zero_subfactors, eldest
 export relabel!, standardize_labels!, replace_subgraph!, merge_linear_combination!, merge_multi_product!, merge_chains!
 export relabel, standardize_labels, replace_subgraph, merge_linear_combination, merge_multi_product, merge_chains
-
+export open_parenthesis, flatten_prod!, flatten_prod
 export optimize!, optimize, merge_all_chains!, merge_all_linear_combinations!, remove_duplicated_leaves!
 
 include("TaylorSeries/TaylorSeries.jl")
