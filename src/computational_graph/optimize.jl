@@ -249,7 +249,7 @@ function unique_leaves(graphs::AbstractVector{<:AbstractGraph})
     for g in graphs
         flag = true
         for e in unique_graphs
-            if isequiv(e, g, :id)
+            if isequiv(e, g, :id, :name)
                 mapping[id(g)] = e
                 flag = false
                 break

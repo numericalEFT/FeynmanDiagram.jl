@@ -309,10 +309,20 @@ function isequiv(a::AbstractGraph, b::AbstractGraph, args...)
     # Check that all subgraphs are equivalent modulo `args`
     length(subgraphs(a)) != length(subgraphs(b)) && return false
 
+    # if :id ∉ args
     pa = sortperm(subgraphs(a), by=x -> id(x))
     pb = sortperm(subgraphs(b), by=x -> id(x))
     subgraph_factors(a)[pa] != subgraph_factors(b)[pb] && return false
     !all(isequiv.(subgraphs(a)[pa], subgraphs(b)[pb], args...)) && return false
+    # else
+    #     a_pairs = collect(zip(subgraphs(a), subgraph_factors(a)))
+    #     b_pairs = collect(zip(subgraphs(b), subgraph_factors(b)))
+    #     for a_pair in a_pairs
+    #         while true
+    #             isequiv(a_pair[1], b_pair)
+    #         end
+    #     end
+    # end
 
     for field in fieldnames(typeof(a))
         if field in [:weight, :subgraphs, :subgraph_factors, args...]
@@ -324,7 +334,11 @@ function isequiv(a::AbstractGraph, b::AbstractGraph, args...)
             # elseif field == :subgraph_factors && getproperty(a, :subgraph_factors) == subgraph_factors(a) && getproperty(b, :subgraph_factors) == subgraph_factors(b)
             #     continue  # skip subgraph_factors if already accounted for
         else
-            getproperty(a, field) != getproperty(b, field) && return false
+            # getproperty(a, field) != getproperty(b, field) && return false
+            if getproperty(a, field) != getproperty(b, field)
+                # println(field)
+                return false
+            end
         end
     end
     return true

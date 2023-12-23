@@ -500,6 +500,7 @@ function feynman_diagram(subgraphs::Vector{FeynmanGraph{F,W}}, topology::Vector{
     external_leg, external_noleg = Int[], Int[] # index all leg/nonleg external operators
     ind = 0
 
+    subgraphs = deepcopy(subgraphs)
     orders_length = length(orders(subgraphs[1]))
     diag_orders = zeros(Int, orders_length)
     for g in subgraphs
@@ -539,25 +540,25 @@ function feynman_diagram(subgraphs::Vector{FeynmanGraph{F,W}}, topology::Vector{
         sign = 1
     end
 
-    subgraphs_noVer = FeynmanGraph{F,W}[]
+    # subgraphs_noVer = FeynmanGraph{F,W}[]
     if isnothing(contraction_orders)
         for (i, connection) in enumerate(topology)
-            # push!(subgraphs, propagator(operators[connection]; orders=zeros(Int, orders_length)))
-            push!(subgraphs_noVer, propagator(operators[connection]; orders=zeros(Int, orders_length)))
+            push!(subgraphs, propagator(operators[connection]; orders=zeros(Int, orders_length)))
+            # push!(subgraphs_noVer, propagator(operators[connection]; orders=zeros(Int, orders_length)))
         end
     else
         for (i, connection) in enumerate(topology)
             propagator_orders = zeros(Int, orders_length)
             propagator_orders[eachindex(contraction_orders[i])] = contraction_orders[i]
-            # push!(subgraphs, propagator(operators[connection]; orders=propagator_orders))
-            push!(subgraphs_noVer, propagator(operators[connection]; orders=propagator_orders))
+            push!(subgraphs, propagator(operators[connection]; orders=propagator_orders))
+            # push!(subgraphs_noVer, propagator(operators[connection]; orders=propagator_orders))
             diag_orders += propagator_orders
         end
     end
     _external_indices = union(external_leg, external_noleg)
     _external_legs = append!([true for i in eachindex(external_leg)], [false for i in eachindex(external_noleg)])
-    # return FeynmanGraph(subgraphs; topology=topology, external_indices=_external_indices, external_legs=_external_legs, vertices=vertices,
-    return FeynmanGraph(subgraphs_noVer; topology=topology, external_indices=_external_indices, external_legs=_external_legs, vertices=vertices,
+    # return FeynmanGraph(subgraphs_noVer; topology=topology, external_indices=_external_indices, external_legs=_external_legs, vertices=vertices,
+    return FeynmanGraph(subgraphs; topology=topology, external_indices=_external_indices, external_legs=_external_legs, vertices=vertices,
         orders=diag_orders, name=name, diagtype=diagtype, operator=Prod(), factor=factor * sign, weight=weight)
 end
 
