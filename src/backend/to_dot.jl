@@ -297,8 +297,9 @@ function get_leafname(g, leafidx)
 
     if leaftype == BareGreenId
         leafname = "<i>G</i><sub>$leafidx</sub>"
+        println(leaftype, ": ", leafidx, " ", g.factor, " ", " ", g.properties.extK, " ", g.properties.extT, " ", g.properties.order)
     elseif leaftype == BareInteractionId
-        println(leafidx, " ", g.factor, " ", g.properties.response, " ", g.properties.type,
+        println(leaftype, ": ", leafidx, " ", g.factor, " ", g.properties.response, " ", g.properties.type,
             " ", g.properties.permutation, " ", g.properties.extK, " ", g.properties.extT, " ", g.properties.order)
         leafname = "<i>V</i><sub>$leafidx</sub>"
     elseif leaftype == PolarId
@@ -316,6 +317,7 @@ function get_leafname(g, leafidx)
     elseif leaftype == ComputationalGraphs.Interaction
         leafname = "<i>Ver</i><sub>$leafidx</sub>"
     else
+        println("Unknown leaf type: $leaftype")
         leafname = "L<sub>$leafidx</sub>"
     end
     return leafname
