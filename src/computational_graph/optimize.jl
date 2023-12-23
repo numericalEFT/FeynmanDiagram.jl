@@ -231,7 +231,7 @@ function merge_all_multi_products!(graphs::Union{Tuple,AbstractVector{<:Graph}};
 end
 
 """
-    function unique_nodes(graphs::AbstractVector{<:AbstractGraph})
+    function unique_nodes!(graphs::AbstractVector{<:AbstractGraph})
 
     Identifies and retrieves unique leaf nodes from a set of graphs.
 
@@ -241,15 +241,17 @@ end
 # Returns:
 - A mapping dictionary from the id of each leaf to the unique leaf node.
 """
-function unique_nodes(graphs::AbstractVector{<:AbstractGraph})
+function unique_nodes!(graphs::AbstractVector{<:AbstractGraph}, mapping::Dict{Int,<:AbstractGraph}=Dict{Int,eltype(graphs)}())
+    # function unique_nodes!(graphs::AbstractVector{<:AbstractGraph})
     ############### find the unique Leaves #####################
-    unique_graphs = []
-    mapping = Dict{Int,eltype(graphs)}()
+    # unique_graphs = []
+    # mapping = Dict{Int,eltype(graphs)}()
+    unique_graphs = collect(values(mapping))
 
     for g in graphs
         flag = true
         for e in unique_graphs
-            if isequiv(e, g, :id, :name)
+            if isequiv(e, g, :id, :name, :weight)
                 mapping[id(g)] = e
                 flag = false
                 break
@@ -288,7 +290,7 @@ function remove_duplicated_leaves!(graphs::Union{Tuple,AbstractVector{<:Abstract
     sort!(leaves, by=x -> id(x)) #sort the id of the leaves in an asscend order
     unique!(x -> id(x), leaves) #filter out the leaves with the same id number
 
-    mapping = unique_nodes(leaves)
+    mapping = unique_nodes!(leaves)
 
     for g in graphs
         for n in PreOrderDFS(g)
@@ -304,7 +306,7 @@ function remove_duplicated_leaves!(graphs::Union{Tuple,AbstractVector{<:Abstract
 end
 
 function remove_duplicated_nodes!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0, kwargs...)
-    verbose > 0 && println("remove duplicated leaves.")
+    verbose > 0 && println("remove duplicated nodes.")
 
     nodes_all = Vector{eltype(graphs)}()
     for g in graphs
@@ -316,7 +318,7 @@ function remove_duplicated_nodes!(graphs::Union{Tuple,AbstractVector{<:AbstractG
     sort!(nodes_all, by=x -> id(x)) #sort the id of the leaves in an asscend order
     unique!(x -> id(x), nodes_all) #filter out the leaves with the same id number
 
-    mapping = unique_nodes(nodes_all)
+    mapping = unique_nodes!(nodes_all)
 
     for g in graphs
         for n in PreOrderDFS(g)
@@ -328,6 +330,47 @@ function remove_duplicated_nodes!(graphs::Union{Tuple,AbstractVector{<:AbstractG
 
     return graphs
 end
+
+function remove_duplicated_nodes_wip!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0, kwargs...)
+    verbose > 0 && println("remove duplicated nodes.")
+
+    root = Graph(collect(graphs))
+
+    leaves = collect(Leaves(root))
+    sort!(leaves, by=x -> id(x)) #sort the id of the leaves in an asscend order
+    unique!(x -> id(x), leaves) #filter out the leaves with the same id number
+
+    mapping = unique_nodes!(leaves)
+
+    nodes_samedepth = eltype(graphs)[]
+    indices_subgraphs = id.(leaves)
+    indices_samedepth = Int[]
+    for node in PostOrderDFS(root)
+        isleaf(node) && continue
+        # if haskey(mapping, id(eldest(node)))
+        if isdisjoint(id.(subgraphs(node)), indices_subgraphs)
+            # println("disjoint, $(node.id)")
+            _map = unique_nodes!(nodes_samedepth)
+            merge!(mapping, _map)
+            for (si, sub_g) in enumerate(subgraphs(node))
+                set_subgraph!(node, mapping[id(sub_g)], si)
+            end
+            indices_subgraphs = indices_samedepth
+            nodes_samedepth = [node]
+            indices_samedepth = [id(node)]
+        else
+            # println("samedepth, $(node.id)")
+            for (si, sub_g) in enumerate(subgraphs(node))
+                set_subgraph!(node, mapping[id(sub_g)], si)
+            end
+            push!(nodes_samedepth, node)
+            push!(indices_samedepth, id(node))
+        end
+    end
+
+    return graphs
+end
+
 
 """
     function burn_from_targetleaves!(graphs::AbstractVector{G}, targetleaves_id::AbstractVector{Int}; verbose=0) where {G <: AbstractGraph}

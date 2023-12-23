@@ -309,24 +309,26 @@ function isequiv(a::AbstractGraph, b::AbstractGraph, args...)
     # Check that all subgraphs are equivalent modulo `args`
     length(subgraphs(a)) != length(subgraphs(b)) && return false
 
-    if :id ∉ args
-        pa = sortperm(subgraphs(a), by=x -> id(x))
-        pb = sortperm(subgraphs(b), by=x -> id(x))
-        subgraph_factors(a)[pa] != subgraph_factors(b)[pb] && return false
-        !all(isequiv.(subgraphs(a)[pa], subgraphs(b)[pb], args...)) && return false
-    else
-        a_pairs = collect(zip(subgraphs(a), subgraph_factors(a)))
-        b_pairs = collect(zip(subgraphs(b), subgraph_factors(b)))
-        for (suba, suba_factor) in a_pairs
-            for (idx, (subb, subb_factor)) in enumerate(b_pairs)
-                if suba_factor == subb_factor && isequiv(suba, subb, args...)
-                    deleteat!(b_pairs, idx)
-                    break
-                end
-                return false
+    # if :id ∉ args
+    #     pa = sortperm(subgraphs(a), by=x -> id(x))
+    #     pb = sortperm(subgraphs(b), by=x -> id(x))
+    #     subgraph_factors(a)[pa] != subgraph_factors(b)[pb] && return false
+    #     !all(isequiv.(subgraphs(a)[pa], subgraphs(b)[pb], args...)) && return false
+    # else
+    a_pairs = collect(zip(subgraphs(a), subgraph_factors(a)))
+    b_pairs = collect(zip(subgraphs(b), subgraph_factors(b)))
+    for (suba, suba_factor) in a_pairs
+        match_found = false
+        for (idx, (subb, subb_factor)) in enumerate(b_pairs)
+            if suba_factor == subb_factor && isequiv(suba, subb, args...)
+                deleteat!(b_pairs, idx)
+                match_found = true
+                break
             end
         end
+        !match_found && return false
     end
+    # end
 
     for field in fieldnames(typeof(a))
         if field in [:weight, :subgraphs, :subgraph_factors, args...]
