@@ -155,6 +155,15 @@ function replace_subgraph(g::AbstractGraph, w::AbstractGraph, m::AbstractGraph)
     return g_new
 end
 
+"""
+    open_parenthesis(graph::AbstractGraph)
+
+    Recursively open parenthesis of subgraphs within the given graph `g`.  The graph eventually becomes 
+    a single Sum root node with multiple subgraphs that represents multi-product of nodes (not flattened).
+
+# Arguments:
+- `g::AbstractGraph`: graph to be modified
+"""
 function open_parenthesis(graph::AbstractGraph)
     if isempty(graph.subgraphs)
         return deepcopy(graph)
@@ -201,6 +210,15 @@ function open_parenthesis(graph::AbstractGraph)
     end
 end
 
+"""
+    flatten_prod!(graph::AbstractGraph)
+
+    Recursively merge multi-product sub-branches within the given graph `g  by merging  product subgraphs 
+    into their parent product graphs in the in-place form.
+
+# Arguments:
+- `g::AbstractGraph`: graph to be modified
+"""
 function flatten_prod!(graph::AbstractGraph)
     if isempty(graph.subgraphs)
         return graph
@@ -243,6 +261,54 @@ function flatten_prod(graph::AbstractGraph)
     flatten_prod!(deepcopy(graph))
 end
 
+"""
+    flatten_sum!(graph::AbstractGraph)
+
+    Recursively merge multi-product sub-branches within the given graph `g  by merging  sum subgraphs 
+    into their parent sum graphs in the in-place form.
+
+# Arguments:
+- `g::AbstractGraph`: graph to be modified
+"""
+function flatten_sum!(graph::AbstractGraph)
+    if isempty(graph.subgraphs)
+        return graph
+    else
+        children = []
+        for sub in graph.subgraphs
+            push!(children, flatten_sum!(sub))
+        end
+        newchildren = []
+        newfactors = []
+        if graph.operator == Sum
+            for (child_idx, child) in enumerate(children)
+                if isempty(child.subgraphs) || child.operator == Prod
+                    push!(newchildren, child)
+                    push!(newfactors, graph.subgraph_factors[child_idx])
+                else
+                    for (grandchild_idx, grandchild) in enumerate(child.subgraphs)
+                        push!(newchildren, grandchild)
+                        push!(newfactors, graph.subgraph_factors[child_idx] * child.subgraph_factors[grandchild_idx])
+                    end
+                end
+            end
+        elseif graph.operator == Prod
+            for (child_idx, child) in enumerate(children)
+                push!(newchildren, child)
+                push!(newfactors, graph.subgraph_factors[child_idx])
+            end
+        end
+        graph.subgraphs = newchildren
+        graph.subgraph_factors = newfactors
+        return graph
+    end
+end
+
+function flatten_sum!(graph::AbstractGraph)
+    flatten_sum!(deepcopy(graph))
+end
+
+to_feynman(g::AbstractGraph) = flatten_prod(open_parenthesis(g))
 """
     function flatten_chains!(g::AbstractGraph)
 
