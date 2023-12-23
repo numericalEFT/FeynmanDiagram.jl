@@ -48,18 +48,13 @@ function Graph!(d::DiagTree.Diagram{W}) where {W}
     end
 
     if isempty(subgraphs)
-        root = ComputationalGraphs.Graph(subgraphs; subgraph_factors=ones(W, length(d.subdiagram)), factor=d.factor, name=String(d.name),
+        root = ComputationalGraphs.Graph(subgraphs; subgraph_factors=ones(W, length(subgraphs)), factor=d.factor, name=String(d.name),
             operator=op(d.operator), orders=d.id.order, ftype=W, wtype=W, weight=d.weight, properties=d.id)
     else
-        if d.factor ≈ 1
-            root = ComputationalGraphs.Graph(subgraphs; subgraph_factors=ones(W, length(d.subdiagram)),
-                operator=op(d.operator), orders=d.id.order, ftype=W, wtype=W, weight=d.weight)
-        else
-            tree = ComputationalGraphs.Graph(subgraphs; subgraph_factors=ones(W, length(d.subdiagram)),
-                operator=op(d.operator), orders=d.id.order, ftype=W, wtype=W, weight=d.weight)
-            root = ComputationalGraphs.Graph([tree,]; subgraph_factors=[d.factor,], orders=tree.orders,
-                ftype=W, wtype=W, weight=d.weight * d.factor)
-        end
+        tree = ComputationalGraphs.Graph(subgraphs; subgraph_factors=ones(W, length(subgraphs)),
+            operator=op(d.operator), orders=d.id.order, ftype=W, wtype=W, weight=d.weight)
+        root = ComputationalGraphs.Graph([tree,]; subgraph_factors=[d.factor,], orders=tree.orders,
+            ftype=W, wtype=W, weight=d.weight * d.factor)
     end
 
     return root

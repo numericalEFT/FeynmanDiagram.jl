@@ -334,11 +334,7 @@ function isequiv(a::AbstractGraph, b::AbstractGraph, args...)
             # elseif field == :subgraph_factors && getproperty(a, :subgraph_factors) == subgraph_factors(a) && getproperty(b, :subgraph_factors) == subgraph_factors(b)
             #     continue  # skip subgraph_factors if already accounted for
         else
-            # getproperty(a, field) != getproperty(b, field) && return false
-            if getproperty(a, field) != getproperty(b, field)
-                # println(field)
-                return false
-            end
+            getproperty(a, field) != getproperty(b, field) && return false
         end
     end
     return true
