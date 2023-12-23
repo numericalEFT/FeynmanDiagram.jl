@@ -231,7 +231,7 @@ function merge_all_multi_products!(graphs::Union{Tuple,AbstractVector{<:Graph}};
 end
 
 """
-    function unique_leaves(graphs::AbstractVector{<:AbstractGraph})
+    function unique_nodes(graphs::AbstractVector{<:AbstractGraph})
 
     Identifies and retrieves unique leaf nodes from a set of graphs.
 
@@ -241,7 +241,7 @@ end
 # Returns:
 - A mapping dictionary from the id of each leaf to the unique leaf node.
 """
-function unique_leaves(graphs::AbstractVector{<:AbstractGraph})
+function unique_nodes(graphs::AbstractVector{<:AbstractGraph})
     ############### find the unique Leaves #####################
     unique_graphs = []
     mapping = Dict{Int,eltype(graphs)}()
@@ -288,7 +288,7 @@ function remove_duplicated_leaves!(graphs::Union{Tuple,AbstractVector{<:Abstract
     sort!(leaves, by=x -> id(x)) #sort the id of the leaves in an asscend order
     unique!(x -> id(x), leaves) #filter out the leaves with the same id number
 
-    mapping = unique_leaves(leaves)
+    mapping = unique_nodes(leaves)
 
     for g in graphs
         for n in PreOrderDFS(g)
@@ -316,7 +316,7 @@ function remove_duplicated_nodes!(graphs::Union{Tuple,AbstractVector{<:AbstractG
     sort!(nodes_all, by=x -> id(x)) #sort the id of the leaves in an asscend order
     unique!(x -> id(x), nodes_all) #filter out the leaves with the same id number
 
-    mapping = unique_leaves(nodes_all)
+    mapping = unique_nodes(nodes_all)
 
     for g in graphs
         for n in PreOrderDFS(g)

@@ -44,8 +44,11 @@ function main()
     #     print("graph1\n")
     #     recursive_print(d)
     # end
+    print("eval: $(ComputationalGraphs.eval!(G[1]))\n")
     optimize!(G)
+    print("eval: $(ComputationalGraphs.eval!(G[1]))\n")
     optimize!(G)
+    print("eval: $(ComputationalGraphs.eval!(G[1]))\n")
 
     # for d in G
     #     print("graph2\n")
@@ -53,7 +56,7 @@ function main()
     # end
 
     # fname = "par_o$(order)_merge_unoptimized"
-    fname = "par_o$(order)_merge_opt"
+    fname = "par_o$(order)_merge_opt_spinless"
     filename = "$fname.dot"
     # Compilers.compile_dot(G, filename; diagram_id_map=diagram_id_map)
     Compilers.compile_dot(G, filename)
