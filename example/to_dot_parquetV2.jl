@@ -19,12 +19,12 @@ function recursive_print(diag)
 end
 
 function main()
-    order = 3
+    order = 2
     spin = 2
     KinL, KoutL, KinR = zeros(16), zeros(16), zeros(16)
     KinL[1], KoutL[2], KinR[3] = 1.0, 1.0, 1.0
     # para = GV.diagPara(SigmaDiag, false, spin, order, [NoHartree], KinL - KoutL)
-    para = DiagParaF64(type=SigmaDiag, innerLoopNum=order, interaction=[Interaction(UpUp, [Instant,])])
+    para = DiagParaF64(type=SigmaDiag, innerLoopNum=order, interaction=[Interaction(ChargeCharge, [Instant,])])
     # para = DiagParaF64(type=SigmaDiag, innerLoopNum=2, interaction=[Interaction(ChargeCharge, [Instant,])])
     parquet_builder = Parquet.build(para)
     diag = parquet_builder.diagram
