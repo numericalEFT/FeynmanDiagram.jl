@@ -180,6 +180,8 @@ function bubble!(ver4df::DataFrame, para::DiagPara{W}, legK, chan::TwoBodyChanne
         if length(ver8[key]) == 1
             diag = Diagram{W}(id, Prod(), [ver8[key][1], g0, gx], factor=1.0)
             push!(ver4df, (response=Vresponse, type=vtype, extT=extT, diagram=diag))
+        elseif isempty(ver8[key])
+            continue
         else
             diag = Diagram{W}(GenericId(para), Sum(), ver8[key], factor=1.0)
             ver4diag = Diagram{W}(id, Prod(), [diag, g0, gx], factor=1.0)
