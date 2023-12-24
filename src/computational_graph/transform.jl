@@ -156,14 +156,72 @@ function replace_subgraph(g::AbstractGraph, w::AbstractGraph, m::AbstractGraph)
 end
 
 """
-    open_parenthesis(graph::AbstractGraph)
+    open_parenthesis!(graph::G; map::Dict{Int,G}=Dict{Int,G}()) where {G<:AbstractGraph}
 
-    Recursively open parenthesis of subgraphs within the given graph `g`.  The graph eventually becomes 
+    Recursively open parenthesis of subgraphs within the given graph `g`with in place form.  The graph eventually becomes 
     a single Sum root node with multiple subgraphs that represents multi-product of nodes (not flattened).
 
 # Arguments:
 - `g::AbstractGraph`: graph to be modified
+- `map::Dict{Int,G}=Dict{Int,G}()`: A dictionary that maps the id of an original node with its corresponding new node after transformation. 
+In recursive transform, nodes can be visited several times by different parents. This map keeps track of those visited, and reuse those transformed sub-branches instead of recreating them.
+parents
 """
+function open_parenthesis!(graph::G; map::Dict{Int,G}=Dict{Int,G}()) where {G<:AbstractGraph}
+    if haskey(map, graph.id)
+        return map[graph.id]
+    end
+
+    if isempty(graph.subgraphs)
+        map[graph.id] = graph
+        return graph
+    else
+        children = []
+        for sub in graph.subgraphs
+            push!(children, open_parenthesis(sub))
+        end
+        newchildren = []
+        newfactors = []
+        if graph.operator == Sum
+            # flatten function make sure that all children are already converted to Sum->Prod two layer graphs, so here when merging the subgraphs we just consider the case when operator are Sum.
+            for (child_idx, child) in enumerate(children)
+                if isempty(child.subgraphs)
+                    push!(newchildren, child)
+                    push!(newfactors, graph.subgraph_factors[child_idx])
+                else
+                    for (grandchild_idx, grandchild) in enumerate(child.subgraphs)
+                        push!(newchildren, grandchild)
+                        push!(newfactors, graph.subgraph_factors[child_idx] * child.subgraph_factors[grandchild_idx])
+                    end
+                end
+            end
+        elseif graph.operator == Prod
+            graph.operator = Sum
+            # When opertaor is Prod, we expand parenthese and replace Prod with a Sum operator.
+            childsub_len = [length(child.subgraphs) for child in children]
+            ordtuple = ((childsub_len[num] > 0) ? (1:childsub_len[num]) : (0:0) for num in eachindex(childsub_len)) #The child with no grand child is labeled with a single idx=0
+            for indices in collect(Iterators.product(ordtuple...)) #Indices for all combination of grandchilds, with one from each child. 
+                newchildnode = Graph([]; operator=Prod())
+                for (child_idx, grandchild_idx) in enumerate(indices)
+                    child = children[child_idx]
+                    if grandchild_idx == 0 #Meaning this node is a leaf node
+                        push!(newchildnode.subgraphs, child)
+                        push!(newchildnode.subgraph_factors, graph.subgraph_factors[child_idx])
+                    else
+                        push!(newchildnode.subgraphs, child.subgraphs[grandchild_idx])
+                        push!(newchildnode.subgraph_factors, graph.subgraph_factors[child_idx] * child.subgraph_factors[grandchild_idx])
+                    end
+                end
+                push!(newchildren, newchildnode)
+                push!(newfactors, 1.0)
+            end
+        end
+        graph.subgraphs = newchildren
+        graph.subgraph_factors = newfactors
+        return graph
+    end
+end
+
 function open_parenthesis(graph::AbstractGraph)
     if isempty(graph.subgraphs)
         return deepcopy(graph)
@@ -172,6 +230,8 @@ function open_parenthesis(graph::AbstractGraph)
         for sub in graph.subgraphs
             push!(children, open_parenthesis(sub))
         end
+        newchildren = []
+        newfactors = []
         newnode = Graph([]; operator=Sum())
         if graph.operator == Sum
             # flatten function make sure that all children are already converted to Sum->Prod two layer graphs, so here when merging the subgraphs we just consider the case when operator are Sum.
@@ -211,21 +271,28 @@ function open_parenthesis(graph::AbstractGraph)
 end
 
 """
-    flatten_prod!(graph::AbstractGraph)
+    flatten_prod!(graph::G; map::Dict{Int,G}=Dict{Int,G}()) where {G<:AbstractGraph}
 
     Recursively merge multi-product sub-branches within the given graph `g  by merging  product subgraphs 
     into their parent product graphs in the in-place form.
 
 # Arguments:
 - `g::AbstractGraph`: graph to be modified
+- `map::Dict{Int,G}=Dict{Int,G}()`: A dictionary that maps the id of an original node with its corresponding new node after transformation. 
+In recursive transform, nodes can be visited several times by different parents. This map keeps track of those visited, and reuse those transformed sub-branches instead of recreating them.
 """
-function flatten_prod!(graph::AbstractGraph)
+function flatten_prod!(graph::G; map::Dict{Int,G}=Dict{Int,G}()) where {G<:AbstractGraph}
+    if haskey(map, graph.id)
+        return map[graph.id]
+    end
+
     if isempty(graph.subgraphs)
+        map[graph.id] = graph
         return graph
     else
         children = []
         for sub in graph.subgraphs
-            push!(children, flatten_prod!(sub))
+            push!(children, flatten_prod!(sub, map=map))
         end
         newchildren = []
         newfactors = []
@@ -253,30 +320,37 @@ function flatten_prod!(graph::AbstractGraph)
         end
         graph.subgraphs = newchildren
         graph.subgraph_factors = newfactors
+        map[graph.id] = graph
         return graph
     end
 end
 
-function flatten_prod(graph::AbstractGraph)
-    flatten_prod!(deepcopy(graph))
+function flatten_prod(graph::G; map::Dict{Int,G}=Dict{Int,G}()) where {G<:AbstractGraph}
+    flatten_prod!(deepcopy(graph), map=map)
 end
 
-"""
-    flatten_sum!(graph::AbstractGraph)
+""" 
+    flatten_sum!(graph::G; map::Dict{Int,G}=Dict{Int,G}()) where {G<:AbstractGraph}
 
     Recursively merge multi-product sub-branches within the given graph `g  by merging  sum subgraphs 
     into their parent sum graphs in the in-place form.
 
 # Arguments:
 - `g::AbstractGraph`: graph to be modified
+- `map::Dict{Int,G}=Dict{Int,G}()`: A dictionary that maps the id of an original node with its corresponding new node after transformation. 
+In recursive transform, nodes can be visited several times by different parents. This map keeps track of those visited, and reuse those transformed sub-branches instead of recreating them.
 """
-function flatten_sum!(graph::AbstractGraph)
+function flatten_sum!(graph::G; map::Dict{Int,G}=Dict{Int,G}()) where {G<:AbstractGraph}
+    if haskey(map, graph.id)
+        return map[graph.id]
+    end
     if isempty(graph.subgraphs)
+        map[graph.id] = graph
         return graph
     else
         children = []
         for sub in graph.subgraphs
-            push!(children, flatten_sum!(sub))
+            push!(children, flatten_sum!(sub, map=map))
         end
         newchildren = []
         newfactors = []
@@ -300,15 +374,15 @@ function flatten_sum!(graph::AbstractGraph)
         end
         graph.subgraphs = newchildren
         graph.subgraph_factors = newfactors
+        map[graph.id] = graph
         return graph
     end
 end
 
-function flatten_sum!(graph::AbstractGraph)
-    flatten_sum!(deepcopy(graph))
+function flatten_sum(graph::G; map::Dict{Int,G}=Dict{Int,G}()) where {G<:AbstractGraph}
+    flatten_sum!(deepcopy(graph), map=map)
 end
 
-to_feynman(g::AbstractGraph) = flatten_prod(open_parenthesis(g))
 """
     function flatten_chains!(g::AbstractGraph)
 
