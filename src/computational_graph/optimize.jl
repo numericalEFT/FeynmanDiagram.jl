@@ -14,6 +14,22 @@ function optimize!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose
     else
         graphs = collect(graphs)
         # remove_duplicated_leaves!(graphs, verbose=verbose, normalize=normalize)
+        root = Graph(graphs)
+        remove_duplicated_nodes!(root, verbose=verbose)
+
+        flatten_all_chains!(graphs, verbose=verbose)
+        merge_all_linear_combinations!(graphs, verbose=verbose)
+        remove_all_zero_valued_subgraphs!(graphs, verbose=verbose)
+        return graphs
+    end
+end
+
+function optimize!_v0(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0, normalize=nothing)
+    if isempty(graphs)
+        return nothing
+    else
+        graphs = collect(graphs)
+        # remove_duplicated_leaves!(graphs, verbose=verbose, normalize=normalize)
         while true
             g_copy = deepcopy(graphs)
             remove_duplicated_nodes!(graphs, verbose=verbose)
@@ -331,46 +347,44 @@ function remove_duplicated_nodes!(graphs::Union{Tuple,AbstractVector{<:AbstractG
     return graphs
 end
 
-function remove_duplicated_nodes_wip!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0, kwargs...)
+function remove_duplicated_nodes!(root::G; verbose=0) where {G<:AbstractGraph}
     verbose > 0 && println("remove duplicated nodes.")
+    # A dictionary to keep track of unique nodes based on a key (like id, or a hash of properties)
+    unique_nodes = Dict{Int,G}()
 
-    root = Graph(collect(graphs))
+    # Helper function to process a node
+    function process_node(node)
+        # Compute a key for the node (here, I'm using `id` for simplicity)
+        node_key = id(node)
 
-    leaves = collect(Leaves(root))
-    sort!(leaves, by=x -> id(x)) #sort the id of the leaves in an asscend order
-    unique!(x -> id(x), leaves) #filter out the leaves with the same id number
-
-    mapping = unique_nodes!(leaves)
-
-    nodes_samedepth = eltype(graphs)[]
-    indices_subgraphs = id.(leaves)
-    indices_samedepth = Int[]
-    for node in PostOrderDFS(root)
-        isleaf(node) && continue
-        # if haskey(mapping, id(eldest(node)))
-        if isdisjoint(id.(subgraphs(node)), indices_subgraphs)
-            # println("disjoint, $(node.id)")
-            _map = unique_nodes!(nodes_samedepth)
-            merge!(mapping, _map)
-            for (si, sub_g) in enumerate(subgraphs(node))
-                set_subgraph!(node, mapping[id(sub_g)], si)
-            end
-            indices_subgraphs = indices_samedepth
-            nodes_samedepth = [node]
-            indices_samedepth = [id(node)]
+        # Check if a node with the same key already exists
+        if haskey(unique_nodes, node_key)
+            return unique_nodes[node_key]
         else
-            # println("samedepth, $(node.id)")
-            for (si, sub_g) in enumerate(subgraphs(node))
-                set_subgraph!(node, mapping[id(sub_g)], si)
+            # Check if the node is equivalent to any existing unique node
+            for g in values(unique_nodes)
+                if isequiv(node, g, :id, :name, :weight)
+                    return g
+                end
             end
-            push!(nodes_samedepth, node)
-            push!(indices_samedepth, id(node))
+
+            # Process child nodes if the node is unique
+            for (i, child) in enumerate(subgraphs(node))
+                unique_child = process_node(child)
+                set_subgraph!(node, unique_child, i)
+            end
+
+            # Add the (now potentially updated) node to the unique_nodes dictionary
+            unique_nodes[node_key] = node
+            return node
         end
     end
 
-    return graphs
-end
+    # Start processing from the root
+    process_node(root)
 
+    return root
+end
 
 """
     function burn_from_targetleaves!(graphs::AbstractVector{G}, targetleaves_id::AbstractVector{Int}; verbose=0) where {G <: AbstractGraph}
