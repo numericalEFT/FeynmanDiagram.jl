@@ -19,7 +19,7 @@ function recursive_print(diag)
 end
 
 function main()
-    order = 2
+    order = 3
     spin = 2
     KinL, KoutL, KinR = zeros(16), zeros(16), zeros(16)
     KinL[1], KoutL[2], KinR[3] = 1.0, 1.0, 1.0
@@ -40,7 +40,6 @@ function main()
     # end
     G = FrontEnds.Graph!(d[1])
     G = [eldest(G)]  # drop extraneous Add node at root
-    # G = ComputationalGraphs.merge_all_multi_products!(G)
     # for d in G
     #     print("graph1\n")
     #     recursive_print(d)
@@ -51,13 +50,16 @@ function main()
     optimize!(G)
     print("eval: $(ComputationalGraphs.eval!(G[1]))\n")
 
+    # G = [ComputationalGraphs.flatten_prod!(g) for g in G]
+    G = [ComputationalGraphs.open_parenthesis(g) for g in G]
+
     # for d in G
     #     print("graph2\n")
     #     recursive_print(d)
     # end
 
     # fname = "par_o$(order)_merge_unoptimized"
-    fname = "par_o$(order)_merge_opt_spinless"
+    fname = "par_o$(order)_merge_opt_spinless_flat"
     filename = "$fname.dot"
     # Compilers.compile_dot(G, filename; diagram_id_map=diagram_id_map)
     Compilers.compile_dot(G, filename)
