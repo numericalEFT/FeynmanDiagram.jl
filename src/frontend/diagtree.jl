@@ -27,7 +27,8 @@ julia> root = FrontEnds.Graph!(d)
 ```
 
 """
-function Graph!(d::DiagTree.Diagram{W}; map=Dict{Int,DiagTree.DiagramId}()) where {W}
+# function Graph!(d::DiagTree.Diagram{W}; map=Dict{Int,DiagTree.DiagramId}()) where {W}
+function Graph!(d::DiagTree.Diagram{W}) where {W}
 
     function op(o)
         if o isa DiagTree.Sum
@@ -39,22 +40,30 @@ function Graph!(d::DiagTree.Diagram{W}; map=Dict{Int,DiagTree.DiagramId}()) wher
         end
     end
 
-    subgraph = ComputationalGraphs.Graph{W,W}[]
+    subgraphs = ComputationalGraphs.Graph{W,W}[]
     for g in d.subdiagram
-        res, map = Graph!(g; map=map)
-        push!(subgraph, res)
+        # res, map = Graph!(g; map=map)
+        res = Graph!(g)
+        push!(subgraphs, res)
     end
 
-    tree = ComputationalGraphs.Graph(subgraph; subgraph_factors=ones(W, length(d.subdiagram)), name=String(d.name), operator=op(d.operator), orders=d.id.order, ftype=W, wtype=W, weight=d.weight)
+    if isempty(subgraphs)
+        root = ComputationalGraphs.Graph(subgraphs; subgraph_factors=ones(W, length(subgraphs)), factor=d.factor, name=String(d.name),
+            operator=op(d.operator), orders=d.id.order, ftype=W, wtype=W, weight=d.weight, properties=d.id)
+    else
+        tree = ComputationalGraphs.Graph(subgraphs; subgraph_factors=ones(W, length(subgraphs)),
+            operator=op(d.operator), orders=d.id.order, ftype=W, wtype=W, weight=d.weight)
+        root = ComputationalGraphs.Graph([tree,]; subgraph_factors=[d.factor,], orders=tree.orders,
+            ftype=W, wtype=W, weight=d.weight * d.factor)
+    end
 
-    root = ComputationalGraphs.Graph([tree,]; subgraph_factors=[d.factor,], name=tree.name, orders=tree.orders, ftype=W, wtype=W, weight=d.weight * d.factor)
+    return root
+    # @assert haskey(map, root.id) == false "DiagramId already exists in map: $(root.id)"
+    # @assert haskey(map, tree.id) == false "DiagramId already exists in map: $(tree.id)"
+    # map[root.id] = d.id
+    # map[tree.id] = d.id
 
-    @assert haskey(map, root.id) == false "DiagramId already exists in map: $(root.id)"
-    @assert haskey(map, tree.id) == false "DiagramId already exists in map: $(tree.id)"
-    map[root.id] = d.id
-    map[tree.id] = d.id
-
-    return root, map
+    # return root, map
 end
 
 """

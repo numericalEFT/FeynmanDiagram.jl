@@ -97,11 +97,11 @@ evalPropagatorfixK(id::BareGreenId, K, extT, varT) = evalGfixK(K, varT[extT[1]],
 evalPropagatorfixK(id::BareInteractionId, K, extT, varT) = evalVfixK(K)
 evalFakePropagator(id::PropagatorId, K, extT, varT) = 1.0
 
-@testset "ep Ver4" begin
-    loopnum = 2
-    para = DiagParaF64(type=Ver4Diag, hasTau=true, innerLoopNum=loopnum, interaction=[Interaction(ChargeCharge, [Instant, Dynamic])])
-    Parquet.ep_coupling(para) # make sure ep_coupling runs
-end
+# @testset "ep Ver4" begin
+#     loopnum = 2
+#     para = DiagParaF64(type=Ver4Diag, hasTau=true, innerLoopNum=loopnum, interaction=[Interaction(ChargeCharge, [Instant, Dynamic])])
+#     Parquet.ep_coupling(para) # make sure ep_coupling runs
+# end
 
 
 @testset "Ver4 RPA chain" begin

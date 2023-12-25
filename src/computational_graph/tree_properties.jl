@@ -141,12 +141,15 @@ end
 function count_operation(g::G) where {G<:AbstractGraph}
     totalsum = 0
     totalprod = 0
+    # totalpower = 0
     for node in PreOrderDFS(g)
         if length(node.subgraphs) > 0
             if node.operator == Prod
                 totalprod += length(node.subgraphs) - 1
             elseif node.operator == Sum
                 totalsum += length(node.subgraphs) - 1
+                # elseif node.operator <: Power
+                #     totalpower += 1
             end
         end
     end
@@ -203,4 +206,33 @@ end
 
 function count_operation(nothing)
     return [0, 0]
+end
+
+function count_expanded_operation(g::G) where {G<:AbstractGraph}
+    totalsum = 0
+    totalprod = 0
+
+    len_subg = length(subgraphs(g))
+    subgraphs_sum = zeros(Int, len_subg)
+    subgraphs_prod = zeros(Int, len_subg)
+    for (i, subg) in enumerate(subgraphs(g))
+        subgraphs_sum[i], subgraphs_prod[i] = count_expanded_operation(subg)
+    end
+
+    if isleaf(g)
+        return [0, 0]
+    else
+        if operator(g) == Sum
+            totalsum = sum(subgraphs_sum) + len_subg - 1
+            totalprod = sum(subgraphs_prod)
+        elseif operator(g) == Prod
+            totalsum = prod(subgraphs_sum .+ 1) - 1
+            innerprod = 0
+            for i in 1:len_subg
+                innerprod += subgraphs_prod[i] * prod([subgraphs_sum[j] + 1 for j in 1:len_subg if j != i])
+            end
+            totalprod = innerprod + (totalsum + 1) * (len_subg - 1)
+        end
+    end
+    return [totalsum, totalprod]
 end

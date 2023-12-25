@@ -111,9 +111,9 @@ function merge_vertex4(para, ver4df, name, legK, W)
     return ver4df
 end
 
-function bubble!(ver4df::DataFrame, para::DiagPara, legK, chan::TwoBodyChannel, partition::Vector{Int}, level::Int, name::Symbol,
+function bubble!(ver4df::DataFrame, para::DiagPara{W}, legK, chan::TwoBodyChannel, partition::Vector{Int}, level::Int, name::Symbol,
     blocks::ParquetBlocks, blockstoplevel::ParquetBlocks,
-    extrafactor=1.0)
+    extrafactor=1.0) where {W}
 
     TauNum = interactionTauNum(para) # maximum tau number for each bare interaction
     oL, oG0, oR, oGx = partition[1], partition[2], partition[3], partition[4]
@@ -158,6 +158,8 @@ function bubble!(ver4df::DataFrame, para::DiagPara, legK, chan::TwoBodyChannel, 
     Rver = vertex4(rPara, RLegK, Γf, true; level=level + 1, name=:Γf, blocks=blocks)
     isempty(Rver) && return
 
+    ver8 = Dict{Any,Any}()
+
     for ldiag in Lver.diagram
         for rdiag in Rver.diagram
             extT, G0T, GxT = tauBasis(chan, ldiag.id.extT, rdiag.id.extT)
@@ -165,9 +167,29 @@ function bubble!(ver4df::DataFrame, para::DiagPara, legK, chan::TwoBodyChannel, 
             gx = green(gxPara, Kx, GxT, true, name=:Gx, blocks=blocks)
             @assert g0 isa Diagram && gx isa Diagram
             # append!(diag, bubble2diag(para, chan, ldiag, rdiag, legK, g0, gx, extrafactor))
-            bubble2diag!(ver4df, para, chan, ldiag, rdiag, legK, g0, gx, extrafactor)
+            bubble2diag!(ver8, para, chan, ldiag, rdiag, legK, g0, gx, extrafactor)
         end
     end
+
+    for key in keys(ver8)
+        G0T, GxT, extT, Vresponse, vtype = key
+        g0 = green(g0Para, K, G0T, true, name=:G0, blocks=blocks)
+        gx = green(gxPara, Kx, GxT, true, name=:Gx, blocks=blocks)
+        @assert g0 isa Diagram && gx isa Diagram
+        id = Ver4Id(para, Vresponse, vtype, k=legK, t=extT, chan=chan)
+        if length(ver8[key]) == 1
+            diag = Diagram{W}(id, Prod(), [ver8[key][1], g0, gx], factor=1.0)
+            push!(ver4df, (response=Vresponse, type=vtype, extT=extT, diagram=diag))
+        elseif isempty(ver8[key])
+            continue
+        else
+            diag = Diagram{W}(GenericId(para), Sum(), ver8[key], factor=1.0)
+            ver4diag = Diagram{W}(id, Prod(), [diag, g0, gx], factor=1.0)
+            push!(ver4df, (response=Vresponse, type=vtype, extT=extT, diagram=ver4diag))
+        end
+        # push!(ver4df, (response=Vresponse, type=vtype, extT=extT, diagram=diag))
+    end
+
     return
 end
 
@@ -182,7 +204,7 @@ function RPA_chain!(ver4df::DataFrame, para::DiagPara, legK, chan::TwoBodyChanne
     return
 end
 
-function bubble2diag!(ver4df::DataFrame, para::DiagPara{W}, chan::TwoBodyChannel, ldiag, rdiag, extK, g0, gx, extrafactor) where {W}
+function bubble2diag!(ver8, para::DiagPara{W}, chan::TwoBodyChannel, ldiag, rdiag, extK, g0, gx, extrafactor) where {W}
     lid, rid = ldiag.id, rdiag.id
     ln, rn = lid.response, rid.response
     lo, ro = lid.para.innerLoopNum, rid.para.innerLoopNum
@@ -193,11 +215,18 @@ function bubble2diag!(ver4df::DataFrame, para::DiagPara{W}, chan::TwoBodyChannel
     spin(response) = (response == UpUp ? "↑↑" : "↑↓")
 
     function add(Lresponse::Response, Rresponse::Response, Vresponse::Response, factor=1.0)
+        key = (G0T, GxT, extT, Vresponse, vtype)
+        if (key in keys(ver8)) == false
+            ver8[key] = []
+        end
+
         if ln == Lresponse && rn == Rresponse
             nodeName = Symbol("$(spin(Lresponse))x$(spin(Rresponse)) → $chan,")
-            id = Ver4Id(para, Vresponse, vtype, k=extK, t=extT, chan=chan)
-            diag = Diagram{W}(id, Prod(), [g0, gx, ldiag, rdiag], factor=factor * Factor, name=nodeName)
-            push!(ver4df, (response=Vresponse, type=vtype, extT=extT, diagram=diag))
+            id = GenericId(para)
+            # diag = Diagram{W}(id, Prod(), [g0, gx, ldiag, rdiag], factor=factor * Factor, name=nodeName)
+            diag = Diagram{W}(id, Prod(), [ldiag, rdiag], factor=factor * Factor, name=nodeName)
+            push!(ver8[key], diag)
+            # push!(ver4df, (response=Vresponse, type=vtype, extT=extT, diagram=diag))
             # push!(diag, Diagram(id, Prod(), [g0, gx, ldiag, rdiag], factor=factor * Factor, name=nodeName))
         end
     end
