@@ -10,21 +10,21 @@ function to_dotstatic(::Type{ComputationalGraphs.Sum}, id::Int, factor::F, subgr
     if factor != 1
         # opr_fac = "factor$(id)[label=$(factor), style=filled, fillcolor=lavender]\n"
         # opr_name = "g$(id)_t"
-        # node_str = "g$(id)[shape=box, label = <<b>&otimes;</b>>, style=filled, fillcolor=cornsilk,]\n"
+        # node_str = "g$(id)[shape=box, label = <<b>&otimes;</b>>, style=filled, fillcolor=lightcyan,]\n"
         # arrow_temp *= "factor$(id)->g$(id)[arrowhead=vee,]\ng$(id)_t->g$(id)[arrowhead=vee,]\n"
         # node_temp *= opr_fac * node_str
-        opr_node = "g$(id)[shape=box, label = <($factor)*<b>&oplus;</b>>, style=filled, color = orange, fontsize=18, width = 0.8, height = 0.4]\n"
+        opr_node = "g$(id)[shape=box, label = <($factor)*<b>&oplus;</b>>, style=filled, color = darkturquoise, fontsize=18, width = 0.8, height = 0.4]\n"
     else
-        opr_node = "g$(id)[shape=box, label = <<b>&oplus;</b>>, style=filled, color= orange, fontsize=18, width = 0.5, height = 0.4]\n"
+        opr_node = "g$(id)[shape=box, label = <<b>&oplus;</b>>, style=filled, color= darkturquoise, fontsize=18, width = 0.5, height = 0.4]\n"
         # opr_name = "g$id"
     end
     opr_name = "g$id"
-    # opr_node = opr_name * "[shape=box, label = <<b>&oplus;</b>>, style=filled, fillcolor=cyan,]\n"
+    # opr_node = opr_name * "[shape=box, label = <<b>&oplus;</b>>, style=filled, fillcolor=lightcyan,]\n"
     node_temp *= opr_node
     for (gix, (g, gfactor)) in enumerate(zip(subgraphs, subgraph_factors))
         if gfactor != 1
             # factor_str = "factor$(g.id)_$(id)_$gix[label=$(gfactor), style=filled, fillcolor=lavender]\n"
-            # subg_str = "g$(g.id)_$(id)_$gix[shape=box, label = <<b>&otimes;</b>>, style=filled, fillcolor=cornsilk,]\n"
+            # subg_str = "g$(g.id)_$(id)_$gix[shape=box, label = <<b>&otimes;</b>>, style=filled, fillcolor=lightcyan,]\n"
             # node_temp *= factor_str * subg_str
             # arrow_temp *= "factor$(g.id)_$(id)_$gix->g$(g.id)_$(id)_$gix[arrowhead=vee,]\ng$(g.id)->g$(g.id)_$(id)_$gix[arrowhead=vee,]\n"
             # arrow_temp *= "g$(g.id)_$(id)_$gix->$opr_name[arrowhead=vee,]\n"
@@ -42,14 +42,14 @@ function to_dotstatic(::Type{ComputationalGraphs.Prod}, id::Int, factor::F, subg
     if factor != 1
         # opr_fac = "factor$(id)[label=$(factor), style=filled, fillcolor=lavender]\n"
         # opr_name = "g$(id)_t"
-        # node_str = "g$(id)[shape=box, label = <<b>&otimes;</b>>, style=filled, fillcolor=cornsilk,]\n"
+        # node_str = "g$(id)[shape=box, label = <<b>&otimes;</b>>, style=filled, fillcolor=lightcyan,]\n"
         # arrow_temp *= "factor$(id)->g$(id)[arrowhead=vee,]\ng$(id)_t->g$(id)[arrowhead=vee,]\n"
         # node_temp *= opr_fac * node_str
         opr_node = "g$id[shape=box, label = <($factor)<b>&otimes;</b>>, style=filled, color=lightpink , fontsize=18, width = 0.8, height = 0.4]\n"
     else
         opr_node = "g$id[shape=box, label = <<b>&otimes;</b>>, style=filled, color=lightpink, fontsize=18, width = 0.5, height = 0.4]\n"
     end
-    # opr_node = opr_name * "[shape=box, label = <<b>&otimes;</b>>, style=filled, fillcolor=cornsilk,]\n"
+    # opr_node = opr_name * "[shape=box, label = <<b>&otimes;</b>>, style=filled, fillcolor=lightcyan,]\n"
     node_temp *= opr_node
     # if length(subgraphs) == 1
     #     if subgraph_factors[1] == 1
@@ -63,7 +63,7 @@ function to_dotstatic(::Type{ComputationalGraphs.Prod}, id::Int, factor::F, subg
     for (gix, (g, gfactor)) in enumerate(zip(subgraphs, subgraph_factors))
         if gfactor != 1
             # factor_str = "factor$(g.id)_$(id)_$gix[label=$(gfactor), style=filled, fillcolor=lavender]\n"
-            # subg_str = "g$(g.id)_$(id)_$gix[shape=box, label = <<b>&otimes;</b>>, style=filled, fillcolor=cornsilk,]\n"
+            # subg_str = "g$(g.id)_$(id)_$gix[shape=box, label = <<b>&otimes;</b>>, style=filled, fillcolor=lightcyan,]\n"
             # node_temp *= factor_str * subg_str
             # arrow_temp *= "factor$(g.id)_$(id)_$gix->g$(g.id)_$(id)_$gix[arrowhead=vee,]\ng$(g.id)->g$(g.id)_$(id)_$gix[arrowhead=vee,]\n"
             # arrow_temp *= "g$(g.id)_$(id)_$gix->$opr_name[arrowhead=vee,]\n"
@@ -82,7 +82,7 @@ function to_dotstatic(::Type{ComputationalGraphs.Power{N}}, id::Int, factor::F, 
     if factor != 1
         # opr_fac = "factor$(id)[label=$(factor), style=filled, fillcolor=lavender]\n"
         # opr_name = "g$(id)_t"
-        # node_str = "g$(id)[shape=box, label = <<b>&otimes;</b>>, style=filled, fillcolor=cornsilk,]\n"
+        # node_str = "g$(id)[shape=box, label = <<b>&otimes;</b>>, style=filled, fillcolor=lightcyan,]\n"
         # arrow_temp *= "factor$(id)->g$(id)[arrowhead=vee,]\ng$(id)_t->g$(id)[arrowhead=vee,]\n"
         # node_temp *= opr_fac * node_str
         opr_node = "g$id[shape=box, label = <($factor)*Pow($N)>, style=filled, color=darkolivegreen, fontsize=18, width = 1.0, height = 0.4]\n"
@@ -96,7 +96,7 @@ function to_dotstatic(::Type{ComputationalGraphs.Power{N}}, id::Int, factor::F, 
     # arrow_temp *= "order$(id)->$opr_name[arrowhead=vee,]\n"
     if subgraph_factors[1] != 1
         # factor_str = "factor$(subgraphs[1].id)_$(id)[label=$(subgraph_factors[1]), style=filled, fillcolor=lavender]\n"
-        # subg_str = "g$(subgraphs[1].id)_$(id)[shape=box, label = <<b>&otimes;</b>>, style=filled, fillcolor=cornsilk,]\n"
+        # subg_str = "g$(subgraphs[1].id)_$(id)[shape=box, label = <<b>&otimes;</b>>, style=filled, fillcolor=lightcyan,]\n"
         # node_temp *= factor_str * subg_str
         # arrow_temp *= "factor$(subgraphs[1].id)_$(id)->g$(subgraphs[1].id)_$(id)[arrowhead=vee,]\ng$(subgraphs[1].id)->g$(subgraphs[1].id)_$(id)[arrowhead=vee,]\n"
         arrow_temp *= "g$(subgraphs[1].id)->$opr_name[arrowhead=vee,label=$gfactor,fontsize=16, penwidth = 0.2,arrowsize = 0.3]\n"
@@ -112,21 +112,21 @@ function to_dotstatic(::Type{ComputationalGraphs.Sum}, id::Int, factor::F, subgr
     if factor != 1
         # opr_fac = "factor$(id)[label=$(factor), style=filled, fillcolor=lavender]\n"
         # opr_name = "g$(id)_t"
-        # node_str = "g$(id)[shape=box, label = <<b>&otimes;</b>>, style=filled, fillcolor=cornsilk,]\n"
+        # node_str = "g$(id)[shape=box, label = <<b>&otimes;</b>>, style=filled, fillcolor=lightcyan,]\n"
         # arrow_temp *= "factor$(id)->g$(id)[arrowhead=vee,]\ng$(id)_t->g$(id)[arrowhead=vee,]\n"
         # node_temp *= opr_fac * node_str
-        opr_node = "g$(id)[shape=box, label = <($factor)*<b>&oplus;</b>>, style=filled, color=orange,fontsize=18, width = 0.8, height = 0.4]\n"
+        opr_node = "g$(id)[shape=box, label = <($factor)*<b>&oplus;</b>>, style=filled, color=darkturquoise,fontsize=18, width = 0.8, height = 0.4]\n"
     else
-        opr_node = "g$(id)[shape=box, label = <<b>&oplus;</b>>, style=filled, color=orange ,fontsize=18, width = 0.5, height = 0.4]\n"
+        opr_node = "g$(id)[shape=box, label = <<b>&oplus;</b>>, style=filled, color=darkturquoise ,fontsize=18, width = 0.5, height = 0.4]\n"
         # opr_name = "g$id"
     end
     opr_name = "g$id"
-    # opr_node = opr_name * "[shape=box, label = <<b>&oplus;</b>>, style=filled, fillcolor=cyan,]\n"
+    # opr_node = opr_name * "[shape=box, label = <<b>&oplus;</b>>, style=filled, fillcolor=lightcyan,]\n"
     node_temp *= opr_node
     for (gix, (g, gfactor)) in enumerate(zip(subgraphs, subgraph_factors))
         if gfactor != 1
             # factor_str = "factor$(g.id)_$(id)_$gix[label=$(gfactor), style=filled, fillcolor=lavender]\n"
-            # subg_str = "g$(g.id)_$(id)_$gix[shape=box, label = <<b>&otimes;</b>>, style=filled, fillcolor=cornsilk,]\n"
+            # subg_str = "g$(g.id)_$(id)_$gix[shape=box, label = <<b>&otimes;</b>>, style=filled, fillcolor=lightcyan,]\n"
             # node_temp *= factor_str * subg_str
             # arrow_temp *= "factor$(g.id)_$(id)_$gix->g$(g.id)_$(id)_$gix[arrowhead=vee,]\ng$(g.id)->g$(g.id)_$(id)_$gix[arrowhead=vee,]\n"
             # arrow_temp *= "g$(g.id)_$(id)_$gix->$opr_name[arrowhead=vee,]\n"
@@ -144,14 +144,14 @@ function to_dotstatic(::Type{ComputationalGraphs.Prod}, id::Int, factor::F, subg
     if factor != 1
         # opr_fac = "factor$(id)[label=$(factor), style=filled, fillcolor=lavender]\n"
         # opr_name = "g$(id)_t"
-        # node_str = "g$(id)[shape=box, label = <<b>&otimes;</b>>, style=filled, fillcolor=cornsilk,]\n"
+        # node_str = "g$(id)[shape=box, label = <<b>&otimes;</b>>, style=filled, fillcolor=lightcyan,]\n"
         # arrow_temp *= "factor$(id)->g$(id)[arrowhead=vee,]\ng$(id)_t->g$(id)[arrowhead=vee,]\n"
         # node_temp *= opr_fac * node_str
         opr_node = "g$id[shape=box, label = <($factor)<b>&otimes;</b>>, style=filled, color=lightpink,fontsize=18, width = 0.8, height = 0.4]\n"
     else
         opr_node = "g$id[shape=box, label = <<b>&otimes;</b>>, style=filled, color=lightpink,fontsize=18, width = 0.5, height = 0.4]\n"
     end
-    # opr_node = opr_name * "[shape=box, label = <<b>&otimes;</b>>, style=filled, fillcolor=cornsilk,]\n"
+    # opr_node = opr_name * "[shape=box, label = <<b>&otimes;</b>>, style=filled, fillcolor=lightcyan,]\n"
     node_temp *= opr_node
     # if length(subgraphs) == 1
     #     if subgraph_factors[1] == 1
@@ -165,7 +165,7 @@ function to_dotstatic(::Type{ComputationalGraphs.Prod}, id::Int, factor::F, subg
     for (gix, (g, gfactor)) in enumerate(zip(subgraphs, subgraph_factors))
         if gfactor != 1
             # factor_str = "factor$(g.id)_$(id)_$gix[label=$(gfactor), style=filled, fillcolor=lavender]\n"
-            # subg_str = "g$(g.id)_$(id)_$gix[shape=box, label = <<b>&otimes;</b>>, style=filled, fillcolor=cornsilk,]\n"
+            # subg_str = "g$(g.id)_$(id)_$gix[shape=box, label = <<b>&otimes;</b>>, style=filled, fillcolor=lightcyan,]\n"
             # node_temp *= factor_str * subg_str
             # arrow_temp *= "factor$(g.id)_$(id)_$gix->g$(g.id)_$(id)_$gix[arrowhead=vee,]\ng$(g.id)->g$(g.id)_$(id)_$gix[arrowhead=vee,]\n"
             # arrow_temp *= "g$(g.id)_$(id)_$gix->$opr_name[arrowhead=vee,]\n"
@@ -184,7 +184,7 @@ function to_dotstatic(::Type{ComputationalGraphs.Power{N}}, id::Int, factor::F, 
     if factor != 1
         # opr_fac = "factor$(id)[label=$(factor), style=filled, fillcolor=lavender]\n"
         # opr_name = "g$(id)_t"
-        # node_str = "g$(id)[shape=box, label = <<b>&otimes;</b>>, style=filled, fillcolor=cornsilk,]\n"
+        # node_str = "g$(id)[shape=box, label = <<b>&otimes;</b>>, style=filled, fillcolor=lightcyan,]\n"
         # arrow_temp *= "factor$(id)->g$(id)[arrowhead=vee,]\ng$(id)_t->g$(id)[arrowhead=vee,]\n"
         # node_temp *= opr_fac * node_str
         opr_node = "g$id[shape=box, label = <($factor)*Pow($N)>, style=filled, fillcolor=darkolivegreen,fontsize=18, width = 1.0, height = 0.4]\n"
@@ -198,7 +198,7 @@ function to_dotstatic(::Type{ComputationalGraphs.Power{N}}, id::Int, factor::F, 
     # arrow_temp *= "order$(id)->$opr_name[arrowhead=vee,]\n"
     if subgraph_factors[1] != 1
         # factor_str = "factor$(subgraphs[1].id)_$(id)[label=$(subgraph_factors[1]), style=filled, fillcolor=lavender]\n"
-        # subg_str = "g$(subgraphs[1].id)_$(id)[shape=box, label = <<b>&otimes;</b>>, style=filled, fillcolor=cornsilk,]\n"
+        # subg_str = "g$(subgraphs[1].id)_$(id)[shape=box, label = <<b>&otimes;</b>>, style=filled, fillcolor=lightcyan,]\n"
         # node_temp *= factor_str * subg_str
         # arrow_temp *= "factor$(subgraphs[1].id)_$(id)->g$(subgraphs[1].id)_$(id)[arrowhead=vee,]\ng$(subgraphs[1].id)->g$(subgraphs[1].id)_$(id)[arrowhead=vee,]\n"
         arrow_temp *= "g$(subgraphs[1].id)->$opr_name[arrowhead=vee,label=$gfactor,fontsize=16, penwidth = 0.2, arrowsize = 0.3]\n"
@@ -219,7 +219,7 @@ end
 """
 function to_dot_str(graphs::AbstractVector{<:AbstractGraph}, name::String="")
     head = "digraph ComputationalGraph { \nlabel=\"$name\"\n"
-    head *= "ReturnNode[shape=box, label = \"Return\", style=filled, color=crimson, fontsize=18]\n"
+    head *= "ReturnNode[shape=box, label = \"Return\", style=filled, color=wheat3, fontsize=18]\n"
     body_node = ""
     body_arrow = ""
     leafidx = 1
@@ -238,7 +238,7 @@ function to_dot_str(graphs::AbstractVector{<:AbstractGraph}, name::String="")
                 g_id in inds_visitedleaf && continue
                 leafname = get_leafname(g, leafidx)
                 if factor(g) == 1
-                    gnode_str = "g$g_id[label=<$leafname>, style=filled, color=cyan,fontsize=18]\n"
+                    gnode_str = "g$g_id[label=<$leafname>, style=filled, color=lightcyan,fontsize=18]\n"
                     body_node *= gnode_str
                 elseif factor(g) == -1
                     # println("BareInteraction with -1 factor!")
@@ -246,13 +246,13 @@ function to_dot_str(graphs::AbstractVector{<:AbstractGraph}, name::String="")
                     # leafname = "<<i>-V</i><sub>$leafidx</sub>>"
                     # gnode_str = "g$g_id[label=$leafname, style=filled, fillcolor=paleturquoise]\n"
                     # body_node *= gnode_str
-                    gnode_str = "g$g_id[label=<-$leafname>, style=filled, color=cyan,fontsize=18]\n"
+                    gnode_str = "g$g_id[label=<-$leafname>, style=filled, color=lightcyan, fontsize=18]\n"
                     body_node *= gnode_str
                 else
                     # factor_str = "factor$(leafidx)_inp[label=$(factor(g)), style=filled, fillcolor=lavender]\n"
                     # leaf_node = "l$(leafidx)[label=$leafname, style=filled, fillcolor=paleturquoise]\n"
-                    # gnode_str = "g$g_id[shape=box, label = <<b>&otimes;</b>>, style=filled, fillcolor=cornsilk,]\n"
-                    gnode_str = "l$(leafidx)[label=<$(factor(g))$leafname>, style=filled, color=cyan,fontsize=18]\n"
+                    # gnode_str = "g$g_id[shape=box, label = <<b>&otimes;</b>>, style=filled, fillcolor=lightcyan,]\n"
+                    gnode_str = "l$(leafidx)[label=<$(factor(g))$leafname>, style=filled, color=lightcyan,fontsize=18]\n"
                     # body_node *= factor_str * leaf_node * gnode_str
                     # body_node *= gnode_str
                     # body_arrow *= "factor$(leafidx)_inp->g$g_id[arrowhead=vee,]\nl$(leafidx)->g$g_id[arrowhead=vee,]\n"
