@@ -13,9 +13,9 @@ function to_dotstatic(::Type{ComputationalGraphs.Sum}, id::Int, factor::F, subgr
         # node_str = "g$(id)[shape=box, label = <<b>&otimes;</b>>, style=filled, fillcolor=cornsilk,]\n"
         # arrow_temp *= "factor$(id)->g$(id)[arrowhead=vee,]\ng$(id)_t->g$(id)[arrowhead=vee,]\n"
         # node_temp *= opr_fac * node_str
-        opr_node = "g$(id)[shape=box, label = <($factor)*<b>&oplus;</b>>, style=filled, color = orange, fontsize=18, width = 0.8, height = 0.4]"
+        opr_node = "g$(id)[shape=box, label = <($factor)*<b>&oplus;</b>>, style=filled, color = orange, fontsize=18, width = 0.8, height = 0.4]\n"
     else
-        opr_node = "g$(id)[shape=box, label = <<b>&oplus;</b>>, style=filled, color= orange, fontsize=18, width = 0.5, height = 0.4]"
+        opr_node = "g$(id)[shape=box, label = <<b>&oplus;</b>>, style=filled, color= orange, fontsize=18, width = 0.5, height = 0.4]\n"
         # opr_name = "g$id"
     end
     opr_name = "g$id"
@@ -115,9 +115,9 @@ function to_dotstatic(::Type{ComputationalGraphs.Sum}, id::Int, factor::F, subgr
         # node_str = "g$(id)[shape=box, label = <<b>&otimes;</b>>, style=filled, fillcolor=cornsilk,]\n"
         # arrow_temp *= "factor$(id)->g$(id)[arrowhead=vee,]\ng$(id)_t->g$(id)[arrowhead=vee,]\n"
         # node_temp *= opr_fac * node_str
-        opr_node = "g$(id)[shape=box, label = <($factor)*<b>&oplus;</b>>, style=filled, color=orange,fontsize=18, width = 0.8, height = 0.4]"
+        opr_node = "g$(id)[shape=box, label = <($factor)*<b>&oplus;</b>>, style=filled, color=orange,fontsize=18, width = 0.8, height = 0.4]\n"
     else
-        opr_node = "g$(id)[shape=box, label = <<b>&oplus;</b>>, style=filled, color=orange ,fontsize=18, width = 0.5, height = 0.4]"
+        opr_node = "g$(id)[shape=box, label = <<b>&oplus;</b>>, style=filled, color=orange ,fontsize=18, width = 0.5, height = 0.4]\n"
         # opr_name = "g$id"
     end
     opr_name = "g$id"
