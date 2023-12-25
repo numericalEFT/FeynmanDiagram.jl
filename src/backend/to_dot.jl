@@ -28,9 +28,9 @@ function to_dotstatic(::Type{ComputationalGraphs.Sum}, id::Int, factor::F, subgr
             # node_temp *= factor_str * subg_str
             # arrow_temp *= "factor$(g.id)_$(id)_$gix->g$(g.id)_$(id)_$gix[arrowhead=vee,]\ng$(g.id)->g$(g.id)_$(id)_$gix[arrowhead=vee,]\n"
             # arrow_temp *= "g$(g.id)_$(id)_$gix->$opr_name[arrowhead=vee,]\n"
-            arrow_temp *= "g$(g.id)->g$(id)[arrowhead=vee,label=$gfactor,fontsize=16,penwidth = 0.75]\n"
+            arrow_temp *= "g$(g.id)->g$(id)[arrowhead=vee,label=$gfactor,fontsize=16,penwidth = 0.6,arrowsize = 0.3]\n"
         else
-            arrow_temp *= "g$(g.id)->g$(id)[arrowhead=vee,penwidth = 0.75]\n"
+            arrow_temp *= "g$(g.id)->g$(id)[arrowhead=vee,penwidth = 0.6,arrowsize = 0.3]\n"
         end
     end
     return node_temp, arrow_temp
@@ -67,9 +67,9 @@ function to_dotstatic(::Type{ComputationalGraphs.Prod}, id::Int, factor::F, subg
             # node_temp *= factor_str * subg_str
             # arrow_temp *= "factor$(g.id)_$(id)_$gix->g$(g.id)_$(id)_$gix[arrowhead=vee,]\ng$(g.id)->g$(g.id)_$(id)_$gix[arrowhead=vee,]\n"
             # arrow_temp *= "g$(g.id)_$(id)_$gix->$opr_name[arrowhead=vee,]\n"
-            arrow_temp *= "g$(g.id)->g$(id)[arrowhead=vee,label=$gfactor,fontsize=16,penwidth = 0.75]\n"
+            arrow_temp *= "g$(g.id)->g$(id)[arrowhead=vee,label=$gfactor,fontsize=16,penwidth = 0.6,arrowsize = 0.3]\n"
         else
-            arrow_temp *= "g$(g.id)->g$(id)[arrowhead=vee,penwidth = 0.75]\n"
+            arrow_temp *= "g$(g.id)->g$(id)[arrowhead=vee,penwidth = 0.6,arrowsize = 0.3]\n"
         end
     end
     # end
@@ -99,9 +99,9 @@ function to_dotstatic(::Type{ComputationalGraphs.Power{N}}, id::Int, factor::F, 
         # subg_str = "g$(subgraphs[1].id)_$(id)[shape=box, label = <&otimes;>, style=filled, fillcolor=cornsilk,]\n"
         # node_temp *= factor_str * subg_str
         # arrow_temp *= "factor$(subgraphs[1].id)_$(id)->g$(subgraphs[1].id)_$(id)[arrowhead=vee,]\ng$(subgraphs[1].id)->g$(subgraphs[1].id)_$(id)[arrowhead=vee,]\n"
-        arrow_temp *= "g$(subgraphs[1].id)->$opr_name[arrowhead=vee,label=$gfactor,fontsize=16, penwidth = 0.75]\n"
+        arrow_temp *= "g$(subgraphs[1].id)->$opr_name[arrowhead=vee,label=$gfactor,fontsize=16, penwidth = 0.6,arrowsize = 0.3]\n"
     else
-        arrow_temp *= "g$(subgraphs[1].id)->$opr_name[arrowhead=vee, penwidth = 0.75]\n"
+        arrow_temp *= "g$(subgraphs[1].id)->$opr_name[arrowhead=vee, penwidth = 0.6,arrowsize = 0.3]\n"
     end
     return node_temp, arrow_temp
 end
@@ -130,9 +130,9 @@ function to_dotstatic(::Type{ComputationalGraphs.Sum}, id::Int, factor::F, subgr
             # node_temp *= factor_str * subg_str
             # arrow_temp *= "factor$(g.id)_$(id)_$gix->g$(g.id)_$(id)_$gix[arrowhead=vee,]\ng$(g.id)->g$(g.id)_$(id)_$gix[arrowhead=vee,]\n"
             # arrow_temp *= "g$(g.id)_$(id)_$gix->$opr_name[arrowhead=vee,]\n"
-            arrow_temp *= "g$(g.id)->$opr_name[arrowhead=vee,label=$gfactor,fontsize=16,penwidth = 0.75]\n"
+            arrow_temp *= "g$(g.id)->$opr_name[arrowhead=vee,label=$gfactor,fontsize=16,penwidth = 0.6,arrowsize = 0.3]\n"
         else
-            arrow_temp *= "g$(g.id)->$opr_name[arrowhead=vee, penwidth = 0.75]\n"
+            arrow_temp *= "g$(g.id)->$opr_name[arrowhead=vee, penwidth = 0.6,arrowsize = 0.3]\n"
         end
     end
     return node_temp, arrow_temp
@@ -169,9 +169,9 @@ function to_dotstatic(::Type{ComputationalGraphs.Prod}, id::Int, factor::F, subg
             # node_temp *= factor_str * subg_str
             # arrow_temp *= "factor$(g.id)_$(id)_$gix->g$(g.id)_$(id)_$gix[arrowhead=vee,]\ng$(g.id)->g$(g.id)_$(id)_$gix[arrowhead=vee,]\n"
             # arrow_temp *= "g$(g.id)_$(id)_$gix->$opr_name[arrowhead=vee,]\n"
-            arrow_temp *= "g$(g.id)->g$(id)[arrowhead=vee,label=$gfactor,fontsize=16,penwidth = 0.75]\n"
+            arrow_temp *= "g$(g.id)->g$(id)[arrowhead=vee,label=$gfactor,fontsize=16,penwidth = 0.6,arrowsize = 0.3]\n"
         else
-            arrow_temp *= "g$(g.id)->g$(id)[arrowhead=vee,penwidth = 0.75]\n"
+            arrow_temp *= "g$(g.id)->g$(id)[arrowhead=vee,penwidth = 0.6,arrowsize = 0.3]\n"
         end
     end
     # end
@@ -201,9 +201,9 @@ function to_dotstatic(::Type{ComputationalGraphs.Power{N}}, id::Int, factor::F, 
         # subg_str = "g$(subgraphs[1].id)_$(id)[shape=box, label = <&otimes;>, style=filled, fillcolor=cornsilk,]\n"
         # node_temp *= factor_str * subg_str
         # arrow_temp *= "factor$(subgraphs[1].id)_$(id)->g$(subgraphs[1].id)_$(id)[arrowhead=vee,]\ng$(subgraphs[1].id)->g$(subgraphs[1].id)_$(id)[arrowhead=vee,]\n"
-        arrow_temp *= "g$(subgraphs[1].id)->$opr_name[arrowhead=vee,label=$gfactor,fontsize=16, penwidth = 0.75]\n"
+        arrow_temp *= "g$(subgraphs[1].id)->$opr_name[arrowhead=vee,label=$gfactor,fontsize=16, penwidth = 0.6, arrowsize = 0.3]\n"
     else
-        arrow_temp *= "g$(subgraphs[1].id)->$opr_name[arrowhead=vee, penwidth = 0.75]\n"
+        arrow_temp *= "g$(subgraphs[1].id)->$opr_name[arrowhead=vee, penwidth = 0.6, arrowsize = 0.3]\n"
     end
     return node_temp, arrow_temp
 end
@@ -267,7 +267,7 @@ function to_dot_str(graphs::AbstractVector{<:AbstractGraph}, name::String="")
                 push!(inds_visitednode, g_id)
             end
             if isroot
-                body_arrow *= "g$(g_id)->ReturnNode[arrowhead=vee, penwidth = 0.75]\n"
+                body_arrow *= "g$(g_id)->ReturnNode[arrowhead=vee, penwidth = 0.6, arrowsize = 0.3]\n"
                 rootidx += 1
             end
         end
