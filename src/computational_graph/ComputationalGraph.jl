@@ -3,7 +3,7 @@ module ComputationalGraphs
 using AbstractTrees
 using StaticArrays
 using Printf, PyCall, DataFrames
-#using ..Taylor
+using Random
 macro todo()
     return :(error("Not yet implemented!"))
 end
@@ -50,7 +50,7 @@ export eval!
 include("transform.jl")
 export relabel!, standardize_labels!, replace_subgraph!, merge_linear_combination!, merge_multi_product!, merge_chains!, flatten_chains!
 export relabel, standardize_labels, replace_subgraph, merge_linear_combination, merge_multi_product, merge_chains, flatten_chains
-export open_parenthesis, flatten_prod!, flatten_prod
+export open_parenthesis!, open_parenthesis, flatten_prod!, flatten_prod, flatten_sum!, flatten_sum
 include("optimize.jl")
 export optimize!, optimize
 
