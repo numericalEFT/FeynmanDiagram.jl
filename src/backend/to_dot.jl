@@ -92,7 +92,7 @@ function to_dotstatic(::Type{ComputationalGraphs.Power{N}}, id::Int, factor::F, 
     # opr_node = "g$id[shape=box, label = <Pow($N)>, style=filled, fillcolor=darkolivegreen,]\n"
     # order_node = "order$(id)[label=$N, style=filled, fillcolor=lavender]\n"
     # node_temp *= opr_node * order_node
-    node_temp *= opr_node 
+    node_temp *= opr_node
     # arrow_temp *= "order$(id)->$opr_name[arrowhead=vee,]\n"
     if subgraph_factors[1] != 1
         # factor_str = "factor$(subgraphs[1].id)_$(id)[label=$(subgraph_factors[1]), style=filled, fillcolor=lavender]\n"
@@ -209,7 +209,7 @@ function to_dotstatic(::Type{ComputationalGraphs.Power{N}}, id::Int, factor::F, 
 end
 
 """
-    function to_dot_str(graphs::AbstractVector{<:AbstractGraph}, name::String="", diagram_id_map=nothing)
+    function to_dot_str(graphs::AbstractVector{<:AbstractGraph}, name::String="")
 
     Compile a list of graphs into a string for dot language.
 
@@ -217,7 +217,7 @@ end
     - `graphs`  vector of computational graphs
     - `title`   The name of the compiled function (defaults to nothing)
 """
-function to_dot_str(graphs::AbstractVector{<:AbstractGraph}, name::String="", diagram_id_map=nothing)
+function to_dot_str(graphs::AbstractVector{<:AbstractGraph}, name::String="")
     head = "digraph ComputationalGraph { \nlabel=\"$name\"\n"
     head *= "ReturnNode[shape=box, label = \"Return\", style=filled, fillcolor=darkorange,fontsize=18]\n"
     body_node = ""
@@ -236,11 +236,16 @@ function to_dot_str(graphs::AbstractVector{<:AbstractGraph}, name::String="", di
             end
             if isempty(subgraphs(g)) #leaf
                 g_id in inds_visitedleaf && continue
-                leafname = get_leafname(g, leafidx, diagram_id_map)
+                leafname = get_leafname(g, leafidx)
                 if factor(g) == 1
                     gnode_str = "g$g_id[label=<$leafname>, style=filled, fillcolor=paleturquoise,fontsize=18]\n"
                     body_node *= gnode_str
                 elseif factor(g) == -1
+                    # println("BareInteraction with -1 factor!")
+                    # @assert typeof(g.properties) == BareInteractionId
+                    # leafname = "<<i>-V</i><sub>$leafidx</sub>>"
+                    # gnode_str = "g$g_id[label=$leafname, style=filled, fillcolor=paleturquoise]\n"
+                    # body_node *= gnode_str
                     gnode_str = "g$g_id[label=<-$leafname>, style=filled, fillcolor=paleturquoise,fontsize=18]\n"
                     body_node *= gnode_str
                 else
@@ -249,7 +254,7 @@ function to_dot_str(graphs::AbstractVector{<:AbstractGraph}, name::String="", di
                     # gnode_str = "g$g_id[shape=box, label = <&otimes;>, style=filled, fillcolor=cornsilk,]\n"
                     gnode_str = "l$(leafidx)[label=<$(factor(g))$leafname>, style=filled, fillcolor=paleturquoise,fontsize=18]\n"
                     # body_node *= factor_str * leaf_node * gnode_str
-                    body_node *= gnode_str
+                    # body_node *= gnode_str
                     # body_arrow *= "factor$(leafidx)_inp->g$g_id[arrowhead=vee,]\nl$(leafidx)->g$g_id[arrowhead=vee,]\n"
                 end
                 leafidx += 1
@@ -273,30 +278,29 @@ function to_dot_str(graphs::AbstractVector{<:AbstractGraph}, name::String="", di
     return expr
 end
 
-function compile_dot(graphs::AbstractVector{<:AbstractGraph}, filename::String; graph_name="", diagram_id_map=nothing)
-    dot_string = to_dot_str(graphs, graph_name, diagram_id_map)
+function compile_dot(graphs::AbstractVector{<:AbstractGraph}, filename::String; graph_name="")
+    dot_string = to_dot_str(graphs, graph_name)
     open(filename, "w") do f
         write(f, dot_string)
     end
 end
 
-function get_leafname(g, leafidx, diagram_id_map=nothing)
-    # println(typeof(g))
+function get_leafname(g, leafidx)
     leaftype = Nothing
     if g isa FeynmanGraph
         leaftype = g.properties.diagtype
     elseif g isa Graph
-        if isnothing(diagram_id_map) == false
-            leaftype = typeof(diagram_id_map[g.id])
-        else
-            leaftype = typeof(g.properties)
-        end
+        leaftype = typeof(g.properties)
     else
         error("Unknown graph type: $(typeof(g))")
     end
-    if leaftype in [BareGreenId, ComputationalGraphs.Propagator]
+
+    if leaftype == BareGreenId
         leafname = "<i>G</i><sub>$leafidx</sub>"
-    elseif leaftype in [BareInteractionId, ComputationalGraphs.Interaction]
+        println(leaftype, ": ", leafidx, " ", g.factor, " ", " ", g.properties.extK, " ", g.properties.extT, " ", g.properties.order)
+    elseif leaftype == BareInteractionId
+        println(leaftype, ": ", leafidx, " ", g.factor, " ", g.properties.response, " ", g.properties.type,
+            " ", g.properties.permutation, " ", g.properties.extK, " ", g.properties.extT, " ", g.properties.order)
         leafname = "<i>V</i><sub>$leafidx</sub>"
     elseif leaftype == PolarId
         leafname = "&Pi;<sub>$leafidx</sub>"
@@ -304,13 +308,17 @@ function get_leafname(g, leafidx, diagram_id_map=nothing)
         leafname = "&Gamma;<sup>(3)</sup><sub>$leafidx</sub>"
     elseif leaftype == Ver4Id
         leafname = "&Gamma;<sup>(4)</sup><sub>$leafidx</sub>"
+    elseif leaftype == ComputationalGraphs.Propagator
+        if isfermionic(g.properties.vertices[1])
+            leafname = "<i>G</i><sub>$leafidx</sub>"
+        else
+            leafname = "<i>V</i><sub>$leafidx</sub>"
+        end
+    elseif leaftype == ComputationalGraphs.Interaction
+        leafname = "<i>Ver</i><sub>$leafidx</sub>"
     else
+        println("Unknown leaf type: $leaftype")
         leafname = "L<sub>$leafidx</sub>"
     end
-    # println()
-    # println(g)
-    # println(leaftype)
-    # println(leafname)
-    # println()
     return leafname
 end

@@ -78,3 +78,6 @@ __pycache__
 *.pb.gz
 .DS_Store
 *.history
+
+*.pdf
+*.dot
