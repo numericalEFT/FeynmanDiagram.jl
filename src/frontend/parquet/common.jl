@@ -1,5 +1,5 @@
 
-function build(para::DiagPara{W}, extK=nothing, subdiagram=false) where {W}
+function build(para::DiagPara, extK=nothing, subdiagram=false)
     if para.type == Ver4Diag
         if isnothing(extK)
             extK = [getK(para.totalLoopNum, 1), getK(para.totalLoopNum, 2), getK(para.totalLoopNum, 3)]

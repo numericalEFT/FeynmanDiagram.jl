@@ -16,9 +16,9 @@ When sigma is created as a subdiagram, then no Fock diagram is generated if para
 - A DataFrame with fields `:type`, `:extT`, `:diagram`, `:hash`
 - All sigma share the same incoming Tau index, but not the outgoing one
 """
-function sigma(para::DiagPara{W}, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false;
+function sigma(para::DiagPara, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false;
     name=:Σ, resetuid=false, blocks::ParquetBlocks=ParquetBlocks()
-) where {W}
+)
     resetuid && ComputationalGraphs.uidreset()
     (para.type == SigmaDiag) || error("$para is not for a sigma diagram")
     (para.innerLoopNum >= 1) || error("sigma must has more than one inner loop")

@@ -173,20 +173,19 @@ function Base.isequal(a::ParquetBlocks, b::ParquetBlocks)
 end
 Base.:(==)(a::ParquetBlocks, b::ParquetBlocks) = Base.isequal(a, b)
 
-@with_kw struct DiagPara{W}
+@with_kw struct DiagPara
     type::DiagramType
     innerLoopNum::Int
 
     isFermi::Bool = true
     spin::Int = 2
-    # loopDim::Int = 3
     interaction::Vector{Interaction} = [Interaction(ChargeCharge, [Instant,]),] # :ChargeCharge, :SpinSpin, ...
 
     firstLoopIdx::Int = firstLoopIdx(type)
     totalLoopNum::Int = firstLoopIdx + innerLoopNum - 1
 
     #### turn the following parameters on if there is tau variables ########
-    hasTau::Bool = false
+    hasTau::Bool = true # enable imaginary-time variables
     firstTauIdx::Int = firstTauIdx(type)
     totalTauNum::Int = firstTauIdx + innerTauNum(type, innerLoopNum, interactionTauNum(hasTau, interaction)) - 1
     #if there is no imaginary-time at all, then set this number to zero!
@@ -196,8 +195,6 @@ Base.:(==)(a::ParquetBlocks, b::ParquetBlocks) = Base.isequal(a, b)
     extra::Any = Nothing
 end
 
-const DiagParaF64 = DiagPara{Float64}
-
 @inline interactionTauNum(para::DiagPara) = interactionTauNum(para.hasTau, para.interaction)
 @inline innerTauNum(para::DiagPara) = innerTauNum(para.type, para.innerLoopNum, para.interactionTauNum)
 
@@ -206,10 +203,10 @@ const DiagParaF64 = DiagPara{Float64}
 
     Type-stable version of the Parameters.reconstruct
 """
-function Parameters.reconstruct(::Type{DiagPara{W}}, p::DiagPara{W}, di) where {W}
+function Parameters.reconstruct(::Type{DiagPara}, p::DiagPara, di)
     di = !isa(di, AbstractDict) ? Dict(di) : copy(di)
     get(p, di, key) = pop!(di, key, getproperty(p, key))
-    return DiagPara{W}(
+    return DiagPara(
         # type = pop!(di, :type, p.type),
         type=get(p, di, :type),
         innerLoopNum=get(p, di, :innerLoopNum),
@@ -229,10 +226,10 @@ function Parameters.reconstruct(::Type{DiagPara{W}}, p::DiagPara{W}, di) where {
     length(di) != 0 && error("Fields $(keys(di)) not in type $T")
 end
 
-function derivepara(p::DiagPara{W}; kwargs...) where {W}
+function derivepara(p::DiagPara; kwargs...)
     di = !isa(kwargs, AbstractDict) ? Dict(kwargs) : copy(kwargs)
     get(p, di, key) = pop!(di, key, getproperty(p, key))
-    return DiagPara{W}(
+    return DiagPara(
         # type = pop!(di, :type, p.type),
         type=get(p, di, :type),
         innerLoopNum=get(p, di, :innerLoopNum),
@@ -252,7 +249,7 @@ function derivepara(p::DiagPara{W}; kwargs...) where {W}
     length(di) != 0 && error("Fields $(keys(di)) not in type $T")
 end
 
-function Base.isequal(p::DiagPara{W}, q::DiagPara{W}) where {W}
+function Base.isequal(p::DiagPara, q::DiagPara)
     for field in fieldnames(typeof(p)) #fieldnames doesn't include user-defined entries in Base.getproperty
         if field == :filter
             if Set(p.filter) != Set(q.filter)
@@ -279,7 +276,7 @@ function Base.isequal(p::DiagPara{W}, q::DiagPara{W}) where {W}
     return true
 end
 
-Base.:(==)(a::DiagPara{W}, b::DiagPara{W}) where {W} = Base.isequal(a, b)
+Base.:(==)(a::DiagPara, b::DiagPara) = Base.isequal(a, b)
 
 include("common.jl")
 

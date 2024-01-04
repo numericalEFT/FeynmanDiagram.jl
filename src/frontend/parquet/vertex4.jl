@@ -24,14 +24,14 @@ Generate 4-vertex diagrams using Parquet Algorithm
 # Output
 - A DataFrame with fields :response, :type, :extT, :diagram, :hash
 """
-function vertex4(para::DiagPara{W},
+function vertex4(para::DiagPara,
     extK=[DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)],
     chan::AbstractVector=[PHr, PHEr, PPr, Alli], subdiagram=false;
     level=1, name=:none, resetuid=false,
     # phi_toplevel=ParquetBlocks().phi, ppi_toplevel=ParquetBlocks().ppi, Γ4_toplevel=ParquetBlocks().Γ4,
     blocks::ParquetBlocks=ParquetBlocks(),
     blockstoplevel::ParquetBlocks=blocks
-) where {W}
+)
 
     # if (para.innerLoopNum > 1) && (NoBubble in para.filter)
     #     @warn "Vertex4 with two or more loop orders still contain bubble subdiagram even if NoBubble is turned on in para.filter!"
@@ -92,12 +92,12 @@ function vertex4(para::DiagPara{W},
         # # TODO: add envolpe diagrams
     end
     # println(typeof(groups))
-    ver4df = merge_vertex4(para, ver4df, name, legK, W)
+    ver4df = merge_vertex4(para, ver4df, name, legK)
     @assert all(x -> x[1] == para.firstTauIdx, ver4df.extT) "not all extT[1] are equal to the first Tau index $(para.firstTauIdx)! $ver4df"
     return ver4df
 end
 
-function merge_vertex4(para, ver4df, name, legK, W)
+function merge_vertex4(para, ver4df, name, legK)
     diags = ver4df.diagram
     @assert all(x -> x.properties isa Ver4Id, diags) "not all id are Ver4Id! $diags"
     @assert all(x -> x.properties.extK ≈ legK, diags) "not all extK are the same! $diags"
@@ -111,9 +111,9 @@ function merge_vertex4(para, ver4df, name, legK, W)
     return ver4df
 end
 
-function bubble!(ver4df::DataFrame, para::DiagPara{W}, legK, chan::TwoBodyChannel, partition::Vector{Int}, level::Int, name::Symbol,
+function bubble!(ver4df::DataFrame, para::DiagPara, legK, chan::TwoBodyChannel, partition::Vector{Int}, level::Int, name::Symbol,
     blocks::ParquetBlocks, blockstoplevel::ParquetBlocks,
-    extrafactor=1.0) where {W}
+    extrafactor=1.0)
 
     TauNum = interactionTauNum(para) # maximum tau number for each bare interaction
     oL, oG0, oR, oGx = partition[1], partition[2], partition[3], partition[4]
@@ -204,7 +204,7 @@ function RPA_chain!(ver4df::DataFrame, para::DiagPara, legK, chan::TwoBodyChanne
     return
 end
 
-function bubble2diag!(ver8, para::DiagPara{W}, chan::TwoBodyChannel, ldiag, rdiag, extK, g0, gx, extrafactor) where {W}
+function bubble2diag!(ver8, para::DiagPara, chan::TwoBodyChannel, ldiag, rdiag, extK, g0, gx, extrafactor)
     lid, rid = ldiag.properties, rdiag.properties
     ln, rn = lid.response, rid.response
     lo, ro = lid.para.innerLoopNum, rid.para.innerLoopNum
@@ -268,8 +268,8 @@ function bubble2diag!(ver8, para::DiagPara{W}, chan::TwoBodyChannel, ldiag, rdia
     return
 end
 
-function _bare(para::DiagPara{W}, diex::Vector{Permutation}, response::Response, type::AnalyticProperty,
-    _diex::Permutation, _innerT::Tuple{Int,Int}, _q, _factor=1.0) where {W}
+function _bare(para::DiagPara, diex::Vector{Permutation}, response::Response, type::AnalyticProperty,
+    _diex::Permutation, _innerT::Tuple{Int,Int}, _q, _factor=1.0)
     @assert _diex == Di || _diex == Ex
 
     # there is an overall sign coming from Taylor expansion of exp(-S) depsite the statistics
@@ -290,7 +290,7 @@ function _bare(para::DiagPara{W}, diex::Vector{Permutation}, response::Response,
     end
 end
 
-function _pushbarever4!(para::DiagPara{W}, nodes::DataFrame, response::Response, type::AnalyticProperty, _extT, legK, vd, ve) where {W}
+function _pushbarever4!(para::DiagPara, nodes::DataFrame, response::Response, type::AnalyticProperty, _extT, legK, vd, ve)
 
     if isnothing(vd) == false
         id_di = Ver4Id(para, response, type, k=legK, t=_extT[DI])
