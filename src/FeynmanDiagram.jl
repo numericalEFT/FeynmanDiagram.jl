@@ -182,36 +182,36 @@ using .Compilers
 export Compilers
 
 
-##################### precompile #######################
-# precompile as the final step of the module definition:
-if ccall(:jl_generating_output, Cint, ()) == 1   # if we're precompiling the package
-    let
-        para = DiagParaF64(type=Ver4Diag, innerLoopNum=2, hasTau=true)
-        # ver4 = Parquet.vertex4(para)  # this will force precompilation
-        ver4 = Parquet.build(para)  # this will force precompilation
+# ##################### precompile #######################
+# # precompile as the final step of the module definition:
+# if ccall(:jl_generating_output, Cint, ()) == 1   # if we're precompiling the package
+#     let
+#         para = DiagParaF64(type=Ver4Diag, innerLoopNum=2, hasTau=true)
+#         # ver4 = Parquet.vertex4(para)  # this will force precompilation
+#         ver4 = Parquet.build(para)  # this will force precompilation
 
-        mergeby(ver4, [:response])
-        mergeby(ver4.diagram)
-        mergeby(ver4.diagram, [:response]; idkey=[:extT, :response])
+#         mergeby(ver4, [:response])
+#         mergeby(ver4.diagram)
+#         mergeby(ver4.diagram, [:response]; idkey=[:extT, :response])
 
-        para = DiagParaF64(type=SigmaDiag, innerLoopNum=2, hasTau=true)
-        Parquet.build(para)  # this will force precompilation
-        para = DiagParaF64(type=GreenDiag, innerLoopNum=2, hasTau=true)
-        Parquet.green(para)  # this will force precompilation
-        para = DiagParaF64(type=PolarDiag, innerLoopNum=2, hasTau=true)
-        # Parquet.polarization(para)  # this will force precompilation
-        Parquet.build(para)  # this will force precompilation
-        para = DiagParaF64(type=Ver3Diag, innerLoopNum=2, hasTau=true)
-        # Parquet.vertex3(para)  # this will force precompilation
-        Parquet.build(para)  # this will force precompilation
+#         para = DiagParaF64(type=SigmaDiag, innerLoopNum=2, hasTau=true)
+#         Parquet.build(para)  # this will force precompilation
+#         para = DiagParaF64(type=GreenDiag, innerLoopNum=2, hasTau=true)
+#         Parquet.green(para)  # this will force precompilation
+#         para = DiagParaF64(type=PolarDiag, innerLoopNum=2, hasTau=true)
+#         # Parquet.polarization(para)  # this will force precompilation
+#         Parquet.build(para)  # this will force precompilation
+#         para = DiagParaF64(type=Ver3Diag, innerLoopNum=2, hasTau=true)
+#         # Parquet.vertex3(para)  # this will force precompilation
+#         Parquet.build(para)  # this will force precompilation
 
-        DiagTree.removeHartreeFock!(ver4.diagram)
-        DiagTree.derivative(ver4.diagram, BareGreenId)
-        DiagTree.derivative(ver4.diagram, BareInteractionId)
-        # DiagTree.removeHartreeFock!(ver4.diagram)
-        ExprTree.build(ver4.diagram, 3)
-    end
-end
+#         DiagTree.removeHartreeFock!(ver4.diagram)
+#         DiagTree.derivative(ver4.diagram, BareGreenId)
+#         DiagTree.derivative(ver4.diagram, BareInteractionId)
+#         # DiagTree.removeHartreeFock!(ver4.diagram)
+#         ExprTree.build(ver4.diagram, 3)
+#     end
+# end
 
 
 end
