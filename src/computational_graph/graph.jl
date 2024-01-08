@@ -56,14 +56,20 @@ mutable struct Graph{F<:Number,W} <: AbstractGraph # Graph
     - `factor`  fixed scalar multiplicative factor for this diagram (e.g., a permutation sign)
     - `weight`  the weight of this node
     """
-    function Graph(subgraphs::AbstractVector; subgraph_factors=one.(eachindex(subgraphs)), name="", operator::AbstractOperator=Sum(),
-        orders=zeros(Int, 16), ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype), properties=nothing
+    function Graph(subgraphs::AbstractVector; factor=one(_dtype.factor), subgraph_factors=one.(eachindex(subgraphs)), name="", operator::AbstractOperator=Sum(),
+        orders=zeros(Int, 16), ftype=_dtype.factor, wtype=_dtype.weight, weight=zero(wtype), properties=nothing
     )
         if typeof(operator) <: Power
             @assert length(subgraphs) == 1 "Graph with Power operator must have one and only one subgraph."
         end
         # @assert allunique(subgraphs) "all subgraphs must be distinct."
-        return new{ftype,wtype}(uid(), name, orders, subgraphs, subgraph_factors, typeof(operator), factor, weight, properties)
+        g = new{ftype,wtype}(uid(), String(name), orders, subgraphs, subgraph_factors, typeof(operator), one(ftype), weight, properties)
+
+        if (factor ≈ one(ftype))
+            return g
+        else
+            return new{ftype,wtype}(uid(), String(name), orders, [g,], [factor,], Prod, one(ftype), weight * factor, properties)
+        end
     end
 end
 

@@ -16,10 +16,13 @@ export LoopPool
 include("LabelProduct.jl")
 export LabelProduct
 
-include("parquet.jl")
-using .Parquet
+# include("parquet.jl")
+# using .Parquet
 # export Parquet
 
 include("diagtree.jl")
+
+include("parquet/parquet.jl")
+using .Parquet
 
 end
