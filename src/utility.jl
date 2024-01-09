@@ -44,14 +44,16 @@ function taylorexpansion!(graph::G, var_dependence::Dict{Int,Vector{Bool}}=Dict{
             if sum(o) == 0      # For a graph the zero order taylor coefficient is just itself.
                 result.coeffs[o] = graph
             else
-                coeff = Graph([]; operator=ComputationalGraphs.Sum(), factor=graph.factor, properties=graph.properties, orders=o)
+                # coeff = Graph([]; operator=ComputationalGraphs.Sum(), factor=graph.factor, properties=graph.properties, orders=o)
+                coeff = Graph([]; operator=ComputationalGraphs.Sum(), properties=graph.properties, orders=o)
                 result.coeffs[o] = coeff
             end
         end
         to_coeff_map[graph.id] = result
         return result, to_coeff_map
     else
-        to_coeff_map[graph.id] = graph.factor * apply(graph.operator, [taylorexpansion!(sub, var_dependence; to_coeff_map=to_coeff_map)[1] for sub in graph.subgraphs], graph.subgraph_factors)
+        # to_coeff_map[graph.id] = graph.factor * apply(graph.operator, [taylorexpansion!(sub, var_dependence; to_coeff_map=to_coeff_map)[1] for sub in graph.subgraphs], graph.subgraph_factors)
+        to_coeff_map[graph.id] = apply(graph.operator, [taylorexpansion!(sub, var_dependence; to_coeff_map=to_coeff_map)[1] for sub in graph.subgraphs], graph.subgraph_factors)
         return to_coeff_map[graph.id], to_coeff_map
     end
 end
@@ -80,13 +82,15 @@ function taylorexpansion!(graph::FeynmanGraph{F,W}, var_dependence::Dict{Int,Vec
         result = TaylorSeries{Graph{F,W}}()
         for order in collect(Iterators.product(ordtuple...)) #varidx specifies the variables graph depends on. Iterate over all taylor coefficients of those variables.
             o = collect(order)
-            coeff = Graph([]; operator=ComputationalGraphs.Sum(), factor=graph.factor, properties=graph.properties, orders=o)
+            # coeff = Graph([]; operator=ComputationalGraphs.Sum(), factor=graph.factor, properties=graph.properties, orders=o)
+            coeff = Graph([]; operator=ComputationalGraphs.Sum(), properties=graph.properties, orders=o)
             result.coeffs[o] = coeff
         end
         to_coeff_map[graph.id] = result
         return result, to_coeff_map
     else
-        to_coeff_map[graph.id] = graph.factor * apply(graph.operator, [taylorexpansion!(sub, var_dependence; to_coeff_map=to_coeff_map)[1] for sub in graph.subgraphs], graph.subgraph_factors)
+        # to_coeff_map[graph.id] = graph.factor * apply(graph.operator, [taylorexpansion!(sub, var_dependence; to_coeff_map=to_coeff_map)[1] for sub in graph.subgraphs], graph.subgraph_factors)
+        to_coeff_map[graph.id] = apply(graph.operator, [taylorexpansion!(sub, var_dependence; to_coeff_map=to_coeff_map)[1] for sub in graph.subgraphs], graph.subgraph_factors)
         return to_coeff_map[graph.id], to_coeff_map
     end
 end
@@ -248,10 +252,12 @@ function taylorexpansion_withmap(g::G; coeffmode=true, var::Vector{Bool}=fill(tr
                     if ordernew[idx] <= get_orders(idx)
                         if !haskey(result.coeffs, ordernew)
                             if coeffmode
-                                funcAD = Graph([]; operator=ComputationalGraphs.Sum(), factor=g.factor)
+                                # funcAD = Graph([]; operator=ComputationalGraphs.Sum(), factor=g.factor)
+                                funcAD = Graph([]; operator=ComputationalGraphs.Sum())
                             else
                                 #funcAD = taylor_factorial(ordernew) * Graph([]; operator=ComputationalGraphs.Sum(), factor=g.factor)
-                                funcAD = Graph([]; operator=ComputationalGraphs.Sum(), factor=taylor_factorial(ordernew) * g.factor)
+                                # funcAD = Graph([]; operator=ComputationalGraphs.Sum(), factor=taylor_factorial(ordernew) * g.factor)
+                                funcAD = Graph([]; operator=ComputationalGraphs.Sum(), factor=taylor_factorial(ordernew))
                             end
                             new_func[ordernew] = funcAD
                             result.coeffs[ordernew] = funcAD

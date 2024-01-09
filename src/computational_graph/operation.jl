@@ -391,7 +391,8 @@ function forwardAD_root!(graphs::AbstractVector{G}, idx::Int=1,
                     dual[key_node].subgraph_factors = node.subgraph_factors
                     dual[key_node].name = node.name
                 else
-                    dual[key_node] = Graph(nodes_deriv; subgraph_factors=node.subgraph_factors, factor=node.factor)
+                    # dual[key_node] = Graph(nodes_deriv; subgraph_factors=node.subgraph_factors, factor=node.factor)
+                    dual[key_node] = Graph(nodes_deriv; subgraph_factors=node.subgraph_factors)
                 end
             elseif node.operator == Prod
                 nodes_deriv = G[]
@@ -416,7 +417,8 @@ function forwardAD_root!(graphs::AbstractVector{G}, idx::Int=1,
                     dual[key_node].subgraph_factors = one.(eachindex(nodes_deriv))
                     dual[key_node].name = node.name
                 else
-                    dual[key_node] = Graph(nodes_deriv; factor=node.factor)
+                    # dual[key_node] = Graph(nodes_deriv; factor=node.factor)
+                    dual[key_node] = Graph(nodes_deriv)
                 end
             elseif node.operator <: Power   # node with Power operator has only one subgraph!
                 nodes_deriv = G[]
@@ -437,7 +439,8 @@ function forwardAD_root!(graphs::AbstractVector{G}, idx::Int=1,
                     dual[key_node].name = node.name
                     dual.operator = Prod
                 else
-                    dual[key_node] = Graph(nodes_deriv; subgraph_factors=[1, node.subgraph_factors[1]], operator=Prod(), factor=node.factor)
+                    # dual[key_node] = Graph(nodes_deriv; subgraph_factors=[1, node.subgraph_factors[1]], operator=Prod(), factor=node.factor)
+                    dual[key_node] = Graph(nodes_deriv; subgraph_factors=[1, node.subgraph_factors[1]], operator=Prod())
                 end
             end
         end

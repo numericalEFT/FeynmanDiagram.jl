@@ -119,7 +119,7 @@ export multi_product, linear_combination, feynman_diagram, propagator, interacti
 # export reducibility, connectivity
 # export 𝐺ᶠ, 𝐺ᵇ, 𝐺ᵠ, 𝑊, Green2, Interaction
 # export Coupling_yukawa, Coupling_phi3, Coupling_phi4, Coupling_phi6
-export haschildren, onechild, isleaf, isbranch, ischain, isfactorless, has_zero_subfactors, eldest
+export haschildren, onechild, isleaf, isbranch, ischain, has_zero_subfactors, eldest
 export relabel!, standardize_labels!, replace_subgraph!, merge_linear_combination!, merge_multi_product!, merge_chains!
 export relabel, standardize_labels, replace_subgraph, merge_linear_combination, merge_multi_product, merge_chains
 export open_parenthesis, open_parenthesis!, flatten_prod!, flatten_prod, flatten_sum!, flatten_sum

@@ -42,7 +42,6 @@ Base.:(==)(a::FeynmanProperties, b::FeynmanProperties) = Base.isequal(a, b)
     Returns a copy of the given FeynmanProperties `p` modified to have no topology.
 """
 drop_topology(p::FeynmanProperties) = FeynmanProperties(p.diagtype, p.vertices, [], p.external_indices, p.external_legs)
-
 """
     mutable struct FeynmanGraph{F<:Number,W}
     
@@ -120,7 +119,14 @@ mutable struct FeynmanGraph{F<:Number,W} <: AbstractGraph # FeynmanGraph
             vertices = [external_operators(g) for g in subgraphs if diagram_type(g) != Propagator]
         end
         properties = FeynmanProperties(typeof(diagtype), vertices, topology, external_indices, external_legs)
-        return new{ftype,wtype}(uid(), name, orders, properties, subgraphs, subgraph_factors, typeof(operator), factor, weight)
+        # return new{ftype,wtype}(uid(), name, orders, properties, subgraphs, subgraph_factors, typeof(operator), factor, weight)
+        g = new{ftype,wtype}(uid(), String(name), orders, properties, subgraphs, subgraph_factors, typeof(operator), one(ftype), weight)
+
+        if factor ≈ one(ftype)
+            return g
+        else
+            return new{ftype,wtype}(uid(), String(name), orders, properties, [g,], [factor,], Prod, one(ftype), weight * factor)
+        end
     end
 
     """
@@ -150,7 +156,14 @@ mutable struct FeynmanGraph{F<:Number,W} <: AbstractGraph # FeynmanGraph
             @assert length(subgraphs) == 1 "FeynmanGraph with Power operator must have one and only one subgraph."
         end
         # @assert allunique(subgraphs) "all subgraphs must be distinct."
-        return new{ftype,wtype}(uid(), name, orders, properties, subgraphs, subgraph_factors, typeof(operator), factor, weight)
+        # return new{ftype,wtype}(uid(), name, orders, properties, subgraphs, subgraph_factors, typeof(operator), factor, weight)
+        g = new{ftype,wtype}(uid(), String(name), orders, properties, subgraphs, subgraph_factors, typeof(operator), one(ftype), weight)
+
+        if factor ≈ one(ftype)
+            return g
+        else
+            return new{ftype,wtype}(uid(), String(name), orders, properties, [g,], [factor,], Prod, one(ftype), weight * factor)
+        end
     end
 
     """
@@ -165,7 +178,8 @@ mutable struct FeynmanGraph{F<:Number,W} <: AbstractGraph # FeynmanGraph
     function FeynmanGraph(g::Graph{F,W}, properties::FeynmanProperties) where {F,W}
         @assert length(properties.external_indices) == length(properties.external_legs)
         # @assert allunique(subgraphs) "all subgraphs must be distinct."
-        return new{F,W}(uid(), g.name, g.orders, properties, g.subgraphs, g.subgraph_factors, g.operator, g.factor, g.weight)
+        # return new{F,W}(uid(), g.name, g.orders, properties, g.subgraphs, g.subgraph_factors, g.operator, g.factor, g.weight)
+        return new{F,W}(uid(), g.name, g.orders, properties, [FeynmanGraph(subg, subg.properties) for subg in g.subgraphs], g.subgraph_factors, g.operator, g.factor, g.weight)
     end
 end
 

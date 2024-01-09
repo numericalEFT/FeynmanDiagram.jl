@@ -498,10 +498,11 @@ function merge_multi_product!(g::Graph{F,W}) where {F,W}
             end
         end
 
-        if length(unique_factors) == 1
+        if length(unique_factors) == 1 && repeated_counts[1] > 1
             g.subgraphs = unique_graphs
             g.subgraph_factors = unique_factors
             g.operator = typeof(Power(repeated_counts[1]))
+            # g.operator = repeated_counts[1] == 1 ? Prod : typeof(Power(repeated_counts[1]))
         else
             _subgraphs = Vector{Graph{F,W}}()
             for (idx, g) in enumerate(unique_graphs)

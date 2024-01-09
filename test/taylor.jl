@@ -15,9 +15,24 @@ function assign_random_numbers(g, taylormap1, taylormap2) #Benchmark taylor expa
             num = rand()
             push!(leafvec1, num)
             push!(leafvec2, num)
-            leafmap1[coeff.id] = idx
-            leafmap2[taylor2.coeffs[order].id] = idx
-            #print("assign $(order) $(coeff.id)  $(taylor_factorial(order)) $(leafvec[idx])\n")
+            # leafmap1[coeff.id] = idx
+            if isleaf(coeff)
+                leafmap1[coeff.id] = idx
+            else
+                @assert onechild(coeff) && isleaf(eldest(coeff))
+                println("taylor:  $(coeff.id) -> $(eldest(coeff).id)")
+                leafmap1[eldest(coeff).id] = idx
+            end
+            coeff2 = taylor2.coeffs[order]
+            if isleaf(coeff2)
+                leafmap2[coeff2.id] = idx
+            else
+                @assert onechild(coeff2) && isleaf(eldest(coeff2))
+                println("backAD:  $(coeff2.id) -> $(eldest(coeff2).id)")
+                leafmap2[eldest(coeff2).id] = idx
+            end
+            # leafmap2[taylor2.coeffs[order].id] = idx
+            # print("assign $(order) $(coeff.id) $(coeff2.id) $(taylor_factorial(order)) $(leafvec1[idx]) $(leafvec2[idx])\n")
         end
     end
     return leafmap1, leafvec1, leafmap2, leafvec2

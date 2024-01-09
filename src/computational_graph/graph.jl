@@ -65,7 +65,7 @@ mutable struct Graph{F<:Number,W} <: AbstractGraph # Graph
         # @assert allunique(subgraphs) "all subgraphs must be distinct."
         g = new{ftype,wtype}(uid(), String(name), orders, subgraphs, subgraph_factors, typeof(operator), one(ftype), weight, properties)
 
-        if (factor ≈ one(ftype))
+        if factor ≈ one(ftype)
             return g
         else
             return new{ftype,wtype}(uid(), String(name), orders, [g,], [factor,], Prod, one(ftype), weight * factor, properties)
@@ -117,7 +117,12 @@ set_subgraph_factors!(g::Graph{F,W}, subgraph_factors::AbstractVector, indices::
 - `f`:  constant factor
 """
 function constant_graph(factor=one(_dtype.factor))
-    return Graph([]; operator=Constant(), factor=factor, ftype=_dtype.factor, wtype=_dtype.weight, weight=one(_dtype.weight))
+    g = Graph([]; operator=Constant(), ftype=_dtype.factor, wtype=_dtype.weight, weight=one(_dtype.weight))
+    if factor ≈ one(_dtype.factor)
+        return g
+    else
+        return g * factor
+    end
 end
 
 """
