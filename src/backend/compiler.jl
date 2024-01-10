@@ -1,7 +1,7 @@
 module Compilers
 using PyCall
 using ..ComputationalGraphs
-import ..ComputationalGraphs: id, name, set_name!, operator, subgraphs, subgraph_factors, factor, FeynmanProperties
+import ..ComputationalGraphs: id, name, set_name!, operator, subgraphs, subgraph_factors, FeynmanProperties
 
 using ..Parquet
 using ..Parquet: PropagatorId, BareGreenId, BareInteractionId

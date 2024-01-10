@@ -3,7 +3,7 @@ using FeynmanDiagram
 function recursive_print(diag)
     if typeof(diag) <: FeynmanDiagram.ComputationalGraphs.Graph
         if !isempty(diag.subgraphs)
-            print("$(diag.id) $(diag.factor) $(diag.subgraph_factors)\n")
+            print("$(diag.id) $(diag.subgraph_factors)\n")
             for subdiag in diag.subgraphs
                 recursive_print(subdiag)
             end
@@ -24,7 +24,7 @@ function main()
     KinL, KoutL, KinR = zeros(16), zeros(16), zeros(16)
     KinL[1], KoutL[2], KinR[3] = 1.0, 1.0, 1.0
     # para = GV.diagPara(SigmaDiag, false, spin, order, [NoHartree], KinL - KoutL)
-    para = DiagParaF64(type=SigmaDiag, innerLoopNum=order, interaction=[Interaction(UpUp, [Instant,])], hasTau=true)
+    para = DiagPara(type=SigmaDiag, innerLoopNum=order, interaction=[Interaction(UpUp, [Instant,])], hasTau=true)
     # para = DiagParaF64(type=SigmaDiag, innerLoopNum=2, interaction=[Interaction(ChargeCharge, [Instant,])], hasTau=true)
     parquet_builder = Parquet.build(para)
     diag = parquet_builder.diagram
@@ -38,8 +38,8 @@ function main()
     #     print("new diag2\n")
     #     recursive_print(eachd)
     # end
-    G = FrontEnds.Graph!(d[1])
-    G = [eldest(G)]  # drop extraneous Add node at root
+    # G = FrontEnds.Graph!(d[1])
+    G = [eldest(d[1])]  # drop extraneous Add node at root
     # for d in G
     #     print("graph1\n")
     #     recursive_print(d)

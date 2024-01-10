@@ -3,7 +3,7 @@ abstract type AbstractGraph end
 abstract type AbstractOperator end
 struct Sum <: AbstractOperator end
 struct Prod <: AbstractOperator end
-struct Constant <: AbstractOperator end
+struct Unitary <: AbstractOperator end
 struct Power{N} <: AbstractOperator
     function Power(N::Int)
         @assert N ∉ [0, 1] "Power{$N} makes no sense."
@@ -19,7 +19,7 @@ apply(o::AbstractOperator, diags) = error("not implemented!")
 Base.show(io::IO, o::AbstractOperator) = print(io, typeof(o))
 Base.show(io::IO, ::Type{Sum}) = print(io, "⨁")
 Base.show(io::IO, ::Type{Prod}) = print(io, "Ⓧ")
-Base.show(io::IO, ::Type{Constant}) = print(io, "C")
+Base.show(io::IO, ::Type{Unitary}) = print(io, "𝟙")
 Base.show(io::IO, ::Type{Power{N}}) where {N} = print(io, "^$N")
 
 # Is the unary form of operator 𝓞 trivial: 𝓞(G) ≡ G?
@@ -81,13 +81,6 @@ function operator(g::AbstractGraph)
     Returns the operation associated with computational graph node `g`.
 """
 function operator(g::AbstractGraph) end
-
-"""
-function factor(g::AbstractGraph)
-
-    Returns the fixed scalar-multiplicative factor of the computational graph `g`.
-"""
-function factor(g::AbstractGraph) end
 
 """
     function weight(g::AbstractGraph)
@@ -183,13 +176,6 @@ function set_operator!(g::AbstractGraph, operator::Type{<:AbstractOperator})
     Update the operator of graph `g` to `operator`.
 """
 function set_operator!(g::AbstractGraph, operator::Type{<:AbstractOperator}) end
-
-"""
-function set_factor!(g::AbstractGraph, factor)
-
-    Update the factor of graph `g` to `factor`.
-"""
-function set_factor!(g::AbstractGraph, factor) end
 
 """
 function set_weight!(g::AbstractGraph, weight)

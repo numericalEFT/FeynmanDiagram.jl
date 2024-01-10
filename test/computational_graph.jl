@@ -77,7 +77,6 @@ Graphs.unary_istrivial(::Type{O}) where {O<:Union{O1,O2,O3}} = true
         @test Graphs.name(g) == ""
         @test Graphs.orders(g) == zeros(Int, 0)
         @test Graphs.operator(g) == O
-        # @test Graphs.factor(g) == 1.0
         @test Graphs.weight(g) == 1.0
         @test Graphs.subgraph(g) == g1
         @test Graphs.subgraph(g, 2) == g2
@@ -147,7 +146,6 @@ end
         end
         @testset "Addition" begin
             g3 = g1 + g2
-            # @test g3.factor == 1
             @test g3.subgraphs == [g1]
             @test g3.subgraph_factors == [3]
             # @test g3.subgraphs == [g1, g1]
@@ -156,7 +154,6 @@ end
         end
         @testset "Subtraction" begin
             g4 = g1 - g2
-            # @test g4.factor == 1
             @test g4.subgraphs == [g1]
             @test g4.subgraph_factors == [-1]
             @test g4.subgraphs[1] == g1
@@ -525,7 +522,6 @@ end
             g3 = g1 + g2
             @test vertices(g3) == vertices(g1)
             @test external_operators(g3) == external_operators(g1)
-            # @test g3.factor == 1
             @test g3.subgraphs == [g1]
             @test g3.subgraph_factors == [3]
             # @test g3.subgraphs == [g1, g1]
@@ -536,7 +532,6 @@ end
             g4 = g1 - g2
             @test vertices(g4) == vertices(g1)
             @test external_operators(g4) == external_operators(g1)
-            # @test g4.factor == 1
             @test g4.subgraphs == [g1,]
             @test g4.subgraph_factors == [-1,]
             # @test g4.subgraphs == [g1, g1]

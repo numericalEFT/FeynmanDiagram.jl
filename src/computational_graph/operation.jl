@@ -35,9 +35,8 @@ function linear_combination_number_with_graph(g::Vector{Union{F,Graph{F,W}}}, co
             push!(subcoeff, 1.0)
         end
         result = linear_combination(subgraphs, subcoeff)
-        #result.factor *= d.factor
     elseif !isnothing(subnumber)  #if only numbers appear in derivative, return a number
-        result = subnumber #* d.factor
+        result = subnumber
     end
     return result
     #return subgraphs, subnumber, subcoeff
@@ -257,7 +256,7 @@ function backAD(diag::Graph{F,W}, debug::Bool=false) where {F,W}
     result = Dict{Tuple{Int,Int},Graph{F,W}}()
     parents = all_parent(diag)
     for d in Leaves(diag)#PreOrderDFS(diag) # preorder traversal will visit all parents first
-        if d.operator == Constant || haskey(dual, d.id)
+        if d.operator == Unitary || haskey(dual, d.id)
             continue
         end
         recursive_backAD!(d, parents, dual, result, diag.id)
@@ -391,7 +390,6 @@ function forwardAD_root!(graphs::AbstractVector{G}, idx::Int=1,
                     dual[key_node].subgraph_factors = node.subgraph_factors
                     dual[key_node].name = node.name
                 else
-                    # dual[key_node] = Graph(nodes_deriv; subgraph_factors=node.subgraph_factors, factor=node.factor)
                     dual[key_node] = Graph(nodes_deriv; subgraph_factors=node.subgraph_factors)
                 end
             elseif node.operator == Prod
@@ -417,7 +415,6 @@ function forwardAD_root!(graphs::AbstractVector{G}, idx::Int=1,
                     dual[key_node].subgraph_factors = one.(eachindex(nodes_deriv))
                     dual[key_node].name = node.name
                 else
-                    # dual[key_node] = Graph(nodes_deriv; factor=node.factor)
                     dual[key_node] = Graph(nodes_deriv)
                 end
             elseif node.operator <: Power   # node with Power operator has only one subgraph!
@@ -439,7 +436,6 @@ function forwardAD_root!(graphs::AbstractVector{G}, idx::Int=1,
                     dual[key_node].name = node.name
                     dual.operator = Prod
                 else
-                    # dual[key_node] = Graph(nodes_deriv; subgraph_factors=[1, node.subgraph_factors[1]], operator=Prod(), factor=node.factor)
                     dual[key_node] = Graph(nodes_deriv; subgraph_factors=[1, node.subgraph_factors[1]], operator=Prod())
                 end
             end

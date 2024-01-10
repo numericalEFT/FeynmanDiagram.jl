@@ -96,15 +96,13 @@ function to_julia_str(graphs::AbstractVector{<:AbstractGraph}; root::AbstractVec
             end
             if isempty(subgraphs(g)) #leaf
                 g_id in inds_visitedleaf && continue
-                factor_str = factor(g) == 1 ? "" : " * $(factor(g))"
-                body *= "    $target = leafVal[$idx_leafVal]$factor_str\n"
+                body *= "    $target = leafVal[$idx_leafVal]\n"
                 map_validx_leaf[idx_leafVal] = g
                 idx_leafVal += 1
                 push!(inds_visitedleaf, g_id)
             else
                 g_id in inds_visitednode && continue
-                factor_str = factor(g) == 1 ? "" : " * $(factor(g))"
-                body *= "    $target = $(to_static(operator(g), subgraphs(g), subgraph_factors(g)))$factor_str\n"
+                body *= "    $target = $(to_static(operator(g), subgraphs(g), subgraph_factors(g)))\n"
                 push!(inds_visitednode, g_id)
             end
             if isroot
@@ -160,16 +158,14 @@ function to_Cstr(graphs::AbstractVector{<:AbstractGraph}; root::AbstractVector{I
             if isempty(subgraphs(g)) #leaf
                 g_id in inds_visitedleaf && continue
                 declare *= " g$g_id,"
-                factor_str = factor(g) == 1 ? "" : " * $(factor(g))"
-                body *= "    $target = leafVal[$idx_leafVal]$factor_str;\n"
+                body *= "    $target = leafVal[$idx_leafVal];\n"
                 idx_leafVal += 1
                 map_validx_leaf[idx_leafVal] = g
                 push!(inds_visitedleaf, g_id)
             else
                 g_id in inds_visitednode && continue
                 declare *= " g$g_id,"
-                factor_str = factor(g) == 1 ? "" : " * $(factor(g))"
-                body *= "    $target = $(to_static(operator(g), subgraphs(g), subgraph_factors(g)))$factor_str;\n"
+                body *= "    $target = $(to_static(operator(g), subgraphs(g), subgraph_factors(g)));\n"
                 push!(inds_visitednode, g_id)
             end
             if isroot

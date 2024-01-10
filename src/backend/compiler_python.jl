@@ -96,15 +96,13 @@ function to_python_str(graphs::AbstractVector{<:AbstractGraph}, framework::Symbo
             end
             if isempty(subgraphs(g)) #leaf
                 g_id in inds_visitedleaf && continue
-                factor_str = factor(g) == 1 ? "" : " * $(factor(g))"
-                body *= "    $target = leaf[$(leafidx)]$factor_str\n"
+                body *= "    $target = leaf[$(leafidx)]\n"
                 gid_to_leafid[target] = leafidx
                 leafidx += 1
                 push!(inds_visitedleaf, g_id)
             else
                 g_id in inds_visitednode && continue
-                factor_str = factor(g) == 1 ? "" : " * $(factor(g))"
-                body *= "    $target = $(to_pystatic(operator(g), subgraphs(g), subgraph_factors(g)))$factor_str\n"
+                body *= "    $target = $(to_pystatic(operator(g), subgraphs(g), subgraph_factors(g)))\n"
                 push!(inds_visitednode, g_id)
             end
             if isroot
@@ -115,18 +113,18 @@ function to_python_str(graphs::AbstractVector{<:AbstractGraph}, framework::Symbo
     end
     head *= "def graphfunc(leaf):\n"
     output = ["root$(i)" for i in 0:rootidx-1]
-    output = join(output,",")
+    output = join(output, ",")
     tail = "    return $output\n\n"
 
     if framework == :jax
-        tail *="graphfunc_jit = jit(graphfunc)"
+        tail *= "graphfunc_jit = jit(graphfunc)"
     end
     expr = head * body * tail
 
-    return expr, leafidx , gid_to_leafid
+    return expr, leafidx, gid_to_leafid
 end
 function compile_python(graphs::AbstractVector{<:AbstractGraph}, framework::Symbol=:jax, filename::String="GraphFunc.py")
-    py_string, leafnum, leafmap = to_python_str(graphs,framework)
+    py_string, leafnum, leafmap = to_python_str(graphs, framework)
     println("The number of leaves: $leafnum")
     open(filename, "w") do f
         write(f, py_string)

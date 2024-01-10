@@ -10,7 +10,6 @@
 - `subgraphs::Vector{Graph{F,W}}`  vector of sub-diagrams 
 - `subgraph_factors::Vector{F}`  scalar multiplicative factors associated with each subgraph. Note that the subgraph factors may be manipulated algebraically. To associate a fixed multiplicative factor with this graph which carries some semantic meaning, use the `factor` argument instead.
 - `operator::DataType`  node operation. Addition and multiplication are natively supported via operators Sum and Prod, respectively. Should be a concrete subtype of `AbstractOperator`.
-- `factor::F`  a number representing the total scalar multiplicative factor for the diagram.
 - `weight::W`  the weight of this node
 - `properties::Any` extra information of Green's functions.
 
@@ -35,7 +34,6 @@ mutable struct Graph{F<:Number,W} <: AbstractGraph # Graph
     subgraph_factors::Vector{F}
 
     operator::DataType
-    factor::F
     weight::W
 
     properties::Any
@@ -63,12 +61,12 @@ mutable struct Graph{F<:Number,W} <: AbstractGraph # Graph
             @assert length(subgraphs) == 1 "Graph with Power operator must have one and only one subgraph."
         end
         # @assert allunique(subgraphs) "all subgraphs must be distinct."
-        g = new{ftype,wtype}(uid(), String(name), orders, subgraphs, subgraph_factors, typeof(operator), one(ftype), weight, properties)
+        g = new{ftype,wtype}(uid(), String(name), orders, subgraphs, subgraph_factors, typeof(operator), weight, properties)
 
         if factor ≈ one(ftype)
             return g
         else
-            return new{ftype,wtype}(uid(), String(name), orders, [g,], [factor,], Prod, one(ftype), weight * factor, properties)
+            return new{ftype,wtype}(uid(), String(name), orders, [g,], [factor,], Prod, weight * factor, properties)
         end
     end
 end
@@ -80,7 +78,6 @@ id(g::Graph) = g.id
 name(g::Graph) = g.name
 orders(g::Graph) = g.orders
 operator(g::Graph) = g.operator
-factor(g::Graph) = g.factor
 weight(g::Graph) = g.weight
 properties(g::Graph) = g.properties
 subgraph(g::Graph, i=1) = g.subgraphs[i]
@@ -96,7 +93,6 @@ set_name!(g::Graph, name::String) = (g.name = name)
 set_orders!(g::Graph, orders::Vector{Int}) = (g.orders = orders)
 set_operator!(g::Graph, operator::Type{<:AbstractOperator}) = (g.operator = operator)
 set_operator!(g::Graph, operator::AbstractOperator) = (g.operator = typeof(operator))
-set_factor!(g::Graph{F,W}, factor) where {F,W} = (g.factor = F(factor))
 set_weight!(g::Graph{F,W}, weight) where {F,W} = (g.weight = W(weight))
 set_properties!(g::Graph, properties) = (g.properties = properties)
 set_subgraph!(g::Graph{F,W}, subgraph::Graph{F,W}, i=1) where {F,W} = (g.subgraphs[i] = subgraph)
@@ -117,7 +113,7 @@ set_subgraph_factors!(g::Graph{F,W}, subgraph_factors::AbstractVector, indices::
 - `f`:  constant factor
 """
 function constant_graph(factor=one(_dtype.factor))
-    g = Graph([]; operator=Constant(), ftype=_dtype.factor, wtype=_dtype.weight, weight=one(_dtype.weight))
+    g = Graph([]; operator=Unitary(), ftype=_dtype.factor, wtype=_dtype.weight, weight=one(_dtype.weight))
     if factor ≈ one(_dtype.factor)
         return g
     else
@@ -139,7 +135,6 @@ function Base.:*(g1::Graph{F,W}, c2) where {F,W}
     # Convert trivial unary link to in-place form
     if unary_istrivial(g1) && onechild(g1)
         g.subgraph_factors[1] *= g1.subgraph_factors[1]
-        # g.subgraph_factors[1] *= g1.subgraph_factors[1] * g1.factor
         g.subgraphs = g1.subgraphs
     end
     return g
@@ -159,7 +154,6 @@ function Base.:*(c1, g2::Graph{F,W}) where {F,W}
     # Convert trivial unary link to in-place form
     if unary_istrivial(g2) && onechild(g2)
         g.subgraph_factors[1] *= g2.subgraph_factors[1]
-        # g.subgraph_factors[1] *= g2.subgraph_factors[1] * g2.factor
         g.subgraphs = g2.subgraphs
     end
     return g
@@ -193,16 +187,14 @@ function linear_combination(g1::Graph{F,W}, g2::Graph{F,W}, c1=F(1), c2=F(1)) wh
     # Convert trivial unary links to in-place form
     if unary_istrivial(g1) && onechild(g1)
         subgraph_factors[1] *= g1.subgraph_factors[1]
-        # subgraph_factors[1] *= g1.subgraph_factors[1] * g1.factor
         subgraphs[1] = g1.subgraphs[1]
     end
     if unary_istrivial(g2) && onechild(g2)
         subgraph_factors[2] *= g2.subgraph_factors[1]
-        # subgraph_factors[2] *= g2.subgraph_factors[1] * g2.factor
         subgraphs[2] = g2.subgraphs[1]
     end
 
-    if subgraphs[1] == subgraphs[2]
+    if subgraphs[1].id == subgraphs[2].id
         g = Graph([subgraphs[1]]; subgraph_factors=[sum(subgraph_factors)], operator=Sum(), orders=orders(g1), ftype=F, wtype=W)
     else
         g = Graph(subgraphs; subgraph_factors=subgraph_factors, operator=Sum(), orders=orders(g1), ftype=F, wtype=W)
@@ -243,7 +235,6 @@ function linear_combination(graphs::Vector{Graph{F,W}}, constants::AbstractVecto
     for (i, sub_g) in enumerate(graphs)
         if unary_istrivial(sub_g) && onechild(sub_g)
             subgraph_factors[i] *= sub_g.subgraph_factors[1]
-            # subgraph_factors[i] *= sub_g.subgraph_factors[1] * sub_g.factor
             subgraphs[i] = sub_g.subgraphs[1]
         end
     end
@@ -251,7 +242,7 @@ function linear_combination(graphs::Vector{Graph{F,W}}, constants::AbstractVecto
     unique_graphs = Graph{F,W}[]
     unique_factors = F[]
     for (idx, g) in enumerate(subgraphs)
-        i = findfirst(isequal(g), unique_graphs)
+        i = findfirst(isequal(g.id), id.(unique_graphs))
         if isnothing(i)
             push!(unique_graphs, g)
             push!(unique_factors, subgraph_factors[idx])
@@ -316,16 +307,14 @@ function multi_product(g1::Graph{F,W}, g2::Graph{F,W}, c1=F(1), c2=F(1)) where {
     # Convert trivial unary links to in-place form
     if unary_istrivial(g1) && onechild(g1)
         subgraph_factors[1] *= g1.subgraph_factors[1]
-        # subgraph_factors[1] *= g1.subgraph_factors[1] * g1.factor
         subgraphs[1] = g1.subgraphs[1]
     end
     if unary_istrivial(g2) && onechild(g2)
         subgraph_factors[2] *= g2.subgraph_factors[1]
-        # subgraph_factors[2] *= g2.subgraph_factors[1] * g2.factor
         subgraphs[2] = g2.subgraphs[1]
     end
 
-    if subgraphs[1] == subgraphs[2]
+    if subgraphs[1].id == subgraphs[2].id
         g = Graph([subgraphs[1]]; subgraph_factors=[prod(subgraph_factors)], operator=Power(2), orders=2 * orders(g1), ftype=F, wtype=W)
     else
         if length(g1.orders) > length(g2.orders)
@@ -367,7 +356,6 @@ function multi_product(graphs::Vector{Graph{F,W}}, constants::AbstractVector=one
     for (i, sub_g) in enumerate(graphs)
         if unary_istrivial(sub_g) && onechild(sub_g)
             subgraph_factors[i] *= sub_g.subgraph_factors[1]
-            # subgraph_factors[i] *= sub_g.subgraph_factors[1] * sub_g.factor
             subgraphs[i] = sub_g.subgraphs[1]
         end
         sub_g.orders = [orders(sub_g); zeros(Int, maxlen_orders - length(orders(sub_g)))]
@@ -378,7 +366,7 @@ function multi_product(graphs::Vector{Graph{F,W}}, constants::AbstractVector=one
     unique_factors = F[]
     repeated_counts = Int[]
     for (idx, g) in enumerate(subgraphs)
-        loc = findfirst(isequal(g), unique_graphs)
+        loc = findfirst(isequal(g.id), id.(unique_graphs))
         if isnothing(loc)
             push!(unique_graphs, g)
             push!(unique_factors, subgraph_factors[idx])

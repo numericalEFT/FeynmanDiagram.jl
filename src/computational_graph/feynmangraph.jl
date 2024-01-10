@@ -55,7 +55,6 @@ drop_topology(p::FeynmanProperties) = FeynmanProperties(p.diagtype, p.vertices, 
 - `subgraphs::Vector{FeynmanGraph{F,W}}`  vector of sub-diagrams 
 - `subgraph_factors::Vector{F}`  scalar multiplicative factors associated with each subdiagram
 - `operator::DataType`  node operation (Sum, Prod, etc.)
-- `factor::F`  a number representing the total scalar multiplicative factor for the diagram.
 - `weight::W`  weight of the diagram
 
 # Example:
@@ -80,7 +79,6 @@ mutable struct FeynmanGraph{F<:Number,W} <: AbstractGraph # FeynmanGraph
     subgraph_factors::Vector{F}
 
     operator::DataType
-    factor::F
     weight::W
 
     """
@@ -119,13 +117,12 @@ mutable struct FeynmanGraph{F<:Number,W} <: AbstractGraph # FeynmanGraph
             vertices = [external_operators(g) for g in subgraphs if diagram_type(g) != Propagator]
         end
         properties = FeynmanProperties(typeof(diagtype), vertices, topology, external_indices, external_legs)
-        # return new{ftype,wtype}(uid(), name, orders, properties, subgraphs, subgraph_factors, typeof(operator), factor, weight)
-        g = new{ftype,wtype}(uid(), String(name), orders, properties, subgraphs, subgraph_factors, typeof(operator), one(ftype), weight)
 
+        g = new{ftype,wtype}(uid(), String(name), orders, properties, subgraphs, subgraph_factors, typeof(operator), weight)
         if factor ≈ one(ftype)
             return g
         else
-            return new{ftype,wtype}(uid(), String(name), orders, properties, [g,], [factor,], Prod, one(ftype), weight * factor)
+            return new{ftype,wtype}(uid(), String(name), orders, properties, [g,], [factor,], Prod, weight * factor)
         end
     end
 
@@ -156,13 +153,11 @@ mutable struct FeynmanGraph{F<:Number,W} <: AbstractGraph # FeynmanGraph
             @assert length(subgraphs) == 1 "FeynmanGraph with Power operator must have one and only one subgraph."
         end
         # @assert allunique(subgraphs) "all subgraphs must be distinct."
-        # return new{ftype,wtype}(uid(), name, orders, properties, subgraphs, subgraph_factors, typeof(operator), factor, weight)
-        g = new{ftype,wtype}(uid(), String(name), orders, properties, subgraphs, subgraph_factors, typeof(operator), one(ftype), weight)
-
+        g = new{ftype,wtype}(uid(), String(name), orders, properties, subgraphs, subgraph_factors, typeof(operator), weight)
         if factor ≈ one(ftype)
             return g
         else
-            return new{ftype,wtype}(uid(), String(name), orders, properties, [g,], [factor,], Prod, one(ftype), weight * factor)
+            return new{ftype,wtype}(uid(), String(name), orders, properties, [g,], [factor,], Prod, weight * factor)
         end
     end
 
@@ -178,8 +173,8 @@ mutable struct FeynmanGraph{F<:Number,W} <: AbstractGraph # FeynmanGraph
     function FeynmanGraph(g::Graph{F,W}, properties::FeynmanProperties) where {F,W}
         @assert length(properties.external_indices) == length(properties.external_legs)
         # @assert allunique(subgraphs) "all subgraphs must be distinct."
-        # return new{F,W}(uid(), g.name, g.orders, properties, g.subgraphs, g.subgraph_factors, g.operator, g.factor, g.weight)
-        return new{F,W}(uid(), g.name, g.orders, properties, [FeynmanGraph(subg, subg.properties) for subg in g.subgraphs], g.subgraph_factors, g.operator, g.factor, g.weight)
+        # return new{F,W}(uid(), g.name, g.orders, properties, g.subgraphs, g.subgraph_factors, g.operator, g.weight)
+        return new{F,W}(uid(), g.name, g.orders, properties, [FeynmanGraph(subg, subg.properties) for subg in g.subgraphs], g.subgraph_factors, g.operator, g.weight)
     end
 end
 
@@ -190,7 +185,6 @@ id(g::FeynmanGraph) = g.id
 name(g::FeynmanGraph) = g.name
 orders(g::FeynmanGraph) = g.orders
 operator(g::FeynmanGraph) = g.operator
-factor(g::FeynmanGraph) = g.factor
 weight(g::FeynmanGraph) = g.weight
 subgraph(g::FeynmanGraph, i=1) = g.subgraphs[i]
 subgraphs(g::FeynmanGraph) = g.subgraphs
@@ -205,7 +199,6 @@ set_name!(g::FeynmanGraph, name::String) = (g.name = name)
 set_orders!(g::FeynmanGraph, orders::Vector{Int}) = (g.orders = orders)
 set_operator!(g::FeynmanGraph, operator::Type{<:AbstractOperator}) = (g.operator = operator)
 set_operator!(g::FeynmanGraph, operator::AbstractOperator) = (g.operator = typeof(operator))
-set_factor!(g::FeynmanGraph{F,W}, factor) where {F,W} = (g.factor = F(factor))
 set_weight!(g::FeynmanGraph{F,W}, weight) where {F,W} = (g.weight = W(weight))
 set_subgraph!(g::FeynmanGraph{F,W}, subgraph::FeynmanGraph{F,W}, i=1) where {F,W} = (g.subgraphs[i] = subgraph)
 set_subgraphs!(g::FeynmanGraph{F,W}, subgraphs::Vector{FeynmanGraph{F,W}}) where {F,W} = (g.subgraphs = subgraphs)
@@ -313,7 +306,6 @@ function Base.:*(g1::FeynmanGraph{F,W}, c2) where {F,W}
     # Convert trivial unary link to in-place form
     if unary_istrivial(g1) && onechild(g1)
         g.subgraph_factors[1] *= g1.subgraph_factors[1]
-        # g.subgraph_factors[1] *= g1.subgraph_factors[1] * g1.factor
         g.subgraphs = g1.subgraphs
     end
     return g
@@ -333,7 +325,6 @@ function Base.:*(c1, g2::FeynmanGraph{F,W}) where {F,W}
     # Convert trivial unary link to in-place form
     if unary_istrivial(g2) && onechild(g2)
         g.subgraph_factors[1] *= g2.subgraph_factors[1]
-        # g.subgraph_factors[1] *= g2.subgraph_factors[1] * g2.factor
         g.subgraphs = g2.subgraphs
     end
     return g
@@ -366,12 +357,10 @@ function linear_combination(g1::FeynmanGraph{F,W}, g2::FeynmanGraph{F,W}, c1=F(1
     # Convert trivial unary links to in-place form
     if unary_istrivial(g1) && onechild(g1)
         subgraph_factors[1] *= g1.subgraph_factors[1]
-        # subgraph_factors[1] *= g1.subgraph_factors[1] * g1.factor
         subgraphs[1] = g1.subgraphs[1]
     end
     if unary_istrivial(g2) && onechild(g2)
         subgraph_factors[2] *= g2.subgraph_factors[1]
-        # subgraph_factors[2] *= g2.subgraph_factors[1] * g2.factor
         subgraphs[2] = g2.subgraphs[1]
     end
 
@@ -418,14 +407,13 @@ function linear_combination(graphs::Vector{FeynmanGraph{F,W}}, constants::Abstra
     for (i, sub_g) in enumerate(graphs)
         if unary_istrivial(sub_g) && onechild(sub_g)
             subgraph_factors[i] *= sub_g.subgraph_factors[1]
-            # subgraph_factors[i] *= sub_g.subgraph_factors[1] * sub_g.factor
             subgraphs[i] = sub_g.subgraphs[1]
         end
     end
     unique_graphs = FeynmanGraph{F,W}[]
     unique_factors = F[]
     for (idx, g) in enumerate(subgraphs)
-        i = findfirst(isequal(g), unique_graphs)
+        i = findfirst(isequal(g.id), id.(unique_graphs))
         if isnothing(i)
             push!(unique_graphs, g)
             push!(unique_factors, subgraph_factors[idx])

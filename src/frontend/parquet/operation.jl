@@ -130,7 +130,6 @@ function mergeby(diags::Vector{Graph{F,W}};
             # if there is only one diagram, and the new id is either GenericId or the id of the existing diagram, 
             # then simply return the current diagram without creating a new diagram
             # ! the new factor will be multiplied to the factor of the exisiting diagram!
-            # diags[1].factor *= factor
             return diags
         end
         diag = Graph(diags; properties=id, operator=operator, name=name)
