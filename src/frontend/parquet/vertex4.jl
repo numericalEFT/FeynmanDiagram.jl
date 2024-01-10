@@ -1,6 +1,6 @@
 """
     vertex4(para::DiagPara,
-        extK = [DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)],
+        extK = [getK(para.totalLoopNum, 1), getK(para.totalLoopNum, 2), getK(para.totalLoopNum, 3)],
         chan::AbstractVector = [PHr, PHEr, PPr, Alli],
         subdiagram = false;
         level = 1, name = :none, resetuid = false,
@@ -25,7 +25,7 @@ Generate 4-vertex diagrams using Parquet Algorithm
 - A DataFrame with fields :response, :type, :extT, :diagram, :hash
 """
 function vertex4(para::DiagPara,
-    extK=[DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)],
+    extK=[getK(para.totalLoopNum, 1), getK(para.totalLoopNum, 2), getK(para.totalLoopNum, 3)],
     chan::AbstractVector=[PHr, PHEr, PPr, Alli], subdiagram=false;
     level=1, name=:none, resetuid=false,
     # phi_toplevel=ParquetBlocks().phi, ppi_toplevel=ParquetBlocks().ppi, Γ4_toplevel=ParquetBlocks().Γ4,

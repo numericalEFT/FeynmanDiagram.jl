@@ -1,0 +1,132 @@
+#Type: SelfEnergy
+#DiagNum: 6
+#Order: 2
+#GNum: 4
+#Ver4Num: 2
+#LoopNum: 3
+#ExtLoopIndex: 0
+#DummyLoopIndex: 
+#TauNum: 2
+#ExtTauIndex: 0 2
+#DummyTauIndex: 
+
+# Permutation
+ 3  2  1  0 
+# SymFactor
+-1.0
+# GType
+-2 -2  1 -2 
+# VertexBasis
+ 0  0  1  1 
+ 1  1  0  0 
+# LoopBasis
+ 1  0  1  0 
+ 0  1  1  0 
+ 1  0  0  1 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 3  0  2  1 | 1  2  0  3 |
+# WType(Direct,Exchange)
+ 0  0 | 1  1 |
+# SpinFactor
+-2  1 
+
+# Permutation
+ 3  2  1  0 
+# SymFactor
+-1.0
+# GType
+-2 -2  0 -2 
+# VertexBasis
+ 0  0  1  1 
+ 1  1  0  0 
+# LoopBasis
+ 1  0  1  0 
+ 0  1  1  0 
+ 1  0  0  1 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 3  0  2  1 | 1  2  0  3 |
+# WType(Direct,Exchange)
+ 0  0 | 1  1 |
+# SpinFactor
+-2  1 
+
+# Permutation
+ 3  2  1  0 
+# SymFactor
+-1.0
+# GType
+-2 -2  0 -2 
+# VertexBasis
+ 0  0  1  1 
+ 1  1  0  0 
+# LoopBasis
+ 1  0  1  0 
+ 0  1  1  0 
+ 1  0  0  1 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 3  0  2  1 | 1  2  0  3 |
+# WType(Direct,Exchange)
+ 0  0 | 1  1 |
+# SpinFactor
+-2  1 
+
+# Permutation
+ 3  2  1  0 
+# SymFactor
+-1.0
+# GType
+-2 -2  1 -2 
+# VertexBasis
+ 0  0  1  1 
+ 1  1  0  0 
+# LoopBasis
+ 1  0  1  0 
+ 0  1  1  0 
+ 1  0  0  1 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 3  0  2  1 | 1  2  0  3 |
+# WType(Direct,Exchange)
+ 1  1 | 0  0 |
+# SpinFactor
+-2  1 
+
+# Permutation
+ 3  2  1  0 
+# SymFactor
+-1.0
+# GType
+-2 -2  0 -2 
+# VertexBasis
+ 0  0  1  1 
+ 1  1  0  0 
+# LoopBasis
+ 1  0  1  0 
+ 0  1  1  0 
+ 1  0  0  1 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 3  0  2  1 | 1  2  0  3 |
+# WType(Direct,Exchange)
+ 1  1 | 0  0 |
+# SpinFactor
+-2  1 
+
+# Permutation
+ 3  2  1  0 
+# SymFactor
+-1.0
+# GType
+-2 -2  0 -2 
+# VertexBasis
+ 0  0  1  1 
+ 1  1  0  0 
+# LoopBasis
+ 1  0  1  0 
+ 0  1  1  0 
+ 1  0  0  1 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 3  0  2  1 | 1  2  0  3 |
+# WType(Direct,Exchange)
+ 1  1 | 0  0 |
+# SpinFactor
+-2  1 
+

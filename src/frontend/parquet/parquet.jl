@@ -27,9 +27,6 @@ const SymFactor = [1.0, -1.0, 1.0, -0.5, +1.0, -1.0]
 @enum TwoBodyChannel Alli = 1 PHr PHEr PPr AnyChan
 @enum Permutation Di = 1 Ex DiEx
 
-export TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
-export Permutation, Di, Ex, DiEx
-
 Base.length(r::TwoBodyChannel) = 1
 Base.iterate(r::TwoBodyChannel) = (r, nothing)
 function Base.iterate(r::TwoBodyChannel, ::Nothing) end
@@ -288,9 +285,24 @@ include("vertex4.jl")
 
 include("sigma.jl")
 include("green.jl")
-# include("vertex3.jl")
-# include("polarization.jl")
+include("vertex3.jl")
+include("polarization.jl")
 
+include("ep_coupling.jl")
 
-# include("benchmark/benchmark.jl")
+include("benchmark/benchmark.jl")
+
+export DiagPara, ParquetBlocks
+export Interaction, interactionTauNum, innerTauNum
+export DiagramType, VacuumDiag, SigmaDiag, GreenDiag, PolarDiag, Ver3Diag, Ver4Diag
+export Filter, Wirreducible, Girreducible, NoBubble, NoHartree, NoFock, Proper, DirectOnly
+export Response, Composite, ChargeCharge, SpinSpin, ProperChargeCharge, ProperSpinSpin, UpUp, UpDown
+export AnalyticProperty, Instant, Dynamic, D_Instant, D_Dynamic
+export TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
+export Permutation, Di, Ex, DiEx
+export DiagramId, GenericId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId
+export PropagatorId, BareGreenId, BareInteractionId
+# export BareGreenNId, BareHoppingId, GreenNId, ConnectedGreenNId
+export mergeby
+
 end

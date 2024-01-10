@@ -375,7 +375,8 @@ function linear_combination(g1::FeynmanGraph{F,W}, g2::FeynmanGraph{F,W}, c1=F(1
         subgraphs[2] = g2.subgraphs[1]
     end
 
-    if subgraphs[1] == subgraphs[2]
+    if subgraphs[1].id == subgraphs[2].id
+        # if isequiv(subgraphs[1], subgraphs[2], :id)
         g = FeynmanGraph([subgraphs[1]], properties; subgraph_factors=[sum(subgraph_factors)], operator=Sum(), orders=orders(g1), ftype=F, wtype=W)
     else
         g = FeynmanGraph(subgraphs, properties; subgraph_factors=subgraph_factors, operator=Sum(), orders=orders(g1), ftype=F, wtype=W)

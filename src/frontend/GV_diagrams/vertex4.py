@@ -60,7 +60,7 @@ class vertex4():
 
                     for FeynPermu in FeynList:
                         if (FeynPermu[0] == 1 or FeynPermu[1] == 0 or self.__IsHartree(FeynPermu, Diag.LoopBasis, vertype, gtype) or 
-                            self.__IsTwoParticleReducible(FeynPermu, Diag.LoopBasis)):
+                            self.__IsReducible(FeynPermu, Diag.LoopBasis, vertype, gtype) or self.__IsTwoParticleReducible(FeynPermu, Diag.LoopBasis)):
                             FactorList.append(0)
                         else:
                             FactorList.append(1)
@@ -98,30 +98,30 @@ class vertex4():
             # print "newPermu: {0}".format(Permutation)
 
             # print Diag.LoopBasis
-            loopBasis = np.copy(Diag.LoopBasis)
-            gtype_temp = np.copy(GType)
-            if len(swap_ver) > 0:
-                loopBasis[:, swap_ver[0]], loopBasis[:, 2] = Diag.LoopBasis[:,2], Diag.LoopBasis[:, swap_ver[0]]
-                GType[swap_ver[0]], GType[2] = gtype_temp[2], gtype_temp[swap_ver[0]]
-                if swap_ver[1] != 2:
-                    loopBasis[:, swap_ver[1]], loopBasis[:, 3] = Diag.LoopBasis[:,3], Diag.LoopBasis[:, swap_ver[1]]
-                    GType[swap_ver[1]], GType[3] = gtype_temp[3], gtype_temp[swap_ver[1]]
-            if jp_0 >= 2:
-                locs_extloop = np.where(abs(loopBasis[:, 0]) == 1 & (loopBasis[:, 0] == loopBasis[:,2]))[0]
-                loc_extloop=locs_extloop[0]
-                # loc_extloop = np.where(abs(loopBasis[:, 0]) == 1 & (loopBasis[:, 0] == loopBasis[:,2]))[0][0]
-            else:
-                # loc_extloop = np.where(abs(loopBasis[:, 0]) == 1 & (loopBasis[:, 0] == loopBasis[:,1]))[0][0]
-                locs_extloop = np.where(abs(loopBasis[:, 0]) == 1 & (loopBasis[:, 0] == loopBasis[:,1]))[0]
-                loc_extloop=locs_extloop[0]
-            if len(locs_extloop)>1:
-                print yellow("{0}".format(loopBasis))
-                for loc in locs_extloop[1:]:
-                    if loopBasis[loc, 0] ==  loopBasis[loc_extloop, 0]:
-                        loopBasis[loc, :] = loopBasis[loc, :] - loopBasis[loc_extloop, :]
-                    else:
-                        loopBasis[loc, :] = loopBasis[loc, :] + loopBasis[loc_extloop, :]
-                print blue("{0}".format(loopBasis))
+            # loopBasis = np.copy(Diag.LoopBasis)
+            # gtype_temp = np.copy(GType)
+            # if len(swap_ver) > 0:
+            #     loopBasis[:, swap_ver[0]], loopBasis[:, 2] = Diag.LoopBasis[:,2], Diag.LoopBasis[:, swap_ver[0]]
+            #     GType[swap_ver[0]], GType[2] = gtype_temp[2], gtype_temp[swap_ver[0]]
+            #     if swap_ver[1] != 2:
+            #         loopBasis[:, swap_ver[1]], loopBasis[:, 3] = Diag.LoopBasis[:,3], Diag.LoopBasis[:, swap_ver[1]]
+            #         GType[swap_ver[1]], GType[3] = gtype_temp[3], gtype_temp[swap_ver[1]]
+            # if jp_0 >= 2:
+            #     locs_extloop = np.where(abs(loopBasis[:, 0]) == 1 & (loopBasis[:, 0] == loopBasis[:,2]))[0]
+            #     loc_extloop=locs_extloop[0]
+            #     # loc_extloop = np.where(abs(loopBasis[:, 0]) == 1 & (loopBasis[:, 0] == loopBasis[:,2]))[0][0]
+            # else:
+            #     # loc_extloop = np.where(abs(loopBasis[:, 0]) == 1 & (loopBasis[:, 0] == loopBasis[:,1]))[0][0]
+            #     locs_extloop = np.where(abs(loopBasis[:, 0]) == 1 & (loopBasis[:, 0] == loopBasis[:,1]))[0]
+            #     loc_extloop=locs_extloop[0]
+            # if len(locs_extloop)>1:
+            #     print yellow("{0}".format(loopBasis))
+            #     for loc in locs_extloop[1:]:
+            #         if loopBasis[loc, 0] ==  loopBasis[loc_extloop, 0]:
+            #             loopBasis[loc, :] = loopBasis[loc, :] - loopBasis[loc_extloop, :]
+            #         else:
+            #             loopBasis[loc, :] = loopBasis[loc, :] + loopBasis[loc_extloop, :]
+            #     print blue("{0}".format(loopBasis))
 
             print "Save {0}".format(Permutation)
 
@@ -134,7 +134,7 @@ class vertex4():
 
             Body += "# GType\n"
             for i in range(self.GNum):
-                if Permutation[i] == 0:
+                if Permutation[i] == 0 or i == 0 or i == 1:
                     Body += "{0:2d} ".format(-2)
                 else:
                     Body += "{0:2d} ".format(GType[i])
@@ -151,18 +151,19 @@ class vertex4():
 
             Body += "# LoopBasis\n"
 
-            basis_temp = np.copy(loopBasis)
-            if loc_extloop > 0:
-                if loopBasis[loc_extloop, 0] == 1:
-                    basis_temp[0, :] = loopBasis[loc_extloop, :]
-                else:
-                    basis_temp[0, :] = -loopBasis[loc_extloop, :]
-                basis_temp[loc_extloop:-1, :] = loopBasis[loc_extloop+1:, :]
-                basis_temp[-1, :] = loopBasis[0, :]
+            # basis_temp = np.copy(loopBasis)
+            # if loc_extloop > 0:
+            #     if loopBasis[loc_extloop, 0] == 1:
+            #         basis_temp[0, :] = loopBasis[loc_extloop, :]
+            #     else:
+            #         basis_temp[0, :] = -loopBasis[loc_extloop, :]
+            #     basis_temp[loc_extloop:-1, :] = loopBasis[loc_extloop+1:, :]
+            #     basis_temp[-1, :] = loopBasis[0, :]
             # print yellow("{0}".format(loc_extloop))
             for i in range(self.LoopNum):
                 for j in range(self.GNum):
-                    Body += "{0:2d} ".format(basis_temp[i, j])
+                    # Body += "{0:2d} ".format(basis_temp[i, j])
+                    Body += "{0:2d} ".format(Mom[i, j])
                 Body += "\n"
             # print basis_temp
 
@@ -190,7 +191,8 @@ class vertex4():
             FactorList = []
 
             for idx, FeynPermu in enumerate(FeynList):
-                if self.__IsHartree(FeynPermu, basis_temp, vertype, gtype):
+                # if self.__IsHartree(FeynPermu, basis_temp, vertype, gtype):
+                if self.__IsHartree(FeynPermu, Mom, vertype, gtype):
                     prefactor = 0
                 else:
                     prefactor = 1

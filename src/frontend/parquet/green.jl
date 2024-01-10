@@ -1,5 +1,5 @@
 """
-    green(para::DiagPara, extK = DiagTree.getK(para.totalLoopNum, 1), extT = para.hasTau ? (1, 2) : (0, 0), subdiagram = false;
+    green(para::DiagPara, extK = getK(para.totalLoopNum, 1), extT = para.hasTau ? (1, 2) : (0, 0), subdiagram = false;
         name = :G, resetuid = false, blocks::ParquetBlocks=ParquetBlocks())
     
 Build composite Green's function.
@@ -18,7 +18,7 @@ By definition, para.firstTauIdx is the first Tau index of the left most self-ene
 # Output
 - A Diagram object or nothing if the Green's function is illegal. 
 """
-function green(para::DiagPara, extK=DiagTree.getK(para.totalLoopNum, 1), extT=para.hasTau ? (1, 2) : (0, 0), subdiagram=false;
+function green(para::DiagPara, extK=getK(para.totalLoopNum, 1), extT=para.hasTau ? (1, 2) : (0, 0), subdiagram=false;
     name=:G, resetuid=false, blocks::ParquetBlocks=ParquetBlocks())
 
     @assert isValidG(para) "$para doesn't gives a valid Green's function"

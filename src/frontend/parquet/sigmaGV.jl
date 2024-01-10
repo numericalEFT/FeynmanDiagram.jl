@@ -1,7 +1,7 @@
-"""
-    function sigma(para::DiagPara, extK=getK(para.totalLoopNum, 1), subdiagram=false;
-        name=:Σ, resetuid=false, blocks::ParquetBlocks=ParquetBlocks())
 
+"""
+    function sigmaGV(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = false; name = :Σ, resetuid = false, blocks::ParquetBlocks=ParquetBlocks())
+    
 Build sigma diagram. 
 When sigma is created as a subdiagram, then no Fock diagram is generated if para.filter contains NoFock, and no sigma diagram is generated if para.filter contains Girreducible
 
@@ -17,10 +17,15 @@ When sigma is created as a subdiagram, then no Fock diagram is generated if para
 - A DataFrame with fields `:type`, `:extT`, `:diagram`, `:hash`
 - All sigma share the same incoming Tau index, but not the outgoing one
 """
-function sigma(para::DiagPara, extK=getK(para.totalLoopNum, 1), subdiagram=false;
+function sigmaGV(para::DiagPara, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false;
     name=:Σ, resetuid=false, blocks::ParquetBlocks=ParquetBlocks()
 )
-    resetuid && ComputationalGraphs.uidreset()
+    resetuid && uidreset()
+    for i in para.interaction
+        @assert (Dynamic in i.type) == false "Dynamic interaction is not supported for sigmaGV diagrams."
+    end
+    @assert NoHartree in para.filter "sigmaGV diagrams must have NoHartree in para.filter."
+
     (para.type == SigmaDiag) || error("$para is not for a sigma diagram")
     (para.innerLoopNum >= 1) || error("sigma must has more than one inner loop")
     # @assert length(extK) == para.totalLoopNum
@@ -67,7 +72,7 @@ function sigma(para::DiagPara, extK=getK(para.totalLoopNum, 1), subdiagram=false
             spinfactor *= 0.5
         end
         # plot_tree(mergeby(DataFrame(group)), maxdepth = 7)
-        sigmadiag = Graph([g, group[:diagram]]; properties=sid, operator=Prod(), factor=spinfactor, name=name)
+        sigmadiag = Graph([g, group[:diagram]], properties=sid, operator=Prod(), factor=spinfactor, name=name)
         # plot_tree(sigmadiag, maxdepth = 7)
         return (type=type, extT=group[:extT], diagram=sigmadiag)
     end
@@ -79,44 +84,34 @@ function sigma(para::DiagPara, extK=getK(para.totalLoopNum, 1), subdiagram=false
         WfirstLoopIdx, GfirstLoopIdx = idx
 
         # it is important to do W first, because the left in of W is also the incoming leg of sigma, they have the same Tidx
-        idx, maxTau = findFirstTauIdx([oW, oG], [Ver4Diag, GreenDiag], para.firstTauIdx, interactionTauNum(para))
+        idx, maxTau = findFirstTauIdx([oW, oG], [Ver3Diag, GreenDiag], para.firstTauIdx, interactionTauNum(para))
         (maxTau <= para.totalTauNum) || error("maxTau = $maxTau > $(para.totalTauNum)")
         WfirstTauIdx, GfirstTauIdx = idx
 
         paraG = reconstruct(para, type=GreenDiag, innerLoopNum=oG,
             firstLoopIdx=GfirstLoopIdx, firstTauIdx=GfirstTauIdx)
-        paraW = reconstruct(para, type=Ver4Diag, innerLoopNum=oW,
+        paraW = reconstruct(para, type=Ver3Diag, innerLoopNum=oW,
             firstLoopIdx=WfirstLoopIdx, firstTauIdx=WfirstTauIdx)
 
         #TODO: add validation for paraW
         # println("oG: $oG, oW: $oW  -> ", isValidG(paraG))
         if isValidG(paraG)
             # println(paraW)
+            paraW0 = reconstruct(paraW, filter=union(paraW.filter, Proper), transferLoop=zero(K))
+            bareV = vertex4(paraW0, legK, [], true)
             if oW == 0 # Fock-type Σ
-                if NoHartree in paraW.filter
-                    paraW0 = reconstruct(paraW, filter=union(paraW.filter, Proper), transferLoop=zero(K))
-                    ver4 = vertex4(paraW0, legK, [], true)
-                else
-                    ver4 = vertex4(paraW, legK, [], true)
+                ver4 = bareV
+                df = transform(ver4, :extT => ByRow(x -> [(x[INL], x[OUTR]), (x[OUTL], x[INR])]) => [:extT, :GT])
+
+                groups = mergeby(df, [:response, :type, :GT, :extT], operator=Sum())
+                for mergedVer4 in eachrow(groups)
+                    push!(compositeSigma, GWwithGivenExTtoΣ(mergedVer4, oW, paraG))
                 end
-                # println(ver4)
             else # composite Σ
-                # paraW0 = reconstruct(paraW, filter=union(paraW.filter, Proper), transferLoop=extK-K)
-                # plot_tree(mergeby(ver4).diagram[1])
-                # if compact
-                #     ver4 = ep_coupling(paraW; extK=legK, subdiagram=true, name=:W, blocks=blocks)
-                # else
-                ver4 = vertex4(paraW, legK, [PHr,], true; blocks=blocks, blockstoplevel=ParquetBlocks(phi=[], Γ4=[PHr, PHEr, PPr]))
-                # end
+                ver3 = vertex3(paraW, [extK - K, extK, K])
             end
             #transform extT coloum intwo extT for Σ and extT for G
             # plot_tree(ver4)
-            df = transform(ver4, :extT => ByRow(x -> [(x[INL], x[OUTR]), (x[OUTL], x[INR])]) => [:extT, :GT])
-
-            groups = mergeby(df, [:response, :type, :GT, :extT], operator=Sum())
-            for mergedVer4 in eachrow(groups)
-                push!(compositeSigma, GWwithGivenExTtoΣ(mergedVer4, oW, paraG))
-            end
         end
     end
 
@@ -124,8 +119,6 @@ function sigma(para::DiagPara, extK=getK(para.totalLoopNum, 1), subdiagram=false
     if isempty(compositeSigma)
         return compositeSigma
     else
-        # sigmaid(g) = SigmaId(para, g[1, :type], k=extK, t=g[1, :extT])
-        # sigmadf = mergeby(compositeSigma, [:type, :extT], name=name, factor=Factor, getid=sigmaid)
         sigmadf = mergeby(compositeSigma, [:type, :extT], name=name,
             getid=g -> SigmaId(para, g[1, :type], k=extK, t=g[1, :extT]))
 
