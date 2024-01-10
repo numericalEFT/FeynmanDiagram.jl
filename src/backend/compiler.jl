@@ -1,10 +1,10 @@
 module Compilers
 using PyCall
 using ..ComputationalGraphs
-import ..ComputationalGraphs: id, name, set_name!, operator, subgraphs, subgraph_factors, factor, FeynmanProperties
+import ..ComputationalGraphs: id, name, set_name!, operator, subgraphs, subgraph_factors, FeynmanProperties
 
-using ..DiagTree
-using ..DiagTree: Diagram, PropagatorId, BareGreenId, BareInteractionId
+using ..Parquet
+using ..Parquet: PropagatorId, BareGreenId, BareInteractionId
 
 using ..QuantumOperators
 import ..QuantumOperators: isfermionic

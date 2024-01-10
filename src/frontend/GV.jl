@@ -6,46 +6,22 @@ import ..ComputationalGraphs: FeynmanGraph
 import ..ComputationalGraphs: Graph
 import ..ComputationalGraphs: _dtype
 import ..Parquet
+import ..Parquet: Filter, NoBubble, NoHartree, NoFock, DirectOnly
+import ..Parquet: Wirreducible  #remove all polarization subdiagrams
+import ..Parquet: Girreducible  #remove all self-energy inseration
+import ..Parquet: NoBubble  # true to remove all bubble subdiagram
+import ..Parquet: Proper  #ver4, ver3, and polarization diagrams may require to be irreducible along the transfer momentum/frequency
+import ..Parquet: Response, Composite, ChargeCharge, SpinSpin, UpUp, UpDown
+import ..Parquet: AnalyticProperty, Instant, Dynamic, D_Instant, D_Dynamic
+import ..Parquet: DiagramType, VacuumDiag, SigmaDiag, GreenDiag, PolarDiag, Ver3Diag, Ver4Diag
 import ..Taylor
-using ..DiagTree
 using ..FrontEnds
 using AbstractTrees
 
 import ..Utility: taylorexpansion!
 
-import ..Filter
-import ..Wirreducible  #remove all polarization subdiagrams
-import ..Girreducible  #remove all self-energy inseration
-import ..NoHartree
-import ..NoFock
-import ..NoBubble  # true to remove all bubble subdiagram
-import ..Proper  #ver4, ver3, and polarization diagrams may require to be irreducible along the transfer momentum/frequency
-import ..DirectOnly
-
-import ..DiagramType
-import ..VacuumDiag
-import ..GreenDiag
-import ..SigmaDiag
-import ..PolarDiag
-import ..Ver3Diag
-import ..Ver4Diag
-
-import ..Composite
-import ..ChargeCharge
-import ..SpinSpin
-import ..UpUp
-import ..UpDown
-import ..Response
-
-import ..Instant
-import ..Dynamic
-import ..D_Instant
-import ..D_Dynamic
-import ..AnalyticProperty
-
 import ..Interaction
 import ..DiagPara
-import ..DiagParaF64
 
 import ..DiagramId
 import ..Ver4Id
@@ -274,9 +250,7 @@ function diagdict_parquet(type::Symbol, MaxOrder::Int, has_counterterm::Bool=tru
         for order in MinOrder:MaxOrder
             Taylor.set_variables("x y"; orders=[MaxOrder - order, MaxOrder - order])
             para = diagPara(diagtype, isDynamic, spin, order, filter, transferLoop)
-            # legK = [DiagTree.getK(para.totalLoopNum + 3, 1), DiagTree.getK(para.totalLoopNum + 3, 2), DiagTree.getK(para.totalLoopNum + 3, 3)]
-            # d::Vector{Diagram{Float64}} = Parquet.vertex4(para, legK, channel).diagram
-            # diags::Vector{Diagram{Float64}} = Parquet.build(para).diagram
+            # legK = [Parquet.getK(para.totalLoopNum + 3, 1), Parquet.getK(para.totalLoopNum + 3, 2), Parquet.getK(para.totalLoopNum + 3, 3)]
             parquet_builder = Parquet.build(para)
             diags, extT = parquet_builder.diagram, parquet_builder.extT
 
@@ -443,7 +417,7 @@ function diagPara(type, isDynamic::Bool, spin, order, filter, transferLoop=nothi
     end
 
     if isnothing(transferLoop)
-        return DiagParaF64(
+        return DiagPara(
             type=type,
             innerLoopNum=innerLoopNum,
             hasTau=true,
@@ -452,7 +426,7 @@ function diagPara(type, isDynamic::Bool, spin, order, filter, transferLoop=nothi
             filter=filter,
         )
     else
-        return DiagParaF64(
+        return DiagPara(
             type=type,
             innerLoopNum=innerLoopNum,
             hasTau=true,
@@ -608,7 +582,7 @@ function leafstates_diagtree(leaf_maps::Vector{Dict{Int,Graph}}, maxloopNum::Int
             push!(leafOutTau[ikey], diagId.extT[2])
 
             push!(leafOrders[ikey], leaf_orders)
-            push!(leafType[ikey], DiagTree.index(typeof(diagId)))
+            push!(leafType[ikey], Parquet.index(typeof(diagId)))
 
         end
     end

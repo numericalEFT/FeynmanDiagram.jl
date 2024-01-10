@@ -34,21 +34,22 @@ function _idstring(graph::AbstractGraph)
     return string(id(graph), _namestr(graph))
 end
 
-function _idstring(graph::FeynmanGraph)    
+function _idstring(graph::FeynmanGraph)
     return string(id(graph), _namestr(graph), ":", _ops_to_str(vertices(graph)))
 end
 
 function _stringrep(graph::AbstractGraph, color=true)
     idstr = _idstring(graph)
-    fstr = short(factor(graph), one(factor(graph)))
+    # fstr = short(factor(graph), one(factor(graph)))
     wstr = short(weight(graph))
     ostr = short_orders(orders(graph))
     # =$(node.weight*(2π)^(3*node.id.para.innerLoopNum))
 
     if length(subgraphs(graph)) == 0
-        return isempty(fstr) ? "$(idstr)$(ostr)=$wstr" : "$(idstr)⋅$(fstr)=$wstr"
+        # return isempty(fstr) ? "$(idstr)$(ostr)=$wstr" : "$(idstr)⋅$(fstr)=$wstr"
+        return "$(idstr)$(ostr)=$wstr"
     else
-        return "$(idstr)$(ostr)=$wstr=$(fstr)$(operator(graph)) "
+        return "$(idstr)$(ostr)=$wstr=$(operator(graph)) "
     end
 end
 

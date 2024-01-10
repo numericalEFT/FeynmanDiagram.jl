@@ -403,7 +403,7 @@ function burn_from_targetleaves!(graphs::AbstractVector{G}, targetleaves_id::Abs
     verbose > 0 && println("remove all nodes connected to the target leaves via Prod operators.")
 
     graphs_sum = linear_combination(graphs, one.(eachindex(graphs)))
-    ftype = typeof(factor(graphs[1]))
+    ftype = eltype(subgraph_factors(graphs[1]))
 
     for leaf in Leaves(graphs_sum)
         if !isdisjoint(id(leaf), targetleaves_id)
@@ -435,16 +435,19 @@ function burn_from_targetleaves!(graphs::AbstractVector{G}, targetleaves_id::Abs
         end
     end
 
-    g_c0 = constant_graph(ftype(0))
+    # g_c0 = constant_graph(ftype(0))
+    g_c1 = constant_graph(ftype(1))
     has_c0 = false
     for g in graphs
         if name(g) == "BURNING"
             has_c0 = true
-            set_id!(g, id(g_c0))
-            set_operator!(g, Constant)
-            set_factor!(g, ftype(0))
+            set_id!(g, id(g_c1))
+            set_operator!(g, Unitary)
+            # set_subgraphs!(g, subgraphs(g_c0))
+            # set_subgraph_factors!(g, subgraph_factors(g_c0))
+            set_weight!(g, 0.0)
         end
     end
 
-    has_c0 ? (return id(g_c0)) : (return nothing)
+    has_c0 ? (return id(g_c1)) : (return nothing)
 end
