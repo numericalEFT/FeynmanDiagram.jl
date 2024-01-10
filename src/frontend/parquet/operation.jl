@@ -89,7 +89,7 @@ function mergeby(df::DataFrame, fields=Vector{Symbol}();
 end
 
 function mergeby(diags::Union{Graph,Tuple,AbstractVector}, fields=nothing; idkey=nothing, kwargs...)
-    if diags isa Diagram
+    if diags isa Graph
         return diags
     else
         if isempty(diags)
@@ -137,5 +137,5 @@ function mergeby(diags::Vector{Graph{F,W}};
     end
 end
 # mergeby(df::DataFrame; kwargs...) = mergeby(df, []; kwargs...)
-# mergeby(diags::Vector{Diagram{W}}; kwargs...) where {W} = mergeby(diags, []; kwargs...)
+# mergeby(diags::Vector{Graph}; kwargs...) = mergeby(diags, []; kwargs...)
 

@@ -44,24 +44,6 @@ include("TaylorSeries/TaylorSeries.jl")
 using .Taylor
 export Taylor
 
-# include("diagram_tree/DiagTree.jl")
-# using .DiagTree
-# export DiagTree
-# export TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
-# export Permutation, Di, Ex, DiEx
-# export Diagram, addSubDiagram!, toDataFrame
-# export evalDiagNode!, evalDiagTree!, evalDiagTreeKT!
-# export Operator, Sum, Prod
-# export DiagramId, GenericId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId
-# export PropagatorId, BareGreenId, BareInteractionId
-# export BareGreenNId, BareHoppingId, GreenNId, ConnectedGreenNId
-# export uidreset, toDataFrame, mergeby, plot_tree
-
-# include("strong_coupling_expansion_builder/strong_coupling_expansion")
-# using .SCE
-# export SCE
-# export Gn
-
 include("utility.jl")
 using .Utility
 export Utility
@@ -93,6 +75,11 @@ include("frontend/GV.jl")
 using .GV
 export GV
 export diagdictGV, diagdict_parquet, leafstates, leafstates_diagtree
+
+# include("frontend/strong_coupling_expansion_builder/strong_coupling_expansion.jl")
+# using .SCE
+# export SCE
+# export Gn
 
 include("backend/compiler.jl")
 using .Compilers

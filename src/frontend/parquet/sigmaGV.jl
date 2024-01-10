@@ -1,6 +1,6 @@
 
 """
-    function sigmaGV(para, extK = DiagTree.getK(para.totalLoopNum, 1), subdiagram = false; name = :Σ, resetuid = false, blocks::ParquetBlocks=ParquetBlocks())
+    function sigmaGV(para, extK = getK(para.totalLoopNum, 1), subdiagram = false; name = :Σ, resetuid = false, blocks::ParquetBlocks=ParquetBlocks())
     
 Build sigma diagram. 
 When sigma is created as a subdiagram, then no Fock diagram is generated if para.filter contains NoFock, and no sigma diagram is generated if para.filter contains Girreducible
@@ -17,7 +17,7 @@ When sigma is created as a subdiagram, then no Fock diagram is generated if para
 - A DataFrame with fields `:type`, `:extT`, `:diagram`, `:hash`
 - All sigma share the same incoming Tau index, but not the outgoing one
 """
-function sigmaGV(para::DiagPara, extK=DiagTree.getK(para.totalLoopNum, 1), subdiagram=false;
+function sigmaGV(para::DiagPara, extK=getK(para.totalLoopNum, 1), subdiagram=false;
     name=:Σ, resetuid=false, blocks::ParquetBlocks=ParquetBlocks()
 )
     resetuid && uidreset()

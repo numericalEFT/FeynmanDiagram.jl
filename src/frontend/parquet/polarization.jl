@@ -74,7 +74,6 @@ function polarization(para::DiagPara, extK=getK(para.totalLoopNum, 1), subdiagra
                 @assert gin isa Graph && gout isa Graph "$gin or $gout is not a single graph"
 
                 sign = para.isFermi ? -1.0 : 1.0
-                # polardiag = Diagram{W}(polarid, Prod(), [gin, gout], name=name, factor=sign)
                 polardiag = Graph([gin, gout], properties=polarid, operator=Prod(), name=name, factor=sign)
                 push!(polar, (response=response, extT=extT, diagram=polardiag))
             else
@@ -113,7 +112,6 @@ function polarization(para::DiagPara, extK=getK(para.totalLoopNum, 1), subdiagra
                     gout = green(paraGout, K .- extK, v3.GoutT, true, name=:Gout, blocks=blocks)
                     @assert gin isa Graph && gout isa Graph
 
-                    # polardiag = Diagram{W}(polarid, Prod(), [gin, gout, v3.diagram], name=name)
                     polardiag = Graph([gin, gout, v3.diagram], properties=polarid, operator=Prod(), name=name)
                     push!(polar, (response=response, extT=v3.extT, diagram=polardiag))
                 end

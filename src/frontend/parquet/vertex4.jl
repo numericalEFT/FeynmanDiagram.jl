@@ -223,11 +223,8 @@ function bubble2diag!(ver8, para::DiagPara, chan::TwoBodyChannel, ldiag, rdiag, 
         if ln == Lresponse && rn == Rresponse
             nodeName = Symbol("$(spin(Lresponse))x$(spin(Rresponse)) → $chan,")
             id = GenericId(para)
-            # diag = Diagram{W}(id, Prod(), [g0, gx, ldiag, rdiag], factor=factor * Factor, name=nodeName)
             diag = Graph([ldiag, rdiag]; properties=id, operator=Prod(), factor=factor * Factor, name=nodeName)
             push!(ver8[key], diag)
-            # push!(ver4df, (response=Vresponse, type=vtype, extT=extT, diagram=diag))
-            # push!(diag, Diagram(id, Prod(), [g0, gx, ldiag, rdiag], factor=factor * Factor, name=nodeName))
         end
     end
 

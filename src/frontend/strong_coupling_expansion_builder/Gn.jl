@@ -58,7 +58,7 @@ function fullGreen(para, hop::Vector{BareHoppingId}, subdiagram=false; name=Symb
         o = orbital[ind]
         c = _creation[ind]
         bareGId = BareGreenNId(para, orbital=o, t=t, r=r, creation=c)
-        push!(gn, Diagram(bareGId, name=Symbol("gn$(length(t))")))
+        push!(gn, Graph([], properties=bareGId, name=Symbol("gn$(length(t))")))
         append!(permutation, ind)
     end
 
@@ -66,9 +66,9 @@ function fullGreen(para, hop::Vector{BareHoppingId}, subdiagram=false; name=Symb
         return nothing
     else
         for h in hop
-            push!(gn, Diagram(h, name=:hop))
+            push!(gn, Graph([], properties=h, name=:hop))
         end
         # println(permutation)
-        return Diagram(GreenNId(para, orbital=orbital, t=extT, r=site, creation=_creation), Prod(), gn, name=name, factor=parity(permutation))
+        return Graph(gn, properties=GreenNId(para, orbital=orbital, t=extT, r=site, creation=_creation), operator=Prod(), name=name, factor=parity(permutation))
     end
 end

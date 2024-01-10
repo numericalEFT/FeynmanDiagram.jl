@@ -15,7 +15,6 @@ import ..Parquet: Response, Composite, ChargeCharge, SpinSpin, UpUp, UpDown
 import ..Parquet: AnalyticProperty, Instant, Dynamic, D_Instant, D_Dynamic
 import ..Parquet: DiagramType, VacuumDiag, SigmaDiag, GreenDiag, PolarDiag, Ver3Diag, Ver4Diag
 import ..Taylor
-# using ..DiagTree
 using ..FrontEnds
 using AbstractTrees
 
@@ -252,8 +251,6 @@ function diagdict_parquet(type::Symbol, MaxOrder::Int, has_counterterm::Bool=tru
             Taylor.set_variables("x y"; orders=[MaxOrder - order, MaxOrder - order])
             para = diagPara(diagtype, isDynamic, spin, order, filter, transferLoop)
             # legK = [Parquet.getK(para.totalLoopNum + 3, 1), Parquet.getK(para.totalLoopNum + 3, 2), Parquet.getK(para.totalLoopNum + 3, 3)]
-            # d::Vector{Diagram{Float64}} = Parquet.vertex4(para, legK, channel).diagram
-            # diags::Vector{Diagram{Float64}} = Parquet.build(para).diagram
             parquet_builder = Parquet.build(para)
             diags, extT = parquet_builder.diagram, parquet_builder.extT
 

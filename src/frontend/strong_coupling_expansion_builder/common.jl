@@ -35,8 +35,6 @@ import ..Interaction
 import ..DiagPara
 import ..innerTauNum
 
-import ..Diagram
-
 import ..DiagramId
 import ..Ver4Id
 import ..Ver3Id

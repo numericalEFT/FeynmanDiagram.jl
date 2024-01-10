@@ -30,7 +30,7 @@ function connectedGreen(para, hop::Vector{BareHoppingId}, subdiagram=false; name
         if isnothing(subGn) || isnothing(subGc)
             continue
         end
-        push!(Gc, Diagram(GenericId(para), Prod(), [subGc, subGn], factor=-1.0)) #additional minus sign because Gc(s) = Gn(s) - \sum_o Gc(o)Gn(s-o)
+        push!(Gc, Graph([subGc, subGn], properties=GenericId(para), operator=Prod(), factor=-1.0)) #additional minus sign because Gc(s) = Gn(s) - \sum_o Gc(o)Gn(s-o)
     end
 
     extT, orbital, site, creation = [], [], [], []
@@ -40,7 +40,7 @@ function connectedGreen(para, hop::Vector{BareHoppingId}, subdiagram=false; name
         append!(creation, [true, false])
         append!(orbital, h.orbital)
     end
-    return Diagram(ConnectedGreenNId(para, orbital=orbital, t=extT, r=site, creation=creation), Sum(), Gc, name=name)
+    return Graph(Gc, properties=ConnectedGreenNId(para, orbital=orbital, t=extT, r=site, creation=creation), operator=Sum(), name=name)
 end
 
 # function connectedGreen(para, site::AbstractVector, orbital::AbstractVector, extT::AbstractVector = collect(1:length(orbital)), subdiagram = false; name = Symbol("Gc$(length(site))"), resetuid = false, even = true)

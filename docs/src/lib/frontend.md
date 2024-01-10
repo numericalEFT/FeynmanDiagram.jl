@@ -1,4 +1,4 @@
-# Front-end translates a source code into a computational graph
+# Front-end generates Feynman diagrams and translates then into a computational graph
 
 ## API
 

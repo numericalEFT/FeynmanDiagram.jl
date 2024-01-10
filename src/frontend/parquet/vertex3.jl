@@ -97,7 +97,6 @@ function vertex3(para::DiagPara,
                 gout = green(paraGout, K .+ q, v4.GoutT, true, name=:Gout, blocks=blocks)
                 @assert gin isa Graph && gout isa Graph
 
-                # ver3diag = Diagram{WW}(ver3id, Prod(), [gin, gout, v4.diagram], name=name)
                 ver3diag = Graph([gin, gout, v4.diagram], properties=ver3id, operator=Prod(), name=name)
                 push!(vertex3, (response=response, extT=v4.extT, diagram=ver3diag))
             end

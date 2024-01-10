@@ -18,11 +18,11 @@ Modules = [FeynmanDiagram]
 Pages = [
     "lib/operator.md",
     "lib/computgraph.md",
+    "lib/taylorseries.md",
     "lib/frontend.md",
     "lib/GV.md",
     "lib/parquet.md",
-    "lib/diagtree.md",
-    "lib/exprtree.md",
+    "lib/backend.md",
 ]
 Depth = 2
 ```

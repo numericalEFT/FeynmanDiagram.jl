@@ -5,16 +5,11 @@ using ..ComputationalGraphs: decrement_power
 using ..ComputationalGraphs: build_all_leaf_derivative, eval!, isfermionic
 import ..ComputationalGraphs: count_operation, count_expanded_operation
 using ..ComputationalGraphs.AbstractTrees
-# using ..DiagTree
-# using ..DiagTree: Diagram, PropagatorId, BareGreenId, BareInteractionId
 using ..Taylor
 
 @inline apply(::Type{ComputationalGraphs.Sum}, diags::Vector{T}, factors::Vector{F}) where {T<:TaylorSeries,F<:Number} = sum(d * f for (d, f) in zip(diags, factors))
 @inline apply(::Type{ComputationalGraphs.Prod}, diags::Vector{T}, factors::Vector{F}) where {T<:TaylorSeries,F<:Number} = prod(d * f for (d, f) in zip(diags, factors))
 @inline apply(::Type{ComputationalGraphs.Power{N}}, diags::Vector{T}, factors::Vector{F}) where {N,T<:TaylorSeries,F<:Number} = (diags[1])^N * factors[1]
-
-# @inline apply(::Type{DiagTree.Sum}, diags::Vector{T}, factors::Vector{F}) where {T<:TaylorSeries,F<:Number} = sum(d * f for (d, f) in zip(diags, factors))
-# @inline apply(::Type{DiagTree.Prod}, diags::Vector{T}, factors::Vector{F}) where {T<:TaylorSeries,F<:Number} = prod(d * f for (d, f) in zip(diags, factors))
 
 
 """
@@ -122,12 +117,13 @@ function taylorexpansion!(graph::FeynmanGraph{F,W}, propagator_var::Tuple{Vector
 end
 
 """
-    function taylorexpansion!(graph::Diagram{W}, propagator_var::Dict{DataType,Vector{Bool}}; to_coeff_map::Dict{Int,TaylorSeries{Graph{W,W}}}=Dict{Int,TaylorSeries{Graph{W,W}}}()) where {W}
-
-    Return a taylor series of Diagram g, together with a map of between nodes of g and correponding taylor series. In this set up, the leaves that are the same type of diagrams (such as Green functions) depend on the same set of variables.
+    function taylorexpansion!(graph::Graph{F,W}, propagator_var::Dict{DataType,Vector{Bool}};
+        to_coeff_map::Dict{Int,TaylorSeries{Graph{F,W}}}=Dict{Int,TaylorSeries{Graph{F,W}}}()) where {F,W}
+        
+    Return a taylor series of Graph g, together with a map of between nodes of g and correponding taylor series. In this set up, the leaves that are the same type of diagrams (such as Green functions) depend on the same set of variables.
 
 # Arguments:
-- `graph`  Target Diagram
+- `graph`  Target Graph
 - `propagator_var::Dict{DataType,Vector{Bool}}` A dictionary that specifies the variable dependence of different types of diagrams. Should be a map between DataTypes in DiagramID and Bool vectors.
     The dependence is given by a vector of the length same as the number of variables.
 - `to_coeff_map::Dict{Int,TaylorSeries}` A dicitonary that maps id of each node of target diagram to its correponding taylor series.
