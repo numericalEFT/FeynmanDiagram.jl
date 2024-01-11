@@ -48,10 +48,11 @@ include("eval.jl")
 export eval!
 
 include("transform.jl")
-export relabel!, standardize_labels!, replace_subgraph!, merge_linear_combination!, merge_multi_product!, merge_chains!, flatten_chains!
-export relabel, standardize_labels, replace_subgraph, merge_linear_combination, merge_multi_product, merge_chains, flatten_chains
-export open_parenthesis!, open_parenthesis, flatten_prod!, flatten_prod, flatten_sum!, flatten_sum
+export relabel!, standardize_labels!, replace_subgraph!, merge_linear_combination!, merge_multi_product!, remove_zero_valued_subgraphs!
+export relabel, standardize_labels, replace_subgraph, merge_linear_combination, merge_multi_product, remove_zero_valued_subgraphs
+export open_parenthesis, open_parenthesis!, flatten_prod!, flatten_prod, flatten_sum!, flatten_sum, flatten_chains!, flatten_chains
 include("optimize.jl")
-export optimize!, optimize
+export optimize!, optimize, flatten_all_chains!, merge_all_linear_combinations!, merge_all_multi_products!, remove_all_zero_valued_subgraphs!, remove_duplicated_leaves!, remove_duplicated_nodes!
+
 
 end

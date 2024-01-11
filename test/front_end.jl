@@ -1,3 +1,9 @@
+import FeynmanDiagram.FrontEnds: DiagramId, PropagatorId, GenericId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId, BareGreenId, BareInteractionId
+import FeynmanDiagram.FrontEnds: Response, Composite, ChargeCharge, SpinSpin, UpUp, UpDown
+import FeynmanDiagram.FrontEnds: AnalyticProperty, Instant, Dynamic
+import FeynmanDiagram.FrontEnds: Filter, NoHartree, NoFock, DirectOnly, Wirreducible, Girreducible, Proper
+import FeynmanDiagram.FrontEnds: TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
+
 @testset "LoopPool" begin
     loopbasis = [[1.0, 1.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0],
         [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0], [1.0, 0.0, -1.0, 0.0]]
@@ -64,6 +70,8 @@ end
 @testset "Parquet" begin
     using FeynmanDiagram: ComputationalGraphs as Graphs
     Ftype, Wtype = Graphs._dtype.factor, Graphs._dtype.weight
+    import FeynmanDiagram.Parquet: DiagramType, VacuumDiag, SigmaDiag, GreenDiag, PolarDiag, Ver3Diag, Ver4Diag
+    import FeynmanDiagram.Parquet: DiagPara, Interaction, ParquetBlocks, mergeby
 
     @testset "Parameter" begin
         p = DiagPara(type=Ver4Diag, innerLoopNum=1)
@@ -242,13 +250,13 @@ end
         # autodiff
         factor = 1 / (2π)^D
         Taylor.set_variables("x y"; orders=[1, 1])
-        propagator_var = Dict(BareGreenId => [true, false], BareInteractionId => [false, true]) # Specify variable dependence of fermi (first element) and bose (second element) particles.
+        propagator_var = Dict(BareGreenId{DiagPara} => [true, false], BareInteractionId{DiagPara} => [false, true]) # Specify variable dependence of fermi (first element) and bose (second element) particles.
         t, taylormap = Utility.taylorexpansion!(root, propagator_var)
 
         taylorleafmap, taylorleafvec = assign_leaves(root, taylormap)
-        @test eval!(t.coeffs[[0, 0]], taylorleafmap, taylorleafvec) ≈ (-2 + spin) * factor
-        @test eval!(t.coeffs[[0, 1]], taylorleafmap, taylorleafvec) ≈ (-2 + spin) * 2 * factor / Taylor.taylor_factorial([0, 1])
-        @test eval!(t.coeffs[[1, 0]], taylorleafmap, taylorleafvec) ≈ (-2 + spin) * 2 * factor / Taylor.taylor_factorial([1, 0])
+        @test Graphs.eval!(t.coeffs[[0, 0]], taylorleafmap, taylorleafvec) ≈ (-2 + spin) * factor
+        @test Graphs.eval!(t.coeffs[[0, 1]], taylorleafmap, taylorleafvec) ≈ (-2 + spin) * 2 * factor / Taylor.taylor_factorial([0, 1])
+        @test Graphs.eval!(t.coeffs[[1, 0]], taylorleafmap, taylorleafvec) ≈ (-2 + spin) * 2 * factor / Taylor.taylor_factorial([1, 0])
 
         # #more sophisticated test of the weight evaluation
         varK = rand(D, Nk)
