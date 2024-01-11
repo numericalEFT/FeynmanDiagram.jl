@@ -40,7 +40,6 @@ end
 if isempty(ARGS)
     include("quantum_operator.jl")
     include("computational_graph.jl")
-    # include("diagram_tree.jl")
     # include("graph_deriv.jl")
     include("compiler.jl")
     include("front_end.jl")

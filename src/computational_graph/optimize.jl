@@ -249,7 +249,7 @@ end
 """
     function unique_nodes!(graphs::AbstractVector{<:AbstractGraph})
 
-    Identifies and retrieves unique leaf nodes from a set of graphs.
+    Identifies and retrieves unique nodes from a set of graphs.
 
 # Arguments:
 - `graphs`: A collection of graphs to be processed.

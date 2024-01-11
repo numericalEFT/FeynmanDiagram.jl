@@ -1,3 +1,9 @@
+import FeynmanDiagram.FrontEnds: DiagramId, PropagatorId, GenericId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId, BareGreenId, BareInteractionId
+import FeynmanDiagram.FrontEnds: Response, Composite, ChargeCharge, SpinSpin, UpUp, UpDown
+import FeynmanDiagram.FrontEnds: AnalyticProperty, Instant, Dynamic
+import FeynmanDiagram.FrontEnds: Filter, NoHartree, NoFock, DirectOnly, Wirreducible, Girreducible, Proper
+import FeynmanDiagram.FrontEnds: TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
+
 @testset "LoopPool" begin
     loopbasis = [[1.0, 1.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0],
         [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0], [1.0, 0.0, -1.0, 0.0]]
@@ -64,6 +70,8 @@ end
 @testset "Parquet" begin
     using FeynmanDiagram: ComputationalGraphs as Graphs
     Ftype, Wtype = Graphs._dtype.factor, Graphs._dtype.weight
+    import FeynmanDiagram.Parquet: DiagramType, VacuumDiag, SigmaDiag, GreenDiag, PolarDiag, Ver3Diag, Ver4Diag
+    import FeynmanDiagram.Parquet: DiagPara, Interaction, ParquetBlocks, mergeby
 
     @testset "Parameter" begin
         p = DiagPara(type=Ver4Diag, innerLoopNum=1)
@@ -186,15 +194,15 @@ end
         # #construct the propagator table
         gK = [[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0]]
         gT = [(1, 2), (2, 1)]
-        g = [Graph([], properties=BareGreenId(paraG, k=gK[i], t=gT[i]), name=:G) for i in 1:2]
+        g = [Graph([], properties=BareGreenId(k=gK[i], t=gT[i]), name=:G) for i in 1:2]
 
         vdK = [[0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 1.0, 0.0]]
         # vdT = [[1, 1], [2, 2]]
-        vd = [Graph([], properties=BareInteractionId(paraV, ChargeCharge, k=vdK[i]), name=:Vd) for i in 1:2]
+        vd = [Graph([], properties=BareInteractionId(ChargeCharge, k=vdK[i]), name=:Vd) for i in 1:2]
 
         veK = [[1, 0, -1, -1], [0, 1, 0, -1]]
         # veT = [[1, 1], [2, 2]]
-        ve = [Graph([], properties=BareInteractionId(paraV, ChargeCharge, k=veK[i]), name=:Ve) for i in 1:2]
+        ve = [Graph([], properties=BareInteractionId(ChargeCharge, k=veK[i]), name=:Ve) for i in 1:2]
 
         Id = GenericId(paraV)
         # contruct the tree
@@ -246,9 +254,9 @@ end
         t, taylormap = Utility.taylorexpansion!(root, propagator_var)
 
         taylorleafmap, taylorleafvec = assign_leaves(root, taylormap)
-        @test eval!(t.coeffs[[0, 0]], taylorleafmap, taylorleafvec) ≈ (-2 + spin) * factor
-        @test eval!(t.coeffs[[0, 1]], taylorleafmap, taylorleafvec) ≈ (-2 + spin) * 2 * factor / Taylor.taylor_factorial([0, 1])
-        @test eval!(t.coeffs[[1, 0]], taylorleafmap, taylorleafvec) ≈ (-2 + spin) * 2 * factor / Taylor.taylor_factorial([1, 0])
+        @test Graphs.eval!(t.coeffs[[0, 0]], taylorleafmap, taylorleafvec) ≈ (-2 + spin) * factor
+        @test Graphs.eval!(t.coeffs[[0, 1]], taylorleafmap, taylorleafvec) ≈ (-2 + spin) * 2 * factor / Taylor.taylor_factorial([0, 1])
+        @test Graphs.eval!(t.coeffs[[1, 0]], taylorleafmap, taylorleafvec) ≈ (-2 + spin) * 2 * factor / Taylor.taylor_factorial([1, 0])
 
         # #more sophisticated test of the weight evaluation
         varK = rand(D, Nk)

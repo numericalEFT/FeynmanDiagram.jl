@@ -3,10 +3,15 @@ module Parquet
 import ..ComputationalGraphs
 import ..ComputationalGraphs: Graph
 import ..ComputationalGraphs: _dtype
-import ..ComputationalGraphs: Sum
-import ..ComputationalGraphs: Prod
+import ..ComputationalGraphs: Sum, Prod
 # import ..ComputationalGraphs: Power
 Ftype, Wtype = ComputationalGraphs._dtype.factor, ComputationalGraphs._dtype.weight
+
+import ..FrontEnds: TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
+import ..FrontEnds: Filter, NoBubble, NoHartree, NoFock, DirectOnly, Wirreducible, Girreducible, Proper
+import ..FrontEnds: Response, Composite, ChargeCharge, SpinSpin, ProperChargeCharge, ProperSpinSpin, UpUp, UpDown
+import ..FrontEnds: AnalyticProperty, Instant, Dynamic
+import ..FrontEnds: DiagramId, PropagatorId, GenericId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId, BareGreenId, BareInteractionId
 
 using StaticArrays, PyCall
 using AbstractTrees
@@ -17,14 +22,12 @@ using DataFrames
 #     @eval Base.Experimental.@optlevel 1
 # end
 
-
 const DI, EX, BOTH = 1, 2, 3
 const INL, OUTL, INR, OUTR = 1, 2, 3, 4
 # orginal diagrams T, U, S; particle-hole counterterm Ts, Us; and their counterterm Tc, Uc, Sc, Tsc, Usc 
 # symmetry factor for Alli, PHr, PHEr, PPr, PHrc, PHErc 
 const SymFactor = [1.0, -1.0, 1.0, -0.5, +1.0, -1.0]
 
-@enum TwoBodyChannel Alli = 1 PHr PHEr PPr AnyChan
 @enum Permutation Di = 1 Ex DiEx
 
 Base.length(r::TwoBodyChannel) = 1
@@ -47,46 +50,6 @@ Base.length(r::DiagramType) = 1
 Base.iterate(r::DiagramType) = (r, nothing)
 function Base.iterate(r::DiagramType, ::Nothing) end
 
-@enum Filter begin
-    Wirreducible  #remove all polarization subdiagrams
-    Girreducible  #remove all self-energy inseration
-    NoHartree
-    NoFock
-    NoBubble  # true to remove all bubble subdiagram
-    Proper  #ver4, ver3, and polarization diagrams may require to be irreducible along the transfer momentum/frequency
-    DirectOnly # only direct interaction, this can be useful for debug purpose
-end
-
-Base.length(r::Filter) = 1
-Base.iterate(r::Filter) = (r, nothing)
-function Base.iterate(r::Filter, ::Nothing) end
-
-@enum Response begin
-    Composite
-    ChargeCharge
-    SpinSpin
-    ProperChargeCharge
-    ProperSpinSpin
-    UpUp
-    UpDown
-end
-
-Base.length(r::Response) = 1
-Base.iterate(r::Response) = (r, nothing)
-function Base.iterate(r::Response, ::Nothing) end
-
-@enum AnalyticProperty begin
-    Instant
-    Dynamic
-    D_Instant #derivative of instant interaction
-    D_Dynamic #derivative of the dynamic interaction
-end
-
-Base.length(r::AnalyticProperty) = 1
-Base.iterate(r::AnalyticProperty) = (r, nothing)
-function Base.iterate(r::AnalyticProperty, ::Nothing) end
-
-
 struct Interaction
     response::Response
     type::Set{AnalyticProperty}
@@ -103,43 +66,6 @@ Base.:(==)(a::Interaction, b::Interaction) = Base.isequal(a, b)
 
 function short(inter::Interaction)
     return "$(short(inter.response))_$(reduce(*, [short(t) for t in inter.type]))"
-end
-
-function short(name::Response)
-    if name == ChargeCharge
-        return "cc"
-    elseif name == SpinSpin
-        return "σσ"
-    elseif name == UpUp
-        return "↑↑"
-    elseif name == UpDown
-        return "↑↓"
-    else
-        @error("$name is not implemented!")
-    end
-end
-
-function short(type::AnalyticProperty)
-    if type == Instant
-        return "Ins"
-    elseif type == Dynamic
-        return "Dyn"
-    elseif type == D_Instant
-        return "dIns"
-    elseif type == D_Dynamic
-        return "dDyn"
-    else
-        @error("$type is not implemented!")
-    end
-end
-
-function symbol(name::Response, type::AnalyticProperty, addition=nothing)
-    if isnothing(addition)
-        return Symbol("$(short(name))$(short(type))")
-    else
-        return Symbol("$(short(name))$(short(type))$(addition)")
-    end
-
 end
 
 """
@@ -277,7 +203,6 @@ Base.:(==)(a::DiagPara, b::DiagPara) = Base.isequal(a, b)
 
 include("common.jl")
 
-include("diagram_id.jl")
 include("operation.jl")
 
 include("filter.jl")
@@ -291,18 +216,5 @@ include("polarization.jl")
 include("ep_coupling.jl")
 
 include("benchmark/benchmark.jl")
-
-export DiagPara, ParquetBlocks
-export Interaction, interactionTauNum, innerTauNum
-export DiagramType, VacuumDiag, SigmaDiag, GreenDiag, PolarDiag, Ver3Diag, Ver4Diag
-export Filter, Wirreducible, Girreducible, NoBubble, NoHartree, NoFock, Proper, DirectOnly
-export Response, Composite, ChargeCharge, SpinSpin, ProperChargeCharge, ProperSpinSpin, UpUp, UpDown
-export AnalyticProperty, Instant, Dynamic, D_Instant, D_Dynamic
-export TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
-export Permutation, Di, Ex, DiEx
-export DiagramId, GenericId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId
-export PropagatorId, BareGreenId, BareInteractionId
-# export BareGreenNId, BareHoppingId, GreenNId, ConnectedGreenNId
-export mergeby
 
 end

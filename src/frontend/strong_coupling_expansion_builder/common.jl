@@ -24,8 +24,6 @@ import ..Response
 
 import ..Instant
 import ..Dynamic
-import ..D_Instant
-import ..D_Dynamic
 import ..AnalyticProperty
 
 import ..symbol

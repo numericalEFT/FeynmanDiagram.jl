@@ -34,11 +34,11 @@ export multi_product, linear_combination, feynman_diagram, propagator, interacti
 # export reducibility, connectivity
 # export 𝐺ᶠ, 𝐺ᵇ, 𝐺ᵠ, 𝑊, Green2, Interaction
 # export Coupling_yukawa, Coupling_phi3, Coupling_phi4, Coupling_phi6
-export haschildren, onechild, isleaf, isbranch, ischain, has_zero_subfactors, eldest
-export relabel!, standardize_labels!, replace_subgraph!, merge_linear_combination!, merge_multi_product!, merge_chains!
-export relabel, standardize_labels, replace_subgraph, merge_linear_combination, merge_multi_product, merge_chains
-export open_parenthesis, open_parenthesis!, flatten_prod!, flatten_prod, flatten_sum!, flatten_sum
-export optimize!, optimize, merge_all_chains!, merge_all_linear_combinations!, remove_duplicated_leaves!
+export haschildren, onechild, isleaf, isbranch, ischain, has_zero_subfactors, eldest, count_operation
+export relabel!, standardize_labels!, replace_subgraph!, merge_linear_combination!, merge_multi_product!, remove_zero_valued_subgraphs!
+export relabel, standardize_labels, replace_subgraph, merge_linear_combination, merge_multi_product, remove_zero_valued_subgraphs
+export open_parenthesis, open_parenthesis!, flatten_prod!, flatten_prod, flatten_sum!, flatten_sum, flatten_chains!, flatten_chains
+export optimize!, optimize, flatten_all_chains!, merge_all_linear_combinations!, merge_all_multi_products!, remove_all_zero_valued_subgraphs!, remove_duplicated_leaves!, remove_duplicated_nodes!
 
 include("TaylorSeries/TaylorSeries.jl")
 using .Taylor
@@ -53,30 +53,18 @@ include("frontend/frontends.jl")
 using .FrontEnds
 export FrontEnds
 export LabelProduct
+export Filter, Wirreducible, Girreducible, NoBubble, NoHartree, NoFock, Proper, DirectOnly
 
 include("frontend/parquet/parquet.jl")
 using .Parquet
 export Parquet
-export ParquetBlocks
-export DiagramType, VacuumDiag, SigmaDiag, GreenDiag, PolarDiag, Ver3Diag, Ver4Diag
-export Filter, Wirreducible, Girreducible, NoBubble, NoHartree, NoFock, Proper, DirectOnly
-export Response, Composite, ChargeCharge, SpinSpin, ProperChargeCharge, ProperSpinSpin, UpUp, UpDown
-export AnalyticProperty, Instant, Dynamic, D_Instant, D_Dynamic
-
-export DiagPara
-export Interaction, interactionTauNum, innerTauNum
-export TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
-export Permutation, Di, Ex, DiEx
-export DiagramId, GenericId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId
-export PropagatorId, BareGreenId, BareInteractionId
-export mergeby
 
 include("frontend/GV.jl")
 using .GV
 export GV
 export diagdictGV, diagdict_parquet, leafstates, leafstates_diagtree
 
-# include("frontend/strong_coupling_expansion_builder/strong_coupling_expansion.jl")
+# include("strong_coupling_expansion_builder/strong_coupling_expansion.jl")
 # using .SCE
 # export SCE
 # export Gn

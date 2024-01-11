@@ -280,7 +280,7 @@ function _bare(para::DiagPara, diex::Vector{Permutation}, response::Response, ty
 
     if notProper(para, _q) == false && _diex in diex
         #create new bare ver4 only if _diex is required in the diex table 
-        vid = BareInteractionId(para, response, type, k=_q, t=_innerT)
+        vid = BareInteractionId(response, type, k=_q, t=_innerT)
         return Graph([]; factor=sign * _factor, properties=vid)
     else
         return nothing

@@ -74,7 +74,7 @@ function interactionTauNum(hasTau::Bool, interactionSet)
         return 0
     end
     for interaction in interactionSet
-        if Dynamic in interaction.type || D_Dynamic in interaction.type
+        if Dynamic in interaction.type
             return 2
         end
     end
