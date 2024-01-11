@@ -194,15 +194,15 @@ end
         # #construct the propagator table
         gK = [[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 1.0]]
         gT = [(1, 2), (2, 1)]
-        g = [Graph([], properties=BareGreenId(paraG, k=gK[i], t=gT[i]), name=:G) for i in 1:2]
+        g = [Graph([], properties=BareGreenId(k=gK[i], t=gT[i]), name=:G) for i in 1:2]
 
         vdK = [[0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 1.0, 0.0]]
         # vdT = [[1, 1], [2, 2]]
-        vd = [Graph([], properties=BareInteractionId(paraV, ChargeCharge, k=vdK[i]), name=:Vd) for i in 1:2]
+        vd = [Graph([], properties=BareInteractionId(ChargeCharge, k=vdK[i]), name=:Vd) for i in 1:2]
 
         veK = [[1, 0, -1, -1], [0, 1, 0, -1]]
         # veT = [[1, 1], [2, 2]]
-        ve = [Graph([], properties=BareInteractionId(paraV, ChargeCharge, k=veK[i]), name=:Ve) for i in 1:2]
+        ve = [Graph([], properties=BareInteractionId(ChargeCharge, k=veK[i]), name=:Ve) for i in 1:2]
 
         Id = GenericId(paraV)
         # contruct the tree
@@ -250,7 +250,7 @@ end
         # autodiff
         factor = 1 / (2π)^D
         Taylor.set_variables("x y"; orders=[1, 1])
-        propagator_var = Dict(BareGreenId{DiagPara} => [true, false], BareInteractionId{DiagPara} => [false, true]) # Specify variable dependence of fermi (first element) and bose (second element) particles.
+        propagator_var = Dict(BareGreenId => [true, false], BareInteractionId => [false, true]) # Specify variable dependence of fermi (first element) and bose (second element) particles.
         t, taylormap = Utility.taylorexpansion!(root, propagator_var)
 
         taylorleafmap, taylorleafvec = assign_leaves(root, taylormap)

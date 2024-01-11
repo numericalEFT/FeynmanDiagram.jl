@@ -40,7 +40,7 @@ function green(para::DiagPara, extK=getK(para.totalLoopNum, 1), extT=para.hasTau
     # end
 
     if para.innerLoopNum == 0
-        return Graph([]; properties=BareGreenId(para, k=extK, t=extT), name=name)
+        return Graph([]; properties=BareGreenId(k=extK, t=extT), name=name)
     end
 
     # ################# after this step, the Green's function must be nontrivial! ##################
@@ -61,8 +61,8 @@ function green(para::DiagPara, extK=getK(para.totalLoopNum, 1), extT=para.hasTau
         return Graph([group[:diagram], G]; properties=GenericId(para, pairT), operator=Prod(), name=:ΣG)
     end
 
-    para0 = reconstruct(para, innerLoopNum=0) #parameter for g0
-    g0 = Graph([]; properties=BareGreenId(para0, k=extK, t=(tin, t0)), name=:g0)
+    # para0 = reconstruct(para, innerLoopNum=0) #parameter for g0
+    g0 = Graph([]; properties=BareGreenId(k=extK, t=(tin, t0)), name=:g0)
     ΣGpairs = Vector{Graph{Ftype,Wtype}}()
     for p in orderedPartition(para.innerLoopNum, 2, 0)
         oΣ, oG = p

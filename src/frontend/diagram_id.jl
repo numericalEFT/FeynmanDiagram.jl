@@ -17,34 +17,32 @@ abstract type PropagatorId <: DiagramId end
 # Base.isequal(a::DiagramId, b::DiagramId) = error("Base.isequal not implemented!")
 Base.:(==)(a::DiagramId, b::DiagramId) = Base.isequal(a, b)
 
-struct BareGreenId{P} <: PropagatorId
-    para::P
+struct BareGreenId <: PropagatorId
     type::AnalyticProperty #Instant, Dynamic
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
-    function BareGreenId(para::P, type::AnalyticProperty=Dynamic; k, t) where {P}
+    function BareGreenId(type::AnalyticProperty=Dynamic; k, t)
         idx = findfirst(!iszero, k)
         if isnothing(idx) || k[idx] > 0
-            return new{P}(para, type, k, Tuple(t))
+            return new(type, k, Tuple(t))
         else
-            return new{P}(para, type, -k, Tuple(t))
+            return new(type, -k, Tuple(t))
         end
     end
 end
 Base.show(io::IO, v::BareGreenId) = print(io, "$(short(v.type)), k$(v.extK), t$(v.extT)")
 
-struct BareInteractionId{P} <: PropagatorId # bare W-type interaction, with only one extK
-    para::P
+struct BareInteractionId <: PropagatorId # bare W-type interaction, with only one extK
     response::Response #UpUp, UpDown, ...
     type::AnalyticProperty #Instant, Dynamic
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
-    function BareInteractionId(para::P, response::Response, type::AnalyticProperty=Instant; k, t=(0, 0)) where {P}
+    function BareInteractionId(response::Response, type::AnalyticProperty=Instant; k, t=(0, 0))
         idx = findfirst(!iszero, k)
         if isnothing(idx) || k[idx] > 0
-            return new{P}(para, response, type, k, Tuple(t))
+            return new(response, type, k, Tuple(t))
         else
-            return new{P}(para, response, type, -k, Tuple(t))
+            return new(response, type, -k, Tuple(t))
         end
     end
 end
@@ -234,12 +232,22 @@ function Base.isequal(a::DiagramId, b::DiagramId)
     end
     bothIns = false
     for field in fieldnames(typeof(a))
+        if getproperty(a, field) != getproperty(b, field)
+            return false
+        end
+    end
+    return true
+end
+
+function Base.isequal(a::BareInteractionId, b::BareInteractionId)
+    bothIns = false
+    for field in fieldnames(typeof(a))
         if field == :type
             a.type != b.type && return false
             if a.type == Instant
                 bothIns = true
-                continue
             end
+            continue
         end
         bothIns && field == :extT && continue
         if getproperty(a, field) != getproperty(b, field)
