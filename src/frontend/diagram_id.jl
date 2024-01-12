@@ -48,6 +48,28 @@ struct BareInteractionId <: PropagatorId # bare W-type interaction, with only on
 end
 Base.show(io::IO, v::BareInteractionId) = print(io, "$(short(v.response))$(short(v.type)), k$(v.extK), t$(v.extT)")
 
+function Base.isequal(a::BareInteractionId, b::BareInteractionId)
+    # Check if response, type, and extK are not equal
+    if (a.response != b.response) || (a.type != b.type) || ((a.extK ≈ b.extK) == false)
+        return false
+    end
+
+    # Check the conditions for Instant and Dynamic types
+    # both Instant or Dynamic can have extT = [1, 1] or [1, 2]
+    # This is because that Instant interaction may need an auxiliary time index to increase the number of the internal time variables to two.
+
+    # if extT[1] == extT[2], that means the interaction is not time-dependent, then the specific time is not important
+
+    # For example, if a.extT = [1, 1] and b.extT = [2, 2], then return true
+    # Or, if a.extT = [1, 2] and b.extT = [1, 2], then return true
+    # otherwise, return false
+
+    return ((a.extT[1] == a.extT[2]) && (b.extT[1] == b.extT[2])) || (a.extT == b.extT)
+
+    # If none of the conditions are met, return false
+    return false
+end
+
 struct GenericId{P} <: DiagramId
     para::P
     extra::Any
@@ -230,26 +252,7 @@ function Base.isequal(a::DiagramId, b::DiagramId)
     if typeof(a) != typeof(b)
         return false
     end
-    bothIns = false
     for field in fieldnames(typeof(a))
-        if getproperty(a, field) != getproperty(b, field)
-            return false
-        end
-    end
-    return true
-end
-
-function Base.isequal(a::BareInteractionId, b::BareInteractionId)
-    bothIns = false
-    for field in fieldnames(typeof(a))
-        if field == :type
-            a.type != b.type && return false
-            if a.type == Instant
-                bothIns = true
-            end
-            continue
-        end
-        bothIns && field == :extT && continue
         if getproperty(a, field) != getproperty(b, field)
             return false
         end
