@@ -22,12 +22,7 @@ struct BareGreenId <: PropagatorId
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
     function BareGreenId(type::AnalyticProperty=Dynamic; k, t)
-        idx = findfirst(!iszero, k)
-        if isnothing(idx) || k[idx] > 0
-            return new(type, k, Tuple(t))
-        else
-            return new(type, -k, Tuple(t))
-        end
+        return new(type, mirror_symmetrize(k), Tuple(t))
     end
 end
 Base.show(io::IO, v::BareGreenId) = print(io, "$(short(v.type)), k$(v.extK), t$(v.extT)")
@@ -38,15 +33,32 @@ struct BareInteractionId <: PropagatorId # bare W-type interaction, with only on
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
     function BareInteractionId(response::Response, type::AnalyticProperty=Instant; k, t=(0, 0))
-        idx = findfirst(!iszero, k)
-        if isnothing(idx) || k[idx] > 0
-            return new(response, type, k, Tuple(t))
-        else
-            return new(response, type, -k, Tuple(t))
-        end
+        return new(response, type, mirror_symmetrize(k), Tuple(t))
     end
 end
 Base.show(io::IO, v::BareInteractionId) = print(io, "$(short(v.response))$(short(v.type)), k$(v.extK), t$(v.extT)")
+
+function Base.isequal(a::BareInteractionId, b::BareInteractionId)
+    # Check if response, type, and extK are not equal
+    if (a.response != b.response) || (a.type != b.type) || ((a.extK ≈ b.extK) == false)
+        return false
+    end
+
+    # Check the conditions for Instant and Dynamic types
+    # both Instant or Dynamic can have extT = [1, 1] or [1, 2]
+    # This is because that Instant interaction may need an auxiliary time index to increase the number of the internal time variables to two.
+
+    # if extT[1] == extT[2], that means the interaction is not time-dependent, then the specific time is not important
+
+    # For example, if a.extT = [1, 1] and b.extT = [2, 2], then return true
+    # Or, if a.extT = [1, 2] and b.extT = [1, 2], then return true
+    # otherwise, return false
+
+    return ((a.extT[1] == a.extT[2]) && (b.extT[1] == b.extT[2])) || (a.extT == b.extT)
+
+    # If none of the conditions are met, return false
+    return false
+end
 
 struct GenericId{P} <: DiagramId
     para::P
@@ -55,18 +67,30 @@ struct GenericId{P} <: DiagramId
 end
 Base.show(io::IO, v::GenericId) = print(io, v.extra == Nothing ? "" : "$(v.extra)")
 
+function mirror_symmetrize(k::Vector{T}) where {T<:Number}
+    idx = findfirst(!iszero, k)
+    if isnothing(idx) || k[idx] > 0
+        return k
+    else
+        mk = -k
+        if T <: Real
+            for i in 1:length(mk)
+                if mk[i] == -T(0)
+                    mk[i] = T(0)
+                end
+            end
+        end
+        return mk
+    end
+end
+
 struct GreenId{P} <: DiagramId
     para::P
     type::AnalyticProperty #Instant, Dynamic
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
     function GreenId(para::P, type::AnalyticProperty=Dynamic; k, t) where {P}
-        idx = findfirst(!iszero, k)
-        if isnothing(idx) || k[idx] > 0
-            return new{P}(para, type, k, Tuple(t))
-        else
-            return new{P}(para, type, -k, Tuple(t))
-        end
+        return new{P}(para, type, mirror_symmetrize(k), Tuple(t))
     end
 end
 Base.show(io::IO, v::GreenId) = print(io, "$(short(v.type)), k$(v.extK), t$(v.extT)")
@@ -77,12 +101,7 @@ struct SigmaId{P} <: DiagramId
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
     function SigmaId(para::P, type::AnalyticProperty; k, t=(0, 0)) where {P}
-        idx = findfirst(!iszero, k)
-        if isnothing(idx) || k[idx] > 0
-            return new{P}(para, type, k, Tuple(t))
-        else
-            return new{P}(para, type, -k, Tuple(t))
-        end
+        return new{P}(para, type, mirror_symmetrize(k), Tuple(t))
     end
 end
 Base.show(io::IO, v::SigmaId) = print(io, "$(short(v.type))#$(v.order), t$(v.extT)")
@@ -94,12 +113,7 @@ struct PolarId{P} <: DiagramId
     extT::Tuple{Int,Int} #all possible extT from different interactionType
     order::Vector{Int}
     function PolarId(para::P, response::Response; k, t=(0, 0)) where {P}
-        idx = findfirst(!iszero, k)
-        if isnothing(idx) || k[idx] > 0
-            return new{P}(para, response, k, Tuple(t))
-        else
-            return new{P}(para, response, -k, Tuple(t))
-        end
+        return new{P}(para, response, mirror_symmetrize(k), Tuple(t))
     end
 end
 Base.show(io::IO, v::PolarId) = print(io, "$(short(v.response)), k$(v.extK), t$(v.extT)")
@@ -230,26 +244,7 @@ function Base.isequal(a::DiagramId, b::DiagramId)
     if typeof(a) != typeof(b)
         return false
     end
-    bothIns = false
     for field in fieldnames(typeof(a))
-        if getproperty(a, field) != getproperty(b, field)
-            return false
-        end
-    end
-    return true
-end
-
-function Base.isequal(a::BareInteractionId, b::BareInteractionId)
-    bothIns = false
-    for field in fieldnames(typeof(a))
-        if field == :type
-            a.type != b.type && return false
-            if a.type == Instant
-                bothIns = true
-            end
-            continue
-        end
-        bothIns && field == :extT && continue
         if getproperty(a, field) != getproperty(b, field)
             return false
         end
