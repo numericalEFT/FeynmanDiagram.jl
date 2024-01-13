@@ -67,16 +67,17 @@ struct GenericId{P} <: DiagramId
 end
 Base.show(io::IO, v::GenericId) = print(io, v.extra == Nothing ? "" : "$(v.extra)")
 
-function mirror_symmetrize(k::Vector{Float64})
-
+function mirror_symmetrize(k::Vector{T}) where {T<:Number}
     idx = findfirst(!iszero, k)
     if isnothing(idx) || k[idx] > 0
         return k
     else
         mk = -k
-        for i in 1:length(mk)
-            if mk[i] == -0.0
-                mk[i] = 0.0
+        if T <: Real
+            for i in 1:length(mk)
+                if mk[i] == -T(0)
+                    mk[i] = T(0)
+                end
             end
         end
         return mk
