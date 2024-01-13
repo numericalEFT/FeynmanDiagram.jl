@@ -267,7 +267,13 @@ function diagdict_parquet(type::Symbol, MaxOrder::Int, has_counterterm::Bool=tru
 
     diagtype = _diagtype(type)
     spin = 2.0 / (spinPolarPara + 1)
-    dict_graphs = Dict{Tuple{Int,Int,Int},Tuple{Vector{Graph},Vector{Vector{Int}}}}()
+    if type == :vertex4
+        dict_graphs = Dict{Tuple{Int,Int,Int},Tuple{Vector{Graph},Vector{Vector{Int}},Vector{Any}
+}}()
+    else
+        dict_graphs = Dict{Tuple{Int,Int,Int},Tuple{Vector{Graph},Vector{Vector{Int}}}}()
+    end
+
     # dict_graphs = Dict{Tuple{Int,Int,Int},Tuple{Vector{Graph},Vector{Tuple{Vararg{Int}}}}}()
 
     if has_counterterm
@@ -279,7 +285,9 @@ function diagdict_parquet(type::Symbol, MaxOrder::Int, has_counterterm::Bool=tru
             # diags::Vector{Diagram{Float64}} = Parquet.build(para).diagram
             parquet_builder = Parquet.build(para)
             diags, extT = parquet_builder.diagram, parquet_builder.extT
-
+            if type == :vertex4
+                spin_convention = parquet_builder.response
+            end
             propagator_var = Dict(BareGreenId => [true, false], BareInteractionId => [false, true]) # Specify variable dependence of fermi (first element) and bose (second element) particles.
             taylor_vec, taylormap = taylorexpansion!(diags, propagator_var)
 
@@ -290,7 +298,11 @@ function diagdict_parquet(type::Symbol, MaxOrder::Int, has_counterterm::Bool=tru
                     if haskey(dict_graphs, key)
                         push!(dict_graphs[key][1], graph)
                     else
-                        dict_graphs[key] = ([graph,], collect.(extT))
+                        if type == :vertex4
+                            dict_graphs[key] = ([graph,], collect.(extT), spin_convention)
+                        else
+                            dict_graphs[key] = ([graph,], collect.(extT))
+                        end
                     end
                 end
             end
@@ -301,6 +313,9 @@ function diagdict_parquet(type::Symbol, MaxOrder::Int, has_counterterm::Bool=tru
             para = diagPara(diagtype, isDynamic, spin, order, filter, transferLoop)
             parquet_builder = Parquet.build(para)
             diags, extT = parquet_builder.diagram, parquet_builder.extT
+            if type == :vertex4
+                spin_convention = parquet_builder.response
+            end
 
             propagator_var = Dict(BareGreenId => [true, false], BareInteractionId => [false, true]) # Specify variable dependence of fermi (first element) and bose (second element) particles.
             taylor_vec, taylormap = taylorexpansion!(diags, propagator_var)
@@ -310,8 +325,13 @@ function diagdict_parquet(type::Symbol, MaxOrder::Int, has_counterterm::Bool=tru
                 if haskey(dict_graphs, key)
                     push!(dict_graphs[key][1], graph)
                 else
-                    dict_graphs[key] = ([graph,], extT)
+                    if type == :vertex4
+                        dict_graphs[key] = ([graph,], collect.(extT), spin_convention)
+                    else
+                        dict_graphs[key] = ([graph,], collect.(extT))
+                    end
                 end
+
             end
         end
     end
@@ -329,7 +349,13 @@ function diagdict_parquet(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}};
 
     diagtype = _diagtype(type)
     spin = 2.0 / (spinPolarPara + 1)
-    dict_graphs = Dict{Tuple{Int,Int,Int},Tuple{Vector{Graph},Vector{Vector{Int}}}}()
+    if type == :vertex4
+        dict_graphs = Dict{Tuple{Int,Int,Int},Tuple{Vector{Graph},Vector{Vector{Int}},Vector{Any}
+}}()
+    else
+        dict_graphs = Dict{Tuple{Int,Int,Int},Tuple{Vector{Graph},Vector{Vector{Int}}}}()
+    end
+
 
     # KinL, KoutL, KinR = zeros(16), zeros(16), zeros(16)
     # KinL[1], KoutL[2], KinR[3] = 1.0, 1.0, 1.0
@@ -341,6 +367,9 @@ function diagdict_parquet(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}};
         para = diagPara(diagtype, isDynamic, spin, order, filter, transferLoop)
         parquet_builder = Parquet.build(para)
         diags, extT = parquet_builder.diagram, parquet_builder.extT
+        if type == :vertex4
+            spin_convention = parquet_builder.response
+        end
 
         propagator_var = Dict(BareGreenId => [true, false], BareInteractionId => [false, true]) # Specify variable dependence of fermi (first element) and bose (second element) particles.
         taylor_vec, taylormap = taylorexpansion!(diags, propagator_var)
@@ -352,7 +381,11 @@ function diagdict_parquet(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}};
                 if haskey(dict_graphs, key)
                     push!(dict_graphs[key][1], graph)
                 else
-                    dict_graphs[key] = ([graph,], collect.(extT))
+                    if type == :vertex4
+                        dict_graphs[key] = ([graph,], collect.(extT), spin_convention)
+                    else
+                        dict_graphs[key] = ([graph,], collect.(extT))
+                    end
                 end
             end
         end
@@ -372,7 +405,13 @@ function diagdict_parquet(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}, extra
     diagtype = _diagtype(type)
     spin = 2.0 / (spinPolarPara + 1)
     # num_vars = 3 + length(keys(extra_variables))
-    dict_graphs = Dict{NTuple{3,Int},Tuple{Vector{Graph},Vector{Vector{Int}}}}()
+    if type == :vertex4
+        dict_graphs = Dict{Tuple{Int,Int,Int},Tuple{Vector{Graph},Vector{Vector{Int}},Vector{Any}
+}}()
+    else
+        dict_graphs = Dict{Tuple{Int,Int,Int},Tuple{Vector{Graph},Vector{Vector{Int}}}}()
+    end
+
 
     extra_varnames = ""
     extra_orders = Int[]
@@ -389,6 +428,9 @@ function diagdict_parquet(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}, extra
         para = diagPara(diagtype, isDynamic, spin, order, filter, transferLoop)
         parquet_builder = Parquet.build(para)
         diags, extT = parquet_builder.diagram, parquet_builder.extT
+        if type == :vertex4
+            spin_convention = parquet_builder.response
+        end
 
         var_dependence = Dict{Int,Vector{Bool}}()
         for diag in diags
@@ -419,7 +461,11 @@ function diagdict_parquet(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}, extra
                 if haskey(dict_graphs, key)
                     push!(dict_graphs[key][1], graph)
                 else
-                    dict_graphs[key] = ([graph,], collect.(extT))
+                    if type == :vertex4
+                        dict_graphs[key] = ([graph,], collect.(extT), spin_convention)
+                    else
+                        dict_graphs[key] = ([graph,], collect.(extT))
+                    end
                 end
             end
         end

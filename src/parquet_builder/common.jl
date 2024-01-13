@@ -68,7 +68,7 @@ function build(para::DiagPara{W}, extK=nothing, subdiagram=false) where {W}
         if isnothing(extK)
             extK = [DiagTree.getK(para.totalLoopNum, 1), DiagTree.getK(para.totalLoopNum, 2), DiagTree.getK(para.totalLoopNum, 3)]
         end
-        return vertex4(para, extK, [PHr, PHEr, PPr, Alli], subdiagram)
+        return vertex4(para, extK, [PHr, PHEr, PPr], subdiagram)
     elseif para.type == SigmaDiag
         if isnothing(extK)
             extK = DiagTree.getK(para.totalLoopNum, 1)
