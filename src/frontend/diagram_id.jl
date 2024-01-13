@@ -22,12 +22,7 @@ struct BareGreenId <: PropagatorId
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
     function BareGreenId(type::AnalyticProperty=Dynamic; k, t)
-        idx = findfirst(!iszero, k)
-        if isnothing(idx) || k[idx] > 0
-            return new(type, k, Tuple(t))
-        else
-            return new(type, -k, Tuple(t))
-        end
+        return new(type, mirror_symmetrize(k), Tuple(t))
     end
 end
 Base.show(io::IO, v::BareGreenId) = print(io, "$(short(v.type)), k$(v.extK), t$(v.extT)")
@@ -38,12 +33,7 @@ struct BareInteractionId <: PropagatorId # bare W-type interaction, with only on
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
     function BareInteractionId(response::Response, type::AnalyticProperty=Instant; k, t=(0, 0))
-        idx = findfirst(!iszero, k)
-        if isnothing(idx) || k[idx] > 0
-            return new(response, type, k, Tuple(t))
-        else
-            return new(response, type, -k, Tuple(t))
-        end
+        return new(response, type, mirror_symmetrize(k), Tuple(t))
     end
 end
 Base.show(io::IO, v::BareInteractionId) = print(io, "$(short(v.response))$(short(v.type)), k$(v.extK), t$(v.extT)")
@@ -77,18 +67,29 @@ struct GenericId{P} <: DiagramId
 end
 Base.show(io::IO, v::GenericId) = print(io, v.extra == Nothing ? "" : "$(v.extra)")
 
+function mirror_symmetrize(k::Vector{Float64})
+
+    idx = findfirst(!iszero, k)
+    if isnothing(idx) || k[idx] > 0
+        return k
+    else
+        mk = -k
+        for i in 1:length(mk)
+            if mk[i] == -0.0
+                mk[i] = 0.0
+            end
+        end
+        return mk
+    end
+end
+
 struct GreenId{P} <: DiagramId
     para::P
     type::AnalyticProperty #Instant, Dynamic
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
     function GreenId(para::P, type::AnalyticProperty=Dynamic; k, t) where {P}
-        idx = findfirst(!iszero, k)
-        if isnothing(idx) || k[idx] > 0
-            return new{P}(para, type, k, Tuple(t))
-        else
-            return new{P}(para, type, -k, Tuple(t))
-        end
+        return new{P}(para, type, mirror_symmetrize(k), Tuple(t))
     end
 end
 Base.show(io::IO, v::GreenId) = print(io, "$(short(v.type)), k$(v.extK), t$(v.extT)")
@@ -99,12 +100,7 @@ struct SigmaId{P} <: DiagramId
     extK::Vector{Float64}
     extT::Tuple{Int,Int} #all possible extT from different interactionType
     function SigmaId(para::P, type::AnalyticProperty; k, t=(0, 0)) where {P}
-        idx = findfirst(!iszero, k)
-        if isnothing(idx) || k[idx] > 0
-            return new{P}(para, type, k, Tuple(t))
-        else
-            return new{P}(para, type, -k, Tuple(t))
-        end
+        return new{P}(para, type, mirror_symmetrize(k), Tuple(t))
     end
 end
 Base.show(io::IO, v::SigmaId) = print(io, "$(short(v.type))#$(v.order), t$(v.extT)")
@@ -116,12 +112,7 @@ struct PolarId{P} <: DiagramId
     extT::Tuple{Int,Int} #all possible extT from different interactionType
     order::Vector{Int}
     function PolarId(para::P, response::Response; k, t=(0, 0)) where {P}
-        idx = findfirst(!iszero, k)
-        if isnothing(idx) || k[idx] > 0
-            return new{P}(para, response, k, Tuple(t))
-        else
-            return new{P}(para, response, -k, Tuple(t))
-        end
+        return new{P}(para, response, mirror_symmetrize(k), Tuple(t))
     end
 end
 Base.show(io::IO, v::PolarId) = print(io, "$(short(v.response)), k$(v.extK), t$(v.extT)")
