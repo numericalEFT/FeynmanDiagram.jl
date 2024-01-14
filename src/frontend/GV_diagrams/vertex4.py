@@ -6,15 +6,15 @@ from logger import *
 class vertex4():
     def __init__(self, Order):
         self.Order = Order
-        self.GNum = 2*self.Order 
-        self.Ver4Num = self.Order
+        self.GNum = 2*self.Order + 4
+        self.Ver4Num = self.Order + 1
         self.VerNum = 2*self.Ver4Num
 
         self.ExtLegNum = 2
         # self.ExtLegNum = 0
         self.ExtLoopNum = 1
 
-        self.LoopNum = self.Order+self.ExtLoopNum
+        self.LoopNum = self.Order+self.ExtLoopNum+2
 
     def GetInteractionPairs(self, WithMeasuring=False):
         if WithMeasuring:
@@ -27,19 +27,18 @@ class vertex4():
 
     def BuildADiagram(self):
         d = diag.diagram(self.Order)
-        d.Type = "SelfEnergy"
+        d.Type = "Vertex4"
         d.GNum = self.GNum
         d.Ver4Num = self.Ver4Num
         d.VerNum = self.VerNum
         d.LoopNum = self.LoopNum
-        # d.ExtLeg = [0, 1]
-        d.ExtLeg = [0, 2]
+        d.ExtLeg = [0, 1]
         d.ExtLegNum = 2
         d.ExtLoop = [0]
         d.ExtLoopNum = 1
         return d
 
-    def ToString(self, PolarHugenList, VerOrder, SigmaOrder, SPIN):
+    def ToString(self, PolarHugenList, VerOrder, SigmaOrder, SPIN, IsFullyIrreducible):
         if len(PolarHugenList) == 0:
             return
 
@@ -59,8 +58,8 @@ class vertex4():
                     FactorList = []
 
                     for FeynPermu in FeynList:
-                        if (FeynPermu[0] == 1 or FeynPermu[1] == 0 or self.__IsHartree(FeynPermu, Diag.LoopBasis, vertype, gtype) or 
-                            self.__IsReducible(FeynPermu, Diag.LoopBasis, vertype, gtype) or self.__IsTwoParticleReducible(FeynPermu, Diag.LoopBasis)):
+                        if FeynPermu[0] == 1 or FeynPermu[1] == 0 or self.__IsReducible(FeynPermu, Diag.LoopBasis, vertype, gtype) \
+                            or (IsFullyIrreducible and self.__IsTwoParticleReducible(FeynPermu, Diag.LoopBasis)):
                             FactorList.append(0)
                         else:
                             FactorList.append(1)
@@ -73,7 +72,7 @@ class vertex4():
                         [Diag, FeynList, FactorList, vertype, gtype])
 
         print yellow(
-            "Irreducible SelfEnergy Diag Num: {0}".format(len(IrreDiagList)))
+            "Irreducible Vertex4 Diag Num: {0}".format(len(IrreDiagList)))
 
         Body = ""
         DiagNum = 0
@@ -83,17 +82,21 @@ class vertex4():
             Mom = Diag.LoopBasis
             # DiagNum += 1
 
-            inv_OldPermu = np.argsort(Permutation)
             Permutation = list(Permutation)
 
             print "Original Polar Permu: {0}".format(Permutation)
-            swap_ver = ()
-            jp_0 = Permutation.index(0)
-            jp_1 = Permutation.index(1)
-            # if jp_0 < 2 or jp_1 < 2:
-            Assert(jp_0 > 1 and jp_1>1, "false permutation with {0} and {1}".format(jp_0, jp_1))
-            Permutation = diag.SwapTwoVertex(Permutation, jp_0, 2)
-            Permutation = diag.SwapTwoVertex(Permutation, jp_1, 3)
+
+            # if IsFullyIrreducible and self.__IsTwoParticleReducible(Permutation, Mom):
+            #     print "Skip two-particle reducible diagram"
+            #     continue
+
+            # swap_ver = ()
+            # jp_0 = Permutation.index(0)
+            # jp_1 = Permutation.index(1)
+            # # if jp_0 < 2 or jp_1 < 2:
+            # Assert(jp_0 > 1 and jp_1>1, "false permutation with {0} and {1}".format(jp_0, jp_1))
+            # Permutation = diag.SwapTwoVertex(Permutation, jp_0, 2)
+            # Permutation = diag.SwapTwoVertex(Permutation, jp_1, 3)
             # swap_ver = (jp_0, neighbor)
             # print "newPermu: {0}".format(Permutation)
 
@@ -122,6 +125,13 @@ class vertex4():
             #         else:
             #             loopBasis[loc, :] = loopBasis[loc, :] + loopBasis[loc_extloop, :]
             #     print blue("{0}".format(loopBasis))
+            flag = False
+            for i in range(self.GNum):
+                if Permutation[i] in [0, 1] or i in [0, 1]:
+                    if GType[i] > 0:
+                        flag = True
+            if flag:
+                continue
 
             print "Save {0}".format(Permutation)
 
@@ -134,7 +144,7 @@ class vertex4():
 
             Body += "# GType\n"
             for i in range(self.GNum):
-                if Permutation[i] == 0 or i == 0 or i == 1:
+                if Permutation[i] in [0, 1] or i in [0, 1]:
                     Body += "{0:2d} ".format(-2)
                 else:
                     Body += "{0:2d} ".format(GType[i])
@@ -151,15 +161,6 @@ class vertex4():
 
             Body += "# LoopBasis\n"
 
-            # basis_temp = np.copy(loopBasis)
-            # if loc_extloop > 0:
-            #     if loopBasis[loc_extloop, 0] == 1:
-            #         basis_temp[0, :] = loopBasis[loc_extloop, :]
-            #     else:
-            #         basis_temp[0, :] = -loopBasis[loc_extloop, :]
-            #     basis_temp[loc_extloop:-1, :] = loopBasis[loc_extloop+1:, :]
-            #     basis_temp[-1, :] = loopBasis[0, :]
-            # print yellow("{0}".format(loc_extloop))
             for i in range(self.LoopNum):
                 for j in range(self.GNum):
                     # Body += "{0:2d} ".format(basis_temp[i, j])
@@ -168,7 +169,7 @@ class vertex4():
             # print basis_temp
 
             Body += "# Ver4Legs(InL,OutL,InR,OutR)\n"
-            for i in range(0, self.Ver4Num):
+            for i in range(1, self.Ver4Num+1):
                 # skip the external vertexes 0 and 1
                 end1, end2 = 2*i, 2*i+1
                 start1 = Permutation.index(end1)
@@ -188,22 +189,19 @@ class vertex4():
             Body += "# SpinFactor\n"
 
             FeynList = self.HugenToFeyn(Permutation)
-            FactorList = []
 
             for idx, FeynPermu in enumerate(FeynList):
-                # if self.__IsHartree(FeynPermu, basis_temp, vertype, gtype):
-                if self.__IsHartree(FeynPermu, Mom, vertype, gtype):
-                    prefactor = 0
-                else:
-                    prefactor = 1
+                # if self.__IsHartree(FeynPermu, Mom, vertype, gtype):
+                #     prefactor = 0
+                # else:
+                #     prefactor = 1
                 Path = diag.FindAllLoops(FeynPermu)
                 nloop = len(Path) - 1
                 Sign = (-1)**nloop*(-1)**(self.Order-1) / \
                     (Diag.SymFactor/abs(Diag.SymFactor))
 
                 # make sure the sign of the Spin factor of the first diagram is positive
-                # spinfactor = SPIN**(nloop) * int(Sign)*FactorList[idx] 
-                spinfactor = SPIN**(nloop) * int(Sign)* prefactor
+                spinfactor = SPIN**(nloop) * int(Sign)*FactorList[idx] 
                 Body += "{0:2d} ".format(spinfactor)
             #   Body += "{0:2d} ".format(-(-1)**nloop*Factor)
 
@@ -211,7 +209,7 @@ class vertex4():
             Body += "\n"
             DiagNum += 1
 
-        Title = "#Type: {0}\n".format("SelfEnergy")
+        Title = "#Type: {0}\n".format("Vertex4")
             # Title = "#Type: {0}\n".format("Green2")
         Title += "#DiagNum: {0}\n".format(DiagNum)
         Title += "#Order: {0}\n".format(self.Order)
@@ -226,7 +224,7 @@ class vertex4():
         # if IsSelfEnergy:
         #     Title += "#TauNum: {0}\n".format(self.Ver4Num)
         # else:
-        Title += "#TauNum: {0}\n".format(self.Ver4Num)
+        Title += "#TauNum: {0}\n".format(self.Ver4Num+2)
         Title += "#ExtTauIndex: {0} {1}\n".format(0, 2)
         Title += "#DummyTauIndex: \n"
         Title += "\n"
@@ -242,7 +240,7 @@ class vertex4():
         FeynList = []
         FeynList.append(HugenPermu)
         Permutation = HugenPermu
-        for j in range(1, self.Order):
+        for j in range(1, self.Ver4Num+1):
             end1, end2 = 2*j, 2*j+1
             start1 = Permutation.index(end1)
             start2 = Permutation.index(end2)
@@ -259,71 +257,69 @@ class vertex4():
 
     def __VerBasis(self, index, Permutation):
         return int(index/2)
-
-    def __IsHartree(self, Permutation, LoopBasis, vertype, gtype):
+    
+    def __IsReducible(self, Permutation, LoopBasis, vertype, gtype):
+        # extK = LoopBasis[:, Permutation.index(0)]
         ExterLoop = [0, ]*self.LoopNum
         ExterLoop[0] = 1
-        for i in range(0, self.Ver4Num):
+        # for i in range(0, self.GNum):
+        #     if Permutation[i] != 0 and (np.allclose(extK, LoopBasis[:, i]) or np.allclose(-extK, LoopBasis[:, i])):
+        #         return True
+        #     if Permutation[i] == 0 and gtype[i] > 0:
+        #         return True
+        for i in range(1, self.Ver4Num+1):
             end1, end2 = 2*i, 2*i+1
             start1 = Permutation.index(end1)
             # start2 = Permutation.index(end2)
             VerLoopBasis = LoopBasis[:, start1]-LoopBasis[:, end1]
-            # print Permutation, 2*i,  VerLoopBasis
 
             # ####### Check Polarization diagram ##################
-            # if(np.array_equal(VerLoopBasis, ExterLoop) or
-            #    np.array_equal(-VerLoopBasis, ExterLoop)):
-            #     return True
-
+            if np.array_equal(VerLoopBasis, ExterLoop) or np.array_equal(-VerLoopBasis, ExterLoop):
+                return True
+            
             # remove any hartree insertion
             if(np.all(VerLoopBasis == 0)):
                 # print "Contain high-order Hartree: ", Permutation
                 return True
 
-        ###### Check High order Hatree ######################
-        # kG, kW = diag.AssignMomentums(
-        #     Permutation, self.GetReference(), self.GetInteractionPairs(True))
-        # last = Permutation.index(1)
-        # first = 0
-        # print '###############################################'
-        # if abs(kG[first]- kG[last])<1e-6:
-        #     print 'Reduc Perm:', Permutation, 'kG:', kG, 'index:', last
-        #     return True
-        # print 'irReduc Perm:', Permutation, 'kG:', kG, 'index:', last
-
-        # for i in range(len(kW)):
-        #     if abs(kW[i]) < 1e-12:
-        #             # print "k=0 on W {0}: {1}".format(p, kW[i])
-        #         print "Contain high-order Hartree: ", Permutation
-        #         return True
-        return False
-    
-    def __IsReducible(self, Permutation, LoopBasis, vertype, gtype):
-        extK = LoopBasis[:, Permutation.index(0)]
-        for i in range(0, self.GNum):
-            if Permutation[i] != 0 and (np.allclose(extK, LoopBasis[:, i]) or np.allclose(-extK, LoopBasis[:, i])):
-                return True
-            if Permutation[i] == 0 and gtype[i] > 0:
-                return True
-        for i in range(0, self.Ver4Num):
-            end1, end2 = 2*i, 2*i+1
-            start1 = Permutation.index(end1)
-            # start2 = Permutation.index(end2)
-            VerLoopBasis = LoopBasis[:, start1]-LoopBasis[:, end1]
-
-            # ####### Check Polarization diagram ##################
-            if np.array_equal(VerLoopBasis, extK) or np.array_equal(-VerLoopBasis, extK):
-                return True
-
     def __IsTwoParticleReducible(self, Permutation, LoopBasis):
-        extK = LoopBasis[:, Permutation.index(0)]
+        # extK = LoopBasis[:, Permutation.index(0)]
+        ExterLoop = [0, ]*self.LoopNum
+        ExterLoop[0] = 1
+        ExterLoop = np.array(ExterLoop)
+        extK4 = [list(LoopBasis[:, 0]), list(LoopBasis[:, 1])]
         for i in range(2, self.GNum):
-            for j in range(2, self.GNum):
-                if Permutation[i] == 0 or Permutation[j] == 0:
-                    continue
-                if np.allclose(extK, LoopBasis[:, i]+ LoopBasis[:,j]):
+            if Permutation[i] == 0:
+                if list(LoopBasis[:, i]) == extK4[1]:
                     return True
-
+                extK4.append(list(LoopBasis[:, i]))
+        for i in range(2, self.GNum):
+            if Permutation[i] == 1:
+                if list(LoopBasis[:, i]) == extK4[0]:
+                    return True
+                extK4.append(list(LoopBasis[:, i]))
+        if not np.allclose(np.array(extK4[0]) - np.array(extK4[2]), ExterLoop):
+            print extK4
+            exit(-1)
+        exterQ1 = np.array(extK4[1]) - np.array(extK4[2])
+        exterQ2 = np.array(extK4[0]) + np.array(extK4[1])
+        for i in range(2, self.GNum):
+            if Permutation[i] in [0, 1]:
+                continue
+            # print LoopBasis[:, i] 
+            # print extK4
+            if list(LoopBasis[:, i]) in extK4:
+                return True
+            for j in range(2, self.GNum):
+                if Permutation[j] in [0, 1] or i == j:
+                    continue
+                # if np.allclose(ExterLoop, LoopBasis[:, i] + LoopBasis[:,j]):
+                momm = LoopBasis[:, i] - LoopBasis[:,j]
+                momp = LoopBasis[:, i] + LoopBasis[:,j]
+                # if np.allclose(ExterLoop, momm) or np.allclose(ExterLoop, -momm) or np.allclose(exterQ1, momm) \
+                #     or np.allclose(exterQ1, -momm) or np.allclose(exterQ2, momp) or np.allclose(exterQ2, -momp):
+                if np.allclose(ExterLoop, momm) or np.allclose(exterQ1, momm)  or np.allclose(exterQ2, momp):            
+                    return True
 
     def __GetInteractionMom(self, Permutation, Mom):
         InteractionMom = []

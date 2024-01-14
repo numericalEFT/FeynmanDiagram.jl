@@ -131,7 +131,34 @@ function eldest(g::AbstractGraph)
 end
 
 """
-    function count_operation(g::Graph)
+    function count_leaves(g::G) where {G<:AbstractGraph}
+
+    Returns the total number of leaves with unique id in the graph.
+
+# Arguments:
+- `g::Graph`: graph for which to find the total number of leaves.
+"""
+function count_leaves(g::G) where {G<:AbstractGraph}
+    leaves = collect(Leaves(g))
+    sort!(leaves, by=x -> x.id)
+    unique!(x -> x.id, leaves)
+
+    return length(leaves)
+end
+
+function count_leaves(graphs::Vector{G}) where {G<:AbstractGraph}
+    leaves = Vector{G}()
+    for g in graphs
+        append!(leaves, collect(Leaves(g)))
+    end
+    sort!(leaves, by=x -> x.id)
+    unique!(x -> x.id, leaves)
+
+    return length(leaves)
+end
+
+"""
+    function count_operation(g::G) where {G<:AbstractGraph}
 
     Returns the total number of  additions and multiplications in the graph.
 
@@ -139,17 +166,21 @@ end
 - `g::Graph`: graph for which to find the total number of  operations.
 """
 function count_operation(g::G) where {G<:AbstractGraph}
+    visited = Set{Int}()
     totalsum = 0
     totalprod = 0
     # totalpower = 0
     for node in PreOrderDFS(g)
-        if length(node.subgraphs) > 0
-            if node.operator == Prod
-                totalprod += length(node.subgraphs) - 1
-            elseif node.operator == Sum
-                totalsum += length(node.subgraphs) - 1
-                # elseif node.operator <: Power
-                #     totalpower += 1
+        if !(node.id in visited)
+            push!(visited, node.id)
+            if length(node.subgraphs) > 0
+                if node.operator == Prod
+                    totalprod += length(node.subgraphs) - 1
+                elseif node.operator == Sum
+                    totalsum += length(node.subgraphs) - 1
+                    # elseif node.operator <: Power
+                    #     totalpower += 1
+                end
             end
         end
     end
@@ -208,6 +239,14 @@ function count_operation(nothing)
     return [0, 0]
 end
 
+"""
+    function count_expanded_operation(g::G) where {G<:AbstractGraph}
+
+    Returns the total number of operations in the totally expanded version (without any parentheses in the mathematical expression) of the graph.
+
+# Arguments:
+- `g::Graph`: graph for which to find the total number of operations in its expanded version.
+"""
 function count_expanded_operation(g::G) where {G<:AbstractGraph}
     totalsum = 0
     totalprod = 0
