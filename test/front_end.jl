@@ -67,6 +67,41 @@ end
     @test FrontEnds._find_label(typeof(labelProd.labels), typeof(loopbasis)) == 3
 end
 
+@testset "DiagramId" begin
+
+    # Test cases for type = Instant
+    @testset "Instant" begin
+        a = BareInteractionId(UpUp, Instant, k=[1.0, 1.0], t=(1, 1))
+        b = BareInteractionId(UpUp, Instant, k=[1.0, 1.0], t=(1, 1)) # same as a
+        c = BareInteractionId(UpUp, Instant, k=[2.0, 2.0], t=(2, 2)) # different k and t
+        d = BareInteractionId(UpUp, Instant, k=[1.0, 1.0], t=(2, 2)) # same k, different t
+        e = BareInteractionId(UpUp, Instant, k=[1.0, 1.0], t=(1, 2)) # same k, different t
+        f = BareInteractionId(UpUp, Instant, k=[1.0, 1.0], t=(1, 2))
+
+        @test isequal(a, b) == true
+        @test isequal(a, c) == false
+        @test isequal(a, d) == true
+        @test isequal(a, e) == false
+        @test isequal(e, f) == true
+    end
+
+    # Test cases for type = Dynamic
+    @testset "Dynamic" begin
+        a = BareInteractionId(UpUp, Dynamic, k=[1.0, 1.0], t=(1, 1))
+        b = BareInteractionId(UpUp, Dynamic, k=[1.0, 1.0], t=(1, 1)) # same as a
+        c = BareInteractionId(UpUp, Dynamic, k=[2.0, 2.0], t=(2, 2)) # different k and t
+        d = BareInteractionId(UpUp, Dynamic, k=[1.0, 1.0], t=(2, 2)) # same k, different t
+        e = BareInteractionId(UpUp, Dynamic, k=[1.0, 1.0], t=(1, 2)) # same k, different t
+        f = BareInteractionId(UpUp, Dynamic, k=[1.0, 1.0], t=(1, 2))
+
+        @test isequal(a, b) == true
+        @test isequal(a, c) == false
+        @test isequal(a, d) == true
+        @test isequal(a, e) == false
+        @test isequal(e, f) == true
+    end
+end
+
 @testset "Parquet" begin
     using FeynmanDiagram: ComputationalGraphs as Graphs
     Ftype, Wtype = Graphs._dtype.factor, Graphs._dtype.weight
