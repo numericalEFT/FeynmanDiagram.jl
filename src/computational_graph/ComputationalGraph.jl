@@ -30,7 +30,8 @@ export Graph, FeynmanGraph, FeynmanProperties
 export isequiv, drop_topology, is_external, is_internal, diagram_type, orders, vertices, topology
 export external_legs, external_indices, external_operators, external_labels
 export multi_product, linear_combination, feynman_diagram, propagator, interaction, external_vertex
-
+include("tensorgraph.jl")
+export TensorGraph, einsum
 # export Prod, Sum
 # export DiagramType, Interaction, ExternalVertex, Propagator, SelfEnergy, VertexDiag, GreenDiag, GenericDiag
 # export standardize_order!
