@@ -22,7 +22,7 @@ end
 - `subgraph_factors::Vector{F}`  scalar multiplicative factors associated with each subgraph. Note that the subgraph factors may be manipulated algebraically. To associate a fixed multiplicative factor with this graph which carries some semantic meaning, use the `factor` argument instead.
 - `operator::DataType`  node operation. Addition and multiplication are natively supported via operators Sum and Prod, respectively. Should be a concrete subtype of `AbstractOperator`.
 - `weight::Vecctor{W}`  the weight of this node.  Should be a tensor that has the 
-- `dim::Vecctor{Int}` the shape of this tensor node. Default value is [1].
+- `dims::Vecctor{Int}` the shape of this tensor node. Default value is [1].
 - `properties::Any` extra information of Green's functions. Default value is nothing.
 
 # Example:
@@ -43,7 +43,7 @@ mutable struct TensorGraph{F<:Number,W} <: AbstractGraph # Graph
     subgraph_factors::Vector{F}
 
     operator::DataType
-    dim::Vector{Int}
+    dims::Vector{Int}
     weight::Array{W}
     properties::Any
     """
@@ -61,18 +61,18 @@ mutable struct TensorGraph{F<:Number,W} <: AbstractGraph # Graph
     - `ftype`  typeof(factor)
     - `wtype`  typeof(weight)
     - `weight`  the weight of this node
-    - `dim::Vecctor{Int}` the shape of this tensor node. Default value is [1].
+    - `dims::Vecctor{Int}` the shape of this tensor node. Default value is [1].
     - `properties::Any` extra information of Green's functions. Default value is nothing.
     """
     function TensorGraph(subgraphs::AbstractVector; factor=one(_dtype.factor), subgraph_factors=one.(eachindex(subgraphs)), name="", operator::AbstractOperator=Sum(),
-        orders=zeros(Int, 16), ftype=_dtype.factor, wtype=_dtype.weight, dim=[1], weight=zeros(wtype, dim...), properties=nothing
+        orders=zeros(Int, 16), ftype=_dtype.factor, wtype=_dtype.weight, dims=[1], weight=zeros(wtype, dims...), properties=nothing
     )
 
-        g = new{ftype,wtype}(uid(), name, orders, subgraphs, subgraph_factors, typeof(operator), dim, weight, properties)
+        g = new{ftype,wtype}(uid(), name, orders, subgraphs, subgraph_factors, typeof(operator), dims, weight, properties)
         if factor ≈ one(ftype)
             return g
         else
-            return new{ftype,wtype}(uid(), name, orders, [g,], [factor,], Prod, dim, weight * factor, properties)
+            return new{ftype,wtype}(uid(), name, orders, [g,], [factor,], Prod, dims, weight * factor, properties)
         end
     end
 end
@@ -92,7 +92,7 @@ subgraphs(g::TensorGraph, indices::AbstractVector{Int}) = g.subgraphs[indices]
 subgraph_factor(g::TensorGraph, i=1) = g.subgraph_factors[i]
 subgraph_factors(g::TensorGraph) = g.subgraph_factors
 subgraph_factors(g::TensorGraph, indices::AbstractVector{Int}) = g.subgraph_factors[indices]
-dim(g::TensorGraph) = g.dim
+dims(g::TensorGraph) = g.dims
 # Setters
 set_id!(g::TensorGraph, id::Int) = (g.id = id)
 set_name!(g::TensorGraph, name::String) = (g.name = name)
@@ -127,22 +127,22 @@ function derive_output_axes(input_axes1::Vector{Int}, input_axes2::Vector{Int})
 end
 
 #Internal function that generates the dimension of output tenosr in an Einstein summation.
-function dim_contraction(dim1::Vector{Int}, input_axes1::Vector{Int}, dim2::Vector{Int}, input_axes2::Vector{Int}, output_axes::Vector{Int})
-    @assert length(dim1) == length(input_axes1) "Einsum subscript does not have  the right number of axes for operand 1. "
-    @assert length(dim2) == length(input_axes2) "Einsum subscript does not have  the right number of axes for operand 2. "
+function dims_contraction(dims1::Vector{Int}, input_axes1::Vector{Int}, dims2::Vector{Int}, input_axes2::Vector{Int}, output_axes::Vector{Int})
+    @assert length(dims1) == length(input_axes1) "Einsum subscript does not have  the right number of axes for operand 1. "
+    @assert length(dims2) == length(input_axes2) "Einsum subscript does not have  the right number of axes for operand 2. "
     visited = [false for _ in input_axes2]
     result = zeros(Int, length(output_axes))
     count = 0
     for (idx1, label) in enumerate(input_axes1)
         idx2 = findfirst(x -> x == label, input_axes2)
         if !isnothing(idx2)
-            @assert dim1[idx1] == dim2[idx2] "Axis[$(idx1)] in first operand do not have same length as axis[$(idx2)] in second operand for contraction."
+            @assert dims1[idx1] == dims2[idx2] "Axis[$(idx1)] in first operand do not have same length as axis[$(idx2)] in second operand for contraction."
             visited[idx2] = true
         end
 
         idx = findfirst(x -> x == label, output_axes)
         if !isnothing(idx)
-            result[idx] = dim1[idx1]
+            result[idx] = dims1[idx1]
             count += 1
         end
     end
@@ -153,7 +153,7 @@ function dim_contraction(dim1::Vector{Int}, input_axes1::Vector{Int}, dim2::Vect
         else
             idx = findfirst(x -> x == label, output_axes)
             if !isnothing(idx)
-                result[idx] = dim2[idx2]
+                result[idx] = dims2[idx2]
                 count += 1
             end
         end
@@ -171,8 +171,8 @@ end
 - `g1`  tensor graph
 - `c2`  scalar multiple
 """
-function Base.:*(g1::TensorGraph{F,W}, c2) where {F,W}
-    g = TensorGraph([g1,]; subgraph_factors=[F(c2),], operator=Prod(), orders=orders(g1), ftype=F, wtype=W, dim=g1.dim)
+function Base.:*(g1::TensorGraph{F,W}, c2::Number) where {F,W}
+    g = TensorGraph([g1,]; subgraph_factors=[F(c2),], operator=Prod(), orders=orders(g1), ftype=F, wtype=W, dims=g1.dims)
     # Convert trivial unary link to in-place form
     if unary_istrivial(g1) && onechild(g1)
         g.subgraph_factors[1] *= g1.subgraph_factors[1]
@@ -192,8 +192,8 @@ end
 - `c1`  scalar multiple
 - `g2`  tensor graph
 """
-function Base.:*(c1, g2::TensorGraph{F,W}) where {F,W}
-    g = TensorGraph([g2,]; subgraph_factors=[F(c1),], operator=Prod(), orders=orders(g2), ftype=F, wtype=W, dim=g2.dim)
+function Base.:*(c1::Number, g2::TensorGraph{F,W}) where {F,W}
+    g = TensorGraph([g2,]; subgraph_factors=[F(c1),], operator=Prod(), orders=orders(g2), ftype=F, wtype=W, dims=g2.dims)
     # Convert trivial unary link to in-place form
     if unary_istrivial(g2) && onechild(g2)
         g.subgraph_factors[1] *= g2.subgraph_factors[1]
@@ -216,8 +216,8 @@ end
 - `c1`  first scalar multiple
 - `c2`  second scalar multiple
 """
-function linear_combination(g1::TensorGraph{F,W}, g2::TensorGraph{F,W}, c1=F(1), c2=F(1)) where {F,W}
-    @assert dim(g1) == dim(g2) "g1 and g2 have different dimensions."
+function linear_combination(g1::TensorGraph{F,W}, g2::TensorGraph{F,W}, c1::Number=F(1), c2::Number=F(1)) where {F,W}
+    @assert dims(g1) == dims(g2) "g1 and g2 have different dimensions."
     if length(g1.orders) > length(g2.orders)
         g2.orders = [orders(g2); zeros(Int, length(g1.orders) - length(g2.orders))]
     else
@@ -242,9 +242,9 @@ function linear_combination(g1::TensorGraph{F,W}, g2::TensorGraph{F,W}, c1=F(1),
     end
 
     if subgraphs[1] == subgraphs[2]
-        g = TensorGraph([subgraphs[1]]; subgraph_factors=[sum(subgraph_factors)], operator=Sum(), orders=orders(g1), ftype=F, wtype=W, dim=subgraphs[1].dim)
+        g = TensorGraph([subgraphs[1]]; subgraph_factors=[sum(subgraph_factors)], operator=Sum(), orders=orders(g1), ftype=F, wtype=W, dims=subgraphs[1].dims)
     else
-        g = TensorGraph(subgraphs; subgraph_factors=subgraph_factors, operator=Sum(), orders=orders(g1), ftype=F, wtype=W, dim=subgraphs[1].dim)
+        g = TensorGraph(subgraphs; subgraph_factors=subgraph_factors, operator=Sum(), orders=orders(g1), ftype=F, wtype=W, dims=subgraphs[1].dims)
     end
 
     return g
@@ -270,7 +270,7 @@ where duplicate graphs in the input `graphs` are combined by summing their assoc
     Given graphs `g1`, `g2`, `g1` and constants `c1`, `c2`, `c3`, the function computes `(c1+c3)*g1 + c2*g2`.
 """
 function linear_combination(graphs::Vector{TensorGraph{F,W}}, constants::AbstractVector=ones(F, length(graphs))) where {F,W}
-    @assert alleq(dim.(graphs)) "TensorGraphs do not all have the same dimesnions."
+    @assert alleq(dims.(graphs)) "TensorGraphs do not all have the same dimesnions."
     maxlen_orders = maximum(length.(orders.(graphs)))
     for g in graphs
         g.orders = [orders(g); zeros(Int, maxlen_orders - length(orders(g)))]
@@ -303,7 +303,7 @@ function linear_combination(graphs::Vector{TensorGraph{F,W}}, constants::Abstrac
     if isempty(unique_graphs)
         return nothing
     end
-    g = TensorGraph(unique_graphs; subgraph_factors=unique_factors, operator=Sum(), orders=orders(graphs[1]), ftype=F, wtype=W, dim=unique_graphs.dim)
+    g = TensorGraph(unique_graphs; subgraph_factors=unique_factors, operator=Sum(), orders=orders(graphs[1]), ftype=F, wtype=W, dims=unique_graphs.dims)
     return g
 end
 
@@ -369,8 +369,8 @@ function einsum(g1::TensorGraph{F,W}, input_axes1::Vector{Int}, g2::TensorGraph{
     else
         g1.orders = [orders(g1); zeros(Int, length(g2.orders) - length(g1.orders))]
     end
-    dim = dim_contraction(subgraphs[1].dim, input_axes1, subgraphs[2].dim, input_axes2, output_axes)
-    g = TensorGraph(subgraphs; subgraph_factors=subgraph_factors, operator=EinSum(input_axes1, input_axes2, output_axes), orders=orders(g1) + orders(g2), ftype=F, wtype=W, dim=dim)
+    dims = dims_contraction(subgraphs[1].dims, input_axes1, subgraphs[2].dims, input_axes2, output_axes)
+    g = TensorGraph(subgraphs; subgraph_factors=subgraph_factors, operator=EinSum(input_axes1, input_axes2, output_axes), orders=orders(g1) + orders(g2), ftype=F, wtype=W, dims=dims)
 
     return g
 end
@@ -435,7 +435,7 @@ end
 #     end
 
 #     if length(unique_factors) == 1
-#         g = TensorGraph(unique_graphs; subgraph_factors=unique_factors, operator=Power(repeated_counts[1]), orders=g_orders, ftype=F, wtype=W, dim=dim_contraction([uni_graph.dim for uni_graph in unique_graphs]))
+#         g = TensorGraph(unique_graphs; subgraph_factors=unique_factors, operator=Power(repeated_counts[1]), orders=g_orders, ftype=F, wtype=W, dims=dims_contraction([uni_graph.dims for uni_graph in unique_graphs]))
 #     else
 #         subgraphs = Vector{TensorGraph{F,W}}()
 #         for (idx, g) in enumerate(unique_graphs)
@@ -445,7 +445,7 @@ end
 #                 push!(subgraphs, TensorGraph([g], operator=Power(repeated_counts[idx]), orders=orders(g1) * repeated_counts[idx], ftype=F, wtype=W))
 #             end
 #         end
-#         g = TensorGraph(subgraphs; subgraph_factors=unique_factors, operator=Prod(), orders=g_orders, ftype=F, wtype=W, dim=dim_contraction([subgraph.dim for subgraph in subgraphs]))
+#         g = TensorGraph(subgraphs; subgraph_factors=unique_factors, operator=Prod(), orders=g_orders, ftype=F, wtype=W, dims=dims_contraction([subgraph.dims for subgraph in subgraphs]))
 #     end
 #     return g
 # end
