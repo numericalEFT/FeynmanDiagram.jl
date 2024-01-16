@@ -25,7 +25,7 @@ using AbstractTrees
 
 import ..Utility: taylorexpansion!
 
-export eachorder_diag, diagdictGV, diagdict_parquet, diagdict_parquetVer4, leafstates, leafstates_diagtree
+export eachorder_diag, diagdictGV, diagdict_parquet, diagdict_parquet_ver4, leafstates, leafstates_parquet
 
 include("GV_diagrams/readfile.jl")
 
@@ -417,7 +417,7 @@ function diagdict_parquet(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}, extra
     return dict_graphs
 end
 
-function diagdict_parquetVer4(gkeys::Vector{Tuple{Int,Int,Int}};
+function diagdict_parquet_ver4(gkeys::Vector{Tuple{Int,Int,Int}};
     spinPolarPara::Float64=0.0, isDynamic=false, filter=[NoHartree], transferLoop=nothing)
     # spinPolarPara::Float64=0.0, isDynamic=false, channel=[PHr, PHEr, PPr], filter=[NoHartree])
 
@@ -582,7 +582,7 @@ end
     The loop basis is also obtained for all the graphs.
     
 # Arguments:
-- `leaf_maps`: A vector of the dictionary mapping the leaf value's index to the FeynmanGraph/Graph of this leaf. 
+- `leaf_maps`: A vector of the dictionary mapping the leaf value's index to the Graph of this leaf. 
                Each dict corresponds to a graph partition, such as (order, Gorder, Vorder).
 - `maxloopNum`: The maximum loop-momentum number.
 
@@ -590,7 +590,7 @@ end
 - A tuple of vectors containing information about the leaves of graphs, including their initial values, types, orders, input and output time indexes, and loop-momenta indexes.
 - Loop-momentum basis (`::Vector{Vector{Float64}}`) for all the graphs.
 """
-function leafstates_diagtree(leaf_maps::Vector{Dict{Int,Graph}}, maxloopNum::Int)
+function leafstates_parquet(leaf_maps::Vector{Dict{Int,G}}, maxloopNum::Int) where {G<:Graph}
 
     num_g = length(leaf_maps)
     leafType = [Vector{Int}() for _ in 1:num_g]
@@ -640,7 +640,7 @@ function leafstates_diagtree(leaf_maps::Vector{Dict{Int,Graph}}, maxloopNum::Int
             push!(leafOutTau[ikey], diagId.extT[2])
 
             push!(leafOrders[ikey], leaf_orders)
-            push!(leafType[ikey], Parquet.index(typeof(diagId)))
+            push!(leafType[ikey], FrontEnds.index(typeof(diagId)))
 
         end
     end
