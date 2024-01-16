@@ -62,7 +62,7 @@ export Parquet
 include("frontend/GV.jl")
 using .GV
 export GV
-export diagdictGV, diagdict_parquet, leafstates, leafstates_diagtree
+export diagdictGV, diagdict_parquet, diagdict_parquetVer4, leafstates, leafstates_diagtree
 
 # include("strong_coupling_expansion_builder/strong_coupling_expansion.jl")
 # using .SCE

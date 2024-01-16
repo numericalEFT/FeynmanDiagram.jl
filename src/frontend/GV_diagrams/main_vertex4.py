@@ -60,9 +60,12 @@ def Generate(Order, VerOrder, SigmaOrder, SPIN, IsFullyIrreducible):
 
     Vertex4 = vertex4(Order)
 
-    # fname = "./output/{0}{1}_{2}_{3}.diag".format(
-    fname = "./groups_vertex4/{0}{1}_{2}_{3}.diag".format(
-        "Vertex4I", Order, VerOrder, SigmaOrder)
+    if IsFullyIrreducible:
+        fname = "./groups_vertex4/{0}{1}_{2}_{3}.diag".format(
+            "Vertex4I", Order, VerOrder, SigmaOrder)
+    else:
+        fname = "./groups_vertex4/{0}{1}_{2}_{3}.diag".format(
+            "Vertex4", Order, VerOrder, SigmaOrder)
     # with open(fname, "w") as f:
     with open(fname, "w") as f:
         str_polar = Vertex4.ToString(UniqueUnLabelDiagList,
@@ -78,15 +81,16 @@ if __name__ == "__main__":
     # Order = int(sys.argv[1])
     Order = 4
     SPIN = 2
-    IsFullyIrreducible = True
+    # IsFullyIrreducible = True
+    IsFullyIrreducible = False
     if IsFullyIrreducible:
         MinOrder = 3
     else:
         MinOrder = 0
 
     for o in range(MinOrder, Order+1):
-        for v in range(0, Order):
-            for g in range(0, Order):
-                if o+v+g > Order:
-                    continue
-                Generate(o, v, g,  SPIN, IsFullyIrreducible)
+        # for v in range(0, Order):
+        #     for g in range(0, Order):
+                # if o+v+g > Order:
+                #     continue
+        Generate(o, 0, 0,  SPIN, IsFullyIrreducible)

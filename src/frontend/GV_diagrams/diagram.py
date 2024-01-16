@@ -4,7 +4,7 @@ from nullspace import rank, nullspace
 from numpy.linalg import matrix_rank
 import numpy as np
 import random
-
+from copy import deepcopy
 
 class diagram:
     """a feynman diagram class"""
@@ -72,7 +72,27 @@ class diagram:
 
     def GetPermu(self):
         return tuple(self.Permutation)
+    
+    def SwapTwoVertexPairs(self, i, j, k, l):
+        # print permutation, i, j
+        Assert(i-j == k-l, "Error input two vertex pairs!")
 
+        permutation = list(self.Permutation)
+        ip, kp = permutation.index(i), permutation.index(k)
+        jp, lp = permutation.index(j), permutation.index(l)
+        permutation[ip] = k
+        permutation[kp] = i
+        permutation[jp] = l
+        permutation[lp] = j
+        permutation[i], permutation[k] = permutation[k], permutation[i]
+        permutation[j], permutation[l] = permutation[l], permutation[j]
+        # print "after", permutation
+        self.Permutation = tuple(permutation)
+
+        loopBasis = deepcopy(self.LoopBasis)
+        self.LoopBasis[:, i], self.LoopBasis[:, k] =  loopBasis[:, k], loopBasis[:, i]
+        self.LoopBasis[:, j], self.LoopBasis[:, l] =  loopBasis[:, l], loopBasis[:, j]
+    
     # def GetSimpleInteractionPairs(self):
     #     if self.Type == "FreeEnergy" or self.Type == "Ver4":
     #         return [(2*i, 2*i+1) for i in range(self.Ver4Num)]
@@ -207,6 +227,22 @@ def SwapTwoVertex(permutation, i, j):
     permutation[i], permutation[j] = permutation[j], permutation[i]
     # print "after", permutation
     return tuple(permutation)
+
+# def SwapTwoVertexPairs(permutation, i, j, k, l):
+#     # print permutation, i, j
+#     Assert(i-j == k-l, "Error input two vertex pairs!")
+
+#     permutation = list(permutation)
+#     ip, kp = permutation.index(i), permutation.index(k)
+#     jp, lp = permutation.index(j), permutation.index(l)
+#     permutation[ip] = k
+#     permutation[kp] = i
+#     permutation[jp] = l
+#     permutation[lp] = j
+#     permutation[i], permutation[k] = permutation[k], permutation[i]
+#     permutation[j], permutation[l] = permutation[l], permutation[j]
+#     # print "after", permutation
+#     return tuple(permutation)
 
 
 def Direct2Exchange(permutation, i, j):

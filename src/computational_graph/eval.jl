@@ -22,7 +22,8 @@ function eval!(g::Graph{F,W}, leafmap::Dict{Int,Int}=Dict{Int,Int}(), leaf::Vect
             if !inherit
                 if isempty(leafmap)
                     if randseed < 0
-                        node.weight = 1.0
+                        # node.weight = 1.0
+                        node.weight = -3.0
                     else
                         node.weight = rand()
                     end
