@@ -26,6 +26,9 @@ struct BareGreenId <: PropagatorId
     end
 end
 Base.show(io::IO, v::BareGreenId) = print(io, "$(short(v.type)), k$(v.extK), t$(v.extT)")
+function Base.isequal(a::BareGreenId, b::BareGreenId)
+    return a.type == b.type && a.extT == b.extT && a.extK == b.extK
+end
 
 struct BareInteractionId <: PropagatorId # bare W-type interaction, with only one extK
     response::Response #UpUp, UpDown, ...
@@ -66,6 +69,9 @@ struct GenericId{P} <: DiagramId
     GenericId(para::P, extra=Nothing) where {P} = new{P}(para, extra)
 end
 Base.show(io::IO, v::GenericId) = print(io, v.extra == Nothing ? "" : "$(v.extra)")
+function Base.isequal(a::GenericId, b::GenericId)
+    return a.para == b.para && a.extra == b.extra
+end
 
 function mirror_symmetrize(k::Vector{T}) where {T<:Number}
     idx = findfirst(!iszero, k)
@@ -94,6 +100,9 @@ struct GreenId{P} <: DiagramId
     end
 end
 Base.show(io::IO, v::GreenId) = print(io, "$(short(v.type)), k$(v.extK), t$(v.extT)")
+function Base.isequal(a::GreenId, b::GreenId)
+    return a.type == b.type && a.extT == b.extT && a.extK == b.extK && a.para == b.para
+end
 
 struct SigmaId{P} <: DiagramId
     para::P
@@ -105,6 +114,12 @@ struct SigmaId{P} <: DiagramId
     end
 end
 Base.show(io::IO, v::SigmaId) = print(io, "$(short(v.type))#$(v.order), t$(v.extT)")
+function Base.isequal(a::SigmaId, b::SigmaId)
+    if typeof(a) != typeof(b)
+        return false
+    end
+    return a.type == b.type && a.extT == b.extT && a.extK == b.extK && a.para == b.para
+end
 
 struct PolarId{P} <: DiagramId
     para::P
@@ -117,6 +132,12 @@ struct PolarId{P} <: DiagramId
     end
 end
 Base.show(io::IO, v::PolarId) = print(io, "$(short(v.response)), k$(v.extK), t$(v.extT)")
+function Base.isequal(a::PolarId, b::PolarId)
+    if typeof(a) != typeof(b)
+        return false
+    end
+    return a.response == b.response && a.extT == b.extT && a.order == b.order && a.extK == b.extK && a.para == b.para
+end
 
 struct Ver3Id{P} <: DiagramId
     para::P
@@ -128,6 +149,12 @@ struct Ver3Id{P} <: DiagramId
     end
 end
 Base.show(io::IO, v::Ver3Id) = print(io, "$(short(v.response)),t$(v.extT)")
+function Base.isequal(a::Ver3Id, b::Ver3Id)
+    if typeof(a) != typeof(b)
+        return false
+    end
+    return a.response == b.response && a.extT == b.extT && a.extK == b.extK && a.para == b.para
+end
 
 struct Ver4Id{P} <: DiagramId
     para::P
@@ -142,6 +169,12 @@ struct Ver4Id{P} <: DiagramId
     end
 end
 Base.show(io::IO, v::Ver4Id) = print(io, (v.channel == AnyChan ? "" : "$(v.channel) ") * "$(short(v.response))$(short(v.type)),t$(v.extT)")
+function Base.isequal(a::Ver4Id, b::Ver4Id)
+    if typeof(a) != typeof(b)
+        return false
+    end
+    return a.response == b.response && a.type == b.type && a.channel == b.channel && a.extT == b.extT && a.extK == b.extK && a.para == b.para
+end
 
 function vstr(r, c)
     N = length(r)
@@ -187,6 +220,12 @@ struct BareHoppingId{P} <: PropagatorId
     end
 end
 Base.show(io::IO, v::BareHoppingId) = print(io, "($(vstr(v.site, "ᵣ"))|$(vstr(v.orbital, "ₒ"))|$(vcstr(v.extT, [true, false])))")
+function Base.isequal(a::BareHoppingId, b::BareHoppingId)
+    if typeof(a) != typeof(b)
+        return false
+    end
+    return a.site == b.site && a.orbital == b.orbital && a.extT == b.extT && a.para == b.para
+end
 
 """
 time-ordered N-point Bare Green's function
@@ -204,6 +243,12 @@ struct BareGreenNId{P} <: PropagatorId
     end
 end
 Base.show(io::IO, v::BareGreenNId) = print(io, "($(v.site)ᵣ|$(vstr(v.orbital, "ₒ"))|$(vcstr(v.extT, v.creation)))")
+function Base.isequal(a::BareGreenNId, b::BareGreenNId)
+    if typeof(a) != typeof(b)
+        return false
+    end
+    return a.N == b.N && a.site == b.site && a.creation == b.creation && a.orbital == b.orbital && a.extT == b.extT && a.para == b.para
+end
 
 """
 time-ordered N-point Composite Green's function
@@ -221,6 +266,12 @@ struct GreenNId{P} <: DiagramId
     end
 end
 Base.show(io::IO, v::GreenNId) = print(io, "($(vstr(v.site, "ᵣ"))|$(vstr(v.orbital, "ₒ"))|$(vcstr(v.extT, v.creation)))")
+function Base.isequal(a::GreenNId, b::GreenNId)
+    if typeof(a) != typeof(b)
+        return false
+    end
+    return a.N == b.N && a.site == b.site && a.creation == b.creation && a.orbital == b.orbital && a.extT == b.extT && a.para == b.para
+end
 
 """
 time-ordered N-point Composite Green's function
@@ -238,7 +289,12 @@ struct ConnectedGreenNId{P} <: DiagramId
     end
 end
 Base.show(io::IO, v::ConnectedGreenNId) = print(io, "($(vstr(v.site, "ᵣ"))|$(vstr(v.orbital, "ₒ"))|$(vcstr(v.extT, v.creation)))")
-
+function Base.isequal(a::ConnectedGreenNId, b::ConnectedGreenNId)
+    if typeof(a) != typeof(b)
+        return false
+    end
+    return a.N == b.N && a.site == b.site && a.creation == b.creation && a.orbital == b.orbital && a.extT == b.extT && a.para == b.para
+end
 
 function Base.isequal(a::DiagramId, b::DiagramId)
     if typeof(a) != typeof(b)

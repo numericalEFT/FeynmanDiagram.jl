@@ -54,15 +54,19 @@ using .FrontEnds
 export FrontEnds
 export LabelProduct
 export Filter, Wirreducible, Girreducible, NoBubble, NoHartree, NoFock, Proper, DirectOnly
-
-include("frontend/parquet/parquet.jl")
-using .Parquet
-export Parquet
-
-include("frontend/GV.jl")
 using .GV
 export GV
 export diagdictGV, diagdict_parquet, diagdict_parquet_ver4, leafstates, leafstates_parquet
+export Parquet
+
+# include("frontend/parquet/parquet.jl")
+# using .Parquet
+# export Parquet
+
+# include("frontend/GV.jl")
+# using .GV
+# export GV
+# export diagdictGV, diagdict_parquet, diagdict_parquet_ver4, leafstates, leafstates_parquet
 
 # include("strong_coupling_expansion_builder/strong_coupling_expansion.jl")
 # using .SCE

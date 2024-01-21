@@ -8,33 +8,21 @@
 - `verbose`: Level of verbosity (default: 0).
 - `normalize`: Optional function to normalize the graphs (default: nothing).
 """
-function optimize!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0, normalize=nothing)
+function optimize!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; level=0, verbose=0, normalize=nothing)
     if isempty(graphs)
         return nothing
     else
-        graphs = collect(graphs)
-        # remove_duplicated_leaves!(graphs, verbose=verbose, normalize=normalize)
-        root = Graph(graphs)
-        remove_duplicated_nodes!(root, verbose=verbose)
-
-        flatten_all_chains!(graphs, verbose=verbose)
-        merge_all_linear_combinations!(graphs, verbose=verbose)
-        remove_all_zero_valued_subgraphs!(graphs, verbose=verbose)
-        return graphs
-    end
-end
-
-function optimize!_v0(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0, normalize=nothing)
-    if isempty(graphs)
-        return nothing
-    else
-        graphs = collect(graphs)
-        # remove_duplicated_leaves!(graphs, verbose=verbose, normalize=normalize)
-        while true
-            g_copy = deepcopy(graphs)
-            remove_duplicated_nodes!(graphs, verbose=verbose)
-            g_copy == graphs && break
+        if level > 0
+            if graphs isa Tuple
+                root = Graph(collect(graphs))
+            else
+                root = Graph(graphs)
+            end
+            remove_duplicated_nodes!(root, verbose=verbose)
+        else
+            remove_duplicated_leaves!(graphs, verbose=verbose, normalize=normalize)
         end
+
         flatten_all_chains!(graphs, verbose=verbose)
         merge_all_linear_combinations!(graphs, verbose=verbose)
         remove_all_zero_valued_subgraphs!(graphs, verbose=verbose)
@@ -55,9 +43,9 @@ end
 # Returns:
 - A tuple/vector of optimized graphs.
 """
-function optimize(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0, normalize=nothing)
+function optimize(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; level=0, verbose=0, normalize=nothing)
     graphs_new = deepcopy(graphs)
-    optimize!(graphs_new, verbose=verbose, normalize=normalize)
+    optimize!(graphs_new, level=level, verbose=verbose, normalize=normalize)
     return graphs_new
 end
 
@@ -350,7 +338,15 @@ end
 function remove_duplicated_nodes!(root::G; verbose=0) where {G<:AbstractGraph}
     verbose > 0 && println("remove duplicated nodes.")
     # A dictionary to keep track of unique nodes based on a key (like id, or a hash of properties)
+
+    # remove_duplicated_leaves!([root])
+
     unique_nodes = Dict{Int,G}()
+    # for l in Leaves(root)
+    #     if !haskey(unique_nodes, id(l))
+    #         unique_nodes[id(l)] = l
+    #     end
+    # end
 
     # Helper function to process a node
     function process_node(node)

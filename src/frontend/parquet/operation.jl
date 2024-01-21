@@ -139,3 +139,53 @@ end
 # mergeby(df::DataFrame; kwargs...) = mergeby(df, []; kwargs...)
 # mergeby(diags::Vector{Graph}; kwargs...) = mergeby(diags, []; kwargs...)
 
+
+function update_extK!(diag::Graph, extK::Vector{Vector{Float64}})
+    visited = Set{Int}()
+    num_extK = length(extK)
+    for leaf in Leaves(diag)
+        if !(leaf.id in visited)
+            push!(visited, leaf.id)
+            prop = IR.properties(leaf)
+
+            K = prop.extK
+            _K = append!(zeros(num_extK), K[num_extK+1:end])
+            K = sum([K[i] * extK[i] for i in eachindex(extK)]) + _K
+
+            if prop isa BareGreenId
+                new_properties = BareGreenId(prop.type, k=K, t=prop.extT)
+            elseif prop isa BareInteractionId
+                new_properties = BareInteractionId(prop.response, prop.type, k=K, t=prop.extT)
+            else
+                error("unexpected property type $prop")
+            end
+            IR.set_properties!(leaf, new_properties)
+        end
+    end
+end
+
+function update_extK!(diags::Vector{Graph}, extK::Vector{Vector{Float64}})
+    visited = Set{Int}()
+    num_extK = length(extK)
+    for diag in diags
+        for leaf in Leaves(diag)
+            if !(leaf.id in visited)
+                push!(visited, leaf.id)
+                prop = IR.properties(leaf)
+
+                K = prop.extK
+                _K = append!(zeros(num_extK), K[num_extK+1:end])
+                K = sum([K[i] * extK[i] for i in eachindex(extK)]) + _K
+
+                if prop isa BareGreenId
+                    new_properties = BareGreenId(prop.type, k=K, t=prop.extT)
+                elseif prop isa BareInteractionId
+                    new_properties = BareInteractionId(prop.response, prop.type, k=K, t=prop.extT)
+                else
+                    error("unexpected property type $prop")
+                end
+                IR.set_properties!(leaf, new_properties)
+            end
+        end
+    end
+end

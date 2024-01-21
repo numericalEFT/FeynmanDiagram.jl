@@ -79,10 +79,10 @@ def Generate(Order, VerOrder, SigmaOrder, SPIN, IsFullyIrreducible):
 if __name__ == "__main__":
     # print "Input Diagram Order: "
     # Order = int(sys.argv[1])
-    Order = 4
+    Order = 4       
     SPIN = 2
-    # IsFullyIrreducible = True
-    IsFullyIrreducible = False
+    IsFullyIrreducible = True
+    # IsFullyIrreducible = False
     if IsFullyIrreducible:
         MinOrder = 3
     else:

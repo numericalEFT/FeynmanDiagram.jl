@@ -73,6 +73,11 @@ function vertex4(para::DiagPara,
         for c in chan
             if c == Alli
                 continue
+                if 3 ≤ loopNum ≤ 4
+                    addAlli!(ver4df, para, extK)
+                else
+                    continue
+                end
             end
 
             partition = orderedPartition(loopNum - 1, 4, 0)
@@ -109,6 +114,16 @@ function merge_vertex4(para, ver4df, name, legK)
         )
     end
     return ver4df
+end
+
+function addAlli!(ver4df::DataFrame, para::DiagPara, extK::Vector{Vector{Float64}})
+    dict_graphs = get_ver4I()
+    graphvec = dict_graphs[para.innerLoopNum]
+    update_extK!(graphvec, extK)
+    for ver4diag in graphvec
+        Id = ver4diag.properties
+        push!(ver4df, (response=Id.response, type=Id.type, extT=Id.extT, diagram=ver4diag))
+    end
 end
 
 function bubble!(ver4df::DataFrame, para::DiagPara, legK, chan::TwoBodyChannel, partition::Vector{Int}, level::Int, name::Symbol,

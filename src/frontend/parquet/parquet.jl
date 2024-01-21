@@ -5,13 +5,14 @@ import ..ComputationalGraphs: Graph
 import ..ComputationalGraphs: _dtype
 import ..ComputationalGraphs: Sum, Prod
 # import ..ComputationalGraphs: Power
-Ftype, Wtype = ComputationalGraphs._dtype.factor, ComputationalGraphs._dtype.weight
+Ftype, Wtype = _dtype.factor, _dtype.weight
 
 import ..FrontEnds: TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
 import ..FrontEnds: Filter, NoBubble, NoHartree, NoFock, DirectOnly, Wirreducible, Girreducible, Proper
 import ..FrontEnds: Response, Composite, ChargeCharge, SpinSpin, ProperChargeCharge, ProperSpinSpin, UpUp, UpDown
 import ..FrontEnds: AnalyticProperty, Instant, Dynamic
 import ..FrontEnds: DiagramId, PropagatorId, GenericId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId, BareGreenId, BareInteractionId
+# import ..FrontEnds: get_ver4I
 
 using StaticArrays, PyCall
 using AbstractTrees

@@ -5,11 +5,10 @@ import ..ComputationalGraphs as IR
 import ..ComputationalGraphs: FeynmanGraph
 import ..ComputationalGraphs: Graph
 import ..ComputationalGraphs: _dtype
-import ..Parquet
-import ..Parquet: DiagramType, VacuumDiag, SigmaDiag, GreenDiag, PolarDiag, Ver3Diag, Ver4Diag
-import ..Parquet: Interaction, DiagPara
-import ..Taylor
-using ..FrontEnds
+import ..Taylor: set_variables
+import ..Utility: taylorexpansion!
+import ..FrontEnds
+import ..FrontEnds: LabelProduct
 import ..FrontEnds: Filter, NoHartree, NoFock, DirectOnly
 import ..FrontEnds: Wirreducible  #remove all polarization subdiagrams
 import ..FrontEnds: Girreducible  #remove all self-energy inseration
@@ -19,11 +18,11 @@ import ..FrontEnds: Response, Composite, ChargeCharge, SpinSpin, UpUp, UpDown
 import ..FrontEnds: AnalyticProperty, Instant, Dynamic
 import ..FrontEnds: TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
 import ..FrontEnds: DiagramId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId, BareGreenId, BareInteractionId
-
+import ..Parquet
+import ..Parquet: DiagramType, VacuumDiag, SigmaDiag, GreenDiag, PolarDiag, Ver3Diag, Ver4Diag
+import ..Parquet: Interaction, DiagPara
 
 using AbstractTrees
-
-import ..Utility: taylorexpansion!
 
 export eachorder_diag, diagdictGV, diagdict_parquet, diagdict_parquet_ver4, leafstates, leafstates_parquet
 
@@ -52,7 +51,7 @@ A tuple `(dict_graphs, labelProd)` where
 - `labelProd` is a `LabelProduct` object containing the labels for the leaves of graphs. 
 """
 function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false;
-    MinOrder::Int=1, spinPolarPara::Float64=0.0)
+    MinOrder::Int=1, spinPolarPara::Float64=0.0, optimize_level=0)
     dict_graphs = Dict{Tuple{Int,Int,Int},Tuple{Vector{FeynmanGraph{_dtype.factor,_dtype.weight}},Vector{Vector{Int}}}}()
     if type == :sigma
         MaxLoopNum = MaxOrder + 1
@@ -87,7 +86,7 @@ function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false;
                         labelProd=labelProd, spinPolarPara=spinPolarPara)
                     key = (order, GOrder, VerOrder)
                     dict_graphs[key] = (gvec, extT_labels)
-                    IR.optimize!(gvec)
+                    IR.optimize!(gvec, level=optimize_level)
                 end
             end
         end
@@ -97,7 +96,7 @@ function diagdictGV(type::Symbol, MaxOrder::Int, has_counterterm::Bool=false;
                 labelProd=labelProd, spinPolarPara=spinPolarPara)
             key = (order, 0, 0)
             dict_graphs[key] = (gvec, extT_labels)
-            IR.optimize!(gvec)
+            IR.optimize!(gvec, level=optimize_level)
         end
     end
 
@@ -122,7 +121,7 @@ A tuple `(dict_graphs, labelProd)` where
    The key is (order, Gorder, Vorder). The element is a Tuple (graphVector, extT_labels).
 - `labelProd` is a `LabelProduct` object containing the labels for the leaves of graphs.
 """
-function diagdictGV(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}; spinPolarPara::Float64=0.0)
+function diagdictGV(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}; spinPolarPara::Float64=0.0, optimize_level=0)
     dict_graphs = Dict{Tuple{Int,Int,Int},Tuple{Vector{FeynmanGraph{_dtype.factor,_dtype.weight}},Vector{Vector{Int}}}}()
     if type == :sigma
         MaxLoopNum = maximum([key[1] for key in gkeys]) + 1
@@ -150,7 +149,7 @@ function diagdictGV(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}; spinPolarPa
         gvec, labelProd, extT_labels = eachorder_diag(type, key...;
             labelProd=labelProd, spinPolarPara=spinPolarPara)
         dict_graphs[key] = (gvec, extT_labels)
-        IR.optimize!(gvec)
+        IR.optimize!(gvec, level=optimize_level)
         # append!(graphvector, gvec)
     end
     # IR.optimize!(graphvector)
@@ -203,7 +202,36 @@ function eachorder_diag(type::Symbol, order::Int, GOrder::Int=0, VerOrder::Int=0
     end
 end
 
-function eachorder_diags(type::Symbol, order::Int)
+function diagdictGV_AD(type::Symbol, gkeys::Vector{NTuple{3,Int}}; filter=[NoHartree], spinPolarPara::Float64=0.0, optimize_level=0)
+    dict_graphs = Dict{NTuple{3,Int},Tuple{Vector{Graph},Vector{Vector{Int}}}}()
+    MinOrder = minimum([p[1] for p in gkeys])
+    MaxOrder = maximum([p[1] for p in gkeys])
+
+    for order in MinOrder:MaxOrder
+        set_variables("x y"; orders=[MaxOrder - order, MaxOrder - order])
+        diags, extT = eachorder_diags(type, order, filter=filter, spinPolarPara=spinPolarPara)
+        # IR.optimize!(diags)
+        propagator_var = Dict(BareGreenId => [true, false], BareInteractionId => [false, true])
+        taylor_vec, taylormap = taylorexpansion!(diags, propagator_var)
+        for t in taylor_vec
+            for (o, graph) in t.coeffs
+                key = (order, o...)
+                key ∉ gkeys && continue
+                if haskey(dict_graphs, key)
+                    push!(dict_graphs[key][1], graph)
+                else
+                    dict_graphs[key] = ([graph,], collect.(extT))
+                end
+            end
+        end
+    end
+    for gvec in values(dict_graphs)
+        IR.optimize!(gvec[1], level=optimize_level)
+    end
+    return dict_graphs
+end
+
+function eachorder_diags(type::Symbol, order::Int; filter=[NoHartree], spinPolarPara::Float64=0.0)
     innerLoopNum = order
     if type == :spinPolar
         filename = string(@__DIR__, "/GV_diagrams/groups_spin/Polar$(order)_0_0.diag")
@@ -226,9 +254,9 @@ function eachorder_diags(type::Symbol, order::Int)
         innerLoopNum=innerLoopNum,
         hasTau=true,
         interaction=[Interaction(ChargeCharge, Instant)],
-        filter=[NoHartree]
+        filter=filter
     )
-    return read_diagrams(filename, para)
+    return read_diagrams(filename, para, spinPolarPara=spinPolarPara)
 end
 
 """
@@ -262,7 +290,7 @@ function diagdict_parquet(type::Symbol, MaxOrder::Int, has_counterterm::Bool=tru
 
     if has_counterterm
         for order in MinOrder:MaxOrder
-            Taylor.set_variables("x y"; orders=[MaxOrder - order, MaxOrder - order])
+            set_variables("x y"; orders=[MaxOrder - order, MaxOrder - order])
             para = diagPara(diagtype, isDynamic, spin, order, filter, transferLoop)
             # legK = [Parquet.getK(para.totalLoopNum + 3, 1), Parquet.getK(para.totalLoopNum + 3, 2), Parquet.getK(para.totalLoopNum + 3, 3)]
             parquet_builder = Parquet.build(para)
@@ -284,7 +312,7 @@ function diagdict_parquet(type::Symbol, MaxOrder::Int, has_counterterm::Bool=tru
             end
         end
     else
-        Taylor.set_variables("x y"; orders=[0, 0])
+        set_variables("x y"; orders=[0, 0])
         for order in MinOrder:MaxOrder
             para = diagPara(diagtype, isDynamic, spin, order, filter, transferLoop)
             parquet_builder = Parquet.build(para)
@@ -305,13 +333,13 @@ function diagdict_parquet(type::Symbol, MaxOrder::Int, has_counterterm::Bool=tru
     end
 
     for gvec in values(dict_graphs)
-        IR.optimize!(gvec[1])
+        IR.optimize!(gvec[1], level=optimize_level)
     end
     return dict_graphs
 end
 
 function diagdict_parquet(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}};
-    spinPolarPara::Float64=0.0, isDynamic=false, filter=[NoHartree], transferLoop=nothing)
+    spinPolarPara::Float64=0.0, isDynamic=false, filter=[NoHartree], transferLoop=nothing, optimize_level=0)
     # spinPolarPara::Float64=0.0, isDynamic=false, channel=[PHr, PHEr, PPr], filter=[NoHartree])
 
     diagtype = _diagtype(type)
@@ -324,7 +352,7 @@ function diagdict_parquet(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}};
     MinOrder = minimum([p[1] for p in gkeys])
     MaxOrder = maximum([p[1] for p in gkeys])
     for order in MinOrder:MaxOrder
-        Taylor.set_variables("x y"; orders=[MaxOrder - order, MaxOrder - order])
+        set_variables("x y"; orders=[MaxOrder - order, MaxOrder - order])
         para = diagPara(diagtype, isDynamic, spin, order, filter, transferLoop)
         parquet_builder = Parquet.build(para)
         diags, extT = parquet_builder.diagram, parquet_builder.extT
@@ -346,13 +374,13 @@ function diagdict_parquet(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}};
     end
 
     for gvec in values(dict_graphs)
-        IR.optimize!(gvec[1])
+        IR.optimize!(gvec[1], level=optimize_level)
     end
     return dict_graphs
 end
 
 function diagdict_parquet(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}, extra_variables::Dict{String,Int};
-    spinPolarPara::Float64=0.0, isDynamic=false, filter=[NoHartree], transferLoop=nothing)
+    spinPolarPara::Float64=0.0, isDynamic=false, filter=[NoHartree], transferLoop=nothing, optimize_level=0)
     # spinPolarPara::Float64=0.0, isDynamic=false, channel=[PHr, PHEr, PPr], filter=[NoHartree])
 
     diagtype = _diagtype(type)
@@ -370,8 +398,8 @@ function diagdict_parquet(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}, extra
     MinOrder = minimum([p[1] for p in gkeys])
     MaxOrder = maximum([p[1] for p in gkeys])
     for order in MinOrder:MaxOrder
-        # Taylor.set_variables("x y k"; orders=[MaxOrder - order, MaxOrder - order, 1])
-        Taylor.set_variables("x y" * extra_varnames; orders=[MaxOrder - order, MaxOrder - order, extra_orders...])
+        # set_variables("x y k"; orders=[MaxOrder - order, MaxOrder - order, 1])
+        set_variables("x y" * extra_varnames; orders=[MaxOrder - order, MaxOrder - order, extra_orders...])
         para = diagPara(diagtype, isDynamic, spin, order, filter, transferLoop)
         parquet_builder = Parquet.build(para)
         diags, extT = parquet_builder.diagram, parquet_builder.extT
@@ -412,13 +440,13 @@ function diagdict_parquet(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}, extra
     end
 
     for gvec in values(dict_graphs)
-        IR.optimize!(gvec[1])
+        IR.optimize!(gvec[1], level=optimize_level)
     end
     return dict_graphs
 end
 
 function diagdict_parquet_ver4(gkeys::Vector{Tuple{Int,Int,Int}};
-    spinPolarPara::Float64=0.0, isDynamic=false, filter=[NoHartree], transferLoop=nothing)
+    spinPolarPara::Float64=0.0, isDynamic=false, filter=[NoHartree], transferLoop=nothing, optimize_level=0)
     # spinPolarPara::Float64=0.0, isDynamic=false, channel=[PHr, PHEr, PPr], filter=[NoHartree])
 
     spin = 2.0 / (spinPolarPara + 1)
@@ -430,18 +458,20 @@ function diagdict_parquet_ver4(gkeys::Vector{Tuple{Int,Int,Int}};
     MinOrder = minimum([p[1] for p in gkeys])
     MaxOrder = maximum([p[1] for p in gkeys])
     for order in MinOrder:MaxOrder
-        Taylor.set_variables("x y"; orders=[MaxOrder - order, MaxOrder - order])
-        para = diagPara(Ver4Diag, isDynamic, spin, order, filter, transferLoop)
-        ver4df = Parquet.vertex4(para)
+        set_variables("x y"; orders=[MaxOrder - order, MaxOrder - order])
+        # para = diagPara(Ver4Diag, isDynamic, spin, order, filter, transferLoop)
+        # ver4df = Parquet.vertex4(para)
 
-        # Append fully irreducible Vertex4 diagrams
-        if 3 ≤ order ≤ 4
-            ver4I, extT_labels = eachorder_diags(:vertex4I, order)
-            responses = repeat([ChargeCharge], length(ver4I))
-            types = repeat([Dynamic], length(ver4I))
-            append!(ver4df, (response=responses, type=types, extT=extT_labels, diagram=ver4I, hash=IR.id.(ver4I)))
-        end
-        diags, extT = ver4df.diagram, ver4df.extT
+        # # Append fully irreducible Vertex4 diagrams
+        # if 3 ≤ order ≤ 4
+        #     ver4I, extT_labels = eachorder_diags(:vertex4I, order)
+        #     responses = repeat([ChargeCharge], length(ver4I))
+        #     types = repeat([Dynamic], length(ver4I))
+        #     append!(ver4df, (response=responses, type=types, extT=extT_labels, diagram=ver4I, hash=IR.id.(ver4I)))
+        # end
+        # diags, extT = ver4df.diagram, ver4df.extT
+
+        diags, extT = eachorder_diags(:vertex4, order)
         propagator_var = Dict(BareGreenId => [true, false], BareInteractionId => [false, true]) # Specify variable dependence of fermi (first element) and bose (second element) particles.
         taylor_vec, taylormap = taylorexpansion!(diags, propagator_var)
 
@@ -459,7 +489,7 @@ function diagdict_parquet_ver4(gkeys::Vector{Tuple{Int,Int,Int}};
     end
 
     for gvec in values(dict_graphs)
-        IR.optimize!(gvec[1])
+        IR.optimize!(gvec[1], level=optimize_level)
     end
     return dict_graphs
 end
