@@ -26,7 +26,7 @@ function vertex3(para::DiagPara,
     blocks::ParquetBlocks=ParquetBlocks()
 )
 
-    resetuid && ComputationalGraphs.uidreset()
+    resetuid && IR.uidreset()
     @assert para.type == Ver3Diag
     @assert para.innerLoopNum >= 1 "Only generates vertex corrections with more than one internal loops."
     for k in _extK

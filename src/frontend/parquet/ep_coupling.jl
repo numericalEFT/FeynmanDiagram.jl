@@ -47,7 +47,7 @@ function ep_coupling(para::DiagPara;
     legK = [k[1:para.totalLoopNum] for k in extK[1:3]]
     push!(legK, legK[1] + legK[3] - legK[2])
 
-    resetuid && ComputationalGraphs.uidreset()
+    resetuid && IR.uidreset()
 
     @assert para.totalTauNum >= maxVer4TauIdx(para) "Increase totalTauNum!\n$para"
     @assert para.totalLoopNum >= maxVer4LoopIdx(para) "Increase totalLoopNum\n$para"

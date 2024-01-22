@@ -89,23 +89,13 @@ export LoopPool
 include("LabelProduct.jl")
 export LabelProduct
 
-include("parquet/parquet.jl")
-export Parquet
-
 include("GV.jl")
 export GV
 
-export get_ver4I
+include("parquet/parquet.jl")
+export Parquet
 
-const vertex4I_diags = Dict{Int,Vector{Graph}}()
-function initialize_vertex4I_diags(; filter=[NoHartree], spinPolarPara::Float64=0.0)
-    dict_graphs = GV.diagdictGV_AD(:vertex4I, [(3, 0, 0), (4, 0, 0)], filter=filter, spinPolarPara=spinPolarPara)
-    vertex4I_diags[3] = dict_graphs[(3, 0, 0)][1]
-    vertex4I_diags[4] = dict_graphs[(4, 0, 0)][1]
-end
-
-get_ver4I() = vertex4I_diags
-
-initialize_vertex4I_diags()
+# include("strong_coupling_expansion_builder/strong_coupling_expansion.jl")
+# export SCE
 
 end

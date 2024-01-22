@@ -20,7 +20,7 @@ When sigma is created as a subdiagram, then no Fock diagram is generated if para
 function sigma(para::DiagPara, extK=getK(para.totalLoopNum, 1), subdiagram=false;
     name=:Σ, resetuid=false, blocks::ParquetBlocks=ParquetBlocks()
 )
-    resetuid && ComputationalGraphs.uidreset()
+    resetuid && IR.uidreset()
     (para.type == SigmaDiag) || error("$para is not for a sigma diagram")
     (para.innerLoopNum >= 1) || error("sigma must has more than one inner loop")
     # @assert length(extK) == para.totalLoopNum

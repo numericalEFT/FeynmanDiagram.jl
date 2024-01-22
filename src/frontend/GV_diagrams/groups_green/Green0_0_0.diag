@@ -1,6 +1,6 @@
 #Type: Polarization
 #DiagNum: 1
-#Order: 1
+#Order: 0
 #GNum: 2
 #Ver4Num: 0
 #LoopNum: 2
@@ -15,7 +15,7 @@
 # SymFactor
 -1.0
 # GType
--2  3
+-2  0
 # VertexBasis
  0  1
  1  0
@@ -26,4 +26,3 @@
 # WType(Direct,Exchange)
 # SpinFactor
 1
-

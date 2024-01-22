@@ -12,7 +12,7 @@ function _StringtoFloatVector(str::AbstractString)
     return [parse(Float64, m.match) for m in eachmatch(pattern, str)]
 end
 
-function _exchange(perm::Vector{Int}, ver4Legs::Vector{Vector{Int}}, index::Int, extNum::Int; offset_ver4::Int=0)
+function _exchange(perm::Vector{Int}, ver4Legs::Vector{Vector{Int}}, index::Int, extNum::Int=2; offset_ver4::Int=0)
     inds = digits(index - 1, base=2, pad=length(ver4Legs) - offset_ver4)
     permu_ex = copy(perm)
     ver4Legs_ex = deepcopy(ver4Legs)
@@ -66,6 +66,22 @@ function getK(loopNum::Int, loopIdx::Int)
     k = zeros(loopNum)
     k[loopIdx] = 1.0
     return k
+end
+
+function firstLoopIdx(type)
+    if type == :vertex4 || type == :vertex4I #three extK
+        return 4
+    elseif type == :sigma #one extK
+        return 2
+    elseif type == :green #one extK
+        return 2
+    elseif type == :chargePolar || type == :spinPolar #one extK
+        return 2
+    elseif type == :freeEnergy #no extK
+        return 1
+    else
+        error("not implemented!")
+    end
 end
 
 """
@@ -172,17 +188,14 @@ function read_diagrams(filename::AbstractString; labelProd::Union{Nothing,LabelP
     end
 end
 
-function read_diagrams(filename::AbstractString, para::DiagPara; spinPolarPara::Float64=0.0,
+function read_vertex4diagrams(filename::AbstractString; spinPolarPara::Float64=0.0, filter=[NoHartree],
     keywords::Vector{String}=["SelfEnergy", "DiagNum", "Order", "GNum", "Ver4Num", "LoopNum", "ExtLoopIndex",
-        "DummyLoopIndex", "TauNum", "ExtTauIndex", "DummyTauIndex"]
-)
-    diagType = para.type
+        "DummyLoopIndex", "TauNum", "DummyTauIndex"])
     # Open a diagram file
     io = open(filename, "r")
 
     # Read global graph properties
-    diagNum, loopNum, tauNum, verNum = 1, 1, 2, 0
-    extIndex = Int[]
+    diagNum, loopNum, tauNum, verNum = 1, 1, 1, 0
     GNum = 2
     lineNum = 1
     while true
@@ -200,98 +213,77 @@ function read_diagrams(filename::AbstractString, para::DiagPara; spinPolarPara::
             loopNum = _StringtoIntVector(line)[1]
         elseif keyword == "TauNum"
             tauNum = _StringtoIntVector(line)[1]
-        elseif keyword == "ExtTauIndex"
-            extIndex = _StringtoIntVector(line)
         end
         lineNum += 1
     end
 
     # Read one diagram at a time
     diagrams = Graph{_dtype.factor,_dtype.weight}[]
-    extT_labels = Vector{NTuple{para.firstLoopIdx,Int}}()
-    offset_ver4 = diagType == SigmaDiag ? 1 : 0
-    DiEx = Int[]
     for _ in 1:diagNum
-        diags, _DiEx = read_onediagram!(para, IOBuffer(readuntil(io, "\n\n")),
-            GNum, verNum, loopNum, extIndex, spinPolarPara;
-            offset_ver4=offset_ver4)
+        diags = read_one_vertex4diagram!(IOBuffer(readuntil(io, "\n\n")),
+            GNum, verNum, loopNum, spinPolarPara, filter=filter)
         isempty(diags) && continue
         append!(diagrams, diags)
-        append!(extT_labels, [prop.extT for prop in IR.properties.(diags)])
-        append!(DiEx, _DiEx)
     end
     close(io)
+    innerLoopNum = loopNum - 3
+    para = (2, innerLoopNum)
 
     # Combine and merge all diagrams with the same external-tau labels
-    if diagType == SigmaDiag
-        staticextT_idx = findfirst(allequal, extT_labels)
-        if staticextT_idx > 1
-            extT_labels[staticextT_idx], extT_labels[1] = extT_labels[1], extT_labels[staticextT_idx]
-        end
-        gr = _group(diagrams, extT_labels)
-        unique!(extT_labels)
-        graphvec = Graph{_dtype.factor,_dtype.weight}[]
-        for key in extT_labels
-            push!(graphvec, IR.linear_combination(gr[key], ones(_dtype.factor, length(gr[key]))))
-        end
-        return graphvec, extT_labels
-    elseif diagType == Ver4Diag
-        # Create a GraphVector with keys of external-tau labels
-        channels = [prop.channel for prop in IR.properties.(diagrams)]
-        gr = _group(diagrams, extT_labels, channels, DiEx)
-        gr_keys = [(extT, channel) for (extT, channel, _) in collect(keys(gr))]
-        unique!(gr_keys)
-        graphvec = Graph{_dtype.factor,_dtype.weight}[]
-
-        extTs = eltype(extT_labels)[]
-        for (extT, channel) in gr_keys
-            keyDi = (extT, channel, 0)
-            keyEx = (extT, channel, 1)
-
-            # gId_Di = gr[keyDi][1].properties
-            # if any(x -> x != gId_Di.channel, [gr[keyDi][i].properties.channel for i in eachindex(gr[keyDi])])
-            #     gId_Di = Ver4Id(gId_Di.para, ChargeCharge, gId_Di.type, k=gId_Di.extK, t=gId_Di.extT, chan=AnyChan)
-            # end
-            # gId_Ex = gr[keyEx][1].properties
-            # if any(x -> x != gId_Ex.channel, [gr[keyEx][i].properties.channel for i in eachindex(gr[keyEx])])
-            #     gId_Ex = Ver4Id(gId_Ex.para, ChargeCharge, gId_Ex.type, k=gId_Ex.extK, t=gId_Ex.extT, chan=AnyChan)
-            # end
-            gId_Di = gr[keyDi][1].properties
-
-            gDi = IR.linear_combination(gr[keyDi])
-            gEx = IR.linear_combination(gr[keyEx])
-            gDi.properties = gId_Di
-            gEx.properties = gId_Di
-
-            guuId = Ver4Id(gId_Di.para, UpUp, gId_Di.type, k=gId_Di.extK, t=gId_Di.extT, chan=gId_Di.channel)
-            gudId = Ver4Id(gId_Di.para, UpDown, gId_Di.type, k=gId_Di.extK, t=gId_Di.extT, chan=gId_Di.channel)
-            guu = Graph([gDi, gEx], properties=guuId)
-            gud = Graph([gDi, gEx], subgraph_factors=[0.5, -0.5], properties=gudId)
-            append!(graphvec, [guu, gud])
-            append!(extTs, [extT, extT])
-        end
-
-        # for key in gr_keys
-        #     push!(graphvec, IR.linear_combination(gr[key], ones(_dtype.factor, length(gr[key]))))
-        # end
-        return graphvec, extTs
-    else
-        unique!(extT_labels)
-        @assert length(extT_labels) == 1
-        return [IR.linear_combination(diagrams, ones(_dtype.factor, diagNum))], extT_labels
+    extT_labels = Vector{NTuple{4,Int}}()
+    channels = Vector{TwoBodyChannel}()
+    DiEx = Int[]
+    sizehint!(extT_labels, length(diagrams))
+    sizehint!(channels, length(diagrams))
+    sizehint!(DiEx, length(diagrams))
+    for prop in IR.properties.(diagrams)
+        push!(extT_labels, prop.extT)
+        push!(channels, prop.channel)
+        push!(DiEx, prop.para[1])
     end
+    # Create a GraphVector with keys of external-tau labels
+    gr = _group(diagrams, extT_labels, channels, DiEx)
+    gr_keys = [(extT, channel) for (extT, channel, _) in collect(keys(gr))]
+    unique!(gr_keys)
+    graphvec = Graph{_dtype.factor,_dtype.weight}[]
+
+    extTs = Vector{NTuple{4,Int}}()
+    for (extT, channel) in gr_keys
+        keyDi = (extT, channel, 0)
+        keyEx = (extT, channel, 1)
+
+        # gId_Di = gr[keyDi][1].properties
+        # if any(x -> x != gId_Di.channel, [gr[keyDi][i].properties.channel for i in eachindex(gr[keyDi])])
+        #     gId_Di = Ver4Id(gId_Di.para, ChargeCharge, gId_Di.type, k=gId_Di.extK, t=gId_Di.extT, chan=AnyChan)
+        # end
+        # gId_Ex = gr[keyEx][1].properties
+        # if any(x -> x != gId_Ex.channel, [gr[keyEx][i].properties.channel for i in eachindex(gr[keyEx])])
+        #     gId_Ex = Ver4Id(gId_Ex.para, ChargeCharge, gId_Ex.type, k=gId_Ex.extK, t=gId_Ex.extT, chan=AnyChan)
+        # end
+        gId_Di = gr[keyDi][1].properties
+
+        gDi = IR.linear_combination(gr[keyDi])
+        gEx = IR.linear_combination(gr[keyEx])
+        gDi.properties = gId_Di
+        gEx.properties = gId_Di
+
+        guuId = Ver4Id(para, UpUp, gId_Di.type, k=gId_Di.extK, t=gId_Di.extT, chan=gId_Di.channel)
+        gudId = Ver4Id(para, UpDown, gId_Di.type, k=gId_Di.extK, t=gId_Di.extT, chan=gId_Di.channel)
+        guu = Graph([gDi, gEx], properties=guuId)
+        gud = Graph([gDi, gEx], subgraph_factors=[0.5, -0.5], properties=gudId)
+        append!(graphvec, [guu, gud])
+        append!(extTs, [extT, extT])
+    end
+    return graphvec, extTs
 end
 
-function read_onediagram!(para::DiagPara, io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex::Vector{Int},
-    spinPolarPara::Float64=0.0; splitter="|", offset::Int=-1, offset_ver4::Int=0)
-    diagType = para.type
+function read_one_vertex4diagram!(io::IO, GNum::Int, verNum::Int, loopNum::Int,
+    spinPolarPara::Float64=0.0; filter=[NoHartree], splitter="|", offset::Int=-1)
     flag_proper = false
-    if Proper in para.filter
+    if Proper in filter
         flag_proper = true
     end
-
-    extIndex = extIndex .- offset
-    extNum = length(extIndex)
+    isDynamic = verNum == 1 ? false : true
     ################ Read Hugenholtz Diagram information ####################
     @assert occursin("Permutation", readline(io))
     permutation = _StringtoIntVector(readline(io)) .- offset
@@ -319,7 +311,7 @@ function read_onediagram!(para::DiagPara, io::IO, GNum::Int, verNum::Int, loopNu
     @assert length(opGType) == GNum
 
     @assert occursin("VertexBasis", readline(io))
-    tau_labels = _StringtoIntVector(readline(io)) .- offset
+    tau_labels = _StringtoIntVector(readline(io))
     readline(io)
 
     @assert occursin("LoopBasis", readline(io))
@@ -355,65 +347,58 @@ function read_onediagram!(para::DiagPara, io::IO, GNum::Int, verNum::Int, loopNu
     graphs = Graph{_dtype.factor,_dtype.weight}[]
     spinfactors_existed = Float64[]
 
-    extK = [zeros(loopNum) for _ in 1:para.firstLoopIdx]
-    for i in 1:para.firstLoopIdx-1
+    innerLoopNum = loopNum - 3
+    extK = [zeros(loopNum) for _ in 1:4]
+    for i in 1:3
         extK[i][i] = 1.0
-        extK[para.firstLoopIdx][i] = (-1)^(i - 1)
+        extK[4][i] = (-1)^(i - 1)
     end
-    if diagType == SigmaDiag
-        extIndex[2] = findfirst(isequal(extIndex[1]), permutation)
-    elseif diagType == Ver4Diag
-        extIndex = [1, 0, 2, 0]
-        for (ind1, ind2) in enumerate(permutation)
-            ind1 in [1, 2] && continue
-            if opGType[ind1] == -2
-                if ind2 == 1
-                    extIndex[2] = ind1
-                elseif ind2 == 2
-                    extIndex[4] = ind1
-                else
-                    error("error GType for ($ind1, $ind2).")
-                end
+    extIndex = [1, 0, 2, 0]
+    for (ind1, ind2) in enumerate(permutation)
+        ind1 in [1, 2] && continue
+        if opGType[ind1] == -2
+            if ind2 == 1
+                extIndex[2] = ind1
+            elseif ind2 == 2
+                extIndex[4] = ind1
+            else
+                error("error GType for ($ind1, $ind2).")
             end
         end
-        # for (i, iver) in enumerate(extIndex[1:3])
-        #     locs_non0 = findall(!iszero, currentBasis[iver, :])
-        #     @assert !isnothing(locs_non0) "Wrong LoopBasis!"
-        #     if currentBasis[iver, i] == 0
-        #         idx = findfirst(x -> x > i, locs_non0)
-        #         currentBasis[:, i], currentBasis[:, locs_non0[idx]] = currentBasis[:, locs_non0[idx]] ./ currentBasis[iver, locs_non0[idx]], currentBasis[:, i]
-        #         deleteat!(locs_non0, idx)
-        #     elseif currentBasis[iver, i] != 1 #&& all(currentBasis[iver, 1:i-1] .== 0)
-        #         currentBasis[:, i] ./= currentBasis[iver, i]
-        #     end
-        #     for j in locs_non0
-        #         j == i && continue
-        #         currentBasis[:, j] -= currentBasis[:, i] .* currentBasis[iver, j]
-        #     end
-        # end
-        # for (i, iver) in enumerate(extIndex)
-        #     @assert extK[i] == currentBasis[iver, :] "LoopBasis is isconsistent with extK."
-        # end
-        tau_labels .+= offset
     end
 
-    DiEx_existed = Int[]
+    # for (i, iver) in enumerate(extIndex[1:3])
+    #     locs_non0 = findall(!iszero, currentBasis[iver, :])
+    #     @assert !isnothing(locs_non0) "Wrong LoopBasis!"
+    #     if currentBasis[iver, i] == 0
+    #         idx = findfirst(x -> x > i, locs_non0)
+    #         currentBasis[:, i], currentBasis[:, locs_non0[idx]] = currentBasis[:, locs_non0[idx]] ./ currentBasis[iver, locs_non0[idx]], currentBasis[:, i]
+    #         deleteat!(locs_non0, idx)
+    #     elseif currentBasis[iver, i] != 1 #&& all(currentBasis[iver, 1:i-1] .== 0)
+    #         currentBasis[:, i] ./= currentBasis[iver, i]
+    #     end
+    #     for j in locs_non0
+    #         j == i && continue
+    #         currentBasis[:, j] -= currentBasis[:, i] .* currentBasis[iver, j]
+    #     end
+    # end
+    # for (i, iver) in enumerate(extIndex)
+    #     @assert extK[i] == currentBasis[iver, :] "LoopBasis is isconsistent with extK."
+    # end
+
+    # DiEx_existed = Int[]
     # println("##### $permutation  $ver4Legs")
     for (iex, spinFactor) in enumerate(spinFactors)
         # create permutation and ver4Legs for each Feynman diagram from a Hugenholtz diagram
         spinFactor == 0 && continue
         flag_proper && proper[iex] == 1 && continue
-
         push!(spinfactors_existed, sign(spinFactor) * (2 / (1 + spinPolarPara))^(log2(abs(spinFactor))))
-
-        permu, ver4Legs_ex = _exchange(permutation, ver4Legs, iex, extNum, offset_ver4=offset_ver4)
+        permu, ver4Legs_ex = _exchange(permutation, ver4Legs, iex)
 
         ######################## Create Feynman diagram #########################
         leafs = Graph{_dtype.factor,_dtype.weight}[]
-        if diagType == Ver4Diag
-            extIndex[1] = permu[1]
-            extIndex[3] = permu[2]
-        end
+        extIndex[1] = permu[1]
+        extIndex[3] = permu[2]
 
         # create all fermionic operators
         for (ind1, ind2) in enumerate(permu)
@@ -432,21 +417,18 @@ function read_onediagram!(para::DiagPara, io::IO, GNum::Int, verNum::Int, loopNu
             push!(leafs, Graph([]; properties=diagid))
         end
 
-        # if proper[iex] == 0
-        #     dpara = Parquet.reconstruct(para, filter=[NoHartree, Proper])
-        #     diagid = Ver4Id(dpara, ChargeCharge, k=extK, t=tau_labels[extIndex], chan=channel)
-        # end
-        if para.innerLoopNum == 0
-            diagid = Ver4Id(para, ChargeCharge, Instant, k=extK, t=tau_labels[extIndex], chan=channel)
+        para = (DiEx[iex], innerLoopNum)
+        if isDynamic
+            diagid = Ver4Id(para, ChargeCharge, Dynamic, k=extK, t=tau_labels[extIndex], chan=channel)
         else
-            diagid = Ver4Id(para, ChargeCharge, k=extK, t=tau_labels[extIndex], chan=channel)
+            diagid = Ver4Id(para, ChargeCharge, Instant, k=extK, t=tau_labels[extIndex], chan=channel)
         end
 
         push!(graphs, Graph(leafs, operator=IR.Prod(), properties=diagid, factor=spinFactor * symfactor))
-        push!(DiEx_existed, DiEx[iex])
+        # push!(DiEx_existed, DiEx[iex])
     end
 
-    return graphs, DiEx_existed
+    return graphs
 end
 
 function read_onediagram!(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex::Vector{Int},

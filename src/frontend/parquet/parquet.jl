@@ -1,23 +1,27 @@
 module Parquet
 
-import ..ComputationalGraphs
+import ..ComputationalGraphs as IR
 import ..ComputationalGraphs: Graph
-import ..ComputationalGraphs: _dtype
+import ..ComputationalGraphs: _dtype, isleaf
 import ..ComputationalGraphs: Sum, Prod
 # import ..ComputationalGraphs: Power
 Ftype, Wtype = _dtype.factor, _dtype.weight
+import ..Taylor: set_variables
+import ..Utility: taylorexpansion!
 
 import ..FrontEnds: TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
 import ..FrontEnds: Filter, NoBubble, NoHartree, NoFock, DirectOnly, Wirreducible, Girreducible, Proper
 import ..FrontEnds: Response, Composite, ChargeCharge, SpinSpin, ProperChargeCharge, ProperSpinSpin, UpUp, UpDown
 import ..FrontEnds: AnalyticProperty, Instant, Dynamic
 import ..FrontEnds: DiagramId, PropagatorId, GenericId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId, BareGreenId, BareInteractionId
-# import ..FrontEnds: get_ver4I
+import ..GV: diagdictGV_ver4
 
 using StaticArrays, PyCall
 using AbstractTrees
 using Parameters, Combinatorics
 using DataFrames
+
+export diagdict_parquet
 
 # if isdefined(Base, :Experimental) && isdefined(Base.Experimental, Symbol("@optlevel"))
 #     @eval Base.Experimental.@optlevel 1
@@ -203,12 +207,22 @@ end
 Base.:(==)(a::DiagPara, b::DiagPara) = Base.isequal(a, b)
 
 include("common.jl")
-
 include("operation.jl")
-
 include("filter.jl")
-include("vertex4.jl")
+include("to_graph.jl")
 
+const vertex4I_diags = Dict{Int,Vector{Graph}}()
+function initialize_vertex4I_diags(; filter=[NoHartree], spinPolarPara::Float64=0.0)
+    dict_graphs = diagdictGV_ver4(:vertex4I, [(3, 0, 0), (4, 0, 0)], filter=filter, spinPolarPara=spinPolarPara)
+    vertex4I_diags[3] = dict_graphs[(3, 0, 0)][1]
+    vertex4I_diags[4] = dict_graphs[(4, 0, 0)][1]
+end
+
+get_ver4I() = vertex4I_diags
+
+initialize_vertex4I_diags()
+
+include("vertex4.jl")
 include("sigma.jl")
 include("green.jl")
 include("vertex3.jl")

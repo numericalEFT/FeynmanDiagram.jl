@@ -143,23 +143,40 @@ end
 function update_extK!(diag::Graph, extK::Vector{Vector{Float64}})
     visited = Set{Int}()
     num_extK = length(extK)
+    len_extK = length(extK[1])
+
+    sumK = zeros(len_extK)
+    _K = zeros(len_extK)
     for leaf in Leaves(diag)
         if !(leaf.id in visited)
             push!(visited, leaf.id)
             prop = IR.properties(leaf)
-
             K = prop.extK
-            _K = append!(zeros(num_extK), K[num_extK+1:end])
-            K = sum([K[i] * extK[i] for i in eachindex(extK)]) + _K
 
-            if prop isa BareGreenId
-                new_properties = BareGreenId(prop.type, k=K, t=prop.extT)
-            elseif prop isa BareInteractionId
-                new_properties = BareInteractionId(prop.response, prop.type, k=K, t=prop.extT)
+            original_len_K = length(K)
+            if length(K) < len_extK
+                resize!(K, len_extK)
+                K[original_len_K+1:end] .= 0.0
             else
-                error("unexpected property type $prop")
+                resize!(K, len_extK)
             end
-            IR.set_properties!(leaf, new_properties)
+
+            _K[num_extK+1:end] .= K[num_extK+1:end]
+            for i in eachindex(extK)
+                sumK .+= K[i] * extK[i]
+            end
+            K .= sumK .+ _K
+            fill!(sumK, 0.0)
+            # K[1:end] = sum([K[i] * extK[i] for i in eachindex(extK)]) + _K
+
+            # if prop isa BareGreenId
+            #     new_properties = BareGreenId(prop.type, k=K, t=prop.extT)
+            # elseif prop isa BareInteractionId
+            #     new_properties = BareInteractionId(prop.response, prop.type, k=K, t=prop.extT)
+            # else
+            #     error("unexpected property type $prop")
+            # end
+            # IR.set_properties!(leaf, new_properties)
         end
     end
 end
@@ -167,24 +184,31 @@ end
 function update_extK!(diags::Vector{Graph}, extK::Vector{Vector{Float64}})
     visited = Set{Int}()
     num_extK = length(extK)
+    len_extK = length(extK[1])
+
+    sumK = zeros(len_extK)
+    _K = zeros(len_extK)
     for diag in diags
         for leaf in Leaves(diag)
             if !(leaf.id in visited)
                 push!(visited, leaf.id)
                 prop = IR.properties(leaf)
-
                 K = prop.extK
-                _K = append!(zeros(num_extK), K[num_extK+1:end])
-                K = sum([K[i] * extK[i] for i in eachindex(extK)]) + _K
 
-                if prop isa BareGreenId
-                    new_properties = BareGreenId(prop.type, k=K, t=prop.extT)
-                elseif prop isa BareInteractionId
-                    new_properties = BareInteractionId(prop.response, prop.type, k=K, t=prop.extT)
+                original_len_K = length(K)
+                if length(K) < len_extK
+                    resize!(K, len_extK)
+                    K[original_len_K+1:end] .= 0.0
                 else
-                    error("unexpected property type $prop")
+                    resize!(K, len_extK)
                 end
-                IR.set_properties!(leaf, new_properties)
+
+                _K[num_extK+1:end] .= K[num_extK+1:end]
+                for i in eachindex(extK)
+                    sumK .+= K[i] * extK[i]
+                end
+                K .= sumK .+ _K
+                fill!(sumK, 0.0)
             end
         end
     end

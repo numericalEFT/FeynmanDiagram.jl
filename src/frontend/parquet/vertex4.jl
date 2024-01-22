@@ -44,7 +44,7 @@ function vertex4(para::DiagPara,
     legK = [k[1:para.totalLoopNum] for k in extK[1:3]]
     push!(legK, legK[1] + legK[3] - legK[2])
 
-    resetuid && ComputationalGraphs.uidreset()
+    resetuid && IR.uidreset()
 
     @assert para.totalTauNum >= maxVer4TauIdx(para) "Increase totalTauNum!\n$para"
     @assert para.totalLoopNum >= maxVer4LoopIdx(para) "Increase totalLoopNum\n$para"
@@ -72,7 +72,6 @@ function vertex4(para::DiagPara,
     else # loopNum>0
         for c in chan
             if c == Alli
-                continue
                 if 3 ≤ loopNum ≤ 4
                     addAlli!(ver4df, para, extK)
                 else
@@ -96,9 +95,9 @@ function vertex4(para::DiagPara,
         end
         # # TODO: add envolpe diagrams
     end
-    # println(typeof(groups))
+    # println(ver4df)
     ver4df = merge_vertex4(para, ver4df, name, legK)
-    @assert all(x -> x[1] == para.firstTauIdx, ver4df.extT) "not all extT[1] are equal to the first Tau index $(para.firstTauIdx)! $ver4df"
+    # @assert all(x -> x[1] == para.firstTauIdx, ver4df.extT) "not all extT[1] are equal to the first Tau index $(para.firstTauIdx)! $ver4df"
     return ver4df
 end
 
@@ -119,9 +118,17 @@ end
 function addAlli!(ver4df::DataFrame, para::DiagPara, extK::Vector{Vector{Float64}})
     dict_graphs = get_ver4I()
     graphvec = dict_graphs[para.innerLoopNum]
-    update_extK!(graphvec, extK)
+
+    legK = [k[1:para.totalLoopNum] for k in extK[1:3]]
+    update_extK!(graphvec, legK)
+    push!(legK, legK[1] + legK[3] - legK[2])
     for ver4diag in graphvec
         Id = ver4diag.properties
+        for node in PostOrderDFS(ver4diag)
+            if !isleaf(node)
+                node.properties = Ver4Id(para, node.properties.response, node.properties.type, k=legK, t=Id.extT, chan=Alli)
+            end
+        end
         push!(ver4df, (response=Id.response, type=Id.type, extT=Id.extT, diagram=ver4diag))
     end
 end
