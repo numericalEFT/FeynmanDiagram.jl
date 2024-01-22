@@ -38,7 +38,7 @@ export multi_product, linear_combination, feynman_diagram, propagator, interacti
 
 
 include("tree_properties.jl")
-export haschildren, onechild, isleaf, isbranch, ischain, isfactorless, eldest, count_operation
+export haschildren, onechild, isleaf, isbranch, ischain, isfactorless, has_zero_subfactors, eldest, count_operation
 
 include("operation.jl")
 include("io.jl")
@@ -50,7 +50,7 @@ export eval!
 include("transform.jl")
 export relabel!, standardize_labels!, replace_subgraph!, merge_linear_combination!, merge_multi_product!, merge_chains!, flatten_chains!
 export relabel, standardize_labels, replace_subgraph, merge_linear_combination, merge_multi_product, merge_chains, flatten_chains
-
+export open_parenthesis, flatten_prod!, flatten_prod
 include("optimize.jl")
 export optimize!, optimize
 

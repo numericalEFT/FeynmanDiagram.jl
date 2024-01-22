@@ -155,6 +155,94 @@ function replace_subgraph(g::AbstractGraph, w::AbstractGraph, m::AbstractGraph)
     return g_new
 end
 
+function open_parenthesis(graph::AbstractGraph)
+    if isempty(graph.subgraphs)
+        return deepcopy(graph)
+    else
+        children = []
+        for sub in graph.subgraphs
+            push!(children, open_parenthesis(sub))
+        end
+        newnode = Graph([]; operator=Sum())
+        if graph.operator == Sum
+            # flatten function make sure that all children are already converted to Sum->Prod two layer graphs, so here when merging the subgraphs we just consider the case when operator are Sum.
+            for (child_idx, child) in enumerate(children)
+                if isempty(child.subgraphs)
+                    push!(newnode.subgraphs, child)
+                    push!(newnode.subgraph_factors, graph.subgraph_factors[child_idx])
+                else
+                    for (grandchild_idx, grandchild) in enumerate(child.subgraphs)
+                        push!(newnode.subgraphs, grandchild)
+                        push!(newnode.subgraph_factors, graph.subgraph_factors[child_idx] * child.subgraph_factors[grandchild_idx])
+                    end
+                end
+            end
+        elseif graph.operator == Prod
+            # When opertaor is Prod, we expand parenthese and replace Prod with a Sum operator.
+            childsub_len = [length(child.subgraphs) for child in children]
+            ordtuple = ((childsub_len[num] > 0) ? (1:childsub_len[num]) : (0:0) for num in eachindex(childsub_len)) #The child with no grand child is labeled with a single idx=0
+            for indices in collect(Iterators.product(ordtuple...)) #Indices for all combination of grandchilds, with one from each child. 
+                newchildnode = Graph([]; operator=Prod())
+                for (child_idx, grandchild_idx) in enumerate(indices)
+                    child = children[child_idx]
+                    if grandchild_idx == 0 #Meaning this node is a leaf node
+                        push!(newchildnode.subgraphs, child)
+                        push!(newchildnode.subgraph_factors, graph.subgraph_factors[child_idx])
+                    else
+                        push!(newchildnode.subgraphs, child.subgraphs[grandchild_idx])
+                        push!(newchildnode.subgraph_factors, graph.subgraph_factors[child_idx] * child.subgraph_factors[grandchild_idx])
+                    end
+                end
+                push!(newnode.subgraphs, newchildnode)
+                push!(newnode.subgraph_factors, 1.0)
+            end
+        end
+        return newnode
+    end
+end
+
+function flatten_prod!(graph::AbstractGraph)
+    if isempty(graph.subgraphs)
+        return graph
+    else
+        children = []
+        for sub in graph.subgraphs
+            push!(children, flatten_prod!(sub))
+        end
+        newchildren = []
+        newfactors = []
+        if graph.operator == Sum
+            for (child_idx, child) in enumerate(children)
+                push!(newchildren, child)
+                push!(newfactors, graph.subgraph_factors[child_idx])
+            end
+        elseif graph.operator == Prod
+            for (child_idx, child) in enumerate(children)
+                if isempty(child.subgraphs) || child.operator == Sum
+                    push!(newchildren, child)
+                    push!(newfactors, graph.subgraph_factors[child_idx])
+                else
+                    for (grandchild_idx, grandchild) in enumerate(child.subgraphs)
+                        push!(newchildren, grandchild)
+                        if grandchild_idx == 1
+                            push!(newfactors, graph.subgraph_factors[child_idx] * child.subgraph_factors[grandchild_idx])
+                        else
+                            push!(newfactors, child.subgraph_factors[grandchild_idx])
+                        end
+                    end
+                end
+            end
+        end
+        graph.subgraphs = newchildren
+        graph.subgraph_factors = newfactors
+        return graph
+    end
+end
+
+function flatten_prod(graph::AbstractGraph)
+    flatten_prod!(deepcopy(graph))
+end
+
 """
     function flatten_chains!(g::AbstractGraph)
 
@@ -183,7 +271,7 @@ end
     function flatten_chains(g::AbstractGraph) 
 
     Recursively flattens chains of subgraphs within a given graph `g` by merging certain trivial unary subgraphs into their parent graphs,
-    This function returns a new graph with flatten chains, dervied from the input graph `g` remaining unchanged.
+    This function returns a new graph with flatten chains, derived from the input graph `g` remaining unchanged.
 
 # Arguments:
 - `g::AbstractGraph`: graph to be modified
@@ -191,7 +279,49 @@ end
 flatten_chains(g::AbstractGraph) = flatten_chains!(deepcopy(g))
 
 """
-    function merge_linear_combination(g::AbstractGraph)
+    function remove_zero_valued_subgraphs!(g::AbstractGraph)
+
+    Removes zero-valued (zero subgraph_factor) subgraph(s) of a computational graph `g`. If all subgraphs are zero-valued, the first one (`eldest(g)`) will be retained.
+
+# Arguments:
+- `g::AbstractGraph`: graph to be modified
+"""
+function remove_zero_valued_subgraphs!(g::AbstractGraph)
+    if isleaf(g) || isbranch(g)  # we must retain at least one subgraph
+        return g
+    end
+    subg = collect(subgraphs(g))
+    subg_fac = collect(subgraph_factors(g))
+    zero_sgf = zero(subg_fac[1])  # F(0)
+    # Find subgraphs with all-zero subgraph_factors and propagate subfactor one level up
+    for (i, sub_g) in enumerate(subg)
+        if has_zero_subfactors(sub_g)
+            subg_fac[i] = zero_sgf
+        end
+    end
+    # Remove marked zero subgraph factor subgraph(s) of g
+    mask_zeros = findall(x -> x != zero(x), subg_fac)
+    if isempty(mask_zeros)
+        mask_zeros = [1]  # retain eldest(g) if all subfactors are zero
+    end
+    set_subgraphs!(g, subg[mask_zeros])
+    set_subgraph_factors!(g, subg_fac[mask_zeros])
+    return g
+end
+
+"""
+    function remove_zero_valued_subgraphs(g::AbstractGraph)
+
+    Returns a copy of graph `g` with zero-valued (zero subgraph_factor) subgraph(s) removed.
+    If all subgraphs are zero-valued, the first one (`eldest(g)`) will be retained.
+
+# Arguments:
+- `g::AbstractGraph`: graph to be modified
+"""
+remove_zero_valued_subgraphs(g::AbstractGraph) = remove_zero_valued_subgraphs!(deepcopy(g))
+
+"""
+    function merge_linear_combination!(g::AbstractGraph)
    
     Modifies a computational graph `g` by factorizing multiplicative prefactors, e.g.,
     3*g1 + 5*g2 + 7*g1 + 9*g2 ↦ 10*g1 + 14*g2 = linear_combination(g1, g2, 10, 14).

@@ -3,7 +3,7 @@ using ..ComputationalGraphs
 #using ..ComputationalGraphs: Sum, Prod, Power, decrement_power
 using ..ComputationalGraphs: decrement_power
 using ..ComputationalGraphs: build_all_leaf_derivative, eval!, isfermionic
-import ..ComputationalGraphs: count_operation
+import ..ComputationalGraphs: count_operation, count_expanded_operation
 using ..ComputationalGraphs.AbstractTrees
 using ..DiagTree
 using ..DiagTree: Diagram, PropagatorId, BareGreenId, BareInteractionId
@@ -179,8 +179,18 @@ function taylorexpansion!(graph::Diagram{W}, propagator_var::Dict{DataType,Vecto
 end
 
 function taylorexpansion!(graphs::Vector{G}, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}();
-    to_coeff_map::Dict{Int,TaylorSeries{G}}=Dict{Int,TaylorSeries{G}}()) where {G<:AbstractGraph}
+    to_coeff_map::Dict{Int,TaylorSeries{G}}=Dict{Int,TaylorSeries{G}}()) where {G<:Graph}
     result = Vector{TaylorSeries{G}}()
+    for graph in graphs
+        taylor, _ = taylorexpansion!(graph, var_dependence; to_coeff_map=to_coeff_map)
+        push!(result, taylor)
+    end
+    return result, to_coeff_map
+end
+
+function taylorexpansion!(graphs::Vector{Diagram{W}}, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}();
+    to_coeff_map::Dict{Int,TaylorSeries{Graph{W,W}}}=Dict{Int,TaylorSeries{Graph{W,W}}}()) where {W}
+    result = Vector{TaylorSeries{Graph{W,W}}}()
     for graph in graphs
         taylor, _ = taylorexpansion!(graph, var_dependence; to_coeff_map=to_coeff_map)
         push!(result, taylor)
@@ -400,6 +410,19 @@ function count_operation(graphs::Vector{TaylorSeries{G}}, order::Vector{Int}) wh
             push!(allcoeffs, g.coeffs[order])
         end
         return count_operation(allcoeffs)
+    end
+end
+
+function count_expanded_operation(graphs::Vector{TaylorSeries{G}}, order::Vector{Int}) where {G<:Graph}
+    if length(graphs) == 0
+        return [0, 0]
+    else
+        # allcoeffs = Vector{G}()
+        total_sumprod = [0, 0]
+        for g in graphs
+            total_sumprod += count_expanded_operation(g.coeffs[order])
+        end
+        return total_sumprod
     end
 end
 

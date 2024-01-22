@@ -224,10 +224,12 @@ function Base.isequal(a::DiagramId, b::DiagramId)
         return false
     end
     for field in fieldnames(typeof(a))
+        field in [:para, :permutation] && continue
         if field == :extK
-            if (getproperty(a, :extK) ≈ getproperty(b, :extK)) == false
+            if !(getproperty(a, :extK) ≈ getproperty(b, :extK)) && !(getproperty(a, :extK) ≈ -getproperty(b, :extK))
                 return false
             end
+            continue
         end
         if getproperty(a, field) != getproperty(b, field)
             return false

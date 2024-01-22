@@ -99,6 +99,25 @@ function isfactorless(g::AbstractGraph)
 end
 
 """
+    function has_zero_subfactors(g)
+
+    Returns whether the graph g has only zero-valued subgraph factor(s). 
+    Note that this function does not recurse through subgraphs of g, so that one may have, e.g.,
+    `isfactorless(g) == true` but `isfactorless(eldest(g)) == false`.
+    By convention, returns `false` if g is a leaf.
+
+# Arguments:
+- `g::AbstractGraph`: graph to be analyzed
+"""
+function has_zero_subfactors(g::AbstractGraph)
+    if isleaf(g)
+        return false  # convention: subgraph_factors = [] ⟹ subfactorless = false
+    else
+        return iszero(subgraph_factors(g))
+    end
+end
+
+"""
     function eldest(g::AbstractGraph)
 
     Returns the first child (subgraph) of a graph g.
@@ -122,12 +141,15 @@ end
 function count_operation(g::G) where {G<:AbstractGraph}
     totalsum = 0
     totalprod = 0
+    # totalpower = 0
     for node in PreOrderDFS(g)
         if length(node.subgraphs) > 0
             if node.operator == Prod
                 totalprod += length(node.subgraphs) - 1
             elseif node.operator == Sum
                 totalsum += length(node.subgraphs) - 1
+                # elseif node.operator <: Power
+                #     totalpower += 1
             end
         end
     end
@@ -184,4 +206,33 @@ end
 
 function count_operation(nothing)
     return [0, 0]
+end
+
+function count_expanded_operation(g::G) where {G<:AbstractGraph}
+    totalsum = 0
+    totalprod = 0
+
+    len_subg = length(subgraphs(g))
+    subgraphs_sum = zeros(Int, len_subg)
+    subgraphs_prod = zeros(Int, len_subg)
+    for (i, subg) in enumerate(subgraphs(g))
+        subgraphs_sum[i], subgraphs_prod[i] = count_expanded_operation(subg)
+    end
+
+    if isleaf(g)
+        return [0, 0]
+    else
+        if operator(g) == Sum
+            totalsum = sum(subgraphs_sum) + len_subg - 1
+            totalprod = sum(subgraphs_prod)
+        elseif operator(g) == Prod
+            totalsum = prod(subgraphs_sum .+ 1) - 1
+            innerprod = 0
+            for i in 1:len_subg
+                innerprod += subgraphs_prod[i] * prod([subgraphs_sum[j] + 1 for j in 1:len_subg if j != i])
+            end
+            totalprod = innerprod + (totalsum + 1) * (len_subg - 1)
+        end
+    end
+    return [totalsum, totalprod]
 end

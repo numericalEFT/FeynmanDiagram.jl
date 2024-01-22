@@ -18,7 +18,7 @@ function eval!(g::Graph{F,W}, leafmap::Dict{Int,Int}=Dict{Int,Int}(), leaf::Vect
     for node in PostOrderDFS(g)
         if isleaf(node)
             if isempty(leafmap)
-                node.weight = 1.0
+                node.weight = -3.0
             else
                 node.weight = leaf[leafmap[node.id]]
             end
