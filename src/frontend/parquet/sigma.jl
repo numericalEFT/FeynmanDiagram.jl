@@ -95,9 +95,9 @@ function sigma(para::DiagPara, extK=getK(para.totalLoopNum, 1), subdiagram=false
             if oW == 0 # Fock-type Σ
                 if NoHartree in paraW.filter
                     paraW0 = reconstruct(paraW, filter=union(paraW.filter, Proper), transferLoop=zero(K))
-                    ver4 = vertex4(paraW0, legK, [], true)
+                    ver4 = vertex4(paraW0, legK, true, channels=[])
                 else
-                    ver4 = vertex4(paraW, legK, [], true)
+                    ver4 = vertex4(paraW, legK, true, channels=[])
                 end
                 # println(ver4)
             else # composite Σ
@@ -106,7 +106,7 @@ function sigma(para::DiagPara, extK=getK(para.totalLoopNum, 1), subdiagram=false
                 # if compact
                 #     ver4 = ep_coupling(paraW; extK=legK, subdiagram=true, name=:W, blocks=blocks)
                 # else
-                ver4 = vertex4(paraW, legK, [PHr,], true; blocks=blocks, blockstoplevel=ParquetBlocks(phi=[], Γ4=[PHr, PHEr, PPr]))
+                ver4 = vertex4(paraW, legK, true; channels=[PHr,], blocks=blocks, blockstoplevel=ParquetBlocks(phi=[], Γ4=[PHr, PHEr, PPr]))
                 # end
             end
             #transform extT coloum intwo extT for Σ and extT for G

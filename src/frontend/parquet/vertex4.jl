@@ -1,8 +1,8 @@
 """
     vertex4(para::DiagPara,
         extK = [getK(para.totalLoopNum, 1), getK(para.totalLoopNum, 2), getK(para.totalLoopNum, 3)],
-        chan::AbstractVector = [PHr, PHEr, PPr, Alli],
         subdiagram = false;
+        channels::AbstractVector = [PHr, PHEr, PPr, Alli],
         level = 1, name = :none, resetuid = false,
         blocks::ParquetBlocks=ParquetBlocks(),
         blockstoplevel::ParquetBlocks=blocks
@@ -13,8 +13,8 @@ Generate 4-vertex diagrams using Parquet Algorithm
 # Arguments
 - `para`            : parameters. It should provide internalLoopNum, interactionTauNum, firstTauIdx
 - `extK`            : basis of external loops as a vector [left in, left out, right in, right out]. 
-- `chan`            : vector of channels of the current 4-vertex. 
 - `subdiagram`      : a sub-vertex or not
+- `channels`            : vector of channels of the current 4-vertex. 
 - `name`            : name of the vertex
 - `level`           : level in the diagram tree
 - `resetuid`        : restart uid count from 1
@@ -26,7 +26,7 @@ Generate 4-vertex diagrams using Parquet Algorithm
 """
 function vertex4(para::DiagPara,
     extK=[getK(para.totalLoopNum, 1), getK(para.totalLoopNum, 2), getK(para.totalLoopNum, 3)],
-    chan::AbstractVector=[PHr, PHEr, PPr, Alli], subdiagram=false;
+    subdiagram=false; channels::AbstractVector=[PHr, PHEr, PPr, Alli],
     level=1, name=:none, resetuid=false,
     # phi_toplevel=ParquetBlocks().phi, ppi_toplevel=ParquetBlocks().ppi, Γ4_toplevel=ParquetBlocks().Γ4,
     blocks::ParquetBlocks=ParquetBlocks(),
@@ -70,10 +70,11 @@ function vertex4(para::DiagPara,
         end
         bareVer4(ver4df, para, legK, permutation)
     else # loopNum>0
-        for c in chan
+        for c in channels
             if c == Alli
+                # continue
                 if 3 ≤ loopNum ≤ 4
-                    addAlli!(ver4df, para, extK)
+                    addAlli!(ver4df, para, legK)
                 else
                     continue
                 end
@@ -95,9 +96,8 @@ function vertex4(para::DiagPara,
         end
         # # TODO: add envolpe diagrams
     end
-    # println(ver4df)
     ver4df = merge_vertex4(para, ver4df, name, legK)
-    # @assert all(x -> x[1] == para.firstTauIdx, ver4df.extT) "not all extT[1] are equal to the first Tau index $(para.firstTauIdx)! $ver4df"
+    @assert all(x -> x[1] == para.firstTauIdx, ver4df.extT) "not all extT[1] are equal to the first Tau index $(para.firstTauIdx)! $ver4df"
     return ver4df
 end
 
@@ -115,20 +115,12 @@ function merge_vertex4(para, ver4df, name, legK)
     return ver4df
 end
 
-function addAlli!(ver4df::DataFrame, para::DiagPara, extK::Vector{Vector{Float64}})
+function addAlli!(ver4df::DataFrame, para::DiagPara, legK::Vector{Vector{Float64}})
     dict_graphs = get_ver4I()
     graphvec = dict_graphs[para.innerLoopNum]
-
-    legK = [k[1:para.totalLoopNum] for k in extK[1:3]]
-    update_extK!(graphvec, legK)
-    push!(legK, legK[1] + legK[3] - legK[2])
+    graphvec = update_extKT(graphvec, para, legK)
     for ver4diag in graphvec
         Id = ver4diag.properties
-        for node in PostOrderDFS(ver4diag)
-            if !isleaf(node)
-                node.properties = Ver4Id(para, node.properties.response, node.properties.type, k=legK, t=Id.extT, chan=Alli)
-            end
-        end
         push!(ver4df, (response=Id.response, type=Id.type, extT=Id.extT, diagram=ver4diag))
     end
 end
@@ -155,6 +147,9 @@ function bubble!(ver4df::DataFrame, para::DiagPara, legK, chan::TwoBodyChannel, 
     LfirstTauIdx, G0firstTauIdx, RfirstTauIdx, GxfirstTauIdx = idx
     @assert maxTau == maxVer4TauIdx(para) "Partition $partition with tauNum configuration $idx. maxTau = $maxTau, yet $(maxTauIdx(para)) is expected!"
 
+    # println(partition)
+    # println(idx, " ", maxTau)
+
     lPara = reconstruct(para, type=Ver4Diag, innerLoopNum=oL, firstLoopIdx=LfirstLoopIdx, firstTauIdx=LfirstTauIdx)
     rPara = reconstruct(para, type=Ver4Diag, innerLoopNum=oR, firstLoopIdx=RfirstLoopIdx, firstTauIdx=RfirstTauIdx)
     gxPara = reconstruct(para, type=GreenDiag, innerLoopNum=oGx, firstLoopIdx=GxfirstLoopIdx, firstTauIdx=GxfirstTauIdx)
@@ -175,9 +170,9 @@ function bubble!(ver4df::DataFrame, para::DiagPara, legK, chan::TwoBodyChannel, 
     LLegK, K, RLegK, Kx = legBasis(chan, legK, LoopIdx)
     # println(K, ", ", Kx)
 
-    Lver = vertex4(lPara, LLegK, Γi, true; level=level + 1, name=:Γi, blocks=blocks)
+    Lver = vertex4(lPara, LLegK, true; channels=Γi, level=level + 1, name=:Γi, blocks=blocks)
     isempty(Lver) && return
-    Rver = vertex4(rPara, RLegK, Γf, true; level=level + 1, name=:Γf, blocks=blocks)
+    Rver = vertex4(rPara, RLegK, true; channels=Γf, level=level + 1, name=:Γf, blocks=blocks)
     isempty(Rver) && return
 
     ver8 = Dict{Any,Any}()

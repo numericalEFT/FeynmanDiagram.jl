@@ -139,62 +139,53 @@ end
 # mergeby(df::DataFrame; kwargs...) = mergeby(df, []; kwargs...)
 # mergeby(diags::Vector{Graph}; kwargs...) = mergeby(diags, []; kwargs...)
 
+"""
+    update_extKT!(diags::Vector{Graph}, para::DiagPara, legK::Vector{Vector{Float64}})
 
-function update_extK!(diag::Graph, extK::Vector{Vector{Float64}})
+    Update the external momenta (`extK`) and external times (`extT`) of all the nodes in a vector of graphs in-place.
+
+# Arguments
+- `diags::Vector{Graph}`: A vector of `Graph` objects.
+- `para::DiagPara`: parameters reconstructed in the graphs. Its `firstTauIdx` will update the `extT` of graphs.
+- `legK::Vector{Vector{Float64}}`: basus of the external momenta for the legs of the diagram as [left in, left out, right in, right out]. 
+"""
+function update_extKT!(diags::Vector{Graph}, para::DiagPara, legK::Vector{Vector{Float64}})
     visited = Set{Int}()
-    num_extK = length(extK)
-    len_extK = length(extK[1])
+    tauIdx = para.firstTauIdx
+    # len_extK = para.totalLoopNum
+    # num_extK = len_extK - para.innerLoopNum
+    # extK = [k[1:len_extK] for k in legK[1:num_extK]]
+    # if para.totalLoopNum - para.innerLoopNum != 3
+    #     println(legK)
+    #     println(para)
+    # end
+    len_extK = length(legK[1])
+    num_extK = length(legK) - 1
+    extK = legK[1:end-1]
 
     sumK = zeros(len_extK)
     _K = zeros(len_extK)
-    for leaf in Leaves(diag)
-        if !(leaf.id in visited)
-            push!(visited, leaf.id)
-            prop = IR.properties(leaf)
+
+    for graph in diags
+        for node in PreOrderDFS(graph)
+            node.id in visited && continue
+            node.id = IR.uid()
+            push!(visited, node.id)
+            prop = IR.properties(node)
             K = prop.extK
-
-            original_len_K = length(K)
-            if length(K) < len_extK
-                resize!(K, len_extK)
-                K[original_len_K+1:end] .= 0.0
+            T = prop.extT
+            tau_shift = tauIdx - T[1]
+            if prop isa Ver4Id || prop isa Ver3Id
+                for i in eachindex(K)
+                    resize!(K[i], len_extK)
+                    K[i] .= legK[i][1:len_extK]
+                end
+                if tau_shift != 0
+                    node.properties = FrontEnds.reconstruct(prop, :para => para, :extT => Tuple(t + tau_shift for t in T))
+                else
+                    node.properties = FrontEnds.reconstruct(prop, :para => para)
+                end
             else
-                resize!(K, len_extK)
-            end
-
-            _K[num_extK+1:end] .= K[num_extK+1:end]
-            for i in eachindex(extK)
-                sumK .+= K[i] * extK[i]
-            end
-            K .= sumK .+ _K
-            fill!(sumK, 0.0)
-            # K[1:end] = sum([K[i] * extK[i] for i in eachindex(extK)]) + _K
-
-            # if prop isa BareGreenId
-            #     new_properties = BareGreenId(prop.type, k=K, t=prop.extT)
-            # elseif prop isa BareInteractionId
-            #     new_properties = BareInteractionId(prop.response, prop.type, k=K, t=prop.extT)
-            # else
-            #     error("unexpected property type $prop")
-            # end
-            # IR.set_properties!(leaf, new_properties)
-        end
-    end
-end
-
-function update_extK!(diags::Vector{Graph}, extK::Vector{Vector{Float64}})
-    visited = Set{Int}()
-    num_extK = length(extK)
-    len_extK = length(extK[1])
-
-    sumK = zeros(len_extK)
-    _K = zeros(len_extK)
-    for diag in diags
-        for leaf in Leaves(diag)
-            if !(leaf.id in visited)
-                push!(visited, leaf.id)
-                prop = IR.properties(leaf)
-                K = prop.extK
-
                 original_len_K = length(K)
                 if length(K) < len_extK
                     resize!(K, len_extK)
@@ -209,7 +200,30 @@ function update_extK!(diags::Vector{Graph}, extK::Vector{Vector{Float64}})
                 end
                 K .= sumK .+ _K
                 fill!(sumK, 0.0)
+                if tau_shift != 0
+                    node.properties = FrontEnds.reconstruct(prop, :extT => Tuple(t + tau_shift for t in T))
+                end
             end
         end
     end
+end
+
+"""
+    update_extKT(diags::Vector{Graph}, para::DiagPara, legK::Vector{Vector{Float64}}) -> Vector{Graph}
+
+    Returns a new vector of graphs with updated external momenta (`extK`) and external times (`extT`), 
+    based on the provided graphs, parameters, and external legs' momenta.
+
+# Arguments
+- `diags::Vector{Graph}`: A vector of `Graph` objects.
+- `para::DiagPara`: parameters reconstructed in the graphs. Its `firstTauIdx` will update the `extT` of graphs.
+- `legK::Vector{Vector{Float64}}`: basus of the external momenta for the legs of the diagram as [left in, left out, right in, right out]. 
+
+# Returns
+- `Vector{Graph}`: A new vector of `Graph` objects with updated `extK`, `extT`, and `para` (if existed) properties for each node.
+"""
+function update_extKT(diags::Vector{Graph}, para::DiagPara, legK::Vector{Vector{Float64}})
+    graphs = deepcopy(diags)
+    update_extKT!(graphs, para, legK)
+    return graphs
 end

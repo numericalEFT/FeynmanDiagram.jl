@@ -9,6 +9,7 @@ Ftype, Wtype = _dtype.factor, _dtype.weight
 import ..Taylor: set_variables
 import ..Utility: taylorexpansion!
 
+import ..FrontEnds
 import ..FrontEnds: TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
 import ..FrontEnds: Filter, NoBubble, NoHartree, NoFock, DirectOnly, Wirreducible, Girreducible, Proper
 import ..FrontEnds: Response, Composite, ChargeCharge, SpinSpin, ProperChargeCharge, ProperSpinSpin, UpUp, UpDown

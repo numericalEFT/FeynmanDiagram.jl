@@ -98,7 +98,7 @@ function sigmaGV(para::DiagPara, extK=getK(para.totalLoopNum, 1), subdiagram=fal
         if isValidG(paraG)
             # println(paraW)
             paraW0 = reconstruct(paraW, filter=union(paraW.filter, Proper), transferLoop=zero(K))
-            bareV = vertex4(paraW0, legK, [], true)
+            bareV = vertex4(paraW0, legK, true, channels=[])
             if oW == 0 # Fock-type Σ
                 ver4 = bareV
                 df = transform(ver4, :extT => ByRow(x -> [(x[INL], x[OUTR]), (x[OUTL], x[INR])]) => [:extT, :GT])

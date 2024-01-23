@@ -112,7 +112,7 @@ function ep_bubble!(ver4df::DataFrame, para::DiagPara, legK, chans::Vector{TwoBo
 
     LLegK, K, RLegK, Kx = legBasis(PHr, legK, LoopIdx)
 
-    Lver = vertex4(lPara, LLegK, chans, true; name=:Γf, blocks=blocks)
+    Lver = vertex4(lPara, LLegK, true; channels=chans, name=:Γf, blocks=blocks)
     isempty(Lver) && return
 
     Rver = DataFrame(response=Response[], type=AnalyticProperty[], extT=Tuple{Int,Int,Int,Int}[], diagram=Graph{Ftype,Wtype}[])

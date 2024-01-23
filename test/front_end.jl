@@ -478,7 +478,7 @@ end
             varT = [rand() for i in 1:para.totalTauNum]
 
             #################### DiagTree ####################################
-            diags = Parquet.vertex4(para, legK, chan)
+            diags = Parquet.vertex4(para, legK, channels=chan)
             diags = mergeby(diags, :response)
             # DiagTreeNew.plot_tree(diags[1])
             # DiagTreeNew.plot_tree(diags[2])

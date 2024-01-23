@@ -1,4 +1,3 @@
-
 """
     function diagdict_parquet(type::Symbol, MaxOrder::Int, has_counterterm::Bool=true; MinOrder::Int=1,
         spinPolarPara::Float64=0.0, isDynamic=false, filter=[NoHartree])
@@ -20,7 +19,7 @@
    The key is (order, Gorder, Vorder). The element is a Tuple (graphVector, extT_labels).
 """
 function diagdict_parquet(type::Symbol, MaxOrder::Int, MinOrder::Int=1;
-    has_counterterm::Bool=true, spinPolarPara::Float64=0.0, optimize_level=0,
+    has_counterterm::Bool=true, spinPolarPara::Float64=0.0, optimize_level=0, channels=[PHr, PHEr, PPr, Alli],
     isDynamic=false, filter=[NoHartree], transferLoop=nothing, extK=nothing)
 
     diagtype = _diagtype(type)
@@ -32,7 +31,7 @@ function diagdict_parquet(type::Symbol, MaxOrder::Int, MinOrder::Int=1;
         for order in MinOrder:MaxOrder
             set_variables("x y"; orders=[MaxOrder - order, MaxOrder - order])
             para = diagPara(diagtype, isDynamic, spin, order, filter, transferLoop)
-            parquet_builder = Parquet.build(para, extK)
+            parquet_builder = Parquet.build(para, extK, channels=channels)
             diags, extT = parquet_builder.diagram, parquet_builder.extT
 
             propagator_var = Dict(BareGreenId => [true, false], BareInteractionId => [false, true]) # Specify variable dependence of fermi (first element) and bose (second element) particles.
@@ -54,7 +53,7 @@ function diagdict_parquet(type::Symbol, MaxOrder::Int, MinOrder::Int=1;
         set_variables("x y"; orders=[0, 0])
         for order in MinOrder:MaxOrder
             para = diagPara(diagtype, isDynamic, spin, order, filter, transferLoop)
-            parquet_builder = Parquet.build(para, extK)
+            parquet_builder = Parquet.build(para, extK, channels=channels)
             diags, extT = parquet_builder.diagram, parquet_builder.extT
 
             propagator_var = Dict(BareGreenId => [true, false], BareInteractionId => [false, true]) # Specify variable dependence of fermi (first element) and bose (second element) particles.
@@ -68,17 +67,18 @@ function diagdict_parquet(type::Symbol, MaxOrder::Int, MinOrder::Int=1;
                     dict_graphs[key] = ([graph,], extT)
                 end
             end
+            dict_graphs[(order, 0, 0)] = (diags, collect.(extT))
         end
     end
 
-    # for gvec in values(dict_graphs)
-    #     IR.optimize!(gvec[1], level=optimize_level)
-    # end
+    for gvec in values(dict_graphs)
+        IR.optimize!(gvec[1], level=optimize_level)
+    end
     return dict_graphs
 end
 
 function diagdict_parquet(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}};
-    spinPolarPara::Float64=0.0, optimize_level=0,
+    spinPolarPara::Float64=0.0, optimize_level=0, channels=[PHr, PHEr, PPr, Alli],
     isDynamic=false, filter=[NoHartree], transferLoop=nothing, extK=nothing)
 
     diagtype = _diagtype(type)
@@ -91,7 +91,8 @@ function diagdict_parquet(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}};
     for order in diag_orders
         set_variables("x y"; orders=[Gorder, Vorder])
         para = diagPara(diagtype, isDynamic, spin, order, filter, transferLoop)
-        parquet_builder = Parquet.build(para, extK)
+        parquet_builder = Parquet.build(para, extK, channels=channels)
+
         diags, extT = parquet_builder.diagram, parquet_builder.extT
 
         propagator_var = Dict(BareGreenId => [true, false], BareInteractionId => [false, true]) # Specify variable dependence of fermi (first element) and bose (second element) particles.
@@ -117,7 +118,7 @@ function diagdict_parquet(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}};
 end
 
 function diagdict_parquet(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}, extra_variables::Dict{String,Int};
-    spinPolarPara::Float64=0.0, optimize_level=0,
+    spinPolarPara::Float64=0.0, optimize_level=0, channels=[PHr, PHEr, PPr, Alli],
     isDynamic=false, filter=[NoHartree], transferLoop=nothing, extK=nothing)
 
     diagtype = _diagtype(type)
@@ -139,7 +140,7 @@ function diagdict_parquet(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}, extra
         # set_variables("x y k"; orders=[MaxOrder - order, MaxOrder - order, 1])
         set_variables("x y" * extra_varnames; orders=[Gorder, Vorder, extra_orders...])
         para = diagPara(diagtype, isDynamic, spin, order, filter, transferLoop)
-        parquet_builder = Parquet.build(para, extK)
+        parquet_builder = Parquet.build(para, extK, channels=channels)
         diags, extT = parquet_builder.diagram, parquet_builder.extT
 
         var_dependence = Dict{Int,Vector{Bool}}()
@@ -207,6 +208,10 @@ function diagPara(type, isDynamic::Bool, spin, order, filter, transferLoop=nothi
         innerLoopNum = order + 1
     else
         innerLoopNum = order
+    end
+
+    if Proper in filter
+        @assert !isnothing(transferLoop) "transferLoop must be provided if Proper is in filter"
     end
 
     if isnothing(transferLoop)

@@ -1,10 +1,10 @@
 
-function build(para::DiagPara, extK=nothing, subdiagram=false)
+function build(para::DiagPara, extK=nothing, subdiagram=false; channels=[PHr, PHEr, PPr, Alli])
     if para.type == Ver4Diag
         if isnothing(extK)
             extK = [getK(para.totalLoopNum, 1), getK(para.totalLoopNum, 2), getK(para.totalLoopNum, 3)]
         end
-        return vertex4(para, extK, [PHr, PHEr, PPr, Alli], subdiagram)
+        return vertex4(para, extK, subdiagram, channels=channels)
     elseif para.type == SigmaDiag
         if isnothing(extK)
             extK = getK(para.totalLoopNum, 1)
@@ -19,7 +19,7 @@ function build(para::DiagPara, extK=nothing, subdiagram=false)
         if isnothing(extK)
             extK = [getK(para.totalLoopNum, 1), getK(para.totalLoopNum, 2)]
         end
-        return vertex3(para, extK, subdiagram)
+        return vertex3(para, extK, subdiagram, channels=channels)
     else
         error("not implemented!")
     end
