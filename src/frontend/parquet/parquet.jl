@@ -22,7 +22,7 @@ using AbstractTrees
 using Parameters, Combinatorics
 using DataFrames
 
-export diagdict_parquet
+export diagdict_parquet, diagdict_parquet_extraAD
 
 # if isdefined(Base, :Experimental) && isdefined(Base.Experimental, Symbol("@optlevel"))
 #     @eval Base.Experimental.@optlevel 1
@@ -214,7 +214,7 @@ include("to_graph.jl")
 
 const vertex4I_diags = Dict{Int,Vector{Graph}}()
 function initialize_vertex4I_diags(; filter=[NoHartree], spinPolarPara::Float64=0.0)
-    dict_graphs = diagdictGV_ver4(:vertex4I, [(3, 0, 0), (4, 0, 0)], filter=filter, spinPolarPara=spinPolarPara)
+    dict_graphs = diagdictGV_ver4([(3, 0, 0), (4, 0, 0)], channels=[Alli], filter=filter, spinPolarPara=spinPolarPara)
     vertex4I_diags[3] = dict_graphs[(3, 0, 0)][1]
     vertex4I_diags[4] = dict_graphs[(4, 0, 0)][1]
 end

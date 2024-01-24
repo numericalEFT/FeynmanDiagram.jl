@@ -57,7 +57,7 @@ export Filter, Wirreducible, Girreducible, NoBubble, NoHartree, NoFock, Proper, 
 using .GV
 export GV, diagdictGV, diagdictGV_ver4, leafstates
 using .Parquet
-export Parquet, diagdict_parquet
+export Parquet, diagdict_parquet, diagdict_parquet_extraAD
 
 include("backend/compiler.jl")
 using .Compilers

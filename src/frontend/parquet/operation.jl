@@ -167,6 +167,7 @@ function update_extKT!(diags::Vector{Graph}, para::DiagPara, legK::Vector{Vector
     _K = zeros(len_extK)
 
     for graph in diags
+        tau_shift = tauIdx - graph.properties.extT[1]
         for node in PreOrderDFS(graph)
             node.id in visited && continue
             node.id = IR.uid()
@@ -174,7 +175,6 @@ function update_extKT!(diags::Vector{Graph}, para::DiagPara, legK::Vector{Vector
             prop = IR.properties(node)
             K = prop.extK
             T = prop.extT
-            tau_shift = tauIdx - T[1]
             if prop isa Ver4Id || prop isa Ver3Id
                 for i in eachindex(K)
                     resize!(K[i], len_extK)

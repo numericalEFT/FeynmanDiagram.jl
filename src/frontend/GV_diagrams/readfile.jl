@@ -188,7 +188,7 @@ function read_diagrams(filename::AbstractString; labelProd::Union{Nothing,LabelP
     end
 end
 
-function read_vertex4diagrams(filename::AbstractString; spinPolarPara::Float64=0.0, filter=[NoHartree],
+function read_vertex4diagrams(filename::AbstractString; spinPolarPara::Float64=0.0, filter=[NoHartree], channels=[PHr, PHEr, PPr, Alli],
     keywords::Vector{String}=["SelfEnergy", "DiagNum", "Order", "GNum", "Ver4Num", "LoopNum", "ExtLoopIndex",
         "DummyLoopIndex", "TauNum", "DummyTauIndex"])
     # Open a diagram file
@@ -221,7 +221,7 @@ function read_vertex4diagrams(filename::AbstractString; spinPolarPara::Float64=0
     diagrams = Graph{_dtype.factor,_dtype.weight}[]
     for _ in 1:diagNum
         diags = read_one_vertex4diagram!(IOBuffer(readuntil(io, "\n\n")),
-            GNum, verNum, loopNum, spinPolarPara, filter=filter)
+            GNum, verNum, loopNum, spinPolarPara, channels=channels, filter=filter)
         isempty(diags) && continue
         append!(diagrams, diags)
     end
@@ -231,35 +231,27 @@ function read_vertex4diagrams(filename::AbstractString; spinPolarPara::Float64=0
 
     # Combine and merge all diagrams with the same external-tau labels
     extT_labels = Vector{NTuple{4,Int}}()
-    channels = Vector{TwoBodyChannel}()
+    channel_vector = Vector{TwoBodyChannel}()
     DiEx = Int[]
     sizehint!(extT_labels, length(diagrams))
-    sizehint!(channels, length(diagrams))
+    sizehint!(channel_vector, length(diagrams))
     sizehint!(DiEx, length(diagrams))
     for prop in IR.properties.(diagrams)
         push!(extT_labels, prop.extT)
-        push!(channels, prop.channel)
+        push!(channel_vector, prop.channel)
         push!(DiEx, prop.para[1])
     end
     # Create a GraphVector with keys of external-tau labels
-    gr = _group(diagrams, extT_labels, channels, DiEx)
+    gr = _group(diagrams, extT_labels, channel_vector, DiEx)
     gr_keys = [(extT, channel) for (extT, channel, _) in collect(keys(gr))]
     unique!(gr_keys)
     graphvec = Graph{_dtype.factor,_dtype.weight}[]
 
     extTs = Vector{NTuple{4,Int}}()
+    responses = Vector{Response}()
     for (extT, channel) in gr_keys
         keyDi = (extT, channel, 0)
         keyEx = (extT, channel, 1)
-
-        # gId_Di = gr[keyDi][1].properties
-        # if any(x -> x != gId_Di.channel, [gr[keyDi][i].properties.channel for i in eachindex(gr[keyDi])])
-        #     gId_Di = Ver4Id(gId_Di.para, ChargeCharge, gId_Di.type, k=gId_Di.extK, t=gId_Di.extT, chan=AnyChan)
-        # end
-        # gId_Ex = gr[keyEx][1].properties
-        # if any(x -> x != gId_Ex.channel, [gr[keyEx][i].properties.channel for i in eachindex(gr[keyEx])])
-        #     gId_Ex = Ver4Id(gId_Ex.para, ChargeCharge, gId_Ex.type, k=gId_Ex.extK, t=gId_Ex.extT, chan=AnyChan)
-        # end
         gId_Di = gr[keyDi][1].properties
 
         gDi = IR.linear_combination(gr[keyDi])
@@ -273,18 +265,21 @@ function read_vertex4diagrams(filename::AbstractString; spinPolarPara::Float64=0
         gud = Graph([gDi, gEx], subgraph_factors=[0.5, -0.5], properties=gudId)
         append!(graphvec, [guu, gud])
         append!(extTs, [extT, extT])
+        append!(responses, [UpUp, UpDown])
     end
-    return graphvec, extTs
+    return graphvec, extTs, responses
 end
 
-function read_one_vertex4diagram!(io::IO, GNum::Int, verNum::Int, loopNum::Int,
-    spinPolarPara::Float64=0.0; filter=[NoHartree], splitter="|", offset::Int=-1)
+function read_one_vertex4diagram!(io::IO, GNum::Int, verNum::Int, loopNum::Int, spinPolarPara::Float64=0.0;
+    channels=[PHr, PHEr, PPr, Alli], filter=[NoHartree], splitter="|", offset::Int=-1)
     flag_proper = false
     if Proper in filter
         flag_proper = true
     end
     isDynamic = verNum == 1 ? false : true
     ################ Read Hugenholtz Diagram information ####################
+    graphs = Graph{_dtype.factor,_dtype.weight}[]
+
     @assert occursin("Permutation", readline(io))
     permutation = _StringtoIntVector(readline(io)) .- offset
     @assert length(permutation) == length(unique(permutation)) == GNum
@@ -305,6 +300,7 @@ function read_one_vertex4diagram!(io::IO, GNum::Int, verNum::Int, loopNum::Int,
     else
         error("Unknown channel: $channel")
     end
+    channel ∉ channels && return graphs
 
     @assert occursin("GType", readline(io))
     opGType = _StringtoIntVector(readline(io))
@@ -344,9 +340,6 @@ function read_one_vertex4diagram!(io::IO, GNum::Int, verNum::Int, loopNum::Int,
     @assert occursin("Proper/ImProper", readline(io))
     proper = _StringtoIntVector(readline(io))
 
-    graphs = Graph{_dtype.factor,_dtype.weight}[]
-    spinfactors_existed = Float64[]
-
     innerLoopNum = loopNum - 3
     extK = [zeros(loopNum) for _ in 1:4]
     for i in 1:3
@@ -366,27 +359,8 @@ function read_one_vertex4diagram!(io::IO, GNum::Int, verNum::Int, loopNum::Int,
             end
         end
     end
+    spinfactors_existed = Float64[]
 
-    # for (i, iver) in enumerate(extIndex[1:3])
-    #     locs_non0 = findall(!iszero, currentBasis[iver, :])
-    #     @assert !isnothing(locs_non0) "Wrong LoopBasis!"
-    #     if currentBasis[iver, i] == 0
-    #         idx = findfirst(x -> x > i, locs_non0)
-    #         currentBasis[:, i], currentBasis[:, locs_non0[idx]] = currentBasis[:, locs_non0[idx]] ./ currentBasis[iver, locs_non0[idx]], currentBasis[:, i]
-    #         deleteat!(locs_non0, idx)
-    #     elseif currentBasis[iver, i] != 1 #&& all(currentBasis[iver, 1:i-1] .== 0)
-    #         currentBasis[:, i] ./= currentBasis[iver, i]
-    #     end
-    #     for j in locs_non0
-    #         j == i && continue
-    #         currentBasis[:, j] -= currentBasis[:, i] .* currentBasis[iver, j]
-    #     end
-    # end
-    # for (i, iver) in enumerate(extIndex)
-    #     @assert extK[i] == currentBasis[iver, :] "LoopBasis is isconsistent with extK."
-    # end
-
-    # DiEx_existed = Int[]
     # println("##### $permutation  $ver4Legs")
     for (iex, spinFactor) in enumerate(spinFactors)
         # create permutation and ver4Legs for each Feynman diagram from a Hugenholtz diagram

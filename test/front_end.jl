@@ -100,6 +100,21 @@ end
         @test isequal(a, e) == false
         @test isequal(e, f) == true
     end
+
+    @testset "reconstruct" begin
+        a = BareInteractionId(UpUp, Dynamic, k=[1.0, 1.0], t=(1, 1))
+        b = FrontEnds.reconstruct(a, :response => UpDown, :extT => (1, 2))
+        @test b isa BareInteractionId
+        @test a.response == UpUp && a.extT == (1, 1) && b.response == UpDown && b.extT == (1, 2) && a.type == b.type && a.extK == b.extK
+
+        c = SigmaId((1.0,), Dynamic, k=[1.0, 1.0], t=(1, 2))
+        d = FrontEnds.reconstruct(c, :type => Instant, :extT => (1, 1))
+        @test typeof(c) == typeof(d) == SigmaId{Tuple{Float64}}
+        @test d.type == Instant && d.extT == (1, 1) && c.type == Dynamic && c.extT == (1, 2) && c.extK == d.extK && c.para == d.para
+        e = FrontEnds.reconstruct(c, :para => 1, :extK => [1.0, 2.0, -1.0])
+        @test typeof(e) == SigmaId{Int} && typeof(c) == SigmaId{Tuple{Float64}}
+        @test e.para == 1 && e.extK == [1.0, 2.0, -1.0] && e.type == Dynamic && e.extT == (1, 2)
+    end
 end
 
 @testset "Parquet" begin

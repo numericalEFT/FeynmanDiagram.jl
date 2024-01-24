@@ -154,23 +154,26 @@ function diagdictGV(type::Symbol, gkeys::Vector{Tuple{Int,Int,Int}}; spinPolarPa
     return dict_graphs, labelProd
 end
 
-function diagdictGV_ver4(type::Symbol, gkeys::Vector{NTuple{3,Int}}; filter=[NoHartree], spinPolarPara::Float64=0.0, optimize_level=0)
-    dict_graphs = Dict{NTuple{3,Int},Tuple{Vector{Graph},Vector{NTuple{4,Int}}}}()
+function diagdictGV_ver4(gkeys::Vector{NTuple{3,Int}}; filter=[NoHartree], spinPolarPara::Float64=0.0,
+    optimize_level=0, channels=[PHr, PHEr, PPr, Alli])
+    dict_graphs = Dict{NTuple{3,Int},Tuple{Vector{Graph},Vector{Vector{Int}},Vector{Response}}}()
     Gorder = maximum([p[2] for p in gkeys])
     Vorder = maximum([p[3] for p in gkeys])
 
     if Gorder == Vorder == 0
         for key in gkeys
-            gvec, extT_labels = eachorder_ver4diag(type, key[1], filter=filter, spinPolarPara=spinPolarPara)
-            dict_graphs[key] = (gvec, extT_labels)
+            gvec, extT, responses = eachorder_ver4diag(key[1], filter=filter, channels=channels, spinPolarPara=spinPolarPara)
+            dict_graphs[key] = (gvec, collect.(extT), responses)
             IR.optimize!(gvec, level=optimize_level)
         end
     else
         diag_orders = unique([p[1] for p in gkeys])
+        maxOrder = maximum(diag_orders)
 
         for order in diag_orders
-            set_variables("x y"; orders=[Gorder, Vorder])
-            diags, extT = eachorder_ver4diag(type, order, filter=filter, spinPolarPara=spinPolarPara)
+            GVorder = maxOrder - order
+            set_variables("x y"; orders=[GVorder, GVorder])
+            diags, extT, responses = eachorder_ver4diag(order, filter=filter, channels=channels, spinPolarPara=spinPolarPara)
             propagator_var = Dict(BareGreenId => [true, false], BareInteractionId => [false, true])
             taylor_vec, taylormap = taylorexpansion!(diags, propagator_var)
             for t in taylor_vec
@@ -180,7 +183,7 @@ function diagdictGV_ver4(type::Symbol, gkeys::Vector{NTuple{3,Int}}; filter=[NoH
                     if haskey(dict_graphs, key)
                         push!(dict_graphs[key][1], graph)
                     else
-                        dict_graphs[key] = ([graph,], extT)
+                        dict_graphs[key] = ([graph,], collect.(extT), responses)
                     end
                 end
             end
@@ -241,68 +244,15 @@ function eachorder_diag(type::Symbol, order::Int, GOrder::Int=0, VerOrder::Int=0
     end
 end
 
-function eachorder_ver4diag(type::Symbol, order::Int; spinPolarPara::Float64=0.0, filter::Vector{Filter}=[NoHartree])
-    if type == :vertex4
-        filename = string(@__DIR__, "/GV_diagrams/groups_vertex4/Vertex4$(order)_0_0.diag")
-        return read_vertex4diagrams(filename, spinPolarPara=spinPolarPara, filter=filter)
-    elseif type == :vertex4I
+function eachorder_ver4diag(order::Int; spinPolarPara::Float64=0.0, filter::Vector{Filter}=[NoHartree], channels=[PHr, PHEr, PPr, Alli])
+    if channels == [Alli]
         filename = string(@__DIR__, "/GV_diagrams/groups_vertex4/Vertex4I$(order)_0_0.diag")
-        return read_vertex4diagrams(filename, spinPolarPara=spinPolarPara, filter=filter)
+        return read_vertex4diagrams(filename, spinPolarPara=spinPolarPara, channels=channels, filter=filter)
     else
-        error("no support for $type diagram")
+        filename = string(@__DIR__, "/GV_diagrams/groups_vertex4/Vertex4$(order)_0_0.diag")
+        return read_vertex4diagrams(filename, spinPolarPara=spinPolarPara, channels=channels, filter=filter)
     end
-
-    return read_vertex4diagrams(filename, spinPolarPara=spinPolarPara, filter=filter)
 end
-
-# function diagdict_parquet_ver4(gkeys::Vector{Tuple{Int,Int,Int}};
-#     spinPolarPara::Float64=0.0, isDynamic=false, filter=[NoHartree], transferLoop=nothing, optimize_level=0)
-#     # spinPolarPara::Float64=0.0, isDynamic=false, channel=[PHr, PHEr, PPr], filter=[NoHartree])
-
-#     spin = 2.0 / (spinPolarPara + 1)
-#     dict_graphs = Dict{Tuple{Int,Int,Int},Tuple{Vector{Graph},Vector{Vector{Int}}}}()
-
-#     # KinL, KoutL, KinR = zeros(16), zeros(16), zeros(16)
-#     # KinL[1], KoutL[2], KinR[3] = 1.0, 1.0, 1.0
-
-#     MinOrder = minimum([p[1] for p in gkeys])
-#     MaxOrder = maximum([p[1] for p in gkeys])
-#     for order in MinOrder:MaxOrder
-#         set_variables("x y"; orders=[MaxOrder - order, MaxOrder - order])
-#         # para = diagPara(Ver4Diag, isDynamic, spin, order, filter, transferLoop)
-#         # ver4df = Parquet.vertex4(para)
-
-#         # # Append fully irreducible Vertex4 diagrams
-#         # if 3 ≤ order ≤ 4
-#         #     ver4I, extT_labels = eachorder_diags(:vertex4I, order)
-#         #     responses = repeat([ChargeCharge], length(ver4I))
-#         #     types = repeat([Dynamic], length(ver4I))
-#         #     append!(ver4df, (response=responses, type=types, extT=extT_labels, diagram=ver4I, hash=IR.id.(ver4I)))
-#         # end
-#         # diags, extT = ver4df.diagram, ver4df.extT
-
-#         diags, extT = eachorder_diags(:vertex4, order)
-#         propagator_var = Dict(BareGreenId => [true, false], BareInteractionId => [false, true]) # Specify variable dependence of fermi (first element) and bose (second element) particles.
-#         taylor_vec, taylormap = taylorexpansion!(diags, propagator_var)
-
-#         for t in taylor_vec
-#             for (o, graph) in t.coeffs
-#                 key = (order, o...)
-#                 key ∉ gkeys && continue
-#                 if haskey(dict_graphs, key)
-#                     push!(dict_graphs[key][1], graph)
-#                 else
-#                     dict_graphs[key] = ([graph,], collect.(extT))
-#                 end
-#             end
-#         end
-#     end
-
-#     for gvec in values(dict_graphs)
-#         IR.optimize!(gvec[1], level=optimize_level)
-#     end
-#     return dict_graphs
-# end
 
 """
     function leafstates(leaf_maps::Vector{Dict{Int,G}}, labelProd::LabelProduct) where {G<:Union{Graph,FeynmanGraph}}
