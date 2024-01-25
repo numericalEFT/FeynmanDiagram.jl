@@ -262,7 +262,7 @@ function read_vertex4diagrams(filename::AbstractString; spinPolarPara::Float64=0
         guuId = Ver4Id(para, UpUp, gId_Di.type, k=gId_Di.extK, t=gId_Di.extT, chan=gId_Di.channel)
         gudId = Ver4Id(para, UpDown, gId_Di.type, k=gId_Di.extK, t=gId_Di.extT, chan=gId_Di.channel)
         guu = Graph([gDi, gEx], properties=guuId)
-        gud = Graph([gDi, gEx], subgraph_factors=[0.5, -0.5], properties=gudId)
+        gud = Graph([gDi], properties=gudId)
         append!(graphvec, [guu, gud])
         append!(extTs, [extT, extT])
         append!(responses, [UpUp, UpDown])
@@ -399,7 +399,6 @@ function read_one_vertex4diagram!(io::IO, GNum::Int, verNum::Int, loopNum::Int, 
         end
 
         push!(graphs, Graph(leafs, operator=IR.Prod(), properties=diagid, factor=spinFactor * symfactor))
-        # push!(DiEx_existed, DiEx[iex])
     end
 
     return graphs
