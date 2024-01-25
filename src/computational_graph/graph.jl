@@ -172,7 +172,7 @@ end
 - `c1`  first scalar multiple
 - `c2`  second scalar multiple
 """
-function linear_combination(g1::Graph{F,W}, g2::Graph{F,W}, c1=F(1), c2=F(1)) where {F,W}
+function linear_combination(g1::Graph{F,W}, g2::Graph{F,W}, c1=F(1), c2=F(1); properties=nothing) where {F,W}
     if length(g1.orders) > length(g2.orders)
         g2.orders = [orders(g2); zeros(Int, length(g1.orders) - length(g2.orders))]
     else
@@ -195,9 +195,9 @@ function linear_combination(g1::Graph{F,W}, g2::Graph{F,W}, c1=F(1), c2=F(1)) wh
     end
 
     if subgraphs[1].id == subgraphs[2].id
-        g = Graph([subgraphs[1]]; subgraph_factors=[sum(subgraph_factors)], operator=Sum(), orders=orders(g1), ftype=F, wtype=W)
+        g = Graph([subgraphs[1]]; subgraph_factors=[sum(subgraph_factors)], operator=Sum(), orders=orders(g1), ftype=F, wtype=W, properties=properties)
     else
-        g = Graph(subgraphs; subgraph_factors=subgraph_factors, operator=Sum(), orders=orders(g1), ftype=F, wtype=W)
+        g = Graph(subgraphs; subgraph_factors=subgraph_factors, operator=Sum(), orders=orders(g1), ftype=F, wtype=W, properties=properties)
     end
 
     return g
@@ -222,7 +222,7 @@ where duplicate graphs in the input `graphs` are combined by summing their assoc
 # Example:
     Given graphs `g1`, `g2`, `g1` and constants `c1`, `c2`, `c3`, the function computes `(c1+c3)*g1 + c2*g2`.
 """
-function linear_combination(graphs::Vector{Graph{F,W}}, constants::AbstractVector=ones(F, length(graphs))) where {F,W}
+function linear_combination(graphs::Vector{Graph{F,W}}, constants::AbstractVector=ones(F, length(graphs)); properties=nothing) where {F,W}
     maxlen_orders = maximum(length.(orders.(graphs)))
     for g in graphs
         g.orders = [orders(g); zeros(Int, maxlen_orders - length(orders(g)))]
@@ -254,7 +254,7 @@ function linear_combination(graphs::Vector{Graph{F,W}}, constants::AbstractVecto
     if isempty(unique_graphs)
         return nothing
     end
-    g = Graph(unique_graphs; subgraph_factors=unique_factors, operator=Sum(), orders=orders(graphs[1]), ftype=F, wtype=W)
+    g = Graph(unique_graphs; subgraph_factors=unique_factors, operator=Sum(), orders=orders(graphs[1]), ftype=F, wtype=W, properties=properties)
     return g
 end
 
@@ -298,7 +298,7 @@ end
 - `c1`:  first scalar multiple (defaults to 1).
 - `c2`:  second scalar multiple (defaults to 1).
 """
-function multi_product(g1::Graph{F,W}, g2::Graph{F,W}, c1=F(1), c2=F(1)) where {F,W}
+function multi_product(g1::Graph{F,W}, g2::Graph{F,W}, c1=F(1), c2=F(1); properties=nothing) where {F,W}
     # @assert orders(g1) == orders(g2) "g1 and g2 have different orders."
     f1 = typeof(c1) == F ? c1 : F(c1)
     f2 = typeof(c2) == F ? c2 : F(c2)
@@ -315,14 +315,14 @@ function multi_product(g1::Graph{F,W}, g2::Graph{F,W}, c1=F(1), c2=F(1)) where {
     end
 
     if subgraphs[1].id == subgraphs[2].id
-        g = Graph([subgraphs[1]]; subgraph_factors=[prod(subgraph_factors)], operator=Power(2), orders=2 * orders(g1), ftype=F, wtype=W)
+        g = Graph([subgraphs[1]]; subgraph_factors=[prod(subgraph_factors)], operator=Power(2), orders=2 * orders(g1), ftype=F, wtype=W, properties=properties)
     else
         if length(g1.orders) > length(g2.orders)
             g2.orders = [orders(g2); zeros(Int, length(g1.orders) - length(g2.orders))]
         else
             g1.orders = [orders(g1); zeros(Int, length(g2.orders) - length(g1.orders))]
         end
-        g = Graph(subgraphs; subgraph_factors=subgraph_factors, operator=Prod(), orders=orders(g1) + orders(g2), ftype=F, wtype=W)
+        g = Graph(subgraphs; subgraph_factors=subgraph_factors, operator=Prod(), orders=orders(g1) + orders(g2), ftype=F, wtype=W, properties=properties)
     end
     return g
 end
@@ -344,7 +344,7 @@ Returns:
 # Example:
     Given graphs `g1`, `g2`, `g1` and constants `c1`, `c2`, `c3`, the function computes `(c1*c3)*(g1)^2 * c2*g2`.
 """
-function multi_product(graphs::Vector{Graph{F,W}}, constants::AbstractVector=ones(F, length(graphs))) where {F,W}
+function multi_product(graphs::Vector{Graph{F,W}}, constants::AbstractVector=ones(F, length(graphs)); properties=nothing) where {F,W}
     # @assert alleq(orders.(graphs)) "Graphs do not all have the same order."
     g1 = graphs[1]
     subgraphs = graphs
@@ -382,7 +382,7 @@ function multi_product(graphs::Vector{Graph{F,W}}, constants::AbstractVector=one
     end
 
     if length(unique_factors) == 1
-        g = Graph(unique_graphs; subgraph_factors=unique_factors, operator=Power(repeated_counts[1]), orders=g_orders, ftype=F, wtype=W)
+        g = Graph(unique_graphs; subgraph_factors=unique_factors, operator=Power(repeated_counts[1]), orders=g_orders, ftype=F, wtype=W, properties=properties)
     else
         subgraphs = Vector{Graph{F,W}}()
         for (idx, g) in enumerate(unique_graphs)
@@ -392,7 +392,7 @@ function multi_product(graphs::Vector{Graph{F,W}}, constants::AbstractVector=one
                 push!(subgraphs, Graph([g], operator=Power(repeated_counts[idx]), orders=orders(g1) * repeated_counts[idx], ftype=F, wtype=W))
             end
         end
-        g = Graph(subgraphs; subgraph_factors=unique_factors, operator=Prod(), orders=g_orders, ftype=F, wtype=W)
+        g = Graph(subgraphs; subgraph_factors=unique_factors, operator=Prod(), orders=g_orders, ftype=F, wtype=W, properties=properties)
     end
     return g
 end

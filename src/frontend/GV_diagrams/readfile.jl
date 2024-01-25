@@ -230,12 +230,13 @@ function read_vertex4diagrams(filename::AbstractString; spinPolarPara::Float64=0
     para = (2, innerLoopNum)
 
     # Combine and merge all diagrams with the same external-tau labels
+    num_diags = length(diagrams)
     extT_labels = Vector{NTuple{4,Int}}()
     channel_vector = Vector{TwoBodyChannel}()
     DiEx = Int[]
-    sizehint!(extT_labels, length(diagrams))
-    sizehint!(channel_vector, length(diagrams))
-    sizehint!(DiEx, length(diagrams))
+    sizehint!(extT_labels, num_diags)
+    sizehint!(channel_vector, num_diags)
+    sizehint!(DiEx, num_diags)
     for prop in IR.properties.(diagrams)
         push!(extT_labels, prop.extT)
         push!(channel_vector, prop.channel)
@@ -254,15 +255,11 @@ function read_vertex4diagrams(filename::AbstractString; spinPolarPara::Float64=0
         keyEx = (extT, channel, 1)
         gId_Di = gr[keyDi][1].properties
 
-        gDi = IR.linear_combination(gr[keyDi])
-        gEx = IR.linear_combination(gr[keyEx])
-        gDi.properties = gId_Di
-        gEx.properties = gId_Di
+        gud = IR.linear_combination(gr[keyDi], properties=gId_Di)     # Direct = UpDown
+        gEx = IR.linear_combination(gr[keyEx], properties=gr[keyEx][1].properties)
 
         guuId = Ver4Id(para, UpUp, gId_Di.type, k=gId_Di.extK, t=gId_Di.extT, chan=gId_Di.channel)
-        gudId = Ver4Id(para, UpDown, gId_Di.type, k=gId_Di.extK, t=gId_Di.extT, chan=gId_Di.channel)
-        guu = Graph([gDi, gEx], properties=guuId)
-        gud = Graph([gDi], properties=gudId)
+        guu = Graph([gud, gEx], properties=guuId)
         append!(graphvec, [guu, gud])
         append!(extTs, [extT, extT])
         append!(responses, [UpUp, UpDown])
@@ -359,8 +356,19 @@ function read_one_vertex4diagram!(io::IO, GNum::Int, verNum::Int, loopNum::Int, 
             end
         end
     end
-    spinfactors_existed = Float64[]
 
+    greens = Graph{_dtype.factor,_dtype.weight}[]
+    # create all fermionic propagators
+    for (ind1, ind2) in enumerate(permutation)
+        opGType[ind1] == -2 && continue
+        diagid = BareGreenId(k=currentBasis[ind1, :], t=[tau_labels[ind1], tau_labels[ind2]])
+        push!(greens, Graph([]; properties=diagid))
+    end
+    fermi_greenProd = Graph(greens, operator=IR.Prod())
+
+    interactions_Di = Graph{_dtype.factor,_dtype.weight}[]
+    interactions_Ex = Graph{_dtype.factor,_dtype.weight}[]
+    spinfactors_existed = Float64[]
     # println("##### $permutation  $ver4Legs")
     for (iex, spinFactor) in enumerate(spinFactors)
         # create permutation and ver4Legs for each Feynman diagram from a Hugenholtz diagram
@@ -374,13 +382,6 @@ function read_one_vertex4diagram!(io::IO, GNum::Int, verNum::Int, loopNum::Int, 
         extIndex[1] = permu[1]
         extIndex[3] = permu[2]
 
-        # create all fermionic operators
-        for (ind1, ind2) in enumerate(permu)
-            opGType[ind1] == -2 && continue
-            diagid = BareGreenId(k=currentBasis[ind1, :], t=[tau_labels[ind1], tau_labels[ind2]])
-            push!(leafs, Graph([]; properties=diagid))
-        end
-
         # create all bosionic operators (relevant to interaction lines)
         for verLeg in ver4Legs_ex
             ind1, ind2 = verLeg[2] - offset, verLeg[4] - offset
@@ -391,17 +392,24 @@ function read_one_vertex4diagram!(io::IO, GNum::Int, verNum::Int, loopNum::Int, 
             push!(leafs, Graph([]; properties=diagid))
         end
 
-        para = (DiEx[iex], innerLoopNum)
-        if isDynamic
-            diagid = Ver4Id(para, ChargeCharge, Dynamic, k=extK, t=tau_labels[extIndex], chan=channel)
+        if DiEx[iex] == 0
+            push!(interactions_Di, Graph(leafs, operator=IR.Prod(), factor=spinFactor * symfactor))
         else
-            diagid = Ver4Id(para, ChargeCharge, Instant, k=extK, t=tau_labels[extIndex], chan=channel)
+            push!(interactions_Ex, Graph(leafs, operator=IR.Prod(), factor=spinFactor * symfactor))
         end
-
-        push!(graphs, Graph(leafs, operator=IR.Prod(), properties=diagid, factor=spinFactor * symfactor))
     end
 
-    return graphs
+    diagid_Di = Ver4Id((0, innerLoopNum), UpDown, isDynamic ? Dynamic : Instant, k=extK, t=tau_labels[extIndex], chan=channel)
+    diagid_Ex = Ver4Id((1, innerLoopNum), ChargeCharge, isDynamic ? Dynamic : Instant, k=extK, t=tau_labels[extIndex], chan=channel)
+    if isempty(fermi_greenProd.subgraphs)
+        g_Di = Graph(interactions_Di, operator=IR.Sum(), properties=diagid_Di)
+        g_Ex = Graph(interactions_Ex, operator=IR.Sum(), properties=diagid_Ex)
+    else
+        g_Di = IR.multi_product(fermi_greenProd, Graph(interactions_Di, operator=IR.Sum()), properties=diagid_Di)
+        g_Ex = IR.multi_product(fermi_greenProd, Graph(interactions_Ex, operator=IR.Sum()), properties=diagid_Ex)
+    end
+
+    return g_Di, g_Ex
 end
 
 function read_onediagram!(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex::Vector{Int},

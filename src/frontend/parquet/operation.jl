@@ -155,10 +155,6 @@ function update_extKT!(diags::Vector{Graph}, para::DiagPara, legK::Vector{Vector
     # len_extK = para.totalLoopNum
     # num_extK = len_extK - para.innerLoopNum
     # extK = [k[1:len_extK] for k in legK[1:num_extK]]
-    # if para.totalLoopNum - para.innerLoopNum != 3
-    #     println(legK)
-    #     println(para)
-    # end
     len_extK = length(legK[1])
     num_extK = length(legK) - 1
     extK = legK[1:end-1]
@@ -173,6 +169,9 @@ function update_extKT!(diags::Vector{Graph}, para::DiagPara, legK::Vector{Vector
             node.id = IR.uid()
             push!(visited, node.id)
             prop = IR.properties(node)
+            if !hasproperty(prop, :extK) || !hasproperty(prop, :extT)
+                continue
+            end
             K = prop.extK
             T = prop.extT
             if prop isa Ver4Id || prop isa Ver3Id
@@ -185,7 +184,7 @@ function update_extKT!(diags::Vector{Graph}, para::DiagPara, legK::Vector{Vector
                 else
                     node.properties = FrontEnds.reconstruct(prop, :para => para)
                 end
-            else
+            elseif prop isa PropagatorId || prop isa GreenId || prop isa SigmaId || prop isa PolarId
                 original_len_K = length(K)
                 if length(K) < len_extK
                     resize!(K, len_extK)
