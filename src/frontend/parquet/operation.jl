@@ -156,13 +156,20 @@ function update_extKT!(diags::Vector{Graph}, para::DiagPara, legK::Vector{Vector
     # num_extK = len_extK - para.innerLoopNum
     # extK = [k[1:len_extK] for k in legK[1:num_extK]]
     len_extK = length(legK[1])
-    num_extK = length(legK) - 1
     extK = legK[1:end-1]
+    indices = collect(1:len_extK)
 
     sumK = zeros(len_extK)
     _K = zeros(len_extK)
-
+    # extK0 = [getK(len_extK, 1), getK(len_extK, 2), getK(len_extK, 3)]
+    # flag = false
+    # if extK0 != legK
+    #     flag = true
+    # end
+    # println(legK)
     for graph in diags
+        # println("Graph:")
+        # println(graph.properties.extT, tauIdx)
         tau_shift = tauIdx - graph.properties.extT[1]
         for node in PreOrderDFS(graph)
             node.id in visited && continue
@@ -174,6 +181,9 @@ function update_extKT!(diags::Vector{Graph}, para::DiagPara, legK::Vector{Vector
             end
             K = prop.extK
             T = prop.extT
+            # if flag && isleaf(node)
+            #     println(node.properties)
+            # end
             if prop isa Ver4Id || prop isa Ver3Id
                 for i in eachindex(K)
                     resize!(K[i], len_extK)
@@ -192,17 +202,31 @@ function update_extKT!(diags::Vector{Graph}, para::DiagPara, legK::Vector{Vector
                 else
                     resize!(K, len_extK)
                 end
-
-                _K[num_extK+1:end] .= K[num_extK+1:end]
-                for i in eachindex(extK)
-                    sumK .+= K[i] * extK[i]
+                for (i, k) in enumerate(extK)
+                    sumK .+= K[i] * k
                 end
+
+                permu = sortperm(length.([filter(!iszero, k) for k in extK]))
+                idx_independent_extK = Int[]
+                for i in permu
+                    j = findfirst(idx -> idx ∉ idx_independent_extK && extK[i][idx] != 0, indices)
+                    push!(idx_independent_extK, j)
+                    K[i], K[j] = K[j], K[i]
+                end
+
+                idx_innerL = setdiff(indices, idx_independent_extK)
+                _K[idx_innerL] .= K[idx_innerL]
                 K .= sumK .+ _K
+
                 fill!(sumK, 0.0)
+                fill!(_K, 0.0)
                 if tau_shift != 0
                     node.properties = FrontEnds.reconstruct(prop, :extT => Tuple(t + tau_shift for t in T))
                 end
             end
+            # if flag && isleaf(node)
+            #     println(node.id, " ", node.properties)
+            # end
         end
     end
 end

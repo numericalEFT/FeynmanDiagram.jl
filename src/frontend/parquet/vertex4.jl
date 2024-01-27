@@ -72,6 +72,7 @@ function vertex4(para::DiagPara,
     else # loopNum>0
         for c in channels
             if c == Alli
+                # continue
                 if 3 ≤ loopNum ≤ 4
                     addAlli!(ver4df, para, legK)
                 else
@@ -97,6 +98,10 @@ function vertex4(para::DiagPara,
     end
     ver4df = merge_vertex4(para, ver4df, name, legK)
     @assert all(x -> x[1] == para.firstTauIdx, ver4df.extT) "not all extT[1] are equal to the first Tau index $(para.firstTauIdx)! $ver4df"
+    # if any(x -> length(unique(x)) == 4, ver4df.extT)
+    #     println(para)
+    #     println(ver4df)
+    # end
     return ver4df
 end
 
@@ -175,6 +180,18 @@ function bubble!(ver4df::DataFrame, para::DiagPara, legK, chan::TwoBodyChannel, 
 
     ver8 = Dict{Any,Any}()
 
+    # if lPara.innerLoopNum == 3
+    #     println("Lver:")
+    #     println(lPara)
+    #     println(Lver)
+    #     println(Rver)
+    # end
+    # if rPara.innerLoopNum == 3
+    #     println("Rver:")
+    #     println(rPara)
+    #     println(Lver)
+    #     println(Rver)
+    # end
     for ldiag in Lver.diagram
         for rdiag in Rver.diagram
             extT, G0T, GxT = tauBasis(chan, ldiag.properties.extT, rdiag.properties.extT)
