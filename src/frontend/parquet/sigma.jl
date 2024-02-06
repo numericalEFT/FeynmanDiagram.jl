@@ -106,7 +106,7 @@ function sigma(para::DiagPara, extK=getK(para.totalLoopNum, 1), subdiagram=false
                 # if compact
                 #     ver4 = ep_coupling(paraW; extK=legK, subdiagram=true, name=:W, blocks=blocks)
                 # else
-                ver4 = vertex4(paraW, legK, true; channels=[PHr,], blocks=blocks, blockstoplevel=ParquetBlocks(phi=[], Γ4=[PHr, PHEr, PPr]))
+                ver4 = vertex4(paraW, legK, true; channels=[PHr,], blocks=blocks, blockstoplevel=ParquetBlocks(phi=[], Γ4=[PHr, PHEr, PPr, Alli]))
                 # end
             end
             #transform extT coloum intwo extT for Σ and extT for G

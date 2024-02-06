@@ -140,7 +140,6 @@ end
 """
 function count_leaves(g::G) where {G<:AbstractGraph}
     leaves = collect(Leaves(g))
-    sort!(leaves, by=x -> x.id)
     unique!(x -> x.id, leaves)
 
     return length(leaves)
@@ -151,7 +150,6 @@ function count_leaves(graphs::Vector{G}) where {G<:AbstractGraph}
     for g in graphs
         append!(leaves, collect(Leaves(g)))
     end
-    sort!(leaves, by=x -> x.id)
     unique!(x -> x.id, leaves)
 
     return length(leaves)

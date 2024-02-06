@@ -1,12 +1,17 @@
 """
-    function optimize!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0, normalize=nothing)
+    function optimize!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; level=0, verbose=0, normalize=nothing)
 
-    In-place optimization of given `graphs`. Removes duplicated leaves, merges chains, and merges linear combinations.
+    In-place optimization of given `graphs`. Removes duplicated nodes (when `level > 0`) or leaves, flattens chains, 
+    merges linear combinations, and removing zero-valued subgraphs.
 
 # Arguments:
 - `graphs`: A tuple or vector of graphs.
+- `level`: Optimization level (default: 0). A value greater than 0 triggers more extensive but slower optimization processes, such as removing duplicated nodes.
 - `verbose`: Level of verbosity (default: 0).
 - `normalize`: Optional function to normalize the graphs (default: nothing).
+
+# Returns
+- Returns the optimized graphs. If the input graphs is empty, it returns nothing.
 """
 function optimize!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; level=0, verbose=0, normalize=nothing)
     if isempty(graphs)
@@ -31,12 +36,14 @@ function optimize!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; level=0
 end
 
 """
-    function optimize(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0, normalize=nothing)
+    function optimize(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; level=0, verbose=0, normalize=nothing)
 
-    Optimizes a copy of given `graphs`. Removes duplicated leaves, merges chains, and merges linear combinations.
+    Optimizes a copy of given `graphs`. Removes duplicated nodes (when `level > 0`) or leaves, flattens chains, 
+    merges linear combinations, and removing zero-valued subgraphs.
 
 # Arguments:
 - `graphs`: A tuple or vector of graphs.
+- `level`: Optimization level (default: 0). A value greater than 0 triggers more extensive but slower optimization processes, such as removing duplicated nodes.
 - `verbose`: Level of verbosity (default: 0).
 - `normalize`: Optional function to normalize the graphs (default: nothing).
 
