@@ -10,7 +10,7 @@ function main()
     dim = 3
     kF = 1.919
     β = 3.0
-    para = Parquet.DiagPara(type=Parquet.Ver4Diag, innerLoopNum=4)
+    # para = Parquet.DiagPara(type=Parquet.Ver4Diag, innerLoopNum=4)
 
     # partition = [(0, 0, 0), (1, 0, 0), (2, 0, 0), (3, 0, 0), (3, 1, 0), (3, 0, 1), (4, 0, 0)]
     partition = [(4, 0, 0)]
@@ -21,8 +21,10 @@ function main()
     Random.seed!(randseed)
 
     # FeynGraphs = diagdict_parquet(:vertex4, partition)
-    ver4df = Parquet.vertex4(para)
-    diags = ver4df.diagram
+    # ver4df = Parquet.vertex4(para)
+    diags, extT, responses = GV.eachorder_ver4diag(4)
+
+    # diags = ver4df.diagram
     IR.optimize!(diags)
     # extT_labels = Vector{Vector{Int}}[]
     # spin_conventions = Vector{FrontEnds.Response}[]
@@ -188,4 +190,4 @@ function _leafstates(leaf_maps::Vector{Dict{Int,G}}, maxloopNum::Int) where {G<:
     return (leafValue, leafType, leafOrders, leafInTau, leafOutTau, leafLoopIndex), loopbasis, leafval_map
 end
 
-# main()
+main()

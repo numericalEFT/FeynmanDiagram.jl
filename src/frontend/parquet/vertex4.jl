@@ -98,10 +98,6 @@ function vertex4(para::DiagPara,
     end
     ver4df = merge_vertex4(para, ver4df, name, legK)
     @assert all(x -> x[1] == para.firstTauIdx, ver4df.extT) "not all extT[1] are equal to the first Tau index $(para.firstTauIdx)! $ver4df"
-    # if any(x -> length(unique(x)) == 4, ver4df.extT)
-    #     println(para)
-    #     println(ver4df)
-    # end
     return ver4df
 end
 
@@ -122,7 +118,7 @@ end
 function addAlli!(ver4df::DataFrame, para::DiagPara, legK::Vector{Vector{Float64}})
     dict_graphs = get_ver4I()
     graphvec = dict_graphs[para.innerLoopNum]
-    graphvec = update_extKT(graphvec, para, legK)
+    graphvec = update_extKT(graphvec, para, legK, para.firstLoopIdx - 1)
     for ver4diag in graphvec
         Id = ver4diag.properties
         push!(ver4df, (response=Id.response, type=Id.type, extT=Id.extT, diagram=ver4diag))
@@ -180,18 +176,6 @@ function bubble!(ver4df::DataFrame, para::DiagPara, legK, chan::TwoBodyChannel, 
 
     ver8 = Dict{Any,Any}()
 
-    # if lPara.innerLoopNum == 3
-    #     println("Lver:")
-    #     println(lPara)
-    #     println(Lver)
-    #     println(Rver)
-    # end
-    # if rPara.innerLoopNum == 3
-    #     println("Rver:")
-    #     println(rPara)
-    #     println(Lver)
-    #     println(Rver)
-    # end
     for ldiag in Lver.diagram
         for rdiag in Rver.diagram
             extT, G0T, GxT = tauBasis(chan, ldiag.properties.extT, rdiag.properties.extT)
