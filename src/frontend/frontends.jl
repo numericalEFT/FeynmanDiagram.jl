@@ -1,12 +1,11 @@
 module FrontEnds
 
 import ..ComputationalGraphs
+import ..ComputationalGraphs: Graph, _dtype
+import ..QuantumOperators
+import ..Taylor
+import ..Utility
 using LinearAlgebra
-import ..QuantumOperators as Op
-import ..ComputationalGraphs as IR
-import ..ComputationalGraphs: FeynmanGraph
-import ..ComputationalGraphs: Graph
-import ..ComputationalGraphs: _dtype
 
 @enum TwoBodyChannel Alli = 1 PHr PHEr PPr AnyChan
 
@@ -89,5 +88,14 @@ export LoopPool
 
 include("LabelProduct.jl")
 export LabelProduct
+
+include("GV.jl")
+export GV
+
+include("parquet/parquet.jl")
+export Parquet
+
+# include("strong_coupling_expansion_builder/strong_coupling_expansion.jl")
+# export SCE
 
 end

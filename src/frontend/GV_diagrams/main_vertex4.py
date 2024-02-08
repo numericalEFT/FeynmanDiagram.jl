@@ -5,8 +5,8 @@ import copy
 import sys
 
 
-def Generate(Order, VerOrder, SigmaOrder, SPIN):
-    LnZOrder = Order-1
+def Generate(Order, VerOrder, SigmaOrder, SPIN, IsFullyIrreducible):
+    LnZOrder = Order+1
     DiagFile = "./Diagram/HugenDiag{0}.diag".format(LnZOrder)
     LnZ = free_energy(LnZOrder)
     # Load pre-generated lnZ diagrams
@@ -17,7 +17,7 @@ def Generate(Order, VerOrder, SigmaOrder, SPIN):
     print red("\nThe optimimal LnZ diagrams:")
     OptLnZHugenDiagList = LnZ.OptimizeLoopBasis()
 
-    Polar = polar(Order)
+    Polar = polar(Order+2)
 
     UniqueUnLabelDiagList = []
 
@@ -60,13 +60,16 @@ def Generate(Order, VerOrder, SigmaOrder, SPIN):
 
     Vertex4 = vertex4(Order)
 
-    # fname = "./output/{0}{1}_{2}_{3}.diag".format(
-    fname = "./groups_vertex4/{0}{1}_{2}_{3}.diag".format(
-        "4Vertex", Order, VerOrder, SigmaOrder)
+    if IsFullyIrreducible:
+        fname = "./groups_vertex4/{0}{1}_{2}_{3}.diag".format(
+            "Vertex4I", Order, VerOrder, SigmaOrder)
+    else:
+        fname = "./groups_vertex4/{0}{1}_{2}_{3}.diag".format(
+            "Vertex4", Order, VerOrder, SigmaOrder)
     # with open(fname, "w") as f:
     with open(fname, "w") as f:
         str_polar = Vertex4.ToString(UniqueUnLabelDiagList,
-                                   VerOrder, SigmaOrder,  SPIN)
+                                   VerOrder, SigmaOrder,  SPIN, IsFullyIrreducible)
         if not(str_polar is None):
             f.write(str_polar)
             # f.write(SelfEnergy.ToString(UniqueUnLabelDiagList,
@@ -76,14 +79,18 @@ def Generate(Order, VerOrder, SigmaOrder, SPIN):
 if __name__ == "__main__":
     # print "Input Diagram Order: "
     # Order = int(sys.argv[1])
-    Order = 4
+    Order = 4       
     SPIN = 2
-    for o in range(2, Order+1):
-        for v in range(0, Order):
-            # for g in range(0, (Order-1)/2+1):
-            for g in range(0, Order):
-                # if o+v+2*g > Order:
-                if o+v+g > Order:
-                    continue
-                Generate(o, v, g,  SPIN)
-    # Generate(5, 0, 0, SPIN)
+    IsFullyIrreducible = True
+    # IsFullyIrreducible = False
+    if IsFullyIrreducible:
+        MinOrder = 3
+    else:
+        MinOrder = 0
+
+    for o in range(MinOrder, Order+1):
+        # for v in range(0, Order):
+        #     for g in range(0, Order):
+                # if o+v+g > Order:
+                #     continue
+        Generate(o, 0, 0,  SPIN, IsFullyIrreducible)

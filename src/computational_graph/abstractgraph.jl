@@ -265,14 +265,12 @@ function Base.isequal(a::AbstractGraph, b::AbstractGraph)
     subgraphs(a)[pa] != subgraphs(b)[pb] && return false
 
     for field in fieldnames(typeof(a))
-        if field in [:weight, :subgraphs, :subgraph_factors]
-            continue
-            # if field == :weight && getproperty(a, :weight) == weight(a) && getproperty(b, :weight) == weight(b)
-            #     continue  # skip graph weights if already accounted for
-            # elseif field == :subgraphs && getproperty(a, :subgraphs) == subgraphs(a) && getproperty(b, :subgraphs) == subgraphs(b)
-            #     continue  # skip subgraphs if already accounted for
-            # elseif field == :subgraph_factors && getproperty(a, :subgraph_factors) == subgraph_factors(a) && getproperty(b, :subgraph_factors) == subgraph_factors(b)
-            #     continue  # skip subgraph_factors if already accounted for
+        if field == :weight # && getproperty(a, :weight) == weight(a) && getproperty(b, :weight) == weight(b)
+            continue  # skip graph weights if already accounted for
+        elseif field == :subgraphs # && getproperty(a, :subgraphs) == subgraphs(a) && getproperty(b, :subgraphs) == subgraphs(b)
+            continue  # skip subgraphs if already accounted for
+        elseif field == :subgraph_factors # && getproperty(a, :subgraph_factors) == subgraph_factors(a) && getproperty(b, :subgraph_factors) == subgraph_factors(b)
+            continue  # skip subgraph_factors if already accounted for
         else
             getproperty(a, field) != getproperty(b, field) && return false
         end
@@ -289,49 +287,44 @@ Base.:(==)(a::AbstractGraph, b::AbstractGraph) = Base.isequal(a, b)
 function isequiv(a::AbstractGraph, b::AbstractGraph, args...)
     typeof(a) != typeof(b) && return false
     # Check graph weights for approximate equality where applicable
-    if :weight ∉ args
-        (weight(a) ≈ weight(b)) == false && return false
+    if :weight ∉ args && !(weight(a) ≈ weight(b))
+        return false
     end
     # Check that all subgraphs are equivalent modulo `args`
-    length(subgraphs(a)) != length(subgraphs(b)) && return false
+    asubg_factors, bsubg_factors = subgraph_factors(a), subgraph_factors(b)
+    length(asubg_factors) != length(bsubg_factors) && return false
 
-    # if :id ∉ args
-    #     pa = sortperm(subgraphs(a), by=x -> id(x))
-    #     pb = sortperm(subgraphs(b), by=x -> id(x))
-    #     subgraph_factors(a)[pa] != subgraph_factors(b)[pb] && return false
-    #     !all(isequiv.(subgraphs(a)[pa], subgraphs(b)[pb], args...)) && return false
-    # else
-    a_pairs = collect(zip(subgraphs(a), subgraph_factors(a)))
-    b_pairs = collect(zip(subgraphs(b), subgraph_factors(b)))
+    for field in fieldnames(typeof(a))
+        if field == :weight
+            continue  # skip graph weights if already accounted for
+        elseif field == :subgraphs
+            continue  # skip subgraphs if already accounted for
+        elseif field == :subgraph_factors
+            continue  # skip subgraph_factors if already accounted for
+        elseif field in args
+            continue  # skip fields in `args`
+        else
+            getproperty(a, field) != getproperty(b, field) && return false
+        end
+    end
+
+    # Compare groups of subgraphs with the same factor
+    a_pairs = zip(subgraphs(a), asubg_factors)
+    b_pairs = collect(zip(subgraphs(b), bsubg_factors))
+    # b_pairs = zip(subgraphs(b), subgraph_factors(b))
+    # matched = falses(length(asubg_factors))
     for (suba, suba_factor) in a_pairs
         match_found = false
         for (idx, (subb, subb_factor)) in enumerate(b_pairs)
             if suba_factor == subb_factor && isequiv(suba, subb, args...)
+                # if !matched[idx] && suba_factor == subb_factor && isequiv(suba, subb, args...)
                 deleteat!(b_pairs, idx)
+                # matched[idx] = true
                 match_found = true
                 break
             end
         end
         !match_found && return false
-    end
-    # end
-
-    for field in fieldnames(typeof(a))
-        if field in [:weight, :subgraphs, :subgraph_factors, args...]
-            continue
-            # if field == :weight && getproperty(a, :weight) == weight(a) && getproperty(b, :weight) == weight(b)
-            #     continue  # skip graph weights if already accounted for
-            # elseif field == :subgraphs && getproperty(a, :subgraphs) == subgraphs(a) && getproperty(b, :subgraphs) == subgraphs(b)
-            #     continue  # skip subgraphs if already accounted for
-            # elseif field == :subgraph_factors && getproperty(a, :subgraph_factors) == subgraph_factors(a) && getproperty(b, :subgraph_factors) == subgraph_factors(b)
-            #     continue  # skip subgraph_factors if already accounted for
-        else
-            # getproperty(a, field) != getproperty(b, field) && return false
-            if getproperty(a, field) != getproperty(b, field)
-                # println(field)
-                return false
-            end
-        end
     end
     return true
 end

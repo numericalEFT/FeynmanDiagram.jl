@@ -1,6 +1,6 @@
 """
     function vertex3(para::DiagPara, _extK=[getK(para.totalLoopNum, 1), getK(para.totalLoopNum, 2)], subdiagram=false;
-        name=:Γ3, chan=[PHr, PHEr, PPr, Alli], resetuid=false, blocks::ParquetBlocks=ParquetBlocks())
+        name=:Γ3, channels=[PHr, PHEr, PPr, Alli], resetuid=false, blocks::ParquetBlocks=ParquetBlocks())
 
 Generate 3-vertex diagrams using Parquet Algorithm.
 With imaginary-time variables, all vertex3 generated has the same bosonic Tidx ``extT[1]=para.firstTauIdx`` and the incoming fermionic Tidx ``extT[2]=para.firstTauIdx+1``.
@@ -10,7 +10,7 @@ With imaginary-time variables, all vertex3 generated has the same bosonic Tidx `
 - `extK`            : basis of external loops as a vector [bosonic leg (out), fermionic in, fermionic out], extK[1] = extK[2] - extK[3]. 
 - `subdiagram`      : a sub-vertex or not
 - `name`            : name of the vertex
-- `chan`            : vector of channels of the current 4-vertex. 
+- `channels`            : vector of channels of the current 4-vertex. 
 - `resetuid`        : restart uid count from 1
 - `blocks`          : building blocks of the Parquet equation. See the struct ParquetBlocks for more details.
 
@@ -21,12 +21,12 @@ function vertex3(para::DiagPara,
     _extK=[getK(para.totalLoopNum, 1), getK(para.totalLoopNum, 2)],
     subdiagram=false;
     name=:Γ3,
-    chan=[PHr, PHEr, PPr, Alli],
+    channels=[PHr, PHEr, PPr, Alli],
     resetuid=false,
     blocks::ParquetBlocks=ParquetBlocks()
 )
 
-    resetuid && ComputationalGraphs.uidreset()
+    resetuid && IR.uidreset()
     @assert para.type == Ver3Diag
     @assert para.innerLoopNum >= 1 "Only generates vertex corrections with more than one internal loops."
     for k in _extK
@@ -74,7 +74,7 @@ function vertex3(para::DiagPara,
                 firstLoopIdx=GoutKidx, firstTauIdx=GoutTidx)
             paraVer4 = reconstruct(para, type=Ver4Diag, innerLoopNum=oVer4,
                 firstLoopIdx=Ver4Kidx, firstTauIdx=Ver4Tidx)
-            ver4 = vertex4(paraVer4, legK, chan, true; blocks=blocks)
+            ver4 = vertex4(paraVer4, legK, true; channels=channels, blocks=blocks)
             if isnothing(ver4) || isempty(ver4)
                 continue
             end

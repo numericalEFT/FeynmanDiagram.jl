@@ -30,7 +30,7 @@ function green(para::DiagPara, extK=getK(para.totalLoopNum, 1), extT=para.hasTau
     @assert length(extK) >= para.totalLoopNum "expect dim of extK>=$(para.totalLoopNum), got $(length(extK))"
     extK = extK[1:para.totalLoopNum]
 
-    resetuid && ComputationalGraphs.uidreset()
+    resetuid && IR.uidreset()
 
     tin, tout = extT[1], extT[2]
     t0 = para.firstTauIdx
