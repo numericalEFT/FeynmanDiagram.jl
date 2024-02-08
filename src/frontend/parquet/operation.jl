@@ -147,9 +147,10 @@ end
 # Arguments
 - `diags::Vector{Graph}`: A vector of `Graph` objects.
 - `para::DiagPara`: parameters reconstructed in the graphs. Its `firstTauIdx` will update the `extT` of graphs.
-- `legK::Vector{Vector{Float64}}`: basus of the external momenta for the legs of the diagram as [left in, left out, right in, right out]. 
+- `legK::Vector{Vector{Float64}}`: basis of the external momenta for the legs of the diagram as [left in, left out, right in, right out].
+- `extraLoopIdx`: the index of the extra loop in the external momenta basis in `legK`. Defaults to `nothing`, which means no extra loop is included. 
 """
-function update_extKT!(diags::Vector{Graph}, para::DiagPara, legK::Vector{Vector{Float64}}, extLoopIdx=nothing)
+function update_extKT!(diags::Vector{Graph}, para::DiagPara, legK::Vector{Vector{Float64}}, extraLoopIdx=nothing)
     visited = Set{Int}()
     tauIdx = para.firstTauIdx
     len_extK = length(legK[1])
@@ -158,25 +159,9 @@ function update_extKT!(diags::Vector{Graph}, para::DiagPara, legK::Vector{Vector
 
     sumK = zeros(len_extK)
     _K = zeros(len_extK)
-    # extK0 = [getK(len_extK, 1), getK(len_extK, 2), getK(len_extK, 3)]
-    # extK1 = [[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [1.0, -1.0, 1.0, 0.0, 0.0, 0.0, 0.0], [0.0, -1.0, 1.0, 1.0, 0.0, 0.0, 0.0]]
-    flag = false
-    # if extK0 != legK[1:3] # && para.innerLoopNum == 2  #&& extK1 != legK[1:3]
-    # if extK1 == extK #&& extLoopIdx == 4
-    #     flag = true
-    #     println(legK)
-    #     println(extLoopIdx)
-    # end
     for graph in diags
-        if flag
-            println("Graph:")
-            println(graph.properties.extT, tauIdx)
-        end
         tau_shift = tauIdx - graph.properties.extT[1]
         for node in PreOrderDFS(graph)
-            if flag && isleaf(node)
-                println(node.properties)
-            end
             node.id in visited && continue
             node.id = IR.uid()
             push!(visited, node.id)
@@ -201,9 +186,9 @@ function update_extKT!(diags::Vector{Graph}, para::DiagPara, legK::Vector{Vector
                 if length(K) < len_extK
                     resize!(K, len_extK)
                     K[original_len_K+1:end] .= 0.0
-                    if !isnothing(extLoopIdx)
-                        K[end] = K[extLoopIdx]
-                        K[extLoopIdx] = 0.0
+                    if !isnothing(extraLoopIdx)
+                        K[end] = K[extraLoopIdx]
+                        K[extraLoopIdx] = 0.0
                     end
                 else
                     resize!(K, len_extK)
@@ -224,18 +209,11 @@ function update_extKT!(diags::Vector{Graph}, para::DiagPara, legK::Vector{Vector
                 _K[idx_innerL] .= K[idx_innerL]
                 K .= sumK .+ _K
 
-                if flag
-                    println("sumK: $sumK")
-                    println("_K: $_K")
-                end
                 fill!(sumK, 0.0)
                 fill!(_K, 0.0)
                 if tau_shift != 0
                     node.properties = FrontEnds.reconstruct(prop, :extT => Tuple(t + tau_shift for t in T))
                 end
-            end
-            if flag && isleaf(node)
-                println(node.id, " ", node.properties)
             end
         end
     end
@@ -250,13 +228,14 @@ end
 # Arguments
 - `diags::Vector{Graph}`: A vector of `Graph` objects.
 - `para::DiagPara`: parameters reconstructed in the graphs. Its `firstTauIdx` will update the `extT` of graphs.
-- `legK::Vector{Vector{Float64}}`: basus of the external momenta for the legs of the diagram as [left in, left out, right in, right out]. 
+- `legK::Vector{Vector{Float64}}`: basis of the external momenta for the legs of the diagram as [left in, left out, right in, right out]. 
+- `extraLoopIdx`: the index of the extra loop in the external momenta basis in `legK`. Defaults to `nothing`, which means no extra loop is included. 
 
 # Returns
-- `Vector{Graph}`: A new vector of `Graph` objects with updated `extK`, `extT`, and `para` (if existed) properties for each node.
+- `Vector{Graph}`: A new vector of `Graph` objects with updated `extK`, `extT`, and `para` (if existing) properties for each node.
 """
-function update_extKT(diags::Vector{Graph}, para::DiagPara, legK::Vector{Vector{Float64}}, extLoopIdx=nothing)
+function update_extKT(diags::Vector{Graph}, para::DiagPara, legK::Vector{Vector{Float64}}, extraLoopIdx=nothing)
     graphs = deepcopy(diags)
-    update_extKT!(graphs, para, legK, extLoopIdx)
+    update_extKT!(graphs, para, legK, extraLoopIdx)
     return graphs
 end
