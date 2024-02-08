@@ -14,7 +14,6 @@ abstract type PropagatorId <: DiagramId end
 
 # Base.Dict(x::DiagramId) = Dict{Symbol,Any}([fn => getfield(x, fn) for fn ∈ fieldnames(typeof(x))])
 # Base.show(io::IO, d::DiagramId) = error("Base.show not implemented!")
-# Base.isequal(a::DiagramId, b::DiagramId) = error("Base.isequal not implemented!")
 Base.:(==)(a::DiagramId, b::DiagramId) = Base.isequal(a, b)
 
 struct BareGreenId <: PropagatorId

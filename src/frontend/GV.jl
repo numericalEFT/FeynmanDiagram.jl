@@ -40,6 +40,7 @@ include("GV_diagrams/readfile.jl")
 - `MinOrder` (Int): The minmimum actual order of the diagrams (defaults to `1`).
 - `has_counterterm` (Bool, optional): `false` for G0W0, `true` for GW with self-energy and interaction counterterms (defaults to `false`).
 - `spinPolarPara` (Float64, optional): The spin-polarization parameter (n_up - n_down) / (n_up + n_down) (defaults to `0.0`).
+- `optimize_level` (Int, optional): The optimization level for the diagrams, defaults to `0`.
 
 # Returns
 A tuple `(dict_graphs, labelProd)` where 
@@ -111,6 +112,7 @@ end
 - `type` (Symbol): The type of the Feynman diagrams, including `:spinPolar`, `:chargePolar`, `:sigma_old`, `:green`, or `:freeEnergy`.
 - `gkeys` (Vector{Tuple{Int,Int,Int}}): The (order, Gorder, Vorder) of the diagrams. Gorder is the order of self-energy counterterms, and Vorder is the order of interaction counterterms. 
 - `spinPolarPara` (Float64, optional): The spin-polarization parameter (n_up - n_down) / (n_up + n_down) (defaults to `0.0`).
+- `optimize_level` (Int, optional): The optimization level for the diagrams, defaults to `0`.
 
 # Returns
 A tuple `(dict_graphs, labelProd)` where 
@@ -343,7 +345,6 @@ function leafstates(leaf_maps::Vector{Dict{Int,G}}, maxloopNum::Int) where {G<:G
     leafValue = [Vector{Float64}() for _ in 1:num_g]
 
     loopbasis = Vector{Float64}[]
-    # tau_labels = Vector{Int}[]
     for (ikey, leafmap) in enumerate(leaf_maps)
         len_leaves = length(keys(leafmap))
         sizehint!(leafType[ikey], len_leaves)
@@ -377,7 +378,6 @@ function leafstates(leaf_maps::Vector{Dict{Int,G}}, maxloopNum::Int) where {G<:G
                 push!(leafLoopIndex[ikey], length(loopbasis))
             end
 
-            # push!(tau_labels, collect(diagId.extT))
             push!(leafInTau[ikey], diagId.extT[1])
             push!(leafOutTau[ikey], diagId.extT[2])
 

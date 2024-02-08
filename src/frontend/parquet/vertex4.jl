@@ -72,7 +72,6 @@ function vertex4(para::DiagPara,
     else # loopNum>0
         for c in channels
             if c == Alli
-                # continue
                 if 3 ≤ loopNum ≤ 4
                     addAlli!(ver4df, para, legK)
                 else
@@ -92,9 +91,7 @@ function vertex4(para::DiagPara,
                 # add RPA bubble counter-diagram to remove the bubble
                 RPA_chain!(ver4df, para, legK, c, level, name, -1.0)
             end
-            # println(bub)
         end
-        # # TODO: add envolpe diagrams
     end
     ver4df = merge_vertex4(para, ver4df, name, legK)
     @assert all(x -> x[1] == para.firstTauIdx, ver4df.extT) "not all extT[1] are equal to the first Tau index $(para.firstTauIdx)! $ver4df"
@@ -152,8 +149,6 @@ function bubble!(ver4df::DataFrame, para::DiagPara, legK, chan::TwoBodyChannel, 
     gxPara = reconstruct(para, type=GreenDiag, innerLoopNum=oGx, firstLoopIdx=GxfirstLoopIdx, firstTauIdx=GxfirstTauIdx)
     g0Para = reconstruct(para, type=GreenDiag, innerLoopNum=oG0, firstLoopIdx=G0firstLoopIdx, firstTauIdx=G0firstTauIdx)
 
-    # println("$lPara, $rPara, $gxPara, $g0Para")
-
     phi, ppi, Γ4 = blocks.phi, blocks.ppi, blocks.Γ4
     phi_toplevel, ppi_toplevel, Γ4_toplevel = blockstoplevel.phi, blockstoplevel.ppi, blockstoplevel.Γ4
     if chan == PHr || chan == PHEr
@@ -167,7 +162,6 @@ function bubble!(ver4df::DataFrame, para::DiagPara, legK, chan::TwoBodyChannel, 
     end
 
     LLegK, K, RLegK, Kx = legBasis(chan, legK, LoopIdx)
-    # println(K, ", ", Kx)
 
     Lver = vertex4(lPara, LLegK, true; channels=Γi, level=level + 1, name=:Γi, blocks=blocks)
     isempty(Lver) && return
@@ -182,7 +176,6 @@ function bubble!(ver4df::DataFrame, para::DiagPara, legK, chan::TwoBodyChannel, 
             g0 = green(g0Para, K, G0T, true, name=:G0, blocks=blocks)
             gx = green(gxPara, Kx, GxT, true, name=:Gx, blocks=blocks)
             @assert g0 isa Graph && gx isa Graph
-            # append!(diag, bubble2diag(para, chan, ldiag, rdiag, legK, g0, gx, extrafactor))
             bubble2diag!(ver8, para, chan, ldiag, rdiag, legK, g0, gx, extrafactor)
         end
     end
@@ -203,7 +196,6 @@ function bubble!(ver4df::DataFrame, para::DiagPara, legK, chan::TwoBodyChannel, 
             ver4diag = Graph([diag, g0, gx]; properties=id, operator=Prod())
             push!(ver4df, (response=Vresponse, type=vtype, extT=extT, diagram=ver4diag))
         end
-        # push!(ver4df, (response=Vresponse, type=vtype, extT=extT, diagram=diag))
     end
 
     return

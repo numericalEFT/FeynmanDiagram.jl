@@ -265,14 +265,12 @@ function Base.isequal(a::AbstractGraph, b::AbstractGraph)
     subgraphs(a)[pa] != subgraphs(b)[pb] && return false
 
     for field in fieldnames(typeof(a))
-        if field in [:weight, :subgraphs, :subgraph_factors]
-            continue
-            # if field == :weight && getproperty(a, :weight) == weight(a) && getproperty(b, :weight) == weight(b)
-            #     continue  # skip graph weights if already accounted for
-            # elseif field == :subgraphs && getproperty(a, :subgraphs) == subgraphs(a) && getproperty(b, :subgraphs) == subgraphs(b)
-            #     continue  # skip subgraphs if already accounted for
-            # elseif field == :subgraph_factors && getproperty(a, :subgraph_factors) == subgraph_factors(a) && getproperty(b, :subgraph_factors) == subgraph_factors(b)
-            #     continue  # skip subgraph_factors if already accounted for
+        if field == :weight # && getproperty(a, :weight) == weight(a) && getproperty(b, :weight) == weight(b)
+            continue  # skip graph weights if already accounted for
+        elseif field == :subgraphs # && getproperty(a, :subgraphs) == subgraphs(a) && getproperty(b, :subgraphs) == subgraphs(b)
+            continue  # skip subgraphs if already accounted for
+        elseif field == :subgraph_factors # && getproperty(a, :subgraph_factors) == subgraph_factors(a) && getproperty(b, :subgraph_factors) == subgraph_factors(b)
+            continue  # skip subgraph_factors if already accounted for
         else
             getproperty(a, field) != getproperty(b, field) && return false
         end

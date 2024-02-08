@@ -368,7 +368,6 @@ function count_expanded_operation(graphs::Vector{TaylorSeries{G}}, order::Vector
     if length(graphs) == 0
         return [0, 0]
     else
-        # allcoeffs = Vector{G}()
         total_sumprod = [0, 0]
         for g in graphs
             total_sumprod += count_expanded_operation(g.coeffs[order])
