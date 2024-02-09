@@ -42,7 +42,7 @@ export haschildren, onechild, isleaf, isbranch, ischain, has_zero_subfactors, el
 
 include("operation.jl")
 include("io.jl")
-# plot_tree
+export plot_tree
 
 include("eval.jl")
 export eval!

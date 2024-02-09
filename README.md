@@ -5,54 +5,72 @@
 [![Build Status](https://github.com/numericalEFT/FeynmanDiagram.jl/workflows/CI/badge.svg)](https://github.com/numericalEFT/FeynmanDiagram.jl/actions)
 [![Coverage](https://codecov.io/gh/numericalEFT/FeynmanDiagram.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/numericalEFT/FeynmanDiagram.jl)
 
-This package implements a mini-compiler that compiles generic Feynman diagrams into computational-graph representations for fast computation. 
+`FeynmanDiagram.jl` is a Julia package that introduces a novel compiler that transforms Feynman diagrams into a compact computational graph representation for efficient computation in Quantum Field Theory (QFT). It utilizes Taylor-mode Automatic Differentiation (AD) for field-theoretic renormalization, showcasing the synergy between QFT and AI tech stack to address computational challenges in QFT.
 
-## Infrastructure
+## Key Features
 
-In general, Feynman diagrams represents high-order integral. The integrand are propagators/interactions composed by the basis arithmetic operations (multiplication, addition). The sequence of calculating the integrand by combining the propagators/interactions with the arithmetic operatos can be represented as an algebraic computational graph. In this sense, the computational graph provides an intermediate representation (IR) for Feynman diagrams that completely independent of the diagram type. 
+- **Computational Graphs for Feynman Diagrams**: Utilizes computational graphs analogous to those in Machine Learning (ML) architectures, where nodes represent mathematical operations and edges denote the tensor flow.
+  
+- **Compiler Architecture**: Implements a three-stage compiler process, analogous to modern programming language compilers, to transform Feynman diagrams into executable code, significantly enhancing the adaptability and computational efficiency of QFT calculations.
+
+- **Interdisciplinary Approach**: Bridges QFT and AI tech stack by adapting ML algorithms, such as Taylor-mode AD, for QFT calculations, enhancing computational efficiency with tools like JAX, TensorFlow, PyTorch, and Mindspore.
+
+## Compiler Architecture Overview
+
+In general, Feynman diagrams represents high-order integral. The integrand are propagators/interactions composed by the basis arithmetic operations (multiplication, addition). The sequence of calculating the integrand by combining the propagators/interactions with the arithmetic operatos can be represented as an algebraic computational graph. In this sense, the computational graph serves as an intermediate representation that standardizes the treatment of various diagram types, ensuring a consistent approach across different QFT calculations.
 
 ![infrastructure](assets/diagram_compiler.svg?raw=true "Compiler Infrastructure")
 
-Base on this observation, we develop a package to compile the integrand of Feynman diagrams into machine code so that one can evaluate the it efficiently. The infrastructure of this package is similar to the modern compiler LLVM for generic programming language. There are three layers: a front-end translates a source code into an IR as a computational graph, then a mid-end optimizes and transforms the IR, and a back-end to compiles the IR to machine code. 
+Base on this observation, the compiler architecture is designed to process Feynman diagrams through a structured, three-stage procedure, drawing parallels with the architectures of the modern compiler LLVM. This approach not only enhances the adaptability of the compiler for various QFT calculations but also significantly boosts computational efficiency. The three-stage procedure is as follows:
 
-- The front-end supports Feynman diagrams from weak coupling expansion or strong coupling expansion. The user can incorprate new types of diagrams by writing their own front-end.
+- **Front End**: Generates the specific Feynman diagrams and maps them into a unified intermediate representation as a computational graph. It identifies diagram elements, mapping them into corresponding nodes. Users can also incorporate new diagram types by extending the front end.
 
-- The mid-end performs universal optimizations and transformations of one computational graph to another. The possible optimizations of the computational graph includes: remove common nodes/leaves, remove zero-valued nodes/leaves, merge small nodes into a large one. The possible transformations include automatic differentiation (which can be useful to derive the diagrams for the specific heat, RG flow equation, etc.), renormalization of the propagators and the interactions, and analytic Matsubara-frequency integration (work in progress).
+- **Intermediate Representation**: Applies optimizations and automatic differentiation to the static computational graph, enabling comprehensive analysis and optimization. Optimizations include removing redundant nodes/leaves, flattens chains, merges linear combinations, removing zero-valued nodes, and so on. AD is used to derive the diagrams for the specific heat, RG flow equation, etc, or the renormalized Feynman diagrams. The incorporated Taylor-mode AD is utilized for efficient high-order derivative graph computations.
 
-- The back-end provides a universal subroutine to evalue the computational graph efficiently. 
+- **Back End**: Translates the optimized graph into executable code for a variety of computing platforms, supporting multiple programming languages and integration with software and hardware ecosystems.
 
-## Supported Front-end
+## Usage
 
-### 1. Generic Weak Coupling Expansion based on the Parquet Algorithm
+### Installation
 
-This algorithm generates the Feynman diagrams of weak coupling expansion. It supports the diagrams of self-energy, polarization, 3-point vertex function and 4-point vertex function. The internal degrees of freedom can be either the loop variables (e.g., momentum or frequency) or the site variables (e.g., imaginary-time or lattice site).
+To install the package, you can simply use the following command in the Julia package manager:
 
-The main idea of the algorithm is to use the parquet equation to build high-order-vertex-function diagrams from the lower order sub-diagrams. 
+```julia
+julia> using Pkg
+julia> Pkg.add("FeynmanDiagram.jl")
+```
 
-The following code is a simple example to generate the one-loop 4-point vertex function diagrams, then visualize the computational graph (namely, an experssion tree).
+### Example: Weak Coupling Expansion with Parquet Algorithm
+
+This algorithm generates Feynman diagrams for weak coupling expansions, supporting various diagram types, such as self-energy, polarization, 3-point vertex function, and 4-point vertex function. The internal degrees of freedom can be either the loop variables (e.g., momentum or frequency) or the site variables (e.g., imaginary-time or lattice site). The main idea of the algorithm is to use the parquet equation to build high-order-vertex-function diagrams from the lower order sub-diagrams. 
+
+The example below demonstrates generating one-loop 4-point vertex function diagrams and visualizing their computational graph.
 
 ```julia
 using FeynmanDiagram
+import FeynmanDiagram.FrontEnds: NoHartree, Girreducible
 
-# Define a parameter structure for the 4-vertex diagram with one-loop, in the momentum and the imaginary-time representation. Require the diagrams to be green's function irreducible.
-para = DiagParaF64(type = Ver4Diag, innerLoopNum = 1,hasTau = true, filter=[NoHartree, Girreducible,])
+# Define a parameter structure for a 4-vertex diagram with one-loop in the momentum and the imaginary-time representation. Require the diagrams to be green's function irreducible.
+para = Parquet.DiagPara(type = Parquet.Ver4Diag, innerLoopNum = 1, hasTau = true, filter=[NoHartree, Girreducible,])
 
-ver4=Parquet.build(para) #build the diagram tree with the parquet algorithm.
+# Generate the Feynman diagrams in a DataFrame using the parquet algorithm. `ver4df` is a DataFrame containing fields :response, :type, :extT, :diagram, and :hash.
+ver4df = Parquet.build(para) 
 
-plot_tree(ver4) # visualize the generated diagram tree
+ver4df_extT = Parquet.mergeby(ver4df, [:extT], name=:vertex4) # merge the Feynman diagrams in a DataFrame with the same `extT` field.
 
-tree=ExprTree.build(ver4.diagram) #optimize the diagram tree to get an optimized expression tree
+optimize!(ver4df_extT.diagram) # optimize the Graph for the given Feynman diagrams.
+
+ver4 = ver4df_extT.diagram[1]
+plot_tree(ver4) # visualize the generated first Feynman diagram and its computational graph using ete3.
 ```
 
-The generated diagram tree is as shown in the following figure. The leaves of the tree are the propagators (labeled with `G`) and the interactions (labeled with `Ins`). By default, the interactions is assumed to spin-symmetric. A typical example is the Coulomb interaction.
-![tree](assets/ver4tree.png?raw=true "Diagram Tree")
+The generated computational graph is as shown in the following figure. The leaves of the tree are the propagators (labeled with `G`) and the interactions (labeled with `Ins`). By default, the interactions is assumed to spin-symmetric. A typical example is the Coulomb interaction.
+![tree](assets/ver4_ete3.svg?raw=true "Diagram Tree")
 
+### Computational Graph visualization
+Install the [ete3](http://etetoolkit.org/) Python package for visualization.
 
-### 2. Generic Strong Coupling Expansion (work in progress)
-### 3. Hand-drawing Feynman diagrams (work in progress)
+Note that we rely on [PyCall.jl](https://github.com/JuliaPy/PyCall.jl) to call the ete3 python functions from julia. Therefore, you have to install ete3 python package use the python distribution associated with PyCall. According to the tutorial of PyCall, "by default on Mac and Windows systems, Pkg.add("PyCall") or Pkg.build("PyCall") will use the Conda.jl package to install a minimal Python distribution (via Miniconda) that is private to Julia (not in your PATH). You can use the Conda Julia package to install more Python packages, and import Conda to print the Conda.PYTHONDIR directory where python was installed. On GNU/Linux systems, PyCall will default to using the python3 program (if any, otherwise python) in your PATH."
 
-## Computational Graph visualization
-To visualize the diagram tree, you need to install the ete3 python3 package (http://etetoolkit.org/).
-
-Note that we rely on "PyCall.jl" to call the ete3 python functions from julia. Therefore, you have to install ete3 python package use the python distribution associated with PyCall. According to the tutorial of PyCall (https://github.com/JuliaPy/PyCall.jl), "by default on Mac and Windows systems, Pkg.add("PyCall") or Pkg.build("PyCall") will use the Conda.jl package to install a minimal Python distribution (via Miniconda) that is private to Julia (not in your PATH). You can use the Conda Julia package to install more Python packages, and import Conda to print the Conda.PYTHONDIR directory where python was installed. On GNU/Linux systems, PyCall will default to using the python3 program (if any, otherwise python) in your PATH."
-
+## License
+`FeynmanDiagram.jl` is open-source, available under the [MIT License](https://opensource.org/licenses/MIT). For more details, see the `license.md` file in the repository.
