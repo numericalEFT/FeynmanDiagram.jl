@@ -5,7 +5,7 @@
 [![Build Status](https://github.com/numericalEFT/FeynmanDiagram.jl/workflows/CI/badge.svg)](https://github.com/numericalEFT/FeynmanDiagram.jl/actions)
 [![Coverage](https://codecov.io/gh/numericalEFT/FeynmanDiagram.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/numericalEFT/FeynmanDiagram.jl)
 
-`FeynmanDiagram.jl` is a Julia package that compiles Feynman diagrams in Quantum Field Theory (QFT) into a compact computational graph representation for fast evalution. It utilizes Taylor-mode Automatic Differentiation (AD) for field-theoretic renormalization, showcasing the synergy between QFT and AI tech stack to address computational challenges in QFT.
+`FeynmanDiagram.jl` is a Julia package designed to efficiently encode Feynman diagrams --- essential elements of Quantum Field Theory (QFT) —-- into compact computational graphs for fast evaluation. It employs Taylor-mode Automatic Differentiation (AD) specifically to implement field-theoretic renormalization schemes, a pivotal technique in QFT that significantly improves the convergence of Feynman diagrammatic series. This approach underscores the synergy between QFT and AI technologies, effectively addressing the sophisticated computational challenges in QFT.
 
 ## Key Features
 
