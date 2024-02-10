@@ -124,7 +124,7 @@ struct SigmaId{P} <: DiagramId
         return new{P}(para, type, mirror_symmetrize(k), Tuple(t))
     end
 end
-Base.show(io::IO, v::SigmaId) = print(io, "$(short(v.type))#$(v.order), t$(v.extT)")
+Base.show(io::IO, v::SigmaId) = print(io, "$(short(v.type)), k$(v.extK), t$(v.extT)")
 function Base.isequal(a::SigmaId, b::SigmaId)
     if typeof(a) != typeof(b)
         return false
