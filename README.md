@@ -21,13 +21,13 @@ In general, Feynman diagrams represents high-order integral. The integrand are p
 
 ![infrastructure](assets/diagram_compiler.svg?raw=true "Compiler Infrastructure")
 
-Base on this observation, the compiler architecture is designed to process Feynman diagrams through a structured, three-stage procedure, drawing parallels with the architectures of the modern compiler LLVM. This approach not only enhances the adaptability of the compiler for various QFT calculations but also significantly boosts computational efficiency. The three-stage procedure is as follows:
+Based on these insights, the compiler's architecture is designed to process Feynman diagrams via a structured, three-stage procedure, mirroring the design principles of the advanced LLVM compiler architecture. This strategy not only broadens the compiler's versatility for diverse QFT computations but also markedly enhances its computational efficiency. The procedure unfolds in three distinct stages:
 
-- **Front End**: Generates the specific Feynman diagrams and maps them into a unified intermediate representation as a computational graph. It identifies diagram elements, mapping them into corresponding nodes. Users can also incorporate new diagram types by extending the front end.
+- **Front End**: This initial phase generates Feynman diagrams and converts them into a unified intermediate representation, shaping them as static computational graphs. It offers flexibility for users to introduce new diagrammatic techniques by extending the front end capabilities.
 
-- **Intermediate Representation**: Applies optimizations and automatic differentiation to the static computational graph, enabling comprehensive analysis and optimization. Optimizations include removing redundant nodes/leaves, flattens chains, merges linear combinations, removing zero-valued nodes, and so on. AD is used to derive the diagrams for the specific heat, RG flow equation, etc, or the renormalized Feynman diagrams. The incorporated Taylor-mode AD is utilized for efficient high-order derivative graph computations.
+- **Intermediate Representation**: At this stage, the compiler applies optimizations and AD to the static computational graph, facilitating thorough analysis and refinement. The optimizations aim to streamline the graph by eliminating redundant elements, flattening nested chains, and removing zero-valued nodes, among other enhancements. The Taylor-mode AD --- an algorithm for efficient high-order derivatives calculations --- is crucial for deriving specific heat diagrams, RG flow equations, or renormalized Feynman diagrams.
 
-- **Back End**: Translates the optimized graph into executable code for a variety of computing platforms, supporting multiple programming languages and integration with software and hardware ecosystems.
+- **Back End**: The final phase focuses on converting the optimized graph into executable code, compatible with a wide range of computing environments. This stage supports various programming languages and ensures seamless integration with different software and hardware ecosystems, thereby extending the compiler's utility across multiple platforms.
 
 ## Usage
 
