@@ -72,7 +72,7 @@ __pycache__
 *.vscode
 
 # Temporarily unignore vscode settings
-!.vscode/
+.vscode/
 
 *.DS_Store
 *.pb.gz

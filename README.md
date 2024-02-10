@@ -5,7 +5,7 @@
 [![Build Status](https://github.com/numericalEFT/FeynmanDiagram.jl/workflows/CI/badge.svg)](https://github.com/numericalEFT/FeynmanDiagram.jl/actions)
 [![Coverage](https://codecov.io/gh/numericalEFT/FeynmanDiagram.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/numericalEFT/FeynmanDiagram.jl)
 
-`FeynmanDiagram.jl` is a Julia package that introduces a novel compiler that transforms Feynman diagrams into a compact computational graph representation for efficient computation in Quantum Field Theory (QFT). It utilizes Taylor-mode Automatic Differentiation (AD) for field-theoretic renormalization, showcasing the synergy between QFT and AI tech stack to address computational challenges in QFT.
+`FeynmanDiagram.jl` is a Julia package that compiles Feynman diagrams in Quantum Field Theory (QFT) into a compact computational graph representation for fast evalution. It utilizes Taylor-mode Automatic Differentiation (AD) for field-theoretic renormalization, showcasing the synergy between QFT and AI tech stack to address computational challenges in QFT.
 
 ## Key Features
 
@@ -17,7 +17,7 @@
 
 ## Compiler Architecture Overview
 
-In general, Feynman diagrams represents high-order integral. The integrand are propagators/interactions composed by the basis arithmetic operations (multiplication, addition). The sequence of calculating the integrand by combining the propagators/interactions with the arithmetic operatos can be represented as an algebraic computational graph. In this sense, the computational graph serves as an intermediate representation that standardizes the treatment of various diagram types, ensuring a consistent approach across different QFT calculations.
+In general, Feynman diagrams represents high-order integral. The integrand are propagators/interactions composed by the basis arithmetic operations (multiplication, addition, power, etc). The sequence of calculating the integrand by combining the propagators/interactions with the arithmetic operatos can be represented as an algebraic computational graph. In this sense, the computational graph serves as an intermediate representation that standardizes the treatment of various diagram types, ensuring a consistent approach across different QFT calculations.
 
 ![infrastructure](assets/diagram_compiler.svg?raw=true "Compiler Infrastructure")
 
