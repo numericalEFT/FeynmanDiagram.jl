@@ -261,11 +261,11 @@ function diagdict_parquet_noresponse(diagtype::DiagramType, gkeys::Vector{Tuple{
     spin = 2.0 / (spinPolarPara + 1)
     dict_graphs = Dict{NTuple{3,Int},Tuple{Vector{Graph},Vector{Vector{Int}}}}()
     diag_orders = unique([p[1] for p in gkeys])
-    maxOrder = maximum(diag_orders)
 
     for order in diag_orders
-        GVorder = maxOrder - order
-        set_variables("x y"; orders=[GVorder, GVorder])
+        Gorder = maximum([p[2] for p in gkeys if p[1] == order])
+        Vorder = maximum([p[3] for p in gkeys if p[1] == order])
+        set_variables("x y"; orders=[Gorder, Vorder])
         para = diagPara(diagtype, isDynamic, spin, order, filter, transferLoop)
         parquet_builder = Parquet.build(para, extK)
 
@@ -300,11 +300,11 @@ function diagdict_parquet_response(diagtype::DiagramType, gkeys::Vector{Tuple{In
     spin = 2.0 / (spinPolarPara + 1)
     dict_graphs = Dict{NTuple{3,Int},Tuple{Vector{Graph},Vector{Vector{Int}},Vector{Response}}}()
     diag_orders = unique([p[1] for p in gkeys])
-    maxOrder = maximum(diag_orders)
 
     for order in diag_orders
-        GVorder = maxOrder - order
-        set_variables("x y"; orders=[GVorder, GVorder])
+        Gorder = maximum([p[2] for p in gkeys if p[1] == order])
+        Vorder = maximum([p[3] for p in gkeys if p[1] == order])
+        set_variables("x y"; orders=[Gorder, Vorder])
         para = diagPara(diagtype, isDynamic, spin, order, filter, transferLoop)
         parquet_builder = Parquet.build(para, extK, channels=channels)
 
@@ -346,12 +346,12 @@ function diagdict_parquet_noresponse_extraAD(diagtype::DiagramType, gkeys::Vecto
         push!(extra_orders, order)
     end
     diag_orders = unique([p[1] for p in gkeys])
-    maxOrder = maximum(diag_orders)
 
     for order in diag_orders
-        GVorder = maxOrder - order
+        Gorder = maximum([p[2] for p in gkeys if p[1] == order])
+        Vorder = maximum([p[3] for p in gkeys if p[1] == order])
         # set_variables("x y k"; orders=[MaxOrder - order, MaxOrder - order, 1])
-        set_variables("x y" * extra_varnames; orders=[GVorder, GVorder, extra_orders...])
+        set_variables("x y" * extra_varnames; orders=[Gorder, Vorder, extra_orders...])
         para = diagPara(diagtype, isDynamic, spin, order, filter, transferLoop)
         parquet_builder = Parquet.build(para, extK)
         diags, extT = parquet_builder.diagram, parquet_builder.extT
@@ -412,12 +412,12 @@ function diagdict_parquet_response_extraAD(diagtype::DiagramType, gkeys::Vector{
         push!(extra_orders, order)
     end
     diag_orders = unique([p[1] for p in gkeys])
-    maxOrder = maximum(diag_orders)
 
     for order in diag_orders
-        GVorder = maxOrder - order
+        Gorder = maximum([p[2] for p in gkeys if p[1] == order])
+        Vorder = maximum([p[3] for p in gkeys if p[1] == order])
         # set_variables("x y k"; orders=[MaxOrder - order, MaxOrder - order, 1])
-        set_variables("x y" * extra_varnames; orders=[GVorder, GVorder, extra_orders...])
+        set_variables("x y" * extra_varnames; orders=[Gorder, Vorder, extra_orders...])
         para = diagPara(diagtype, isDynamic, spin, order, filter, transferLoop)
         parquet_builder = Parquet.build(para, extK, channels=channels)
         diags, extT, responses = parquet_builder.diagram, parquet_builder.extT, parquet_builder.response
