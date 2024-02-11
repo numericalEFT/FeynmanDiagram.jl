@@ -49,16 +49,16 @@ The algorithms in `FrontEnds` generates Feynman diagrams for weak coupling expan
 
 The example below demonstrates generating two-loop self-energy diagrams by `Parquet` and optimizing their computational graphs.
 
-#### Diagram generation by `Parquet` and optimization
+#### Generate Diagram generation with the `Parquet` algorithm
 
 ```julia
 julia> using FeynmanDiagram
 julia> import FeynmanDiagram.FrontEnds: NoHartree
 
-# Define a parameter structure for two-loop self-energy diagrams in the momentum and the imaginary-time representation. Require the diagrams to be green's function irreducible.
+# Define a parameter for two-loop self-energy diagrams in the momentum and the imaginary-time representation. Exclude any diagrams containing Hartree subdiagrams. 
 julia> para = Parquet.DiagPara(type = Parquet.SigmaDiag, innerLoopNum = 2 hasTau = true, filter=[NoHartree,]);
 
-# Generate the Feynman diagrams in a DataFrame using the parquet algorithm. `sigmadf` is a DataFrame containing fields :type, :extT, :diagram, and :hash.
+# Construct Feynman diagrams within a DataFrame utilizing the parquet algorithm. The resulting sigmadf DataFrame comprises two components: the instantaneous part and the dynamic part of the self-energy.
 julia> sigmadf = Parquet.build(para) 
 2×4 DataFrame
  Row │ diagram                            extT    hash   type
@@ -71,7 +71,7 @@ julia> sigmadf = Parquet.build(para)
 julia> optimize!(sigmadf.diagram); 
 ```
 
-#### Construct renormalized Feynman diagrams by Taylor-mode AD
+#### Construct renormalized Feynman diagrams using the Taylor-mode AD
 
 The example code below demonstrates how to build the renormalized Feynman diagrams for the self-energy with the Green's function counterterms and the interaction counterterms using Taylor-mode AD.
 
@@ -85,7 +85,7 @@ julia> renormalization_orders = [(2,0,0), (2,1,0), (2,0,1), (2,2,0), (2,1,1), (2
 julia> dict_sigma = Parquet.diagdict_parquet(Parquet.SigmaDiag, renormalization_orders, filter=[FrontEnds.NoHartree]);
 ```
 
-### Example: BackEnds's `Compilers` for self-energy
+### Example: Compile Feynman diagrams to different programming languages 
 The Back End architecture enables the compiler to output source code in a range of other programming languages and machine learning frameworks. The example code below demonstrates how to use the `Compilers` to generate the source code for the self-energy diagrams in Julia, C, and Python.
 
 ```julia
@@ -106,26 +106,24 @@ julia> Compilers.compile_Python(g_o211, :jax, "func_g211.py");
 
 ### Computational Graph visualization
 #### Tree-type visualization using ETE
-Install the [ete3](http://etetoolkit.org/) Python package for tree-type visualization.
+To visualize tree-type structures of the self-energy in the Parquet example, install the [ete3](http://etetoolkit.org/) Python package, a powerful toolkit for tree visualizations.
 
-Note that we rely on [PyCall.jl](https://github.com/JuliaPy/PyCall.jl) to call the ete3 python functions from julia. Therefore, you have to install ete3 python package use the python distribution associated with PyCall. According to the tutorial of PyCall, "by default on Mac and Windows systems, Pkg.add("PyCall") or Pkg.build("PyCall") will use the Conda.jl package to install a minimal Python distribution (via Miniconda) that is private to Julia (not in your PATH). You can use the Conda Julia package to install more Python packages, and import Conda to print the Conda.PYTHONDIR directory where python was installed. On GNU/Linux systems, PyCall will default to using the python3 program (if any, otherwise python) in your PATH."
-
-You can simply use the following command for the tree-type visualization of the self-energy in the above `Parquet` example.
+Execute the following command in Julia for tree-type visualization of the self-energy generated in the above `Parquet` example:
 ```julia
-julia> plot_tree(sigmadf.diagram)
+julia> plot_tree(sigmadf.diagram, depth = 3)
 ```
+For installation instructions on using ete3 with [PyCall.jl](https://github.com/JuliaPy/PyCall.jl), please refer to the PyCall.jl documentation on how to configure and use external Python packages within Julia.
 
 #### Graph visualization using DOT
-Back End's `Compilers` support compile the computataional graphs to the `dot` file, which can be visualized using the `dot` command in Graphviz programs. The example code below demonstrates how to visualize the computational graph of the self-energy in the above `Parquet` example.
+The Back-End's `Compilers` module includes functionality to translate computational graphs into .dot files, which can be visualized using the `dot` command from Graphviz software. Below is an example code snippet that illustrates how to visualize the computational graph of the self-energy from the previously mentioned `Parquet` example.
 
 ```julia
-# Generate the dot file for the Graph of the self-energy in the above `Parquet` example.
+# Convert the self-energy graph from the `Parquet` example into a dot file.
 julia> Compilers.compile_dot(sigmadf.diagram, "sigma_o2.dot");
+# Use Graphviz's dot command to create an SVG visualization of the computational graph.
 julia> run(`dot -Tsvg sigma_o2.dot -o sigma_o2.svg`);
 ```
-
-The generated computational graphs are shown in the following figure as a directed acyclic graph, by the `dot` compiler. The leaves are represented by the green oval nodes and the intermediate nodes are represented by the rectangular nodes. In the penultimate floor of the graph, the left blue node with Sum operator represents the dynamic self-energy, and the right blue node represents the instant self-energy. 
-
+The resulting computational graphs are depicted as directed acyclic graphs by the dot compiler. In these visualizations, the leaves are indicated by green oval nodes, while the intermediate nodes take on a rectangular shape. On the penultimate level of the graph, the left blue node with the Sum operator signifies the dynamic part of the self-energy, and the right blue node denotes the instantaneous part of the self-energy.
 ![graph](assets/sigma_o2.svg?raw=true "Graph")
 
 ## License
