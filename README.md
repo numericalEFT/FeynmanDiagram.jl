@@ -87,7 +87,7 @@ julia> dict_sigma = taylorAD(sigmadf.diagram, para.innerLoopNum, renormalization
 The Back End architecture enables the compiler to output source code in a range of other programming languages and machine learning frameworks. The example code below demonstrates how to use the `Compilers` to generate the source code for the self-energy diagrams in Julia, C, and Python.
 
 ```julia
-#Access the self-energy data for the configuration with 1st-order Green's function counterterms and 1st-order interaction counterterms.
+#Access the two-loop self-energy data for the configuration with 1st-order Green's function counterterms and 1st-order interaction counterterms.
 julia> g_o211 = dict_sigma[[2,1,1]]; 
 
 # Compile the selected self-energy into a Julia RuntimeGeneratedFunction `func` and a `leafmap`.

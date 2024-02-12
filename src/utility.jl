@@ -14,6 +14,24 @@ export taylorAD
 @inline apply(::Type{ComputationalGraphs.Prod}, diags::Vector{T}, factors::Vector{F}) where {T<:TaylorSeries,F<:Number} = prod(d * f for (d, f) in zip(diags, factors))
 @inline apply(::Type{ComputationalGraphs.Power{N}}, diags::Vector{T}, factors::Vector{F}) where {N,T<:TaylorSeries,F<:Number} = (diags[1])^N * factors[1]
 
+
+"""
+    taylorAD(graphs::Vector{G}, diag_order::Int, renorm_orders::Tuple{Int,Int};
+             dict_graphs::Dict{Vector{Int},Vector{Graph}}=Dict{Vector{Int},Vector{Graph}}()) where {G<:Graph}
+
+    Performs Taylor-mode automatic differentiation on a vector of graphs based on renormalization orders. 
+    Focuses on differentiating based on renormalization orders, applying to all leaves (propagators) with BareGreenId and BareInteractionId properties.
+
+# Arguments
+- `graphs`: Vector of graph objects to be differentiated.
+- `diag_order`: Diagram order of the input graphs.
+- `renorm_orders`: Tuple specifying the renormalization orders for AD.
+- `dict_graphs`: Optional dictionary for storing the output graphs, keyed by their diagram and expansion orders.
+
+# Returns
+- `Dict{Vector{Int},Vector{Graph}}`: A dictionary of graphs processed through AD, with keys representing the diagram and renormalization orders,
+  and values being vectors of the differentiated graph objects.
+"""
 function taylorAD(graphs::Vector{G}, diag_order::Int, renorm_orders::Tuple{Int,Int};
     dict_graphs::Dict{Vector{Int},Vector{Graph}}=Dict{Vector{Int},Vector{Graph}}()) where {G<:Graph}
 
@@ -35,6 +53,23 @@ function taylorAD(graphs::Vector{G}, diag_order::Int, renorm_orders::Tuple{Int,I
     return dict_graphs
 end
 
+"""
+    taylorAD(graphs::Vector{G}, diag_order::Int, deriv_variables::Dict{String,Tuple{Int,Function}};
+             dict_graphs::Dict{Vector{Int},Vector{Graph}}=Dict{Vector{Int},Vector{Graph}}()) where {G<:Graph}
+
+    Performs Taylor-mode automatic differentiation on a vector of graphs, allowing for the specification of derivative variables and their computational dependencies. 
+    This function enables a focused differentiation process, where variables related to graph properties can be explicitly targeted.
+
+# Arguments
+- `graphs`: Vector of graphs subject to AD.
+- `diag_order`: Diagram order of the input graphs.
+- `deriv_variables`: A dictionary mapping variable names to their derivative orders and functions defining their dependence on graph properties.
+- `dict_graphs`: An optional dictionary to store the results, categorized by diagram and differentiation orders.
+
+# Returns
+- `Dict{Vector{Int},Vector{Graph}}`: A dictionary of graphs processed through AD, with keys indicating the differentiation orders,
+  and values being vectors of the differentiated graph objects.
+"""
 function taylorAD(graphs::Vector{G}, diag_order::Int, deriv_variables::Dict{String,Tuple{Int,Function}};
     dict_graphs::Dict{Vector{Int},Vector{Graph}}=Dict{Vector{Int},Vector{Graph}}()) where {G<:Graph}
 
@@ -76,6 +111,25 @@ function taylorAD(graphs::Vector{G}, diag_order::Int, deriv_variables::Dict{Stri
 
     return dict_graphs
 end
+
+"""
+    taylorAD(graphs::Vector{G}, diag_order::Int, renorm_orders::Tuple{Int,Int},
+             extra_variables::Dict{String,Tuple{Int,Function}};
+             dict_graphs::Dict{Vector{Int},Vector{Graph}}=Dict{Vector{Int},Vector{Graph}}()) where {G<:Graph}
+
+    Performs Taylor-mode automatic differentiation on a vector of graphs, by incorporating both standard
+    renormalization orders and additional variables for differentiation. 
+
+# Arguments
+- `graphs`: Vector of graphs for AD.
+- `diag_order`: Diagram order of the input graphs.
+- `renorm_orders`: Tuple specifying the standard renormalization orders of differentiation.
+- `extra_variables`: Additional variables for differentiation, each with specified orders and dependency functions.
+- `dict_graphs`: Optional dictionary for storing the differentiated graphs.
+
+# Returns
+- A dictionary categorizing the differentiated graphs by diagram and specific differentiation orders.
+"""
 
 function taylorAD(graphs::Vector{G}, diag_order::Int, renorm_orders::Tuple{Int,Int},
     extra_variables::Dict{String,Tuple{Int,Function}};
