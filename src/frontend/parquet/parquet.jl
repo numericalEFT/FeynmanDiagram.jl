@@ -7,7 +7,6 @@ import ..ComputationalGraphs: Sum, Prod
 # import ..ComputationalGraphs: Power
 Ftype, Wtype = _dtype.factor, _dtype.weight
 import ..Taylor: set_variables
-import ..Utility: taylorexpansion!
 
 import ..FrontEnds
 import ..FrontEnds: TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
@@ -15,14 +14,12 @@ import ..FrontEnds: Filter, NoBubble, NoHartree, NoFock, DirectOnly, Wirreducibl
 import ..FrontEnds: Response, Composite, ChargeCharge, SpinSpin, ProperChargeCharge, ProperSpinSpin, UpUp, UpDown
 import ..FrontEnds: AnalyticProperty, Instant, Dynamic
 import ..FrontEnds: DiagramId, PropagatorId, GenericId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId, BareGreenId, BareInteractionId
-import ..GV: diagdictGV_ver4
+import ..GV: diagsGV_ver4
 
 using StaticArrays, PyCall
 using AbstractTrees
 using Parameters, Combinatorics
 using DataFrames
-
-export diagdict_parquet, diagdict_parquet_extraAD
 
 # if isdefined(Base, :Experimental) && isdefined(Base.Experimental, Symbol("@optlevel"))
 #     @eval Base.Experimental.@optlevel 1
@@ -210,7 +207,6 @@ Base.:(==)(a::DiagPara, b::DiagPara) = Base.isequal(a, b)
 include("common.jl")
 include("operation.jl")
 include("filter.jl")
-include("to_graph.jl")
 
 const vertex4I_diags = Dict{Int,Vector{Graph}}()
 
@@ -224,9 +220,8 @@ const vertex4I_diags = Dict{Int,Vector{Graph}}()
 - `spinPolarPara (optional)` : the spin-polarization parameter. Default is `0.0`.
 """
 function initialize_vertex4I_diags(; filter=[NoHartree], spinPolarPara::Float64=0.0)
-    dict_graphs = diagdictGV_ver4([(3, 0, 0), (4, 0, 0)], channels=[Alli], filter=filter, spinPolarPara=spinPolarPara)
-    vertex4I_diags[3] = dict_graphs[(3, 0, 0)][1]
-    vertex4I_diags[4] = dict_graphs[(4, 0, 0)][1]
+    vertex4I_diags[3] = diagsGV_ver4(3, channels=[Alli], filter=filter, spinPolarPara=spinPolarPara)
+    vertex4I_diags[4] = diagsGV_ver4(4, channels=[Alli], filter=filter, spinPolarPara=spinPolarPara)
 end
 
 """

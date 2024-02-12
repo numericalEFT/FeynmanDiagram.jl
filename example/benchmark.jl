@@ -20,7 +20,6 @@ function main()
     MaxLoopNum = 7
     Random.seed!(randseed)
 
-    # FeynGraphs = diagdict_parquet(:vertex4, partition)
     ver4df = Parquet.vertex4(para)
     diags = ver4df.diagram
     IR.optimize!(diags)

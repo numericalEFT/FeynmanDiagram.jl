@@ -56,7 +56,7 @@ julia> using FeynmanDiagram
 julia> import FeynmanDiagram.FrontEnds: NoHartree
 
 # Define a parameter structure for two-loop self-energy diagrams in the momentum and the imaginary-time representation. Require the diagrams to be green's function irreducible.
-julia> para = Parquet.DiagPara(type = Parquet.SigmaDiag, innerLoopNum = 2 hasTau = true, filter=[NoHartree,]);
+julia> para = Parquet.DiagPara(type = Parquet.SigmaDiag, innerLoopNum = 2, hasTau = true, filter=[NoHartree,]);
 
 # Generate the Feynman diagrams in a DataFrame using the parquet algorithm. `sigmadf` is a DataFrame containing fields :type, :extT, :diagram, and :hash.
 julia> sigmadf = Parquet.build(para) 
@@ -76,20 +76,18 @@ julia> optimize!(sigmadf.diagram);
 The example code below demonstrates how to build the renormalized Feynman diagrams for the self-energy with the Green's function counterterms and the interaction counterterms using Taylor-mode AD.
 
 ```julia
-julia> using FeynmanDiagram
-
-# Set the renormalization orders. The first element is the order of Feynman diagrams, the second element is the order of the Green's function counterterms, and the second element is the order of the interaction counterterms.
-julia> renormalization_orders = [(2,0,0), (2,1,0), (2,0,1), (2,2,0), (2,1,1), (2,0,2)];
+# Set the renormalization orders. The first element is the order of the Green's function counterterms, and the second element is the order of the interaction counterterms.
+julia> renormalization_orders = (2, 2);
 
 # Generate the Dict of Graph for the renormalized self-energy diagrams with the Green's function counterterms and the interaction counterterms.
-julia> dict_sigma = Parquet.diagdict_parquet(Parquet.SigmaDiag, renormalization_orders, filter=[FrontEnds.NoHartree]);
+julia> dict_sigma = taylorAD(sigmadf.diagram, para.innerLoopNum, renormalization_orders);
 ```
 
 ### Example: BackEnds's `Compilers` for self-energy
 The Back End architecture enables the compiler to output source code in a range of other programming languages and machine learning frameworks. The example code below demonstrates how to use the `Compilers` to generate the source code for the self-energy diagrams in Julia, C, and Python.
 
 ```julia
-julia> g_o211 = dict_sigma[(2,1,1)] # select the self-energy with 2nd-order Green's function counterterms and 1st-order interaction counterterms.
+julia> g_o211 = dict_sigma[[2,1,1]]; # select the self-energy with 1st-order Green's function counterterms and 1st-order interaction counterterms.
 
 # Compile the self-energy to Julia RuntimeGeneratedFunction `func` and the `leafmap`, which maps the indices in the vector of leaf values to the corresponding leafs (propagators and interactions). 
 julia> func, leafmap = Compilers.compile(g_o211);

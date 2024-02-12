@@ -248,8 +248,8 @@ function read_vertex4diagrams(filename::AbstractString; spinPolarPara::Float64=0
     unique!(gr_keys)
     graphvec = Graph{_dtype.factor,_dtype.weight}[]
 
-    extTs = Vector{NTuple{4,Int}}()
-    responses = Vector{Response}()
+    # extTs = Vector{NTuple{4,Int}}()
+    # responses = Vector{Response}()
     for (extT, channel) in gr_keys
         keyDi = (extT, channel, 0)
         keyEx = (extT, channel, 1)
@@ -261,10 +261,11 @@ function read_vertex4diagrams(filename::AbstractString; spinPolarPara::Float64=0
         guuId = Ver4Id(para, UpUp, gId_Di.type, k=gId_Di.extK, t=gId_Di.extT, chan=gId_Di.channel)
         guu = Graph([gud, gEx], properties=guuId)
         append!(graphvec, [guu, gud])
-        append!(extTs, [extT, extT])
-        append!(responses, [UpUp, UpDown])
+        # append!(extTs, [extT, extT])
+        # append!(responses, [UpUp, UpDown])
     end
-    return graphvec, extTs, responses
+    # return graphvec, extTs, responses
+    return graphvec
 end
 
 function read_one_vertex4diagram!(io::IO, GNum::Int, verNum::Int, loopNum::Int, spinPolarPara::Float64=0.0;

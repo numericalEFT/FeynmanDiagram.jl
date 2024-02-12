@@ -6,11 +6,124 @@ using ..ComputationalGraphs: build_all_leaf_derivative, eval!, isfermionic
 import ..ComputationalGraphs: count_operation, count_expanded_operation
 using ..ComputationalGraphs.AbstractTrees
 using ..Taylor
+using ..FrontEnds: DiagramId, PropagatorId, GenericId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId, BareGreenId, BareInteractionId
+
+export taylorAD
 
 @inline apply(::Type{ComputationalGraphs.Sum}, diags::Vector{T}, factors::Vector{F}) where {T<:TaylorSeries,F<:Number} = sum(d * f for (d, f) in zip(diags, factors))
 @inline apply(::Type{ComputationalGraphs.Prod}, diags::Vector{T}, factors::Vector{F}) where {T<:TaylorSeries,F<:Number} = prod(d * f for (d, f) in zip(diags, factors))
 @inline apply(::Type{ComputationalGraphs.Power{N}}, diags::Vector{T}, factors::Vector{F}) where {N,T<:TaylorSeries,F<:Number} = (diags[1])^N * factors[1]
 
+function taylorAD(graphs::Vector{G}, diag_order::Int, renorm_orders::Tuple{Int,Int};
+    dict_graphs::Dict{Vector{Int},Vector{Graph}}=Dict{Vector{Int},Vector{Graph}}()) where {G<:Graph}
+
+    set_variables("δg δv"; orders=collect(renorm_orders))
+    propagator_var = Dict(BareGreenId => [true, false], BareInteractionId => [false, true]) # Specify variable dependence of fermi (first element) and bose (second element) particles.
+    taylor_series_vec, taylormap = taylorexpansion!(graphs, propagator_var)
+
+    for taylor_series in taylor_series_vec
+        for (o, graph) in taylor_series.coeffs
+            key = [diag_order; o]
+            if haskey(dict_graphs, key)
+                push!(dict_graphs[key], graph)
+            else
+                dict_graphs[key] = [graph,]
+            end
+        end
+    end
+
+    return dict_graphs
+end
+
+function taylorAD(graphs::Vector{G}, diag_order::Int, deriv_variables::Dict{String,Tuple{Int,Function}};
+    dict_graphs::Dict{Vector{Int},Vector{Graph}}=Dict{Vector{Int},Vector{Graph}}()) where {G<:Graph}
+
+    varnames = ""
+    deriv_orders = Int[]
+    funcs = Vector{Function}()
+    for (var_name, var_info) in deriv_variables
+        varnames *= " $var_name"
+        push!(deriv_orders, var_info[1])
+        push!(funcs, var_info[2])
+    end
+    set_variables(varnames; orders=deriv_orders)
+
+    var_dependence = Dict{Int,Vector{Bool}}()
+    visited = Set{Int}()
+    for diag in graphs
+        for leaf in Leaves(diag)
+            hash = leaf.id
+            if hash in visited
+                continue
+            else
+                push!(visited, hash)
+            end
+            var_dependence[hash] = map(f -> f(leaf.properties), funcs)
+        end
+    end
+    taylor_series_vec, taylormap = taylorexpansion!(graphs, var_dependence)
+
+    for taylor_series in taylor_series_vec
+        for (o, graph) in taylor_series.coeffs
+            key = [diag_order; o]
+            if haskey(dict_graphs, key)
+                push!(dict_graphs[key], graph)
+            else
+                dict_graphs[key] = [graph,]
+            end
+        end
+    end
+
+    return dict_graphs
+end
+
+function taylorAD(graphs::Vector{G}, diag_order::Int, renorm_orders::Tuple{Int,Int},
+    extra_variables::Dict{String,Tuple{Int,Function}};
+    dict_graphs::Dict{Vector{Int},Vector{Graph}}=Dict{Vector{Int},Vector{Graph}}()) where {G<:Graph}
+
+    varnames = "δg δv"
+    deriv_orders = collect(renorm_orders)
+    funcs = Vector{Function}()
+    for (var_name, var_info) in extra_variables
+        varnames *= " $var_name"
+        push!(deriv_orders, var_info[1])
+        push!(funcs, var_info[2])
+    end
+    set_variables(varnames; orders=deriv_orders)
+
+    var_dependence = Dict{Int,Vector{Bool}}()
+    visited = Set{Int}()
+    for diag in graphs
+        for leaf in Leaves(diag)
+            hash = leaf.id
+            if hash in visited
+                continue
+            else
+                push!(visited, hash)
+            end
+            extra_Bools = map(f -> f(leaf.properties), funcs)
+            if leaf.properties isa BareGreenId
+                var_dependence[leaf.id] = [true; false; extra_Bools]
+            elseif leaf.properties isa BareInteractionId
+                var_dependence[leaf.id] = [false; true; extra_Bools]
+            end
+        end
+    end
+    taylor_series_vec, taylormap = taylorexpansion!(graphs, var_dependence)
+
+    for taylor_series in taylor_series_vec
+        for (o, graph) in taylor_series.coeffs
+            key = [diag_order; o]
+            if haskey(dict_graphs, key)
+                push!(dict_graphs[key], graph)
+            else
+                dict_graphs[key] = [graph,]
+            end
+        end
+    end
+
+    return dict_graphs
+end
 
 """
     function taylorexpansion!(graph::G, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}(); to_coeff_map::Dict{Int,TaylorSeries{G}}=Dict{Int,TaylorSeries{G}}()) where {G<:Graph}
@@ -47,6 +160,9 @@ function taylorexpansion!(graph::G, var_dependence::Dict{Int,Vector{Bool}}=Dict{
         return result, to_coeff_map
     else
         to_coeff_map[graph.id] = apply(graph.operator, [taylorexpansion!(sub, var_dependence; to_coeff_map=to_coeff_map)[1] for sub in graph.subgraphs], graph.subgraph_factors)
+        for g in values(to_coeff_map[graph.id].coeffs)
+            g.properties = graph.properties
+        end
         return to_coeff_map[graph.id], to_coeff_map
     end
 end
@@ -82,6 +198,9 @@ function taylorexpansion!(graph::FeynmanGraph{F,W}, var_dependence::Dict{Int,Vec
         return result, to_coeff_map
     else
         to_coeff_map[graph.id] = apply(graph.operator, [taylorexpansion!(sub, var_dependence; to_coeff_map=to_coeff_map)[1] for sub in graph.subgraphs], graph.subgraph_factors)
+        for g in values(to_coeff_map[graph.id].coeffs)
+            g.properties = graph.properties
+        end
         return to_coeff_map[graph.id], to_coeff_map
     end
 end

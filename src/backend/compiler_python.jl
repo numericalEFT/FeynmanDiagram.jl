@@ -124,7 +124,7 @@ function to_python_str(graphs::AbstractVector{<:AbstractGraph}, framework::Symbo
 
     return expr, gid_to_leafid
 end
-function compile_python(graphs::AbstractVector{<:AbstractGraph}, framework::Symbol=:jax, filename::String="GraphFunc.py")
+function compile_Python(graphs::AbstractVector{<:AbstractGraph}, framework::Symbol=:jax, filename::String="GraphFunc.py")
     py_string, leafmap = to_python_str(graphs, framework)
     open(filename, "w") do f
         write(f, py_string)

@@ -40,20 +40,20 @@ include("TaylorSeries/TaylorSeries.jl")
 using .Taylor
 export Taylor
 
-include("utility.jl")
-using .Utility
-export Utility
-export taylorexpansion!
-
 include("frontend/frontends.jl")
 using .FrontEnds
 export FrontEnds
-export LabelProduct
+export LabelProduct, leafstates
 export Filter, Wirreducible, Girreducible, NoBubble, NoHartree, NoFock, Proper, DirectOnly
 using .GV
-export GV, diagdictGV, diagdictGV_ver4, leafstates
+export GV
 using .Parquet
-export Parquet, diagdict_parquet, diagdict_parquet_extraAD
+export Parquet
+
+include("utility.jl")
+using .Utility
+export Utility
+export taylorAD
 
 include("backend/compiler.jl")
 using .Compilers
