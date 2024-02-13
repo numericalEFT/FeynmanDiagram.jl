@@ -14,75 +14,59 @@ export taylorAD
 @inline apply(::Type{ComputationalGraphs.Prod}, diags::Vector{T}, factors::Vector{F}) where {T<:TaylorSeries,F<:Number} = prod(d * f for (d, f) in zip(diags, factors))
 @inline apply(::Type{ComputationalGraphs.Power{N}}, diags::Vector{T}, factors::Vector{F}) where {N,T<:TaylorSeries,F<:Number} = (diags[1])^N * factors[1]
 
-
 """
-    taylorAD(graphs::Vector{G}, diag_order::Int, renorm_orders::Tuple{Int,Int};
-             dict_graphs::Dict{Vector{Int},Vector{Graph}}=Dict{Vector{Int},Vector{Graph}}()) where {G<:Graph}
+    function taylorAD(graphs::Vector{G}, diagram_orders::Vector{Int}, deriv_orders::Vector{Int},
+        leaf_dep_funcs::Vector{Function}=[pr -> pr isa BareGreenId, pr -> pr isa BareInteractionId];
+        dict_graphs::Dict{Vector{Int},Vector{Graph}}=Dict{Vector{Int},Vector{Graph}}()
+    ) where {G<:Graph}
 
-    Performs Taylor-mode automatic differentiation on a vector of graphs based on renormalization orders. 
-    Focuses on differentiating based on renormalization orders, applying to all leaves (propagators) with BareGreenId and BareInteractionId properties.
+    Performs Taylor-mode automatic differentiation (AD) on a vector of graphs, with the differentiation process tailored based on specified derivative orders,
+    and leaf dependency functions. It categorizes the differentiated graphs in a dictionary based on their diagram and derivative orders.
 
-# Arguments
-- `graphs`: Vector of graph objects to be differentiated.
-- `diag_order`: Diagram order of the input graphs.
-- `renorm_orders`: Tuple specifying the renormalization orders for AD.
-- `dict_graphs`: Optional dictionary for storing the output graphs, keyed by their diagram and expansion orders.
+# Parameters
+- `graphs`: A vector of graphs to be differentiated.
+- `diagram_orders`: A vector of integers, each corresponding to the diagram order of the graph at the same index in `graphs`.
+- `deriv_orders`: A vector of integers specifying the orders of differentiation to apply to the graphs.
+- `leaf_dep_funcs`: Optional. A vector of functions determining the dependency of differentiation variables on the properties of leaves in the graphs. 
+                    Defaults to functions identifying BareGreenId and BareInteractionId properties.
+- `dict_graphs`: Optional. A dictionary for storing the output graphs, keyed by vectors of integers representing the diagram order followed by specific differentiation orders. Defaults to an empty dictionary.
 
 # Returns
-- `Dict{Vector{Int},Vector{Graph}}`: A dictionary of graphs processed through AD, with keys representing the diagram and renormalization orders,
-  and values being vectors of the differentiated graph objects.
+- `Dict{Vector{Int},Vector{Graph}}`: A dictionary containing the graphs processed through Taylor-mode AD, categorized by their diagram and differentiation orders.
+
+# Example Usage
+```julia
+# Define a vector of graphs and their corresponding diagram orders
+graphs = [g1, g2]
+diagram_orders = [1, 2]
+deriv_orders = [2, 3, 3]
+leaf_dep_funcs = [pr -> pr isa BareGreenId, pr -> pr isa BareInteractionId, pr -> pr.extK[1] != 0]
+
+# Perform Taylor-mode AD and categorize the results
+result_dict = taylorAD(graphs, diagram_orders, deriv_orders, leaf_dep_funcs)
+```
 """
-function taylorAD(graphs::Vector{G}, diag_order::Int, renorm_orders::Tuple{Int,Int};
-    dict_graphs::Dict{Vector{Int},Vector{Graph}}=Dict{Vector{Int},Vector{Graph}}()) where {G<:Graph}
+function taylorAD(graphs::Vector{G}, diagram_orders::Vector{Int}, deriv_orders::Vector{Int},
+    leaf_dep_funcs::Vector{Function}=[pr -> pr isa BareGreenId, pr -> pr isa BareInteractionId];
+    dict_graphs::Dict{Vector{Int},Vector{Graph}}=Dict{Vector{Int},Vector{Graph}}()
+) where {G<:Graph}
+    @assert length(graphs) == length(diagram_orders) "Lengths of graphs and diagram_orders must be equal."
+    @assert length(deriv_orders) == length(leaf_dep_funcs) "Lengths of deriv_orders and properties_deps must be equal."
 
-    set_variables("δg δv"; orders=collect(renorm_orders))
-    propagator_var = Dict(BareGreenId => [true, false], BareInteractionId => [false, true]) # Specify variable dependence of fermi (first element) and bose (second element) particles.
-    taylor_series_vec, taylormap = taylorexpansion!(graphs, propagator_var)
-
-    for taylor_series in taylor_series_vec
-        for (o, graph) in taylor_series.coeffs
-            key = [diag_order; o]
-            if haskey(dict_graphs, key)
-                push!(dict_graphs[key], graph)
-            else
-                dict_graphs[key] = [graph,]
-            end
+    charset = 'a':'z'
+    variables_strings = []
+    for i in eachindex(deriv_orders)
+        if i ≤ 26
+            push!(variables_strings, charset[i])
+        else
+            j = i % 26
+            j = j == 0 ? 26 : j
+            push!(variables_strings, variables_strings[i-26] * charset[j])
         end
     end
+    varnames = join(variables_strings, " ")
 
-    return dict_graphs
-end
-
-"""
-    taylorAD(graphs::Vector{G}, diag_order::Int, deriv_variables::Dict{String,Tuple{Int,Function}};
-             dict_graphs::Dict{Vector{Int},Vector{Graph}}=Dict{Vector{Int},Vector{Graph}}()) where {G<:Graph}
-
-    Performs Taylor-mode automatic differentiation on a vector of graphs, allowing for the specification of derivative variables and their computational dependencies. 
-    This function enables a focused differentiation process, where variables related to graph properties can be explicitly targeted.
-
-# Arguments
-- `graphs`: Vector of graphs subject to AD.
-- `diag_order`: Diagram order of the input graphs.
-- `deriv_variables`: A dictionary mapping variable names to their derivative orders and functions defining their dependence on graph properties.
-- `dict_graphs`: An optional dictionary to store the results, categorized by diagram and differentiation orders.
-
-# Returns
-- `Dict{Vector{Int},Vector{Graph}}`: A dictionary of graphs processed through AD, with keys indicating the differentiation orders,
-  and values being vectors of the differentiated graph objects.
-"""
-function taylorAD(graphs::Vector{G}, diag_order::Int, deriv_variables::Dict{String,Tuple{Int,Function}};
-    dict_graphs::Dict{Vector{Int},Vector{Graph}}=Dict{Vector{Int},Vector{Graph}}()) where {G<:Graph}
-
-    varnames = ""
-    deriv_orders = Int[]
-    funcs = Vector{Function}()
-    for (var_name, var_info) in deriv_variables
-        varnames *= " $var_name"
-        push!(deriv_orders, var_info[1])
-        push!(funcs, var_info[2])
-    end
     set_variables(varnames; orders=deriv_orders)
-
     var_dependence = Dict{Int,Vector{Bool}}()
     visited = Set{Int}()
     for diag in graphs
@@ -93,81 +77,14 @@ function taylorAD(graphs::Vector{G}, diag_order::Int, deriv_variables::Dict{Stri
             else
                 push!(visited, hash)
             end
-            var_dependence[hash] = map(f -> f(leaf.properties), funcs)
+            var_dependence[hash] = map(f -> f(leaf.properties), leaf_dep_funcs)
         end
     end
     taylor_series_vec, taylormap = taylorexpansion!(graphs, var_dependence)
 
-    for taylor_series in taylor_series_vec
+    for (idx, taylor_series) in enumerate(taylor_series_vec)
         for (o, graph) in taylor_series.coeffs
-            key = [diag_order; o]
-            if haskey(dict_graphs, key)
-                push!(dict_graphs[key], graph)
-            else
-                dict_graphs[key] = [graph,]
-            end
-        end
-    end
-
-    return dict_graphs
-end
-
-"""
-    taylorAD(graphs::Vector{G}, diag_order::Int, renorm_orders::Tuple{Int,Int},
-             extra_variables::Dict{String,Tuple{Int,Function}};
-             dict_graphs::Dict{Vector{Int},Vector{Graph}}=Dict{Vector{Int},Vector{Graph}}()) where {G<:Graph}
-
-    Performs Taylor-mode automatic differentiation on a vector of graphs, by incorporating both standard
-    renormalization orders and additional variables for differentiation. 
-
-# Arguments
-- `graphs`: Vector of graphs for AD.
-- `diag_order`: Diagram order of the input graphs.
-- `renorm_orders`: Tuple specifying the standard renormalization orders of differentiation.
-- `extra_variables`: Additional variables for differentiation, each with specified orders and dependency functions.
-- `dict_graphs`: Optional dictionary for storing the differentiated graphs.
-
-# Returns
-- A dictionary categorizing the differentiated graphs by diagram and specific differentiation orders.
-"""
-
-function taylorAD(graphs::Vector{G}, diag_order::Int, renorm_orders::Tuple{Int,Int},
-    extra_variables::Dict{String,Tuple{Int,Function}};
-    dict_graphs::Dict{Vector{Int},Vector{Graph}}=Dict{Vector{Int},Vector{Graph}}()) where {G<:Graph}
-
-    varnames = "δg δv"
-    deriv_orders = collect(renorm_orders)
-    funcs = Vector{Function}()
-    for (var_name, var_info) in extra_variables
-        varnames *= " $var_name"
-        push!(deriv_orders, var_info[1])
-        push!(funcs, var_info[2])
-    end
-    set_variables(varnames; orders=deriv_orders)
-
-    var_dependence = Dict{Int,Vector{Bool}}()
-    visited = Set{Int}()
-    for diag in graphs
-        for leaf in Leaves(diag)
-            hash = leaf.id
-            if hash in visited
-                continue
-            else
-                push!(visited, hash)
-            end
-            extra_Bools = map(f -> f(leaf.properties), funcs)
-            if leaf.properties isa BareGreenId
-                var_dependence[leaf.id] = [true; false; extra_Bools]
-            elseif leaf.properties isa BareInteractionId
-                var_dependence[leaf.id] = [false; true; extra_Bools]
-            end
-        end
-    end
-    taylor_series_vec, taylormap = taylorexpansion!(graphs, var_dependence)
-
-    for taylor_series in taylor_series_vec
-        for (o, graph) in taylor_series.coeffs
-            key = [diag_order; o]
+            key = [diagram_orders[idx]; o]
             if haskey(dict_graphs, key)
                 push!(dict_graphs[key], graph)
             else

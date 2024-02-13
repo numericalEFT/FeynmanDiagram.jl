@@ -77,10 +77,10 @@ The example code below demonstrates how to build the renormalized Feynman diagra
 
 ```julia
 # Set the renormalization orders. The first element is the order of the Green's function counterterms, and the second element is the order of the interaction counterterms.
-julia> renormalization_orders = (2, 2);
+julia> renormalization_orders = [2, 3];
 
 # Generate the Dict of Graph for the renormalized self-energy diagrams with the Green's function counterterms and the interaction counterterms.
-julia> dict_sigma = taylorAD(sigmadf.diagram, para.innerLoopNum, renormalization_orders);
+julia> dict_sigma = taylorAD(sigmadf.diagram, [para.innerLoopNum, para.innerLoopNum], renormalization_orders);
 ```
 
 ### Example: Compile Feynman diagrams to different programming languages 
