@@ -6,7 +6,6 @@ using ..ComputationalGraphs: build_all_leaf_derivative, eval!, isfermionic
 import ..ComputationalGraphs: count_operation, count_expanded_operation
 using ..ComputationalGraphs.AbstractTrees
 using ..Taylor
-using ..FrontEnds: DiagramId, PropagatorId, GenericId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId, BareGreenId, BareInteractionId
 
 export taylorAD
 
@@ -15,8 +14,7 @@ export taylorAD
 @inline apply(::Type{ComputationalGraphs.Power{N}}, diags::Vector{T}, factors::Vector{F}) where {N,T<:TaylorSeries,F<:Number} = (diags[1])^N * factors[1]
 
 """
-    function taylorAD(graphs::Vector{G}, deriv_orders::Vector{Int},
-        leaf_dep_funcs::Vector{Function}=[pr -> pr isa BareGreenId, pr -> pr isa BareInteractionId];
+    function taylorAD(graphs::Vector{G}, deriv_orders::Vector{Int}, leaf_dep_funcs::Vector{Function};
         dict_graphs::Dict{Vector{Int},Vector{Graph}}=Dict{Vector{Int},Vector{Graph}}()
     ) where {G<:Graph}
 
@@ -26,8 +24,7 @@ export taylorAD
 # Parameters
 - `graphs`: A vector of graphs to be differentiated.
 - `deriv_orders`: A vector of integers specifying the orders of differentiation to apply to the graphs.
-- `leaf_dep_funcs`: Optional. A vector of functions determining the dependency of differentiation variables on the properties of leaves in the graphs. 
-                    Defaults to functions identifying BareGreenId and BareInteractionId properties.
+- `leaf_dep_funcs`: A vector of functions determining the dependency of differentiation variables on the properties of leaves in the graphs. 
 - `dict_graphs`: Optional. A dictionary for storing the output graphs, keyed by vectors of integers representing the specific differentiation orders. Defaults to an empty dictionary.
 
 # Returns
@@ -35,17 +32,20 @@ export taylorAD
 
 # Example Usage
 ```julia
-# Define a vector of graphs and their corresponding diagram orders
+# Define a vector of graphs and their corresponding derivative orders
 graphs = [g1, g2]
 deriv_orders = [2, 3, 3]
-leaf_dep_funcs = [pr -> pr isa BareGreenId, pr -> pr isa BareInteractionId, pr -> pr.extK[1] != 0]
+
+# Define a vector of differentiation dependency functions for the properties of leaf. 
+# The first and second functions specify identify `BareGreenId` and `BareInteractionId` properties as the Green's function and interaction counterterms, respectively.
+# The third function specifies the dependence of on the first external momentum of the leaf.
+leaf_dep_funcs = [pr -> pr isa FrontEnds.BareGreenId, pr -> pr isa FrontEnds.BareInteractionId, pr -> pr.extK[1] != 0]
 
 # Perform Taylor-mode AD and categorize the results
 result_dict = taylorAD(graphs, deriv_orders, leaf_dep_funcs)
 ```
 """
-function taylorAD(graphs::Vector{G}, deriv_orders::Vector{Int},
-    leaf_dep_funcs::Vector{Function}=[pr -> pr isa BareGreenId, pr -> pr isa BareInteractionId];
+function taylorAD(graphs::Vector{G}, deriv_orders::Vector{Int}, leaf_dep_funcs::Vector{Function};
     dict_graphs::Dict{Vector{Int},Vector{Graph}}=Dict{Vector{Int},Vector{Graph}}()
 ) where {G<:Graph}
     @assert length(deriv_orders) == length(leaf_dep_funcs) "Lengths of deriv_orders and properties_deps must be equal."
@@ -79,9 +79,8 @@ function taylorAD(graphs::Vector{G}, deriv_orders::Vector{Int},
     end
     taylor_series_vec, taylormap = taylorexpansion!(graphs, var_dependence)
 
-    for (idx, taylor_series) in enumerate(taylor_series_vec)
+    for taylor_series in taylor_series_vec
         for (orders, graph) in taylor_series.coeffs
-            # key = [diagram_orders[idx]; o]
             if haskey(dict_graphs, orders)
                 push!(dict_graphs[orders], graph)
             else
