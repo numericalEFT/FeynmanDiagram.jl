@@ -15,42 +15,39 @@ export taylorAD
 @inline apply(::Type{ComputationalGraphs.Power{N}}, diags::Vector{T}, factors::Vector{F}) where {N,T<:TaylorSeries,F<:Number} = (diags[1])^N * factors[1]
 
 """
-    function taylorAD(graphs::Vector{G}, diagram_orders::Vector{Int}, deriv_orders::Vector{Int},
+    function taylorAD(graphs::Vector{G}, deriv_orders::Vector{Int},
         leaf_dep_funcs::Vector{Function}=[pr -> pr isa BareGreenId, pr -> pr isa BareInteractionId];
         dict_graphs::Dict{Vector{Int},Vector{Graph}}=Dict{Vector{Int},Vector{Graph}}()
     ) where {G<:Graph}
 
     Performs Taylor-mode automatic differentiation (AD) on a vector of graphs, with the differentiation process tailored based on specified derivative orders,
-    and leaf dependency functions. It categorizes the differentiated graphs in a dictionary based on their diagram and derivative orders.
+    and leaf dependency functions. It categorizes the differentiated graphs in a dictionary based on their derivative orders.
 
 # Parameters
 - `graphs`: A vector of graphs to be differentiated.
-- `diagram_orders`: A vector of integers, each corresponding to the diagram order of the graph at the same index in `graphs`.
 - `deriv_orders`: A vector of integers specifying the orders of differentiation to apply to the graphs.
 - `leaf_dep_funcs`: Optional. A vector of functions determining the dependency of differentiation variables on the properties of leaves in the graphs. 
                     Defaults to functions identifying BareGreenId and BareInteractionId properties.
-- `dict_graphs`: Optional. A dictionary for storing the output graphs, keyed by vectors of integers representing the diagram order followed by specific differentiation orders. Defaults to an empty dictionary.
+- `dict_graphs`: Optional. A dictionary for storing the output graphs, keyed by vectors of integers representing the specific differentiation orders. Defaults to an empty dictionary.
 
 # Returns
-- `Dict{Vector{Int},Vector{Graph}}`: A dictionary containing the graphs processed through Taylor-mode AD, categorized by their diagram and differentiation orders.
+- `Dict{Vector{Int},Vector{Graph}}`: A dictionary containing the graphs processed through Taylor-mode AD, categorized by their differentiation orders.
 
 # Example Usage
 ```julia
 # Define a vector of graphs and their corresponding diagram orders
 graphs = [g1, g2]
-diagram_orders = [1, 2]
 deriv_orders = [2, 3, 3]
 leaf_dep_funcs = [pr -> pr isa BareGreenId, pr -> pr isa BareInteractionId, pr -> pr.extK[1] != 0]
 
 # Perform Taylor-mode AD and categorize the results
-result_dict = taylorAD(graphs, diagram_orders, deriv_orders, leaf_dep_funcs)
+result_dict = taylorAD(graphs, deriv_orders, leaf_dep_funcs)
 ```
 """
-function taylorAD(graphs::Vector{G}, diagram_orders::Vector{Int}, deriv_orders::Vector{Int},
+function taylorAD(graphs::Vector{G}, deriv_orders::Vector{Int},
     leaf_dep_funcs::Vector{Function}=[pr -> pr isa BareGreenId, pr -> pr isa BareInteractionId];
     dict_graphs::Dict{Vector{Int},Vector{Graph}}=Dict{Vector{Int},Vector{Graph}}()
 ) where {G<:Graph}
-    @assert length(graphs) == length(diagram_orders) "Lengths of graphs and diagram_orders must be equal."
     @assert length(deriv_orders) == length(leaf_dep_funcs) "Lengths of deriv_orders and properties_deps must be equal."
 
     charset = 'a':'z'
@@ -83,12 +80,12 @@ function taylorAD(graphs::Vector{G}, diagram_orders::Vector{Int}, deriv_orders::
     taylor_series_vec, taylormap = taylorexpansion!(graphs, var_dependence)
 
     for (idx, taylor_series) in enumerate(taylor_series_vec)
-        for (o, graph) in taylor_series.coeffs
-            key = [diagram_orders[idx]; o]
-            if haskey(dict_graphs, key)
-                push!(dict_graphs[key], graph)
+        for (orders, graph) in taylor_series.coeffs
+            # key = [diagram_orders[idx]; o]
+            if haskey(dict_graphs, orders)
+                push!(dict_graphs[orders], graph)
             else
-                dict_graphs[key] = [graph,]
+                dict_graphs[orders] = [graph,]
             end
         end
     end
