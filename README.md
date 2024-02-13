@@ -90,21 +90,21 @@ julia> dict_sigma = taylorAD(sigmadf.diagram, renormalization_orders, leaf_dep_f
 The Back End architecture enables the compiler to output source code in a range of other programming languages and machine learning frameworks. The example code below demonstrates how to use the `Compilers` to generate the source code for the self-energy diagrams in Julia, C, and Python.
 
 ```julia
-#Access the two-loop self-energy data for the configuration with 1st-order Green's function counterterms and 1st-order interaction counterterms.
-julia> g_o211 = dict_sigma[[2,1,1]]; 
+# Access the self-energy data for the configuration with 2nd-order Green's function counterterms and 1st-order interaction counterterms.
+julia> g_o21 = dict_sigma[[2,1]]; 
 
 # Compile the selected self-energy into a Julia RuntimeGeneratedFunction `func` and a `leafmap`.
 # The `leafmap` associates vector indices of leaf values with their corresponding leaves (propagators and interactions). 
-julia> func, leafmap = Compilers.compile(g_o211);
+julia> func, leafmap = Compilers.compile(g_o21);
 
 # Export the self-energy's source code to a Julia file.
-julia> Compilers.compile_Julia(g_o211, "func_g211.jl");
+julia> Compilers.compile_Julia(g_o21, "func_o21.jl");
 
 # Export the self-energy's source code to a C file.
-julia> Compilers.compile_C(g_o211, "func_g211.c");
+julia> Compilers.compile_C(g_o21, "func_o21.c");
 
 # Export the self-energy's source code to a Python file for use with the JAX machine learning framework.
-julia> Compilers.compile_Python(g_o211, :jax, "func_g211.py");
+julia> Compilers.compile_Python(g_o21, :jax, "func_o21.py");
 ```
 
 ### Computational Graph visualization
