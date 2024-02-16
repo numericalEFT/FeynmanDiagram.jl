@@ -3,9 +3,9 @@ abstract type AbstractGraph end
 abstract type AbstractOperator end
 struct Sum <: AbstractOperator end
 struct Prod <: AbstractOperator end
-struct Constant <: AbstractOperator end
+struct Unitary <: AbstractOperator end
 struct Power{N} <: AbstractOperator
-    function Power(N::Real)
+    function Power(N::Int)
         @assert N ∉ [0, 1] "Power{$N} makes no sense."
         new{N}()
     end
@@ -19,7 +19,7 @@ apply(o::AbstractOperator, diags) = error("not implemented!")
 Base.show(io::IO, o::AbstractOperator) = print(io, typeof(o))
 Base.show(io::IO, ::Type{Sum}) = print(io, "⨁")
 Base.show(io::IO, ::Type{Prod}) = print(io, "Ⓧ")
-Base.show(io::IO, ::Type{Constant}) = print(io, "C")
+Base.show(io::IO, ::Type{Unitary}) = print(io, "𝟙")
 Base.show(io::IO, ::Type{Power{N}}) where {N} = print(io, "^$N")
 
 # Is the unary form of operator 𝓞 trivial: 𝓞(G) ≡ G?
@@ -81,13 +81,6 @@ function operator(g::AbstractGraph)
     Returns the operation associated with computational graph node `g`.
 """
 function operator(g::AbstractGraph) end
-
-"""
-function factor(g::AbstractGraph)
-
-    Returns the fixed scalar-multiplicative factor of the computational graph `g`.
-"""
-function factor(g::AbstractGraph) end
 
 """
     function weight(g::AbstractGraph)
@@ -185,13 +178,6 @@ function set_operator!(g::AbstractGraph, operator::Type{<:AbstractOperator})
 function set_operator!(g::AbstractGraph, operator::Type{<:AbstractOperator}) end
 
 """
-function set_factor!(g::AbstractGraph, factor)
-
-    Update the factor of graph `g` to `factor`.
-"""
-function set_factor!(g::AbstractGraph, factor) end
-
-"""
 function set_weight!(g::AbstractGraph, weight)
 
     Update the weight of graph `g` to `weight`.
@@ -254,6 +240,16 @@ function set_subgraph_factors!(g::AbstractGraph, subgraph_factors::AbstractVecto
     end
 end
 
+"""
+function disconnect_subgraphs!(g::G) where {G<:AbstractGraph}
+
+    Empty the subgraphs and subgraph_factors of graph `g`. Any child nodes of g
+    not referenced elsewhere in the full computational graph are effectively deleted.
+"""
+function disconnect_subgraphs!(g::AbstractGraph)
+    empty!(subgraphs(g))
+    empty!(subgraph_factors(g))
+end
 
 ### Methods ###
 
@@ -261,9 +257,20 @@ end
 function Base.isequal(a::AbstractGraph, b::AbstractGraph)
     typeof(a) != typeof(b) && return false
     (weight(a) ≈ weight(b)) == false && return false  # check graph weights for approximate equality
+    length(subgraphs(a)) != length(subgraphs(b)) && return false
+
+    pa = sortperm(subgraphs(a), by=x -> id(x))
+    pb = sortperm(subgraphs(b), by=x -> id(x))
+    subgraph_factors(a)[pa] != subgraph_factors(b)[pb] && return false
+    subgraphs(a)[pa] != subgraphs(b)[pb] && return false
+
     for field in fieldnames(typeof(a))
-        if field == :weight && getproperty(a, :weight) == weight(a) && getproperty(b, :weight) == weight(b)
+        if field == :weight # && getproperty(a, :weight) == weight(a) && getproperty(b, :weight) == weight(b)
             continue  # skip graph weights if already accounted for
+        elseif field == :subgraphs # && getproperty(a, :subgraphs) == subgraphs(a) && getproperty(b, :subgraphs) == subgraphs(b)
+            continue  # skip subgraphs if already accounted for
+        elseif field == :subgraph_factors # && getproperty(a, :subgraph_factors) == subgraph_factors(a) && getproperty(b, :subgraph_factors) == subgraph_factors(b)
+            continue  # skip subgraph_factors if already accounted for
         else
             getproperty(a, field) != getproperty(b, field) && return false
         end
@@ -280,21 +287,44 @@ Base.:(==)(a::AbstractGraph, b::AbstractGraph) = Base.isequal(a, b)
 function isequiv(a::AbstractGraph, b::AbstractGraph, args...)
     typeof(a) != typeof(b) && return false
     # Check graph weights for approximate equality where applicable
-    if :weight ∉ args
-        (weight(a) ≈ weight(b)) == false && return false
+    if :weight ∉ args && !(weight(a) ≈ weight(b))
+        return false
     end
     # Check that all subgraphs are equivalent modulo `args`
-    length(subgraphs(a)) != length(subgraphs(b)) && return false
-    !all(isequiv.(subgraphs(a), subgraphs(b), args...)) && return false
+    asubg_factors, bsubg_factors = subgraph_factors(a), subgraph_factors(b)
+    length(asubg_factors) != length(bsubg_factors) && return false
+
     for field in fieldnames(typeof(a))
-        field in args && continue
-        if field == :weight && getproperty(a, :weight) == weight(a) && getproperty(b, :weight) == weight(b)
+        if field == :weight
             continue  # skip graph weights if already accounted for
-        elseif field == :subgraphs && getproperty(a, :subgraphs) == subgraphs(a) && getproperty(b, :subgraphs) == subgraphs(b)
+        elseif field == :subgraphs
             continue  # skip subgraphs if already accounted for
+        elseif field == :subgraph_factors
+            continue  # skip subgraph_factors if already accounted for
+        elseif field in args
+            continue  # skip fields in `args`
         else
             getproperty(a, field) != getproperty(b, field) && return false
         end
+    end
+
+    # Compare groups of subgraphs with the same factor
+    a_pairs = zip(subgraphs(a), asubg_factors)
+    b_pairs = collect(zip(subgraphs(b), bsubg_factors))
+    # b_pairs = zip(subgraphs(b), subgraph_factors(b))
+    # matched = falses(length(asubg_factors))
+    for (suba, suba_factor) in a_pairs
+        match_found = false
+        for (idx, (subb, subb_factor)) in enumerate(b_pairs)
+            if suba_factor == subb_factor && isequiv(suba, subb, args...)
+                # if !matched[idx] && suba_factor == subb_factor && isequiv(suba, subb, args...)
+                deleteat!(b_pairs, idx)
+                # matched[idx] = true
+                match_found = true
+                break
+            end
+        end
+        !match_found && return false
     end
     return true
 end

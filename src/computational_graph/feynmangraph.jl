@@ -42,7 +42,6 @@ Base.:(==)(a::FeynmanProperties, b::FeynmanProperties) = Base.isequal(a, b)
     Returns a copy of the given FeynmanProperties `p` modified to have no topology.
 """
 drop_topology(p::FeynmanProperties) = FeynmanProperties(p.diagtype, p.vertices, [], p.external_indices, p.external_legs)
-
 """
     mutable struct FeynmanGraph{F<:Number,W}
     
@@ -56,7 +55,6 @@ drop_topology(p::FeynmanProperties) = FeynmanProperties(p.diagtype, p.vertices, 
 - `subgraphs::Vector{FeynmanGraph{F,W}}`  vector of sub-diagrams 
 - `subgraph_factors::Vector{F}`  scalar multiplicative factors associated with each subdiagram
 - `operator::DataType`  node operation (Sum, Prod, etc.)
-- `factor::F`  a number representing the total scalar multiplicative factor for the diagram.
 - `weight::W`  weight of the diagram
 
 # Example:
@@ -81,7 +79,6 @@ mutable struct FeynmanGraph{F<:Number,W} <: AbstractGraph # FeynmanGraph
     subgraph_factors::Vector{F}
 
     operator::DataType
-    factor::F
     weight::W
 
     """
@@ -120,7 +117,13 @@ mutable struct FeynmanGraph{F<:Number,W} <: AbstractGraph # FeynmanGraph
             vertices = [external_operators(g) for g in subgraphs if diagram_type(g) != Propagator]
         end
         properties = FeynmanProperties(typeof(diagtype), vertices, topology, external_indices, external_legs)
-        return new{ftype,wtype}(uid(), name, orders, properties, subgraphs, subgraph_factors, typeof(operator), factor, weight)
+
+        g = new{ftype,wtype}(uid(), String(name), orders, properties, subgraphs, subgraph_factors, typeof(operator), weight)
+        if factor ≈ one(ftype)
+            return g
+        else
+            return new{ftype,wtype}(uid(), String(name), orders, properties, [g,], [factor,], Prod, weight * factor)
+        end
     end
 
     """
@@ -150,7 +153,12 @@ mutable struct FeynmanGraph{F<:Number,W} <: AbstractGraph # FeynmanGraph
             @assert length(subgraphs) == 1 "FeynmanGraph with Power operator must have one and only one subgraph."
         end
         # @assert allunique(subgraphs) "all subgraphs must be distinct."
-        return new{ftype,wtype}(uid(), name, orders, properties, subgraphs, subgraph_factors, typeof(operator), factor, weight)
+        g = new{ftype,wtype}(uid(), String(name), orders, properties, subgraphs, subgraph_factors, typeof(operator), weight)
+        if factor ≈ one(ftype)
+            return g
+        else
+            return new{ftype,wtype}(uid(), String(name), orders, properties, [g,], [factor,], Prod, weight * factor)
+        end
     end
 
     """
@@ -165,7 +173,8 @@ mutable struct FeynmanGraph{F<:Number,W} <: AbstractGraph # FeynmanGraph
     function FeynmanGraph(g::Graph{F,W}, properties::FeynmanProperties) where {F,W}
         @assert length(properties.external_indices) == length(properties.external_legs)
         # @assert allunique(subgraphs) "all subgraphs must be distinct."
-        return new{F,W}(uid(), g.name, g.orders, properties, g.subgraphs, g.subgraph_factors, g.operator, g.factor, g.weight)
+        # return new{F,W}(uid(), g.name, g.orders, properties, g.subgraphs, g.subgraph_factors, g.operator, g.weight)
+        return new{F,W}(uid(), g.name, g.orders, properties, [FeynmanGraph(subg, subg.properties) for subg in g.subgraphs], g.subgraph_factors, g.operator, g.weight)
     end
 end
 
@@ -176,7 +185,6 @@ id(g::FeynmanGraph) = g.id
 name(g::FeynmanGraph) = g.name
 orders(g::FeynmanGraph) = g.orders
 operator(g::FeynmanGraph) = g.operator
-factor(g::FeynmanGraph) = g.factor
 weight(g::FeynmanGraph) = g.weight
 subgraph(g::FeynmanGraph, i=1) = g.subgraphs[i]
 subgraphs(g::FeynmanGraph) = g.subgraphs
@@ -191,7 +199,6 @@ set_name!(g::FeynmanGraph, name::String) = (g.name = name)
 set_orders!(g::FeynmanGraph, orders::Vector{Int}) = (g.orders = orders)
 set_operator!(g::FeynmanGraph, operator::Type{<:AbstractOperator}) = (g.operator = operator)
 set_operator!(g::FeynmanGraph, operator::AbstractOperator) = (g.operator = typeof(operator))
-set_factor!(g::FeynmanGraph{F,W}, factor) where {F,W} = (g.factor = F(factor))
 set_weight!(g::FeynmanGraph{F,W}, weight) where {F,W} = (g.weight = W(weight))
 set_subgraph!(g::FeynmanGraph{F,W}, subgraph::FeynmanGraph{F,W}, i=1) where {F,W} = (g.subgraphs[i] = subgraph)
 set_subgraphs!(g::FeynmanGraph{F,W}, subgraphs::Vector{FeynmanGraph{F,W}}) where {F,W} = (g.subgraphs = subgraphs)
@@ -299,7 +306,6 @@ function Base.:*(g1::FeynmanGraph{F,W}, c2) where {F,W}
     # Convert trivial unary link to in-place form
     if unary_istrivial(g1) && onechild(g1)
         g.subgraph_factors[1] *= g1.subgraph_factors[1]
-        # g.subgraph_factors[1] *= g1.subgraph_factors[1] * g1.factor
         g.subgraphs = g1.subgraphs
     end
     return g
@@ -319,7 +325,6 @@ function Base.:*(c1, g2::FeynmanGraph{F,W}) where {F,W}
     # Convert trivial unary link to in-place form
     if unary_istrivial(g2) && onechild(g2)
         g.subgraph_factors[1] *= g2.subgraph_factors[1]
-        # g.subgraph_factors[1] *= g2.subgraph_factors[1] * g2.factor
         g.subgraphs = g2.subgraphs
     end
     return g
@@ -344,7 +349,7 @@ function linear_combination(g1::FeynmanGraph{F,W}, g2::FeynmanGraph{F,W}, c1=F(1
     empty_topology = []  # No topology for Sum nodes
     total_vertices = union(vertices(g1), vertices(g2))
     properties = FeynmanProperties(diagram_type(g1), total_vertices, empty_topology, external_indices(g1), external_legs(g1))
-    
+
     f1 = typeof(c1) == F ? c1 : F(c1)
     f2 = typeof(c2) == F ? c2 : F(c2)
     subgraphs = [g1, g2]
@@ -352,16 +357,15 @@ function linear_combination(g1::FeynmanGraph{F,W}, g2::FeynmanGraph{F,W}, c1=F(1
     # Convert trivial unary links to in-place form
     if unary_istrivial(g1) && onechild(g1)
         subgraph_factors[1] *= g1.subgraph_factors[1]
-        # subgraph_factors[1] *= g1.subgraph_factors[1] * g1.factor
         subgraphs[1] = g1.subgraphs[1]
     end
     if unary_istrivial(g2) && onechild(g2)
         subgraph_factors[2] *= g2.subgraph_factors[1]
-        # subgraph_factors[2] *= g2.subgraph_factors[1] * g2.factor
         subgraphs[2] = g2.subgraphs[1]
     end
 
-    if subgraphs[1] == subgraphs[2]
+    if subgraphs[1].id == subgraphs[2].id
+        # if isequiv(subgraphs[1], subgraphs[2], :id)
         g = FeynmanGraph([subgraphs[1]], properties; subgraph_factors=[sum(subgraph_factors)], operator=Sum(), orders=orders(g1), ftype=F, wtype=W)
     else
         g = FeynmanGraph(subgraphs, properties; subgraph_factors=subgraph_factors, operator=Sum(), orders=orders(g1), ftype=F, wtype=W)
@@ -396,21 +400,20 @@ function linear_combination(graphs::Vector{FeynmanGraph{F,W}}, constants::Abstra
     empty_topology = []  # No topology for Sum nodes
     total_vertices = union(Iterators.flatten(vertices.(graphs)))
     properties = FeynmanProperties(diagram_type(g1), total_vertices, empty_topology, external_indices(g1), external_legs(g1))
-    
+
     subgraphs = graphs
     subgraph_factors = eltype(constants) == F ? constants : Vector{F}(constants)
     # Convert trivial unary links to in-place form
     for (i, sub_g) in enumerate(graphs)
         if unary_istrivial(sub_g) && onechild(sub_g)
             subgraph_factors[i] *= sub_g.subgraph_factors[1]
-            # subgraph_factors[i] *= sub_g.subgraph_factors[1] * sub_g.factor
             subgraphs[i] = sub_g.subgraphs[1]
         end
     end
     unique_graphs = FeynmanGraph{F,W}[]
     unique_factors = F[]
     for (idx, g) in enumerate(subgraphs)
-        i = findfirst(isequal(g), unique_graphs)
+        i = findfirst(isequal(g.id), id.(unique_graphs))
         if isnothing(i)
             push!(unique_graphs, g)
             push!(unique_factors, subgraph_factors[idx])
@@ -500,6 +503,7 @@ function feynman_diagram(subgraphs::Vector{FeynmanGraph{F,W}}, topology::Vector{
     external_leg, external_noleg = Int[], Int[] # index all leg/nonleg external operators
     ind = 0
 
+    subgraphs = deepcopy(subgraphs)
     orders_length = length(orders(subgraphs[1]))
     diag_orders = zeros(Int, orders_length)
     for g in subgraphs
@@ -539,20 +543,24 @@ function feynman_diagram(subgraphs::Vector{FeynmanGraph{F,W}}, topology::Vector{
         sign = 1
     end
 
+    # subgraphs_noVer = FeynmanGraph{F,W}[]
     if isnothing(contraction_orders)
         for (i, connection) in enumerate(topology)
             push!(subgraphs, propagator(operators[connection]; orders=zeros(Int, orders_length)))
+            # push!(subgraphs_noVer, propagator(operators[connection]; orders=zeros(Int, orders_length)))
         end
     else
         for (i, connection) in enumerate(topology)
             propagator_orders = zeros(Int, orders_length)
             propagator_orders[eachindex(contraction_orders[i])] = contraction_orders[i]
             push!(subgraphs, propagator(operators[connection]; orders=propagator_orders))
+            # push!(subgraphs_noVer, propagator(operators[connection]; orders=propagator_orders))
             diag_orders += propagator_orders
         end
     end
     _external_indices = union(external_leg, external_noleg)
     _external_legs = append!([true for i in eachindex(external_leg)], [false for i in eachindex(external_noleg)])
+    # return FeynmanGraph(subgraphs_noVer; topology=topology, external_indices=_external_indices, external_legs=_external_legs, vertices=vertices,
     return FeynmanGraph(subgraphs; topology=topology, external_indices=_external_indices, external_legs=_external_legs, vertices=vertices,
         orders=diag_orders, name=name, diagtype=diagtype, operator=Prod(), factor=factor * sign, weight=weight)
 end

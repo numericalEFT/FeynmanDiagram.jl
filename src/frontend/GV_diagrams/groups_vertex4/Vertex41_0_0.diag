@@ -1,0 +1,92 @@
+#Type: Vertex4
+#DiagNum: 3
+#Order: 1
+#GNum: 6
+#Ver4Num: 2
+#LoopNum: 4
+#ExtLoopIndex: 0
+#DummyLoopIndex: 
+#TauNum: 4
+#DummyTauIndex: 
+
+# Permutation
+ 3  4  5  0  1  2 
+# SymFactor
+-1.0
+# Channel: 
+PHr
+# GType
+-2 -2  0 -2 -2  0 
+# VertexBasis
+ 0  0  1  1  2  2 
+ 1  2  2  0  0  1 
+# LoopBasis
+ 1  0  1  0  1  0 
+ 0  0 -1  1 -1  0 
+ 0  1  0  0  1  0 
+ 0  0  1  0  0  1 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 5  2  0  3 | 1  4  2  5 |
+# WType(Direct,Exchange)
+ 0  0 | 0  0 |
+# SpinFactor
+ 2 -1 -1  1 
+# Di/Ex
+ 0  0  0  1 
+# Proper/ImProper
+ 1  1  1  0 
+
+# Permutation
+ 3  4  5  1  0  2 
+# SymFactor
+1.0
+# Channel: 
+PHEr
+# GType
+-2 -2  0 -2 -2  0 
+# VertexBasis
+ 0  0  1  1  2  2 
+ 1  2  2  0  0  1 
+# LoopBasis
+ 1  0  0  1  0  0 
+ 0  0  1 -1  1  0 
+ 0  1 -1  1  0  0 
+ 0  0  1  0  0  1 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 5  2  0  3 | 1  4  2  5 |
+# WType(Direct,Exchange)
+ 0  0 | 0  0 |
+# SpinFactor
+ 2 -1 -1  1 
+# Di/Ex
+ 1  1  1  0 
+# Proper/ImProper
+ 0  0  0  0 
+
+# Permutation
+ 3  2  5  4  0  1 
+# SymFactor
+0.5
+# Channel: 
+PPr
+# GType
+-2 -2  0  0 -2 -2 
+# VertexBasis
+ 0  0  1  1  2  2 
+ 1  1  2  2  0  0 
+# LoopBasis
+ 1  0  1  0  0  1 
+ 0  0  0  0  1 -1 
+ 0  1  1  0  0  1 
+ 0  0 -1  1  0  0 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 1  2  0  3 | 3  4  2  5 |
+# WType(Direct,Exchange)
+ 0  0 | 0  0 |
+# SpinFactor
+ 1 -1 -1  1 
+# Di/Ex
+ 0  1  1  0 
+# Proper/ImProper
+ 0  0  0  0 
+

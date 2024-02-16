@@ -3,7 +3,7 @@ module ComputationalGraphs
 using AbstractTrees
 using StaticArrays
 using Printf, PyCall, DataFrames
-#using ..Taylor
+using Random
 macro todo()
     return :(error("Not yet implemented!"))
 end
@@ -38,20 +38,21 @@ export multi_product, linear_combination, feynman_diagram, propagator, interacti
 
 
 include("tree_properties.jl")
-export haschildren, onechild, isleaf, isbranch, ischain, isfactorless, eldest, count_operation
+export haschildren, onechild, isleaf, isbranch, ischain, has_zero_subfactors, eldest, count_operation
 
 include("operation.jl")
 include("io.jl")
-# plot_tree
+export plot_tree
 
 include("eval.jl")
 export eval!
 
 include("transform.jl")
-export relabel!, standardize_labels!, replace_subgraph!, merge_linear_combination!, merge_multi_product!, merge_chains!, flatten_chains!
-export relabel, standardize_labels, replace_subgraph, merge_linear_combination, merge_multi_product, merge_chains, flatten_chains
-
+export relabel!, standardize_labels!, replace_subgraph!, merge_linear_combination!, merge_multi_product!, remove_zero_valued_subgraphs!
+export relabel, standardize_labels, replace_subgraph, merge_linear_combination, merge_multi_product, remove_zero_valued_subgraphs
+export open_parenthesis, open_parenthesis!, flatten_prod!, flatten_prod, flatten_sum!, flatten_sum, flatten_chains!, flatten_chains
 include("optimize.jl")
-export optimize!, optimize
+export optimize!, optimize, flatten_all_chains!, merge_all_linear_combinations!, merge_all_multi_products!, remove_all_zero_valued_subgraphs!, remove_duplicated_leaves!, remove_duplicated_nodes!
+
 
 end

@@ -34,21 +34,21 @@ function _idstring(graph::AbstractGraph)
     return string(id(graph), _namestr(graph))
 end
 
-function _idstring(graph::FeynmanGraph)    
+function _idstring(graph::FeynmanGraph)
     return string(id(graph), _namestr(graph), ":", _ops_to_str(vertices(graph)))
 end
 
 function _stringrep(graph::AbstractGraph, color=true)
     idstr = _idstring(graph)
-    fstr = short(factor(graph), one(factor(graph)))
+    properties = graph.properties
     wstr = short(weight(graph))
     ostr = short_orders(orders(graph))
     # =$(node.weight*(2π)^(3*node.id.para.innerLoopNum))
 
-    if length(subgraphs(graph)) == 0
-        return isempty(fstr) ? "$(idstr)$(ostr)=$wstr" : "$(idstr)⋅$(fstr)=$wstr"
+    if isleaf(graph)
+        return isnothing(properties) ? "$(idstr)$(ostr)=$wstr" : "$(idstr)$(properties)$(ostr)=$wstr"
     else
-        return "$(idstr)$(ostr)=$wstr=$(fstr)$(operator(graph)) "
+        return isnothing(properties) ? "$(idstr)$(ostr)=$wstr=$(operator(graph)) " : "$(idstr)$(properties)$(ostr)=$wstr=$(operator(graph)) "
     end
 end
 
@@ -58,7 +58,7 @@ end
     Write a text representation of an AbstractGraph `graph` to the output stream `io`.
 """
 function Base.show(io::IO, graph::AbstractGraph; kwargs...)
-    if length(subgraphs(graph)) == 0
+    if isleaf(graph) == 0
         typestr = ""
     else
         typestr = join(["$(id(g))" for g in subgraphs(graph)], ",")

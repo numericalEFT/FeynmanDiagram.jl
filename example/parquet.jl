@@ -14,6 +14,7 @@ para = DiagPara(
     interaction=[Interaction(ChargeCharge, Instant), Interaction(UpUp, Instant),],
     extra=blocks
 )
+loopDim = 3
 
 K0 = zeros(para.totalLoopNum)
 KinL, KoutL, KinR, KoutR = deepcopy(K0), deepcopy(K0), deepcopy(K0), deepcopy(K0)
@@ -21,7 +22,7 @@ KinL[1] = KoutL[1] = 1
 KinR[2] = KoutR[2] = 1
 legK = [KinL, KoutL, KinR, KoutR]
 
-varK = [rand(para.loopDim) for i in 1:para.totalLoopNum]
+varK = [rand(loopDim) for i in 1:para.totalLoopNum]
 varT = [rand() for i in 1:para.totalTauNum]
 evalK(basis) = sum([basis[i] * varK[i] for i in 1:para.totalLoopNum])
 evalT(Tidx) = varT[Tidx]

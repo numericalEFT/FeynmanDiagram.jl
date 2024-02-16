@@ -1,22 +1,96 @@
 module Utility
 using ..ComputationalGraphs
-#using ..ComputationalGraphs: Sum, Prod, Power, decrement_power
 using ..ComputationalGraphs: decrement_power
 using ..ComputationalGraphs: build_all_leaf_derivative, eval!, isfermionic
-import ..ComputationalGraphs: count_operation
+import ..ComputationalGraphs: count_operation, count_expanded_operation
 using ..ComputationalGraphs.AbstractTrees
-using ..DiagTree
-using ..DiagTree: Diagram, PropagatorId, BareGreenId, BareInteractionId
-using ..FrontEnds: LabelProduct
 using ..Taylor
+
+export taylorAD
 
 @inline apply(::Type{ComputationalGraphs.Sum}, diags::Vector{T}, factors::Vector{F}) where {T<:TaylorSeries,F<:Number} = sum(d * f for (d, f) in zip(diags, factors))
 @inline apply(::Type{ComputationalGraphs.Prod}, diags::Vector{T}, factors::Vector{F}) where {T<:TaylorSeries,F<:Number} = prod(d * f for (d, f) in zip(diags, factors))
 @inline apply(::Type{ComputationalGraphs.Power{N}}, diags::Vector{T}, factors::Vector{F}) where {N,T<:TaylorSeries,F<:Number} = (diags[1])^N * factors[1]
 
-@inline apply(::Type{DiagTree.Sum}, diags::Vector{T}, factors::Vector{F}) where {T<:TaylorSeries,F<:Number} = sum(d * f for (d, f) in zip(diags, factors))
-@inline apply(::Type{DiagTree.Prod}, diags::Vector{T}, factors::Vector{F}) where {T<:TaylorSeries,F<:Number} = prod(d * f for (d, f) in zip(diags, factors))
+"""
+    function taylorAD(graphs::Vector{G}, deriv_orders::Vector{Int}, leaf_dep_funcs::Vector{Function};
+        dict_graphs::Dict{Vector{Int},Vector{Graph}}=Dict{Vector{Int},Vector{Graph}}()
+    ) where {G<:Graph}
 
+    Performs Taylor-mode automatic differentiation (AD) on a vector of graphs, with the differentiation process tailored based on specified maximum orders of differentiation 
+    and leaf dependency functions. It categorizes the differentiated graphs in a dictionary based on their derivative orders.
+
+# Parameters
+- `graphs`: A vector of graphs to be differentiated.
+- `deriv_orders`: A vector of integers specifying the maximum orders of differentiation to apply to the graphs.
+- `leaf_dep_funcs`: A vector of functions determining the dependency of differentiation variables on the properties of leaves in the graphs. 
+- `dict_graphs`: Optional. A dictionary for storing the output graphs, keyed by vectors of integers representing the specific differentiation orders. Defaults to an empty dictionary.
+
+# Returns
+- `Dict{Vector{Int},Vector{Graph}}`: A dictionary containing the graphs processed through Taylor-mode AD, categorized by their differentiation orders.
+
+# Example Usage
+```julia
+# Define a vector of graphs
+graphs = [g1, g2]
+# Specify the maximum orders of differentiation
+deriv_orders = [2, 3, 3]
+
+# Define a vector of differentiation dependency functions for the properties of leaf. 
+# The first and second functions specify identify `BareGreenId` and `BareInteractionId` properties as the Green's function and interaction counterterms, respectively.
+# The third function specifies the dependence of on the first external momentum of the leaf.
+leaf_dep_funcs = [pr -> pr isa FrontEnds.BareGreenId, pr -> pr isa FrontEnds.BareInteractionId, pr -> pr.extK[1] != 0]
+
+# Perform Taylor-mode AD and categorize the results. `result_dict` holds the AD results, organized by differentiation orders `[0:2, 0:3, 0:3]`.
+result_dict = taylorAD(graphs, deriv_orders, leaf_dep_funcs)
+```
+"""
+function taylorAD(graphs::Vector{G}, deriv_orders::Vector{Int}, leaf_dep_funcs::Vector{Function};
+    dict_graphs::Dict{Vector{Int},Vector{Graph}}=Dict{Vector{Int},Vector{Graph}}()
+) where {G<:Graph}
+    @assert length(deriv_orders) == length(leaf_dep_funcs) "Lengths of deriv_orders and properties_deps must be equal."
+
+    charset = 'a':'z'
+    variables_strings = []
+    for i in eachindex(deriv_orders)
+        if i ≤ 26
+            push!(variables_strings, charset[i])
+        else
+            j = i % 26
+            j = j == 0 ? 26 : j
+            push!(variables_strings, variables_strings[i-26] * charset[j])
+        end
+    end
+    varnames = join(variables_strings, " ")
+
+    set_variables(varnames; orders=deriv_orders)
+    var_dependence = Dict{Int,Vector{Bool}}()
+    visited = Set{Int}()
+    for diag in graphs
+        for leaf in Leaves(diag)
+            hash = leaf.id
+            if hash in visited
+                continue
+            else
+                push!(visited, hash)
+            end
+            var_dependence[hash] = map(f -> f(leaf.properties), leaf_dep_funcs)
+        end
+    end
+    taylor_series_vec, taylormap = taylorexpansion!(graphs, var_dependence)
+
+    for taylor_series in taylor_series_vec
+        for (orders, graph) in taylor_series.coeffs
+            if haskey(dict_graphs, orders)
+                push!(dict_graphs[orders], graph)
+            else
+                dict_graphs[orders] = [graph,]
+            end
+        end
+    end
+
+    return dict_graphs
+end
 
 """
     function taylorexpansion!(graph::G, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}(); to_coeff_map::Dict{Int,TaylorSeries{G}}=Dict{Int,TaylorSeries{G}}()) where {G<:Graph}
@@ -27,21 +101,11 @@ using ..Taylor
 - `var_dependence::Dict{Int,Vector{Bool}}` A dictionary that specifies the variable dependence of target graph leaves. Should map the id of each leaf to a Bool vector. 
     The length of the vector should be the same as number of variables.
 - `to_coeff_map::Dict{Int,TaylorSeries}` A dicitonary that maps id of each node of target graph to its correponding taylor series.
-`from_coeff_map::Dict{Int,Tuple{Int,Vector{Bool}}}` A dicitonary that maps a taylor coefficient to its owner FeynmanGraph. The key should be the id of coefficient graph, and value should be a tuple of (feynmangraph.id, order).
 """
-function taylorexpansion!(graph::G, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}(); to_coeff_map::Dict{Int,TaylorSeries{G}}=Dict{Int,TaylorSeries{G}}(), from_coeff_map::Dict{Int,Tuple{Int,Vector{Int}}}=Dict{Int,Tuple{Int,Vector{Int}}}()) where {G<:Graph}
+function taylorexpansion!(graph::G, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}();
+    to_coeff_map::Dict{Int,TaylorSeries{G}}=Dict{Int,TaylorSeries{G}}()) where {G<:Graph}
     if haskey(to_coeff_map, graph.id) #If already exist, use taylor series in to_coeff_map.
-        if isleaf(graph)
-            for (order, coeff) in to_coeff_map[graph.id].coeffs
-                if haskey(from_coeff_map, coeff.id)
-                    @assert from_coeff_map[coeff.id] == (graph.id, order) "The graph g$(graph.id) is mapped to two different leaf taylor series!"
-                else
-                    from_coeff_map[coeff.id] = (graph.id, order)
-                end
-            end
-        end
-        return to_coeff_map[graph.id], to_coeff_map, from_coeff_map
-
+        return to_coeff_map[graph.id], to_coeff_map
     elseif isleaf(graph)
         if haskey(var_dependence, graph.id)
             var = var_dependence[graph.id]
@@ -55,16 +119,18 @@ function taylorexpansion!(graph::G, var_dependence::Dict{Int,Vector{Bool}}=Dict{
             if sum(o) == 0      # For a graph the zero order taylor coefficient is just itself.
                 result.coeffs[o] = graph
             else
-                coeff = Graph([]; operator=ComputationalGraphs.Sum(), factor=graph.factor)
+                coeff = Graph([]; operator=ComputationalGraphs.Sum(), properties=graph.properties, orders=o)
                 result.coeffs[o] = coeff
             end
-            from_coeff_map[result.coeffs[o].id] = (graph.id, o)
         end
         to_coeff_map[graph.id] = result
-        return result, to_coeff_map, from_coeff_map
+        return result, to_coeff_map
     else
-        to_coeff_map[graph.id] = graph.factor * apply(graph.operator, [taylorexpansion!(sub, var_dependence; to_coeff_map=to_coeff_map, from_coeff_map=from_coeff_map)[1] for sub in graph.subgraphs], graph.subgraph_factors)
-        return to_coeff_map[graph.id], to_coeff_map, from_coeff_map
+        to_coeff_map[graph.id] = apply(graph.operator, [taylorexpansion!(sub, var_dependence; to_coeff_map=to_coeff_map)[1] for sub in graph.subgraphs], graph.subgraph_factors)
+        for g in values(to_coeff_map[graph.id].coeffs)
+            g.properties = graph.properties
+        end
+        return to_coeff_map[graph.id], to_coeff_map
     end
 end
 
@@ -77,21 +143,11 @@ end
 - `var_dependence::Dict{Int,Vector{Bool}}` A dictionary that specifies the variable dependence of target graph leaves. Should map the id of each leaf to a Bool vector. 
     The length of the vector should be the same as number of variables.
 - `to_coeff_map::Dict{Int,TaylorSeries}` A dicitonary that maps id of each node of target graph to its correponding taylor series.
-- `from_coeff_map::Dict{Int,Tuple{Int,Vector{Bool}}}` A dicitonary that maps a taylor coefficient to its owner FeynmanGraph. The key should be the id of coefficient graph, and value should be a tuple of (feynmangraph.id, order).
 """
-function taylorexpansion!(graph::FeynmanGraph{F,W}, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}(); to_coeff_map::Dict{Int,TaylorSeries{Graph{F,W}}}=Dict{Int,TaylorSeries{Graph{F,W}}}(), from_coeff_map::Dict{Int,Tuple{Int,Vector{Int}}}=Dict{Int,Tuple{Int,Vector{Int}}}()) where {F,W}
+function taylorexpansion!(graph::FeynmanGraph{F,W}, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}();
+    to_coeff_map::Dict{Int,TaylorSeries{Graph{F,W}}}=Dict{Int,TaylorSeries{Graph{F,W}}}()) where {F,W}
     if haskey(to_coeff_map, graph.id) #If already exist, use taylor series in to_coeff_map.
-        if isleaf(graph)
-            for (order, coeff) in to_coeff_map[graph.id].coeffs
-                if haskey(from_coeff_map, coeff.id)
-                    @assert from_coeff_map[coeff.id] == (graph.id, order) "The graph g$(graph.id) is mapped to two different leaf taylor series!"
-                else
-                    from_coeff_map[coeff.id] = (graph.id, order)
-                end
-            end
-        end
-        return to_coeff_map[graph.id], to_coeff_map, from_coeff_map
-
+        return to_coeff_map[graph.id], to_coeff_map
     elseif isleaf(graph)
         if haskey(var_dependence, graph.id)
             var = var_dependence[graph.id]
@@ -102,61 +158,17 @@ function taylorexpansion!(graph::FeynmanGraph{F,W}, var_dependence::Dict{Int,Vec
         result = TaylorSeries{Graph{F,W}}()
         for order in collect(Iterators.product(ordtuple...)) #varidx specifies the variables graph depends on. Iterate over all taylor coefficients of those variables.
             o = collect(order)
-            coeff = Graph([]; operator=ComputationalGraphs.Sum(), factor=graph.factor)
+            coeff = Graph([]; operator=ComputationalGraphs.Sum(), properties=graph.properties, orders=o)
             result.coeffs[o] = coeff
-            from_coeff_map[coeff.id] = (graph.id, o)
         end
         to_coeff_map[graph.id] = result
-        return result, to_coeff_map, from_coeff_map
+        return result, to_coeff_map
     else
-        to_coeff_map[graph.id] = graph.factor * apply(graph.operator, [taylorexpansion!(sub, var_dependence; to_coeff_map=to_coeff_map, from_coeff_map=from_coeff_map)[1] for sub in graph.subgraphs], graph.subgraph_factors)
-        return to_coeff_map[graph.id], to_coeff_map, from_coeff_map
-    end
-end
-
-"""
-    function taylorexpansion!(graph::Diagram{W}, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}(); to_coeff_map::Dict{Int,TaylorSeries{G}}=Dict{Int,TaylorSeries{G}}()) where {W}
-    
-    Return a taylor series of Diagram g, together with a map of between nodes of g and correponding taylor series.
-# Arguments:
-- `graph`  Target diagram 
-- `var_dependence::Dict{Int,Vector{Bool}}` A dictionary that specifies the variable dependence of target diagram leaves. Should map the id of each leaf to a Bool vector. 
-    The length of the vector should be the same as number of variables.
-- `to_coeff_map::Dict{Int,TaylorSeries}` A dicitonary that maps id of each node of target diagram to its correponding taylor series.
-`from_coeff_map::Dict{Int,Tuple{Int,Vector{Bool}}}` A dicitonary that maps a taylor coefficient to its owner FeynmanGraph. The key should be the id of coefficient graph, and value should be a tuple of (feynmangraph.id, order).
-"""
-function taylorexpansion!(graph::Diagram{W}, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}(); to_coeff_map::Dict{Int,TaylorSeries{Graph{W,W}}}=Dict{Int,TaylorSeries{Graph{W,W}}}(), from_coeff_map::Dict{Int,Tuple{Int,Vector{Int}}}=Dict{Int,Tuple{Int,Vector{Int}}}()) where {W}
-    if haskey(to_coeff_map, graph.hash) #If already exist, use taylor series in to_coeff_map.
-        if isempty(graph.subdiagram)
-            for (order, coeff) in to_coeff_map[graph.hash].coeffs
-                if haskey(from_coeff_map, coeff.id)
-                    @assert from_coeff_map[coeff.id] == (graph.hash, order) "The graph g$(graph.hash) is mapped to two different leaf taylor series!"
-                else
-                    from_coeff_map[coeff.id] = (graph.hash, order)
-                end
-            end
+        to_coeff_map[graph.id] = apply(graph.operator, [taylorexpansion!(sub, var_dependence; to_coeff_map=to_coeff_map)[1] for sub in graph.subgraphs], graph.subgraph_factors)
+        for g in values(to_coeff_map[graph.id].coeffs)
+            g.properties = graph.properties
         end
-        return to_coeff_map[graph.hash], to_coeff_map, from_coeff_map
-
-    elseif isempty(graph.subdiagram)
-        if haskey(var_dependence, graph.hash)
-            var = var_dependence[graph.hash]
-        else
-            var = fill(false, get_numvars()) #if dependence not provhashed, assume the graph depends on no variables
-        end
-        ordtuple = ((var[idx]) ? (0:get_orders(idx)) : (0:0) for idx in 1:get_numvars())
-        result = TaylorSeries{Graph{W,W}}()
-        for order in collect(Iterators.product(ordtuple...)) #varidx specifies the variables graph depends on. Iterate over all taylor coefficients of those variables.
-            o = collect(order)
-            coeff = Graph([]; operator=ComputationalGraphs.Sum(), factor=graph.factor)
-            result.coeffs[o] = coeff
-            from_coeff_map[coeff.id] = (graph.hash, o)
-        end
-        to_coeff_map[graph.hash] = result
-        return result, to_coeff_map, from_coeff_map
-    else
-        to_coeff_map[graph.hash] = graph.factor * apply(typeof(graph.operator), [taylorexpansion!(sub, var_dependence; to_coeff_map=to_coeff_map, from_coeff_map=from_coeff_map)[1] for sub in graph.subdiagram], ones(W, length(graph.subdiagram)))
-        return to_coeff_map[graph.hash], to_coeff_map, from_coeff_map
+        return to_coeff_map[graph.id], to_coeff_map
     end
 end
 
@@ -171,9 +183,9 @@ end
     The dependence is given by a vector of the length same as the number of variables.
 - `label::Tuple{LabelProduct,LabelProduct}` A Tuple fermi (first element) and bose LabelProduct (second element).
 - `to_coeff_map::Dict{Int,TaylorSeries}` A dicitonary that maps id of each node of target diagram to its correponding taylor series.
-`from_coeff_map::Dict{Int,Tuple{Int,Vector{Bool}}}` A dicitonary that maps a taylor coefficient to its owner FeynmanGraph. The key should be the id of coefficient graph, and value should be a tuple of (feynmangraph.id, order).
 """
-function taylorexpansion!(graph::FeynmanGraph{F,W}, propagator_var::Tuple{Vector{Bool},Vector{Bool}}; to_coeff_map::Dict{Int,TaylorSeries{Graph{F,W}}}=Dict{Int,TaylorSeries{Graph{F,W}}}(), from_coeff_map::Dict{Int,Tuple{Int,Vector{Int}}}=Dict{Int,Tuple{Int,Vector{Int}}}()) where {F,W}
+function taylorexpansion!(graph::FeynmanGraph{F,W}, propagator_var::Tuple{Vector{Bool},Vector{Bool}};
+    to_coeff_map::Dict{Int,TaylorSeries{Graph{F,W}}}=Dict{Int,TaylorSeries{Graph{F,W}}}()) where {F,W}
     var_dependence = Dict{Int,Vector{Bool}}()
     for leaf in Leaves(graph)
         if ComputationalGraphs.diagram_type(leaf) == ComputationalGraphs.Propagator
@@ -187,47 +199,60 @@ function taylorexpansion!(graph::FeynmanGraph{F,W}, propagator_var::Tuple{Vector
             end
         end
     end
-    return taylorexpansion!(graph, var_dependence; to_coeff_map=to_coeff_map, from_coeff_map=from_coeff_map)
+    return taylorexpansion!(graph, var_dependence; to_coeff_map=to_coeff_map)
 end
 
 """
-    function taylorexpansion!(graph::Diagram{W}, propagator_var::Dict{DataType,Vector{Bool}}; to_coeff_map::Dict{Int,TaylorSeries{Graph{W,W}}}=Dict{Int,TaylorSeries{Graph{W,W}}}()) where {W}
-    
-    Return a taylor series of Diagram g, together with a map of between nodes of g and correponding taylor series. In this set up, the leaves that are the same type of diagrams (such as Green functions) depend on the same set of variables.
-    
+    function taylorexpansion!(graph::Graph{F,W}, propagator_var::Dict{DataType,Vector{Bool}};
+        to_coeff_map::Dict{Int,TaylorSeries{Graph{F,W}}}=Dict{Int,TaylorSeries{Graph{F,W}}}()) where {F,W}
+        
+    Return a taylor series of Graph g, together with a map of between nodes of g and correponding taylor series. In this set up, the leaves that are the same type of diagrams (such as Green functions) depend on the same set of variables.
+
 # Arguments:
-- `graph`  Target Diagram
+- `graph`  Target Graph
 - `propagator_var::Dict{DataType,Vector{Bool}}` A dictionary that specifies the variable dependence of different types of diagrams. Should be a map between DataTypes in DiagramID and Bool vectors.
     The dependence is given by a vector of the length same as the number of variables.
 - `to_coeff_map::Dict{Int,TaylorSeries}` A dicitonary that maps id of each node of target diagram to its correponding taylor series.
-- `from_coeff_map::Dict{Int,Tuple{Int,Vector{Bool}}}` A dicitonary that maps a taylor coefficient to its owner FeynmanGraph. The key should be the id of coefficient graph, and value should be a tuple of (feynmangraph.id, order).
 """
-function taylorexpansion!(graph::Diagram{W}, propagator_var::Dict{DataType,Vector{Bool}}; to_coeff_map::Dict{Int,TaylorSeries{Graph{W,W}}}=Dict{Int,TaylorSeries{Graph{W,W}}}(), from_coeff_map::Dict{Int,Tuple{Int,Vector{Int}}}=Dict{Int,Tuple{Int,Vector{Int}}}()) where {W}
+function taylorexpansion!(graph::Graph{F,W}, propagator_var::Dict{DataType,Vector{Bool}};
+    to_coeff_map::Dict{Int,TaylorSeries{Graph{F,W}}}=Dict{Int,TaylorSeries{Graph{F,W}}}()) where {F,W}
     var_dependence = Dict{Int,Vector{Bool}}()
     for leaf in Leaves(graph)
-        if haskey(propagator_var, typeof(leaf.id))
-            var_dependence[leaf.hash] = [propagator_var[typeof(leaf.id)][idx] ? true : false for idx in 1:get_numvars()]
+        if haskey(propagator_var, typeof(leaf.properties))
+            var_dependence[leaf.id] = [propagator_var[typeof(leaf.properties)][idx] ? true : false for idx in 1:get_numvars()]
         end
     end
-    return taylorexpansion!(graph, var_dependence; to_coeff_map=to_coeff_map, from_coeff_map=from_coeff_map)
+    return taylorexpansion!(graph, var_dependence; to_coeff_map=to_coeff_map)
 end
 
-function taylorexpansion!(graphs::Vector{G}, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}(); to_coeff_map::Dict{Int,TaylorSeries{G}}=Dict{Int,TaylorSeries{G}}(), from_coeff_map::Dict{Int,Tuple{Int,Vector{Int}}}=Dict{Int,Tuple{Int,Vector{Int}}}()) where {G<:Graph}
+function taylorexpansion!(graphs::Vector{G}, var_dependence::Dict{Int,Vector{Bool}}=Dict{Int,Vector{Bool}}();
+    to_coeff_map::Dict{Int,TaylorSeries{G}}=Dict{Int,TaylorSeries{G}}()) where {G<:Graph}
     result = Vector{TaylorSeries{G}}()
     for graph in graphs
-        taylor, _ = taylorexpansion!(graph, var_dependence; to_coeff_map=to_coeff_map, from_coeff_map=from_coeff_map)
+        taylor, _ = taylorexpansion!(graph, var_dependence; to_coeff_map=to_coeff_map)
         push!(result, taylor)
     end
-    return result, to_coeff_map, from_coeff_map
+    return result, to_coeff_map
 end
 
-function taylorexpansion!(graphs::Vector{Diagram{W}}, propagator_var::Dict{DataType,Vector{Bool}}; to_coeff_map::Dict{Int,TaylorSeries{Graph{W,W}}}=Dict{Int,TaylorSeries{Graph{W,W}}}(), from_coeff_map::Dict{Int,Tuple{Int,Vector{Int}}}=Dict{Int,Tuple{Int,Vector{Int}}}()) where {W}
-    result = Vector{TaylorSeries{Graph{W,W}}}()
+function taylorexpansion!(graphs::Vector{FeynmanGraph{F,W}}, propagator_var::Tuple{Vector{Bool},Vector{Bool}};
+    to_coeff_map::Dict{Int,TaylorSeries{Graph{F,W}}}=Dict{Int,TaylorSeries{Graph{F,W}}}()) where {F,W}
+    result = Vector{TaylorSeries{Graph{F,W}}}()
     for graph in graphs
-        taylor, _ = taylorexpansion!(graph, propagator_var; to_coeff_map=to_coeff_map, from_coeff_map=from_coeff_map)
+        taylor, _ = taylorexpansion!(graph, propagator_var; to_coeff_map=to_coeff_map)
         push!(result, taylor)
     end
-    return result, to_coeff_map, from_coeff_map
+    return result, to_coeff_map
+end
+
+function taylorexpansion!(graphs::Vector{Graph{F,W}}, propagator_var::Dict{DataType,Vector{Bool}};
+    to_coeff_map::Dict{Int,TaylorSeries{Graph{F,W}}}=Dict{Int,TaylorSeries{Graph{F,W}}}()) where {F,W}
+    result = Vector{TaylorSeries{Graph{F,W}}}()
+    for graph in graphs
+        taylor, _ = taylorexpansion!(graph, propagator_var; to_coeff_map=to_coeff_map)
+        push!(result, taylor)
+    end
+    return result, to_coeff_map
 end
 """
     taylorexpansion_withmap(g::G; coeffmode=true, var::Vector{Int}=collect(1:get_numvars())) where {G<:Graph}
@@ -261,10 +286,9 @@ function taylorexpansion_withmap(g::G; coeffmode=true, var::Vector{Bool}=fill(tr
                     if ordernew[idx] <= get_orders(idx)
                         if !haskey(result.coeffs, ordernew)
                             if coeffmode
-                                funcAD = Graph([]; operator=ComputationalGraphs.Sum(), factor=g.factor)
+                                funcAD = Graph([]; operator=ComputationalGraphs.Sum())
                             else
-                                #funcAD = taylor_factorial(ordernew) * Graph([]; operator=ComputationalGraphs.Sum(), factor=g.factor)
-                                funcAD = Graph([]; operator=ComputationalGraphs.Sum(), factor=taylor_factorial(ordernew) * g.factor)
+                                funcAD = Graph([]; operator=ComputationalGraphs.Sum(), factor=taylor_factorial(ordernew))
                             end
                             new_func[ordernew] = funcAD
                             result.coeffs[ordernew] = funcAD
@@ -423,6 +447,18 @@ function count_operation(graphs::Vector{TaylorSeries{G}}, order::Vector{Int}) wh
             push!(allcoeffs, g.coeffs[order])
         end
         return count_operation(allcoeffs)
+    end
+end
+
+function count_expanded_operation(graphs::Vector{TaylorSeries{G}}, order::Vector{Int}) where {G<:Graph}
+    if length(graphs) == 0
+        return [0, 0]
+    else
+        total_sumprod = [0, 0]
+        for g in graphs
+            total_sumprod += count_expanded_operation(g.coeffs[order])
+        end
+        return total_sumprod
     end
 end
 

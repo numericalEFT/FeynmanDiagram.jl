@@ -1,0 +1,37 @@
+#Type: Vertex4
+#DiagNum: 1
+#Order: 0
+#GNum: 4
+#Ver4Num: 1
+#LoopNum: 3
+#ExtLoopIndex: 0
+#DummyLoopIndex: 
+#TauNum: 3
+#DummyTauIndex: 
+
+# Permutation
+ 3  2  1  0 
+# SymFactor
+-1.0
+# Channel: 
+Alli
+# GType
+-2 -2 -2 -2 
+# VertexBasis
+ 0  0  1  1 
+ 1  1  0  0 
+# LoopBasis
+ 1  0  1  0 
+ 0  0 -1  1 
+ 0  1  1  0 
+# Ver4Legs(InL,OutL,InR,OutR)
+ 1  2  0  3 |
+# WType(Direct,Exchange)
+ 0  0 |
+# SpinFactor
+ 1 -1 
+# Di/Ex
+ 0  1 
+# Proper/ImProper
+ 1  0 
+

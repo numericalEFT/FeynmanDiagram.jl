@@ -9,7 +9,7 @@
     - `g`  computational graph
 """
 function Base.convert(::Type{G}, g::FeynmanGraph{F,W}) where {F,W,G<:Graph}
-    return Graph(g.subgraphs; subgraph_factors=g.subgraph_factors, name=g.name, operator=g.operator(), orders=g.orders, ftype=F, wtype=W, factor=g.factor, weight=g.weight)
+    return Graph(g.subgraphs; subgraph_factors=g.subgraph_factors, name=g.name, operator=g.operator(), orders=g.orders, ftype=F, wtype=W, weight=g.weight)
 end
 
 function Base.convert(::Type{FeynmanGraph}, g::Graph{F,W}) where {F,W}
