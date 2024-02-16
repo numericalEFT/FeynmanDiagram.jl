@@ -73,7 +73,7 @@ struct GenericId{P} <: DiagramId
     extra::Any
     GenericId(para::P, extra=nothing) where {P} = new{P}(para, extra)
 end
-Base.show(io::IO, v::GenericId) = print(io, v.extra == Nothing ? "" : "$(v.extra)")
+Base.show(io::IO, v::GenericId) = print(io, isnothing(v.extra) ? "" : "$(v.extra)")
 function Base.isequal(a::GenericId, b::GenericId)
     return a.para == b.para && a.extra == b.extra
 end
@@ -124,7 +124,7 @@ struct SigmaId{P} <: DiagramId
         return new{P}(para, type, mirror_symmetrize(k), Tuple(t))
     end
 end
-Base.show(io::IO, v::SigmaId) = print(io, "$(short(v.type))#$(v.order), t$(v.extT)")
+Base.show(io::IO, v::SigmaId) = print(io, "$(short(v.type)), k$(v.extK), t$(v.extT)")
 function Base.isequal(a::SigmaId, b::SigmaId)
     if typeof(a) != typeof(b)
         return false

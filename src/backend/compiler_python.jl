@@ -3,7 +3,7 @@
 """
     function to_pystatic(operator::Type, subgraphs::AbstractVector{<:AbstractGraph}, subgraph_factors::AbstractVector)
 
-Returns the static representation of a computational graph node `g` with operator `operator`, subgraphs `subgraphs`, and subgraph factors `subgraph_factors` in python.
+    Returns the static representation of a computational graph node `g` with operator `operator`, subgraphs `subgraphs`, and subgraph factors `subgraph_factors` in python.
 """
 function to_pystatic(operator::Type, subgraphs::AbstractVector{<:AbstractGraph}, subgraph_factors::AbstractVector)
     error(
@@ -65,11 +65,12 @@ end
 
 """
     function to_python_str(graphs::AbstractVector{<:AbstractGraph})
+
     Compile a list of graphs into a string for a python static function and output a python script which support the mindspore and jax framework.
 
-    # Arguments:
-    - `graphs`  vector of computational graphs
-    - `framework`  the type of the python frameworks, including `:jax` and `mindspore`.
+# Arguments:
+- `graphs`  vector of computational graphs
+- `framework`  the type of the python frameworks, including `:jax` and `mindspore`.
 """
 function to_python_str(graphs::AbstractVector{<:AbstractGraph}, framework::Symbol=:jax)
     if framework == :jax
@@ -121,13 +122,12 @@ function to_python_str(graphs::AbstractVector{<:AbstractGraph}, framework::Symbo
     end
     expr = head * body * tail
 
-    return expr, leafidx, gid_to_leafid
+    return expr, gid_to_leafid
 end
-function compile_python(graphs::AbstractVector{<:AbstractGraph}, framework::Symbol=:jax, filename::String="GraphFunc.py")
-    py_string, leafnum, leafmap = to_python_str(graphs, framework)
-    println("The number of leaves: $leafnum")
+function compile_Python(graphs::AbstractVector{<:AbstractGraph}, framework::Symbol=:jax, filename::String="GraphFunc.py")
+    py_string, leafmap = to_python_str(graphs, framework)
     open(filename, "w") do f
         write(f, py_string)
     end
-    return leafnum, leafmap
+    return leafmap
 end

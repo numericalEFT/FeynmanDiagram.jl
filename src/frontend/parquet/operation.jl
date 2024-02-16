@@ -68,6 +68,23 @@ end
 #     end
 # end
 
+"""
+    function mergeby(df::DataFrame, fields=Vector{Symbol}();
+        operator=Sum(), name::Symbol=:none,
+        getid::Function=g -> GenericId(g[1, :diagram].properties.para, Tuple(g[1, fields]))
+    )
+
+    Aggregates and merges rows in a DataFrame based on specified fields and an aggregation operator.
+    It is designed to work with data frames containing diagram representations or similar structured data, 
+    allowing for flexible aggregation based on custom identifiers and properties.
+
+# Parameters
+- `df`: A DataFrame to be processed. It must contain a column named :diagram which holds `Graph`.
+- `fields`: A vector of Symbols specifying the columns based on which the aggregation groups are formed.
+- `operator`: The aggregation operator to be applied. This operator is used to aggregate data across rows within each group formed by the specified fields. The default is Sum().
+- `name`: An optional Symbol representing the name of a new column to store the aggregated results. The default is :none.
+- `getid`: A function that generates a unique identifier for each group based on the specified fields and the properties of the :diagram column. The default function is `g -> GenericId(g[1, :diagram].properties.para, Tuple(g[1, fields]))`.
+"""
 function mergeby(df::DataFrame, fields=Vector{Symbol}();
     operator=Sum(), name::Symbol=:none,
     getid::Function=g -> GenericId(g[1, :diagram].properties.para, Tuple(g[1, fields]))
@@ -88,35 +105,35 @@ function mergeby(df::DataFrame, fields=Vector{Symbol}();
     end
 end
 
-function mergeby(diags::Union{Graph,Tuple,AbstractVector}, fields=nothing; idkey=nothing, kwargs...)
-    if diags isa Graph
-        return diags
-    else
-        if isempty(diags)
-            return diags
-        else
-            W = typeof(diags[1].weight)
-            @assert all(x -> (x.weight isa W), diags) "all diagrams should be of the same type. \n$diags"
-            diags = collect(diags)
-            if isnothing(fields) && isnothing(idkey)
-                return mergeby(diags; kwargs...)
-            else
-                return mergeby(diags, fields; idkey=idkey, kwargs...)
-            end
-        end
-    end
-end
+# function mergeby(diags::Union{Graph,Tuple,AbstractVector}, fields=nothing; idkey=nothing, kwargs...)
+#     if diags isa Graph
+#         return diags
+#     else
+#         if isempty(diags)
+#             return diags
+#         else
+#             W = typeof(diags[1].weight)
+#             @assert all(x -> (x.weight isa W), diags) "all diagrams should be of the same type. \n$diags"
+#             diags = collect(diags)
+#             if isnothing(fields) && isnothing(idkey)
+#                 return mergeby(diags; kwargs...)
+#             else
+#                 return mergeby(diags, fields; idkey=idkey, kwargs...)
+#             end
+#         end
+#     end
+# end
 
-# function mergeby(diags::AbstractVector, fields=[]; idkey::Vector{Symbol}=[], kwargs...)
-function mergeby(diags::Vector{Graph{F,W}}, fields; idkey=Vector{Symbol}(), kwargs...) where {F,W}
-    if isempty(diags)
-        return diags
-    else
-        df = toDataFrame(diags, idkey)
-        mergedf = mergeby(df, fields; kwargs...)
-        return Vector{Graph{F,W}}(mergedf.diagram)
-    end
-end
+# # function mergeby(diags::AbstractVector, fields=[]; idkey::Vector{Symbol}=[], kwargs...)
+# function mergeby(diags::Vector{Graph{F,W}}, fields; idkey=Vector{Symbol}(), kwargs...) where {F,W}
+#     if isempty(diags)
+#         return diags
+#     else
+#         df = toDataFrame(diags, idkey)
+#         mergedf = mergeby(df, fields; kwargs...)
+#         return Vector{Graph{F,W}}(mergedf.diagram)
+#     end
+# end
 
 function mergeby(diags::Vector{Graph{F,W}};
     operator=Sum(), name::Symbol=:none,
