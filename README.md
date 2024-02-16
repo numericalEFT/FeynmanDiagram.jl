@@ -76,14 +76,21 @@ julia> optimize!(sigmadf.diagram);
 The example code below demonstrates how to build the renormalized Feynman diagrams for the self-energy with the Green's function counterterms and the interaction counterterms using Taylor-mode AD.
 
 ```julia
-# Set the renormalization orders. The first element is the order of the Green's function counterterms, and the second element is the order of the interaction counterterms.
-julia> renormalization_orders = [2, 3];
+# Set the renormalization orders. The first element is the maximum order of the Green's function counterterms, and the second element is the maximum order of the interaction counterterms.
+julia> renormalization_orders = [2, 1];
 
 # Define functions that determine how the differentiation variables depend on the properties of the leaves in your graphs, identifying `BareGreenId` and `BareInteractionId` properties as the Green's function and interaction counterterms, respectively.
 julia> leaf_dep_funcs = [pr -> pr isa FrontEnds.BareGreenId, pr -> pr isa FrontEnds.BareInteractionId];
 
 # Generate the Dict of Graph for the renormalized self-energy diagrams with the Green's function counterterms and the interaction counterterms.
-julia> dict_sigma = taylorAD(sigmadf.diagram, renormalization_orders, leaf_dep_funcs);
+julia> dict_sigma = taylorAD(sigmadf.diagram, renormalization_orders, leaf_dep_funcs)
+Dict{Vector{Int64}, Vector{Graph}} with 6 entries:
+  [0, 0] => [18822Ins, k[1.0, 0.0, 0.0], t(1, 1)=0.0=Ⓧ , 19019Dyn, k[1.0, 0.0, 0.0], t(1, 2)=0.0=⨁ ]
+  [2, 1] => [18823Ins, k[1.0, 0.0, 0.0], t(1, 1)[2, 1]=0.0=Ⓧ , 19020Dyn, k[1.0, 0.0, 0.0], t(1, 2)[2, 1]=0.0=⨁ ]
+  [2, 0] => [18824Ins, k[1.0, 0.0, 0.0], t(1, 1)[2]=0.0=Ⓧ , 19021Dyn, k[1.0, 0.0, 0.0], t(1, 2)[2]=0.0=⨁ ]
+  [1, 1] => [18825Ins, k[1.0, 0.0, 0.0], t(1, 1)[1, 1]=0.0=Ⓧ , 19022Dyn, k[1.0, 0.0, 0.0], t(1, 2)[1, 1]=0.0=⨁ ]
+  [1, 0] => [18826Ins, k[1.0, 0.0, 0.0], t(1, 1)[1]=0.0=Ⓧ , 19023Dyn, k[1.0, 0.0, 0.0], t(1, 2)[1]=0.0=⨁ ]
+  [0, 1] => [18827Ins, k[1.0, 0.0, 0.0], t(1, 1)[0, 1]=0.0=Ⓧ , 19024Dyn, k[1.0, 0.0, 0.0], t(1, 2)[0, 1]=0.0=⨁ ]
 ```
 
 ### Example: Compile Feynman diagrams to different programming languages 
@@ -108,14 +115,14 @@ julia> Compilers.compile_Python(g_o21, :jax, "func_o21.py");
 ```
 
 ### Computational Graph visualization
-#### Tree-type visualization using ETE
-To visualize tree-type structures of the self-energy in the Parquet example, install the [ete3](http://etetoolkit.org/) Python package, a powerful toolkit for tree visualizations.
+#### Tree-type visualization using ETE3
+To visualize tree-type structures of the self-energy in the Parquet example, install the [ETE3](http://etetoolkit.org/) Python package, a powerful toolkit for tree visualizations.
 
 Execute the following command in Julia for tree-type visualization of the self-energy generated in the above `Parquet` example:
 ```julia
 julia> plot_tree(sigmadf.diagram, depth = 3)
 ```
-For installation instructions on using ete3 with [PyCall.jl](https://github.com/JuliaPy/PyCall.jl), please refer to the PyCall.jl documentation on how to configure and use external Python packages within Julia.
+For installation instructions on using ETE3 with [PyCall.jl](https://github.com/JuliaPy/PyCall.jl), please refer to the PyCall.jl documentation on how to configure and use external Python packages within Julia.
 
 #### Graph visualization using DOT
 The Back-End's `Compilers` module includes functionality to translate computational graphs into .dot files, which can be visualized using the `dot` command from Graphviz software. Below is an example code snippet that illustrates how to visualize the computational graph of the self-energy from the previously mentioned `Parquet` example.
