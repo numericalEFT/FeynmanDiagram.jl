@@ -1,16 +1,16 @@
 """
     function to_static(operator::Type, subgraphs::AbstractVector{<:AbstractGraph}, subgraph_factors::AbstractVector)
 
-Returns the static representation of a computational graph node `g` with operator `operator`, subgraphs `subgraphs`, and subgraph factors `subgraph_factors`.
+    Returns the static representation of a computational graph node `g` with operator `operator`, subgraphs `subgraphs`, and subgraph factors `subgraph_factors`.
 """
-function to_static(operator::Type, subgraphs::AbstractVector{<:AbstractGraph}, subgraph_factors::AbstractVector)
+function to_static(operator::Type, subgraphs::AbstractVector{<:AbstractGraph}, subgraph_factors::AbstractVector; lang::Symbol=:julia)
     error(
         "Static representation for computational graph nodes with operator $(operator) not yet implemented! " *
         "Please define a method `to_static(::Type{$(operator)}, subgraphs::$(typeof(subgraphs)), subgraph_factors::$(typeof(subgraph_factors)))`."
     )
 end
 
-function to_static(::Type{ComputationalGraphs.Sum}, subgraphs::Vector{Graph{F,W}}, subgraph_factors::Vector{F}) where {F,W}
+function to_static(::Type{ComputationalGraphs.Sum}, subgraphs::Vector{Graph{F,W}}, subgraph_factors::Vector{F}; lang::Symbol=:julia) where {F,W}
     if length(subgraphs) == 1
         factor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
         return "(g$(subgraphs[1].id)$factor_str)"
@@ -20,7 +20,7 @@ function to_static(::Type{ComputationalGraphs.Sum}, subgraphs::Vector{Graph{F,W}
     end
 end
 
-function to_static(::Type{ComputationalGraphs.Prod}, subgraphs::Vector{Graph{F,W}}, subgraph_factors::Vector{F}) where {F,W}
+function to_static(::Type{ComputationalGraphs.Prod}, subgraphs::Vector{Graph{F,W}}, subgraph_factors::Vector{F}; lang::Symbol=:julia) where {F,W}
     if length(subgraphs) == 1
         factor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
         return "(g$(subgraphs[1].id)$factor_str)"
@@ -31,12 +31,19 @@ function to_static(::Type{ComputationalGraphs.Prod}, subgraphs::Vector{Graph{F,W
     end
 end
 
-function to_static(::Type{ComputationalGraphs.Power{N}}, subgraphs::Vector{Graph{F,W}}, subgraph_factors::Vector{F}) where {N,F,W}
+function to_static(::Type{ComputationalGraphs.Power{N}}, subgraphs::Vector{Graph{F,W}}, subgraph_factors::Vector{F}; lang::Symbol=:julia) where {N,F,W}
     factor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
-    return "((g$(subgraphs[1].id))^$N$factor_str)"
+    if lang == :julia
+        op_str = "^"
+    elseif lang == :c || lang == :python
+        op_str = "**"
+    else
+        error("Unsupported language")
+    end
+    return "((g$(subgraphs[1].id))$(op_str)$N$factor_str)"
 end
 
-function to_static(::Type{ComputationalGraphs.Sum}, subgraphs::Vector{FeynmanGraph{F,W}}, subgraph_factors::Vector{F}) where {F,W}
+function to_static(::Type{ComputationalGraphs.Sum}, subgraphs::Vector{FeynmanGraph{F,W}}, subgraph_factors::Vector{F}; lang::Symbol=:julia) where {F,W}
     if length(subgraphs) == 1
         factor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
         return "(g$(subgraphs[1].id)$factor_str)"
@@ -46,7 +53,7 @@ function to_static(::Type{ComputationalGraphs.Sum}, subgraphs::Vector{FeynmanGra
     end
 end
 
-function to_static(::Type{ComputationalGraphs.Prod}, subgraphs::Vector{FeynmanGraph{F,W}}, subgraph_factors::Vector{F}) where {F,W}
+function to_static(::Type{ComputationalGraphs.Prod}, subgraphs::Vector{FeynmanGraph{F,W}}, subgraph_factors::Vector{F}; lang::Symbol=:julia) where {F,W}
     if length(subgraphs) == 1
         factor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
         return "(g$(subgraphs[1].id)$factor_str)"
@@ -56,9 +63,16 @@ function to_static(::Type{ComputationalGraphs.Prod}, subgraphs::Vector{FeynmanGr
     end
 end
 
-function to_static(::Type{ComputationalGraphs.Power{N}}, subgraphs::Vector{FeynmanGraph{F,W}}, subgraph_factors::Vector{F}) where {N,F,W}
+function to_static(::Type{ComputationalGraphs.Power{N}}, subgraphs::Vector{FeynmanGraph{F,W}}, subgraph_factors::Vector{F}; lang::Symbol=:julia) where {N,F,W}
     factor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
-    return "((g$(subgraphs[1].id))^$N$factor_str)"
+    if lang == :julia
+        op_str = "^"
+    elseif lang == :c || lang == :python
+        op_str = "**"
+    else
+        error("Unsupported language")
+    end
+    return "((g$(subgraphs[1].id))$(op_str)$N$factor_str)"
 end
 
 """
@@ -165,7 +179,7 @@ function to_Cstr(graphs::AbstractVector{<:AbstractGraph}; root::AbstractVector{I
             else
                 g_id in inds_visitednode && continue
                 declare *= " g$g_id,"
-                body *= "    $target = $(to_static(operator(g), subgraphs(g), subgraph_factors(g)));\n"
+                body *= "    $target = $(to_static(operator(g), subgraphs(g), subgraph_factors(g), lang=:c));\n"
                 push!(inds_visitednode, g_id)
             end
             if isroot

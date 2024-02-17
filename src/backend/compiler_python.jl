@@ -1,68 +1,3 @@
-# ms = pyimport("mindspore")
-
-"""
-    function to_pystatic(operator::Type, subgraphs::AbstractVector{<:AbstractGraph}, subgraph_factors::AbstractVector)
-
-    Returns the static representation of a computational graph node `g` with operator `operator`, subgraphs `subgraphs`, and subgraph factors `subgraph_factors` in python.
-"""
-function to_pystatic(operator::Type, subgraphs::AbstractVector{<:AbstractGraph}, subgraph_factors::AbstractVector)
-    error(
-        "Static representation for computational graph nodes with operator $(operator) not yet implemented! " *
-        "Please define a method `to_static(::Type{$(operator)}, subgraphs::$(typeof(subgraphs)), subgraph_factors::$(typeof(subgraph_factors)))`."
-    )
-end
-
-function to_pystatic(::Type{ComputationalGraphs.Sum}, subgraphs::Vector{Graph{F,W}}, subgraph_factors::Vector{F}) where {F,W}
-    if length(subgraphs) == 1
-        factor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
-        return "(g$(subgraphs[1].id)$factor_str)"
-    else
-        terms = ["g$(g.id)" * (gfactor == 1 ? "" : " * $gfactor") for (g, gfactor) in zip(subgraphs, subgraph_factors)]
-        return "(" * join(terms, " + ") * ")"
-    end
-end
-
-function to_pystatic(::Type{ComputationalGraphs.Prod}, subgraphs::Vector{Graph{F,W}}, subgraph_factors::Vector{F}) where {F,W}
-    if length(subgraphs) == 1
-        factor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
-        return "(g$(subgraphs[1].id)$factor_str)"
-    else
-        terms = ["g$(g.id)" * (gfactor == 1 ? "" : " * $gfactor") for (g, gfactor) in zip(subgraphs, subgraph_factors)]
-        return "(" * join(terms, " * ") * ")"
-        # return "(" * join(["g$(g.id)" for g in subgraphs], " * ") * ")"
-    end
-end
-
-function to_pystatic(::Type{ComputationalGraphs.Power{N}}, subgraphs::Vector{Graph{F,W}}, subgraph_factors::Vector{F}) where {N,F,W}
-    factor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
-    return "((g$(subgraphs[1].id))**$N$factor_str)"
-end
-
-function to_pystatic(::Type{ComputationalGraphs.Sum}, subgraphs::Vector{FeynmanGraph{F,W}}, subgraph_factors::Vector{F}) where {F,W}
-    if length(subgraphs) == 1
-        factor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
-        return "(g$(subgraphs[1].id)$factor_str)"
-    else
-        terms = ["g$(g.id)" * (gfactor == 1 ? "" : " * $gfactor") for (g, gfactor) in zip(subgraphs, subgraph_factors)]
-        return "(" * join(terms, " + ") * ")"
-    end
-end
-
-function to_pystatic(::Type{ComputationalGraphs.Prod}, subgraphs::Vector{FeynmanGraph{F,W}}, subgraph_factors::Vector{F}) where {F,W}
-    if length(subgraphs) == 1
-        factor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
-        return "(g$(subgraphs[1].id)$factor_str)"
-    else
-        terms = ["g$(g.id)" * (gfactor == 1 ? "" : " * $gfactor") for (g, gfactor) in zip(subgraphs, subgraph_factors)]
-        return "(" * join(terms, " * ") * ")"
-    end
-end
-
-function to_pystatic(::Type{ComputationalGraphs.Power{N}}, subgraphs::Vector{FeynmanGraph{F,W}}, subgraph_factors::Vector{F}) where {N,F,W}
-    factor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
-    return "((g$(subgraphs[1].id))**$N$factor_str)"
-end
-
 """
     function to_python_str(graphs::AbstractVector{<:AbstractGraph})
 
@@ -103,7 +38,7 @@ function to_python_str(graphs::AbstractVector{<:AbstractGraph}, framework::Symbo
                 push!(inds_visitedleaf, g_id)
             else
                 g_id in inds_visitednode && continue
-                body *= "    $target = $(to_pystatic(operator(g), subgraphs(g), subgraph_factors(g)))\n"
+                body *= "    $target = $(to_static(operator(g), subgraphs(g), subgraph_factors(g), lang=:python))\n"
                 push!(inds_visitednode, g_id)
             end
             if isroot
