@@ -1,6 +1,6 @@
 module FrontEnds
 
-import ..ComputationalGraphs
+import ..ComputationalGraphs as IR
 import ..ComputationalGraphs: Graph, FeynmanGraph, _dtype
 import ..QuantumOperators
 import ..Taylor
