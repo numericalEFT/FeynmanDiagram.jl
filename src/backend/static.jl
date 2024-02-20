@@ -35,7 +35,9 @@ function to_static(::Type{ComputationalGraphs.Power{N}}, subgraphs::Vector{Graph
     factor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
     if lang == :julia
         op_str = "^"
-    elseif lang == :c || lang == :python
+    elseif lang == :c
+        return "pow(g$(subgraphs[1].id), $N)$factor_str"
+    elseif lang == :python
         op_str = "**"
     else
         error("Unsupported language")
@@ -67,7 +69,9 @@ function to_static(::Type{ComputationalGraphs.Power{N}}, subgraphs::Vector{Feynm
     factor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
     if lang == :julia
         op_str = "^"
-    elseif lang == :c || lang == :python
+    elseif lang == :c
+        return "pow(g$(subgraphs[1].id), $N)$factor_str"
+    elseif lang == :python
         op_str = "**"
     else
         error("Unsupported language")
@@ -266,6 +270,9 @@ function compile_C(graphs::AbstractVector{<:AbstractGraph}, filename::String;
     datatype::DataType=_dtype.weight, root::AbstractVector{Int}=[id(g) for g in graphs], func_name="eval_graph")
     func_string, leafmap = to_Cstr(graphs; datatype=datatype, root=root, name=func_name)
     open(filename, "a") do f
+        if position(f) == 0
+            write(f, "#include <math.h>\n")
+        end
         write(f, func_string)
     end
     return leafmap
