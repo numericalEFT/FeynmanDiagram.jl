@@ -1,6 +1,6 @@
 module FrontEnds
 
-import ..ComputationalGraphs as IR
+import ..ComputationalGraphs 
 import ..ComputationalGraphs: Graph, FeynmanGraph, _dtype
 import ..QuantumOperators
 import ..Taylor
@@ -134,11 +134,11 @@ function leafstates(leaf_maps::Vector{Dict{Int,G}}, labelProd::LabelProduct) whe
         for idx in 1:len_leaves
             g = leafmap[idx]
             vertices = g.properties.vertices
-            if IR.diagram_type(g) == IR.Interaction
+            if ComputationalGraphs.diagram_type(g) == ComputationalGraphs.Interaction
                 In = Out = vertices[1][1].label
                 push!(leafType[ikey], 0)
                 push!(leafLoopIndex[ikey], 1)
-            elseif IR.diagram_type(g) == IR.Propagator
+            elseif ComputationalGraphs.diagram_type(g) == ComputationalGraphs.Propagator
                 if (Op.isfermionic(vertices[1]))
                     In, Out = vertices[2][1].label, vertices[1][1].label
                     # push!(leafType[ikey], g.orders[1] * 2 + 1)
@@ -197,7 +197,7 @@ function leafstates(leaf_maps::Vector{Dict{Int,G}}, maxloopNum::Int) where {G<:G
 
         for idx in 1:len_leaves
             leaf = leafmap[idx]
-            @assert IR.isleaf(leaf)
+            @assert ComputationalGraphs.isleaf(leaf)
             diagId, leaf_orders = leaf.properties, leaf.orders
             loopmom = copy(diagId.extK)
             len = length(loopmom)
