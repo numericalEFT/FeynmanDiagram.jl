@@ -44,7 +44,7 @@ isannihilation(::Type{C}) where {C<:Union{FermiCreation,BosonCreation,Majorana,C
 """
     struct QuantumOperator
 
-    struct of a quantum operator.
+struct of a quantum operator.
 
 # Members:
 - `operator::Datatype`: type of quantum operator, supports :f⁺, :f⁻, :f, :b⁺, :b⁻, :ϕ
@@ -71,27 +71,27 @@ Base.show(io::IO, ::MIME"text/plain", o::QuantumOperator) = Base.show(io, o)
 """
     Base.adjoint(operator::QuantumOperator)
 
-    Return the conjuated quantum operator of `operator`.
+Return the conjuated quantum operator of `operator`.
 """
 Base.adjoint(operator::QuantumOperator) = QuantumOperator(adjoint(operator.operator)(), operator.label)
 
 """
     function isfermionic(operator::QuantumOperator)
 
-    Check if `operator` is a fermionic operator.
+Check if `operator` is a fermionic operator.
 """
 isfermionic(operator::QuantumOperator) = isfermionic(operator.operator)
 
 """
     function iscreation(operator::QuantumOperator)
 
-    Check if `operator` is a creation operator.
+Check if `operator` is a creation operator.
 """
 iscreation(operator::QuantumOperator) = iscreation(operator.operator)
 
 """
     function isannihilation(operator::QuantumOperator)
 
-    Check if `operator` is an annihilation operator.
+Check if `operator` is an annihilation operator.
 """
 isannihilation(operator::QuantumOperator) = isannihilation(operator.operator)

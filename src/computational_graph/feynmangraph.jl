@@ -212,71 +212,71 @@ set_subgraph_factors!(g::FeynmanGraph{F,W}, subgraph_factors::AbstractVector, in
 """
 function is_external_operators(g::FeynmanGraph, i) 
 
-    Check if `i` in the external indices of FeynmanGraph `g`.
+Check if `i` in the external indices of FeynmanGraph `g`.
 """
 is_external(g::FeynmanGraph, i) = i in g.properties.external_indices
 
 """
     function is_internal(g::FeynmanGraph, i) 
 
-    Check if `i` in the internal indices of FeynmanGraph `g`.
+Check if `i` in the internal indices of FeynmanGraph `g`.
 """
 is_internal(g::FeynmanGraph, i) = (i in g.properties.external_indices) == false
 
 """
     function diagram_type(g::FeynmanGraph)
 
-    Returns the diagram type (::DiagramType) of FeynmanGraph `g`.
+Returns the diagram type (::DiagramType) of FeynmanGraph `g`.
 """
 diagram_type(g::FeynmanGraph) = g.properties.diagtype
 
 """
     function vertices(g::FeynmanGraph)
 
-    Returns all vertices (::Vector{OperatorProduct}) of FeynmanGraph `g`.
+Returns all vertices (::Vector{OperatorProduct}) of FeynmanGraph `g`.
 """
 vertices(g::FeynmanGraph) = g.properties.vertices
 
 """
     function vertex(g::FeynmanGraph, i=1)
 
-    Returns the `i`th vertex (::OperatorProduct) of FeynmanGraph `g`.
-    Defaults to the first vertex if an index `i` is not supplied.
+Returns the `i`th vertex (::OperatorProduct) of FeynmanGraph `g`.
+Defaults to the first vertex if an index `i` is not supplied.
 """
 vertex(g::FeynmanGraph, i=1) = g.properties.vertices[i]
 
 """
     function topology(g::FeynmanGraph)
 
-    Returns the topology (::Vector{Vector{Int}}) of FeynmanGraph `g`.
+Returns the topology (::Vector{Vector{Int}}) of FeynmanGraph `g`.
 """
 topology(g::FeynmanGraph) = g.properties.topology
 
 """
     function external_legs(g::FeynmanGraph)
 
-    Returns a list of Boolean indices external_legs (::Vector{Bool}) indicating which external vertices of FeynmanGraph `g` have real legs (true: real leg, false: fake leg).
+Returns a list of Boolean indices external_legs (::Vector{Bool}) indicating which external vertices of FeynmanGraph `g` have real legs (true: real leg, false: fake leg).
 """
 external_legs(g::FeynmanGraph) = g.properties.external_legs
 
 """
     function external_indices(g::FeynmanGraph)
 
-    Returns a list of indices (::Vector{Int}}) to the external vertices of the FeynmanGraph `g`.
+Returns a list of indices (::Vector{Int}}) to the external vertices of the FeynmanGraph `g`.
 """
 external_indices(g::FeynmanGraph) = g.properties.external_indices
 
 """
     function external_operators(g::FeynmanGraph)
 
-    Returns all physical external operators (::OperatorProduct}) of FeynmanGraph `g`.
+Returns all physical external operators (::OperatorProduct}) of FeynmanGraph `g`.
 """
 external_operators(g::FeynmanGraph) = OperatorProduct(OperatorProduct(g.properties.vertices)[g.properties.external_indices])
 
 """
     function external_labels(g::FeynmanGraph)
 
-    Returns the labels of all physical external vertices of FeynmanGraph `g`.
+Returns the labels of all physical external vertices of FeynmanGraph `g`.
 """
 external_labels(g::FeynmanGraph) = [o.label for o in external_operators(g)]
 
@@ -295,7 +295,7 @@ end
 """
     function Base.:*(g1::Graph{F,W}, c2) where {F,W}
 
-    Returns a graph representing the scalar multiplication `g1*c2`.
+Returns a graph representing the scalar multiplication `g1*c2`.
 
 # Arguments:
 - `g1`  Feynman graph
@@ -314,7 +314,7 @@ end
 """
     function Base.:*(c1, g2::Graph{F,W}) where {F,W}
 
-    Returns a graph representing the scalar multiplication `c1*g2`.
+Returns a graph representing the scalar multiplication `c1*g2`.
 
 # Arguments:
 - `c1`  scalar multiple
@@ -333,8 +333,8 @@ end
 """
     function linear_combination(g1::FeynmanGraph{F,W}, g2::FeynmanGraph{F,W}, c1, c2) where {F,W}
 
-    Returns a graph representing the linear combination `c1*g1 + c2*g2`. If `g1 == g2`, it will return a graph representing `(c1+c2)*g1`
-    Feynman Graphs `g1` and `g2` must have the same diagram type, orders, and external vertices.
+Returns a graph representing the linear combination `c1*g1 + c2*g2`. If `g1 == g2`, it will return a graph representing `(c1+c2)*g1`
+Feynman Graphs `g1` and `g2` must have the same diagram type, orders, and external vertices.
 
 # Arguments:
 - `g1`  first Feynman graph
@@ -376,10 +376,10 @@ end
 """
     function linear_combination(graphs::Vector{FeynmanGraph{F,W}}, constants::AbstractVector=ones(F, length(graphs))) where {F,W}
 
-    Given a vector 𝐠 of graphs each with the same type and external/internal vertices and 
-    an equally-sized vector 𝐜 of constants, returns a new graph representing the linear combination (𝐜 ⋅ 𝐠). 
-    The function identifies unique graphs from the input `graphs` and sums their associated `constants`.
-    All input Graphs must have the same diagram type, orders, and external vertices.
+Given a vector 𝐠 of graphs each with the same type and external/internal vertices and 
+an equally-sized vector 𝐜 of constants, returns a new graph representing the linear combination (𝐜 ⋅ 𝐠). 
+The function identifies unique graphs from the input `graphs` and sums their associated `constants`.
+All input Graphs must have the same diagram type, orders, and external vertices.
 
 # Arguments:
 - `graphs`  vector of input FeymanGraphs
@@ -429,8 +429,8 @@ end
 """
     function Base.:+(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
 
-    Returns a graph `g1 + g2` representing the addition of two Feynman diagrams `g2` with `g1`.
-    Diagrams `g1` and `g2` must have the same diagram type, orders, and external vertices.
+Returns a graph `g1 + g2` representing the addition of two Feynman diagrams `g2` with `g1`.
+Diagrams `g1` and `g2` must have the same diagram type, orders, and external vertices.
 
 # Arguments:
 - `g1`  first Feynman graph
@@ -443,8 +443,8 @@ end
 """
     function Base.:-(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
 
-    Returns a graph `g1 - g2` representing the subtraction of `g2` from `g1`.
-    Diagrams `g1` and `g2` must have the same diagram type, orders, and external vertices.
+Returns a graph `g1 - g2` representing the subtraction of `g2` from `g1`.
+Diagrams `g1` and `g2` must have the same diagram type, orders, and external vertices.
 
 # Arguments:
 - `g1`  first Feynman graph
@@ -462,9 +462,9 @@ end
     function feynman_diagram(subgraphs::Vector{FeynmanGraph{F,W}}, topology::Vector{Vector{Int}}, perm_noleg::Union{Vector{Int},Nothing}=nothing;
         factor=one(_dtype.factor), weight=zero(_dtype.weight), name="", diagtype::DiagramType=GenericDiag()) where {F,W}
     
-    Create a FeynmanGraph representing feynman diagram from all subgraphs and topology (connections between vertices),
-    where each ExternalVertex is given in `vertices`, 
-    while internal vertices are constructed with external legs of graphs in `vertices`, or simply OperatorProduct in `vertices`.
+Create a FeynmanGraph representing feynman diagram from all subgraphs and topology (connections between vertices),
+where each ExternalVertex is given in `vertices`, 
+while internal vertices are constructed with external legs of graphs in `vertices`, or simply OperatorProduct in `vertices`.
     
 # Arguments:
 - `subgraphs::Vector{FeynmanGraph{F,W}}` all subgraphs of the diagram. All external operators of subgraphs constitute all operators of the new diagram.
@@ -574,7 +574,7 @@ _extract_vertex(::Type{<:FeynmanGraph}, g) = OperatorProduct(external_operators(
     function propagator(ops::Union{OperatorProduct,Vector{QuantumOperator}};
         name="", factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
 
-    Create a Propagator-type FeynmanGraph from given OperatorProduct or Vector{QuantumOperator} `ops`, including two quantum operators.
+Create a Propagator-type FeynmanGraph from given OperatorProduct or Vector{QuantumOperator} `ops`, including two quantum operators.
 """
 function propagator(ops::Union{OperatorProduct,Vector{QuantumOperator}}; orders::Union{Nothing,Vector{Int}}=nothing,
     name="", factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
@@ -593,8 +593,9 @@ end
 """
     function interaction(ops::OperatorProduct; name="", reorder::Union{Function,Nothing}=nothing,
         factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
-    Create a Interaction-type FeynmanGraph from given OperatorProduct `ops`, including several quantum operators for a vertex.
-    One can call a reorder function for the operators ordering.  
+
+Create a Interaction-type FeynmanGraph from given OperatorProduct `ops`, including several quantum operators for a vertex.
+One can call a reorder function for the operators ordering.  
 """
 function interaction(ops::OperatorProduct; name="", reorder::Union{Function,Nothing}=nothing,
     factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
@@ -612,7 +613,8 @@ end
 """
     function external_vertex(ops::OperatorProduct;
         name="", factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
-    Create a ExternalVertex-type FeynmanGraph from given OperatorProduct `ops`, including several quantum operators for an purely external vertex.
+
+Create a ExternalVertex-type FeynmanGraph from given OperatorProduct `ops`, including several quantum operators for an purely external vertex.
 """
 function external_vertex(ops::OperatorProduct;
     name="", factor=one(_dtype.factor), weight=zero(_dtype.weight), operator=Sum())
