@@ -76,7 +76,7 @@ end
 
     The channels of the left and right sub-vertex4 of a bubble diagram in the parquet equation
 
-#Members
+# Members
 - `phi`   : channels of left sub-vertex for the particle-hole and particle-hole-exchange bubbles
 - `ppi`   : channels of left sub-vertex for the particle-particle bubble
 - `Γ4`   : channels of right sub-vertex of all channels
