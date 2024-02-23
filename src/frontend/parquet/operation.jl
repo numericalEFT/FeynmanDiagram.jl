@@ -74,9 +74,9 @@ end
         getid::Function=g -> GenericId(g[1, :diagram].properties.para, Tuple(g[1, fields]))
     )
 
-    Aggregates and merges rows in a DataFrame based on specified fields and an aggregation operator.
-    It is designed to work with data frames containing diagram representations or similar structured data, 
-    allowing for flexible aggregation based on custom identifiers and properties.
+Aggregates and merges rows in a DataFrame based on specified fields and an aggregation operator.
+It is designed to work with data frames containing diagram representations or similar structured data, 
+allowing for flexible aggregation based on custom identifiers and properties.
 
 # Parameters
 - `df`: A DataFrame to be processed. It must contain a column named :diagram which holds `Graph`.
@@ -159,7 +159,7 @@ end
 """
     update_extKT!(diags::Vector{Graph}, para::DiagPara, legK::Vector{Vector{Float64}})
 
-    Update the external momenta (`extK`) and external times (`extT`) of all the nodes in a vector of graphs in-place.
+Update the external momenta (`extK`) and external times (`extT`) of all the nodes in a vector of graphs in-place.
 
 # Arguments
 - `diags::Vector{Graph}`: A vector of `Graph` objects.
@@ -239,8 +239,8 @@ end
 """
     update_extKT(diags::Vector{Graph}, para::DiagPara, legK::Vector{Vector{Float64}}) -> Vector{Graph}
 
-    Returns a new vector of graphs with updated external momenta (`extK`) and external times (`extT`), 
-    based on the provided graphs, parameters, and external legs' momenta.
+Returns a new vector of graphs with updated external momenta (`extK`) and external times (`extT`), 
+based on the provided graphs, parameters, and external legs' momenta.
 
 # Arguments
 - `diags::Vector{Graph}`: A vector of `Graph` objects.
