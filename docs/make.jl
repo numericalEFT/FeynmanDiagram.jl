@@ -34,5 +34,6 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/numericalEFT/FeynmanDiagram.jl"
+    repo="github.com/numericalEFT/FeynmanDiagram.jl",
+    push_preview=true
 )
