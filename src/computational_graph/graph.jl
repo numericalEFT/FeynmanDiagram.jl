@@ -1,7 +1,7 @@
 """
     mutable struct Graph{F<:Number,W}
     
-    A representation of a computational graph, e.g., an expression tree, with type stable node data.
+A representation of a computational graph, e.g., an expression tree, with type stable node data.
 
 # Members:
 - `id::Int`  the unique hash id to identify the diagram
@@ -37,11 +37,12 @@ mutable struct Graph{F<:Number,W} <: AbstractGraph # Graph
     weight::W
 
     properties::Any
+
     """
         function Graph(subgraphs::AbstractVector; name="", operator::AbstractOperator=Sum(),
             ftype=_dtype.factor, wtype=_dtype.weight, factor=one(ftype), weight=zero(wtype))
         
-        Create a Graph struct from a set of subgraphs with the specified node data and operation.
+    Create a Graph struct from a set of subgraphs with the specified node data and operation.
 
     # Arguments:
     - `subgraphs`  vector of sub-diagrams 
@@ -107,7 +108,7 @@ set_subgraph_factors!(g::Graph{F,W}, subgraph_factors::AbstractVector, indices::
 """
     function constant_graph(factor=one(_dtype.factor))
 
-    Returns a graph that represents a constant equal to f, where f is the factor with default value 1.
+Returns a graph that represents a constant equal to f, where f is the factor with default value 1.
 
 # Arguments:
 - `f`:  constant factor
@@ -124,7 +125,7 @@ end
 """
     function Base.:*(g1::Graph{F,W}, c2) where {F,W}
 
-    Returns a graph representing the scalar multiplication `g1*c2`.
+Returns a graph representing the scalar multiplication `g1*c2`.
 
 # Arguments:
 - `g1`  computational graph
@@ -143,7 +144,7 @@ end
 """
     function Base.:*(c1, g2::Graph{F,W}) where {F,W}
 
-    Returns a graph representing the scalar multiplication `c1*g2`.
+Returns a graph representing the scalar multiplication `c1*g2`.
 
 # Arguments:
 - `c1`  scalar multiple
@@ -162,9 +163,9 @@ end
 """
     function linear_combination(g1::Graph{F,W}, g2::Graph{F,W}, c1, c2) where {F,W}
 
-    Returns a graph representing the linear combination `c1*g1 + c2*g2`.
-    If `g1 == g2`, it will return a graph representing `(c1+c2)*g1`.
-    Graphs `g1` and `g2` must have the same orders.
+Returns a graph representing the linear combination `c1*g1 + c2*g2`.
+If `g1 == g2`, it will return a graph representing `(c1+c2)*g1`.
+Graphs `g1` and `g2` must have the same orders.
 
 # Arguments:
 - `g1`  first computational graph
@@ -206,10 +207,10 @@ end
 """
     function linear_combination(graphs::Vector{Graph{F,W}}, constants::AbstractVector=ones(F, length(graphs))) where {F,W}
 
-    Given a vector 𝐠 of graphs and an equally-sized vector 𝐜 of constants, returns a new
-    graph representing the linear combination (𝐜 ⋅ 𝐠). 
-    The function identifies unique graphs from the input `graphs` and sums their associated `constants`.
-    All input graphs must have the same orders.
+Given a vector 𝐠 of graphs and an equally-sized vector 𝐜 of constants, returns a new
+graph representing the linear combination (𝐜 ⋅ 𝐠). 
+The function identifies unique graphs from the input `graphs` and sums their associated `constants`.
+All input graphs must have the same orders.
 
 # Arguments:
 - `graphs`  vector of computational graphs
@@ -261,8 +262,8 @@ end
 """
     function Base.:+(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
 
-    Returns a graph `g1 + g2` representing the addition of `g2` with `g1`.
-    Graphs `g1` and `g2` must have the same orders.
+Returns a graph `g1 + g2` representing the addition of `g2` with `g1`.
+Graphs `g1` and `g2` must have the same orders.
 
 # Arguments:
 - `g1`  first computational graph
@@ -275,8 +276,8 @@ end
 """
     function Base.:-(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
 
-    Returns a graph `g1 - g2` representing the subtraction of `g2` from `g1`.
-    Graphs `g1` and `g2` must have the same orders.
+Returns a graph `g1 - g2` representing the subtraction of `g2` from `g1`.
+Graphs `g1` and `g2` must have the same orders.
 
 # Arguments:
 - `g1`  first computational graph
@@ -289,8 +290,8 @@ end
 """
     function multi_product(g1::Graph{F,W}, g2::Graph{F,W}, c1=F(1), c2=F(1)) where {F,W,C}
 
-    Returns a graph representing the multi product `c1*g1 * c2*g2`.
-    If `g1 == g2`, it will return a graph representing `c1*c2 * (g1)^2` with `Power(2)` operator.
+Returns a graph representing the multi product `c1*g1 * c2*g2`.
+If `g1 == g2`, it will return a graph representing `c1*c2 * (g1)^2` with `Power(2)` operator.
 
 # Arguments:
 - `g1`:  first computational graph
@@ -330,9 +331,9 @@ end
 """
     multi_product(graphs::Vector{Graph{F,W}}, constants::AbstractVector=ones(F, length(graphs))) where {F,W,C}
 
-    Construct a product graph from multiple input graphs, where each graph can be weighted by a constant. 
-    For graphs that are repeated more than once, it adds a power operator to the subgraph to represent the repetition.
-    Moreover, it optimizes any trivial unary operators in the resulting product graph.
+Construct a product graph from multiple input graphs, where each graph can be weighted by a constant. 
+For graphs that are repeated more than once, it adds a power operator to the subgraph to represent the repetition.
+Moreover, it optimizes any trivial unary operators in the resulting product graph.
 
 # Arguments:
 - `graphs::Vector{Graph{F,W}}`: A vector of input graphs to be multiplied.
@@ -400,7 +401,7 @@ end
 """
     function Base.:*(g1::Graph{F,W}, g2::Graph{F,W}) where {F,W}
 
-    Returns a graph `g1 * g2` representing the graph product between `g1` and `g2`.
+Returns a graph `g1 * g2` representing the graph product between `g1` and `g2`.
 
 # Arguments:
 - `g1`  first computational graph
