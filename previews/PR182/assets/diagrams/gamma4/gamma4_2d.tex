@@ -1,0 +1,36 @@
+% standalone document border convention: {left bottom right top}
+\documentclass[varwidth,border={1pt 1pt 1pt 1pt}]{standalone}
+\usepackage[force]{feynmp-auto}
+
+\begin{document}
+\begin{fmffile}{gamma4_2d_diag}
+	\fmfcmd{
+		% Fermion line with arrow shifted forward
+		style_def fermion_fshift expr p =
+		cdraw p;
+		cfill (tarrow (p, 0.55))
+		enddef;
+	}
+	\begin{fmfgraph*}(60,80)
+		\fmfstraight
+		\fmftop{oa,ob}
+		\fmfbottom{oc,od}
+		\fmf{phantom,tension=3}{a,oa}
+		\fmf{phantom,tension=3}{b,ob}
+		\fmf{fermion,tension=3}{oc,c}
+		\fmf{fermion,tension=3}{od,d}
+		\fmf{phantom}{a,b,c,d,a}
+		\fmffreeze
+		\fmf{fermion,tension=3,left=0.175}{a,ob}
+		\fmf{fermion,tension=3,right=0.175}{b,oa}
+		\fmf{fermion,left=0.25}{c,a}
+		\fmf{fermion,right=0.25}{d,b}
+		\fmf{boson}{a,b}
+		\fmf{boson}{c,d}
+		\fmfv{d.sh=circle, d.fi=full, d.si=2thick, l.a=135, l.d=4.5, label=$4$}{a}
+		\fmfv{d.sh=circle, d.fi=full, d.si=2thick, l.a=45, l.d=4.5, label=$2$}{b}
+		\fmfv{d.sh=circle, d.fi=full, d.si=2thick, l.a=-70, l.d=4.5, label=$1$}{c}
+		\fmfv{d.sh=circle, d.fi=full, d.si=2thick, l.a=-110, l.d=4.5, label=$3$}{d}
+	\end{fmfgraph*}
+\end{fmffile}
+\end{document}
