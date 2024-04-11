@@ -68,17 +68,17 @@ function getK(loopNum::Int, loopIdx::Int)
     return k
 end
 
-function firstLoopIdx(type)
+function extK_num(type)
     if type == :vertex4 || type == :vertex4I #three extK
-        return 4
+        return 3
     elseif type == :sigma #one extK
-        return 2
-    elseif type == :green #one extK
-        return 2
-    elseif type == :chargePolar || type == :spinPolar #one extK
-        return 2
-    elseif type == :freeEnergy #no extK
         return 1
+    elseif type == :green #one extK
+        return 1
+    elseif type == :chargePolar || type == :spinPolar #one extK
+        return 1
+    elseif type == :freeEnergy #no extK
+        return 0
     else
         error("not implemented!")
     end
@@ -189,7 +189,7 @@ function read_diagrams(filename::AbstractString; labelProd::Union{Nothing,LabelP
 end
 
 function read_vertex4diagrams(filename::AbstractString; spinPolarPara::Float64=0.0, filter=[NoHartree], channels=[PHr, PHEr, PPr, Alli],
-    keywords::Vector{String}=["SelfEnergy", "DiagNum", "Order", "GNum", "Ver4Num", "LoopNum", "ExtLoopIndex",
+    keywords::Vector{String}=["Vertex4", "DiagNum", "Order", "GNum", "Ver4Num", "LoopNum", "ExtLoopIndex",
         "DummyLoopIndex", "TauNum", "DummyTauIndex"])
     # Open a diagram file
     io = open(filename, "r")
@@ -248,8 +248,6 @@ function read_vertex4diagrams(filename::AbstractString; spinPolarPara::Float64=0
     unique!(gr_keys)
     graphvec = Graph{_dtype.factor,_dtype.weight}[]
 
-    # extTs = Vector{NTuple{4,Int}}()
-    # responses = Vector{Response}()
     for (extT, channel) in gr_keys
         keyDi = (extT, channel, 0)
         keyEx = (extT, channel, 1)
@@ -261,10 +259,8 @@ function read_vertex4diagrams(filename::AbstractString; spinPolarPara::Float64=0
         guuId = Ver4Id(para, UpUp, gId_Di.type, k=gId_Di.extK, t=gId_Di.extT, chan=gId_Di.channel)
         guu = Graph([gud, gEx], properties=guuId)
         append!(graphvec, [guu, gud])
-        # append!(extTs, [extT, extT])
-        # append!(responses, [UpUp, UpDown])
     end
-    # return graphvec, extTs, responses
+
     return graphvec
 end
 
@@ -411,6 +407,181 @@ function read_one_vertex4diagram!(io::IO, GNum::Int, verNum::Int, loopNum::Int, 
     end
 
     return g_Di, g_Ex
+end
+
+function read_diagrams(filename::AbstractString, diagType::Symbol; filter=[NoHartree], spinPolarPara::Float64=0.0,
+    keywords::Vector{String}=["SelfEnergy", "DiagNum", "Order", "GNum", "Ver4Num", "LoopNum", "ExtLoopIndex",
+        "DummyLoopIndex", "TauNum", "ExtTauIndex", "DummyTauIndex"]
+)
+    # Open a diagram file
+    io = open(filename, "r")
+
+    # Read global graph properties
+    diagNum, loopNum, tauNum, verNum = 1, 1, 2, 0
+    extIndex = Int[]
+    GNum = 2
+    lineNum = 1
+    while true
+        line = readline(io)
+        length(line) == 0 && break
+        keyword = keywords[lineNum]
+        # @assert occursin(keyword, line)
+        if keyword == "DiagNum"
+            diagNum = _StringtoIntVector(line)[1]
+        elseif keyword == "GNum"
+            GNum = _StringtoIntVector(line)[1]
+        elseif keyword == "Ver4Num"
+            verNum = _StringtoIntVector(line)[2]
+        elseif keyword == "LoopNum"
+            loopNum = _StringtoIntVector(line)[1]
+        elseif keyword == "TauNum"
+            tauNum = _StringtoIntVector(line)[1]
+        elseif keyword == "ExtTauIndex"
+            extIndex = _StringtoIntVector(line)
+        end
+        lineNum += 1
+    end
+    offset_ver4 = diagType == :sigma ? 1 : 0
+
+    # Read one diagram at a time
+    diagrams = Graph{_dtype.factor,_dtype.weight}[]
+    for _ in 1:diagNum
+        diag = read_one_diagram!(diagType, IOBuffer(readuntil(io, "\n\n")),
+            GNum, verNum, loopNum, extIndex, spinPolarPara, filter=filter, offset_ver4=offset_ver4)
+        # isempty(diags) && continue
+        push!(diagrams, diag)
+    end
+    close(io)
+
+    if diagType == :freeEnergy
+        return [IR.linear_combination(diagrams, properties=diagrams[1].properties),]
+    else
+        extT_labels = Vector{NTuple{length(extIndex),Int}}()
+        sizehint!(extT_labels, length(diagrams))
+        for prop in IR.properties.(diagrams)
+            push!(extT_labels, prop.extT)
+        end
+        gr = _group(diagrams, extT_labels)
+        unique!(extT_labels)
+        graphvec = Graph{_dtype.factor,_dtype.weight}[]
+        for key in extT_labels
+            gId = gr[key][1].properties
+            push!(graphvec, IR.linear_combination(gr[key], properties=gId))
+        end
+        return graphvec
+    end
+end
+
+function read_one_diagram!(type::Symbol, io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex::Vector{Int},
+    spinPolarPara::Float64=0.0; filter=[NoHartree], splitter="|", offset::Int=-1, offset_ver4::Int=0
+)
+    flag_proper = false
+    if Proper in filter
+        flag_proper = true
+    end
+    isDynamic = verNum == 1 ? false : true
+    ################ Read Hugenholtz Diagram information ####################
+    @assert occursin("Permutation", readline(io))
+    permutation = _StringtoIntVector(readline(io)) .- offset
+    @assert length(permutation) == length(unique(permutation)) == GNum
+
+    @assert occursin("SymFactor", readline(io))
+    symfactor = parse(Float64, readline(io))
+
+    @assert occursin("GType", readline(io))
+    opGType = _StringtoIntVector(readline(io))
+    @assert length(opGType) == GNum
+
+    @assert occursin("VertexBasis", readline(io))
+    tau_labels = _StringtoIntVector(readline(io)) .- offset
+    readline(io)
+
+    @assert occursin("LoopBasis", readline(io))
+    currentBasis = zeros(Int, (GNum, loopNum))
+    for i in 1:loopNum
+        x = parse.(Int, split(readline(io)))
+        @assert length(x) == GNum
+        currentBasis[:, i] = x
+    end
+
+    @assert occursin("Ver4Legs", readline(io))
+    if verNum == 0
+        ver4Legs = Vector{Vector{Int64}}(undef, 0)
+    else
+        strs = split(readline(io), splitter)
+        ver4Legs = _StringtoIntVector.(strs[1:verNum])
+    end
+
+    @assert occursin("WType", readline(io))
+    if verNum > 0
+        opWType = _StringtoIntVector(readline(io))
+    end
+
+    @assert occursin("SpinFactor", readline(io))
+    spinFactors = _StringtoIntVector(readline(io))
+
+    extIndex = extIndex .- offset
+    extNum = length(extIndex)
+    extK = zeros(loopNum)
+
+    greens = Graph{_dtype.factor,_dtype.weight}[]
+    # create all fermionic propagators
+    for (ind1, ind2) in enumerate(permutation)
+        opGType[ind1] == -2 && continue
+        diagid = BareGreenId(k=currentBasis[ind1, :], t=[tau_labels[ind1], tau_labels[ind2]])
+        push!(greens, Graph([]; properties=diagid))
+    end
+    fermi_greenProd = Graph(greens, operator=IR.Prod())
+
+    interactions = Graph{_dtype.factor,_dtype.weight}[]
+    spinfactors_existed = Float64[]
+    # println("##### $permutation  $ver4Legs")
+    for (iex, spinFactor) in enumerate(spinFactors)
+        # create permutation and ver4Legs for each Feynman diagram from a Hugenholtz diagram
+        spinFactor == 0 && continue
+        # flag_proper && proper[iex] == 1 && continue
+        push!(spinfactors_existed, sign(spinFactor) * (2 / (1 + spinPolarPara))^(log2(abs(spinFactor))))
+
+        permu, ver4Legs_ex = _exchange(permutation, ver4Legs, iex, extNum, offset_ver4=offset_ver4)
+
+        ######################## Create Feynman diagram #########################
+        leafs = Graph{_dtype.factor,_dtype.weight}[]
+
+        # create all bosionic operators (relevant to interaction lines)
+        for verLeg in ver4Legs_ex
+            ind1, ind2 = verLeg[2] - offset, verLeg[4] - offset
+            current = currentBasis[verLeg[1]-offset, :] - currentBasis[ind1, :]
+            @assert current == currentBasis[ind2, :] - currentBasis[verLeg[3]-offset, :] # momentum conservation
+
+            diagid = BareInteractionId(ChargeCharge, k=current, t=[tau_labels[ind1], tau_labels[ind2]])
+            push!(leafs, Graph([]; properties=diagid))
+        end
+        isempty(leafs) && continue
+        # push!(interactions, Graph(leafs, operator=IR.Prod(), factor=spinfactor * symfactor))
+        push!(interactions, Graph(leafs, operator=IR.Prod()))
+    end
+
+    innerLoopNum = loopNum - extNum + 1
+    if type == :freeEnergy
+        innerLoopNum -= 1
+        diagid = GenericId(innerLoopNum)
+    elseif type == :chargePolar
+        diagid = PolarId(innerLoopNum, ChargeCharge, k=extK, t=tau_labels[extIndex])
+    elseif type == :spinPolar
+        diagid = PolarId(innerLoopNum, SpinSpin, k=extK, t=tau_labels[extIndex])
+    elseif type == :sigma
+        diagid = SigmaId(innerLoopNum, isDynamic ? Dynamic : Instant, k=extK, t=tau_labels[extIndex])
+    else
+    end
+    if isempty(interactions)
+        # no interaction, so there should be only one spin factor.
+        g = Graph([fermi_greenProd], subgraph_factors=spinfactors_existed * symfactor, operator=IR.Sum(), properties=diagid)
+    else
+        inters = Graph(interactions, subgraph_factors=spinfactors_existed * symfactor, operator=IR.Sum())
+        g = IR.multi_product(fermi_greenProd, inters, properties=diagid)
+    end
+
+    return g
 end
 
 function read_onediagram!(io::IO, GNum::Int, verNum::Int, loopNum::Int, extIndex::Vector{Int},

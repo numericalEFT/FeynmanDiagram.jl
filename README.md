@@ -111,8 +111,8 @@ Compilers.compile_Julia(g_o21, "func_o21.jl");
 # Export the self-energy's source code to a C file.
 Compilers.compile_C(g_o21, "func_o21.c");
 
-# Export the self-energy's source code to a Python file for use with the JAX machine learning framework.
-Compilers.compile_Python(g_o21, :jax, "func_o21.py");
+# Export the self-energy's source code to a Python file.
+Compilers.compile_Python(g_o21, "func_o21.py");
 ```
 
 ### Computational Graph visualization
