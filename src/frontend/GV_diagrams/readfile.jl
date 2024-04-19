@@ -521,6 +521,9 @@ function read_one_diagram!(type::Symbol, io::IO, GNum::Int, verNum::Int, loopNum
     spinFactors = _StringtoIntVector(readline(io))
 
     extIndex = extIndex .- offset
+    if type == :sigma
+        extIndex[2] = findfirst(isequal(extIndex[1]), permutation)
+    end
     extNum = length(extIndex)
     extK = zeros(loopNum)
 
