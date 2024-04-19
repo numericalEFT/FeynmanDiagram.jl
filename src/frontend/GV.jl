@@ -37,8 +37,8 @@ include("GV_diagrams/readfile.jl")
 # Arguments:
 - `type` (Symbol): The type of the diagrams, including `:spinPolar`, `:chargePolar`, `:sigma`, `:green`, or `:freeEnergy`.
 - `order` (Int): The order of the diagrams without counterterms.
-- `GOrder` (Int, optional): The order of self-energy counterterms (defaults to 0).
-- `VerOrder` (Int, optional): The order of interaction counterterms (defaults to 0).
+- `GOrder` (Int): The order of self-energy counterterms.
+- `VerOrder` (Int): The order of interaction counterterms.
 - `labelProd` (Union{Nothing,LabelProduct}=nothing, optional): The initial cartesian QuantumOperator.label product (defaults to `nothing`).
 - `spinPolarPara` (Float64, optional): The spin-polarization parameter (n_up - n_down) / (n_up + n_down) (defaults to `0.0`).
 - `tau_labels`(Union{Nothing, Vector{Int}}, optional): The labels for the discrete time of each vertex. (defaults to `nothing`).
@@ -49,9 +49,9 @@ A tuple `(diagrams, fermi_labelProd, bose_labelProd, extT_labels)` where
 - `labelProd` is a `LabelProduct` object containing the labels for the leaves of graphs, 
 - `extT_labels` is a `Vector{Union{Tuple,Vector{Int}}}` object containing the external tau labels for each `FeynmanGraph` in `diagrams`.
 """
-function diagsGV(type::Symbol, order::Int, GOrder::Int=0, VerOrder::Int=0;
+function diagsGV(type::Symbol, order::Int, GOrder::Int, VerOrder::Int;
     labelProd::Union{Nothing,LabelProduct}=nothing, spinPolarPara::Float64=0.0,
-    tau_labels::Union{Nothing,Vector{Int}}=nothing, filter::Vector{Filter}=[NoHartree])
+    tau_labels::Union{Nothing,Vector{Int}}=nothing)
     if type == :spinPolar
         filename = string(@__DIR__, "/GV_diagrams/groups_spin/Polar$(order)_$(VerOrder)_$(GOrder).diag")
     elseif type == :chargePolar
