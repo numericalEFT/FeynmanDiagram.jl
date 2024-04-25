@@ -16,7 +16,7 @@ import ..FrontEnds: Proper  #ver4, ver3, and polarization diagrams may require t
 import ..FrontEnds: Response, Composite, ChargeCharge, SpinSpin, UpUp, UpDown
 import ..FrontEnds: AnalyticProperty, Instant, Dynamic
 import ..FrontEnds: TwoBodyChannel, Alli, PHr, PHEr, PPr, AnyChan
-import ..FrontEnds: DiagramId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId, BareGreenId, BareInteractionId
+import ..FrontEnds: DiagramId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId, GenericId, BareGreenId, BareInteractionId
 
 using AbstractTrees
 
@@ -37,8 +37,8 @@ include("GV_diagrams/readfile.jl")
 # Arguments:
 - `type` (Symbol): The type of the diagrams, including `:spinPolar`, `:chargePolar`, `:sigma`, `:green`, or `:freeEnergy`.
 - `order` (Int): The order of the diagrams without counterterms.
-- `GOrder` (Int, optional): The order of self-energy counterterms (defaults to 0).
-- `VerOrder` (Int, optional): The order of interaction counterterms (defaults to 0).
+- `GOrder` (Int): The order of self-energy counterterms.
+- `VerOrder` (Int): The order of interaction counterterms.
 - `labelProd` (Union{Nothing,LabelProduct}=nothing, optional): The initial cartesian QuantumOperator.label product (defaults to `nothing`).
 - `spinPolarPara` (Float64, optional): The spin-polarization parameter (n_up - n_down) / (n_up + n_down) (defaults to `0.0`).
 - `tau_labels`(Union{Nothing, Vector{Int}}, optional): The labels for the discrete time of each vertex. (defaults to `nothing`).
@@ -49,9 +49,9 @@ A tuple `(diagrams, fermi_labelProd, bose_labelProd, extT_labels)` where
 - `labelProd` is a `LabelProduct` object containing the labels for the leaves of graphs, 
 - `extT_labels` is a `Vector{Union{Tuple,Vector{Int}}}` object containing the external tau labels for each `FeynmanGraph` in `diagrams`.
 """
-function diagsGV(type::Symbol, order::Int, GOrder::Int=0, VerOrder::Int=0;
+function diagsGV(type::Symbol, order::Int, GOrder::Int, VerOrder::Int;
     labelProd::Union{Nothing,LabelProduct}=nothing, spinPolarPara::Float64=0.0,
-    tau_labels::Union{Nothing,Vector{Int}}=nothing, filter::Vector{Filter}=[NoHartree])
+    tau_labels::Union{Nothing,Vector{Int}}=nothing)
     if type == :spinPolar
         filename = string(@__DIR__, "/GV_diagrams/groups_spin/Polar$(order)_$(VerOrder)_$(GOrder).diag")
     elseif type == :chargePolar
@@ -72,6 +72,24 @@ function diagsGV(type::Symbol, order::Int, GOrder::Int=0, VerOrder::Int=0;
     else
         return read_diagrams(filename; labelProd=labelProd, diagType=type, spinPolarPara=spinPolarPara)
     end
+end
+
+function diagsGV(type::Symbol, order::Int; spinPolarPara::Float64=0.0, filter::Vector{Filter}=[NoHartree])
+    if type == :spinPolar
+        filename = string(@__DIR__, "/GV_diagrams/groups_spin/Polar$(order)_0_0.diag")
+    elseif type == :chargePolar
+        filename = string(@__DIR__, "/GV_diagrams/groups_charge/Polar$(order)_0_0.diag")
+    elseif type == :sigma
+        filename = string(@__DIR__, "/GV_diagrams/groups_sigma/Sigma$(order)_0_0.diag")
+    elseif type == :green
+        filename = string(@__DIR__, "/GV_diagrams/groups_green/Green$(order)_0_0.diag")
+    elseif type == :freeEnergy
+        filename = string(@__DIR__, "/GV_diagrams/groups_free_energy/FreeEnergy$(order)_0_0.diag")
+    else
+        error("no support for $type diagram")
+    end
+
+    return read_diagrams(filename, type, filter=filter, spinPolarPara=spinPolarPara)
 end
 
 """
