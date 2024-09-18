@@ -10,6 +10,7 @@ struct O3 <: Graphs.AbstractOperator end
 Graphs.unary_istrivial(::Type{O}) where {O<:Union{O1,O2,O3}} = true
 
 @testset verbose = true "AbstractGraph interface" begin
+    # Example of a custom graph type with additional type-stable node properties ("color")
     mutable struct ConcreteGraph <: Graphs.AbstractGraph
         id::Int
         name::String
@@ -17,23 +18,47 @@ Graphs.unary_istrivial(::Type{O}) where {O<:Union{O1,O2,O3}} = true
         operator::DataType
         subgraphs::Vector{ConcreteGraph}
         subgraph_factors::Vector{Float64}
-        factor::Float64
         weight::Float64
-        function ConcreteGraph(subgraphs=[]; name="", orders=zeros(Int, 0), operator=O(), subgraph_factors=[], factor=1.0, weight=1.0)
-            return new(Graphs.uid(), name, orders, typeof(operator), subgraphs, subgraph_factors, factor, weight)
+        color::String
+        function ConcreteGraph(subgraphs=[]; name="", orders=zeros(Int, 0), operator=O(), subgraph_factors=[], weight=1.0, color="black")
+            return new(Graphs.uid(), name, orders, typeof(operator), subgraphs, subgraph_factors, weight, color)
         end
     end
 
+    # weight(g::AbstractGraph) is an abstract method
+    @test isnothing(Graphs.weight(ConcreteGraph()))
+
+    ### AbstractGraph interface for ConcreteGraph ###
+
+    # Getters
+    Graphs.id(g::ConcreteGraph) = g.id
+    Graphs.name(g::ConcreteGraph) = g.name
+    Graphs.orders(g::ConcreteGraph) = g.orders
+    Graphs.operator(g::ConcreteGraph) = g.operator
+    Graphs.weight(g::ConcreteGraph) = g.weight
+    Graphs.properties(g::ConcreteGraph) = g.color
+    Graphs.subgraph(g::ConcreteGraph, i=1) = g.subgraphs[i]
+    Graphs.subgraphs(g::ConcreteGraph) = g.subgraphs
+    Graphs.subgraph_factor(g::ConcreteGraph, i=1) = g.subgraph_factors[i]
+    Graphs.subgraph_factors(g::ConcreteGraph) = g.subgraph_factors
+
+    # Setters
+    Graphs.set_name!(g::ConcreteGraph, name::AbstractString) = (g.name = name)
+    Graphs.set_properties!(g::ConcreteGraph, color::AbstractString) = (g.color = color)
+    Graphs.set_subgraph!(g::ConcreteGraph, subgraph::ConcreteGraph, i=1) = (g.subgraphs[i] = subgraph)
+    Graphs.set_subgraphs!(g::ConcreteGraph, subgraphs::Vector{ConcreteGraph}) = (g.subgraphs = subgraphs)
+    Graphs.set_subgraph_factor!(g::ConcreteGraph, subgraph_factor::Float64, i=1) = (g.subgraph_factors[i] = subgraph_factor)
+    Graphs.set_subgraph_factors!(g::ConcreteGraph, subgraph_factors::AbstractVector) = (g.subgraph_factors = subgraph_factors)
+
+    ###############################
+
     Graphs.uidreset()
-    g1 = ConcreteGraph(; operator=O1())
-    g2 = ConcreteGraph(; operator=O2())
-    g3 = ConcreteGraph(; operator=O3())
+    g1 = ConcreteGraph(; operator=O1(), color="red", name="g1")
+    g2 = ConcreteGraph(; operator=O2(), color="green", name="g2")
+    g3 = ConcreteGraph(; operator=O3(), color="blue", name="g3")
     g = ConcreteGraph([g1, g2, g3]; subgraph_factors=[2, 3, 5], operator=O())
     gp = ConcreteGraph([g1, g2, g3]; subgraph_factors=[2, 3, 5], operator=O())
     h = ConcreteGraph([g1, g2, g3]; name="h", subgraph_factors=[2, 3, 5], operator=O())
-
-    # weight(g::AbstractGraph) is an abstract method
-    @test isnothing(Graphs.weight(ConcreteGraph()))
 
     # Base.:+(g1::AbstractGraph, g2::AbstractGraph) is an abstract method
     err = AssertionError()
@@ -44,28 +69,14 @@ Graphs.unary_istrivial(::Type{O}) where {O<:Union{O1,O2,O3}} = true
     @test err isa ErrorException
     @test err.msg == "Method not yet implemented for user-defined graph type ConcreteGraph."
 
-    ### AbstractGraph interface for ConcreteGraph ###
-
-    # Getters
-    Graphs.id(g::ConcreteGraph) = g.id
-    Graphs.name(g::ConcreteGraph) = g.name
-    Graphs.orders(g::ConcreteGraph) = g.orders
-    Graphs.operator(g::ConcreteGraph) = g.operator
-    Graphs.weight(g::ConcreteGraph) = g.weight
-    Graphs.subgraph(g::ConcreteGraph, i=1) = g.subgraphs[i]
-    Graphs.subgraphs(g::ConcreteGraph) = g.subgraphs
-    Graphs.subgraph_factor(g::ConcreteGraph, i=1) = g.subgraph_factors[i]
-    Graphs.subgraph_factors(g::ConcreteGraph) = g.subgraph_factors
-
-    # Setters
-    Graphs.set_name!(g::ConcreteGraph, name::AbstractString) = (g.name = name)
-    Graphs.set_subgraph!(g::ConcreteGraph, subgraph::ConcreteGraph, i=1) = (g.subgraphs[i] = subgraph)
-    Graphs.set_subgraphs!(g::ConcreteGraph, subgraphs::Vector{ConcreteGraph}) = (g.subgraphs = subgraphs)
-    Graphs.set_subgraph_factor!(g::ConcreteGraph, subgraph_factor::Float64, i=1) = (g.subgraph_factors[i] = subgraph_factor)
-    Graphs.set_subgraph_factors!(g::ConcreteGraph, subgraph_factors::AbstractVector) = (g.subgraph_factors = subgraph_factors)
-
-    ###############################
-
+    @testset "String representations" begin
+        @test string(g1) == repr(g1) == "1: g1, red=1.0"
+        @test string(g2) == repr(g2) == "2: g2, green=1.0"
+        @test string(g3) == repr(g3) == "3: g3, blue=1.0"
+        @test string(g) == repr(g) == "4: black=O(1,2,3)=1.0"
+        @test string(gp) == repr(gp) == "5: black=O(1,2,3)=1.0"
+        @test string(h) == repr(h) == "6: h, black=O(1,2,3)=1.0"
+    end
     @testset "Traits" begin
         @test Graphs.unary_istrivial(g1) == true
         @test Graphs.unary_istrivial(g2) == true
@@ -78,6 +89,7 @@ Graphs.unary_istrivial(::Type{O}) where {O<:Union{O1,O2,O3}} = true
         @test Graphs.orders(g) == zeros(Int, 0)
         @test Graphs.operator(g) == O
         @test Graphs.weight(g) == 1.0
+        @test Graphs.properties(g) == "black"
         @test Graphs.subgraph(g) == g1
         @test Graphs.subgraph(g, 2) == g2
         @test Graphs.subgraphs(g) == [g1, g2, g3]
@@ -90,6 +102,10 @@ Graphs.unary_istrivial(::Type{O}) where {O<:Union{O1,O2,O3}} = true
     @testset "Setters" begin
         Graphs.set_name!(g, "g")
         @test Graphs.name(g) == "g"
+        Graphs.set_properties!(g, "white")
+        @test Graphs.properties(g) == "white"
+        @test string(g) == "4: g, white=O(1,2,3)=1.0"
+        Graphs.set_properties!(g, "black")
         Graphs.set_subgraph!(g, g2, 1)
         @test Graphs.subgraph(g) == g2
         Graphs.set_subgraphs!(g, [g1, g2, g3])
@@ -271,7 +287,7 @@ end
             @test h8.subgraph_factors == [36]
             @test isequiv(h7_lc, FeynmanGraph([g1s,], drop_topology(g1.properties); subgraph_factors=[-36], operator=Graphs.Sum()), :id)
         end
-        @testset "Merge multi-pproduct" begin
+        @testset "Merge multi-product" begin
             g1 = Graph([])
             g2 = Graph([], factor=2)
             g3 = Graph([], factor=3)
@@ -452,6 +468,20 @@ end
             @test isequiv(h, _h, :id, :weight)
             @test Graphs.eval!(h, randseed=2) ≈ Graphs.eval!(_h, randseed=2)
         end
+    end
+    @testset "String representations" begin
+        Graphs.uidreset()
+        g1 = Graph([])
+        g2 = 2 * g1
+        g3 = Graph([g1,], subgraph_factors=[3], operator=Graphs.Sum(), name="g3")
+        g4 = Graph([g1,], operator=Graphs.Power(2), name="g4")
+        @test string(g1) == repr(g1) == "1: 0.0"
+        @test repr(g2) == "2: Ⓧ (1)=0.0"
+        @test repr(g3) == "3: g3=⨁(1)=0.0"
+        @test repr(g4) == "4: g4=^2(1)=0.0"
+        @test string(g2) == "2: Prod(1)=0.0"
+        @test string(g3) == "3: g3=Sum(1)=0.0"
+        @test string(g4) == "4: g4=Power{2}(1)=0.0"
     end
 end
 
@@ -800,6 +830,16 @@ end
             @test vertices(g) == [𝑓⁺(1)𝑓⁻(2)𝑓⁺(4)𝑓⁻(5), 𝑓⁺(7)𝑓⁻(8)𝑓⁺(10)𝑓⁻(11), V3...]
             @test external_operators(g) == reduce(*, V3)
         end
+    end
+
+    @testset verbose = true "String representations" begin
+        Graphs.uidreset()
+        g1 = propagator(𝑓⁻(1)𝑓⁺(2))
+        g1p = propagator(𝑓⁻(1)𝑓⁺(2); name="g1p")
+        @test repr(g1) == "1: f⁻(1)|f⁺(2)=0.0"
+        @test repr(g1p) == "2: g1p, f⁻(1)|f⁺(2)=0.0"
+        @test string(g1) == "1: FermiAnnihilation(1)|FermiCreation(2)=0.0"
+        @test string(g1p) == "2: g1p, FermiAnnihilation(1)|FermiCreation(2)=0.0"
     end
 end
 

@@ -44,7 +44,7 @@
     @test parity5 == 1
 end
 
-@testset "feynman_diagram from Wick"
+@testset "feynman_diagram from Wick" begin
     # construct Feynman diagram from FeynmanGraphs
     g1 = ComputationalGraphs.propagator(𝑓⁺(1)𝑓⁻(2),)
     g2 = ComputationalGraphs.propagator(𝑓⁺(2)𝑓⁻(1),)

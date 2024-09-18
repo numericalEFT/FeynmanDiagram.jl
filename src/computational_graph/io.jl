@@ -1,6 +1,11 @@
-function _ops_to_str(ops::Vector{OperatorProduct})
-    strs = ["$(o)" for o in ops]
+function _ops_to_string(ops::Vector{OperatorProduct})
+    strs = [string(o) for o in ops]
     return join(strs, "|")
+end
+
+function _ops_to_repr(ops::Vector{OperatorProduct})
+    reprs = [repr(o) for o in ops]
+    return join(reprs, "|")
 end
 
 function short(factor, ignore=nothing)
@@ -25,31 +30,77 @@ function short_orders(orders)
     end
     return orders_no_trailing_zeros
 end
+  
+function _namestring(graph::AbstractGraph)
+    return isnothing(name(graph)) ? "" : string(name(graph))
+end
 
-function _namestr(graph::AbstractGraph)
-    return isempty(name(graph)) ? "" : "-$(name(graph))"
+function _namestring(graph::FeynmanGraph)
+    return isempty(name(graph)) ? "" : string(name(graph), ", ")
 end
 
 function _idstring(graph::AbstractGraph)
-    return string(id(graph), _namestr(graph))
+    return _namestring(graph)
 end
 
 function _idstring(graph::FeynmanGraph)
-    return string(id(graph), _namestr(graph), ":", _ops_to_str(vertices(graph)))
+    return string(_namestring(graph), _ops_to_string(vertices(graph)))
 end
 
-function _stringrep(graph::AbstractGraph, color=true)
-    idstr = _idstring(graph)
-    properties = graph.properties
-    wstr = short(weight(graph))
-    ostr = short_orders(orders(graph))
-    # =$(node.weight*(2π)^(3*node.id.para.innerLoopNum))
+_idrepr(graph::AbstractGraph) = _idstring(graph)
 
+function _idrepr(graph::FeynmanGraph)
+    return string(_namestring(graph), _ops_to_repr(vertices(graph)))
+end
+
+function _propertystring(graph::AbstractGraph)
+    return isnothing(properties(graph)) ? "" : string(properties(graph))
+end
+
+function _weightstring(graph::AbstractGraph)
     if isleaf(graph)
-        return isnothing(properties) ? "$(idstr)$(ostr)=$wstr" : "$(idstr)$(properties)$(ostr)=$wstr"
-    else
-        return isnothing(properties) ? "$(idstr)$(ostr)=$wstr=$(operator(graph)) " : "$(idstr)$(properties)$(ostr)=$wstr=$(operator(graph)) "
+        return "$(short(weight(graph)))"
     end
+    typestr = join(["$(id(g))" for g in subgraphs(graph)], ",")
+    return "$(operator(graph))($(typestr))=$(short(weight(graph)))"
+end
+
+function _weightrepr(graph::AbstractGraph)
+    if isleaf(graph)
+        return "$(short(weight(graph)))"
+    end
+    typestr = join(["$(id(g))" for g in subgraphs(graph)], ",")
+    return "$(repr(operator(graph)))($(typestr))=$(short(weight(graph)))"
+end
+
+function _stringrep(graph::AbstractGraph; color=false, plain=false)
+    if color
+        idprefix = "\u001b[32m$(id(graph))\u001b[0m: "
+    else
+        idprefix = string(id(graph), ": ")
+    end
+    idsuffix = plain ? _idstring(graph) : _idrepr(graph)
+
+    propertystr = _propertystring(graph) * short_orders(orders(graph))
+    if isempty(idsuffix) == false && isempty(propertystr) == false
+        idsuffix *= ", "
+    end
+    idsuffix *= propertystr
+    
+    wstr = plain ? _weightstring(graph) : _weightrepr(graph)
+    if isempty(idsuffix) == false
+        wstr = "=" * wstr
+    end
+    return "$(idprefix)$(idsuffix)$(wstr)"
+end
+
+"""
+    print(io::IO, graph::AbstractGraph)
+
+    Write an un-decorated text representation of an AbstractGraph `graph` to the output stream `io`.
+"""
+function Base.print(io::IO, graph::AbstractGraph)
+    print(io, _stringrep(graph; plain=true))
 end
 
 """
@@ -58,13 +109,7 @@ end
     Write a text representation of an AbstractGraph `graph` to the output stream `io`.
 """
 function Base.show(io::IO, graph::AbstractGraph; kwargs...)
-    if isleaf(graph) == 0
-        typestr = ""
-    else
-        typestr = join(["$(id(g))" for g in subgraphs(graph)], ",")
-        typestr = "($typestr)"
-    end
-    print(io, "$(_stringrep(graph, true))$typestr")
+    print(io, _stringrep(graph))
 end
 Base.show(io::IO, ::MIME"text/plain", graph::AbstractGraph; kwargs...) = Base.show(io, graph; kwargs...)
 
@@ -87,7 +132,7 @@ function plot_tree(graph::AbstractGraph; verbose=0, maxdepth=6)
         if level > maxdepth
             return
         end
-        name = "$(_stringrep(node, false))"
+        name = _stringrep(node)
         nt = t.add_child(name=name)
 
         if length(subgraphs(node)) > 0

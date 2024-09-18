@@ -1,7 +1,7 @@
 ##################### AbstractTrees interface for AbstractGraphs ########################### 
 
 ## Things that make printing prettier
-AbstractTrees.printnode(io::IO, g::AbstractGraph) = print(io, "\u001b[32m$(id(g))\u001b[0m : $g")
+AbstractTrees.printnode(io::IO, g::AbstractGraph) = print(io, _stringrep(g; color=true))
 
 ## Guarantee type-stable tree iteration for Graphs and FeynmanGraphs
 AbstractTrees.NodeType(::Graph) = HasNodeType()

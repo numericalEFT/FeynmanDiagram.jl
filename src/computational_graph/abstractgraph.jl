@@ -16,9 +16,15 @@ Base.isequal(a::AbstractOperator, b::AbstractOperator) = (typeof(a) == typeof(b)
 Base.:(==)(a::AbstractOperator, b::AbstractOperator) = Base.isequal(a, b)
 apply(o::AbstractOperator, diags) = error("not implemented!")
 
+Base.print(io::IO, o::AbstractOperator) = print(io, typeof(o))
+Base.print(io::IO, ::Type{Sum}) = print(io, "Sum")
+Base.print(io::IO, ::Type{Prod}) = print(io, "Prod")
+Base.print(io::IO, ::Type{Unitary}) = print(io, "Unitary")
+Base.print(io::IO, ::Type{Power{N}}) where {N} = print(io, "Power{$N}")
+
 Base.show(io::IO, o::AbstractOperator) = print(io, typeof(o))
 Base.show(io::IO, ::Type{Sum}) = print(io, "⨁")
-Base.show(io::IO, ::Type{Prod}) = print(io, "Ⓧ")
+Base.show(io::IO, ::Type{Prod}) = print(io, "Ⓧ ")
 Base.show(io::IO, ::Type{Unitary}) = print(io, "𝟙")
 Base.show(io::IO, ::Type{Power{N}}) where {N} = print(io, "^$N")
 
