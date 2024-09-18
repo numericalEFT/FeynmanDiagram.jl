@@ -90,6 +90,13 @@ function operator(g::AbstractGraph) end
 function weight(g::AbstractGraph) end
 
 """
+    function properties(g::AbstractGraph)
+
+    Returns additional properties, if any, of the computational graph `g`.
+"""
+function properties(g::AbstractGraph) end
+
+"""
 function subgraph(g::AbstractGraph, i=1)
     
     Returns a copy of the `i`th subgraph of computational graph `g`.
@@ -183,6 +190,13 @@ function set_weight!(g::AbstractGraph, weight)
     Update the weight of graph `g` to `weight`.
 """
 function set_weight!(g::AbstractGraph, weight) end
+
+"""
+function set_properties!(g::AbstractGraph, properties)
+
+    Update the properties of graph `g` to `properties`.
+"""
+function set_properties!(g::AbstractGraph, properties) end
 
 """
 function set_subgraph!(g::AbstractGraph, subgraph::AbstractGraph, i=1)
