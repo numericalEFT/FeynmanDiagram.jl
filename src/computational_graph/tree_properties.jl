@@ -80,30 +80,12 @@ function ischain(g::AbstractGraph)
     return false
 end
 
-# """
-#     function isfactorless(g)
-
-#     Returns whether the graph g is factorless, i.e., has unity factor and, if applicable,
-#     subgraph factor(s). Note that this function does not recurse through subgraphs of g, so 
-#     that one may have, e.g., `isfactorless(g) == true` but `isfactorless(eldest(g)) == false`.
-
-# # Arguments:
-# - `g::AbstractGraph`: graph to be analyzed
-# """
-# function isfactorless(g::AbstractGraph)
-#     if isleaf(g)
-#         return isapprox_one(factor(g))
-#     else
-#         return all(isapprox_one.([factor(g); subgraph_factors(g)]))
-#     end
-# end
-
 """
     function has_zero_subfactors(g)
 
     Returns whether the graph g has only zero-valued subgraph factor(s). 
     Note that this function does not recurse through subgraphs of g, so that one may have, e.g.,
-    `isfactorless(g) == true` but `isfactorless(eldest(g)) == false`.
+    `has_zero_subfactors(g) == true` but `has_zero_subfactors(eldest(g)) == false`.
     By convention, returns `false` if g is a leaf.
 
 # Arguments:
