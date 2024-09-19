@@ -1,0 +1,37 @@
+article#documenter-page img {
+    background-color: white;
+    /* Center doc images by default */
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Approximately scale images to inline latex font size */
+
+article#documenter-page img[src*="#green"] {
+    width: 90%;
+}
+
+article#documenter-page img[src*="#green0"] {
+    width: 45%;
+}
+
+article#documenter-page img[src*="#sigma"] {
+    width: 80%;
+}
+
+article#documenter-page img[src*="#gamma3"] {
+    width: 68%;
+}
+
+article#documenter-page img[src*="#gamma4"] {
+    width: 62%;
+}
+
+article#documenter-page img[src*="#susceptibility"] {
+    width: 100%;
+}
+
+article#documenter-page img[src*="#derivative_example"] {
+    width: 100%;
+}
