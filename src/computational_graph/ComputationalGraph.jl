@@ -37,12 +37,12 @@ export multi_product, linear_combination, feynman_diagram, propagator, interacti
 # export 𝐺ᶠ, 𝐺ᵇ, 𝐺ᵠ, 𝑊, Green2, Interaction
 
 
-include("tree_properties.jl")
-export haschildren, onechild, isleaf, isbranch, ischain, has_zero_subfactors, eldest, count_operation
-
 include("operation.jl")
 include("io.jl")
 export plot_tree
+
+include("tree_properties.jl")
+export haschildren, onechild, isleaf, isbranch, ischain, has_zero_subfactors, eldest, count_operation
 
 include("eval.jl")
 export eval!

@@ -13,6 +13,14 @@ struct BosonCreation <: AbstractQuantumOperator end
 struct BosonAnnihilation <: AbstractQuantumOperator end
 struct Classic <: AbstractQuantumOperator end
 
+Base.print(io::IO, o::AbstractQuantumOperator) = print(io, typeof(o))
+Base.print(io::IO, ::Type{FermiCreation}) = print(io, "FermiCreation")
+Base.print(io::IO, ::Type{FermiAnnihilation}) = print(io, "FermiAnnihilation")
+Base.print(io::IO, ::Type{Majorana}) = print(io, "Majorana")
+Base.print(io::IO, ::Type{BosonCreation}) = print(io, "BosonCreation")
+Base.print(io::IO, ::Type{BosonAnnihilation}) = print(io, "BosonAnnihilation")
+Base.print(io::IO, ::Type{Classic}) = print(io, "Classic")
+
 Base.show(io::IO, ::Type{FermiCreation}) = print(io, "f⁺")
 Base.show(io::IO, ::Type{FermiAnnihilation}) = print(io, "f⁻")
 Base.show(io::IO, ::Type{Majorana}) = print(io, "f")
@@ -65,7 +73,8 @@ Base.:(==)(a::QuantumOperator, b::QuantumOperator) = Base.isequal(a, b)
 # Relabel constructor
 QuantumOperator(qo::QuantumOperator, label::Int) = QuantumOperator(qo.operator(), label)
 
-Base.show(io::IO, o::QuantumOperator) = print(io, "$(o.operator)($(o.label))")
+Base.print(io::IO, o::QuantumOperator) = print(io, "$(o.operator)($(o.label))")
+Base.show(io::IO, o::QuantumOperator) = print(io, "$(repr(o.operator))($(o.label))")
 Base.show(io::IO, ::MIME"text/plain", o::QuantumOperator) = Base.show(io, o)
 
 """

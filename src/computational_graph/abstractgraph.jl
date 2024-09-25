@@ -16,9 +16,15 @@ Base.isequal(a::AbstractOperator, b::AbstractOperator) = (typeof(a) == typeof(b)
 Base.:(==)(a::AbstractOperator, b::AbstractOperator) = Base.isequal(a, b)
 apply(o::AbstractOperator, diags) = error("not implemented!")
 
+Base.print(io::IO, o::AbstractOperator) = print(io, typeof(o))
+Base.print(io::IO, ::Type{Sum}) = print(io, "Sum")
+Base.print(io::IO, ::Type{Prod}) = print(io, "Prod")
+Base.print(io::IO, ::Type{Unitary}) = print(io, "Unitary")
+Base.print(io::IO, ::Type{Power{N}}) where {N} = print(io, "Power{$N}")
+
 Base.show(io::IO, o::AbstractOperator) = print(io, typeof(o))
 Base.show(io::IO, ::Type{Sum}) = print(io, "⨁")
-Base.show(io::IO, ::Type{Prod}) = print(io, "Ⓧ")
+Base.show(io::IO, ::Type{Prod}) = print(io, "Ⓧ ")
 Base.show(io::IO, ::Type{Unitary}) = print(io, "𝟙")
 Base.show(io::IO, ::Type{Power{N}}) where {N} = print(io, "^$N")
 
@@ -88,6 +94,13 @@ function operator(g::AbstractGraph) end
     Returns the weight of the computational graph `g`.
 """
 function weight(g::AbstractGraph) end
+
+"""
+    function properties(g::AbstractGraph)
+
+    Returns additional properties, if any, of the computational graph `g`.
+"""
+function properties(g::AbstractGraph) end
 
 """
 function subgraph(g::AbstractGraph, i=1)
@@ -183,6 +196,13 @@ function set_weight!(g::AbstractGraph, weight)
     Update the weight of graph `g` to `weight`.
 """
 function set_weight!(g::AbstractGraph, weight) end
+
+"""
+function set_properties!(g::AbstractGraph, properties)
+
+    Update the properties of graph `g` to `properties`.
+"""
+function set_properties!(g::AbstractGraph, properties) end
 
 """
 function set_subgraph!(g::AbstractGraph, subgraph::AbstractGraph, i=1)

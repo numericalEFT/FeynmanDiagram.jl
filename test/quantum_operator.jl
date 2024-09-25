@@ -74,3 +74,19 @@ end
     @test QuantumOperators.parity(p4) == -1
     @test QuantumOperators.parity_old(p4) == -1
 end
+
+@testset "String representations" begin
+    @testset "Operator" begin
+        o = QuantumOperator(QuantumOperators.Majorana(), 1)
+        @test repr(o) == "f(1)"
+        @test string(o) == "Majorana(1)"
+    end
+    @testset "OperatorProduct" begin
+        op1 = OperatorProduct(QuantumOperator(QuantumOperators.Majorana(), 1))
+        @test repr(op1) == "f(1)"
+        @test string(op1) == "Majorana(1)"
+        op2 = 𝑓⁺(1)𝑓⁻(2)
+        @test repr(op2) == "f⁺(1)f⁻(2)"
+        @test string(op2) == "FermiCreation(1)FermiAnnihilation(2)"
+    end
+end

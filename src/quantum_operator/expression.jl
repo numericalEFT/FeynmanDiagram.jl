@@ -64,7 +64,8 @@ Base.setindex!(o::OperatorProduct, v::QuantumOperator, i::Int) = o.operators[i] 
 Base.length(o::OperatorProduct) = length(o.operators)
 Base.size(o::OperatorProduct) = size(o.operators)
 
-Base.show(io::IO, o::OperatorProduct) = print(io, reduce(*, ["$o" for o in o.operators]))
+Base.print(io::IO, o::OperatorProduct) = print(io, reduce(*, [string(o) for o in o.operators]))
+Base.show(io::IO, o::OperatorProduct) = print(io, reduce(*, [repr(o) for o in o.operators]))
 Base.show(io::IO, ::MIME"text/plain", o::OperatorProduct) = Base.show(io, o)
 
 """

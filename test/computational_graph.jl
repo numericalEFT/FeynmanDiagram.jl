@@ -10,6 +10,7 @@ struct O3 <: Graphs.AbstractOperator end
 Graphs.unary_istrivial(::Type{O}) where {O<:Union{O1,O2,O3}} = true
 
 @testset verbose = true "AbstractGraph interface" begin
+    # Example of a custom graph type with additional type-stable node properties ("color")
     mutable struct ConcreteGraph <: Graphs.AbstractGraph
         id::Int
         name::String
@@ -17,23 +18,47 @@ Graphs.unary_istrivial(::Type{O}) where {O<:Union{O1,O2,O3}} = true
         operator::DataType
         subgraphs::Vector{ConcreteGraph}
         subgraph_factors::Vector{Float64}
-        factor::Float64
         weight::Float64
-        function ConcreteGraph(subgraphs=[]; name="", orders=zeros(Int, 0), operator=O(), subgraph_factors=[], factor=1.0, weight=1.0)
-            return new(Graphs.uid(), name, orders, typeof(operator), subgraphs, subgraph_factors, factor, weight)
+        color::String
+        function ConcreteGraph(subgraphs=[]; name="", orders=zeros(Int, 0), operator=O(), subgraph_factors=[], weight=1.0, color="black")
+            return new(Graphs.uid(), name, orders, typeof(operator), subgraphs, subgraph_factors, weight, color)
         end
     end
 
+    # weight(g::AbstractGraph) is an abstract method
+    @test isnothing(Graphs.weight(ConcreteGraph()))
+
+    ### AbstractGraph interface for ConcreteGraph ###
+
+    # Getters
+    Graphs.id(g::ConcreteGraph) = g.id
+    Graphs.name(g::ConcreteGraph) = g.name
+    Graphs.orders(g::ConcreteGraph) = g.orders
+    Graphs.operator(g::ConcreteGraph) = g.operator
+    Graphs.weight(g::ConcreteGraph) = g.weight
+    Graphs.properties(g::ConcreteGraph) = g.color
+    Graphs.subgraph(g::ConcreteGraph, i=1) = g.subgraphs[i]
+    Graphs.subgraphs(g::ConcreteGraph) = g.subgraphs
+    Graphs.subgraph_factor(g::ConcreteGraph, i=1) = g.subgraph_factors[i]
+    Graphs.subgraph_factors(g::ConcreteGraph) = g.subgraph_factors
+
+    # Setters
+    Graphs.set_name!(g::ConcreteGraph, name::AbstractString) = (g.name = name)
+    Graphs.set_properties!(g::ConcreteGraph, color::AbstractString) = (g.color = color)
+    Graphs.set_subgraph!(g::ConcreteGraph, subgraph::ConcreteGraph, i=1) = (g.subgraphs[i] = subgraph)
+    Graphs.set_subgraphs!(g::ConcreteGraph, subgraphs::Vector{ConcreteGraph}) = (g.subgraphs = subgraphs)
+    Graphs.set_subgraph_factor!(g::ConcreteGraph, subgraph_factor::Float64, i=1) = (g.subgraph_factors[i] = subgraph_factor)
+    Graphs.set_subgraph_factors!(g::ConcreteGraph, subgraph_factors::AbstractVector) = (g.subgraph_factors = subgraph_factors)
+
+    ###############################
+
     Graphs.uidreset()
-    g1 = ConcreteGraph(; operator=O1())
-    g2 = ConcreteGraph(; operator=O2())
-    g3 = ConcreteGraph(; operator=O3())
+    g1 = ConcreteGraph(; operator=O1(), color="red", name="g1")
+    g2 = ConcreteGraph(; operator=O2(), color="green", name="g2")
+    g3 = ConcreteGraph(; operator=O3(), color="blue", name="g3")
     g = ConcreteGraph([g1, g2, g3]; subgraph_factors=[2, 3, 5], operator=O())
     gp = ConcreteGraph([g1, g2, g3]; subgraph_factors=[2, 3, 5], operator=O())
     h = ConcreteGraph([g1, g2, g3]; name="h", subgraph_factors=[2, 3, 5], operator=O())
-
-    # weight(g::AbstractGraph) is an abstract method
-    @test isnothing(Graphs.weight(ConcreteGraph()))
 
     # Base.:+(g1::AbstractGraph, g2::AbstractGraph) is an abstract method
     err = AssertionError()
@@ -44,28 +69,14 @@ Graphs.unary_istrivial(::Type{O}) where {O<:Union{O1,O2,O3}} = true
     @test err isa ErrorException
     @test err.msg == "Method not yet implemented for user-defined graph type ConcreteGraph."
 
-    ### AbstractGraph interface for ConcreteGraph ###
-
-    # Getters
-    Graphs.id(g::ConcreteGraph) = g.id
-    Graphs.name(g::ConcreteGraph) = g.name
-    Graphs.orders(g::ConcreteGraph) = g.orders
-    Graphs.operator(g::ConcreteGraph) = g.operator
-    Graphs.weight(g::ConcreteGraph) = g.weight
-    Graphs.subgraph(g::ConcreteGraph, i=1) = g.subgraphs[i]
-    Graphs.subgraphs(g::ConcreteGraph) = g.subgraphs
-    Graphs.subgraph_factor(g::ConcreteGraph, i=1) = g.subgraph_factors[i]
-    Graphs.subgraph_factors(g::ConcreteGraph) = g.subgraph_factors
-
-    # Setters
-    Graphs.set_name!(g::ConcreteGraph, name::AbstractString) = (g.name = name)
-    Graphs.set_subgraph!(g::ConcreteGraph, subgraph::ConcreteGraph, i=1) = (g.subgraphs[i] = subgraph)
-    Graphs.set_subgraphs!(g::ConcreteGraph, subgraphs::Vector{ConcreteGraph}) = (g.subgraphs = subgraphs)
-    Graphs.set_subgraph_factor!(g::ConcreteGraph, subgraph_factor::Float64, i=1) = (g.subgraph_factors[i] = subgraph_factor)
-    Graphs.set_subgraph_factors!(g::ConcreteGraph, subgraph_factors::AbstractVector) = (g.subgraph_factors = subgraph_factors)
-
-    ###############################
-
+    @testset "String representations" begin
+        @test string(g1) == repr(g1) == "1: g1, red=1.0"
+        @test string(g2) == repr(g2) == "2: g2, green=1.0"
+        @test string(g3) == repr(g3) == "3: g3, blue=1.0"
+        @test string(g) == repr(g) == "4: black=O(1,2,3)=1.0"
+        @test string(gp) == repr(gp) == "5: black=O(1,2,3)=1.0"
+        @test string(h) == repr(h) == "6: h, black=O(1,2,3)=1.0"
+    end
     @testset "Traits" begin
         @test Graphs.unary_istrivial(g1) == true
         @test Graphs.unary_istrivial(g2) == true
@@ -78,6 +89,7 @@ Graphs.unary_istrivial(::Type{O}) where {O<:Union{O1,O2,O3}} = true
         @test Graphs.orders(g) == zeros(Int, 0)
         @test Graphs.operator(g) == O
         @test Graphs.weight(g) == 1.0
+        @test Graphs.properties(g) == "black"
         @test Graphs.subgraph(g) == g1
         @test Graphs.subgraph(g, 2) == g2
         @test Graphs.subgraphs(g) == [g1, g2, g3]
@@ -90,6 +102,10 @@ Graphs.unary_istrivial(::Type{O}) where {O<:Union{O1,O2,O3}} = true
     @testset "Setters" begin
         Graphs.set_name!(g, "g")
         @test Graphs.name(g) == "g"
+        Graphs.set_properties!(g, "white")
+        @test Graphs.properties(g) == "white"
+        @test string(g) == "4: g, white=O(1,2,3)=1.0"
+        Graphs.set_properties!(g, "black")
         Graphs.set_subgraph!(g, g2, 1)
         @test Graphs.subgraph(g) == g2
         Graphs.set_subgraphs!(g, [g1, g2, g3])
@@ -148,8 +164,6 @@ end
             g3 = g1 + g2
             @test g3.subgraphs == [g1]
             @test g3.subgraph_factors == [3]
-            # @test g3.subgraphs == [g1, g1]
-            # @test g3.subgraph_factors == [1, 2]
             @test g3.operator == Graphs.Sum
         end
         @testset "Subtraction" begin
@@ -157,8 +171,6 @@ end
             @test g4.subgraphs == [g1]
             @test g4.subgraph_factors == [-1]
             @test g4.subgraphs[1] == g1
-            # @test g4.subgraphs == [g1, g1]
-            # @test g4.subgraph_factors == [1, -2]
             @test g4.operator == Graphs.Sum
         end
         @testset "Linear combinations" begin
@@ -168,15 +180,11 @@ end
             g5lc = linear_combination(g1, g2, 3, 5)
             @test g5lc.subgraphs == [g1,]
             @test g5lc.subgraph_factors == [13,]
-            # @test g5lc.subgraphs == [g1, g1]
-            # @test g5lc.subgraph_factors == [3, 10]
             @test isequiv(g5, g5lc, :id)
             # Vector form
             g6lc = linear_combination([g1, g2, g5, g2, g1], [3, 5, 7, 9, 11])
             @test g6lc.subgraphs == [g1]
             @test g6lc.subgraph_factors == [133]  # 3+5*2+7*13+9*2+11 
-            # @test g6lc.subgraphs == [g1, g1, g5, g1, g1]
-            # @test g6lc.subgraph_factors == [3, 10, 7, 18, 11]
             # Test one-level merging of multiplicative chains
             g7lc = g1 + 2 * (3 * g1 + 5 * g2p)
             g7lc_expect = g1 + 2 * linear_combination([g1, g2p], [3, 5])
@@ -224,12 +232,11 @@ end
         g1 = Graph([])
         g2 = Graph([g1,]; subgraph_factors=[5,], operator=Graphs.Prod())
         g3 = Graph([g2,]; subgraph_factors=[3,], operator=Graphs.Prod())
-        # g = 2*(3*(5*g1))
+        # g: 2*(3*(5*g1))
         g = Graph([g3,]; subgraph_factors=[2,], operator=Graphs.Prod())
-        # gp = 2*(3*(g1 + 5*g1))
-        # g2p = g1 + g2
         g2p = Graph([g1, g2]; operator=Graphs.Sum())
         g3p = Graph([g2p,]; subgraph_factors=[3,], operator=Graphs.Prod())
+        # gp: 2*(3*(g1 + 5*g1))
         gp = Graph([g3p,]; subgraph_factors=[2,], operator=Graphs.Prod())
         @testset "Merge prefactors" begin
             g1 = propagator(𝑓⁺(1)𝑓⁻(2))
@@ -248,7 +255,6 @@ end
             g1s = propagator(𝑓⁺(1)𝑓⁻(2), factor=-1)
             @test isequiv(h3, FeynmanGraph([g1s, g1s], drop_topology(g1.properties); subgraph_factors=[-1, -4]), :id)
             h4 = merge_linear_combination(h3)
-            # @test isequiv(h3, h4, :id)
             @test isequiv(h4, FeynmanGraph([g1s], drop_topology(g1.properties); subgraph_factors=[-5]), :id)
 
             h5 = FeynmanGraph([g1, g2, g2, g1], drop_topology(g1.properties); subgraph_factors=[3, 5, 7, 9], operator=Graphs.Sum())
@@ -257,12 +263,10 @@ end
             @test length(h6.subgraphs) == 2
             @test h6.subgraphs == [g1, g2]
             @test h6.subgraph_factors == [12, 12]
-            # @test isequiv(h5_lc, h6, :id)
             @test isequiv(h5_lc, FeynmanGraph([g1s, g1s], drop_topology(g1.properties); subgraph_factors=[-12, -24]), :id)
             @test isequiv(h6, FeynmanGraph([g1, g2], drop_topology(g1.properties); subgraph_factors=[12, 12]), :id)
 
             g3 = 2 * g1
-            # h7 = FeynmanGraph([g1, g3, g3, g1]; subgraph_factors=[3, 5, 7, 9], operator=Graphs.Sum())
             h7 = FeynmanGraph([g1, g1, g1, g1], drop_topology(g1.properties); subgraph_factors=[3, 5 * 2, 7 * 2, 9], operator=Graphs.Sum())
             h7_lc = linear_combination([g1, g3, g3, g1], [3, 5, 7, 9])
             h8 = merge_linear_combination(h7)
@@ -271,7 +275,7 @@ end
             @test h8.subgraph_factors == [36]
             @test isequiv(h7_lc, FeynmanGraph([g1s,], drop_topology(g1.properties); subgraph_factors=[-36], operator=Graphs.Sum()), :id)
         end
-        @testset "Merge multi-pproduct" begin
+        @testset "Merge multi-product" begin
             g1 = Graph([])
             g2 = Graph([], factor=2)
             g3 = Graph([], factor=3)
@@ -453,6 +457,20 @@ end
             @test Graphs.eval!(h, randseed=2) ≈ Graphs.eval!(_h, randseed=2)
         end
     end
+    @testset "String representations" begin
+        Graphs.uidreset()
+        g1 = Graph([])
+        g2 = 2 * g1
+        g3 = Graph([g1,], subgraph_factors=[3], operator=Graphs.Sum(), name="g3")
+        g4 = Graph([g1,], operator=Graphs.Power(2), name="g4")
+        @test string(g1) == repr(g1) == "1: 0.0"
+        @test repr(g2) == "2: Ⓧ (1)=0.0"
+        @test repr(g3) == "3: g3=⨁(1)=0.0"
+        @test repr(g4) == "4: g4=^2(1)=0.0"
+        @test string(g2) == "2: Prod(1)=0.0"
+        @test string(g3) == "3: g3=Sum(1)=0.0"
+        @test string(g4) == "4: g4=Power{2}(1)=0.0"
+    end
 end
 
 @testset verbose = true "FeynmanGraph" begin
@@ -524,8 +542,6 @@ end
             @test external_operators(g3) == external_operators(g1)
             @test g3.subgraphs == [g1]
             @test g3.subgraph_factors == [3]
-            # @test g3.subgraphs == [g1, g1]
-            # @test g3.subgraph_factors == [1, 2]
             @test g3.operator == Graphs.Sum
         end
         @testset "Subtraction" begin
@@ -534,8 +550,6 @@ end
             @test external_operators(g4) == external_operators(g1)
             @test g4.subgraphs == [g1,]
             @test g4.subgraph_factors == [-1,]
-            # @test g4.subgraphs == [g1, g1]
-            # @test g4.subgraph_factors == [1, -2]
             @test g4.operator == Graphs.Sum
         end
         @testset "Linear combinations" begin
@@ -545,15 +559,11 @@ end
             g5lc = linear_combination(g1, g2, 3, 5)
             @test g5lc.subgraphs == [g1,]
             @test g5lc.subgraph_factors == [13,]
-            # @test g5lc.subgraphs == [g1, g1]
-            # @test g5lc.subgraph_factors == [3, 10]
             @test isequiv(g5, g5lc, :id)
             # Vector form
             g6lc = linear_combination([g1, g2, g5, g2, g1], [3, 5, 7, 9, 11])
             @test g6lc.subgraphs == [g1,]
             @test g6lc.subgraph_factors == [133]
-            # @test g6lc.subgraphs == [g1, g1, g5, g1, g1]
-            # @test g6lc.subgraph_factors == [3, 10, 7, 18, 11]
             # Test one-level merging of multiplicative chains
             g7lc = g1 + 2 * (3 * g1 + 5 * g2p)
             g7lc_expect = g1 + 2 * linear_combination([g1, g2p], [3, 5])
@@ -609,7 +619,6 @@ end
             @test isequiv(gsum.subgraphs[1], gsum.subgraphs[2])
             gnew = replace_subgraph(groot, g2, g3)
             @test isequiv(gnew, g1 + FeynmanGraph([g3, g3], drop_topology(g3.properties)), :id)
-            # @test isequiv(gnew, g1 + (g3 + g3), :id)
         end
         @testset "Prune trivial unary operations" begin
             g1 = propagator(𝑓⁺(1)𝑓⁻(2))
@@ -640,13 +649,11 @@ end
             h0 = FeynmanGraph([g1, g4, g5], subgraph_factors=[2, -1, 1])
             h1 = FeynmanGraph([h0], operator=Graphs.Prod(), subgraph_factors=[2])
             h = FeynmanGraph([h1, g5])
-            # _h = FeynmanGraph([FeynmanGraph([g1, g5], subgraph_factors=[-28, 1]), g5], subgraph_factors=[2, 1])
             g1p = eldest(g5)
             _h = FeynmanGraph([FeynmanGraph([g1, g1p], subgraph_factors=[-28, 3]), g1p], subgraph_factors=[2, 3])
 
             hvec_op = Graphs.optimize(repeat([deepcopy(h)], 3))
             @test all(isequiv(h, _h, :id) for h in hvec_op)
-            # @test Graphs.eval!(hvec_op[1], leafMap, leaf) ≈ Graphs.eval!(h, leafMap, leaf)
             @test Graphs.eval!(hvec_op[1], randseed=1) ≈ Graphs.eval!(_h, randseed=1)
 
             Graphs.optimize!([h])
@@ -801,6 +808,16 @@ end
             @test external_operators(g) == reduce(*, V3)
         end
     end
+
+    @testset verbose = true "String representations" begin
+        Graphs.uidreset()
+        g1 = propagator(𝑓⁻(1)𝑓⁺(2))
+        g1p = propagator(𝑓⁻(1)𝑓⁺(2); name="g1p")
+        @test repr(g1) == "1: f⁻(1)|f⁺(2)=0.0"
+        @test repr(g1p) == "2: g1p, f⁻(1)|f⁺(2)=0.0"
+        @test string(g1) == "1: FermiAnnihilation(1)|FermiCreation(2)=0.0"
+        @test string(g1p) == "2: g1p, FermiAnnihilation(1)|FermiCreation(2)=0.0"
+    end
 end
 
 @testset verbose = true "Conversions" begin
@@ -846,7 +863,6 @@ end
     G4 = 4 * g1 * g1
     G5 = 4 * (2 * G3 + 3 * G4)
     G6 = (2 * g1 + 3 * g2) * (4 * g1 + g3) * g1
-    #G6 = (g1 + g2) * (g1 + g2) * g1
     G7 = (3 * g1 + 4 * g2 + 5 * g3) * 3 * g1
 
     @testset "node_derivative" begin
@@ -873,11 +889,8 @@ end
         for (i, G) in enumerate([G3, G4, G5, G6, G7])
             back_deriv = backAD(G)
             for (id_pair, value_back) in back_deriv
-                # gs = Compilers.to_julia_str([value,], name="eval_graph!")
-                # println("id:$(key)", gs, "\n")
                 value_forward = forwardAD(G, id_pair[2])
                 @test eval!(value_back) == eval!(value_forward)
-                # print("value:$(i+2) $(eval!(value_forward))\n")
             end
         end
     end
@@ -1053,8 +1066,6 @@ end
         @test isleaf(g1)
         @test isbranch(g1) == false
         @test ischain(g1)
-        # @test isfactorless(g1)
-        # @test isfactorless(g2) == false
         @test_throws AssertionError eldest(g1)
         @test count_operation(g1) == [0, 0]
         @test count_operation(g2) == [0, 0]
@@ -1065,9 +1076,6 @@ end
         @test isleaf(g3) == false
         @test isbranch(g3)
         @test ischain(g3)
-        # @test isfactorless(g3)
-        # @test isfactorless(g4)
-        # @test isfactorless(g5) == false
         @test isleaf(eldest(g3))
         @test has_zero_subfactors(h1)
     end
@@ -1077,8 +1085,6 @@ end
         @test isleaf(g6) == false
         @test isbranch(g6) == false
         @test ischain(g6)
-        # @test isfactorless(g6)
-        # @test isfactorless(g7) == false
         @test isbranch(eldest(g6))
     end
     @testset "General" begin
@@ -1087,7 +1093,6 @@ end
         @test isleaf(g8) == false
         @test isbranch(g8) == false
         @test ischain(g8) == false
-        # @test isfactorless(g8) == false
         @test onechild(eldest(g8)) == false
         @test count_operation(g8) == [1, 0]
         @test count_operation(g9) == [2, 0]
