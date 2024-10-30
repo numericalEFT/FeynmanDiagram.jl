@@ -94,6 +94,8 @@ end
 function has_zero_subfactors(g::AbstractGraph)
     if isleaf(g)
         return false  # convention: subgraph_factors = [] ⟹ subfactorless = false
+    elseif g.operator == Prod && 0 in subgraph_factors(g)
+        return true
     else
         return iszero(subgraph_factors(g))
     end

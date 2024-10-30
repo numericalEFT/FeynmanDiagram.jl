@@ -399,6 +399,13 @@ function remove_zero_valued_subgraphs!(g::AbstractGraph)
     mask_zeros = findall(x -> x != zero(x), subg_fac)
     if isempty(mask_zeros)
         mask_zeros = [1]  # retain eldest(g) if all subfactors are zero
+    else
+        if g.operator == Prod
+            idx = findfirst(x -> x==zero(x), subg_fac)
+            if !isnothing(idx)
+                append!(mask_zeros, idx)
+            end
+        end
     end
     set_subgraphs!(g, subg[mask_zeros])
     set_subgraph_factors!(g, subg_fac[mask_zeros])
