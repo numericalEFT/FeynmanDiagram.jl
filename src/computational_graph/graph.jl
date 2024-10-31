@@ -60,6 +60,8 @@ mutable struct Graph{F<:Number,W} <: AbstractGraph # Graph
     )
         if typeof(operator) <: Power
             @assert length(subgraphs) == 1 "Graph with Power operator must have one and only one subgraph."
+        elseif typeof(operator) <: Unitary
+            @assert length(subgraphs) == 0 "Graph with Unitary operator must have no subgraphs."
         end
         # @assert allunique(subgraphs) "all subgraphs must be distinct."
         g = new{ftype,wtype}(uid(), String(name), orders, subgraphs, subgraph_factors, typeof(operator), weight, properties)
