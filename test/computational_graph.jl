@@ -330,14 +330,19 @@ end
             sg3 = Graph([l4]; subgraph_factors=[0], operator=O2())
             sg4 = Graph([l5, l6, l7]; subgraph_factors=[0, 0, 0], operator=O3())
             sg5 = l8
+            sg6 = Graph([l2, l3]; subgraph_factors=[1.0, 0.0], operator=Graphs.Prod())
             # graphs
             g = Graph([sg1, sg2, sg3, sg4, sg5]; subgraph_factors=[1, 1, 1, 1, 0], operator=O())
             g_test = Graph([sg1, sg2]; subgraph_factors=[1, 1], operator=O())
+            g1 = Graph([sg1, sg2, sg3, sg4, sg5, sg6]; subgraph_factors=[1, 1, 1, 1, 0, 2], operator=Graphs.Sum())
+            g1_test = Graph([sg1, sg2]; subgraph_factors=[1, 1], operator=Graphs.Sum())
             gp = Graph([sg3, sg4, sg5]; subgraph_factors=[1, 1, 0], operator=O())
             gp_test = Graph([sg3]; subgraph_factors=[0], operator=O())
             Graphs.remove_zero_valued_subgraphs!(g)
+            Graphs.remove_zero_valued_subgraphs!(g1)
             Graphs.remove_zero_valued_subgraphs!(gp)
             @test isequiv(g, g_test, :id)
+            @test isequiv(g1, g1_test, :id)
             @test isequiv(gp, gp_test, :id)
         end
     end
@@ -387,14 +392,19 @@ end
             sg3 = Graph([l4]; subgraph_factors=[0], operator=O2())
             sg4 = Graph([l5, l6, ssg1]; subgraph_factors=[0, 0, 1], operator=O3())
             sg5 = l8
+            sg6 = Graph([l2, sg3]; subgraph_factors=[1.0, 2.0], operator=Graphs.Prod())
             # graphs
             g = Graph([sg1, sg2, sg3, sg4, sg5]; subgraph_factors=[1, 1, 1, 1, 0], operator=O())
             g_test = Graph([sg1, sg2_test]; subgraph_factors=[1, 1], operator=O())
+            g1 = Graph([sg1, sg2, sg3, sg4, sg5, sg6]; subgraph_factors=[1, 1, 1, 1, 0, -1], operator=Graphs.Sum())
+            g1_test = Graph([sg1, sg2_test]; subgraph_factors=[1, 1], operator=Graphs.Sum())
             gp = Graph([sg3, sg4, sg5]; subgraph_factors=[1, 1, 0], operator=O())
             gp_test = Graph([sg3]; subgraph_factors=[0], operator=O())
             Graphs.remove_all_zero_valued_subgraphs!(g)
+            Graphs.remove_all_zero_valued_subgraphs!(g1)
             Graphs.remove_all_zero_valued_subgraphs!(gp)
             @test isequiv(g, g_test, :id)
+            @test isequiv(g1, g1_test, :id)
             @test isequiv(gp, gp_test, :id)
         end
         @testset "Merge all linear combinations" begin
