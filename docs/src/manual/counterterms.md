@@ -134,7 +134,7 @@ Since the order of differentiation w.r.t. $\mu$ and $\lambda$ does not matter, i
 
 An example of the interaction counterterm evaluation for a diagram with $n_\lambda = 3$ and $m$ interaction lines. Since the Julia implementation evaluates the interaction counterterms of a given diagram as $\frac{(-\lambda)^n}{n!}\partial^n_\lambda V^m_\lambda$, we pick up an extra factor of $l!$ on each $l$th-order derivative in the chain rule.
 
-![An example of the representation of interaction counterterm diagrams via differentiation.](../../assets/derivative_example.svg#derivative_example)
+![An example of the representation of interaction counterterm diagrams via differentiation.](../assets/derivative_example.svg)
 
 ## Benchmark of counterterms in the UEG
 
