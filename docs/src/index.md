@@ -23,6 +23,7 @@ Pages = [
     "lib/GV.md",
     "lib/parquet.md",
     "lib/backend.md",
+    "lib/utility.md",
 ]
 Depth = 2
 ```
