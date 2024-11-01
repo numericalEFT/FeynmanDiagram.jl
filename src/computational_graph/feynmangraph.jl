@@ -111,6 +111,8 @@ mutable struct FeynmanGraph{F<:Number,W} <: AbstractGraph # FeynmanGraph
         @assert length(external_indices) == length(external_legs)
         if typeof(operator) <: Power
             @assert length(subgraphs) == 1 "FeynmanGraph with Power operator must have one and only one subgraph."
+        elseif typeof(operator) <: Unitary
+            @assert length(subgraphs) == 0 "FeynmanGraph with Unitary operator must have no subgraphs."
         end
         # @assert allunique(subgraphs) "all subgraphs must be distinct."
         if isnothing(vertices)

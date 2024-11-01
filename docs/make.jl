@@ -13,6 +13,7 @@ makedocs(;
         canonical="https://numericaleft.github.io/FeynmanDiagram.jl",
         assets=["assets/custom.css"]
     ),
+    checkdocs=:exports, # check only exported names within the modules
     pages=[
         "Home" => "index.md",
         "Manual" => [
@@ -29,6 +30,7 @@ makedocs(;
             "lib/GV.md",
             "lib/parquet.md",
             "lib/backend.md",
+            "lib/utility.md"
         ]
     ]
 )

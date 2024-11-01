@@ -81,22 +81,39 @@ function ischain(g::AbstractGraph)
 end
 
 """
-    function has_zero_subfactors(g)
+    function has_zero_subfactors(g::AbstractGraph, operator_type::Type{<:AbstractOperator})
 
-    Returns whether the graph g has only zero-valued subgraph factor(s). 
-    Note that this function does not recurse through subgraphs of g, so that one may have, e.g.,
-    `has_zero_subfactors(g) == true` but `has_zero_subfactors(eldest(g)) == false`.
-    By convention, returns `false` if g is a leaf.
+    Determines whether the graph `g` has only zero-valued subgraph factors based on the specified operator type.
+    This function does not recurse through the subgraphs of `g`, so it only checks the immediate subgraph factors.
+    If `g` is a leaf (i.e., has no subgraphs), the function returns `false` by convention.
 
+    The behavior of the function depends on the operator type:
+    - `Sum`: Checks if all subgraph factors are zero.
+    - `Prod`: Checks if any subgraph factor is zero.
+    - `Power{N}`: Checks if the first subgraph factor is zero.
+    - Other `AbstractOperator`: Defaults to return `false`.
 # Arguments:
 - `g::AbstractGraph`: graph to be analyzed
+- `operator`: the operator used in graph `g`
 """
-function has_zero_subfactors(g::AbstractGraph)
-    if isleaf(g)
-        return false  # convention: subgraph_factors = [] ⟹ subfactorless = false
-    else
-        return iszero(subgraph_factors(g))
-    end
+function has_zero_subfactors(g::AbstractGraph, ::Type{Sum})
+    @assert g.operator == Sum "Operator must be Sum"
+    return iszero(subgraph_factors(g))
+end
+
+function has_zero_subfactors(g::AbstractGraph, ::Type{Prod})
+    @assert g.operator == Prod "Operator must be Prod"
+    return 0 in subgraph_factors(g)
+end
+
+function has_zero_subfactors(g::AbstractGraph, ::Type{Power{N}}) where {N}
+    @assert g.operator <: Power "Operator must be a Power"
+    return iszero(subgraph_factors(g)[1])
+end
+
+function has_zero_subfactors(g::AbstractGraph, ::Type{<:AbstractOperator})
+    @info "has_zero_subfactors: Operator type $operator is not specifically defined. Defaults to return false."
+    return false
 end
 
 """

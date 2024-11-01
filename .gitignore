@@ -25,6 +25,7 @@ docs/assets
 # committed for packages, but should be committed for applications that require a static
 # environment.
 Manifest.toml
+docs/Manifest.toml
 
 # Ignore intermediate latex files
 *.aux

@@ -375,6 +375,47 @@ end
 flatten_chains(g::AbstractGraph) = flatten_chains!(deepcopy(g))
 
 """
+    function mask_zero_subgraph_factors(operator::Type{<:AbstractOperator}, subg_fac::Vector{F}) where {F}
+
+    Returns a list of indices that should be considered when performing the operation (e.g., Sum, Prod, Power), effectively masking out zero values as appropriate.
+
+    The behavior of the function depends on the operator type:
+    - `Sum`: Returns all indices that are not equal to zero.
+    - `Prod`: Returns the index of the first zero value, or all indices if none are found.
+    - `Power`: Returns `[1]`, or error if the power is negative.
+    - Other `AbstractOperator`: Defaults to return all indices.
+"""
+function mask_zero_subgraph_factors(::Type{Sum}, subg_fac::Vector{F}) where {F}
+    mask_zeros = findall(x -> x != zero(x), subg_fac)
+    if isempty(mask_zeros)
+        mask_zeros = [1]
+    end
+    return mask_zeros
+end
+function mask_zero_subgraph_factors(::Type{Prod}, subg_fac::Vector{F}) where {F}
+    idx = findfirst(x -> x == zero(x), subg_fac)
+    if isnothing(idx)
+        mask_zeros = eachindex(subg_fac)
+    else
+        mask_zeros = [idx]
+    end
+    return mask_zeros
+end
+function mask_zero_subgraph_factors(::Type{Power{N}}, subg_fac::Vector{F}) where {N,F}
+    if N >= 0
+        return [1]
+    else
+        error("0^$N is illegal!")
+    end
+end
+function mask_zero_subgraph_factors(::Type{<:AbstractOperator}, subg_fac::Vector{F}) where {F}
+    @info("Masking zero-valued subgraphs when the node operator is $operator is not implemented. Defaulted to no mask! \n" *
+          "It's better to define a method `mask_zero_subgraph_factors(operator::Type, subg_fac::Vector{F})`."
+    )
+    return eachindex(subg_fac)
+end
+
+"""
     function remove_zero_valued_subgraphs!(g::AbstractGraph)
 
     Removes zero-valued (zero subgraph_factor) subgraph(s) of a computational graph `g`. If all subgraphs are zero-valued, the first one (`eldest(g)`) will be retained.
@@ -391,15 +432,16 @@ function remove_zero_valued_subgraphs!(g::AbstractGraph)
     zero_sgf = zero(subg_fac[1])  # F(0)
     # Find subgraphs with all-zero subgraph_factors and propagate subfactor one level up
     for (i, sub_g) in enumerate(subg)
-        if has_zero_subfactors(sub_g)
+        if isleaf(sub_g)
+            continue
+        end
+        if has_zero_subfactors(sub_g, sub_g.operator)
             subg_fac[i] = zero_sgf
         end
     end
+    
     # Remove marked zero subgraph factor subgraph(s) of g
-    mask_zeros = findall(x -> x != zero(x), subg_fac)
-    if isempty(mask_zeros)
-        mask_zeros = [1]  # retain eldest(g) if all subfactors are zero
-    end
+    mask_zeros = mask_zero_subgraph_factors(g.operator, subg_fac)
     set_subgraphs!(g, subg[mask_zeros])
     set_subgraph_factors!(g, subg_fac[mask_zeros])
     return g

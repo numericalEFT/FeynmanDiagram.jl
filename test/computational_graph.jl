@@ -324,20 +324,40 @@ end
             l6 = Graph([]; factor=6)
             l7 = Graph([]; factor=7)
             l8 = Graph([]; factor=8)
+            l2_test = Graph([]; factor=2)
+            Graphs.remove_zero_valued_subgraphs(l2)
+            @test isequiv(l2, l2_test, :id)
             # subgraphs
             sg1 = l1
-            sg2 = Graph([l2, l3]; subgraph_factors=[1.0, 0.0], operator=O1())
-            sg3 = Graph([l4]; subgraph_factors=[0], operator=O2())
-            sg4 = Graph([l5, l6, l7]; subgraph_factors=[0, 0, 0], operator=O3())
+            sg2 = Graph([l2, l3]; subgraph_factors=[1.0, 0.0], operator=Graphs.Sum())
+            sg2_test = Graph([l2]; subgraph_factors=[1.0], operator=Graphs.Sum())
+            sg3 = Graph([l4]; subgraph_factors=[0], operator=Graphs.Power(2))
+            sg3_test = Graph([l4]; subgraph_factors=[0], operator=Graphs.Power(2))
+            sg4 = Graph([l5, l6, l7]; subgraph_factors=[0, 0, 0], operator=Graphs.Sum())
             sg5 = l8
+            sg6 = Graph([l2, l3]; subgraph_factors=[1.0, 0.0], operator=Graphs.Prod())
+            sg6c = deepcopy(sg6)
+            sg6c_test = Graph([l3]; subgraph_factors=[0.0], operator=Graphs.Prod()) 
+            Graphs.remove_zero_valued_subgraphs!(sg2)
+            Graphs.remove_zero_valued_subgraphs!(sg3)
+            @test isequiv(sg2, sg2_test, :id)
+            @test isequiv(sg3, sg3_test, :id)
+            @test isequiv(sg6, sg6c, :id)
             # graphs
-            g = Graph([sg1, sg2, sg3, sg4, sg5]; subgraph_factors=[1, 1, 1, 1, 0], operator=O())
-            g_test = Graph([sg1, sg2]; subgraph_factors=[1, 1], operator=O())
-            gp = Graph([sg3, sg4, sg5]; subgraph_factors=[1, 1, 0], operator=O())
-            gp_test = Graph([sg3]; subgraph_factors=[0], operator=O())
+            g = Graph([sg1, sg2, sg3, sg4, sg5]; subgraph_factors=[1, 1, 1, 1, 0], operator=Graphs.Sum())
+            g_test = Graph([sg1, sg2]; subgraph_factors=[1, 1], operator=Graphs.Sum())
+            g1 = Graph([sg1, sg2, sg3, sg4, sg5, sg6]; subgraph_factors=[1, 1, 1, 1, 0, 2], operator=Graphs.Sum())
+            g1_test = Graph([sg1, sg2]; subgraph_factors=[1, 1], operator=Graphs.Sum())
+            g2 = Graph([sg1, sg2, sg3, sg4, sg5, sg6]; subgraph_factors=[1, 1, 1, 1, 0, 2], operator=O1())
+            g2_test = Graph([sg1, sg2, sg3, sg4, sg5, sg6]; subgraph_factors=[1, 1, 1, 1, 0, 2], operator=O1())
+            gp = Graph([sg3, sg4, sg5]; subgraph_factors=[1, 1, 0], operator=Graphs.Sum())
+            gp_test = Graph([sg3]; subgraph_factors=[0], operator=Graphs.Sum())
             Graphs.remove_zero_valued_subgraphs!(g)
+            Graphs.remove_zero_valued_subgraphs!(g1)
             Graphs.remove_zero_valued_subgraphs!(gp)
             @test isequiv(g, g_test, :id)
+            @test isequiv(g1, g1_test, :id)
+            @test isequiv(g2, g2_test, :id)
             @test isequiv(gp, gp_test, :id)
         end
     end
@@ -382,19 +402,32 @@ end
             ssg1 = Graph([l7]; subgraph_factors=[0], operator=O())
             # subgraphs
             sg1 = l1
-            sg2 = Graph([l2, l3]; subgraph_factors=[1.0, 0.0], operator=O1())
-            sg2_test = Graph([l2]; subgraph_factors=[1.0], operator=O1())
-            sg3 = Graph([l4]; subgraph_factors=[0], operator=O2())
-            sg4 = Graph([l5, l6, ssg1]; subgraph_factors=[0, 0, 1], operator=O3())
+            sg2 = Graph([l2, l3]; subgraph_factors=[1.0, 0.0], operator=Graphs.Sum())
+            sg2c = deepcopy(sg2)
+            sg2_test = Graph([l2]; subgraph_factors=[1.0], operator=Graphs.Sum())
+            sg3 = Graph([l4]; subgraph_factors=[0], operator=Graphs.Sum())
+            sg4 = Graph([l5, l6, ssg1]; subgraph_factors=[0, 0, 3], operator=Graphs.Sum())
+            sg4c = deepcopy(sg4)
+            sg4_test = Graph([ssg1], subgraph_factors=[3], operator=Graphs.Sum())
             sg5 = l8
+            sg6 = Graph([l2, sg3]; subgraph_factors=[1.0, 2.0], operator=Graphs.Prod())
             # graphs
-            g = Graph([sg1, sg2, sg3, sg4, sg5]; subgraph_factors=[1, 1, 1, 1, 0], operator=O())
-            g_test = Graph([sg1, sg2_test]; subgraph_factors=[1, 1], operator=O())
-            gp = Graph([sg3, sg4, sg5]; subgraph_factors=[1, 1, 0], operator=O())
-            gp_test = Graph([sg3]; subgraph_factors=[0], operator=O())
+            g = Graph([sg1, sg2, sg3, sg4, sg5]; subgraph_factors=[1, 1, 1, 1, 0], operator=Graphs.Sum())
+            g_test = Graph([sg1, sg2_test, sg4_test]; subgraph_factors=[1, 1, 1], operator=Graphs.Sum())
+            g1 = Graph([sg1, sg2, sg3, sg4, sg5, sg6]; subgraph_factors=[1, 1, 1, 1, 0, -1], operator=Graphs.Sum())
+            g1_test = Graph([sg1, sg2_test, sg4_test]; subgraph_factors=[1, 1, 1], operator=Graphs.Sum())
+            
+            g2 = Graph([sg1, sg2c, sg3, sg4c, sg5, sg6]; subgraph_factors=[1, 0, 1, 1, 0, -1], operator=O1())
+            g2_test = Graph([sg1, sg2_test, sg3, sg4_test, sg5, sg6]; subgraph_factors=[1, 0, 0, 1, 0, 0], operator=O1())
+            gp = Graph([sg3, sg4, sg5]; subgraph_factors=[1, 0, 0], operator=Graphs.Sum())
+            gp_test = Graph([sg3]; subgraph_factors=[0], operator=Graphs.Sum())
             Graphs.remove_all_zero_valued_subgraphs!(g)
+            Graphs.remove_all_zero_valued_subgraphs!(g1)
+            Graphs.remove_all_zero_valued_subgraphs!(g2)
             Graphs.remove_all_zero_valued_subgraphs!(gp)
             @test isequiv(g, g_test, :id)
+            @test isequiv(g1, g1_test, :id)
+            @test isequiv(g2, g2_test, :id)
             @test isequiv(gp, gp_test, :id)
         end
         @testset "Merge all linear combinations" begin
@@ -1040,7 +1073,8 @@ end
 
 @testset verbose = true "Tree properties" begin
     using FeynmanDiagram.ComputationalGraphs:
-        haschildren, onechild, isleaf, isbranch, ischain, eldest, count_operation
+        haschildren, onechild, isleaf, isbranch, ischain, eldest, count_operation, has_zero_subfactors
+
     # Leaves: gᵢ
     g1 = Graph([])
     g2 = Graph([], factor=2)
@@ -1058,6 +1092,8 @@ end
     g10 = g1 * g2 + g8 * g9
     h2 = Graph([g1, g2]; subgraph_factors=[0, 0], operator=Graphs.Sum())
     h3 = Graph([g1, g2]; subgraph_factors=[1, 0], operator=Graphs.Sum())
+    h4 = Graph([g1]; subgraph_factors=[0], operator=Graphs.Power(2))
+    h5 = Graph([g1, g2]; subgraph_factors=[0, 0], operator=O())
     glist = [g1, g2, g8, g9, g10]
 
     @testset "Leaves" begin
@@ -1077,7 +1113,7 @@ end
         @test isbranch(g3)
         @test ischain(g3)
         @test isleaf(eldest(g3))
-        @test has_zero_subfactors(h1)
+        @test has_zero_subfactors(h1, h1.operator)
     end
     @testset "Chains" begin
         @test haschildren(g6)
@@ -1097,8 +1133,14 @@ end
         @test count_operation(g8) == [1, 0]
         @test count_operation(g9) == [2, 0]
         @test count_operation(g10) == [4, 2]
-        @test has_zero_subfactors(h2)
-        @test has_zero_subfactors(h3) == false
+        @test has_zero_subfactors(h2, h2.operator)
+        @test has_zero_subfactors(h3, h3.operator) == false
+        @test has_zero_subfactors(h4, h4.operator)
+        @test has_zero_subfactors(h5, h5.operator) == false
+        function FeynmanDiagram.has_zero_subfactors(g::AbstractGraph, ::Type{O})
+            return iszero(g.subgraph_factors)
+        end
+        @test has_zero_subfactors(h5, h5.operator)
     end
     @testset "Iteration" begin
         count_pre = sum(1 for node in PreOrderDFS(g9))
