@@ -3,7 +3,7 @@ using PyCall
 using ..ComputationalGraphs
 import ..ComputationalGraphs: id, name, set_name!, operator, subgraphs, subgraph_factors, FeynmanProperties
 
-using ..FrontEnds: PropagatorId, BareGreenId, BareInteractionId
+using ..FrontEnds: PropagatorId, BareGreenId, BareInteractionId, PolarId, Ver3Id, Ver4Id
 
 using ..QuantumOperators
 import ..QuantumOperators: isfermionic

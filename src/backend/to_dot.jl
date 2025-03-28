@@ -39,6 +39,7 @@ function to_dotstatic(::Type{ComputationalGraphs.Power{N}}, id::Int, subgraphs::
     node_temp = ""
     arrow_temp = ""
     opr_node = "g$id[shape=box, label = <Pow($N)>, style=filled, color=darkolivegreen,fontsize=18, width = 0.8, height = 0.4]\n"
+    opr_name = "g$id"
     node_temp *= opr_node
     if subgraph_factors[1] != 1
         arrow_temp *= "g$(subgraphs[1].id)->$opr_name[arrowhead=vee,label=$gfactor,fontsize=16, penwidth = 0.2,arrowsize = 0.3]\n"
@@ -84,6 +85,7 @@ function to_dotstatic(::Type{ComputationalGraphs.Power{N}}, id::Int, subgraphs::
     node_temp = ""
     arrow_temp = ""
     opr_node = "g$id[shape=box, label = <Pow($N)>, style=filled, color=darkolivegreen,fontsize=18, width = 0.8, height = 0.4]\n"
+    opr_name = "g$id"
     node_temp *= opr_node
     if subgraph_factors[1] != 1
         arrow_temp *= "g$(subgraphs[1].id)->$opr_name[arrowhead=vee,label=$gfactor,fontsize=16, penwidth = 0.2, arrowsize = 0.3]\n"
