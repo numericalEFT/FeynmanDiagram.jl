@@ -112,6 +112,17 @@ function Base.isequal(a::GreenId, b::GreenId)
 	return a.type == b.type && a.extT == b.extT && a.extK == b.extK && a.para == b.para
 end
 
+struct VacuumId{P} <: DiagramId
+	para::P
+	function VacuumId(para::P) where {P}
+		return new{P}(para)
+	end
+end
+Base.show(io::IO, v::VacuumId) = print(io, "vacuum")
+function Base.isequal(a::VacuumId, b::VacuumId)
+	return a.para == b.para
+end
+
 struct SigmaId{P} <: DiagramId
 	para::P
 	type::AnalyticProperty #Instant, Dynamic
@@ -284,10 +295,12 @@ struct GreenNId{P} <: DiagramId
 	extT::Vector{Int}
 	N::Int
 	function GreenNId(para::P, r::Vector{Int}, creation::Vector{Bool}, orbital::Vector{Int}, t::Vector{Int}, N::Int = length(orbital)) where {P}
+		@assert N > 0
 		@assert length(orbital) == length(t) == length(r) == length(creation) == N
 		return new{P}(para, r, creation, orbital, t, N)
 	end
 	function GreenNId(para::P; orbital = [], t = [], creation = [], r = []) where {P}
+		@assert length(orbital) > 0
 		@assert length(orbital) == length(t) == length(r) == length(creation)
 		return new{P}(para, r, creation, orbital, t, length(orbital))
 	end
@@ -311,10 +324,12 @@ struct ConnectedGreenNId{P} <: DiagramId
 	extT::Vector{Int}
 	N::Int
 	function ConnectedGreenNId(para::P, r::Vector{Int}, creation::Vector{Bool}, orbital::Vector{Int}, t::Vector{Int}, N::Int = length(orbital)) where {P}
+		@assert N > 0
 		@assert length(orbital) == length(t) == length(r) == length(creation) == N
 		return new{P}(para, r, creation, orbital, t, N)
 	end
 	function ConnectedGreenNId(para::P; orbital = [], t = [], creation = [], r = []) where {P}
+		@assert length(orbital) > 0
 		@assert length(orbital) == length(t) == length(r) == length(creation)
 		return new{P}(para, r, creation, orbital, t, length(orbital))
 	end

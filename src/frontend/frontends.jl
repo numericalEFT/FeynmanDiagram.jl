@@ -9,7 +9,7 @@ using LinearAlgebra
 @enum TwoBodyChannel Alli = 1 PHr PHEr PPr AnyChan
 
 @enum Filter begin
-	Wqirreducible  #remove all polarization subdiagrams
+	Wirreducible  #remove all polarization subdiagrams
 	Girreducible  #remove all self-energy inseration
 	NoHartree
 	NoFock
@@ -79,7 +79,7 @@ function symbol(name::Response, type::AnalyticProperty, addition = nothing)
 end
 
 include("diagram_id.jl")
-export DiagramId, GenericId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId, GreenNId, ConnectedGreenNId
+export DiagramId, GenericId, VacuumId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId, GreenNId, ConnectedGreenNId
 export PropagatorId, BareGreenId, BareInteractionId, BareHoppingId, BareGreenNId
 
 include("pool.jl")
@@ -93,6 +93,9 @@ export GV
 
 include("parquet/parquet.jl")
 export Parquet
+
+include("strong_coupling_expansion_builder/strong_coupling_expansion.jl")
+export SCE
 
 # include("strong_coupling_expansion_builder/strong_coupling_expansion.jl")
 # export SCE
