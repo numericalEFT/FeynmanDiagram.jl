@@ -29,46 +29,101 @@
 #     end
 # end
 
-function fullGreen(para, hop::Vector{BareHoppingId}, subdiagram=false; name=Symbol("Gn$(length(hop)*2)"), resetuid=false, even=true)
-    # @assert para.type == GreenNDiag
-    # @assert length(extT) == length(orbital) == length(site)
-    # if even
-    #     @assert length(extT) % 2 == 0
-    # end
-    extT, orbital, site, _creation = [], [], [], []
-    for h in hop
-        append!(extT, h.extT)
-        append!(site, h.site)
-        append!(_creation, [true, false])
-        append!(orbital, h.orbital)
-    end
-    # println("calculate: ", hop, " . site: ", site)
+function fullGreen(para, site::Vector{Int}, orbital::AbstractVector, extT::AbstractVector, creation::AbstractVector;
+	ext_site::Vector{Int} = Int[], ext_orbital::Vector{Int} = Int[], ext_T::Vector{Int} = Int[], ext_creation::Vector{Bool} = Bool[],
+	name = Symbol("Gn$(length(site))"), resetuid = false)
 
-    resetuid && uidreset()
+	@assert length(extT) == length(orbital) == length(site) == length(creation)
+	@assert isdisjoint(ext_site, site)
+	@assert length(ext_site) == length(ext_orbital) == length(ext_T) == length(ext_creation)
 
-    gn = []
-    uniqueR = Set(site)
-    permutation = [] # keep track of the permutation after the site index rearrangement
-    for r in uniqueR
-        ind = findall(x -> x == r, site)
-        if even && (length(ind) % 2 == 1)
-            return nothing
-        end
-        t = extT[ind]
-        o = orbital[ind]
-        c = _creation[ind]
-        bareGId = BareGreenNId(para, orbital=o, t=t, r=r, creation=c)
-        push!(gn, Graph([], properties=bareGId, name=Symbol("gn$(length(t))")))
-        append!(permutation, ind)
-    end
+	resetuid && IR.uidreset()
 
-    if isempty(gn)
-        return nothing
-    else
-        for h in hop
-            push!(gn, Graph([], properties=h, name=:hop))
-        end
-        # println(permutation)
-        return Graph(gn, properties=GreenNId(para, orbital=orbital, t=extT, r=site, creation=_creation), operator=Prod(), name=name, factor=parity(permutation))
-    end
+	all_sites = isempty(ext_site) ? site : vcat(ext_site, site)
+	len_ext = length(ext_site)
+
+	Gn = []
+	for (i, ri) in enumerate(all_sites)
+		if i <= len_ext
+			oi = ext_orbital[i]
+			ti = ext_T[i]
+		else
+			oi = orbital[i-len_ext][1]
+			ti = extT[i-len_ext][1]
+		end
+
+		for (j, rj) in enumerate(all_sites)
+			if j <= len_ext
+				oj = ext_orbital[j]
+				tj = ext_T[j]
+			else
+				oj = orbital[j-len_ext][2]
+				tj = extT[j-len_ext][2]
+			end
+			push!(Gn, Graph([], properties = BareHoppingId(para, (ri, rj), (oi, oj), (ti, tj))))
+		end
+	end
+
+	gn = [Graph(Gn, operator = Det(), name = :det)]
+
+	uniqueR = Set(site)
+	for r in uniqueR
+		ind = findall(x -> x == r, site)
+		t = collect(Iterators.flatten(extT[ind]))
+		o = collect(Iterators.flatten(orbital[ind]))
+		c = collect(Iterators.flatten(creation[ind]))
+		bareGId = BareGreenNId(para, orbital = o, t = t, r = r, creation = c)
+		push!(gn, Graph([], properties = bareGId, name = Symbol("gn$(length(t))")))
+	end
+
+	if isempty(ext_site)
+		property = VacuumId(para)
+	else
+		property = GreenNId(para, orbital = ext_orbital, t = ext_T, r = ext_site, creation = ext_creation)
+	end
+	return Graph(gn, properties = property, operator = Prod(), name = name)
+end
+
+function fullGreen(para, hop::Vector{BareHoppingId}, subdiagram = false; name = Symbol("Gn$(length(hop)*2)"), resetuid = false, even = true)
+	# @assert para.type == GreenNDiag
+	# @assert length(extT) == length(orbital) == length(site)
+	# if even
+	#     @assert length(extT) % 2 == 0
+	# end
+	extT, orbital, site, _creation = [], [], [], []
+	for h in hop
+		append!(extT, h.extT)
+		append!(site, h.site)
+		append!(_creation, [true, false])
+		append!(orbital, h.orbital)
+	end
+	# println("calculate: ", hop, " . site: ", site)
+
+	resetuid && IR.uidreset()
+
+	gn = []
+	uniqueR = Set(site)
+	permutation = [] # keep track of the permutation after the site index rearrangement
+	for r in uniqueR
+		ind = findall(x -> x == r, site)
+		if even && (length(ind) % 2 == 1)
+			return nothing
+		end
+		t = extT[ind]
+		o = orbital[ind]
+		c = _creation[ind]
+		bareGId = BareGreenNId(para, orbital = o, t = t, r = r, creation = c)
+		push!(gn, Graph([], properties = bareGId, name = Symbol("gn$(length(t))")))
+		append!(permutation, ind)
+	end
+
+	if isempty(gn)
+		return nothing
+	else
+		for h in hop
+			push!(gn, Graph([], properties = h, name = :hop))
+		end
+		# println(permutation)
+		return Graph(gn, properties = GreenNId(para, orbital = orbital, t = extT, r = site, creation = _creation), operator = Prod(), name = name, factor = parity(permutation))
+	end
 end

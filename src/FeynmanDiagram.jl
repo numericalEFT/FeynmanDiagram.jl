@@ -2,7 +2,7 @@ module FeynmanDiagram
 using Random, LinearAlgebra, Parameters, AbstractTrees, RuntimeGeneratedFunctions
 
 macro todo()
-    return :(error("Not yet implemented!"))
+	return :(error("Not yet implemented!"))
 end
 
 include("quantum_operator/QuantumOperators.jl")
@@ -49,6 +49,8 @@ using .GV
 export GV
 using .Parquet
 export Parquet
+using .SCE
+export SCE
 
 include("utility.jl")
 using .Utility
