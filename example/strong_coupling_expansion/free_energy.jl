@@ -1,7 +1,8 @@
 using FeynmanDiagram
-import FeynmanDiagram.Parquet: DiagPara, VacuumDiag
+import FeynmanDiagram.Parquet: DiagPara, Interaction, VacuumDiag
 import FeynmanDiagram.ComputationalGraphs: Sum
-import FeynmanDiagram.FrontEnds: ConnectedGreenNId, VacuumId
+import FeynmanDiagram.FrontEnds: ConnectedGreenNId, BareHoppingId, VacuumId, UpUp, UpDown, Dynamic
+using Parameters
 
 function generate_vectors(order::Int)
 	function helper(current_vector::Vector{Int}, remaining_length::Int)
@@ -78,11 +79,66 @@ function generate_topologies(order::Int)
 	return result
 end
 
-function free_energy(max_order::Int)
+function assign_orbitals(num_sites::Int, orbital_options = [[1, 1], [2, 2]])
+	# Each site can have either [1,1] or [2,2]
+	all_combinations = Iterators.product(ntuple(_ -> orbital_options, num_sites)...)
+	return [collect(comb) for comb in all_combinations]
+end
 
-	fE = Dict{Int, Graph}()
-	for order in 1:max_order
-		para = DiagPara(type = VacuumDiag, innerLoopNum = order, hasTau = true)
+function partition(order::Int)
+	par = [
+		# order 1
+		(1, 0),
+		# order 2
+		(2, 0), (1, 1),
+		# order 3
+		(3, 0), (2, 1), (1, 2),
+		# order 4
+		(4, 0), (3, 1), (2, 2), (1, 3),
+		#order 5
+		(5, 0), (4, 1), (3, 2), (2, 3), (1, 4),
+		#order 6
+		(6, 0), (5, 1), (4, 2), (3, 3), (2, 4), (1, 5),
+	]
+	return sort([p for p in par if p[1] + p[2] <= order])
+end
+
+function neighbor(partitions)
+	n = Vector{Tuple{Int, Int}}()
+	Nnorm = length(partitions) + 1 # the index of the normalization diagram is the N+1
+	for (ip, p) in enumerate(partitions)
+		# if p[1] == 1 # if there is only one loop, then the diagram can be connected to the normalization diagram
+		if p[1] in [0, 1] # if there is only one loop, then the diagram can be connected to the normalization diagram
+			push!(n, (ip, Nnorm))
+		end
+		for (idx, np) in enumerate(partitions)
+			if idx >= ip
+				continue
+			end
+			if np[1] == p[1] || np[1] == p[1] + 1 || np[1] == p[1] - 1 #the first index is the number of loops
+				push!(n, (ip, idx))
+			end
+		end
+	end
+	println(n)
+	return n
+end
+
+function free_energy(_partition::Vector{T}; filter = [], leaf_dep_funcs::Vector{Function} = Function[pr->pr isa BareHoppingId]) where {T}
+
+	diagpara = []
+	inter = [Interaction(UpDown, [Dynamic])]
+
+	max_order = maximum([p[1] for p in _partition])
+	min_order = minimum([p[1] for p in _partition])
+	max_totalorder = maximum([sum(p) for p in _partition])
+	dict_graphs = Dict{NTuple{2, Int}, Vector{Graph}}()
+
+	println(_partition)
+	println(min_order, max_order, max_totalorder)
+	for order in min_order:max_order
+		para = DiagPara(type = VacuumDiag, innerLoopNum = order, hasTau = true, interaction = inter, totalTauNum = 2order, filter = filter)
+		push!(diagpara, para)
 		println("Order: ", order)
 
 		topologies = generate_topologies(order)
@@ -92,17 +148,38 @@ function free_energy(max_order::Int)
 
 		graphs_fE = []
 		sub_factors = []
+		orbitals = assign_orbitals(order)
 		for (sites, factor) in topologies
-			push!(graphs_fE, SCE.connectedGreen(para, sites, extT, extT, creations))
-			push!(sub_factors, factor)
+			println("sites: ", sites)
+			for orbital in orbitals
+				println(orbital, "t: ", extT)
+				push!(graphs_fE, SCE.connectedGreen(para, sites, orbital, extT, creations))
+				push!(sub_factors, factor)
+			end
 		end
 
 		property = VacuumId(para)
-		fE[order] = Graph(graphs_fE, subgraph_factors = sub_factors, operator = Sum(), properties = property, name = Symbol("F_$order"))
+		graph_order = [Graph(graphs_fE, subgraph_factors = sub_factors, operator = Sum(), properties = property, name = Symbol("F_$order"))]
+		optimize!(graph_order)
+		optimize!(graph_order)
+
+		renormalization_orders = [max_totalorder - order]
+
+		dict_graph_order = taylorAD(graph_order, renormalization_orders, leaf_dep_funcs)
+		for key in keys(dict_graph_order)
+			p = (order, key...)
+			println("key: ", key, " p: ", p)
+			if p in _partition
+				dict_graphs[p] = dict_graph_order[key]
+			end
+		end
 	end
 
-	return fE
+	diagpara = Vector{DiagPara}()
+	partitions = sort(collect(keys(dict_graphs)))
+	for p in partitions
+		push!(diagpara, DiagPara(type = VacuumDiag, innerLoopNum = p[1], hasTau = true, interaction = inter, totalTauNum = 2 * p[1], filter = filter))
+	end
+
+	return (partitions, diagpara, dict_graphs)
 end
-
-
-# fE = free_energy(3)

@@ -1,7 +1,7 @@
 function connectedGreen(para, site::Vector{Int}, orbital::AbstractVector, extT::AbstractVector, creation::AbstractVector;
 	# function connectedGreen(para, site, orbital, extT, creation;
 	ext_site::Vector{Int} = Int[], ext_orbital::Vector{Int} = Int[], ext_T::Vector{Int} = Int[], ext_creation::Vector{Bool} = Bool[],
-	name = Symbol("Gc$(length(site))"), resetuid = false)
+	name = Symbol("Gc$(length(site))"), resetuid = false, num_orbital::Int = 2)
 
 	@assert length(extT) == length(orbital) == length(site) == length(creation)
 	@assert isdisjoint(ext_site, site)
@@ -12,7 +12,7 @@ function connectedGreen(para, site::Vector{Int}, orbital::AbstractVector, extT::
 	Gc = []
 
 	Gfull = fullGreen(para, site, orbital, extT, creation;
-		ext_site = ext_site, ext_orbital = ext_orbital, ext_T = ext_T, ext_creation = ext_creation, resetuid = false)
+		ext_site = ext_site, ext_orbital = ext_orbital, ext_T = ext_T, ext_creation = ext_creation, resetuid = false, num_orbital = num_orbital)
 	push!(Gc, Gfull)
 
 	uniqueR = unique(site)
@@ -22,7 +22,7 @@ function connectedGreen(para, site::Vector{Int}, orbital::AbstractVector, extT::
 		ridx = findall(x -> x in uniqueR[rind], site)
 		subGc = connectedGreen(para, site[lidx], orbital[lidx], extT[lidx], creation[lidx];
 			ext_site = ext_site, ext_orbital = ext_orbital, ext_T = ext_T, ext_creation = ext_creation, resetuid = false)
-		subGn = fullGreen(para, site[ridx], orbital[ridx], extT[ridx], creation[ridx]; resetuid = false)
+		subGn = fullGreen(para, site[ridx], orbital[ridx], extT[ridx], creation[ridx]; resetuid = false, num_orbital = num_orbital)
 
 		push!(Gc, Graph([subGc, subGn], properties = GenericId(para), operator = Prod(), factor = -1.0))
 	end

@@ -359,12 +359,13 @@ function index(type)
 		return 1
 	elseif type == BareInteractionId
 		return 2
-	elseif type == BareGreenNId
+	elseif type <: BareGreenNId
 		return 3
-	elseif type == BareHoppingId
+	elseif type <: BareHoppingId
 		return 4
 	else
-		error("Not Implemented!")
+		# error("Not Implemented!")
+		return 0
 	end
 end
 

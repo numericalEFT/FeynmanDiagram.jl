@@ -234,6 +234,69 @@ function leafstates(leaf_maps::Vector{Dict{Int, G}}, maxloopNum::Int) where {G <
 	return (leafValue, leafType, leafOrders, leafInTau, leafOutTau, leafLoopIndex), loopbasis
 end
 
+function leafstates(leaf_maps::Vector{Dict{Int, G}}) where {G <: Graph}
+
+	num_g = length(leaf_maps)
+	leafType = [Vector{Int}() for _ in 1:num_g]
+	leafOrders = [Vector{Vector{Int}}() for _ in 1:num_g]
+	leafOrbitals = [Vector{Vector{Int}}() for _ in 1:num_g]
+	leafInTaus = [Vector{Vector{Int}}() for _ in 1:num_g]
+	leafOutTaus = [Vector{Vector{Int}}() for _ in 1:num_g]
+	leafSites = [Vector{Vector{Int}}() for _ in 1:num_g]
+	leafValue = [Vector{Float64}() for _ in 1:num_g]
+
+	for (ikey, leafmap) in enumerate(leaf_maps)
+		len_leaves = length(keys(leafmap))
+		sizehint!(leafType[ikey], len_leaves)
+		sizehint!(leafOrders[ikey], len_leaves)
+		sizehint!(leafOrbitals[ikey], len_leaves)
+		sizehint!(leafInTaus[ikey], len_leaves)
+		sizehint!(leafOutTaus[ikey], len_leaves)
+		sizehint!(leafSites[ikey], len_leaves)
+		leafValue[ikey] = ones(Float64, len_leaves)
+
+		println("ikey: ", ikey)
+		for idx in 1:len_leaves
+			leaf = leafmap[idx]
+			@assert ComputationalGraphs.isleaf(leaf)
+			diagId, leaf_orders = leaf.properties, leaf.orders
+
+			println(leaf.id, diagId, leaf_orders)
+
+			if typeof(diagId) <: BareGreenNId
+				# println(diagId.site, diagId.extT, diagId.orbital, diagId.creation)
+				push!(leafInTaus[ikey], diagId.extT[diagId.creation])
+				push!(leafOutTaus[ikey], diagId.extT[.!(diagId.creation)])
+				push!(leafOrbitals[ikey], vcat(diagId.orbital[diagId.creation], diagId.orbital[.!(diagId.creation)]))
+				push!(leafSites[ikey], [diagId.site])
+			elseif typeof(diagId) <: BareHoppingId
+				# println(diagId.site, diagId.extT, diagId.orbital)
+
+				push!(leafInTaus[ikey], [diagId.extT[1]])
+				push!(leafOutTaus[ikey], [diagId.extT[2]])
+				push!(leafOrbitals[ikey], collect(diagId.orbital))
+				push!(leafSites[ikey], collect(diagId.site))
+			elseif isnothing(diagId)
+				# println(leaf.operator, leaf.subgraph_factors)
+				push!(leafInTaus[ikey], [])
+				push!(leafOutTaus[ikey], [])
+				push!(leafOrbitals[ikey], [])
+				push!(leafSites[ikey], [])
+			else
+				println(diagId)
+				println(typeof(diagId))
+				error("Only support leafs with BareGreenNId and BareHoppingId.")
+			end
+
+			push!(leafOrders[ikey], leaf_orders)
+			push!(leafType[ikey], FrontEnds.index(typeof(diagId)))
+
+		end
+	end
+
+	return (leafValue, leafType, leafOrders, leafInTaus, leafOutTaus, leafSites, leafOrbitals)
+end
+
 export leafstates
 
 end

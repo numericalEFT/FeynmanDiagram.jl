@@ -31,7 +31,7 @@
 
 function fullGreen(para, site::Vector{Int}, orbital::AbstractVector, extT::AbstractVector, creation::AbstractVector;
 	ext_site::Vector{Int} = Int[], ext_orbital::Vector{Int} = Int[], ext_T::Vector{Int} = Int[], ext_creation::Vector{Bool} = Bool[],
-	name = Symbol("Gn$(length(site))"), resetuid = false)
+	name = Symbol("Gn$(length(site))"), resetuid = false, num_orbital::Int = 2)
 
 	@assert length(extT) == length(orbital) == length(site) == length(creation)
 	@assert isdisjoint(ext_site, site)
@@ -60,7 +60,8 @@ function fullGreen(para, site::Vector{Int}, orbital::AbstractVector, extT::Abstr
 				oj = orbital[j-len_ext][2]
 				tj = extT[j-len_ext][2]
 			end
-			push!(Gn, Graph([], properties = BareHoppingId(para, (ri, rj), (oi, oj), (ti, tj))))
+			# push!(Gn, Graph([], properties = BareHoppingId(para, (ri, rj), (oi, oj), (ti, tj))))
+			push!(Gn, Graph([], properties = BareHoppingId(para, (rj, ri), (oj, oi), (tj, ti))))
 		end
 	end
 
@@ -73,7 +74,8 @@ function fullGreen(para, site::Vector{Int}, orbital::AbstractVector, extT::Abstr
 		o = collect(Iterators.flatten(orbital[ind]))
 		c = collect(Iterators.flatten(creation[ind]))
 		bareGId = BareGreenNId(para, orbital = o, t = t, r = r, creation = c)
-		push!(gn, Graph([], properties = bareGId, name = Symbol("gn$(length(t))")))
+		push!(gn, Graph([], properties = bareGId, name = Symbol("gn$(length(t))"),
+			factor = prefactor(o[[2m - 1 for m in 1:length(ind)]], num_orbital)))
 	end
 
 	if isempty(ext_site)
@@ -82,6 +84,17 @@ function fullGreen(para, site::Vector{Int}, orbital::AbstractVector, extT::Abstr
 		property = GreenNId(para, orbital = ext_orbital, t = ext_T, r = ext_site, creation = ext_creation)
 	end
 	return Graph(gn, properties = property, operator = Prod(), name = name)
+end
+
+function prefactor(orbitals, num_orbital::Int)
+	m = length(orbitals)
+	_factor = 1.0
+	for i in 1:m
+		for j in (i+1):m
+			_factor *= (num_orbital - (orbitals[i] == orbitals[j] ? 1 : 0))
+		end
+	end
+	return _factor / (2m)
 end
 
 function fullGreen(para, hop::Vector{BareHoppingId}, subdiagram = false; name = Symbol("Gn$(length(hop)*2)"), resetuid = false, even = true)
