@@ -113,7 +113,6 @@ end
 
 function has_zero_subfactors(g::AbstractGraph, ::Type{Det})
 	@assert g.operator == Det "Operator must be Det"
-	# return iszero(subgraph_factors(g)[1])
 	size = Int(sqrt(length(subgraph_factors(g))))
 	matrix = reshape(subgraph_factors(g), (size, size))
 	for row in eachrow(matrix)

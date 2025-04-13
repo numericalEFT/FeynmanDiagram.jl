@@ -6,7 +6,7 @@ using DataFrames
 import ..ComputationalGraphs as IR
 import ..ComputationalGraphs: Graph
 import ..ComputationalGraphs: Sum, Prod, Det
-using ..FrontEnds: BareHoppingId, BareGreenNId, ConnectedGreenNId, GreenNId, GenericId, VacuumId
+using ..FrontEnds: BareHoppingId, BareGreenNId, ConnectedGreenNId, GreenNId, GenericId, VacuumId, DiagramId
 
 # const DI, EX, BOTH = 1, 2, 3
 # const INL, OUTL, INR, OUTR = 1, 2, 3, 4
