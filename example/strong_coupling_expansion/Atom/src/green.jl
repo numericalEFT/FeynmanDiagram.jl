@@ -25,16 +25,16 @@ struct Model{N, No}
 	Norbital::Int # number of orbitals
 	E::SVector{N, Float} # eigen energy
 	Z::Float # partition sum
-	H::Operator # diagnoalized Hamitlonian
+	Hdiag::Operator # diagnoalized Hamitlonian
 	c⁺::SVector{No, Operator} # creation operator in the eigenspace
 	c⁻::SVector{No, Operator} # anniliation operator in the eigenspace
 	n::SVector{No, Operator}  # density operator in the eigenspace
 
-	function Model(β, H, _c⁺, isfermi = true)
-		dim = size(H)[1]
-		@assert size(H) == size(_c⁺[1])
+	function Model(β, H, c⁺_fock::Vector{Operator}, isfermi = true)
+		dim = size(H, 1)
+		@assert size(H) == size(c⁺_fock[1])
 		@assert size(H) == (dim, dim)
-		Norbital = length(_c⁺)
+		Norbital = length(c⁺_fock)
 
 		E, U = eigen(Float64.(Matrix(H)))  # U'*H*U will diagonalize the Hamiltonian
 		Z = sum(exp.(-β * E))
@@ -42,23 +42,20 @@ struct Model{N, No}
 
 		Hdiag = zeros(Float, (dim, dim))
 		Hdiag[diagind(Hdiag)] = E
-		c⁺ = [U' * o * U for o in _c⁺]
-		c⁻ = [U' * o' * U for o in _c⁺]
+		c⁺ = [U' * o * U for o in c⁺_fock]
+		# c⁻ = [U' * o' * U for o in c⁺_fock]
+		c⁻ = [adjoint(op) for op in c⁺]
 		n = [c⁺[i] * c⁻[i] for i in 1:Norbital]
 
 		return new{dim, Norbital}(isfermi, β, dim, Norbital, E, Z, Hdiag, c⁺, c⁻, n)
 	end
 end
 
-function thermalavg(o::Operator, E, β, Z)
-	if !(size(o) == (length(E), length(E)))
-		throw(AssertionError("Dimension of Operator[$(o.m), $(o.n)] doesn't match with $(length(E))"))
+function thermalavg(O::Operator, E, β, Z)
+	if !(size(O) == (length(E), length(E)))
+		throw(AssertionError("Dimension of Operator[$(O.m), $(O.n)] doesn't match with $(length(E))"))
 	end
-	avg = 0.0
-	for di in 1:length(E)
-		avg += o[di, di] * exp(-β * E[di])
-	end
-	return avg / Z
+	return sum(diag(O) .* exp.(-β * E)) / Z
 end
 """
 Heisenberg(o::Operator, E, τ)
@@ -66,21 +63,15 @@ Heisenberg(o::Operator, E, τ)
    Transform operator o into Heisenberg picture
 	exp(H * τ) * o * exp(-H * τ)
 """
-function Heisenberg(o::Operator, E, τ)
-	if !(size(o) == (length(E), length(E)))
-		throw(AssertionError("Dimension of Operator[$(o.m), $(o.n)] doesn't match with $(length(E))"))
+function Heisenberg(O::Operator, E, τ)
+	if !(size(O) == (length(E), length(E)))
+		throw(AssertionError("Dimension of Operator[$(O.m), $(O.n)] doesn't match with $(length(E))"))
 	end
-	if abs(τ) < 1.0e-10
-		return o  # if τ≈0, no evoluation is needed
+	if abs(τ) < 1e-10
+		return O  # if τ≈0, no evoluation is needed
 	end
-	oh = copy(o)
-	for ri in 1:length(E)
-		oh[ri, :] *= exp(E[ri] * τ)
-	end
-	for ci in 1:length(E)
-		oh[:, ci] *= exp(-E[ci] * τ)
-	end
-	return oh
+	Uτ = Diagonal(exp.(E * τ))
+	return Uτ * O * inv(Uτ)
 end
 
 function parity(p)
@@ -173,31 +164,25 @@ struct GreenN
 	τ::Vector{Float} # 1:2n, array of imaginary-time
 	orbital::Vector{Int} # 1:2n, array of orbitals 
 	hop::Vector{Operator}
-	partition::Vector{Partition}
-	function GreenN(m::Model, τ, orbital, N = Int(length(τ) / 2))
-		# @assert length(τ) == length(orbital)
-		# N = Int(length(τ) / 2)
+
+	function GreenN(m::Model, τ, orbital)
+		N = length(τ) ÷ 2
+		@assert length(τ) == length(orbital) == 2N "Length of τ and orbital must be 2N."
 
 		hop = Vector{Operator}(undef, 2N)
-		for idx in 1:N
-			hop[idx] = Heisenberg(m.c⁺[orbital[idx]], m.E, τ[idx])
+		for i in 1:N
+			hop[i] = Heisenberg(m.c⁻[orbital[i]], m.E, τ[i])
 		end
-		for idx in N+1:2N
-			hop[idx] = Heisenberg(m.c⁻[orbital[idx]], m.E, τ[idx])
+		for i in N+1:2N
+			hop[i] = Heisenberg(m.c⁺[orbital[i]], m.E, τ[i])
 		end
 
-		partition = [Partition(o) for o in 2:N]
-		return new(N, τ, orbital, hop, partition)
+		return new(N, τ, orbital, hop)
 	end
 end
 
-function density(m::Model, orbital)
-	n = 0.0
-	for (ei, e) in enumerate(m.E)
-		n += exp(-m.β * e) * m.n[orbital][ei, ei]
-	end
-	return n / m.Z
-end
+# Utility function: density for given orbital
+density(m::Model, orbital) = thermalavg(m.n[orbital], m.E, m.β, m.Z)
 
 """
 Gn=<Tτ c(1)c(2)...c(N)c⁺(N+1)...c⁺(2N)>
@@ -206,67 +191,26 @@ e.g.,
 	| G4 |        
 2->------->-4
 """
-@inline function Gn(m::Model, g::GreenN)
-	return Gn(m, g, [i for i in 1:g.N*2])
-end
+function Gn(m::Model, g::GreenN)
+	τ = g.τ
+	hop = g.hop
 
-function Gn(m::Model, g::GreenN, idx, level = 1)
-	# printstyled("...."^level, "start $level Gn-$idx\n", color=:green)
-	if g.N == 1 # fast treatment of one-body Green's function
-		i, o = idx[1], idx[2]
-		# println(g.hop[o])
-		# println(g.hop[i])
-		if g.τ[i] < g.τ[o]
-			return thermalavg(g.hop[o] * g.hop[i], m.E, m.β, m.Z)
-		else
-			G = thermalavg(g.hop[i] * g.hop[o], m.E, m.β, m.Z)
-			m.isfermi && (G *= -1.0)
-			# printstyled("...."^level, "get $level Gn-$idx -> $(idx[perm])*$(parity(perm))   $G\n", color=:green)
-			return G
-		end
+	perm = sortperm(τ)
+	ordered_hop = hop[perm]
+
+	# Compute product of ordered operators
+	M = ordered_hop[end]
+	for op in Iterators.reverse(ordered_hop[1:end-1])
+		M *= op
+	end
+
+	G = thermalavg(M, m.E, m.β, m.Z)
+	# Compute fermionic parity from the permutation
+	if m.isfermi
+		return G * parity(perm)
 	else
-		perm = sortperm(g.τ[idx])
-		# if length(idx) == 4
-		#     println(g.τ[idx], "  and  ", g.orbital[idx], " --> ", perm)
-		# end
-		# M=c(τ_{2N})...c(2)c(1)
-		M = prod(g.hop[reverse(idx[perm])])  # idx[perm] gives the idx array with the correct time ordering
-		# note that the storage order of hop operators are the opposite of the phyical order of the operators
-		G = thermalavg(M, m.E, m.β, m.Z) # G=tr(exp(-βH) M)/Z
-		m.isfermi && (G *= parity(perm))
-		# printstyled("...."^level, "get $level Gn-$idx -> $(idx[perm])*$(parity(perm))   $G\n", color=:green)
 		return G
 	end
-end
-
-"""
-1->------->-4       1->------->-4     1->---   --->-4
-	| G4 |      -                  +         X   
-2->------->-3       2->------->-3     2->---   --->-3
-"""
-@inline function Gnc(m::Model, g::GreenN)
-	return Gnc(m, g, [i for i in 1:g.N*2])
-end
-
-function Gnc(m::Model, g::GreenN, idx, level = 1)
-	# printstyled("...."^level, "start $level Gc-$idx\n", color=:red)
-	if length(idx) == 2 # case of G2
-		return Gn(m, g, idx, level)
-	end
-
-	G = Gn(m, g, idx, level)
-
-	order = Int(length(idx) / 2)
-	p = g.partition[order-1]
-	for (li, l) in enumerate(p.l)
-		# printstyled("...."^level, "begin $(level): ", idx, " => ", idx[l], ", ", idx[p.r[li]], ": parity: ", 1, " --> ", p.sign[li], "\n", color=:yellow)
-		disconnected = Gnc(m, g, idx[l], level + 1) * Gn(m, g, idx[p.r[li]], level + 1)
-		m.isfermi && (disconnected *= p.sign[li])
-		G -= disconnected
-		# printstyled("...."^level, "end $(level)\n", color=:yellow)
-	end
-	# printstyled("...."^level, "end $level Gc-$idx $G\n", color=:red)
-	return G
 end
 
 function G2(m::Model, g::GreenN)

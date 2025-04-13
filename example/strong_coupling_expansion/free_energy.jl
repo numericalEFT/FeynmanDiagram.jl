@@ -134,8 +134,6 @@ function free_energy(_partition::Vector{T}; filter = [], leaf_dep_funcs::Vector{
 	max_totalorder = maximum([sum(p) for p in _partition])
 	dict_graphs = Dict{NTuple{2, Int}, Vector{Graph}}()
 
-	println(_partition)
-	println(min_order, max_order, max_totalorder)
 	for order in min_order:max_order
 		para = DiagPara(type = VacuumDiag, innerLoopNum = order, hasTau = true, interaction = inter, totalTauNum = 2order, filter = filter)
 		push!(diagpara, para)
@@ -144,13 +142,14 @@ function free_energy(_partition::Vector{T}; filter = [], leaf_dep_funcs::Vector{
 		topologies = generate_topologies(order)
 
 		extT = [[2 * i - 1, 2 * i] for i in 1:order]
-		creations = [(true, false) for _ in 1:order]
+		creations = [[true, false] for _ in 1:order]
 
 		graphs_fE = []
 		sub_factors = []
 		orbitals = assign_orbitals(order)
 		for (sites, factor) in topologies
 			println("sites: ", sites)
+			println("factor: ", factor)
 			for orbital in orbitals
 				println(orbital, "t: ", extT)
 				push!(graphs_fE, SCE.connectedGreen(para, sites, orbital, extT, creations))
@@ -168,7 +167,6 @@ function free_energy(_partition::Vector{T}; filter = [], leaf_dep_funcs::Vector{
 		dict_graph_order = taylorAD(graph_order, renormalization_orders, leaf_dep_funcs)
 		for key in keys(dict_graph_order)
 			p = (order, key...)
-			println("key: ", key, " p: ", p)
 			if p in _partition
 				dict_graphs[p] = dict_graph_order[key]
 			end

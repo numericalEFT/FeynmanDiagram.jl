@@ -5,6 +5,7 @@ using MCIntegration
 using Printf
 using Measurements
 using JLD2
+using DataStructures
 
 include("free_energy.jl")
 
@@ -19,12 +20,25 @@ struct ParaMC
 	order::Int
 end
 
-t, U, μ, β, n = 1.0, 3.0, 1.0, 1.0, 0
+paraid(p::ParaMC) = Dict(
+	"order" => p.order,
+	"beta" => p.β,
+	"lambda" => p.lambda,
+	"mu" => p.μ,
+	"U" => p.U,
+	"Lx" => p.Lx,
+	"Ly" => p.Ly,
+)
+short(p::ParaMC) = join(["$(k)_$(v)" for (k, v) in sort!(OrderedDict(paraid(p)))], "_")
+
+# t, U, μ, β, n = 1.0, 3.0, 1.0, 1.0, 0
+# t, U, μ, β, n = 1.0, 8.0, 1.0, 1.0, 0
+t, U, μ, β, n = 1.0, 4.0, 0.5, 2.0, 0
 Lx, Ly = 2, 1
-# lam = 0.4
-lam = 0.1
-# lam = 0.05
-order = 4
+# lam = 0.2
+# lam = 0.1
+lam = 0.01
+order = 2
 
 para = ParaMC(μ, U, β, n, Lx, Ly, lam, order)
 m = Hubbard.hubbardAtom(:fermi, U, μ, β)
@@ -51,8 +65,8 @@ function disperion_FBC(Lx, Ly, t)
 	for xi in 1:Lx
 		for yi in 1:Ly
 			k = [π * xi / (Lx + 1), π * yi / (Ly + 1)]
-			ϵk[1, 1, xi, yi] = -2 * t * sum(cos.(k))
-			ϵk[2, 2, xi, yi] = -2 * t * sum(cos.(k))
+			ϵk[1, 1, xi, yi] = -2t * sum(cos.(k))
+			ϵk[2, 2, xi, yi] = -2t * sum(cos.(k))
 		end
 	end
 	return ϵk
@@ -124,6 +138,7 @@ function green_counterterm_FBC(para::ParaMC, τ::T, r1::Vector{Int}, r2::Vector{
 			g2c_τ = 0.0
 			for o in 0:order
 				g2c_τ += propagator_derivative(τ, ω, β, o) * ω^o * binomial(order, o) * (-1)^o
+				# g2c_τ += propagator_derivative(τ, ω, β, o) * ω^o * binomial(order, o)
 			end
 
 			phi_r1 = prod(sin.(k .* r1))
@@ -137,7 +152,7 @@ end
 
 function integrand(idx, vars, config)
 	para, root, graphfuncs! = config.userdata[1:3]
-	leafval, leafType, leafOrders, leafτ_i, leafτ_o, leafSites, leaforbitals = config.userdata[4]
+	leafval, leafType, leafOrders, leafSites, leafτ_i, leafτ_o, leaforbitals_i, leaforbitals_o = config.userdata[4]
 	model = config.userdata[5]
 	varT, varR = vars
 
@@ -145,22 +160,24 @@ function integrand(idx, vars, config)
 		if lftype == 0
 			continue
 		elseif lftype == 3  # BareGreenNId
-			τ = vcat(varT[leafτ_i[idx][i]], varT[leafτ_o[idx][i]])
-			_gn = Green.GreenN(model, τ, leaforbitals[idx][i])
-			leafval[idx][i] = Green.Gnc(model, _gn)
+			# τ = vcat(varT[leafτ_i[idx][i]], varT[leafτ_o[idx][i]])
+			τ = vcat(varT[leafτ_o[idx][i]], varT[leafτ_i[idx][i]])
+			orbitals = vcat(leaforbitals_o[idx][i], leaforbitals_i[idx][i])
+			_gn = Green.GreenN(model, τ, orbitals)
+			# leafval[idx][i] = Green.Gnc(model, _gn)
+			leafval[idx][i] = Green.Gn(model, _gn)
 		elseif lftype == 4  # BareHoppingId
-			if leaforbitals[idx][i][1] != leaforbitals[idx][i][2]
-				leafval[idx][i] = 0.0
-				continue
-			end
+			# if leaforbitals_i[idx][i][1] != leaforbitals_o[idx][i][1]
+			# 	leafval[idx][i] = 0.0
+			# 	continue
+			# end
 			τ = varT[leafτ_o[idx][i][1]] - varT[leafτ_i[idx][i][1]]
 			r1x, r2x = varR[leafSites[idx][i][1]], varR[leafSites[idx][i][2]]
-			# rx = r2 - r1
 			r1y, r2y = 1, 1
 			# @assert leaforbitals[idx][i][1] == leaforbitals[idx][i][2]
 
 			order = leafOrders[idx][i][1]
-			orbital = leaforbitals[idx][i][1]
+			orbital = leaforbitals_i[idx][i][1]
 			leafval[idx][i] = green_counterterm_FBC(para, τ, [r1x, r1y], [r2x, r2y], orbital, order)
 		else
 			error("this leaftype $lftype not implemented!")
@@ -180,15 +197,15 @@ function freeE(model, para::ParaMC, diagram; neval = 1e6, print = 0, kwargs...)
 	for (i, key) in enumerate(partition)
 		funcGraphs![i], leafmap = Compilers.compile(FeynGraphs[key])
 		push!(leaf_maps, leafmap)
-
-		println(funcGraphs![i])
+		# println(funcGraphs![i])
 	end
 
 	leafStat = FeynmanDiagram.leafstates(leaf_maps)
 
 	root = zeros(Float64, 1)
-	T = Continuous(0.0, para.β; offset = 1, adapt = true)
-	T.data[1] = 0.0
+	# T = Continuous(0.0, para.β; offset = 1, adapt = true)
+	# T.data[1] = 0.0
+	T = Continuous(0.0, para.β; adapt = true)
 	R = Discrete(1, 2)
 
 	dof = [[p.totalTauNum - 1, p.innerLoopNum] for p in diagpara]
@@ -214,7 +231,7 @@ function freeE(model, para::ParaMC, diagram; neval = 1e6, print = 0, kwargs...)
 			# r = measurement.(real(avg), real(std))
 			# i = measurement.(imag(avg), imag(std))
 			# data = Complex.(r, i)
-			datadict[key] = measurement.(avg, std)
+			datadict[key] = measurement.(avg, std) / (-para.β)
 		end
 		return datadict, result
 	else
@@ -232,7 +249,11 @@ function freeE_MC(model, para::ParaMC; neval = 1e6, partition = partition(para.o
 	if isnothing(reweight_goal)
 		reweight_goal = Float64[]
 		for (order, sOrder) in partition
-			push!(reweight_goal, 1.0)
+			if sOrder == 0
+				push!(reweight_goal, 2.0)
+			else
+				push!(reweight_goal, 1.0)
+			end
 		end
 		push!(reweight_goal, 2.0)
 	end
@@ -244,12 +265,12 @@ function freeE_MC(model, para::ParaMC; neval = 1e6, partition = partition(para.o
 	if isnothing(freeEnergy) == false
 		if isnothing(filename) == false
 			jldopen(filename, "a+") do f
-				key = "$(UEG.short(para))"
+				key = "$(short(para))"
 				if haskey(f, key)
 					@warn("replacing existing data for $key")
 					delete!(f, key)
 				end
-				f[key] = (free_energy,)
+				f[key] = (freeEnergy,)
 			end
 		end
 		for (ip, key) in enumerate(partition)
@@ -261,9 +282,11 @@ function freeE_MC(model, para::ParaMC; neval = 1e6, partition = partition(para.o
 	return freeEnergy, result
 end
 # _partition = [(1, 0), (1, 1), (1, 2), (1, 3), (1, 4), (2, 0), (2, 1), (2, 2), (2, 3), (2, 4), (3, 0), (3, 1), (3, 2)]
-_partition = [(1, 0), (1, 1), (1, 2), (1, 3), (1, 4), (2, 0), (2, 1), (2, 2), (2, 3), (2, 4)]
-# _partition = partition(2)
+# _partition = [(1, 0), (1, 1), (1, 2), (1, 3), (1, 4), (2, 0), (2, 1), (2, 2), (2, 3), (2, 4)]
+_partition = [(1, 0), (1, 1), (1, 2), (1, 3), (2, 0), (2, 1), (2, 2)]
+# _partition = partition(3)
 # freeE_MC(m, para, partition = _partition, neval = 1e8, filename = "data_freeE.jld2")
-freeE_MC(m, para, partition = _partition, neval = 1e6, filename = "data_freeE.jld2")
+# freeE_MC(m, para, partition = _partition, neval = 4e6, filename = "data_freeE.jld2")
+freeE_MC(m, para, partition = _partition, neval = 2e6)
 
 # println(res)
