@@ -18,6 +18,7 @@ struct ParaMC
 	Ly::Int
 	lambda::Float64
 	order::Int
+	ϵk::Array{Float64, 4}
 end
 
 paraid(p::ParaMC) = Dict(
@@ -31,18 +32,21 @@ paraid(p::ParaMC) = Dict(
 )
 short(p::ParaMC) = join(["$(k)_$(v)" for (k, v) in sort!(OrderedDict(paraid(p)))], "_")
 
-# t, U, μ, β, n = 1.0, 3.0, 1.0, 1.0, 0
-# t, U, μ, β, n = 1.0, 8.0, 1.0, 1.0, 0
-t, U, μ, β, n = 1.0, 4.0, 0.5, 2.0, 0
-Lx, Ly = 2, 1
-# lam = 0.2
-# lam = 0.1
-lam = 0.01
-order = 2
+# t, U, μ, β, n = 1.0, 8.0, 1.0, 0.5, 0
+# # t, U, μ, β, n = 1.0, 4.0, 0.5, 2.0, 0
+# Lx, Ly = 2, 1
+# # lam = 0.2
+# # lam = 0.1
+# lam = 0.01
+# order = 2
 
-para = ParaMC(μ, U, β, n, Lx, Ly, lam, order)
-m = Hubbard.hubbardAtom(:fermi, U, μ, β)
+# para = ParaMC(μ, U, β, n, Lx, Ly, lam, order)
+# m = Hubbard.hubbardAtom(:fermi, U, μ, β)
 
+function F0(para::ParaMC)
+	return -log((1+exp(para.β))*(1+exp(-para.β))) / para.β
+end
+# println("F0 = ", F0(para))
 
 function disperion_PBC(Lx, Ly, t)
 	No = 2 # spin up/down
@@ -71,8 +75,6 @@ function disperion_FBC(Lx, Ly, t)
 	end
 	return ϵk
 end
-
-const ϵk = disperion_FBC(para.Lx, para.Ly, t)
 
 function propagator(τ::T, ω::T, β::T) where {T}
 	if τ ≈ T(0.0)
@@ -109,7 +111,7 @@ function propagator_derivative(τ, ϵ, β, order)
 end
 
 function green_counterterm_PBC(para::ParaMC, τ::T, rx::Int, ry::Int, orbital::Int, order::Int) where {T}
-	β, Lx, Ly = para.β, para.Lx, para.Ly
+	β, Lx, Ly, ϵk = para.β, para.Lx, para.Ly, para.ϵk
 	g2c = 0.0
 	N = Lx * Ly
 	for xi in 1:Lx
@@ -128,7 +130,7 @@ function green_counterterm_PBC(para::ParaMC, τ::T, rx::Int, ry::Int, orbital::I
 end
 
 function green_counterterm_FBC(para::ParaMC, τ::T, r1::Vector{Int}, r2::Vector{Int}, orbital::Int, order::Int) where {T}
-	β, Lx, Ly = para.β, para.Lx, para.Ly
+	β, Lx, Ly, ϵk = para.β, para.Lx, para.Ly, para.ϵk
 	g2c = 0.0
 	prefactor = 4 / (Lx + 1) / (Ly + 1)
 	for xi in 1:Lx
@@ -203,13 +205,14 @@ function freeE(model, para::ParaMC, diagram; neval = 1e6, print = 0, kwargs...)
 	leafStat = FeynmanDiagram.leafstates(leaf_maps)
 
 	root = zeros(Float64, 1)
-	# T = Continuous(0.0, para.β; offset = 1, adapt = true)
-	# T.data[1] = 0.0
-	T = Continuous(0.0, para.β; adapt = true)
+	T = Continuous(0.0, para.β; offset = 1, adapt = true)
+	T.data[1] = 0.0
 	R = Discrete(1, 2)
 
 	dof = [[p.totalTauNum - 1, p.innerLoopNum] for p in diagpara]
 	obs = zeros(Float64, length(diagpara))
+
+	println("dof: ", dof)
 
 	config = Configuration(; var = (T, R), dof = dof, obs = obs, type = Float64,
 		userdata = (para, root, funcGraphs!, leafStat, model))
@@ -250,7 +253,7 @@ function freeE_MC(model, para::ParaMC; neval = 1e6, partition = partition(para.o
 		reweight_goal = Float64[]
 		for (order, sOrder) in partition
 			if sOrder == 0
-				push!(reweight_goal, 2.0)
+				push!(reweight_goal, 4.0)
 			else
 				push!(reweight_goal, 1.0)
 			end
@@ -281,12 +284,13 @@ function freeE_MC(model, para::ParaMC; neval = 1e6, partition = partition(para.o
 	end
 	return freeEnergy, result
 end
-# _partition = [(1, 0), (1, 1), (1, 2), (1, 3), (1, 4), (2, 0), (2, 1), (2, 2), (2, 3), (2, 4), (3, 0), (3, 1), (3, 2)]
+# # _partition = [(1, 0), (1, 1), (1, 2), (1, 3), (1, 4), (2, 0), (2, 1), (2, 2), (2, 3), (2, 4), (3, 0), (3, 1), (3, 2)]
 # _partition = [(1, 0), (1, 1), (1, 2), (1, 3), (1, 4), (2, 0), (2, 1), (2, 2), (2, 3), (2, 4)]
-_partition = [(1, 0), (1, 1), (1, 2), (1, 3), (2, 0), (2, 1), (2, 2)]
-# _partition = partition(3)
-# freeE_MC(m, para, partition = _partition, neval = 1e8, filename = "data_freeE.jld2")
+# # _partition = [(1, 0), (1, 1), (1, 2), (1, 3), (2, 0), (2, 1), (2, 2)]
+# # _partition = partition(3)
+# # freeE_MC(m, para, partition = _partition, neval = 1e8, filename = "data_freeE.jld2")
 # freeE_MC(m, para, partition = _partition, neval = 4e6, filename = "data_freeE.jld2")
-freeE_MC(m, para, partition = _partition, neval = 2e6)
+# # freeE_MC(m, para, partition = _partition, neval = 2e6)
 
-# println(res)
+# # println(res)
+# println("F0 = ", F0(para))
