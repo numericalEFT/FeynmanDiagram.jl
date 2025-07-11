@@ -1,7 +1,5 @@
 include("./input.jl")
-# include("./calc_free_energy_v1.jl")
-# include("./calc_free_energy_PBC.jl")
-include("./calc_free_energy_PBC_v1.jl")
+include("./calc_free_energy.jl")
 
 function neighbor(partitions)
     n = Vector{Tuple{Int,Int}}()
@@ -33,16 +31,6 @@ for (_μ, _U, _β, lam, order) in Iterators.product(μ, U, β, lambdas, orders)
     model = Hubbard.hubbardAtom(:fermi, _U, _μ, _β)
 
     # _partition = partition(order)
-    # _partition = [(1, 0), (1, 1), (1, 2), (1, 3), (1, 4), (1, 5)]
-    # _partition = [(2, 0), (2, 1), (2, 2), (2, 3)]
-    # _partition = [(2, 0), (2, 1), (4, 0), (4, 1)]
-    # _partition = [(2, 0), (2, 1), (2, 2), (4, 0), (4, 1), (4, 2)]
-    # _partition = [(4, 0), (4, 1), (4, 2), (4, 3)]
-    # _partition = [(2, 0), (4, 0), (4, 1), (4, 2), (4, 3)]
-    # _partition = [(2, 0), (3, 0)]
-    # _partition = [(2, 0),]
-    # _partition = [(2, 0), (2, 1), (2, 2), (2, 3), (4, 0), (4, 1), (4, 2), (4, 3)]
-    # _partition = [(2, 0), (2, 1), (2, 2), (2, 3), (4, 0), (4, 1), (4, 2)]
 
     # _partition = [(2, 0), (2, 1), (2, 2), (2, 3), (3, 0), (3, 1), (3, 2), (3, 3)]
     _partition = [(2, 0), (2, 1), (2, 2), (3, 0), (3, 1), (3, 2)]

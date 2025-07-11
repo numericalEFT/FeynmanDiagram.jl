@@ -9,13 +9,13 @@ using LinearAlgebra
 @enum TwoBodyChannel Alli = 1 PHr PHEr PPr AnyChan
 
 @enum Filter begin
-	Wirreducible  #remove all polarization subdiagrams
-	Girreducible  #remove all self-energy inseration
-	NoHartree
-	NoFock
-	NoBubble  # true to remove all bubble subdiagram
-	Proper  #ver4, ver3, and polarization diagrams may require to be irreducible along the transfer momentum/frequency
-	DirectOnly # only direct interaction, this can be useful for debug purpose
+    Wirreducible  #remove all polarization subdiagrams
+    Girreducible  #remove all self-energy inseration
+    NoHartree
+    NoFock
+    NoBubble  # true to remove all bubble subdiagram
+    Proper  #ver4, ver3, and polarization diagrams may require to be irreducible along the transfer momentum/frequency
+    DirectOnly # only direct interaction, this can be useful for debug purpose
 end
 
 Base.length(r::Filter) = 1
@@ -23,13 +23,13 @@ Base.iterate(r::Filter) = (r, nothing)
 function Base.iterate(r::Filter, ::Nothing) end
 
 @enum Response begin
-	Composite
-	ChargeCharge
-	SpinSpin
-	ProperChargeCharge
-	ProperSpinSpin
-	UpUp
-	UpDown
+    Composite
+    ChargeCharge
+    SpinSpin
+    ProperChargeCharge
+    ProperSpinSpin
+    UpUp
+    UpDown
 end
 
 Base.length(r::Response) = 1
@@ -37,8 +37,8 @@ Base.iterate(r::Response) = (r, nothing)
 function Base.iterate(r::Response, ::Nothing) end
 
 @enum AnalyticProperty begin
-	Instant
-	Dynamic
+    Instant
+    Dynamic
 end
 
 Base.length(r::AnalyticProperty) = 1
@@ -46,35 +46,35 @@ Base.iterate(r::AnalyticProperty) = (r, nothing)
 function Base.iterate(r::AnalyticProperty, ::Nothing) end
 
 function short(name::Response)
-	if name == ChargeCharge
-		return "cc"
-	elseif name == SpinSpin
-		return "σσ"
-	elseif name == UpUp
-		return "↑↑"
-	elseif name == UpDown
-		return "↑↓"
-	else
-		@error("$name is not implemented!")
-	end
+    if name == ChargeCharge
+        return "cc"
+    elseif name == SpinSpin
+        return "σσ"
+    elseif name == UpUp
+        return "↑↑"
+    elseif name == UpDown
+        return "↑↓"
+    else
+        @error("$name is not implemented!")
+    end
 end
 
 function short(type::AnalyticProperty)
-	if type == Instant
-		return "Ins"
-	elseif type == Dynamic
-		return "Dyn"
-	else
-		@error("$type is not implemented!")
-	end
+    if type == Instant
+        return "Ins"
+    elseif type == Dynamic
+        return "Dyn"
+    else
+        @error("$type is not implemented!")
+    end
 end
 
-function symbol(name::Response, type::AnalyticProperty, addition = nothing)
-	if isnothing(addition)
-		return Symbol("$(short(name))$(short(type))")
-	else
-		return Symbol("$(short(name))$(short(type))$(addition)")
-	end
+function symbol(name::Response, type::AnalyticProperty, addition=nothing)
+    if isnothing(addition)
+        return Symbol("$(short(name))$(short(type))")
+    else
+        return Symbol("$(short(name))$(short(type))$(addition)")
+    end
 
 end
 
@@ -115,51 +115,51 @@ export SCE
 # Returns
 - A tuple of vectors containing information about the leaves of graphs, including their initial values, types, orders, input and output time indexes, and loop-momenta indexes.
 """
-function leafstates(leaf_maps::Vector{Dict{Int, G}}, labelProd::LabelProduct) where {G <: Union{Graph, FeynmanGraph}}
-	#read information of each leaf from the generated graph and its LabelProduct, the information include type, loop momentum, imaginary time.
-	num_g = length(leaf_maps)
-	leafType = [Vector{Int}() for _ in 1:num_g]
-	leafOrders = [Vector{Vector{Int}}() for _ in 1:num_g]
-	leafInTau = [Vector{Int}() for _ in 1:num_g]
-	leafOutTau = [Vector{Int}() for _ in 1:num_g]
-	leafLoopIndex = [Vector{Int}() for _ in 1:num_g]
-	leafValue = [Vector{Float64}() for _ in 1:num_g]
+function leafstates(leaf_maps::Vector{Dict{Int,G}}, labelProd::LabelProduct) where {G<:Union{Graph,FeynmanGraph}}
+    #read information of each leaf from the generated graph and its LabelProduct, the information include type, loop momentum, imaginary time.
+    num_g = length(leaf_maps)
+    leafType = [Vector{Int}() for _ in 1:num_g]
+    leafOrders = [Vector{Vector{Int}}() for _ in 1:num_g]
+    leafInTau = [Vector{Int}() for _ in 1:num_g]
+    leafOutTau = [Vector{Int}() for _ in 1:num_g]
+    leafLoopIndex = [Vector{Int}() for _ in 1:num_g]
+    leafValue = [Vector{Float64}() for _ in 1:num_g]
 
-	for (ikey, leafmap) in enumerate(leaf_maps)
-		len_leaves = length(keys(leafmap))
-		sizehint!(leafType[ikey], len_leaves)
-		sizehint!(leafOrders[ikey], len_leaves)
-		sizehint!(leafInTau[ikey], len_leaves)
-		sizehint!(leafOutTau[ikey], len_leaves)
-		sizehint!(leafLoopIndex[ikey], len_leaves)
-		leafValue[ikey] = ones(Float64, len_leaves)
+    for (ikey, leafmap) in enumerate(leaf_maps)
+        len_leaves = length(keys(leafmap))
+        sizehint!(leafType[ikey], len_leaves)
+        sizehint!(leafOrders[ikey], len_leaves)
+        sizehint!(leafInTau[ikey], len_leaves)
+        sizehint!(leafOutTau[ikey], len_leaves)
+        sizehint!(leafLoopIndex[ikey], len_leaves)
+        leafValue[ikey] = ones(Float64, len_leaves)
 
-		for idx in 1:len_leaves
-			g = leafmap[idx]
-			vertices = g.properties.vertices
-			if ComputationalGraphs.diagram_type(g) == ComputationalGraphs.Interaction
-				In = Out = vertices[1][1].label
-				push!(leafType[ikey], 0)
-				push!(leafLoopIndex[ikey], 1)
-			elseif ComputationalGraphs.diagram_type(g) == ComputationalGraphs.Propagator
-				if (Op.isfermionic(vertices[1]))
-					In, Out = vertices[2][1].label, vertices[1][1].label
-					# push!(leafType[ikey], g.orders[1] * 2 + 1)
-					push!(leafType[ikey], 1)
-					push!(leafLoopIndex[ikey], FrontEnds.linear_to_index(labelProd, In)[end]) #the label of LoopPool for each fermionic leaf
-				else
-					In, Out = vertices[2][1].label, vertices[1][1].label
-					# push!(leafType[ikey], g.orders[2] * 2 + 2)
-					push!(leafType[ikey], 2)
-					push!(leafLoopIndex[ikey], FrontEnds.linear_to_index(labelProd, In)[end]) #the label of LoopPool for each bosonic leaf
-				end
-			end
-			push!(leafOrders[ikey], g.orders)
-			push!(leafInTau[ikey], labelProd[In][1])
-			push!(leafOutTau[ikey], labelProd[Out][1])
-		end
-	end
-	return (leafValue, leafType, leafOrders, leafInTau, leafOutTau, leafLoopIndex)
+        for idx in 1:len_leaves
+            g = leafmap[idx]
+            vertices = g.properties.vertices
+            if ComputationalGraphs.diagram_type(g) == ComputationalGraphs.Interaction
+                In = Out = vertices[1][1].label
+                push!(leafType[ikey], 0)
+                push!(leafLoopIndex[ikey], 1)
+            elseif ComputationalGraphs.diagram_type(g) == ComputationalGraphs.Propagator
+                if (Op.isfermionic(vertices[1]))
+                    In, Out = vertices[2][1].label, vertices[1][1].label
+                    # push!(leafType[ikey], g.orders[1] * 2 + 1)
+                    push!(leafType[ikey], 1)
+                    push!(leafLoopIndex[ikey], FrontEnds.linear_to_index(labelProd, In)[end]) #the label of LoopPool for each fermionic leaf
+                else
+                    In, Out = vertices[2][1].label, vertices[1][1].label
+                    # push!(leafType[ikey], g.orders[2] * 2 + 2)
+                    push!(leafType[ikey], 2)
+                    push!(leafLoopIndex[ikey], FrontEnds.linear_to_index(labelProd, In)[end]) #the label of LoopPool for each bosonic leaf
+                end
+            end
+            push!(leafOrders[ikey], g.orders)
+            push!(leafInTau[ikey], labelProd[In][1])
+            push!(leafOutTau[ikey], labelProd[Out][1])
+        end
+    end
+    return (leafValue, leafType, leafOrders, leafInTau, leafOutTau, leafLoopIndex)
 end
 
 """
@@ -178,123 +178,129 @@ end
 - A tuple of vectors containing information about the leaves of graphs, including their initial values, types, orders, input and output time indexes, and loop-momenta indexes.
 - Loop-momentum basis (`::Vector{Vector{Float64}}`) for all the graphs.
 """
-function leafstates(leaf_maps::Vector{Dict{Int, G}}, maxloopNum::Int) where {G <: Graph}
+function leafstates(leaf_maps::Vector{Dict{Int,G}}, maxloopNum::Int) where {G<:Graph}
 
-	num_g = length(leaf_maps)
-	leafType = [Vector{Int}() for _ in 1:num_g]
-	leafOrders = [Vector{Vector{Int}}() for _ in 1:num_g]
-	leafInTau = [Vector{Int}() for _ in 1:num_g]
-	leafOutTau = [Vector{Int}() for _ in 1:num_g]
-	leafLoopIndex = [Vector{Int}() for _ in 1:num_g]
-	leafValue = [Vector{Float64}() for _ in 1:num_g]
+    num_g = length(leaf_maps)
+    leafType = [Vector{Int}() for _ in 1:num_g]
+    leafOrders = [Vector{Vector{Int}}() for _ in 1:num_g]
+    leafInTau = [Vector{Int}() for _ in 1:num_g]
+    leafOutTau = [Vector{Int}() for _ in 1:num_g]
+    leafLoopIndex = [Vector{Int}() for _ in 1:num_g]
+    leafValue = [Vector{Float64}() for _ in 1:num_g]
 
-	loopbasis = Vector{Float64}[]
-	for (ikey, leafmap) in enumerate(leaf_maps)
-		len_leaves = length(keys(leafmap))
-		sizehint!(leafType[ikey], len_leaves)
-		sizehint!(leafOrders[ikey], len_leaves)
-		sizehint!(leafInTau[ikey], len_leaves)
-		sizehint!(leafOutTau[ikey], len_leaves)
-		sizehint!(leafLoopIndex[ikey], len_leaves)
-		leafValue[ikey] = ones(Float64, len_leaves)
+    loopbasis = Vector{Float64}[]
+    for (ikey, leafmap) in enumerate(leaf_maps)
+        len_leaves = length(keys(leafmap))
+        sizehint!(leafType[ikey], len_leaves)
+        sizehint!(leafOrders[ikey], len_leaves)
+        sizehint!(leafInTau[ikey], len_leaves)
+        sizehint!(leafOutTau[ikey], len_leaves)
+        sizehint!(leafLoopIndex[ikey], len_leaves)
+        leafValue[ikey] = ones(Float64, len_leaves)
 
-		for idx in 1:len_leaves
-			leaf = leafmap[idx]
-			@assert ComputationalGraphs.isleaf(leaf)
-			diagId, leaf_orders = leaf.properties, leaf.orders
-			loopmom = copy(diagId.extK)
-			len = length(loopmom)
-			@assert maxloopNum >= len
+        for idx in 1:len_leaves
+            leaf = leafmap[idx]
+            @assert ComputationalGraphs.isleaf(leaf)
+            diagId, leaf_orders = leaf.properties, leaf.orders
+            loopmom = copy(diagId.extK)
+            len = length(loopmom)
+            @assert maxloopNum >= len
 
-			if maxloopNum > length(loopmom)
-				Base.append!(loopmom, zeros(Float64, maxloopNum - len))
-			end
-			flag = true
-			for bi in eachindex(loopbasis)
-				if loopbasis[bi] ≈ loopmom
-					push!(leafLoopIndex[ikey], bi)
-					flag = false
-					break
-				end
-			end
-			if flag
-				push!(loopbasis, loopmom)
-				push!(leafLoopIndex[ikey], length(loopbasis))
-			end
+            if maxloopNum > length(loopmom)
+                Base.append!(loopmom, zeros(Float64, maxloopNum - len))
+            end
+            flag = true
+            for bi in eachindex(loopbasis)
+                if loopbasis[bi] ≈ loopmom
+                    push!(leafLoopIndex[ikey], bi)
+                    flag = false
+                    break
+                end
+            end
+            if flag
+                push!(loopbasis, loopmom)
+                push!(leafLoopIndex[ikey], length(loopbasis))
+            end
 
-			push!(leafInTau[ikey], diagId.extT[1])
-			push!(leafOutTau[ikey], diagId.extT[2])
+            push!(leafInTau[ikey], diagId.extT[1])
+            push!(leafOutTau[ikey], diagId.extT[2])
 
-			push!(leafOrders[ikey], leaf_orders)
-			push!(leafType[ikey], FrontEnds.index(typeof(diagId)))
+            push!(leafOrders[ikey], leaf_orders)
+            push!(leafType[ikey], FrontEnds.index(typeof(diagId)))
 
-		end
-	end
+        end
+    end
 
-	return (leafValue, leafType, leafOrders, leafInTau, leafOutTau, leafLoopIndex), loopbasis
+    return (leafValue, leafType, leafOrders, leafInTau, leafOutTau, leafLoopIndex), loopbasis
 end
 
-function leafstates(leaf_maps::Vector{Dict{Int, G}}) where {G <: Graph}
+function leafstates(leaf_maps::Vector{Dict{Int,G}}; dtype::DataType=Float64) where {G<:Graph}
 
-	num_g = length(leaf_maps)
-	leafType = [Vector{Int}() for _ in 1:num_g]
-	leafOrders = [Vector{Vector{Int}}() for _ in 1:num_g]
-	leafInOrbitals = [Vector{Vector{Int}}() for _ in 1:num_g]
-	leafOutOrbitals = [Vector{Vector{Int}}() for _ in 1:num_g]
-	leafInTaus = [Vector{Vector{Int}}() for _ in 1:num_g]
-	leafOutTaus = [Vector{Vector{Int}}() for _ in 1:num_g]
-	leafSites = [Vector{Vector{Int}}() for _ in 1:num_g]
-	leafValue = [Vector{Float64}() for _ in 1:num_g]
+    num_g = length(leaf_maps)
+    leafType = [Vector{Int}() for _ in 1:num_g]
+    leafOrders = [Vector{Vector{Int}}() for _ in 1:num_g]
+    leafInOrbitals = [Vector{Vector{Int}}() for _ in 1:num_g]
+    leafOutOrbitals = [Vector{Vector{Int}}() for _ in 1:num_g]
+    leafInTaus = [Vector{Vector{Int}}() for _ in 1:num_g]
+    leafOutTaus = [Vector{Vector{Int}}() for _ in 1:num_g]
+    leafSites = [Vector{Vector{Int}}() for _ in 1:num_g]
+    leafValue = [Vector{dtype}() for _ in 1:num_g]
 
-	for (ikey, leafmap) in enumerate(leaf_maps)
-		len_leaves = length(keys(leafmap))
-		sizehint!(leafType[ikey], len_leaves)
-		sizehint!(leafOrders[ikey], len_leaves)
-		sizehint!(leafInOrbitals[ikey], len_leaves)
-		sizehint!(leafOutOrbitals[ikey], len_leaves)
-		sizehint!(leafInTaus[ikey], len_leaves)
-		sizehint!(leafOutTaus[ikey], len_leaves)
-		sizehint!(leafSites[ikey], len_leaves)
-		leafValue[ikey] = ones(Float64, len_leaves)
+    for (ikey, leafmap) in enumerate(leaf_maps)
+        len_leaves = length(keys(leafmap))
+        sizehint!(leafType[ikey], len_leaves)
+        sizehint!(leafOrders[ikey], len_leaves)
+        sizehint!(leafInOrbitals[ikey], len_leaves)
+        sizehint!(leafOutOrbitals[ikey], len_leaves)
+        sizehint!(leafInTaus[ikey], len_leaves)
+        sizehint!(leafOutTaus[ikey], len_leaves)
+        sizehint!(leafSites[ikey], len_leaves)
+        leafValue[ikey] = ones(dtype, len_leaves)
 
-		for idx in 1:len_leaves
-			leaf = leafmap[idx]
-			@assert ComputationalGraphs.isleaf(leaf)
-			diagId, leaf_orders = leaf.properties, leaf.orders
+        for idx in 1:len_leaves
+            leaf = leafmap[idx]
+            @assert ComputationalGraphs.isleaf(leaf)
+            diagId, leaf_orders = leaf.properties, leaf.orders
 
-			if typeof(diagId) <: BareGreenNId
-				push!(leafInTaus[ikey], diagId.extT[diagId.creation])
-				push!(leafOutTaus[ikey], diagId.extT[.!(diagId.creation)])
-				push!(leafInOrbitals[ikey], diagId.orbital[diagId.creation])
-				push!(leafOutOrbitals[ikey], diagId.orbital[.!diagId.creation])
-				# push!(leafOrbitals[ikey], vcat(diagId.orbital[.!diagId.creation], diagId.orbital[diagId.creation]))
-				push!(leafSites[ikey], [diagId.site])
-			elseif typeof(diagId) <: BareHoppingId
-				push!(leafInTaus[ikey], [diagId.extT[1]])
-				push!(leafOutTaus[ikey], [diagId.extT[2]])
-				# push!(leafOrbitals[ikey], collect(diagId.orbital))
-				push!(leafInOrbitals[ikey], [diagId.orbital[1]])
-				push!(leafOutOrbitals[ikey], [diagId.orbital[2]])
-				push!(leafSites[ikey], collect(diagId.site))
-			elseif isnothing(diagId)
-				push!(leafInTaus[ikey], [])
-				push!(leafOutTaus[ikey], [])
-				push!(leafInOrbitals[ikey], [])
-				push!(leafOutOrbitals[ikey], [])
-				push!(leafSites[ikey], [])
-			else
-				println(diagId)
-				println(typeof(diagId))
-				error("Only support leafs with BareGreenNId and BareHoppingId.")
-			end
+            if typeof(diagId) <: BareGreenNId
+                push!(leafInTaus[ikey], diagId.extT[diagId.creation])
+                push!(leafOutTaus[ikey], diagId.extT[.!(diagId.creation)])
+                push!(leafInOrbitals[ikey], diagId.orbital[diagId.creation])
+                push!(leafOutOrbitals[ikey], diagId.orbital[.!diagId.creation])
+                push!(leafSites[ikey], [diagId.site])
+            elseif typeof(diagId) <: BareHoppingId
+                push!(leafInTaus[ikey], [diagId.extT[1]])
+                push!(leafOutTaus[ikey], [diagId.extT[2]])
+                # push!(leafOrbitals[ikey], collect(diagId.orbital))
+                push!(leafInOrbitals[ikey], [diagId.orbital[1]])
+                push!(leafOutOrbitals[ikey], [diagId.orbital[2]])
+                push!(leafSites[ikey], collect(diagId.site))
+            elseif typeof(diagId) <: GreenNId
+                push!(leafInTaus[ikey], diagId.extT[diagId.creation])
+                push!(leafOutTaus[ikey], diagId.extT[.!(diagId.creation)])
+                push!(leafInOrbitals[ikey], diagId.orbital[diagId.creation])
+                push!(leafOutOrbitals[ikey], diagId.orbital[.!diagId.creation])
+                # push!(leafSites[ikey], collect(diagId.site))
+                push!(leafSites[ikey], vcat(diagId.site[diagId.creation], diagId.site[.!diagId.creation]))
+            elseif isnothing(diagId)
+                push!(leafInTaus[ikey], [])
+                push!(leafOutTaus[ikey], [])
+                push!(leafInOrbitals[ikey], [])
+                push!(leafOutOrbitals[ikey], [])
+                push!(leafSites[ikey], [])
+            else
+                println(diagId)
+                println(typeof(diagId))
+                error("Only support leafs with BareGreenNId and BareHoppingId.")
+            end
 
-			push!(leafOrders[ikey], leaf_orders)
-			push!(leafType[ikey], FrontEnds.index(typeof(diagId)))
+            push!(leafOrders[ikey], leaf_orders)
+            push!(leafType[ikey], FrontEnds.index(typeof(diagId)))
 
-		end
-	end
+        end
+    end
 
-	return (leafValue, leafType, leafOrders, leafSites, leafInTaus, leafOutTaus, leafInOrbitals, leafOutOrbitals)
+    return (leafValue, leafType, leafOrders, leafSites, leafInTaus, leafOutTaus, leafInOrbitals, leafOutOrbitals)
 end
 
 export leafstates

@@ -6,9 +6,11 @@ using Printf
 using Measurements
 using JLD2
 using DataStructures
-using LinearAlgebra: det
+# using LinearAlgebra: det
+using LinearAlgebra
+using Random
 
-include("free_energy.jl")
+include("free_energy_v1.jl")
 
 struct ParaMC
     μ::Float64
@@ -33,17 +35,6 @@ paraid(p::ParaMC) = Dict(
 )
 short(p::ParaMC) = join(["$(k)_$(v)" for (k, v) in sort!(OrderedDict(paraid(p)))], "_")
 
-# t, U, μ, β, n = 1.0, 8.0, 1.0, 0.5, 0
-# # t, U, μ, β, n = 1.0, 4.0, 0.5, 2.0, 0
-# Lx, Ly = 2, 1
-# # lam = 0.2
-# # lam = 0.1
-# lam = 0.01
-# order = 2
-
-# para = ParaMC(μ, U, β, n, Lx, Ly, lam, order)
-# m = Hubbard.hubbardAtom(:fermi, U, μ, β)
-
 function F0(para::ParaMC)
     return -log((1 + exp(para.β)) * (1 + exp(-para.β))) / para.β
 end
@@ -56,8 +47,8 @@ function disperion_PBC(Lx, Ly, t)
     for xi in 1:Lx
         for yi in 1:Ly
             kx, ky = 2π * (xi - 1) / Lx, 2π * (yi - 1) / Ly
-            ϵk[1, 1, xi, yi] = -2t * cos(kx)
-            ϵk[2, 2, xi, yi] = -2t * cos(kx)
+            ϵk[1, 1, xi, yi] = -2t * (cos(kx) + cos(ky))
+            ϵk[2, 2, xi, yi] = -2t * (cos(kx) + cos(ky))
         end
     end
     return ϵk
@@ -111,12 +102,14 @@ function propagator_derivative(τ, ϵ, β, order)
     return result
 end
 
+# function green_counterterm_PBC(para::ParaMC, τ::T, rx::Int, ry::Int, orbital::Int, order::Int) where {T}
 function green_counterterm_PBC(para::ParaMC, τ::T, r1::Vector{Int}, r2::Vector{Int}, orbital::Int, order::Int) where {T}
     β, Lx, Ly, ϵk = para.β, para.Lx, para.Ly, para.ϵk
     g2c = 0.0
     N = Lx * Ly
     for xi in 1:Lx
         for yi in 1:Ly
+            # kx, ky = 2π * (xi - 1) / Lx, 2π * (yi - 1) / Ly
             k = [2π * (xi - 1) / Lx, 2π * (yi - 1) / Ly]
             ω = -1.0 / ϵk[orbital, orbital, xi, yi]
             lambda = sign(ω) * para.lambda
@@ -124,11 +117,13 @@ function green_counterterm_PBC(para::ParaMC, τ::T, r1::Vector{Int}, r2::Vector{
             g2c_τ = 0.0
             for o in 0:order
                 g2c_τ += propagator_derivative(τ, ω, β, o) * ω^o * binomial(order, o) * (-1)^o
-                # g2c_τ += propagator_derivative(τ, ω, β, o) * ω^o * binomial(order, o)
             end
 
-            # g2c += exp(im * dot(k, (r1 - r2))) * g2c_τ / lambda / N
-            g2c += cos(dot(k, (r1 - r2))) * g2c_τ / lambda / N
+            # g2c += cos(kx * rx + ky * ry) * g2c_τ / lambda / N
+            # g2c += cos(dot(k, (r1 + r2))) * g2c_τ / lambda / N
+            # println(exp(im * dot(k, (r1 - r2))))
+            # g2c += cos(dot(k, (r1 - r2))) * g2c_τ / lambda / N
+            g2c += exp(im * dot(k, (r1 - r2))) * g2c_τ / lambda / N
         end
     end
     return g2c
@@ -174,46 +169,104 @@ function g2(para, τ)
     end
 end
 
+@inline function find_duplicates_with_indices(ri::Vector{T}, ro::Vector{T}) where {T}
+    element_indices = Dict{eltype(ri),Tuple{Vector{Int},Vector{Int}}}()
+    # element_indices = Dict{eltype(ri),Vector{Int}}()
+
+    sites = Set(vcat(ri, ro))
+    for elem in sites
+        idx_i = findall(x -> x == elem, ri)
+        idx_o = findall(x -> x == elem, ro)
+        if length(idx_i) != length(idx_o)
+            return nothing
+        end
+        element_indices[elem] = (idx_i, idx_o)
+        # element_indices[elem] = collect(Iterators.flatten(zip(idx_i, idx_o)))
+    end
+    # for (idx, elem) in pairs(v)
+    #     indices = get!(() -> Int[], element_indices, elem)
+    #     push!(indices, idx)
+    # end
+    return element_indices
+end
+
+@inline function wick_sign(v::Vector{Int})
+    sign = 1
+    for i in eachindex(v)
+        for j in (i+1):length(v)
+            if (v[i] > v[j]) || (v[i] == v[j] && iseven(i) && isodd(j))
+                sign *= -1
+            end
+        end
+    end
+    return sign
+end
+
 function integrand(idx, vars, config)
     para, root, graphfuncs! = config.userdata[1:3]
     leafval, leafType, leafOrders, leafSites, leafτ_i, leafτ_o, leaforbitals_i, leaforbitals_o = config.userdata[4]
     model = config.userdata[5]
     varT, varR = vars
-    ω0 = π / para.β
-    # ω0 = 3π / para.β
+
+    varR_all = varR
+    # varR_all = vcat(varR[1:numR], varR[1:numR])
+    # shuffle!(config.rng, varR_all)
 
     # println("varT: ", varT[1], " ", varT[2])
+    # println("idx: ", idx, " ", varR[1:4idx])
 
     for (i, lftype) in enumerate(leafType[idx])
         if lftype == 0
             continue
-        elseif lftype == 3  # BareGreenNId
-            # println("bare green: ", leafτ_o[idx][i], " ", leafτ_i[idx][i])
-            # τ = vcat(varT[leafτ_i[idx][i]], varT[leafτ_o[idx][i]])
-            τ = vcat(varT[leafτ_o[idx][i]], varT[leafτ_i[idx][i]])
-            orbitals = vcat(leaforbitals_o[idx][i], leaforbitals_i[idx][i])
-            _gn = Green.GreenN(model, τ, orbitals)
-            leafval[idx][i] = Green.Gn(model, _gn)
-            # if length(τ) == 2
-            # 	println("$idx, $(τ[1]-τ[2]), ", leafval[idx][i], " ", g2(para, τ[1]-τ[2]))
-            # end
-            # leafval[idx][i] = Green.Gnc(model, _gn)
         elseif lftype == 4  # BareHoppingId
-            # if leaforbitals_i[idx][i][1] != leaforbitals_o[idx][i][1]
-            # 	leafval[idx][i] = 0.0
-            # 	continue
-            # end
             # println("hopping t: ", leafτ_o[idx][i][1], " ", leafτ_i[idx][i][1])
             τ = varT[leafτ_o[idx][i][1]] - varT[leafτ_i[idx][i][1]]
-            r1 = [varR[leafSites[idx][i][1]], 1]
-            r2 = [varR[leafSites[idx][i][2]], 1]
-            # @assert leaforbitals[idx][i][1] == leaforbitals[idx][i][2]
+            r1 = [varR_all[leafSites[idx][i][1]], 1]
+            r2 = [varR_all[leafSites[idx][i][2]], 1]
 
             order = leafOrders[idx][i][1]
             orbital = leaforbitals_i[idx][i][1]
-            # leafval[idx][i] = green_counterterm_FBC(para, τ, r1, r2, orbital, order) * exp(1im * ω0 * τ)
             # leafval[idx][i] = green_counterterm_FBC(para, τ, r1, r2, orbital, order)
             leafval[idx][i] = green_counterterm_PBC(para, τ, r1, r2, orbital, order)
+        elseif lftype == 5  # BareGreenNId
+            # println("bare green: ", leafτ_o[idx][i], " ", leafτ_i[idx][i])
+            # τ = vcat(varT[leafτ_i[idx][i]], varT[leafτ_o[idx][i]])
+            # orbitals = vcat(leaforbitals_i[idx][i], leaforbitals_o[idx][i])
+
+            τi, τo = varT[leafτ_i[idx][i]], varT[leafτ_o[idx][i]]
+            orbitals_i, orbitals_o = leaforbitals_i[idx][i], leaforbitals_o[idx][i]
+
+            Np = Int(length(leafSites[idx][i]) / 2)
+            sites_i = varR_all[leafSites[idx][i][1:Np]]
+            sites_o = varR_all[leafSites[idx][i][Np+1:end]]
+            r_dict = find_duplicates_with_indices(sites_i, sites_o)
+
+            # println("r_dict: ", r_dict)
+            if isnothing(r_dict)
+                leafval[idx][i] = 0.0
+                continue
+            end
+
+            # r_locs = values(r_dict)
+            # if any(isodd(length(locs)) for locs in r_locs)
+            #     leafval[idx][i] = 0.0
+            #     continue
+            # end
+            leafval[idx][i] = wick_sign(collect(Iterators.flatten(zip(sites_i, sites_o))))
+            # leafval[idx][i] = 1.0
+            # println("r:, $(leafSites[idx][i])", "τ: $τ", r_dict)
+
+            # println(collect(Iterators.flatten(zip(sites_i, sites_o))), leafval[idx][i])
+
+            for (loc_i, loc_o) in values(r_dict)
+                # println(idx, " loc_i: ", loc_i, " loc_o: ", loc_o)
+                # loc = vcat(loc_i, loc_o)
+                # _gn = Green.GreenN(model, τ[loc], orbitals[loc])
+                τ = vcat(τi[loc_i], τo[loc_o])
+                orbitals = vcat(orbitals_i[loc_i], orbitals_o[loc_o])
+                _gn = Green.GreenN(model, τ, orbitals)
+                leafval[idx][i] *= Green.Gn(model, _gn)
+            end
         else
             error("this leaftype $lftype not implemented!")
         end
@@ -226,6 +279,7 @@ function integrand(idx, vars, config)
     # 	# println(idx, " ", root[1])
     # 	println(idx, " ", varR.data[1:4], " ", root[1])
     # end
+    # idx == 2 && println("idx: ", idx, " ", varR_all[1:4idx], " ", floor.(Int, config.propose[2, :, :]), floor.(Int, config.accept[2, :, :]), " ", root[1])
     return root[1]
 end
 
@@ -245,23 +299,26 @@ function freeE(model, para::ParaMC, diagram; neval=1e6, print=0, dtype=ComplexF6
     root = zeros(dtype, 1)
     T = Continuous(0.0, para.β; offset=1, adapt=true)
     T.data[1] = 0.0
-    R = Discrete(1, 2)
+    # R = Discrete(1, para.Lx, adapt=false)
+    R = Discrete(1, para.Lx, adapt=true)
 
-    dof = [[p.totalTauNum - 1, p.innerLoopNum] for p in diagpara]
+    dof = [[p.totalTauNum - 1, p.innerLoopNum * 2] for p in diagpara]
+    # dof = [[p.totalTauNum - 1, p.innerLoopNum] for p in diagpara]
     obs = zeros(dtype, length(diagpara))
+    global_updates = [false, true]
 
     println("dof: ", dof)
 
-    config = Configuration(; var=(T, R), dof=dof, obs=obs, type=dtype,
+    config = Configuration(; var=(T, R), dof=dof, obs=obs, type=dtype, global_updates=global_updates,
         userdata=(para, root, funcGraphs!, leafStat, model))
     result = integrate(integrand; config=config, neval=neval, print=print, solver=:mcmc, kwargs...)
 
     if isnothing(result) == false
-        # if print >= 0
-        # 	report(result.config)
-        # 	println(report(result, pick = o -> first(o)))
-        # 	println(result)
-        # end
+        if print >= 0
+            report(result.config)
+            println(report(result, pick=o -> first(o)))
+            println(result)
+        end
         if print >= -2
             println(result)
         end
@@ -269,11 +326,6 @@ function freeE(model, para::ParaMC, diagram; neval=1e6, print=0, dtype=ComplexF6
         datadict = Dict{eltype(partition),Any}()
         for (o, key) in enumerate(partition)
             avg, std = result.mean[o], result.stdev[o]
-            # r = measurement.(real(avg), real(std))
-            # i = measurement.(imag(avg), imag(std))
-            # data = Complex.(r, i)
-            # datadict[key] = data ./ (-para.β)
-            # datadict[key] = measurement.(avg, std) / (-para.β)
             datadict[key] = -measurement.(avg, std)
         end
         return datadict, result
@@ -305,8 +357,8 @@ function freeE_MC(model, para::ParaMC; neval=1e6, partition=partition(para.order
         _neighbor = neighbor(partition)
     end
 
-    # freeEnergy, result = freeE(model, para, diagram; neval = neval, neighbor = _neighbor,
-    freeEnergy, result = freeE(model, para, diagram; neval=neval,
+    freeEnergy, result = freeE(model, para, diagram; neval=neval, neighbor=_neighbor,
+        # freeEnergy, result = freeE(model, para, diagram; neval=neval,
         reweight_goal=reweight_goal, dtype=dtype, print=print)
 
     if isnothing(freeEnergy) == false
@@ -331,13 +383,3 @@ function freeE_MC(model, para::ParaMC; neval=1e6, partition=partition(para.order
     end
     return freeEnergy, result
 end
-# # _partition = [(1, 0), (1, 1), (1, 2), (1, 3), (1, 4), (2, 0), (2, 1), (2, 2), (2, 3), (2, 4), (3, 0), (3, 1), (3, 2)]
-# _partition = [(1, 0), (1, 1), (1, 2), (1, 3), (1, 4), (2, 0), (2, 1), (2, 2), (2, 3), (2, 4)]
-# # _partition = [(1, 0), (1, 1), (1, 2), (1, 3), (2, 0), (2, 1), (2, 2)]
-# # _partition = partition(3)
-# # freeE_MC(m, para, partition = _partition, neval = 1e8, filename = "data_freeE.jld2")
-# freeE_MC(m, para, partition = _partition, neval = 4e6, filename = "data_freeE.jld2")
-# # freeE_MC(m, para, partition = _partition, neval = 2e6)
-
-# # println(res)
-# println("F0 = ", F0(para))

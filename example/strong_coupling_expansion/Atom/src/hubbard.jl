@@ -7,7 +7,7 @@ using ..Green
 using LinearAlgebra
 # import QuantumStatistics.Basis:tau2matfreq, tau2dlr
 
-function fermiHubbard(t, U, μ, sites, bonds)
+function fermiHubbard(t, U, μ, sites, bonds, h=0.0)
     Nsite = length(sites)
     Fock = Hilbert.BinaryFock(Nsite)
     cu⁺ = [Hilbert.creation(Fock, s, UP) for s in sites]
@@ -20,11 +20,12 @@ function fermiHubbard(t, U, μ, sites, bonds)
     K = sum([cu⁺[i] * cu⁻[j] + cd⁺[i] * cd⁻[j] for (i, j) in bonds])
     V = sum(nu[s] * nd[s] for s in sites)
     C = sum(nu[s] + nd[s] for s in sites)
+    M = sum(nu[s] - nd[s] for s in sites)
 
     # show(stdout, "text/plain", Matrix(K))
     # println()
 
-    H = -t * K + U * V - μ * C
+    H = -t * K + U * V - μ * C - h * M
 
     # show(stdout, "text/plain", Matrix(H))
     # println()
@@ -32,21 +33,21 @@ function fermiHubbard(t, U, μ, sites, bonds)
     return H, cu⁺, cd⁺
 end
 
-function hubbardAtom(type, U, μ, β)
-    E = [0.0, -μ, -μ, U - 2μ]
+function hubbardAtom(type, U, μ, β, h=0.0)
+    E = [0.0, -μ - h, -μ + h, U - 2μ]
     H = zeros(Float, (4, 4))
     H[diagind(H)] = E
 
     # |0>=|00>=1, |↑>=|10>=2, |↓>=|01>=3, |↑↓>=|11>=4
     # the first is the forck state for ↑ spin, the second is forck state for ↓
 
-    cpup = zeros(Float, (4, 4)) 
-    cpdown = zeros(Float, (4, 4)) 
+    cpup = zeros(Float, (4, 4))
+    cpdown = zeros(Float, (4, 4))
 
     cpup[2, 1], cpup[4, 3] = 1, 1
     cpdown[3, 1], cpdown[4, 2] = 1, 1
     cmup, cmdown = cpup', cpdown'
-    
+
     @assert abs(tr(cpup * cmdown)) < 1e-16
     @assert abs(tr(cpdown * cmup)) < 1e-16
 

@@ -5,179 +5,218 @@ import FeynmanDiagram.FrontEnds: ConnectedGreenNId, BareHoppingId, VacuumId, UpU
 using Parameters
 
 function generate_vectors(order::Int)
-	function helper(current_vector::Vector{Int}, remaining_length::Int)
-		if remaining_length == 0
-			return [copy(current_vector)]
-		end
+    function helper(current_vector::Vector{Int}, remaining_length::Int)
+        if remaining_length == 0
+            return [copy(current_vector)]
+        end
 
-		results = Vector{Vector{Int}}()
-		last_value = current_vector[end]
+        results = Vector{Vector{Int}}()
+        last_value = current_vector[end]
 
-		# Option 1: Repeat the last value
-		push!(results, helper(vcat(current_vector, [last_value]), remaining_length - 1)...)
+        # Option 1: Repeat the last value
+        push!(results, helper(vcat(current_vector, [last_value]), remaining_length - 1)...)
 
-		# Option 2: Increment the last value
-		push!(results, helper(vcat(current_vector, [last_value + 1]), remaining_length - 1)...)
+        # Option 2: Increment the last value
+        push!(results, helper(vcat(current_vector, [last_value + 1]), remaining_length - 1)...)
 
-		return results
-	end
+        return results
+    end
 
-	return helper([1], order - 1)
+    return helper([1], order - 1)
 end
 
 function generate_topologies(order::Int)
-	all_vectors = generate_vectors(order)
-	groups = Dict{Vector{Int}, Vector{Vector{Int}}}()
+    all_vectors = generate_vectors(order)
+    groups = Dict{Vector{Int},Vector{Vector{Int}}}()
 
-	@inline function get_block_lengths(vec::Vector{Int})::Vector{Int}
-		if isempty(vec)
-			return Int[]
-		end
-		blocks = [1]
-		current = vec[1]
-		for x in vec[2:end]
-			if x == current
-				blocks[end] += 1
-			else
-				push!(blocks, 1)
-				current = x
-			end
-		end
-		return blocks
-	end
+    @inline function get_block_lengths(vec::Vector{Int})::Vector{Int}
+        if isempty(vec)
+            return Int[]
+        end
+        blocks = [1]
+        current = vec[1]
+        for x in vec[2:end]
+            if x == current
+                blocks[end] += 1
+            else
+                push!(blocks, 1)
+                current = x
+            end
+        end
+        return blocks
+    end
 
-	for vec in all_vectors
-		block_lengths = get_block_lengths(vec)
-		key = sort(block_lengths)
-		if haskey(groups, key)
-			push!(groups[key], vec)
-		else
-			groups[key] = [vec]
-		end
-	end
+    for vec in all_vectors
+        block_lengths = get_block_lengths(vec)
+        key = sort(block_lengths)
+        if haskey(groups, key)
+            push!(groups[key], vec)
+        else
+            groups[key] = [vec]
+        end
+    end
 
-	@inline function count_permutations(block_lengths::Vector{Int})::Int
-		counts = Dict{Int, Int}()
-		for len in block_lengths
-			counts[len] = get(counts, len, 0) + 1
-		end
-		k = length(block_lengths)
-		permutations = factorial(k)
-		for cnt in values(counts)
-			permutations ÷= factorial(cnt)
-		end
-		return permutations
-	end
+    @inline function count_permutations(block_lengths::Vector{Int})::Int
+        counts = Dict{Int,Int}()
+        for len in block_lengths
+            counts[len] = get(counts, len, 0) + 1
+        end
+        k = length(block_lengths)
+        permutations = factorial(k)
+        for cnt in values(counts)
+            permutations ÷= factorial(cnt)
+        end
+        return permutations
+    end
 
-	result = Vector{Tuple{Vector{Int}, Int}}()
-	for (block_lengths, vecs) in groups
-		representative = vecs[1]
-		symmetry_factor = count_permutations(block_lengths)
-		push!(result, (representative, symmetry_factor))
-	end
+    result = Vector{Tuple{Vector{Int},Int}}()
+    for (block_lengths, vecs) in groups
+        # For the strong coupling expansion based on the Hubbard atom, local hoppings are not allowed
+        if 2 * maximum(block_lengths) > sum(block_lengths)
+            continue
+        end
 
-	return result
+        representative = vecs[1]
+        symmetry_factor = count_permutations(block_lengths)
+        push!(result, (representative, symmetry_factor))
+    end
+
+    return result
 end
 
-function assign_orbitals(num_sites::Int, orbital_options = [[1, 1], [2, 2]])
-	# Each site can have either [1,1] or [2,2]
-	all_combinations = Iterators.product(ntuple(_ -> orbital_options, num_sites)...)
-	return [collect(comb) for comb in all_combinations]
+function assign_orbitals(num_sites::Int, orbital_options=[[1, 1], [2, 2]])
+    # Each site can have either [1,1] or [2,2]
+    all_combinations = Iterators.product(ntuple(_ -> orbital_options, num_sites)...)
+    return [collect(comb) for comb in all_combinations]
 end
 
 function partition(order::Int)
-	par = [
-		# order 1
-		(1, 0),
-		# order 2
-		(2, 0), (1, 1),
-		# order 3
-		(3, 0), (2, 1), (1, 2),
-		# order 4
-		(4, 0), (3, 1), (2, 2), (1, 3),
-		#order 5
-		(5, 0), (4, 1), (3, 2), (2, 3), (1, 4),
-		#order 6
-		(6, 0), (5, 1), (4, 2), (3, 3), (2, 4), (1, 5),
-	]
-	return sort([p for p in par if p[1] + p[2] <= order])
+    par = [
+        # order 1
+        (1, 0),
+        # order 2
+        (2, 0), (1, 1),
+        # order 3
+        (3, 0), (2, 1), (1, 2),
+        # order 4
+        (4, 0), (3, 1), (2, 2), (1, 3),
+        #order 5
+        (5, 0), (4, 1), (3, 2), (2, 3), (1, 4),
+        #order 6
+        (6, 0), (5, 1), (4, 2), (3, 3), (2, 4), (1, 5),
+    ]
+    return sort([p for p in par if p[1] + p[2] <= order])
 end
 
 function neighbor(partitions)
-	n = Vector{Tuple{Int, Int}}()
-	Nnorm = length(partitions) + 1 # the index of the normalization diagram is the N+1
-	for (ip, p) in enumerate(partitions)
-		# if p[1] == 1 # if there is only one loop, then the diagram can be connected to the normalization diagram
-		if p[1] in [0, 1] # if there is only one loop, then the diagram can be connected to the normalization diagram
-			push!(n, (ip, Nnorm))
-		end
-		for (idx, np) in enumerate(partitions)
-			if idx >= ip
-				continue
-			end
-			if np[1] == p[1] || np[1] == p[1] + 1 || np[1] == p[1] - 1 #the first index is the number of loops
-				push!(n, (ip, idx))
-			end
-		end
-	end
-	println(n)
-	return n
+    n = Vector{Tuple{Int,Int}}()
+    Nnorm = length(partitions) + 1 # the index of the normalization diagram is the N+1
+    for (ip, p) in enumerate(partitions)
+        # if p[1] == 1 # if there is only one loop, then the diagram can be connected to the normalization diagram
+        if p[1] in [0, 1] # if there is only one loop, then the diagram can be connected to the normalization diagram
+            push!(n, (ip, Nnorm))
+        end
+        for (idx, np) in enumerate(partitions)
+            if idx >= ip
+                continue
+            end
+            # if np[1] == p[1] || np[1] == p[1] + 1 || np[1] == p[1] - 1 #the first index is the number of loops
+            if np[1] == p[1] || np[1] == p[1] + 2 || np[1] == p[1] - 2 #the first index is the number of loops
+                push!(n, (ip, idx))
+            end
+        end
+    end
+    # println(n)
+    return n
 end
 
-function free_energy(_partition::Vector{T}; filter = [], leaf_dep_funcs::Vector{Function} = Function[pr->pr isa BareHoppingId]) where {T}
+function free_energy(_partition::Vector{T}; filter=[], leaf_dep_funcs::Vector{Function}=Function[pr->pr isa BareHoppingId]) where {T}
 
-	diagpara = []
-	inter = [Interaction(UpDown, [Dynamic])]
+    diagpara = []
+    inter = [Interaction(UpDown, [Dynamic])]
 
-	max_order = maximum([p[1] for p in _partition])
-	min_order = minimum([p[1] for p in _partition])
-	max_totalorder = maximum([sum(p) for p in _partition])
-	dict_graphs = Dict{NTuple{2, Int}, Vector{Graph}}()
+    orders = union([p[1] for p in _partition])
+    max_order = maximum(orders)
+    min_order = minimum(orders)
+    max_totalorder = maximum([sum(p) for p in _partition])
+    dict_graphs = Dict{NTuple{2,Int},Vector{Graph}}()
 
-	for order in min_order:max_order
-		para = DiagPara(type = VacuumDiag, innerLoopNum = order, hasTau = true, interaction = inter, totalTauNum = 2order, filter = filter)
-		push!(diagpara, para)
-		println("Order: ", order)
+    for order in orders
+        para = DiagPara(type=VacuumDiag, innerLoopNum=order, hasTau=true, interaction=inter, totalTauNum=2order, filter=filter)
+        push!(diagpara, para)
+        println("Order: ", order)
 
-		topologies = generate_topologies(order)
+        topologies = generate_topologies(order)
 
-		extT = [[2 * i - 1, 2 * i] for i in 1:order]
-		creations = [[true, false] for _ in 1:order]
+        extT = [[2 * i - 1, 2 * i] for i in 1:order]
+        creations = [[true, false] for _ in 1:order]
 
-		graphs_fE = []
-		sub_factors = []
-		orbitals = assign_orbitals(order)
-		for (sites, factor) in topologies
-			println("sites: ", sites)
-			println("factor: ", factor)
-			for orbital in orbitals
-				println(orbital, "t: ", extT)
-				push!(graphs_fE, SCE.connectedGreen(para, sites, orbital, extT, creations))
-				push!(sub_factors, factor)
-			end
-		end
+        graphs_fE = Graph[]
+        sub_factors = []
+        orbitals = assign_orbitals(order)
 
-		property = VacuumId(para)
-		graph_order = [Graph(graphs_fE, subgraph_factors = sub_factors, operator = Sum(), properties = property, name = Symbol("F_$order"))]
-		optimize!(graph_order)
-		optimize!(graph_order)
+        tops = []
+        for (sites, factor) in topologies
+            println("sites: ", sites)
+            # println("factor: ", factor)
+            for orbital in orbitals
+                println(orbital, "t: ", extT)
+                push!(graphs_fE, SCE.connectedGreen(para, sites, orbital, extT, creations))
+                push!(sub_factors, factor)
 
-		renormalization_orders = [max_totalorder - order]
+                push!(tops, [sites, orbital])
+            end
+        end
 
-		dict_graph_order = taylorAD(graph_order, renormalization_orders, leaf_dep_funcs)
-		for key in keys(dict_graph_order)
-			p = (order, key...)
-			if p in _partition
-				dict_graphs[p] = dict_graph_order[key]
-			end
-		end
-	end
+        println("len of graphs: ", length(graphs_fE))
 
-	diagpara = Vector{DiagPara}()
-	partitions = sort(collect(keys(dict_graphs)))
-	for p in partitions
-		push!(diagpara, DiagPara(type = VacuumDiag, innerLoopNum = p[1], hasTau = true, interaction = inter, totalTauNum = 2 * p[1], filter = filter))
-	end
+        property = VacuumId(para)
+        # graph_order = [Graph(graphs_fE, subgraph_factors = sub_factors, operator = Sum(), properties = property, name = Symbol("F_$order"))]
 
-	return (partitions, diagpara, dict_graphs)
+        # graph_order = [Graph(graphs_fE, operator = Sum(), properties = property, name = Symbol("F_$order"))]
+        # if order == 4
+        #     sub_factors = ones(48)
+        #     sub_factors[1:16] .= 0.5
+        #     sub_factors[17:32] .= 0.25
+        #     graph_order = [Graph(graphs_fE, subgraph_factors=sub_factors, operator=Sum(), properties=property, name=Symbol("F_$order"))]
+        # else
+        graph_order = [Graph(graphs_fE, operator=Sum(), properties=property, name=Symbol("F_$order"))]
+        # end
+        # if order == 4
+        # 	graph_order = [Graph(graphs_fE[(16*i-15):(16*i)], operator = Sum(), properties = property, name = Symbol("F_$order")) for i in 1:length(topologies)]
+        # 	# elseif order == 2
+        # 	# graph_order = vcat(graphs_fE[1], graphs_fE[4:end])
+        # else
+        # 	graph_order = [Graph(graphs_fE, operator = Sum(), properties = property, name = Symbol("F_$order"))]
+        # end
+        optimize!(graph_order)
+        optimize!(graph_order)
+
+        renormalization_orders = [max_totalorder - order]
+
+        dict_graph_order = taylorAD(graph_order, renormalization_orders, leaf_dep_funcs)
+        for key in keys(dict_graph_order)
+            p = (order, key...)
+            if p in _partition
+                dict_graphs[p] = dict_graph_order[key]
+            end
+        end
+
+        # if order in [2, 4]
+        # if order == 4
+        # 	for i in eachindex(graph_order)
+        # 		dict_graphs[(order, i-1)] = [graph_order[i]]
+        # 	end
+        # else
+        # 	dict_graphs[(order, 0)] = graph_order
+        # end
+    end
+
+    diagpara = Vector{DiagPara}()
+    partitions = sort(collect(keys(dict_graphs)))
+    for p in partitions
+        push!(diagpara, DiagPara(type=VacuumDiag, innerLoopNum=p[1], hasTau=true, interaction=inter, totalTauNum=2 * p[1], filter=filter))
+    end
+
+    return (partitions, diagpara, dict_graphs)
 end

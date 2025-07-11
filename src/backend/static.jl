@@ -12,37 +12,40 @@ end
 
 function to_static(::Type{ComputationalGraphs.Sum}, subgraphs::Vector{Graph{F, W}}, subgraph_factors::Vector{F}; lang::Symbol = :julia) where {F, W}
 	if length(subgraphs) == 1
-		factor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
-		return "(g$(subgraphs[1].id)$factor_str)"
+		# gfactor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
+		gfactor_str = factor_str(subgraph_factors[1])
+		return "(g$(subgraphs[1].id)$gfactor_str)"
 	else
-		terms = ["g$(g.id)" * (gfactor == 1 ? "" : " * $gfactor") for (g, gfactor) in zip(subgraphs, subgraph_factors)]
+		terms = ["g$(g.id)" * factor_str(gfactor) for (g, gfactor) in zip(subgraphs, subgraph_factors)]
 		return "(" * join(terms, " + ") * ")"
 	end
 end
 
 function to_static(::Type{ComputationalGraphs.Prod}, subgraphs::Vector{Graph{F, W}}, subgraph_factors::Vector{F}; lang::Symbol = :julia) where {F, W}
 	if length(subgraphs) == 1
-		factor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
-		return "(g$(subgraphs[1].id)$factor_str)"
+		# gfactor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
+		gfactor_str = factor_str(subgraph_factors[1])
+		return "(g$(subgraphs[1].id)$gfactor_str)"
 	else
-		terms = ["g$(g.id)" * (gfactor == 1 ? "" : " * $gfactor") for (g, gfactor) in zip(subgraphs, subgraph_factors)]
+		terms = ["g$(g.id)" * factor_str(gfactor) for (g, gfactor) in zip(subgraphs, subgraph_factors)]
 		return "(" * join(terms, " * ") * ")"
 		# return "(" * join(["g$(g.id)" for g in subgraphs], " * ") * ")"
 	end
 end
 
 function to_static(::Type{ComputationalGraphs.Power{N}}, subgraphs::Vector{Graph{F, W}}, subgraph_factors::Vector{F}; lang::Symbol = :julia) where {N, F, W}
-	factor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
+	# gfactor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
+	gfactor_str = factor_str(subgraph_factors[1])
 	if lang == :julia
 		op_str = "^"
 	elseif lang == :c
-		return "pow(g$(subgraphs[1].id), $N)$factor_str"
+		return "pow(g$(subgraphs[1].id), $N)$gfactor_str"
 	elseif lang == :python
 		op_str = "**"
 	else
 		error("Unsupported language")
 	end
-	return "((g$(subgraphs[1].id))$(op_str)$N$factor_str)"
+	return "((g$(subgraphs[1].id))$(op_str)$N$gfactor_str)"
 end
 
 function to_static(::Type{ComputationalGraphs.Det}, subgraphs::Vector{Graph{F, W}}, subgraph_factors::Vector{F}; lang::Symbol = :julia) where {F, W}
@@ -51,25 +54,26 @@ function to_static(::Type{ComputationalGraphs.Det}, subgraphs::Vector{Graph{F, W
 		error("subgraphs must have a square number of elements for Det node")
 	end
 	if N == 1
-		factor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
-		return "(g$(subgraphs[1].id)$factor_str)"
+		# gfactor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
+		gfactor_str = factor_str(subgraph_factors[1])
+		return "(g$(subgraphs[1].id)$gfactor_str)"
 	end
 
 	if lang == :julia
 		# Construct Julia Matrix expression，e.g. [g1 g2; g3 g4]
 		rows = String[]
-		for i in 0:N-1
-			row_elements = ["g$(sg.id)*$sg_factor" for (sg.sg_factor) in zip(subgraphs[i*N+1:(i+1)*N], subgraph_factors[i*N+1:(i+1)*N])]
+		for i in 0:(N-1)
+			row_elements = ["g$(sg.id)" * factor_str(sg_factor) for (sg, sg_factor) in zip(subgraphs[(i*N+1):((i+1)*N)], subgraph_factors[(i*N+1):((i+1)*N)])]
 			push!(rows, join(row_elements, " "))
 		end
 		matrix_str = "[" * join(rows, "; ") * "]"
-		return "det($matrix_str)"
+		return "LinearAlgebra.det($matrix_str)"
 	elseif lang == :python
 		# Construct Python 2D list, e.g. [[g1, g2], [g3, g4]]
 		matrix_rows = String[]
-		for i in 0:N-1
+		for i in 0:(N-1)
 			# row_elements = ["g$(sg.id)" for sg in subgraphs[i*N+1:(i+1)*N]]
-			row_elements = ["g$(sg.id)*$sg_factor" for (sg.sg_factor) in zip(subgraphs[i*N+1:(i+1)*N], subgraph_factors[i*N+1:(i+1)*N])]
+			row_elements = ["g$(sg.id)" * factor_str(sg_factor) for (sg, sg_factor) in zip(subgraphs[(i*N+1):((i+1)*N)], subgraph_factors[(i*N+1):((i+1)*N)])]
 			row_str = "[" * join(row_elements, ", ") * "]"
 			push!(matrix_rows, row_str)
 		end
@@ -77,7 +81,7 @@ function to_static(::Type{ComputationalGraphs.Det}, subgraphs::Vector{Graph{F, W
 		return "np.linalg.det($matrix_str)"
 	elseif lang == :c
 		# Construct C 2D array and call the assumed det function, e.g. det((double[]){g1,g2,g3,g4}, 2)
-		elements = ["g$(sg.id)*$sg_factor" for (sg.sg_factor) in zip(subgraphs, subgraph_factors)]
+		elements = ["g$(sg.id)" * factor_str(sg_factor) for (sg, sg_factor) in zip(subgraphs, subgraph_factors)]
 		array_str = "{" * join(elements, ", ") * "}"
 		return "det((double[])$array_str, $N)"
 	else
@@ -87,37 +91,42 @@ end
 
 function to_static(::Type{ComputationalGraphs.Sum}, subgraphs::Vector{FeynmanGraph{F, W}}, subgraph_factors::Vector{F}; lang::Symbol = :julia) where {F, W}
 	if length(subgraphs) == 1
-		factor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
-		return "(g$(subgraphs[1].id)$factor_str)"
+		# gfactor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
+		gfactor_str = factor_str(subgraph_factors[1])
+		return "(g$(subgraphs[1].id)$gfactor_str)"
 	else
-		terms = ["g$(g.id)" * (gfactor == 1 ? "" : " * $gfactor") for (g, gfactor) in zip(subgraphs, subgraph_factors)]
+		terms = ["g$(g.id)" * factor_str(gfactor) for (g, gfactor) in zip(subgraphs, subgraph_factors)]
 		return "(" * join(terms, " + ") * ")"
 	end
 end
 
 function to_static(::Type{ComputationalGraphs.Prod}, subgraphs::Vector{FeynmanGraph{F, W}}, subgraph_factors::Vector{F}; lang::Symbol = :julia) where {F, W}
 	if length(subgraphs) == 1
-		factor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
-		return "(g$(subgraphs[1].id)$factor_str)"
+		# gfactor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
+		gfactor_str = factor_str(subgraph_factors[1])
+		return "(g$(subgraphs[1].id)$gfactor_str)"
 	else
-		terms = ["g$(g.id)" * (gfactor == 1 ? "" : " * $gfactor") for (g, gfactor) in zip(subgraphs, subgraph_factors)]
+		terms = ["g$(g.id)" * factor_str(gfactor) for (g, gfactor) in zip(subgraphs, subgraph_factors)]
 		return "(" * join(terms, " * ") * ")"
 	end
 end
 
 function to_static(::Type{ComputationalGraphs.Power{N}}, subgraphs::Vector{FeynmanGraph{F, W}}, subgraph_factors::Vector{F}; lang::Symbol = :julia) where {N, F, W}
-	factor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
+	# gfactor_str = subgraph_factors[1] == 1 ? "" : " * $(subgraph_factors[1])"
+	gfactor_str = factor_str(subgraph_factors[1])
 	if lang == :julia
 		op_str = "^"
 	elseif lang == :c
-		return "pow(g$(subgraphs[1].id), $N)$factor_str"
+		return "pow(g$(subgraphs[1].id), $N)$gfactor_str"
 	elseif lang == :python
 		op_str = "**"
 	else
 		error("Unsupported language")
 	end
-	return "((g$(subgraphs[1].id))$(op_str)$N$factor_str)"
+	return "((g$(subgraphs[1].id))$(op_str)$N$gfactor_str)"
 end
+
+@inline factor_str(factor) = factor == 1 ? "" : " * $factor"
 
 """
 	function to_julia_str(graphs::AbstractVector{<:AbstractGraph}, leafMap::Dict{Int,Int}; root::AbstractVector{Int}=[id(g) for g in graphs],

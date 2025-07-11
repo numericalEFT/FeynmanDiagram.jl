@@ -11,6 +11,8 @@ import ..QuantumOperators: isfermionic
 using ..AbstractTrees
 using ..RuntimeGeneratedFunctions
 
+using LinearAlgebra
+
 RuntimeGeneratedFunctions.init(Compilers)
 
 include("static.jl")

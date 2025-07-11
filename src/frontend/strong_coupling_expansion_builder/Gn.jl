@@ -1,34 +1,3 @@
-# function fullGreen(para, site::AbstractVector, orbital::AbstractVector, extT::AbstractVector = collect(1:length(orbital)), subdiagram = false; name = Symbol("Gn$(length(site))"), resetuid = false, even = true)
-#     # @assert para.type == GreenNDiag
-#     @assert length(extT) == length(orbital) == length(site)
-#     if even
-#         @assert length(extT) % 2 == 0
-#     end
-
-#     resetuid && uidreset()
-
-#     gn = []
-#     uniqueR = Set(site)
-#     permutation = [] # keep track of the permutation after the site index rearrangement
-#     for r in uniqueR
-#         ind = findall(x -> x == r, site)
-#         if even && (length(ind) % 2 == 1)
-#             continue
-#         end
-#         t = extT[ind]
-#         o = orbital[ind]
-#         bareGId = BareGreenNId(para, o, t, r)
-#         push!(gn, Diagram(bareGId, name = Symbol("gn$(length(t))")))
-#         append!(permutation, ind)
-#     end
-
-#     if isempty(gn)
-#         return nothing
-#     else
-#         return Diagram(GreenNId(para, orbital, extT, site), Prod(), gn, name = name, factor = parity(permutation))
-#     end
-# end
-
 function fullGreen(para, site::Vector{Int}, orbital::AbstractVector, extT::AbstractVector, creation::AbstractVector;
 	# bareGreenN::Union{Function, Nothing} = nothing,
 	bareGreenN::Union{Function, Nothing} = Gnc,
@@ -86,6 +55,7 @@ function fullGreen(para, site::Vector{Int}, orbital::AbstractVector, extT::Abstr
 		t = collect(Iterators.flatten(extT[ind]))
 		o = collect(Iterators.flatten(orbital[ind]))
 		c = collect(Iterators.flatten(creation[ind]))
+
 		bareGId = BareGreenNId(para, orbital = o, t = t, r = r, creation = c)
 		if isnothing(bareGreenN)
 			bareGN = Graph([], properties = bareGId, name = Symbol("gn$(length(t))"), factor = prefactor(o[[2m - 1 for m in 1:length(ind)]], num_orbital))
@@ -93,6 +63,8 @@ function fullGreen(para, site::Vector{Int}, orbital::AbstractVector, extT::Abstr
 			bareGN = bareGreenN(bareGId) * prefactor(o[[2m - 1 for m in 1:length(ind)]], num_orbital)
 		end
 		push!(gn, bareGN)
+
+		# println("t: $t, o: $o, c: $c, factor: $(prefactor(o[[2m - 1 for m in 1:length(ind)]], num_orbital))")
 	end
 
 	if isempty(ext_site)
@@ -120,7 +92,7 @@ function Gnc(GId::DiagramId)
 	Gc = [G]
 
 	p = Partition(Int(N / 2))
-	println(p.l)
+	# println(p.l)
 	for (li, l) in enumerate(p.l)
 		sub_gncId = BareGreenNId(GId.para, orbital = GId.orbital[l], t = GId.extT[l], r = GId.site, creation = GId.creation[l])
 		sub_gnc = Gnc(sub_gncId)
@@ -129,58 +101,25 @@ function Gnc(GId::DiagramId)
 		sub_gnId = BareGreenNId(GId.para, orbital = GId.orbital[r], t = GId.extT[r], r = GId.site, creation = GId.creation[r])
 		sub_gn = Graph([], properties = sub_gnId, name = Symbol("gn$(length(r))"))
 
-		push!(Gc, Graph([sub_gnc, sub_gn], properties = GenericId(GId.para), operator = Prod(), factor = -1.0 * p.sign[li]))
+		# push!(Gc, Graph([sub_gnc, sub_gn], properties = GenericId(GId.para), operator = Prod(), factor = -1.0 * p.sign[li]))
+		push!(Gc, Graph([sub_gnc, sub_gn], properties = GenericId(GId.para), operator = Prod(), factor = p.sign[li]))
 	end
 
 	return Graph(Gc, properties = GId, operator = Sum(), name = Symbol("bareGnc$N"))
 end
 
-# function Gnc(GId::DiagramId; idx = collect(eachindex(GId.extT)))
-
-# 	bareGnId = BareGreenNId(GId.para, orbital = GId.orbital[idx], t = GId.extT[idx], r = GId.site, creation = GId.creation[idx])
-
-# 	N = length(idx)
-# 	if N == 2
-# 		return Graph([], properties = bareGnId, name = Symbol("bareGnc$N"))
-# 	end
-
-# 	G = Graph([], properties = bareGnId, name = Symbol("bareGn$N"))
-# 	Gc = [G]
-
-# 	p = Partition(Int(N / 2))
-# 	for (li, l) in enumerate(p.l)
-
-# 		idx_l = idx[l]
-# 		# sub_gncId = BareGreenNId(GId.para, orbital = GId.orbital[idx_l], t = GId.extT[idx_l], r = GId.site, creation = GId.creation[idx_l])
-# 		# sub_gnc = Gnc(sub_gncId, idx = idx_l)
-# 		sub_gnc = Gnc(GId, idx = idx_l)
-
-# 		# r = p.r[li]
-# 		idx_r = idx[p.r[li]]
-
-# 		sub_gnId = BareGreenNId(GId.para, orbital = GId.orbital[idx_r], t = GId.extT[idx_r], r = GId.site, creation = GId.creation[idx_r])
-
-# 		name = length(idx_r) == 2 ? "bareGnc2" : "bareGn$N"
-# 		sub_gn = Graph([], properties = sub_gnId, name = Symbol(name))
-
-# 		push!(Gc, Graph([sub_gnc, sub_gn], properties = GenericId(GId.para), operator = Prod(), factor = -1.0 * p.sign[li]))
-# 	end
-
-# 	return Graph(Gc, properties = bareGnId, operator = Sum(), name = Symbol("bareGnc$N"))
-# end
-
 function prefactor(orbitals, num_orbital::Int)
 	m = length(orbitals)
-	# if m == 1
-	# 	return 1.0
-	# end
 	_factor = 1.0
 	for i in 1:m
 		for j in (i+1):m
 			_factor *= (num_orbital - (orbitals[i] == orbitals[j] ? 1 : 0))
 		end
 	end
-	return _factor / (2m)
+	# return _factor / (2m)
+	return _factor * (-1)^m / factorial(m)^2
+	# return _factor / factorial(m)^2
+	# return (-1)^m / factorial(m)^2
 end
 
 function fullGreen(para, hop::Vector{BareHoppingId}, subdiagram = false; name = Symbol("Gn$(length(hop)*2)"), resetuid = false, even = true)
