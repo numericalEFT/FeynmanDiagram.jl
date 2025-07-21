@@ -20,14 +20,12 @@ struct ParaMC
     n::Int
     Lx::Int
     Ly::Int
-    lambda::Float64
     order::Int
 end
 
 paraid(p::ParaMC) = Dict(
     "order" => p.order,
     "beta" => p.β,
-    "lambda" => p.lambda,
     "mu" => p.μ,
     "U" => p.U,
     "Lx" => p.Lx,
@@ -35,76 +33,7 @@ paraid(p::ParaMC) = Dict(
 )
 short(p::ParaMC) = join(["$(k)_$(v)" for (k, v) in sort!(OrderedDict(paraid(p)))], "_")
 
-function F0(para::ParaMC)
-    return -log((1 + exp(para.β)) * (1 + exp(-para.β))) / para.β
-end
-# println("F0 = ", F0(para))
-
-function disperion_PBC(Lx, Ly, t)
-    No = 2 # spin up/down
-    ϵk = zeros(Float64, (No, No, Lx, Ly)) # julia column major, the first index is the major index
-
-    for xi in 1:Lx
-        for yi in 1:Ly
-            kx, ky = 2π * (xi - 1) / Lx, 2π * (yi - 1) / Ly
-            ϵk[1, 1, xi, yi] = -2t * (cos(kx) + cos(ky))
-            ϵk[2, 2, xi, yi] = -2t * (cos(kx) + cos(ky))
-            # ϵk[1, 1, xi, yi] = -2t * cos(kx)
-            # ϵk[2, 2, xi, yi] = -2t * cos(kx)
-        end
-    end
-    return ϵk
-end
-
-function disperion_FBC(Lx, Ly, t)
-    No = 2 # spin up/down
-    ϵk = zeros(Float64, (No, No, Lx, Ly)) # julia column major, the first index is the major index
-
-    for xi in 1:Lx
-        for yi in 1:Ly
-            k = [π * xi / (Lx + 1), π * yi / (Ly + 1)]
-            ϵk[1, 1, xi, yi] = -2t * sum(cos.(k))
-            ϵk[2, 2, xi, yi] = -2t * sum(cos.(k))
-        end
-    end
-    return ϵk
-end
-
-function propagator(τ::T, ω::T, β::T) where {T}
-    if τ ≈ T(0.0)
-        τ = -1e-10
-    end
-    if τ > T(0.0)
-        return ω > T(0.0) ?
-               exp(-ω * τ) / (1 + exp(-ω * β)) :
-               exp(ω * (β - τ)) / (1 + exp(ω * β))
-    else
-        return ω > T(0.0) ?
-               -exp(-ω * (τ + β)) / (1 + exp(-ω * β)) :
-               -exp(-ω * τ) / (1 + exp(ω * β))
-    end
-end
-
-function propagator_derivative(τ, ϵ, β, order)
-    if order == 0
-        result = propagator(τ, ϵ, β)
-    elseif order == 1
-        result = -Spectral.kernelFermiT_dω(τ, ϵ, β)
-    elseif order == 2
-        result = Spectral.kernelFermiT_dω2(τ, ϵ, β) / 2.0
-    elseif order == 3
-        result = -Spectral.kernelFermiT_dω3(τ, ϵ, β) / 6.0
-    elseif order == 4
-        result = Spectral.kernelFermiT_dω4(τ, ϵ, β) / 24.0
-    elseif order == 5
-        result = -Spectral.kernelFermiT_dω5(τ, ϵ, β) / 120.0
-    else
-        error("not implemented!")
-    end
-    return result
-end
-
-function green_counterterm_PBC(para::ParaMC, r1::Vector{Int}, r2::Vector{Int}, orbital::Int)
+function hopping_PBC(para::ParaMC, r1::Vector{Int}, r2::Vector{Int}, orbital::Int)
     L = [para.Lx, para.Ly]
     delta12 = abs.(r1 - r2)
     delta = min.(delta12, L .- delta12)
@@ -116,24 +45,13 @@ function green_counterterm_PBC(para::ParaMC, r1::Vector{Int}, r2::Vector{Int}, o
     end
 end
 
-function green_counterterm_FBC(para::ParaMC, r1::Vector{Int}, r2::Vector{Int}, orbital::Int)
+function hopping_FBC(para::ParaMC, r1::Vector{Int}, r2::Vector{Int}, orbital::Int)
     delta = abs.(r1 - r2)
 
     if sum(delta) == 1
         return para.t
     else
         return 0.0
-    end
-end
-
-function g2(para, τ)
-    β, μ, U = para.β, para.μ, para.U
-    Z = 1 + 2 * exp(β * μ) + exp(β * (2μ - U))
-
-    if τ > 0
-        return (exp(μ * τ) + exp(β * μ) * exp((μ - U) * τ)) / Z
-    else
-        return -(exp(β * μ) * exp(μ * τ) + exp(β * (2μ - U)) * exp((μ - U) * τ)) / Z
     end
 end
 
@@ -171,12 +89,6 @@ function integrand(idx, vars, config)
     model = config.userdata[5]
     varT, varRx = vars
 
-    # if idx == 1
-    #     println(varRx[1:4])
-    # else
-    #     println(varRx[1:6])
-    # end
-
     for (i, lftype) in enumerate(leafType[idx])
         if lftype == 0
             continue
@@ -184,10 +96,8 @@ function integrand(idx, vars, config)
             τ = varT[leafτ_o[idx][i][1]] - varT[leafτ_i[idx][i][1]]
             r1 = [varRx[leafSites[idx][i][1]], 1]
             r2 = [varRx[leafSites[idx][i][2]], 1]
-            # order = leafOrders[idx][i][1]
-            # println("idx: $idx, τ: $τ, r1x: $(r1[1]), r2x: $(r2[1])")
             orbital = leaforbitals_i[idx][i][1]
-            leafval[idx][i] = green_counterterm_PBC(para, r1, r2, orbital) #/ para.β
+            leafval[idx][i] = hopping_PBC(para, r1, r2, orbital)
         elseif lftype == 5  # BareGreenNId
             Np = Int(length(leafSites[idx][i]) / 2)
             sites_i = varRx[leafSites[idx][i][1:Np]]
@@ -204,13 +114,6 @@ function integrand(idx, vars, config)
             τi, τo = varT[leafτ_i[idx][i]], varT[leafτ_o[idx][i]]
             orbitals_i, orbitals_o = leaforbitals_i[idx][i], leaforbitals_o[idx][i]
 
-
-            # if idx == 3 && length(sites_i) == 4# && length(unique(varRx[1:6])) == 3 #&& all(sites_i .!= sites_o)
-            #     # println(varRx[1:])
-            #     println("sites: $sites_i $sites_o, τ: $τi $τo")
-            #     println(r_dict)
-            # end
-
             for (loc_i, loc_o) in values(r_dict)
                 τ = vcat(τi[loc_i], τo[loc_o])
                 orbitals = vcat(orbitals_i[loc_i], orbitals_o[loc_o])
@@ -218,23 +121,14 @@ function integrand(idx, vars, config)
                 _gn = Green.GreenN(model, τ, orbitals)
                 leafval[idx][i] *= Green.Gn(model, _gn)
             end
-
-            # if idx == 2 && leafval[idx][i] != 0.0
-            #     println(leafval[idx][i], "sites: $sites_i $sites_o,  τ:$τi $τo,  orb: $orbitals_i $orbitals_o")
-            # end
         else
             error("this leaftype $lftype not implemented!")
         end
     end
 
     graphfuncs![idx](root, leafval[idx])
-    # idx == 2 && println(root[1]) && println()
 
-    # if idx == 2 && root[1] != 0.0
-    #     println("R: ", varRx[1:6], " τ: ", varT[1:3])
-    # end
-    # idx == 2 && println("idx: ", idx, " ", varRx[1:4idx], " ", floor.(Int, config.propose[2, :, :]), floor.(Int, config.accept[2, :, :]), " ", root[1])
-    return root[1] #* (para.β)^(config.dof[idx][1] + 1)
+    return root[1]
 end
 
 function freeE(model, para::ParaMC, diagram; neval=1e6, print=0, dtype=ComplexF64, kwargs...)
@@ -248,11 +142,6 @@ function freeE(model, para::ParaMC, diagram; neval=1e6, print=0, dtype=ComplexF6
     end
 
     leafStat = FeynmanDiagram.leafstates(leaf_maps, dtype=dtype)
-
-    # println("types: ", leafStat[2][2])
-    # println("sites: ", leafStat[4][2])
-    # println("tau_i: ", leafStat[5][2])
-    # println("tau_o: ", leafStat[6][2])
 
     root = zeros(dtype, 1)
     T = Continuous(0.0, para.β; offset=1, adapt=true)

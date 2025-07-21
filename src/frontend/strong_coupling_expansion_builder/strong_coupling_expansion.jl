@@ -14,9 +14,7 @@ using ..FrontEnds: BareHoppingId, BareGreenNId, ConnectedGreenNId, GreenNId, Gen
 # symmetry factor for Alli, PHr, PHEr, PPr, PHrc, PHErc 
 
 include("common.jl")
-# include("Gn.jl")
-# include("Gc.jl")
-include("Gn_v1.jl")
-include("Gc_v1.jl")
+include("Gn.jl")
+include("Gc.jl")
 
 end
