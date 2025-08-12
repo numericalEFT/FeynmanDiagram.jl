@@ -45,7 +45,7 @@ function hubbardAtom(type, U, μ, β, h=0.0)
     cpdown = zeros(Float, (4, 4))
 
     cpup[2, 1], cpup[4, 3] = 1, 1
-    cpdown[3, 1], cpdown[4, 2] = 1, 1
+    cpdown[3, 1], cpdown[4, 2] = 1, -1
     cmup, cmdown = cpup', cpdown'
 
     @assert abs(tr(cpup * cmdown)) < 1e-16

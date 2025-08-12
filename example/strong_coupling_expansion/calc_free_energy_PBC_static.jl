@@ -10,7 +10,7 @@ using DataStructures
 using LinearAlgebra
 using Random
 
-include("free_energy_static.jl")
+include("generate_freeE_static.jl")
 
 struct ParaMC
     μ::Float64
