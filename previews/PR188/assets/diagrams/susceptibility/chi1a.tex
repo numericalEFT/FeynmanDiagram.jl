@@ -1,0 +1,30 @@
+% standalone document border convention: {left bottom right top}
+\documentclass[varwidth,border={1pt 12pt 1pt 12pt}]{standalone}
+\usepackage[force]{feynmp-auto}
+\usepackage{rotating}
+
+\begin{document}
+\begin{fmffile}{chi1a_diag}
+	\begin{fmfgraph*}(90,35)
+		\fmfleft{l}
+        \fmfright{r}
+		\fmftop{n}
+		\fmfbottom{s}
+        \fmf{boson,tension=7}{l,a}
+        \fmf{boson,tension=7}{b,r}
+		\fmf{phantom,left=0.6}{a,b}
+		\fmf{phantom,left=0.6}{b,a}
+		\fmffreeze
+		\fmf{boson}{n,s}
+		\fmf{fermion,left=0.275}{a,n}
+		\fmf{fermion,left=0.275}{n,b}
+		\fmf{fermion,left=0.275}{b,s}
+		\fmf{fermion,left=0.275}{s,a}
+		\fmfdot{a,b,n,s}
+		\fmfv{label=$1$,l.a=110}{a}
+		\fmfv{label=$2$,l.a=70}{b}
+		\fmfv{label=$3$,l.a=90,l.d=4.5}{n}
+		\fmfv{label=$4$,l.a=-90,l.d=4.5}{s}
+	\end{fmfgraph*}
+\end{fmffile}
+\end{document}
