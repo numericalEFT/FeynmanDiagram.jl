@@ -16,5 +16,7 @@ using ..FrontEnds: BareHoppingId, BareGreenNId, ConnectedGreenNId, GreenNId, Gen
 include("common.jl")
 include("Gn.jl")
 include("Gc.jl")
+include("Gn_df.jl")
+include("Gc_df.jl")
 
 end

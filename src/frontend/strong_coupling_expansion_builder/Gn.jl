@@ -45,7 +45,7 @@ function vacuum_order(para, hop::Vector{BareHoppingId}; name=Symbol("vac_o$(leng
     return Graph(gn, operator=Prod(), name=name, factor=prefactor)
 end
 
-function fullGreen_v1(para, hop::Vector{BareHoppingId}; external_T::Vector{Int}=[], external_sites::Vector{Int}=[],
+function fullGreen_external(para, hop::Vector{BareHoppingId}; external_T::Vector{Int}=[], external_sites::Vector{Int}=[],
     external_creation::Vector{Bool}=[], external_orbitals::Vector{Int}=[], prefactor=1.0,
     name=Symbol("Gn$(length(hop)*2)"), resetuid=false, even=true
 )

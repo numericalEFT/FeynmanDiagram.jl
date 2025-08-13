@@ -176,7 +176,7 @@ function freeE(model, para::ParaMC, diagram; neval=1e6, print=0, dtype=ComplexF6
         datadict = Dict{eltype(partition),Any}()
         for (o, key) in enumerate(partition)
             avg, std = result.mean[o], result.stdev[o]
-            datadict[key] = -measurement.(avg, std)
+            datadict[key] = -measurement.(avg, std) / (para.Lx * para.Ly)
             # r = measurement.(real(avg), real(std))
             # i = measurement.(imag(avg), imag(std))
             # data = Complex.(r, i)

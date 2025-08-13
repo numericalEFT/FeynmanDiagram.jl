@@ -19,7 +19,7 @@ U = [4.0]
 # U = [1.0]
 
 ### lambda * t ~ 0.01
-# lambdas = [0.01]
+lambdas = [0.01]
 
 # neval = 8e6
 neval = 4e6
