@@ -117,7 +117,7 @@ function prefactor(orbitals, num_orbital::Int)
         end
     end
     # return _factor / (2m)
-    return _factor * (-1)^m / factorial(m)^2
+    # return _factor * (-1)^m / factorial(m)^2
     # return _factor / factorial(m)^2
-    # return (-1)^m / factorial(m)^2
+    return (-1)^m / factorial(m)^2
 end

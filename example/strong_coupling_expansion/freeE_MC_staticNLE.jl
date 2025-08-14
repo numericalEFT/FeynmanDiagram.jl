@@ -1,5 +1,5 @@
 include("./input.jl")
-include("./calc_free_energy_PBC_static.jl")
+include("./calc_free_energy_staticNLE.jl")
 
 function neighbor(partitions)
     n = Vector{Tuple{Int,Int}}()

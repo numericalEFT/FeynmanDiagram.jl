@@ -1,5 +1,5 @@
 include("./input.jl")
-include("./calc_free_energy_df.jl")
+include("./calc_free_energy_dynNLE.jl")
 
 function neighbor(partitions)
     n = Vector{Tuple{Int,Int}}()
@@ -23,30 +23,18 @@ function neighbor(partitions)
 end
 
 for (_μ, _U, _β, lam, order) in Iterators.product(μ, U, β, lambdas, orders)
-    # ϵk = disperion_FBC(Lx, Ly, t)
     ϵk = disperion_PBC(Lx, Ly, t)
-    println(ϵk)
-    para = ParaMC(_μ, _U, _β, 0, Lx, Ly, lam, order, ϵk)
+
+    para = ParaMC(_μ, _U, t, _β, 0, Lx, Ly, lam, order, ϵk)
     println(short(para))
 
     model = Hubbard.hubbardAtom(:fermi, _U, _μ, _β)
 
-    # _partition = partition(order)
-    # _partition = [(1, 0), (1, 1), (1, 2), (1, 3), (1, 4), (1, 5)]
-    # _partition = [(2, 0), (2, 1), (2, 2), (2, 3)]
-    # _partition = [(2, 0), (2, 1), (4, 0), (4, 1)]
-    # _partition = [(2, 0), (2, 1), (2, 2), (4, 0), (4, 1), (4, 2)]
-    # _partition = [(4, 0), (4, 1), (4, 2), (4, 3)]
-    # _partition = [(2, 0), (4, 0), (4, 1), (4, 2), (4, 3)]
-    # _partition = [(2, 0), (3, 0)]
-    # _partition = [(2, 0),]
-    # _partition = [(2, 0), (2, 1), (2, 2), (2, 3), (4, 0), (4, 1), (4, 2), (4, 3)]
-    # _partition = [(2, 0), (2, 1), (2, 2), (2, 3), (4, 0), (4, 1), (4, 2)]
-
     _partition = [(2, 0), (2, 1), (2, 2), (2, 3), (2, 4), (3, 0), (3, 1), (3, 2), (3, 3), (3, 4)]
-    # _partition = [(2, 0), (2, 1), (2, 2), (3, 0), (3, 1), (3, 2)]
-    # _partition = [(1, 0), (2, 0), (2, 1), (3, 0)]
-    # _partition = [(2, 0), (2, 1), (2, 2), (2, 3), (2, 4), (2, 5)]
+
+    # _partition = [(2, 0), (3, 0),]
+    # _partition = [(2, 0), (4, 0),]
+    # _partition = [(2, 0), (4, 0), (6, 0)]
     # reweight_goal = Float64[]
     # for (order, sOrder) in partition
     # 	reweight_factor = 2.0^(2order + 2sOrder - 2)
@@ -59,6 +47,4 @@ for (_μ, _U, _β, lam, order) in Iterators.product(μ, U, β, lambdas, orders)
 
     freeE_MC(model, para, partition=_partition, neval=neval, filename=freeE_filename,
         dtype=Float64, _neighbor=neighbor(_partition))#, print=1)
-
-    # println(res)
 end

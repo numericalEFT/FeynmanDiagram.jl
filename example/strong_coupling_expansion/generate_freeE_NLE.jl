@@ -50,7 +50,8 @@ function neighbor(partitions)
     return n
 end
 
-function free_energy(_partition::Vector{T}; filter=[], leaf_dep_funcs::Vector{Function}=Function[pr->pr isa BareHoppingId], num_orbitals::Int=2) where {T}
+function free_energy(_partition::Vector{T}; filter=[], leaf_dep_funcs::Vector{Function}=Function[pr->pr isa BareHoppingId],
+    num_orbitals::Int=2, dynamic_hop=true) where {T}
 
     diagpara = []
     inter = [Interaction(UpDown, [Dynamic])]
@@ -69,20 +70,14 @@ function free_energy(_partition::Vector{T}; filter=[], leaf_dep_funcs::Vector{Fu
         graphs_fE = Graph[]
         orbitals_all = assign_orbitals(order, hop_orbitals)
 
-        # if order == 3
-        #     for orbital in [(1, 1), (2, 2)]
-        #         hoppings = BareHoppingId[]
-        #         for hop_idx in 1:order
-        #             push!(hoppings, BareHoppingId(para, (2hop_idx - 1, 2hop_idx), orbital, (hop_idx, hop_idx)))
-        #         end
-        #         push!(graphs_fE, SCE.connectedGreen_o3(para, hoppings, prefactor=-1.0 / factorial(order)))
-        #     end
-        # else
-
         for orbital in orbitals_all
             hoppings = BareHoppingId[]
             for hop_idx in 1:order
-                push!(hoppings, BareHoppingId(para, (2hop_idx - 1, 2hop_idx), Tuple(orbital[hop_idx]), (hop_idx, hop_idx)))
+                if dynamic_hop
+                    push!(hoppings, BareHoppingId(para, (2hop_idx - 1, 2hop_idx), Tuple(orbital[hop_idx]), (2hop_idx - 1, 2hop_idx)))
+                else
+                    push!(hoppings, BareHoppingId(para, (2hop_idx - 1, 2hop_idx), Tuple(orbital[hop_idx]), (hop_idx, hop_idx)))
+                end
             end
             # push!(graphs_fE, SCE.vacuum_order(para, hoppings, prefactor=1.0 / factorial(order)))
             push!(graphs_fE, SCE.connectedVacuum(para, hoppings))
@@ -112,8 +107,11 @@ function free_energy(_partition::Vector{T}; filter=[], leaf_dep_funcs::Vector{Fu
     diagpara = Vector{DiagPara}()
     partitions = sort(collect(keys(dict_graphs)))
     for p in partitions
-        push!(diagpara, DiagPara(type=VacuumDiag, innerLoopNum=p[1], hasTau=true, interaction=inter, totalTauNum=p[1], filter=filter))
-        # push!(diagpara, DiagPara(type=VacuumDiag, innerLoopNum=p[1], hasTau=true, interaction=inter, totalTauNum=p[1] * 2, filter=filter))
+        if dynamic_hop
+            push!(diagpara, DiagPara(type=VacuumDiag, innerLoopNum=p[1], hasTau=true, interaction=inter, totalTauNum=p[1] * 2, filter=filter))
+        else
+            push!(diagpara, DiagPara(type=VacuumDiag, innerLoopNum=p[1], hasTau=true, interaction=inter, totalTauNum=p[1], filter=filter))
+        end
     end
 
     return (partitions, diagpara, dict_graphs)

@@ -10,7 +10,7 @@ using DataStructures
 using LinearAlgebra
 using Random
 
-include("generate_freeE_static.jl")
+include("generate_freeE_NLE.jl")
 
 struct ParaMC
     μ::Float64
@@ -190,7 +190,7 @@ end
 
 function freeE_MC(model, para::ParaMC; neval=1e6, partition=partition(para.order), reweight_goal=nothing,
     print=0, filename::Union{String,Nothing}=nothing, dtype=ComplexF64, _neighbor=nothing)
-    diagram = free_energy(partition)
+    diagram = free_energy(partition, dynamic_hop=false)
 
     partition = diagram[1]
     println("partition: ", partition)

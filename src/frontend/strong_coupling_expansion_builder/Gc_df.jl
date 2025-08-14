@@ -17,6 +17,13 @@ function connectedGreen(para, site::Vector{Int}, orbital::AbstractVector, extT::
 
     uniqueR = unique(site)
     N = length(uniqueR)
+    # for mask in 1:(2^N-2)
+    #     S_idx = Int[]
+    #     for b in 1:N
+    #         (mask & (1 << (b - 1))) != 0 && push!(S_idx, b)
+    #     end
+    #     lidx = findall(x -> x in uniqueR[S_idx], site)
+    #     ridx = findall(x -> x ∉ uniqueR[S_idx], site)
     for (lind, rind) in partitions(collect(1:N), 2)
         lidx = findall(x -> x in uniqueR[lind], site)
         ridx = findall(x -> x in uniqueR[rind], site)
