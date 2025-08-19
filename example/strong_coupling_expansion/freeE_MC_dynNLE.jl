@@ -1,5 +1,6 @@
 include("./input.jl")
-include("./calc_free_energy_dynNLE.jl")
+# include("./calc_free_energy_dynNLE.jl")
+include("./calc_free_energy_dynNLE_2D.jl")
 
 function neighbor(partitions)
     n = Vector{Tuple{Int,Int}}()
@@ -22,15 +23,18 @@ function neighbor(partitions)
     return n
 end
 
-for (_μ, _U, _β, lam, order) in Iterators.product(μ, U, β, lambdas, orders)
-    ϵk = disperion_PBC(Lx, Ly, t)
+for (_μ, _U, _β, lam, _dμ, order) in Iterators.product(μ, U, β, lambdas, dμ, orders)
+    ϵk = disperion_PBC(Lx, Ly, t, _dμ)
 
-    para = ParaMC(_μ, _U, t, _β, 0, Lx, Ly, lam, order, ϵk)
+    println(ϵk)
+
+    para = ParaMC(_μ, _U, t, _β, 0, Lx, Ly, lam, _dμ, order, ϵk)
     println(short(para))
 
-    model = Hubbard.hubbardAtom(:fermi, _U, _μ, _β)
+    model = Hubbard.hubbardAtom(:fermi, _U, _μ + _dμ, _β)
 
-    _partition = [(2, 0), (2, 1), (2, 2), (2, 3), (2, 4), (3, 0), (3, 1), (3, 2), (3, 3), (3, 4)]
+    # _partition = [(2, 0), (2, 1), (2, 2), (2, 3), (2, 4), (3, 0), (3, 1)]
+    _partition = [(2, 0), (2, 1), (2, 2), (2, 3), (2, 4), (3, 0), (3, 1), (3, 2), (3, 3), (3, 4), (3, 5)]
 
     # _partition = [(2, 0), (3, 0),]
     # _partition = [(2, 0), (4, 0),]
