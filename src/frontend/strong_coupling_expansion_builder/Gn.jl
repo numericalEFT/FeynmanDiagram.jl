@@ -21,7 +21,7 @@ function fullGreen(para, hop::Vector{BareHoppingId}; name=Symbol("Gn$(length(hop
     return Graph(gn, operator=Prod(), name=name)
 end
 
-function vacuum_order(para, hop::Vector{BareHoppingId}; name=Symbol("vac_o$(length(hop)*2)"),
+function vacuum_order(para, hop::Vector{<:BareHoppingId}; name=Symbol("vac_o$(length(hop)*2)"),
     prefactor=1.0, resetuid=false, even=true)
     extT, orbital, site, _creation = [], [], [], []
     for h in hop

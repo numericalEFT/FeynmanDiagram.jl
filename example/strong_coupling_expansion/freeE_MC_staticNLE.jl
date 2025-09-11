@@ -22,14 +22,15 @@ function neighbor(partitions)
     return n
 end
 
-for (_μ, _U, _β, order) in Iterators.product(μ, U, β, orders)
-    para = ParaMC(_μ, _U, t, _β, 0, Lx, Ly, order)
+for (_μ, _U, _β, _dμ, order) in Iterators.product(μ, U, β, dμ, orders)
+    para = ParaMC(_μ, _U, t, _β, 0, Lx, Ly, _dμ, order)
     println(short(para))
 
-    model = Hubbard.hubbardAtom(:fermi, _U, _μ, _β)
+    model = Hubbard.hubbardAtom(:fermi, _U, _μ + _dμ, _β)
 
-    _partition = [(2, 0), (3, 0), (4, 0)]
-    # _partition = [(2, 0), (3, 0),]
+    # _partition = [(2, 0), (3, 0), (4, 0), (5, 0), (6, 0)]
+    # _partition = [(2, 0), (3, 0), (4, 0), (5, 0)]
+    _partition = [(1, 0), (2, 0), (3, 0), (4, 0)]
     # _partition = [(2, 0), (4, 0),]
     # _partition = [(2, 0), (4, 0), (6, 0)]
     # reweight_goal = Float64[]

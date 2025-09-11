@@ -334,9 +334,9 @@ class HubbardEDGrandCanonical:
 if __name__ == "__main__":
     L_sites = 3
     t_hopping = 1.0
-    U_interaction = 4.0
+    U_interaction = 1.0
     # mu_chemical_potential = 1.0
-    mu_chemical_potential = 2.0
+    mu_chemical_potential = 0.5
     # mu=U/2 often corresponds to half-filling in large systems. For small L, it's more complex.
 
     print(f"Hubbard Model Parameters (Grand Canonical):")
@@ -369,7 +369,7 @@ if __name__ == "__main__":
         # )
         # print(f"Eigenvalues of H' (H_0 - mu*N): {eigenvalues_gc}")
 
-        Temperature = 5.0
+        Temperature = 0.2
         # Temperature = 2.5
         k_Boltzmann = 1.0
         grand_potential = hubbard_model_gc.get_grand_potential(

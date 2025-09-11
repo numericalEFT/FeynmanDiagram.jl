@@ -1,9 +1,11 @@
 
-function connectedVacuum(para, hop::Vector{BareHoppingId}; name=Symbol("vacuum_c$(length(hop)*2)"), resetuid=false, even=true)
+# function connectedVacuum(para, hop::Vector{BareHoppingId{T}}; name=Symbol("vacuum_c$(length(hop)*2)"), resetuid=false, even=true) where {T}
+function connectedVacuum(para, hop::Vector{<:BareHoppingId}; name=Symbol("vacuum_c$(length(hop)*2)"), resetuid=false, even=true)
     N = length(hop)
     all_compositions = find_compositions(N)
 
     vac_graph = Graph[]
+
     for compos in all_compositions
         num_compos = sum(compos) - 1
         factor = (-1)^num_compos * factorial(num_compos) / prod(factorial.(compos))
@@ -50,9 +52,9 @@ end
         # Convert the partition format (e.g., [4, 1, 1]) to the
         # desired coefficient format (e.g., b_1=2, b_4=1 => [2, 0, 0, 1])
         coeffs = partition_to_coeffs(p)
-        if coeffs[1] == 0
-            push!(all_compositions, coeffs)
-        end
+        # if coeffs[1] == 0  # no order-1 contributions
+        push!(all_compositions, coeffs)
+        # end
     end
     return all_compositions
 end

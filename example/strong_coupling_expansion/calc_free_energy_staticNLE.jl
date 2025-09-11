@@ -20,6 +20,7 @@ struct ParaMC
     n::Int
     Lx::Int
     Ly::Int
+    dμ::Float64
     order::Int
 end
 
@@ -27,6 +28,7 @@ paraid(p::ParaMC) = Dict(
     "order" => p.order,
     "beta" => p.β,
     "mu" => p.μ,
+    "dmu" => p.dμ,
     "U" => p.U,
     "Lx" => p.Lx,
     "Ly" => p.Ly,
@@ -38,8 +40,13 @@ function hopping_PBC(para::ParaMC, r1::Vector{Int}, r2::Vector{Int}, orbital::In
     delta12 = abs.(r1 - r2)
     delta = min.(delta12, L .- delta12)
 
-    if sum(delta) == 1
+    sum_d = sum(delta)
+    if sum_d == 1
+        # return para.t - para.dμ
         return para.t
+    elseif sum_d == 0
+        # return -para.dμ
+        return para.dμ
     else
         return 0.0
     end
@@ -48,8 +55,13 @@ end
 function hopping_FBC(para::ParaMC, r1::Vector{Int}, r2::Vector{Int}, orbital::Int)
     delta = abs.(r1 - r2)
 
-    if sum(delta) == 1
+    sum_d = sum(delta)
+    if sum_d == 1
+        # return para.t - para.dμ
         return para.t
+    elseif sum_d == 0
+        return -para.dμ
+        # return para.dμ
     else
         return 0.0
     end

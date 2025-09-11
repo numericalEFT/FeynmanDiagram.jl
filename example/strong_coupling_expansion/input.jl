@@ -3,10 +3,12 @@ t = 1.0
 # t = 2.0
 # t = 10.0
 # Lx, Ly = 2, 1
-# Lx, Ly = 3, 1
+Lx, Ly = 3, 1
 # Lx, Ly = 4, 1
-Lx, Ly = 2, 2
+# Lx, Ly = 2, 2
 
+# orders = [6]
+# orders = [5]
 orders = [4]
 # orders = [3]
 
@@ -22,8 +24,9 @@ U = [4.0]
 lambdas = [0.01]
 
 ### chemical potential shift in Hubbard atom (reference model)
-# dμ = [0.0]
-dμ = [0.1]
+# dμ = [0.0, 0.05]
+dμ = [0.05]
+# dμ = [0.1]
 
 # neval = 8e6
 neval = 4e6

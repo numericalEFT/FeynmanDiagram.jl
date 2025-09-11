@@ -1,6 +1,6 @@
 include("./input.jl")
-# include("./calc_free_energy_dynNLE.jl")
-include("./calc_free_energy_dynNLE_2D.jl")
+include("./calc_free_energy_dynNLE.jl")
+# include("./calc_free_energy_dynNLE_2D.jl")
 
 function neighbor(partitions)
     n = Vector{Tuple{Int,Int}}()
@@ -13,8 +13,8 @@ function neighbor(partitions)
             if idx >= ip
                 continue
             end
-            if np[1] == p[1] || np[1] == p[1] + 1 || np[1] == p[1] - 1 #the first index is the number of loops
-                # if np[1] == p[1] || np[1] == p[1] + 2 || np[1] == p[1] - 2 #the first index is the number of loops
+            # if np[1] == p[1] || np[1] == p[1] + 1 || np[1] == p[1] - 1 #the first index is the number of loops
+            if np[1] == p[1] || np[1] == p[1] + 2 || np[1] == p[1] - 2 #the first index is the number of loops
                 push!(n, (ip, idx))
             end
         end
@@ -34,7 +34,8 @@ for (_μ, _U, _β, lam, _dμ, order) in Iterators.product(μ, U, β, lambdas, d�
     model = Hubbard.hubbardAtom(:fermi, _U, _μ + _dμ, _β)
 
     # _partition = [(2, 0), (2, 1), (2, 2), (2, 3), (2, 4), (3, 0), (3, 1)]
-    _partition = [(2, 0), (2, 1), (2, 2), (2, 3), (2, 4), (3, 0), (3, 1), (3, 2), (3, 3), (3, 4), (3, 5)]
+    _partition = [(2, 0), (2, 1), (2, 2), (2, 3), (2, 4), (3, 0), (3, 1), (3, 2), (3, 3), (3, 4)]
+    # _partition = [(2, 0), (2, 1), (2, 2), (2, 3), (2, 4), (4, 0), (4, 1), (4, 2), (4, 3), (4, 4)]
 
     # _partition = [(2, 0), (3, 0),]
     # _partition = [(2, 0), (4, 0),]
