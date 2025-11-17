@@ -47,7 +47,7 @@ function integrand(config)
     if config.curr == 1
         extKidx = config.var[3][1]
         KinL, KoutL, KinR, KoutR = RefK, RefK, ExtK[extKidx], ExtK[extKidx]
-        eval(config, config.para.ver4, KinL, KoutL, KinR, KoutR, 1, true)
+        eval_ver4(config, config.para.ver4, KinL, KoutL, KinR, KoutR, 1, true)
         ver4 = config.para.ver4
         w = ver4.weight
         wd, we = 0.0, 0.0
@@ -109,7 +109,7 @@ function phase(varT, Tpair)
     end
 end
 
-function eval(config, ver4, KinL, KoutL, KinR, KoutR, Kidx::Int, fast = false)
+function eval_ver4(config, ver4, KinL, KoutL, KinR, KoutR, Kidx::Int, fast=false)
     para = config.para
     varK, varT = config.var[1], config.var[2]
 
@@ -168,15 +168,15 @@ function eval(config, ver4, KinL, KoutL, KinR, KoutR, Kidx::Int, fast = false)
         Rlopidx = Kidx + 1 + b.Lver.loopNum
 
         if c == Parquet.T
-            eval(config, b.Lver, KinL, KoutL, Kt, K, Llopidx)
-            eval(config, b.Rver, K, Kt, KinR, KoutR, Rlopidx)
+            eval_ver4(config, b.Lver, KinL, KoutL, Kt, K, Llopidx)
+            eval_ver4(config, b.Rver, K, Kt, KinR, KoutR, Rlopidx)
         elseif c == Parquet.U
-            eval(config, b.Lver, KinL, KoutR, Ku, K, Llopidx)
-            eval(config, b.Rver, K, Ku, KinR, KoutL, Rlopidx)
+            eval_ver4(config, b.Lver, KinL, KoutR, Ku, K, Llopidx)
+            eval_ver4(config, b.Rver, K, Ku, KinR, KoutL, Rlopidx)
         elseif c == Parquet.S
             # S channel
-            eval(config, b.Lver, KinL, Ks, KinR, K, Llopidx)
-            eval(config, b.Rver, K, KoutL, Ks, KoutR, Rlopidx)
+            eval_ver4(config, b.Lver, KinL, Ks, KinR, K, Llopidx)
+            eval_ver4(config, b.Rver, K, KoutL, Ks, KoutR, Rlopidx)
         else
             error("not implemented")
         end
@@ -233,8 +233,8 @@ function MC()
     dof = [[1, 4, 1],] # K, T, ExtKidx
     obs = zeros(Nk, 2) # observable for the Fock diagram 
 
-    config = MCIntegration.Configuration(steps, (K, T, ExtKidx), dof, obs; para = para)
-    avg, std = MCIntegration.sample(config, integrand, measure; print = 10, Nblock = 16)
+    config = MCIntegration.Configuration(steps, (K, T, ExtKidx), dof, obs; para=para)
+    avg, std = MCIntegration.sample(config, integrand, measure; print=10, Nblock=16)
     if isnothing(avg) == false
         avg *= NF
         std *= NF

@@ -1,7 +1,7 @@
 using FeynmanDiagram
 import FeynmanDiagram.Parquet: DiagPara, Interaction, VacuumDiag
 import FeynmanDiagram.ComputationalGraphs: Sum
-import FeynmanDiagram.FrontEnds: ConnectedGreenNId, BareHoppingId, VacuumId, UpUp, UpDown, Dynamic
+import FeynmanDiagram.FrontEnds: ConnectedGreenNId, BareHoppingId, GreenNId, VacuumId, UpUp, UpDown, Dynamic
 using Parameters
 
 function assign_orbitals(num_sites::Int, orbital_options=[[1, 1], [2, 2]])
@@ -50,7 +50,140 @@ function neighbor(partitions)
     return n
 end
 
+function free_energy_recursion(_partition::Vector{T}; filter=[], leaf_dep_funcs::Vector{Function}=Function[pr->pr isa BareHoppingId],
+    num_orbitals::Int=2, dynamic_hop=true) where {T}
+
+    diagpara = []
+    inter = [Interaction(UpDown, [Dynamic])]
+
+    orders = union([p[1] for p in _partition])
+    max_totalorder = maximum([sum(p) for p in _partition])
+    dict_graphs = Dict{NTuple{2,Int},Vector{Graph}}()
+
+    hop_orbitals = [[i, i] for i in 1:num_orbitals]
+
+    for order in orders
+        para = DiagPara(type=VacuumDiag, innerLoopNum=order, hasTau=true, interaction=inter, totalTauNum=order, filter=filter)
+        push!(diagpara, para)
+        println("Order: ", order)
+
+        graphs_fE = Graph[]
+        orbitals_all = assign_orbitals(order, hop_orbitals)
+        # hop_inds = [(i, mod1(i + 1, order)) for i in 1:order]
+
+        for orbital in orbitals_all
+            hoppings = BareHoppingId[]
+            for hop_idx in 1:order
+                if dynamic_hop
+                    push!(hoppings, BareHoppingId(para, (2hop_idx - 1, 2hop_idx), Tuple(orbital[hop_idx]), (2hop_idx - 1, 2hop_idx)))
+                    # push!(hoppings, BareHoppingId(para, hop_inds[hop_idx], Tuple(orbital[hop_idx]), (2hop_idx - 1, 2hop_idx)))
+                else
+                    push!(hoppings, BareHoppingId(para, (2hop_idx - 1, 2hop_idx), Tuple(orbital[hop_idx]), (hop_idx, hop_idx)))
+                    # push!(hoppings, BareHoppingId(para, hop_inds[hop_idx], Tuple(orbital[hop_idx]), (hop_idx, hop_idx)))
+                end
+            end
+            push!(graphs_fE, SCE.connectedGreen(para, hoppings, prefactor=(-1)^order / factorial(order)))
+        end
+        println("len of graphs: ", length(graphs_fE))
+
+        property = VacuumId(para)
+
+        graph_order = [Graph(graphs_fE, operator=Sum(), properties=property, name=Symbol("F_$order"))]
+        optimize!(graph_order)
+        optimize!(graph_order)
+
+        renormalization_orders = [max_totalorder - order]
+
+        dict_graph_order = taylorAD(graph_order, renormalization_orders, leaf_dep_funcs)
+        for key in keys(dict_graph_order)
+            p = (order, key...)
+            if p in _partition
+                dict_graphs[p] = dict_graph_order[key]
+            end
+        end
+        # dict_graphs[(order, 0)] = graph_order
+    end
+
+    diagpara = Vector{DiagPara}()
+    partitions = sort(collect(keys(dict_graphs)))
+    for p in partitions
+        if dynamic_hop
+            push!(diagpara, DiagPara(type=VacuumDiag, innerLoopNum=p[1], hasTau=true, interaction=inter, totalTauNum=p[1] * 2, filter=filter))
+        else
+            push!(diagpara, DiagPara(type=VacuumDiag, innerLoopNum=p[1], hasTau=true, interaction=inter, totalTauNum=p[1], filter=filter))
+        end
+    end
+
+    return (partitions, diagpara, dict_graphs)
+end
+
 function free_energy(_partition::Vector{T}; filter=[], leaf_dep_funcs::Vector{Function}=Function[pr->pr isa BareHoppingId],
+    num_orbitals::Int=2, dynamic_hop=true) where {T}
+
+    diagpara = []
+    inter = [Interaction(UpDown, [Dynamic])]
+
+    orders = union([p[1] for p in _partition])
+    max_totalorder = maximum([sum(p) for p in _partition])
+    dict_graphs = Dict{NTuple{2,Int},Vector{Graph}}()
+
+    hop_orbitals = [[i, i] for i in 1:num_orbitals]
+
+    for order in orders
+        para = DiagPara(type=VacuumDiag, innerLoopNum=order, hasTau=true, interaction=inter, totalTauNum=order, filter=filter)
+        push!(diagpara, para)
+        println("Order: ", order)
+
+        graphs_fE = Graph[]
+        orbitals_all = assign_orbitals(order, hop_orbitals)
+
+        for orbital in orbitals_all
+            hoppings = BareHoppingId[]
+            for hop_idx in 1:order
+                if dynamic_hop
+                    push!(hoppings, BareHoppingId(para, (2hop_idx - 1, 2hop_idx), Tuple(orbital[hop_idx]), (2hop_idx - 1, 2hop_idx)))
+                else
+                    push!(hoppings, BareHoppingId(para, (2hop_idx - 1, 2hop_idx), Tuple(orbital[hop_idx]), (hop_idx, hop_idx)))
+                end
+            end
+            push!(graphs_fE, SCE.connectedVacuum(para, hoppings))
+        end
+        println("len of graphs: ", length(graphs_fE))
+
+        property = VacuumId(para)
+
+        graph_order = [Graph(graphs_fE, operator=Sum(), properties=property, name=Symbol("F_$order"))]
+        optimize!(graph_order)
+        optimize!(graph_order)
+
+        # renormalization_orders = [max_totalorder - order]
+
+        # dict_graph_order = taylorAD(graph_order, renormalization_orders, leaf_dep_funcs)
+        # for key in keys(dict_graph_order)
+        #     p = (order, key...)
+        #     if p in _partition
+        #         dict_graphs[p] = dict_graph_order[key]
+        #     end
+        # end
+
+        dict_graphs[(order, 0)] = graph_order
+    end
+
+    diagpara = Vector{DiagPara}()
+    partitions = sort(collect(keys(dict_graphs)))
+    for p in partitions
+        if dynamic_hop
+            push!(diagpara, DiagPara(type=VacuumDiag, innerLoopNum=p[1], hasTau=true, interaction=inter, totalTauNum=p[1] * 2, filter=filter))
+        else
+            push!(diagpara, DiagPara(type=VacuumDiag, innerLoopNum=p[1], hasTau=true, interaction=inter, totalTauNum=p[1], filter=filter))
+        end
+    end
+
+    return (partitions, diagpara, dict_graphs)
+end
+
+function generate_Gnderiv1(_partition::Vector{T}; filter=[],
+    leaf_dep_funcs::Vector{Function}=[pr -> pr isa BareHoppingId, pr -> pr isa GreenNId],
     num_orbitals::Int=2, dynamic_hop=true) where {T}
 
     diagpara = []
@@ -93,12 +226,14 @@ function free_energy(_partition::Vector{T}; filter=[], leaf_dep_funcs::Vector{Fu
         optimize!(graph_order)
         optimize!(graph_order)
 
-        renormalization_orders = [max_totalorder - order]
+        renormalization_orders = [max_totalorder - order, 1]
 
         dict_graph_order = taylorAD(graph_order, renormalization_orders, leaf_dep_funcs)
+        # println("partitions: ", _partition)
         for key in keys(dict_graph_order)
-            p = (order, key...)
-            if p in _partition
+            # println("key: ", key)
+            p = (order, key[1])
+            if p in _partition && key[2] == 1
                 dict_graphs[p] = dict_graph_order[key]
             end
         end

@@ -10,7 +10,7 @@ using DataStructures
 using LinearAlgebra
 using Random
 
-include("generate_freeE_NLE.jl")
+include("generate_freeE_NLErec.jl")
 
 struct ParaMC
     μ::Float64
@@ -37,6 +37,31 @@ paraid(p::ParaMC) = Dict(
     "Ly" => p.Ly,
 )
 short(p::ParaMC) = join(["$(k)_$(v)" for (k, v) in sort!(OrderedDict(paraid(p)))], "_")
+
+function neighbor(partitions; order_diff=1)
+    n = Vector{Tuple{Int,Int}}()
+    Nnorm = length(partitions) + 1 # the index of the normalization diagram is the N+1
+    for (ip, p) in enumerate(partitions)
+        # if p[1] == 1 # if there is only one loop, then the diagram can be connected to the normalization diagram
+        if p[1] in [0, 1, 2] # if there is only one loop, then the diagram can be connected to the normalization diagram
+            push!(n, (ip, Nnorm))
+        end
+        for (idx, np) in enumerate(partitions)
+            if idx >= ip
+                continue
+            end
+            if (np[1] == p[1] && (np[2] == p[2] || np[2] == p[2] + 1 || np[2] == p[2] - 1)) ||
+               ((np[1] == p[1] + 2 || np[1] == p[1] - 2) && np[2] == p[2]) ||
+               ((np[1] == p[1] + order_diff || np[1] == p[1] - order_diff) && np[2] == p[2]) ||
+               ((np[1] == p[1] + order_diff || np[1] == p[1] - order_diff) && (np[2] == p[2] + 1 || np[2] == p[2] - 1))
+                #the first index is the number of loops; the second index is the number of space variables
+                push!(n, (ip, idx))
+            end
+        end
+    end
+    # println(n)
+    return n
+end
 
 function disperion_PBC(Lx, Ly, t, dμ=0.0)
     No = 2 # spin up/down
@@ -183,9 +208,19 @@ function integrand(idx, vars, config)
     model = config.userdata[5]
     varT, varRx = vars
 
+    num_varR = config.dof[idx][2] + 1
+    if length(Set(varRx[1:num_varR])) != length(varRx[1:num_varR])
+        return 0.0
+    end
+
     for (i, lftype) in enumerate(leafType[idx])
         if lftype == 0
             continue
+        elseif lftype == 3  # BareGreenNId
+            τi, τo = varT[leafτ_i[idx][i]], varT[leafτ_o[idx][i]]
+            orbitals_i, orbitals_o = leaforbitals_i[idx][i], leaforbitals_o[idx][i]
+            _gn = Green.GreenN(model, vcat(τi, τo), vcat(orbitals_i, orbitals_o))
+            leafval[idx][i] = Green.Gn(model, _gn)
         elseif lftype == 4  # BareHoppingId
             τ = varT[leafτ_o[idx][i][1]] - varT[leafτ_i[idx][i][1]]
             r1 = [varRx[leafSites[idx][i][1]], 1]
@@ -194,7 +229,9 @@ function integrand(idx, vars, config)
             order = leafOrders[idx][i][1]
             orbital = leaforbitals_i[idx][i][1]
             leafval[idx][i] = hopping_counterterm_PBC(para, τ, r1, r2, orbital, order)
-        elseif lftype == 5  # BareGreenNId
+        elseif lftype == 5  # GreenNId
+            println("No any GreenNId leaftype for the new recursive SCE!")
+
             Np = Int(length(leafSites[idx][i]) / 2)
             sites_i = varRx[leafSites[idx][i][1:Np]]
             sites_o = varRx[leafSites[idx][i][Np+1:end]]
@@ -227,7 +264,7 @@ function integrand(idx, vars, config)
     return root[1]
 end
 
-function freeE(model, para::ParaMC, diagram; neval=1e6, print=0, dtype=ComplexF64, kwargs...)
+function freeE(model, para::ParaMC, diagram, _neighbor; neval=1e6, print=0, dtype=ComplexF64, kwargs...)
     partition, diagpara, FeynGraphs = diagram
 
     funcGraphs! = Dict{Int,Function}()
@@ -243,13 +280,10 @@ function freeE(model, para::ParaMC, diagram; neval=1e6, print=0, dtype=ComplexF6
     T = Continuous(0.0, para.β; offset=1, adapt=true)
     # T = Continuous(0.0, para.β; offset=1, adapt=false)
     T.data[1] = 0.0
-    # T = Continuous(0.0, para.β; adapt=true)
-    # R = Discrete(1, para.Lx, adapt=false)
-    Rx = Discrete(1, para.Lx, adapt=true)
-    Ry = Discrete(1, para.Ly, adapt=true)
+    Rx = Discrete(1, para.Lx; offset=1, adapt=true, alpha=3.0)
+    Rx.data[1] = 1
 
-    dof = [[p.totalTauNum - 1, p.innerLoopNum * 2] for p in diagpara]
-    # dof = [[p.totalTauNum, p.innerLoopNum * 2] for p in diagpara]
+    dof = [[p.totalTauNum - 1, p.innerLoopNum - 1] for p in diagpara]
     obs = zeros(dtype, length(diagpara))
     # global_updates = [false, true]
     global_updates = [false, false]
@@ -257,7 +291,7 @@ function freeE(model, para::ParaMC, diagram; neval=1e6, print=0, dtype=ComplexF6
     println("dof: ", dof)
 
     # config = Configuration(; var=(T, Rx), dof=dof, obs=obs, type=dtype, global_updates=global_updates,
-    config = Configuration(; var=(T, Rx), dof=dof, obs=obs, type=dtype,
+    config = Configuration(; var=(T, Rx), dof=dof, obs=obs, type=dtype, neighbor=_neighbor,
         userdata=(para, root, funcGraphs!, leafStat, model))
     result = integrate(integrand; config=config, neval=neval, print=print, solver=:mcmc, kwargs...)
 
@@ -274,7 +308,7 @@ function freeE(model, para::ParaMC, diagram; neval=1e6, print=0, dtype=ComplexF6
         datadict = Dict{eltype(partition),Any}()
         for (o, key) in enumerate(partition)
             avg, std = result.mean[o], result.stdev[o]
-            datadict[key] = -measurement.(avg, std) / (para.Lx * para.Ly)
+            datadict[key] = -measurement.(avg, std)
             # r = measurement.(real(avg), real(std))
             # i = measurement.(imag(avg), imag(std))
             # data = Complex.(r, i)
@@ -288,7 +322,7 @@ end
 
 function freeE_MC(model, para::ParaMC; neval=1e6, partition=partition(para.order), reweight_goal=nothing,
     print=0, filename::Union{String,Nothing}=nothing, dtype=ComplexF64, _neighbor=nothing)
-    diagram = free_energy(partition)
+    diagram = free_energy_recursion(partition)
 
     partition = diagram[1]
     println("partition: ", partition)
@@ -307,8 +341,9 @@ function freeE_MC(model, para::ParaMC; neval=1e6, partition=partition(para.order
     if isnothing(_neighbor)
         _neighbor = neighbor(partition)
     end
+    println("neighbor: ", _neighbor)
 
-    freeEnergy, result = freeE(model, para, diagram; neval=neval, neighbor=_neighbor,
+    freeEnergy, result = freeE(model, para, diagram, _neighbor; neval=neval,
         reweight_goal=reweight_goal, dtype=dtype, print=print)
 
     if isnothing(freeEnergy) == false

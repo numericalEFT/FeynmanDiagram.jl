@@ -1,6 +1,6 @@
 include("./input.jl")
-include("./calc_free_energy_staticNLE.jl")
-# include("./calc_free_energy_staticNLE_2D.jl")
+# include("./calc_D_dynNLE.jl")
+include("./calc_D_dynNLE_2D.jl")
 
 function neighbor(partitions)
     n = Vector{Tuple{Int,Int}}()
@@ -23,17 +23,22 @@ function neighbor(partitions)
     return n
 end
 
-for (_μ, _U, _β, _dμ, order) in Iterators.product(μ, U, β, dμ, orders)
-    para = ParaMC(_μ, _U, t, _β, 0, Lx, Ly, _dμ, order)
+for (_μ, _U, _β, lam, _dμ, order) in Iterators.product(μ, U, β, lambdas, dμ, orders)
+    ϵk = disperion_PBC(Lx, Ly, t, _dμ)
+
+    println(ϵk)
+
+    para = ParaMC(_μ, _U, t, _β, 0, Lx, Ly, lam, _dμ, order, ϵk)
     println(short(para))
 
     model = Hubbard.hubbardAtom(:fermi, _U, _μ + _dμ, _β)
 
-    # _partition = [(2, 0), (3, 0), (4, 0), (5, 0), (6, 0)]
-    # _partition = [(2, 0), (3, 0), (4, 0), (5, 0)]
-    # _partition = [(1, 0), (2, 0), (3, 0)]
-    _partition = [(2, 0), (3, 0), (4, 0)]
-    # _partition = [(1, 0), (2, 0), (3, 0), (4, 0)]
+    # _partition = [(2, 0), (2, 1), (2, 2), (2, 3), (2, 4), (3, 0), (3, 1)]
+    # _partition = [(2, 0), (2, 1), (2, 2), (2, 3), (3, 0), (3, 1), (3, 2), (3, 3), (4, 0), (4, 1), (4, 2), (4, 3)]
+    _partition = [(2, 0), (2, 1), (2, 2), (2, 3), (3, 0), (3, 1), (3, 2), (3, 3)]
+    # _partition = [(2, 0), (2, 1), (2, 2), (2, 3), (2, 4), (4, 0), (4, 1), (4, 2), (4, 3), (4, 4)]
+
+    # _partition = [(2, 0), (3, 0),]
     # _partition = [(2, 0), (4, 0),]
     # _partition = [(2, 0), (4, 0), (6, 0)]
     # reweight_goal = Float64[]
@@ -46,6 +51,6 @@ for (_μ, _U, _β, _dμ, order) in Iterators.product(μ, U, β, dμ, orders)
     # end
     # push!(reweight_goal, 4.0)
 
-    freeE_MC(model, para, partition=_partition, neval=neval, filename=freeE_filename,
+    double_occupancy_MC(model, para, partition=_partition, neval=neval, filename=D_filename,
         dtype=Float64, _neighbor=neighbor(_partition))#, print=1)
 end

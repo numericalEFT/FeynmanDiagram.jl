@@ -550,13 +550,13 @@ end
                 KinL, KoutL, KinR, KoutR = varK[:, 1], varK[:, 1], varK[:, 2], varK[:, 2]
                 legK = [KinL, KoutL, KinR, KoutR]
                 # Benchmark.eval(para, ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV, true)
-                Benchmark.eval(para, ver4, varK, varT, legK, evalG, evalV, true)
+                Benchmark.eval_ver4(para, ver4, varK, varT, legK, evalG, evalV, true)
 
                 if timing
                     printstyled("parquet evaluator cost:", color=:green)
                     # @btime sin(p, ver4, var) setup = (x = rand())
                     # @time Benchmark.eval(para, ver4, varK, varT, [KinL, KoutL, KinR, KoutR], evalG, evalV, true)
-                    @time Benchmark.eval(para, ver4, varK, varT, legK, evalG, evalV, true)
+                    @time Benchmark.eval_ver4(para, ver4, varK, varT, legK, evalG, evalV, true)
                     # @btime Benchmark.eval(p, v4, vK, vT, lK, eG, eV, flag) setup = (p = para, v4 = ver4, vK = varK, vT = varT, l = legK, eG = evalG, eV = evalV, flag = true)
                 end
 

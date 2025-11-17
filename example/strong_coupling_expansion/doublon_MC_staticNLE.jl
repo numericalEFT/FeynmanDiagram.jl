@@ -1,12 +1,12 @@
 include("./input.jl")
-include("./calc_free_energy_staticNLE.jl")
-# include("./calc_free_energy_staticNLE_2D.jl")
+# include("./calc_D_staticNLE.jl")
+include("./calc_D_staticNLE_2D.jl")
 
 function neighbor(partitions)
     n = Vector{Tuple{Int,Int}}()
     Nnorm = length(partitions) + 1 # the index of the normalization diagram is the N+1
     for (ip, p) in enumerate(partitions)
-        if p[1] in [0, 1] # if there is only one loop, then the diagram can be connected to the normalization diagram
+        if p[1] in [0, 1, 2] # if there is only one loop, then the diagram can be connected to the normalization diagram
             push!(n, (ip, Nnorm))
         end
         for (idx, np) in enumerate(partitions)
@@ -29,11 +29,9 @@ for (_μ, _U, _β, _dμ, order) in Iterators.product(μ, U, β, dμ, orders)
 
     model = Hubbard.hubbardAtom(:fermi, _U, _μ + _dμ, _β)
 
-    # _partition = [(2, 0), (3, 0), (4, 0), (5, 0), (6, 0)]
-    # _partition = [(2, 0), (3, 0), (4, 0), (5, 0)]
+    # _partition = [(1, 0), (2, 0), (3, 0), (4, 0)]
     # _partition = [(1, 0), (2, 0), (3, 0)]
     _partition = [(2, 0), (3, 0), (4, 0)]
-    # _partition = [(1, 0), (2, 0), (3, 0), (4, 0)]
     # _partition = [(2, 0), (4, 0),]
     # _partition = [(2, 0), (4, 0), (6, 0)]
     # reweight_goal = Float64[]
@@ -46,6 +44,6 @@ for (_μ, _U, _β, _dμ, order) in Iterators.product(μ, U, β, dμ, orders)
     # end
     # push!(reweight_goal, 4.0)
 
-    freeE_MC(model, para, partition=_partition, neval=neval, filename=freeE_filename,
+    double_occupancy_MC(model, para, partition=_partition, neval=neval, filename=D_filename,
         dtype=Float64, _neighbor=neighbor(_partition))#, print=1)
 end

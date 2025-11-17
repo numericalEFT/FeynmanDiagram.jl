@@ -59,7 +59,8 @@ end
     return all_compositions
 end
 
-function connectedGreen(para, hop::Vector{BareHoppingId}; prefactor=1.0, name=Symbol("Gc$(length(hop)*2)"), resetuid=false, even=true)
+function connectedGreen(para, hop::Vector{BareHoppingId}; name=Symbol("Gc$(length(hop)*2)"),
+    resetuid=false, even=true, prefactor=1.0)
     # @assert para.type == GreenNDiag
     # @assert length(extT) == length(orbital) == length(site)
     N = length(hop)
@@ -74,14 +75,10 @@ function connectedGreen(para, hop::Vector{BareHoppingId}; prefactor=1.0, name=Sy
 
     resetuid && IR.uidreset()
 
-    Gc = [fullGreen(para, hop; resetuid=false, even=even)]
+    Gc = [fullGreen(para, hop; resetuid=false, even=even, has_root=true)]
 
     for (lind, rind) in partitions(collect(1:N), 2)
-        #this partition will not generate fermionic sign because the hopping term is always a bosonic operator
-        # if even && (length(lind) % 2 == 1)
-        #     continue
-        # end
-        subGc = connectedGreen(para, hop[lind]; resetuid=false, even=even)
+        subGc = connectedGreen(para, hop[lind]; resetuid=false, even=even, name=Symbol("Gc$(length(lind)*2)"))
         subGn = fullGreen(para, hop[rind]; resetuid=false, even=even)
         if isnothing(subGn) || isnothing(subGc)
             continue
@@ -89,7 +86,6 @@ function connectedGreen(para, hop::Vector{BareHoppingId}; prefactor=1.0, name=Sy
         push!(Gc, Graph([subGc, subGn], properties=GenericId(para), operator=Prod())) #additional minus sign because Gc(s) = Gn(s) - \sum_o Gc(o)Gn(s-o)
     end
 
-    # extT, orbital, site, creation = [], [], [], []
     ext_T, ext_orbital, ext_site, ext_creation = [], [], [], []
     # for h in hop
     # 	append!(extT, h.extT)
@@ -105,5 +101,75 @@ function connectedGreen(para, hop::Vector{BareHoppingId}; prefactor=1.0, name=Sy
 
     sg_factors = ones(length(Gc))
     sg_factors[2:end] .= -1.0
-    return Graph(Gc, subgraph_factors=sg_factors, properties=property, operator=Sum(), name=name, factor=prefactor)
+
+    return Graph(Gc, factor=prefactor, subgraph_factors=sg_factors, properties=property, operator=Sum(), name=name)
+
+end
+
+
+function connectedGreen!(para, hop_sets::Vector{Vector{BareHoppingId}}, Gc_pool=Dict(), Gn_pool=Dict();
+    name=Symbol("Gc$(length(hop)*2)"), is_local_Gn::Bool=true,
+    resetuid=false, even=true, prefactors=[1.0 for _ in 1:length(hop_sets)])
+    @assert allequal(length.(hop_sets))
+    N = length(hop_sets[1])
+    graphs = Graph[]
+
+    # println("$N hoppings ", prefactors)
+
+    for hop in hop_sets
+        site = Tuple{Int,Int}[]
+        for h in hop
+            push!(site, h.site)
+        end
+
+        if haskey(Gc_pool, hop)
+            push!(graphs, Gc_pool[hop])
+            continue
+        end
+
+        resetuid && IR.uidreset()
+
+        if haskey(Gn_pool, hop)
+            Gc = [Gn_pool[hop]]
+        else
+            Gc = [fullGreen_topology(para, hop; is_local_Gn=is_local_Gn, resetuid=false, even=even, has_root=true)]
+        end
+
+        # println(site)
+        for (lind, rind) in partitions(collect(1:N), 2)
+            if !(is_connected(site[lind]) && is_closed(site[rind]))
+                continue
+            end
+            # println(site[lind], "  ", site[rind])
+            if haskey(Gc_pool, hop[lind])
+                subGc = Gc_pool[hop[lind]]
+            else
+                # site_unique = unique(collect(Iterators.flatten(site[lind])))
+                # sym_factor = get_symmetry_factor(length(site_unique), site[lind])
+                subGc, _, _ = connectedGreen!(para, [hop[lind]], Gc_pool, Gn_pool;
+                    is_local_Gn=is_local_Gn, resetuid=false, even=even, name=Symbol("Gc$(length(lind)*2)"))
+                # prefactors=[1.0 / sym_factor,], resetuid=false, even=even, name=Symbol("Gc$(length(lind)*2)"))
+                Gc_pool[hop[lind]] = subGc
+            end
+            if haskey(Gn_pool, hop[rind])
+                subGn = Gn_pool[hop[rind]]
+            else
+                subGn = fullGreen_topology(para, hop[rind]; is_local_Gn=is_local_Gn, resetuid=false, even=even)
+                Gn_pool[hop[rind]] = subGn
+            end
+            push!(Gc, Graph([subGc, subGn], properties=GenericId(para), operator=Prod())) #additional minus sign because Gc(s) = Gn(s) - \sum_o Gc(o)Gn(s-o)
+        end
+        # ext_T, ext_orbital, ext_site, ext_creation = [], [], [], []
+        # if isempty(ext_site)
+        property = VacuumId(para)
+        # else
+        #     property = ConnectedGreenNId(para, orbital=ext_orbital, t=ext_T, r=ext_site, creation=ext_creation)
+        # end
+        sg_factors = ones(length(Gc))
+        sg_factors[2:end] .= -1.0
+        push!(graphs, Graph(Gc, subgraph_factors=sg_factors, properties=property, operator=Sum(), name=name))
+    end
+
+    total_Gc = Graph(graphs, subgraph_factors=prefactors, operator=Sum(), properties=VacuumId(para), name=name)
+    return total_Gc, Gc_pool, Gn_pool
 end

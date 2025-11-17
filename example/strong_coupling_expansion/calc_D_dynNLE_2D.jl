@@ -44,13 +44,9 @@ function disperion_PBC(Lx, Ly, t, dμ=0.0)
 
     for xi in 1:Lx
         for yi in 1:Ly
-            # k = [2π * (xi - 1) / Lx, 2π * (yi - 1) / Ly]
-            kx = 2π * (xi - 1) / Lx
-            ϵk[1, 1, xi, yi] = -2t * cos(kx) + dμ
-            ϵk[2, 2, xi, yi] = -2t * cos(kx) + dμ
-            # if ϵk[1, 1, xi, yi] == 0
-            #     println(xi, " ", yi)
-            # end
+            k = [2π * (xi - 1) / Lx, 2π * (yi - 1) / Ly]
+            ϵk[1, 1, xi, yi] = -2t * sum(cos.(k)) + dμ
+            ϵk[2, 2, xi, yi] = -2t * sum(cos.(k)) + dμ
         end
     end
     return ϵk
@@ -111,10 +107,8 @@ function hopping_counterterm_PBC(para::ParaMC, τ::T, r1::Vector{Int}, r2::Vecto
     for xi in 1:Lx
         for yi in 1:Ly
             k = [2π * (xi - 1) / Lx, 2π * (yi - 1) / Ly]
-            # ω = abs(ϵk[orbital, orbital, xi, yi]) < 1e-12 ? 0.0 : -1.0 / ϵk[orbital, orbital, xi, yi]
             ω = -1.0 / ϵk[orbital, orbital, xi, yi]
             lambda = sign(ω) * para.lambda
-            # lambda = iszero(ω) ? para.lambda : sign(ω) * para.lambda
             ω /= lambda
             g2c_τ = 0.0
             for o in 0:order
@@ -136,6 +130,7 @@ function hopping_counterterm_FBC(para::ParaMC, r1::Vector{Int}, r2::Vector{Int},
             ω = -1.0 / ϵk[orbital, orbital, xi, yi]
             lambda = sign(ω) * para.lambda
             ω /= lambda
+
             g2c_τ = 0.0
             for o in 0:order
                 g2c_τ += propagator_derivative(τ, ω, β, o) * ω^o * binomial(order, o) * (-1)^o
@@ -180,16 +175,17 @@ end
 function integrand(idx, vars, config)
     para, root, graphfuncs! = config.userdata[1:3]
     leafval, leafType, leafOrders, leafSites, leafτ_i, leafτ_o, leaforbitals_i, leaforbitals_o = config.userdata[4]
-    model = config.userdata[5]
-    varT, varRx = vars
+    model, coords = config.userdata[5:6]
+    varT_D, varT, varRx = vars
+    τp = varT_D[1]
 
     for (i, lftype) in enumerate(leafType[idx])
         if lftype == 0
             continue
         elseif lftype == 4  # BareHoppingId
             τ = varT[leafτ_o[idx][i][1]] - varT[leafτ_i[idx][i][1]]
-            r1 = [varRx[leafSites[idx][i][1]], 1]
-            r2 = [varRx[leafSites[idx][i][2]], 1]
+            r1 = coords[varRx[leafSites[idx][i][1]]]
+            r2 = coords[varRx[leafSites[idx][i][2]]]
 
             order = leafOrders[idx][i][1]
             orbital = leaforbitals_i[idx][i][1]
@@ -210,12 +206,38 @@ function integrand(idx, vars, config)
             τi, τo = varT[leafτ_i[idx][i]], varT[leafτ_o[idx][i]]
             orbitals_i, orbitals_o = leaforbitals_i[idx][i], leaforbitals_o[idx][i]
 
-            for (loc_i, loc_o) in values(r_dict)
-                τ = vcat(τi[loc_i], τo[loc_o])
-                orbitals = vcat(orbitals_i[loc_i], orbitals_o[loc_o])
+            order = leafOrders[idx][i][2]
+            if order == 0
+                for (loc_i, loc_o) in values(r_dict)
+                    τ = vcat(τi[loc_i], τo[loc_o])
+                    orbitals = vcat(orbitals_i[loc_i], orbitals_o[loc_o])
 
-                _gn = Green.GreenN(model, τ, orbitals)
-                leafval[idx][i] *= Green.Gn(model, _gn)
+                    _gn = Green.GreenN(model, τ, orbitals)
+                    leafval[idx][i] *= Green.Gn(model, _gn)
+                end
+            elseif order == 1
+                len_greenN = length(r_dict)
+                Gvec = Vector{Float64}(undef, len_greenN)
+                dGvec_dU = Vector{Float64}(undef, len_greenN)
+                if len_greenN == 1
+                    τ = vcat(τi, τo)
+                    orbitals = vcat(orbitals_i, orbitals_o)
+
+                    _gn = Green.GreenN(model, τ, orbitals)
+                    leafval[idx][i] *= Green.dGn_dU_estimator(model, _gn, τp)
+                else
+                    for (i, (loc_i, loc_o)) in enumerate(values(r_dict))
+                        τ = vcat(τi[loc_i], τo[loc_o])
+                        orbitals = vcat(orbitals_i[loc_i], orbitals_o[loc_o])
+
+                        _gn = Green.GreenN(model, τ, orbitals)
+                        Gvec[i] = Green.Gn(model, _gn)
+                        dGvec_dU[i] = Green.dGn_dU_estimator(model, _gn, τp)
+                    end
+                    leafval[idx][i] *= deriv_prod(Gvec, dGvec_dU)
+                end
+            else
+                error("this order $order not implemented!")
             end
         else
             error("this leaftype $lftype not implemented!")
@@ -227,7 +249,57 @@ function integrand(idx, vars, config)
     return root[1]
 end
 
-function freeE(model, para::ParaMC, diagram; neval=1e6, print=0, dtype=ComplexF64, kwargs...)
+function indices_to_lattice(indices::AbstractVector{Int}, L::Int)
+    n = length(indices)
+    coords = Vector{Vector{Int}}(undef, n)
+
+    @inbounds for i in 1:n
+        idx = indices[i] - 1
+        rx = (idx ÷ L) + 1
+        ry = (idx % L) + 1
+        coords[i] = [rx, ry]
+    end
+    return coords
+end
+
+"""
+Calculates the derivative of prod(A) with respect to U.
+
+Arguments:
+- A: The vector of values.
+- dA_dU: The vector of derivatives of each element in A w.r.t. U.
+"""
+function deriv_prod(A::AbstractVector, dA_dU::AbstractVector)
+    @assert length(A) == length(dA_dU) "Vectors must have the same length"
+
+    # Find the indices of zero elements
+    zero_indices = findall(iszero, A)
+    num_zeros = length(zero_indices)
+
+    if num_zeros == 0
+        # --- Case 1: No zeros ---
+        # Use the stable log-derivative formula
+        return prod(A) * sum(dA_dU ./ A)
+    elseif num_zeros == 1
+        # --- Case 2: Exactly one zero ---
+        k = zero_indices[1] # Get the index of the single zero
+
+        # We need the product of all non-zero elements.
+        # This is an efficient way to calculate it without allocating new arrays from slicing.
+        p_others = 1.0
+        for i in eachindex(A)
+            if i != k
+                p_others *= A[i]
+            end
+        end
+        return p_others * dA_dU[k]
+    else
+        # --- Case 3: Two or more zeros ---
+        return 0.0
+    end
+end
+
+function double_occupancy(model, para::ParaMC, diagram; neval=1e6, print=0, dtype=ComplexF64, kwargs...)
     partition, diagpara, FeynGraphs = diagram
 
     funcGraphs! = Dict{Int,Function}()
@@ -240,25 +312,24 @@ function freeE(model, para::ParaMC, diagram; neval=1e6, print=0, dtype=ComplexF6
     leafStat = FeynmanDiagram.leafstates(leaf_maps, dtype=dtype)
 
     root = zeros(dtype, 1)
-    T = Continuous(0.0, para.β; offset=1, adapt=true)
+    T_doublon = Continuous(0.0, para.β; adapt=true, alpha=3.0)
+    T = Continuous(0.0, para.β; offset=1, adapt=true, alpha=3.0)
     # T = Continuous(0.0, para.β; offset=1, adapt=false)
     T.data[1] = 0.0
     # T = Continuous(0.0, para.β; adapt=true)
     # R = Discrete(1, para.Lx, adapt=false)
-    Rx = Discrete(1, para.Lx, adapt=true)
-    Ry = Discrete(1, para.Ly, adapt=true)
+    R = Discrete(1, para.Lx * para.Ly, adapt=true, alpha=3.0)
+    coords = indices_to_lattice(collect(1:para.Lx*para.Ly), para.Ly)
 
-    dof = [[p.totalTauNum - 1, p.innerLoopNum * 2] for p in diagpara]
+    dof = [[1, p.totalTauNum - 1, p.innerLoopNum * 2] for p in diagpara]
     # dof = [[p.totalTauNum, p.innerLoopNum * 2] for p in diagpara]
     obs = zeros(dtype, length(diagpara))
-    # global_updates = [false, true]
-    global_updates = [false, false]
 
     println("dof: ", dof)
 
-    # config = Configuration(; var=(T, Rx), dof=dof, obs=obs, type=dtype, global_updates=global_updates,
-    config = Configuration(; var=(T, Rx), dof=dof, obs=obs, type=dtype,
-        userdata=(para, root, funcGraphs!, leafStat, model))
+    # config = Configuration(; var=(T, R), dof=dof, obs=obs, type=dtype, global_updates=global_updates,
+    config = Configuration(; var=(T_doublon, T, R), dof=dof, obs=obs, type=dtype,
+        userdata=(para, root, funcGraphs!, leafStat, model, coords))
     result = integrate(integrand; config=config, neval=neval, print=print, solver=:mcmc, kwargs...)
 
     if isnothing(result) == false
@@ -286,9 +357,9 @@ function freeE(model, para::ParaMC, diagram; neval=1e6, print=0, dtype=ComplexF6
     end
 end
 
-function freeE_MC(model, para::ParaMC; neval=1e6, partition=partition(para.order), reweight_goal=nothing,
+function double_occupancy_MC(model, para::ParaMC; neval=1e6, partition=partition(para.order), reweight_goal=nothing,
     print=0, filename::Union{String,Nothing}=nothing, dtype=ComplexF64, _neighbor=nothing)
-    diagram = free_energy(partition)
+    diagram = generate_Gnderiv1(partition)
 
     partition = diagram[1]
     println("partition: ", partition)
@@ -308,10 +379,13 @@ function freeE_MC(model, para::ParaMC; neval=1e6, partition=partition(para.order
         _neighbor = neighbor(partition)
     end
 
-    freeEnergy, result = freeE(model, para, diagram; neval=neval, neighbor=_neighbor,
+    Dloc = Green.thermalavg(model.D, model.E, model.β, model.Z)
+    println("The local double occupancy (0-th order) is: ", Dloc)
+
+    doublon, result = double_occupancy(model, para, diagram; neval=neval, neighbor=_neighbor,
         reweight_goal=reweight_goal, dtype=dtype, print=print)
 
-    if isnothing(freeEnergy) == false
+    if isnothing(doublon) == false
         if isnothing(filename) == false
             jldopen(filename, "a+") do f
                 key = "$(short(para))"
@@ -319,17 +393,17 @@ function freeE_MC(model, para::ParaMC; neval=1e6, partition=partition(para.order
                     @warn("replacing existing data for $key")
                     delete!(f, key)
                 end
-                f[key] = (freeEnergy,)
+                f[key] = (doublon,)
             end
         end
         for (ip, key) in enumerate(partition)
             println("Group ", key)
             # @printf("%10s   %10s \n", "avg", "err")
             @printf("%10s   %10s   %10s   %10s \n", "real(avg)", "err", "imag(avg)", "err")
-            # @printf("%10.6f ± %10.6f\n", freeEnergy[key].val, freeEnergy[key].err)
-            r, i = real(freeEnergy[key]), imag(freeEnergy[key])
+            # @printf("%10.6f ± %10.6f\n", doublon[key].val, doublon[key].err)
+            r, i = real(doublon[key]), imag(doublon[key])
             @printf("%10.6f ± %10.6f    %10.6f ± %10.6f\n", r.val, r.err, i.val, i.err)
         end
     end
-    return freeEnergy, result
+    return doublon, result
 end

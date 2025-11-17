@@ -12,7 +12,7 @@
 @inline apply(o::Prod, diag::FeynmanGraph{F,W}) where {F<:Number,W<:Number} = diag.weight
 @inline apply(o::Power{N}, diag::FeynmanGraph{F,W}) where {N,F<:Number,W<:Number} = diag.weight
 
-function eval!(g::Graph{F,W}, leafmap::Dict{Int,Int}=Dict{Int,Int}(), leaf::Vector{W}=Vector{W}(); inherit=false, randseed::Int=-1) where {F,W}
+function eval!(g::Graph{F,W}, leafmap::Dict{Int,Int}=Dict{Int,Int}(), leaf::Vector{W}=Vector{W}(); inherit=false, randseed::Int=-1, weight::Float64=1.0) where {F,W}
     result = nothing
     if randseed > 0
         Random.seed!(randseed)
@@ -22,7 +22,8 @@ function eval!(g::Graph{F,W}, leafmap::Dict{Int,Int}=Dict{Int,Int}(), leaf::Vect
             if !inherit
                 if isempty(leafmap)
                     if randseed < 0
-                        node.weight = 1.0
+                        # node.weight = 1.0
+                        node.weight = weight
                     else
                         node.weight = rand()
                     end
