@@ -127,6 +127,11 @@ function integrand(idx, vars, config)
     varT_D, varT, varRx = vars
     τp = varT_D[1]
 
+    num_varR = config.dof[idx][2] + 1
+    if length(Set(varRx[1:num_varR])) != length(varRx[1:num_varR])
+        return 0.0
+    end
+
     for (i, lftype) in enumerate(leafType[idx])
         if lftype == 0
             continue
@@ -140,6 +145,8 @@ function integrand(idx, vars, config)
                 leafval[idx][i] = Green.Gn(model, _gn)
             elseif order == 1
                 leafval[idx][i] = Green.dGn_dU_estimator(model, _gn, τp)
+            else
+                error("this order $order not implemented!")
             end
         elseif lftype == 4  # BareHoppingId
             τ = varT[leafτ_o[idx][i][1]] - varT[leafτ_i[idx][i][1]]

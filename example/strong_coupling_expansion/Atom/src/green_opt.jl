@@ -25,6 +25,7 @@ struct Model{N,No}
     Norbital::Int      # number of orbitals/spin flavors
     E::SVector{N,Float}  # eigen-energies (sorted ascending)
     Z::Float           # partition sum = Tr[e^{-β H_loc}]
+    w::SVector{N,Float}    # Boltzmann weights e^{-β E}
     Hdiag::Operator    # diagonal H in eigenbasis
     c⁺::SVector{No,Operator}  # c† for each orbital, in eigenbasis
     c⁻::SVector{No,Operator}  # c  for each orbital, in eigenbasis
@@ -48,7 +49,8 @@ struct Model{N,No}
         U_sorted = U_unsorted[:, p]
 
         # Partition function Z = Σ_a e^{-β E_a}
-        Z = sum(exp.(-β .* E_sorted))
+        w = exp.(-β .* E_sorted)
+        Z = sum(w)
 
         # Diagonal H in eigenbasis
         Hdiag = zeros(Float, (dim, dim))
@@ -92,11 +94,9 @@ Return ⟨O⟩ = Tr[ O e^{-β H} ] / Z, assuming O is expressed in the eigenbasi
 and E are the eigenvalues of H (so e^{-βH} is diagonal with entries e^{-βE[a]}).
 Matches your original API. (fileciteturn2file0)
 """
-function thermalavg(O::Operator, E, β, Z)
-    if !(size(O) == (length(E), length(E)))
-        throw(AssertionError("Dimension of Operator[$(O.m), $(O.n)] doesn't match with $(length(E))"))
-    end
-    return sum(diag(O) .* exp.(-β .* E)) / Z
+function thermalavg(O::Operator, w, Z)
+    @assert size(O, 1) == length(w)
+    return dot(diag(O), w) / Z
 end
 
 """
@@ -108,14 +108,17 @@ In eigenbasis this is just elementwise multiplication by exp(+τE[a]) and exp(-�
 Matches (and fixes nothing) from your code. (fileciteturn2file0)
 """
 function Heisenberg(O::Operator, E, τ)
-    if !(size(O) == (length(E), length(E)))
-        throw(AssertionError("Dimension of Operator[$(O.m), $(O.n)] doesn't match with $(length(E))"))
-    end
+    n = length(E)
+    @assert size(O) == (n, n)
     if abs(τ) < 1e-10
-        return O # if τ≈0, no evoluation is needed
+        return O
     end
-    Uτ = Diagonal(exp.(E .* τ))
-    return Uτ * O * inv(Uτ)
+    # allocate result same size/type as O
+    Out = similar(O)
+    @inbounds for a in 1:n, b in 1:n
+        Out[a, b] = O[a, b] * exp((E[a] - E[b]) * τ)
+    end
+    return Out
 end
 
 """
@@ -187,7 +190,7 @@ struct GreenN
 end
 
 # density for a given orbital (unchanged API)
-density(m::Model, orbital) = thermalavg(m.n[orbital], m.E, m.β, m.Z)
+density(m::Model, orbital) = thermalavg(m.n[orbital], m.w, m.Z)
 
 # -----------------------------------------------------------------------------
 # Bare Gn and G2 (unchanged semantics)
@@ -215,7 +218,7 @@ function Gn(m::Model, g::GreenN)
         M *= op
     end
 
-    Gval = thermalavg(M, m.E, m.β, m.Z)
+    Gval = thermalavg(M, m.w, m.Z)
     if m.isfermi
         return Gval * parity(perm)
     else
@@ -292,7 +295,7 @@ function G_with_D(m::Model, g::GreenN, τp::Real)
         M *= op
     end
 
-    GwD = thermalavg(M, m.E, m.β, m.Z)
+    GwD = thermalavg(M, m.w, m.Z)
     return fermion_sign * GwD
 end
 
@@ -316,7 +319,7 @@ average its return value. That average → ∂G/∂U.
 """
 function dGn_dU_estimator(m::Model, g::GreenN, τp::Real)
     Gval = Gn(m, g)                        # G = ⟨Tτ legs⟩
-    Dloc = thermalavg(m.D, m.E, m.β, m.Z)  # ⟨D⟩ = ⟨n↑n↓⟩_atom
+    Dloc = thermalavg(m.D, m.w, m.Z)  # ⟨D⟩ = ⟨n↑n↓⟩_atom
     GwD = G_with_D(m, g, τp)              # ⟨Tτ(legs · D(τp))⟩
 
     # return -m.β * (GwD - Gval * Dloc)
@@ -351,7 +354,7 @@ function G_with_N(m::Model, g::GreenN, τp::Real)
         M *= op
     end
 
-    GwN = thermalavg(M, m.E, m.β, m.Z)
+    GwN = thermalavg(M, m.w, m.Z)
     return fermion_sign * GwN
 end
 
@@ -363,7 +366,7 @@ function dGn_dμ_estimator(m::Model, g::GreenN, τp::Real)
         Nmat .+= m.n[orb]
     end
     # local density expectation ⟨N⟩
-    Nloc = thermalavg(Nmat, m.E, m.β, m.Z)
+    Nloc = thermalavg(Nmat, m.w, m.Z)
     # correlator with insertion
     GwN = G_with_N(m, g, τp)  # you'll implement same as GwD but using Nmat
     return GwN - Gval * Nloc
