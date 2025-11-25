@@ -74,6 +74,7 @@ struct Model{N,No}
             Norbital,
             E_sorted,
             Z,
+            w,
             Hdiag,
             c⁺,
             c⁻,

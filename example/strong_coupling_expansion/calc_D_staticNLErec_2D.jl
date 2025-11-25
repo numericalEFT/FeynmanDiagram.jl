@@ -127,7 +127,7 @@ function integrand(idx, vars, config)
     varT_D, varT, varRx = vars
     τp = varT_D[1]
 
-    num_varR = config.dof[idx][2] + 1
+    num_varR = config.dof[idx][3] + 1
     if length(Set(varRx[1:num_varR])) != length(varRx[1:num_varR])
         return 0.0
     end
@@ -400,7 +400,7 @@ function double_occupancy_MC(model, para::ParaMC; neval=1e6, partition=partition
         _neighbor = neighbor(partition)
     end
 
-    Dloc = Green.thermalavg(model.D, model.E, model.β, model.Z)
+    Dloc = Green.thermalavg(model.D, model.w, model.Z)
     println("The local double occupancy (0-th order) is: ", Dloc)
 
     doublon, result = double_occupancy(model, para, diagram, _neighbor; neval=neval,

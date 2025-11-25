@@ -7,7 +7,7 @@ for (_μ, _U, _β, lam, _dμ, order) in Iterators.product(μ, U, β, lambdas, d�
 
     model = Hubbard.hubbardAtom(:fermi, _U, _μ + _dμ, _β)
 
-    _partition = [(2, 0), (3, 0),]
+    _partition = [(2, 0), (3, 0), (4, 0)]
     # _partition = [(2, 0), (4, 0),]
     # _partition = [(2, 0), (4, 0), (6, 0)]
     # reweight_goal = Float64[]

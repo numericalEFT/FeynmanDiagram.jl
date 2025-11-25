@@ -174,9 +174,9 @@ function generate_Gnderiv1(_partition::Vector{T}; filter=[],
     partitions = sort(collect(keys(dict_graphs)))
     for p in partitions
         if dynamic_hop
-            push!(diagpara, DiagPara(type=VacuumDiag, innerLoopNum=p[1], hasTau=true, interaction=inter, totalTauNum=p[1] * 2, filter=filter))
+            push!(diagpara, DiagPara(type=VacuumDiag, innerLoopNum=p[2], hasTau=true, interaction=inter, totalTauNum=p[1] * 2, filter=filter))
         else
-            push!(diagpara, DiagPara(type=VacuumDiag, innerLoopNum=p[1], hasTau=true, interaction=inter, totalTauNum=p[1], filter=filter))
+            push!(diagpara, DiagPara(type=VacuumDiag, innerLoopNum=p[2], hasTau=true, interaction=inter, totalTauNum=p[1], filter=filter))
         end
     end
 

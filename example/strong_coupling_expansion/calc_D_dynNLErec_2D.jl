@@ -204,7 +204,7 @@ function integrand(idx, vars, config)
     varT_D, varT, varRx = vars
     τp = varT_D[1]
 
-    num_varR = config.dof[idx][2] + 1
+    num_varR = config.dof[idx][3] + 1
     if length(Set(varRx[1:num_varR])) != length(varRx[1:num_varR])
         return 0.0
     end
