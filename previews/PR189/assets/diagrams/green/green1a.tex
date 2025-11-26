@@ -1,0 +1,29 @@
+% standalone document border convention: {left bottom right top}
+\documentclass[varwidth,border={6pt 16pt 6pt 5pt}]{standalone}
+\usepackage[force]{feynmp-auto}
+
+\begin{document}
+\begin{fmffile}{green1a_diag}
+	\begin{fmfgraph*}(83,50)
+		\fmfstraight
+		\fmftop{tl,t,tr}
+		\fmfbottom{bl,b,br}
+		\fmffreeze
+		% Draw a circular fermion tadpole
+		\fmfforce{vloc(__t) shifted (0,-20)}{td}
+		\fmf{plain,left}{t,td,t}
+		\fmfipath{q}
+		\fmfcmd{
+			q = vpath(__td,__t) & vpath(__t,__td);
+			cfill (harrow (q, .595));
+			}
+		\fmf{boson}{b,td}
+		\fmf{fermion}{bl,b,br}
+		\fmfdot{bl,b,br,td}
+		\fmfv{d.sh=circle, d.fi=full, d.si=2thick, l.a=-90, label=$1$}{bl}
+		\fmfv{d.sh=circle, d.fi=full, d.si=2thick, l.a=-90, label=$3$}{b}
+		\fmfv{d.sh=circle, d.fi=full, d.si=2thick, l.a=-90, label=$2$}{br}
+		\fmfv{d.sh=circle, d.fi=full, d.si=2thick, l.a=-25, label=$4$}{td}
+	\end{fmfgraph*}
+\end{fmffile}
+\end{document}
