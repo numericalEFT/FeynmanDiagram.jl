@@ -11,6 +11,7 @@ using LinearAlgebra
 using Random
 
 include("generate_freeE_NLErec.jl")
+include("dof_utils.jl")
 
 struct ParaMC
     μ::Float64
@@ -208,7 +209,7 @@ function integrand(idx, vars, config)
     model, coords = config.userdata[5:6]
     varT, varRx = vars
 
-    num_varR = config.dof[idx][3] + 1
+    num_varR = config.dof[idx][2] + 1
     if length(Set(varRx[1:num_varR])) != length(varRx[1:num_varR])
         return 0.0
     end
@@ -297,7 +298,7 @@ function freeE(model, para::ParaMC, diagram, _neighbor; neval=1e6, print=0, dtyp
     Rx.data[1] = 1
     coords = indices_to_lattice(collect(1:para.Lx*para.Ly), para.Ly)
 
-    dof = [[p.totalTauNum - 1, p.innerLoopNum - 1] for p in diagpara]
+    dof = build_dof(diagpara)
     obs = zeros(dtype, length(diagpara))
     # global_updates = [false, true]
     global_updates = [false, false]

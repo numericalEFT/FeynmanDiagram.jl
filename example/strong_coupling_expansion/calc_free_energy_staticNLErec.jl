@@ -11,6 +11,7 @@ using LinearAlgebra
 using Random
 
 include("generate_freeE_NLErec.jl")
+include("dof_utils.jl")
 
 struct ParaMC
     μ::Float64
@@ -127,9 +128,6 @@ function integrand(idx, vars, config)
     varT, varRx = vars
 
     num_varR = config.dof[idx][2] + 1
-    if length(Set(varRx[1:num_varR])) != length(varRx[1:num_varR])
-        return 0.0
-    end
 
     for (i, lftype) in enumerate(leafType[idx])
         if lftype == 0
@@ -202,7 +200,7 @@ function freeE(model, para::ParaMC, diagram, _neighbor; neval=1e6, print=0, dtyp
     Rx = Discrete(1, para.Lx; offset=1, adapt=true, alpha=3.0)
     Rx.data[1] = 1
 
-    dof = [[p.totalTauNum - 1, p.innerLoopNum - 1] for p in diagpara]
+    dof = build_dof(diagpara)
     obs = zeros(dtype, length(diagpara))
     # global_updates = [false, true]
     global_updates = [false, false]

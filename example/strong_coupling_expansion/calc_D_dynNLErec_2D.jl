@@ -11,6 +11,7 @@ using LinearAlgebra
 using Random
 
 include("generate_freeE_NLErec.jl")
+include("dof_utils.jl")
 
 struct ParaMC
     μ::Float64
@@ -201,10 +202,10 @@ function integrand(idx, vars, config)
     para, root, graphfuncs! = config.userdata[1:3]
     leafval, leafType, leafOrders, leafSites, leafτ_i, leafτ_o, leaforbitals_i, leaforbitals_o = config.userdata[4]
     model, coords = config.userdata[5:6]
-    varT_D, varT, varRx = vars
+    varT, varRx, varT_D = vars
     τp = varT_D[1]
 
-    num_varR = config.dof[idx][3] + 1
+    num_varR = config.dof[idx][2] + 1
     if length(Set(varRx[1:num_varR])) != length(varRx[1:num_varR])
         return 0.0
     end
@@ -364,12 +365,12 @@ function double_occupancy(model, para::ParaMC, diagram, _neighbor; neval=1e6, pr
     R.data[1] = 1
     coords = indices_to_lattice(collect(1:para.Lx*para.Ly), para.Ly)
 
-    dof = [[1, p.totalTauNum - 1, p.innerLoopNum - 1] for p in diagpara]
+    dof = build_dof(diagpara; include_probe=true)
     obs = zeros(dtype, length(diagpara))
 
     println("dof: ", dof)
 
-    config = Configuration(; var=(T_doublon, T, R), dof=dof, obs=obs, type=dtype, neighbor=_neighbor,
+    config = Configuration(; var=(T, R, T_doublon), dof=dof, obs=obs, type=dtype, neighbor=_neighbor,
         userdata=(para, root, funcGraphs!, leafStat, model, coords))
     result = integrate(integrand; config=config, neval=neval, print=print, solver=:mcmc, kwargs...)
 

@@ -35,14 +35,14 @@ end
 
 function hubbardAtom(type, U, μ, β, h=0.0)
     E = [0.0, -μ - h, -μ + h, U - 2μ]
-    H = zeros(Float, (4, 4))
+    H = zeros(Float64, (4, 4))
     H[diagind(H)] = E
 
     # |0>=|00>=1, |↑>=|10>=2, |↓>=|01>=3, |↑↓>=|11>=4
     # the first is the forck state for ↑ spin, the second is forck state for ↓
 
-    cpup = zeros(Float, (4, 4))
-    cpdown = zeros(Float, (4, 4))
+    cpup = zeros(Float64, (4, 4))
+    cpdown = zeros(Float64, (4, 4))
 
     cpup[2, 1], cpup[4, 3] = 1, 1
     cpdown[3, 1], cpdown[4, 2] = 1, -1
@@ -69,7 +69,7 @@ function hubbardAtom2(type, t, U, μ, β)
         @error("Not implemented!")
     end
 
-    m = Model(β, H, hcat(cu⁺, cd⁺))
+    m = Model(β, Matrix(H), vcat(Matrix.(cu⁺), Matrix.(cd⁺)))
 
     println("t=$t, U=$U, μ=$μ, β=$β")
     println("Model Hilbert space: $(m.dim)")
@@ -90,7 +90,7 @@ function hubbardAtom4(type, t, U, μ, β)
         @error("Not implemented!")
     end
 
-    m = Model(β, H, hcat(cu⁺, cd⁺))
+    m = Model(β, Matrix(H), vcat(Matrix.(cu⁺), Matrix.(cd⁺)))
 
     println("t=$t, U=$U, μ=$μ, β=$β")
     println("Model Hilbert space: $(m.dim)")
