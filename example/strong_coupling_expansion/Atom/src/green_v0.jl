@@ -20,17 +20,17 @@ Operator should be a matrix type.
 """
 struct Model{N,No}
     isfermi::Bool
-    β::Float
+    β::Float64
     dim::Int # dim of Hilbert space
     Norbital::Int # number of orbitals
-    E::SVector{N,Float} # eigen energy
-    Z::Float # partition sum
-    Hdiag::Operator # diagnoalized Hamitlonian
-    c⁺::SVector{No,Operator} # creation operator in the eigenspace
-    c⁻::SVector{No,Operator} # anniliation operator in the eigenspace
-    n::SVector{No,Operator}  # density operator in the eigenspace
+    E::SVector{N,Float64} # eigen energy
+    Z::Float64 # partition sum
+    Hdiag::Matrix{Float64} # diagnoalized Hamitlonian
+    c⁺::SVector{No,Matrix{Float64}} # creation operator in the eigenspace
+    c⁻::SVector{No,Matrix{Float64}} # anniliation operator in the eigenspace
+    n::SVector{No,Matrix{Float64}}  # density operator in the eigenspace
 
-    function Model(β, H, c⁺_fock::Vector{Operator}, isfermi=true)
+    function Model(β, H, c⁺_fock::Vector{Matrix{Float64}}, isfermi=true)
         dim = size(H, 1)
         @assert size(H) == size(c⁺_fock[1])
         @assert size(H) == (dim, dim)
@@ -40,7 +40,7 @@ struct Model{N,No}
         Z = sum(exp.(-β * E))
         E = sort(E)
 
-        Hdiag = zeros(Float, (dim, dim))
+        Hdiag = zeros(Float64, (dim, dim))
         Hdiag[diagind(Hdiag)] = E
         c⁺ = [U' * o * U for o in c⁺_fock]
         # c⁻ = [U' * o' * U for o in c⁺_fock]
@@ -51,7 +51,7 @@ struct Model{N,No}
     end
 end
 
-function thermalavg(O::Operator, E, β, Z)
+function thermalavg(O::Matrix{Float64}, E, β, Z)
     if !(size(O) == (length(E), length(E)))
         throw(AssertionError("Dimension of Operator[$(O.m), $(O.n)] doesn't match with $(length(E))"))
     end
@@ -63,7 +63,7 @@ Heisenberg(o::Operator, E, τ)
    Transform operator o into Heisenberg picture
 	exp(H * τ) * o * exp(-H * τ)
 """
-function Heisenberg(O::Operator, E, τ)
+function Heisenberg(O::Matrix{Float64}, E, τ)
     if !(size(O) == (length(E), length(E)))
         throw(AssertionError("Dimension of Operator[$(O.m), $(O.n)] doesn't match with $(length(E))"))
     end
@@ -161,15 +161,15 @@ All other Green's function are derived from the above full Green's function
 """
 struct GreenN
     N::Int # n-body or 2n-point
-    τ::Vector{Float} # 1:2n, array of imaginary-time
+    τ::Vector{Float64} # 1:2n, array of imaginary-time
     orbital::Vector{Int} # 1:2n, array of orbitals 
-    hop::Vector{Operator}
+    hop::Vector{Matrix{Float64}}
 
     function GreenN(m::Model, τ, orbital)
         N = length(τ) ÷ 2
         @assert length(τ) == length(orbital) == 2N "Length of τ and orbital must be 2N."
 
-        hop = Vector{Operator}(undef, 2N)
+        hop = Vector{Matrix{Float64}}(undef, 2N)
         for i in 1:N
             hop[i] = Heisenberg(m.c⁺[orbital[i]], m.E, τ[i])
         end

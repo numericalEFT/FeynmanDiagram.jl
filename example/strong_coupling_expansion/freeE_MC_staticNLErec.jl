@@ -1,6 +1,6 @@
 include("./input.jl")
-include("./calc_free_energy_staticNLErec.jl")
-# include("./calc_free_energy_staticNLErec_2D.jl")
+# include("./calc_free_energy_staticNLErec.jl")
+include("./calc_free_energy_staticNLErec_2D.jl")
 
 for (_μ, _U, _β, _dμ, order) in Iterators.product(μ, U, β, dμ, orders)
     para = ParaMC(_μ, _U, t, _β, 0, Lx, Ly, _dμ, order)
@@ -11,9 +11,9 @@ for (_μ, _U, _β, _dμ, order) in Iterators.product(μ, U, β, dμ, orders)
     # _partition = [(2, 0), (3, 0), (4, 0), (5, 0), (6, 0)]
     # _partition = [(2, 0), (3, 0), (4, 0), (5, 0)]
     # _partition = [(1, 0), (2, 0), (3, 0)]
-    # _partition = [(2, 0), (3, 0), (4, 0)]
+    _partition = [(2, 0), (3, 0), (4, 0)]
     # _partition = [(1, 0), (2, 0), (3, 0), (4, 0)]
-    _partition = [(2, 0), (4, 0),]
+    # _partition = [(2, 0), (4, 0),]
     # _partition = [(2, 0), (4, 0), (6, 0)]
     # reweight_goal = Float64[]
     # for (order, sOrder) in partition

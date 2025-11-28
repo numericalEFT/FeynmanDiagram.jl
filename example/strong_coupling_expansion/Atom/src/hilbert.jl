@@ -85,7 +85,7 @@ end
 function creation(basis::BinaryFock, site, spin)
     Dim = 4^basis.sites
     # Dim = length(basis.idx)
-    c⁺ = spzeros(Float, Dim, Dim)
+    c⁺ = spzeros(Float64, Dim, Dim)
     for (ki, ket) in enumerate(basis.idx)
         nup, ndown = idx2state(ket, basis.sites)
         if spin == UP

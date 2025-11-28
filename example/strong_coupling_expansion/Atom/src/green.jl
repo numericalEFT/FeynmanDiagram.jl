@@ -20,19 +20,19 @@ export Gn, G2, G_with_D, dGn_dU_estimator
 
 struct Model{N,No}
     isfermi::Bool
-    β::Float
+    β::Float64
     dim::Int           # Hilbert-space dimension
     Norbital::Int      # number of orbitals/spin flavors
-    E::SVector{N,Float}  # eigen-energies (sorted ascending)
-    Z::Float           # partition sum = Tr[e^{-β H_loc}]
-    Hdiag::Operator    # diagonal H in eigenbasis
-    c⁺::SVector{No,Operator}  # c† for each orbital, in eigenbasis
-    c⁻::SVector{No,Operator}  # c  for each orbital, in eigenbasis
-    n::SVector{No,Operator}   # n = c† c for each orbital, in eigenbasis
-    M::Operator               # local magnetization operator in eigenbasis
-    D::Operator               # local double-occupancy operator in eigenbasis
+    E::SVector{N,Float64}  # eigen-energies (sorted ascending)
+    Z::Float64           # partition sum = Tr[e^{-β H_loc}]
+    Hdiag::Matrix{Float64}    # diagonal H in eigenbasis
+    c⁺::SVector{No,Matrix{Float64}}  # c† for each orbital, in eigenbasis
+    c⁻::SVector{No,Matrix{Float64}}  # c  for each orbital, in eigenbasis
+    n::SVector{No,Matrix{Float64}}   # n = c† c for each orbital, in eigenbasis
+    M::Matrix{Float64}               # local magnetization operator in eigenbasis
+    D::Matrix{Float64}               # local double-occupancy operator in eigenbasis
 
-    function Model(β, H, c⁺_fock::Vector{Operator}, isfermi::Bool=true;
+    function Model(β, H, c⁺_fock::Vector{Matrix{Float64}}, isfermi::Bool=true;
         doublon_orbitals::Tuple{Int,Int}=(UP, DOWN))
         dim = size(H, 1)
         @assert size(H) == size(c⁺_fock[1])
@@ -51,7 +51,7 @@ struct Model{N,No}
         Z = sum(exp.(-β .* E_sorted))
 
         # Diagonal H in eigenbasis
-        Hdiag = zeros(Float, (dim, dim))
+        Hdiag = zeros(Float64, (dim, dim))
         Hdiag[diagind(Hdiag)] = E_sorted
 
         # Rotate creation operators into eigenbasis
@@ -92,7 +92,7 @@ Return ⟨O⟩ = Tr[ O e^{-β H} ] / Z, assuming O is expressed in the eigenbasi
 and E are the eigenvalues of H (so e^{-βH} is diagonal with entries e^{-βE[a]}).
 Matches your original API. (fileciteturn2file0)
 """
-function thermalavg(O::Operator, E, β, Z)
+function thermalavg(O::Matrix{Float64}, E, β, Z)
     if !(size(O) == (length(E), length(E)))
         throw(AssertionError("Dimension of Operator[$(O.m), $(O.n)] doesn't match with $(length(E))"))
     end
@@ -107,7 +107,7 @@ Heisenberg-evolve a local operator O with the *atomic* Hamiltonian:
 In eigenbasis this is just elementwise multiplication by exp(+τE[a]) and exp(-τE[b]).
 Matches (and fixes nothing) from your code. (fileciteturn2file0)
 """
-function Heisenberg(O::Operator, E, τ)
+function Heisenberg(O::Matrix{Float64}, E, τ)
     if !(size(O) == (length(E), length(E)))
         throw(AssertionError("Dimension of Operator[$(O.m), $(O.n)] doesn't match with $(length(E))"))
     end
@@ -164,15 +164,15 @@ All other Green's function are derived from the above full Green's function
 """
 struct GreenN
     N::Int                  # n-body or 2n-point
-    τ::Vector{Float}        # times for each leg (length 2N)
+    τ::Vector{Float64}        # times for each leg (length 2N)
     orbital::Vector{Int}    # orbital/spin index for each leg (length 2N)
-    hop::Vector{Operator}   # Heisenberg-evolved operators for each leg
+    hop::Vector{Matrix{Float64}}   # Heisenberg-evolved operators for each leg
 
     function GreenN(m::Model, τ, orbital)
         N = length(τ) ÷ 2
         @assert length(τ) == length(orbital) == 2N "Length of τ and orbital must be 2N."
 
-        hop = Vector{Operator}(undef, 2N)
+        hop = Vector{Matrix{Float64}}(undef, 2N)
         # incoming: creation legs 1..N
         for i in 1:N
             hop[i] = Heisenberg(m.c⁺[orbital[i]], m.E, τ[i])
