@@ -1,4 +1,5 @@
 include("./input.jl")
+include("./common.jl")
 # include("./calc_free_energy_dynNLErec.jl")
 include("./calc_free_energy_dynNLErec_2D.jl")
 
@@ -12,13 +13,8 @@ for (_μ, _U, _β, lam, _dμ, order) in Iterators.product(μ, U, β, lambdas, d�
 
     model = Hubbard.hubbardAtom(:fermi, _U, _μ + _dμ, _β)
 
-    # _partition = [(2, 0), (2, 1), (2, 2), (2, 3), (2, 4), (3, 0), (3, 1)]
-    _partition = [(2, 0), (2, 1), (2, 2), (2, 3), (3, 0), (3, 1), (3, 2), (3, 3), (4, 0), (4, 1), (4, 2), (4, 3)]
-    # _partition = [(2, 0), (2, 1), (2, 2), (2, 3), (2, 4), (4, 0), (4, 1), (4, 2), (4, 3), (4, 4)]
-
-    # _partition = [(2, 0), (3, 0),]
-    # _partition = [(2, 0), (4, 0),]
-    # _partition = [(2, 0), (4, 0), (6, 0)]
+    # _partition = [(2, 0), (2, 1), (2, 2), (2, 3), (3, 0), (3, 1), (3, 2), (3, 3), (4, 0), (4, 1), (4, 2), (4, 3)]
+    _partition = partition_dyn(order)
     # reweight_goal = Float64[]
     # for (order, sOrder) in partition
     # 	reweight_factor = 2.0^(2order + 2sOrder - 2)

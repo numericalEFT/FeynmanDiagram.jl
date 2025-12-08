@@ -360,7 +360,7 @@ function double_occupancy_MC(model, para::ParaMC; neval=1e6, partition=partition
         _neighbor = neighbor(partition)
     end
 
-    Dloc = Green.thermalavg(model.D, model.E, model.β, model.Z)
+    Dloc = Green.thermal_expectation(model, model.D)
     println("The local double occupancy (0-th order) is: ", Dloc)
 
     doublon, result = double_occupancy(model, para, diagram, _neighbor; neval=neval,

@@ -54,7 +54,8 @@ function neighbor(partitions; order_diff=1)
             if (np[1] == p[1] && (np[2] == p[2] || np[2] == p[2] + 1 || np[2] == p[2] - 1)) ||
                ((np[1] == p[1] + 2 || np[1] == p[1] - 2) && np[2] == p[2]) ||
                ((np[1] == p[1] + order_diff || np[1] == p[1] - order_diff) && np[2] == p[2]) ||
-               ((np[1] == p[1] + order_diff || np[1] == p[1] - order_diff) && (np[2] == p[2] + 1 || np[2] == p[2] - 1))
+               ((np[1] == p[1] + order_diff || np[1] == p[1] - order_diff) && (np[2] == p[2] + 1 || np[2] == p[2] - 1)) ||
+               ((np[1] == p[1] + order_diff || np[1] == p[1] - order_diff) && (np[2] == p[2] + 2 || np[2] == p[2] - 2))
                 #the first index is the number of loops; the second index is the number of space variables
                 push!(n, (ip, idx))
             end
@@ -308,7 +309,7 @@ function freeE(model, para::ParaMC, diagram, _neighbor; neval=1e6, print=0, dtyp
     # config = Configuration(; var=(T, Rx), dof=dof, obs=obs, type=dtype, global_updates=global_updates,
     config = Configuration(; var=(T, Rx), dof=dof, obs=obs, type=dtype, neighbor=_neighbor,
         userdata=(para, root, funcGraphs!, leafStat, model, coords))
-    result = integrate(integrand; config=config, neval=neval, print=print, solver=:mcmc, kwargs...)
+    result = integrate(integrand; config=config, neval=neval, thermal_ratio=0.2, print=print, solver=:mcmc, kwargs...)
 
     if isnothing(result) == false
         if print >= 0
@@ -354,7 +355,7 @@ function freeE_MC(model, para::ParaMC; neval=1e6, partition=partition(para.order
     end
 
     if isnothing(_neighbor)
-        _neighbor = neighbor(partition)
+        _neighbor = neighbor(partition, order_diff=2)
     end
     println("neighbor: ", _neighbor)
 

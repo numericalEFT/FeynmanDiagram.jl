@@ -54,7 +54,8 @@ function neighbor(partitions; order_diff=1)
             if (np[1] == p[1] && (np[2] == p[2] || np[2] == p[2] + 1 || np[2] == p[2] - 1)) ||
                ((np[1] == p[1] + 2 || np[1] == p[1] - 2) && np[2] == p[2]) ||
                ((np[1] == p[1] + order_diff || np[1] == p[1] - order_diff) && np[2] == p[2]) ||
-               ((np[1] == p[1] + order_diff || np[1] == p[1] - order_diff) && (np[2] == p[2] + 1 || np[2] == p[2] - 1))
+               ((np[1] == p[1] + order_diff || np[1] == p[1] - order_diff) && (np[2] == p[2] + 1 || np[2] == p[2] - 1)) ||
+               ((np[1] == p[1] + order_diff || np[1] == p[1] - order_diff) && (np[2] == p[2] + 2 || np[2] == p[2] - 2))
                 #the first index is the number of loops; the second index is the number of space variables
                 push!(n, (ip, idx))
             end
@@ -372,7 +373,7 @@ function double_occupancy(model, para::ParaMC, diagram, _neighbor; neval=1e6, pr
 
     config = Configuration(; var=(T, R, T_doublon), dof=dof, obs=obs, type=dtype, neighbor=_neighbor,
         userdata=(para, root, funcGraphs!, leafStat, model, coords))
-    result = integrate(integrand; config=config, neval=neval, print=print, solver=:mcmc, kwargs...)
+    result = integrate(integrand; config=config, neval=neval, thermal_ratio=0.2, print=print, solver=:mcmc, kwargs...)
 
     if isnothing(result) == false
         if print >= 0
@@ -414,10 +415,10 @@ function double_occupancy_MC(model, para::ParaMC; neval=1e6, partition=partition
     end
 
     if isnothing(_neighbor)
-        _neighbor = neighbor(partition)
+        _neighbor = neighbor(partition, order_diff=2)
     end
 
-    Dloc = Green.thermalavg(model.D, model.E, model.β, model.Z)
+    Dloc = Green.thermal_expectation(model, model.D)
     println("The local double occupancy (0-th order) is: ", Dloc)
 
     doublon, result = double_occupancy(model, para, diagram, _neighbor; neval=neval,

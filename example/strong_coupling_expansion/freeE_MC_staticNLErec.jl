@@ -1,6 +1,16 @@
 include("./input.jl")
+include("./common.jl")
 # include("./calc_free_energy_staticNLErec.jl")
 include("./calc_free_energy_staticNLErec_2D.jl")
+
+function partition(order::Int, hasodd::Bool=false)
+    par = []
+    dord = hasodd ? 1 : 2
+    for i in 2:dord:order
+        push!(par, (i, 0))
+    end
+    return par
+end
 
 for (_μ, _U, _β, _dμ, order) in Iterators.product(μ, U, β, dμ, orders)
     para = ParaMC(_μ, _U, t, _β, 0, Lx, Ly, _dμ, order)
@@ -8,13 +18,7 @@ for (_μ, _U, _β, _dμ, order) in Iterators.product(μ, U, β, dμ, orders)
 
     model = Hubbard.hubbardAtom(:fermi, _U, _μ + _dμ, _β)
 
-    # _partition = [(2, 0), (3, 0), (4, 0), (5, 0), (6, 0)]
-    # _partition = [(2, 0), (3, 0), (4, 0), (5, 0)]
-    # _partition = [(1, 0), (2, 0), (3, 0)]
-    _partition = [(2, 0), (3, 0), (4, 0)]
-    # _partition = [(1, 0), (2, 0), (3, 0), (4, 0)]
-    # _partition = [(2, 0), (4, 0),]
-    # _partition = [(2, 0), (4, 0), (6, 0)]
+    _partition = partition_static(order)
     # reweight_goal = Float64[]
     # for (order, sOrder) in partition
     # 	reweight_factor = 2.0^(2order + 2sOrder - 2)

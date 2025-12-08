@@ -11,7 +11,7 @@ for (_μ, _U, _β, _dμ) in Iterators.product(μ, U, β, dμ)
 
     println("Local free energy: ", log(model.Z) / model.β)
 
-    Dloc = Green.thermalavg(model.D, model.E, model.β, model.Z)
+    Dloc = Green.thermal_expectation(model, model.D)
     println("Local double occupancy: ", Dloc)
 
     nuploc = Green.density(model, 1)
