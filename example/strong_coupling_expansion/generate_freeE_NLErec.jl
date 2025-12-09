@@ -75,7 +75,8 @@ function free_energy_recursion(_partition::Vector{T}; filter=[], leaf_dep_funcs:
             end
             # println("len of graphs $key_topo: ", length(graphs_fE))
             graphs_fE, _, _ = SCE.connectedGreen!(para, vec_hop_set, gc_pool, gn_pool; name=Symbol("F_$order"), even=true,
-                prefactors=(-1)^order ./ sym_factors, is_local_Gn=true)
+                prefactors=1.0 ./ sym_factors, is_local_Gn=true)
+            # prefactors=(-1)^order ./ sym_factors, is_local_Gn=true)
 
             graph_order = [graphs_fE,]
             optimize!(graph_order)
@@ -150,7 +151,7 @@ function generate_Gnderiv1(_partition::Vector{T}; filter=[],
             end
             # println("len of graphs $key_topo: ", length(graphs_fE))
             graphs_fE, _, _ = SCE.connectedGreen!(para, vec_hop_set, gc_pool, gn_pool; name=Symbol("F_$order"), even=true,
-                prefactors=(-1)^order ./ sym_factors, is_local_Gn=true)
+                prefactors=1.0 ./ sym_factors, is_local_Gn=true)
 
             graph_order = [graphs_fE,]
             optimize!(graph_order)
@@ -158,7 +159,7 @@ function generate_Gnderiv1(_partition::Vector{T}; filter=[],
 
             renormalization_orders = [max_totalorder - order, 1]
 
-            println("renormalization_orders: ", renormalization_orders)
+            # println("renormalization_orders: ", renormalization_orders)
 
             dict_graph_order = taylorAD(graph_order, renormalization_orders, leaf_dep_funcs)
             for key in keys(dict_graph_order)

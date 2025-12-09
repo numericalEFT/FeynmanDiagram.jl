@@ -9,6 +9,7 @@ using DataStructures
 # using LinearAlgebra: det
 using LinearAlgebra
 using Random
+using Dates
 
 include("generate_freeE_NLErec.jl")
 include("dof_utils.jl")
@@ -93,7 +94,7 @@ function disperion_FBC(Lx, Ly, t, dμ=0.0)
     return ϵk
 end
 
-function propagator(τ::T, ω::T, β::T) where {T}
+@fastmath function propagator(τ::T, ω::T, β::T) where {T}
     if τ ≈ T(0.0)
         τ = -1e-10
     end
@@ -171,43 +172,34 @@ function hopping_counterterm_FBC(para::ParaMC, r1::Vector{Int}, r2::Vector{Int},
     return g2c * prefactor
 end
 
-@inline function find_duplicates_with_indices(ri::Vector{T}, ro::Vector{T}) where {T}
-    element_indices = Dict{eltype(ri),Tuple{Vector{Int},Vector{Int}}}()
-    # element_indices = Dict{eltype(ri),Vector{Int}}()
-
-    sites = Set(vcat(ri, ro))
-    for elem in sites
-        idx_i = findall(x -> x == elem, ri)
-        idx_o = findall(x -> x == elem, ro)
-        if length(idx_i) != length(idx_o)
-            return nothing
-        end
-        element_indices[elem] = (idx_i, idx_o)
-    end
-    return element_indices
-end
-
-@inline function permu_sign(v::Vector{Int})
-    sign = 1
-    for i in eachindex(v)
-        for j in (i+1):length(v)
-            if (v[i] > v[j]) || (v[i] == v[j] && iseven(i) && isodd(j))
-                sign *= -1
-            end
-        end
-    end
-    return sign
-end
-
 function integrand(idx, vars, config)
     para, root, graphfuncs! = config.userdata[1:3]
     leafval, leafType, leafOrders, leafSites, leafτ_i, leafτ_o, leaforbitals_i, leaforbitals_o = config.userdata[4]
-    model, coords = config.userdata[5:6]
-    varT, varRx, varT_D = vars
+    model = config.userdata[5]
+    varT, (varRx, varRy), varT_D = vars
     τp = varT_D[1]
 
     num_varR = config.dof[idx][2] + 1
-    if length(Set(varRx[1:num_varR])) != length(varRx[1:num_varR])
+    # varR = collect(zip(varRx[1:num_varR], varRy[1:num_varR]))
+    # if length(Set(varR)) != length(varR)
+    #     return 0.0
+    # end
+    # 使用双重循环检查重叠 (O(N^2) 但无内存分配，对于小阶数 N 极快)
+    has_overlap = false
+    @inbounds for i in 1:num_varR
+        xi, yi = varRx[i], varRy[i]
+        for j in (i+1):num_varR
+            if xi == varRx[j] && yi == varRy[j]
+                has_overlap = true
+                break
+            end
+        end
+        if has_overlap
+            break
+        end
+    end
+
+    if has_overlap
         return 0.0
     end
 
@@ -227,62 +219,12 @@ function integrand(idx, vars, config)
             end
         elseif lftype == 4  # BareHoppingId
             τ = varT[leafτ_o[idx][i][1]] - varT[leafτ_i[idx][i][1]]
-            r1 = coords[varRx[leafSites[idx][i][1]]]
-            r2 = coords[varRx[leafSites[idx][i][2]]]
+            r1 = collect(varR[leafSites[idx][i][1]])
+            r2 = collect(varR[leafSites[idx][i][2]])
 
             order = leafOrders[idx][i][1]
             orbital = leaforbitals_i[idx][i][1]
             leafval[idx][i] = hopping_counterterm_PBC(para, τ, r1, r2, orbital, order)
-        elseif lftype == 5  # GreenNId
-            println("No any GreenNId leaftype for the new recursive SCE!")
-            Np = Int(length(leafSites[idx][i]) / 2)
-            sites_i = varRx[leafSites[idx][i][1:Np]]
-            sites_o = varRx[leafSites[idx][i][Np+1:end]]
-            r_dict = find_duplicates_with_indices(sites_i, sites_o)
-
-            if isnothing(r_dict)
-                leafval[idx][i] = 0.0
-                continue
-            end
-
-            leafval[idx][i] = permu_sign(collect(Iterators.flatten(zip(sites_i, sites_o))))
-
-            τi, τo = varT[leafτ_i[idx][i]], varT[leafτ_o[idx][i]]
-            orbitals_i, orbitals_o = leaforbitals_i[idx][i], leaforbitals_o[idx][i]
-
-            order = leafOrders[idx][i][2]
-            if order == 0
-                for (loc_i, loc_o) in values(r_dict)
-                    τ = vcat(τi[loc_i], τo[loc_o])
-                    orbitals = vcat(orbitals_i[loc_i], orbitals_o[loc_o])
-
-                    _gn = Green.GreenN(model, τ, orbitals)
-                    leafval[idx][i] *= Green.Gn(model, _gn)
-                end
-            elseif order == 1
-                len_greenN = length(r_dict)
-                Gvec = Vector{Float64}(undef, len_greenN)
-                dGvec_dU = Vector{Float64}(undef, len_greenN)
-                if len_greenN == 1
-                    τ = vcat(τi, τo)
-                    orbitals = vcat(orbitals_i, orbitals_o)
-
-                    _gn = Green.GreenN(model, τ, orbitals)
-                    leafval[idx][i] *= Green.dGn_dU_estimator(model, _gn, τp)
-                else
-                    for (i, (loc_i, loc_o)) in enumerate(values(r_dict))
-                        τ = vcat(τi[loc_i], τo[loc_o])
-                        orbitals = vcat(orbitals_i[loc_i], orbitals_o[loc_o])
-
-                        _gn = Green.GreenN(model, τ, orbitals)
-                        Gvec[i] = Green.Gn(model, _gn)
-                        dGvec_dU[i] = Green.dGn_dU_estimator(model, _gn, τp)
-                    end
-                    leafval[idx][i] *= deriv_prod(Gvec, dGvec_dU)
-                end
-            else
-                error("this order $order not implemented!")
-            end
         else
             error("this leaftype $lftype not implemented!")
         end
@@ -293,65 +235,17 @@ function integrand(idx, vars, config)
     return root[1]
 end
 
-function indices_to_lattice(indices::AbstractVector{Int}, L::Int)
-    n = length(indices)
-    coords = Vector{Vector{Int}}(undef, n)
-
-    @inbounds for i in 1:n
-        idx = indices[i] - 1
-        rx = (idx ÷ L) + 1
-        ry = (idx % L) + 1
-        coords[i] = [rx, ry]
-    end
-    return coords
-end
-
-"""
-Calculates the derivative of prod(A) with respect to U.
-
-Arguments:
-- A: The vector of values.
-- dA_dU: The vector of derivatives of each element in A w.r.t. U.
-"""
-function deriv_prod(A::AbstractVector, dA_dU::AbstractVector)
-    @assert length(A) == length(dA_dU) "Vectors must have the same length"
-
-    # Find the indices of zero elements
-    zero_indices = findall(iszero, A)
-    num_zeros = length(zero_indices)
-
-    if num_zeros == 0
-        # --- Case 1: No zeros ---
-        # Use the stable log-derivative formula
-        return prod(A) * sum(dA_dU ./ A)
-    elseif num_zeros == 1
-        # --- Case 2: Exactly one zero ---
-        k = zero_indices[1] # Get the index of the single zero
-
-        # We need the product of all non-zero elements.
-        # This is an efficient way to calculate it without allocating new arrays from slicing.
-        p_others = 1.0
-        for i in eachindex(A)
-            if i != k
-                p_others *= A[i]
-            end
-        end
-        return p_others * dA_dU[k]
-    else
-        # --- Case 3: Two or more zeros ---
-        return 0.0
-    end
-end
-
 function double_occupancy(model, para::ParaMC, diagram, _neighbor; neval=1e6, print=0, dtype=ComplexF64, kwargs...)
     partition, diagpara, FeynGraphs = diagram
 
+    println("Start compiling...", now())
     funcGraphs! = Dict{Int,Function}()
     leaf_maps = Vector{Dict{Int,Graph}}()
     for (i, key) in enumerate(partition)
         funcGraphs![i], leafmap = Compilers.compile(FeynGraphs[key])
         push!(leaf_maps, leafmap)
     end
+    println("Compile finished.", now())
 
     leafStat = FeynmanDiagram.leafstates(leaf_maps, dtype=dtype)
 
@@ -360,11 +254,8 @@ function double_occupancy(model, para::ParaMC, diagram, _neighbor; neval=1e6, pr
     T = Continuous(0.0, para.β; offset=1, adapt=true, alpha=3.0)
     # T = Continuous(0.0, para.β; offset=1, adapt=false)
     T.data[1] = 0.0
-    # T = Continuous(0.0, para.β; adapt=true)
-    # R = Discrete(1, para.Lx, adapt=false)
-    R = Discrete(1, para.Lx * para.Ly; offset=1, adapt=true, alpha=3.0)
-    R.data[1] = 1
-    coords = indices_to_lattice(collect(1:para.Lx*para.Ly), para.Ly)
+
+    R = Discrete([(1, para.Lx), (1, para.Ly)]; offset=1, adapt=true, alpha=3.0) # the fixed R is [1, 1]
 
     dof = build_dof(diagpara; include_probe=true)
     obs = zeros(dtype, length(diagpara))
@@ -372,7 +263,7 @@ function double_occupancy(model, para::ParaMC, diagram, _neighbor; neval=1e6, pr
     println("dof: ", dof)
 
     config = Configuration(; var=(T, R, T_doublon), dof=dof, obs=obs, type=dtype, neighbor=_neighbor,
-        userdata=(para, root, funcGraphs!, leafStat, model, coords))
+        userdata=(para, root, funcGraphs!, leafStat, model))
     result = integrate(integrand; config=config, neval=neval, thermal_ratio=0.2, print=print, solver=:mcmc, kwargs...)
 
     if isnothing(result) == false
@@ -398,7 +289,10 @@ end
 
 function double_occupancy_MC(model, para::ParaMC; neval=1e6, partition=partition(para.order), reweight_goal=nothing,
     print=0, filename::Union{String,Nothing}=nothing, dtype=ComplexF64, _neighbor=nothing)
+
+    println("Generating diagrams...", now())
     diagram = generate_Gnderiv1(partition)
+    prinln("Generate finished.", now())
 
     partition = diagram[1]
     println("partition: ", partition)
@@ -415,7 +309,8 @@ function double_occupancy_MC(model, para::ParaMC; neval=1e6, partition=partition
     end
 
     if isnothing(_neighbor)
-        _neighbor = neighbor(partition, order_diff=2)
+        # _neighbor = neighbor(partition, order_diff=2)
+        _neighbor = neighbor(partition, order_diff=1)
     end
 
     Dloc = Green.thermal_expectation(model, model.D)

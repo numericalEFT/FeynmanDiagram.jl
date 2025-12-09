@@ -176,42 +176,15 @@ function hopping_counterterm_FBC(para::ParaMC, r1::Vector{Int}, r2::Vector{Int},
     return g2c * prefactor
 end
 
-@inline function find_duplicates_with_indices(ri::Vector{T}, ro::Vector{T}) where {T}
-    element_indices = Dict{eltype(ri),Tuple{Vector{Int},Vector{Int}}}()
-    # element_indices = Dict{eltype(ri),Vector{Int}}()
-
-    sites = Set(vcat(ri, ro))
-    for elem in sites
-        idx_i = findall(x -> x == elem, ri)
-        idx_o = findall(x -> x == elem, ro)
-        if length(idx_i) != length(idx_o)
-            return nothing
-        end
-        element_indices[elem] = (idx_i, idx_o)
-    end
-    return element_indices
-end
-
-@inline function permu_sign(v::Vector{Int})
-    sign = 1
-    for i in eachindex(v)
-        for j in (i+1):length(v)
-            if (v[i] > v[j]) || (v[i] == v[j] && iseven(i) && isodd(j))
-                sign *= -1
-            end
-        end
-    end
-    return sign
-end
-
 function integrand(idx, vars, config)
     para, root, graphfuncs! = config.userdata[1:3]
     leafval, leafType, leafOrders, leafSites, leafτ_i, leafτ_o, leaforbitals_i, leaforbitals_o = config.userdata[4]
-    model, coords = config.userdata[5:6]
-    varT, varRx = vars
+    model = config.userdata[5]
+    varT, (varRx, varRy) = vars
 
     num_varR = config.dof[idx][2] + 1
-    if length(Set(varRx[1:num_varR])) != length(varRx[1:num_varR])
+    varR = collect(zip(varRx[1:num_varR], varRy[1:num_varR]))
+    if length(Set(varR)) != length(varR)
         return 0.0
     end
 
@@ -225,37 +198,12 @@ function integrand(idx, vars, config)
             leafval[idx][i] = Green.Gn(model, _gn)
         elseif lftype == 4  # BareHoppingId
             τ = varT[leafτ_o[idx][i][1]] - varT[leafτ_i[idx][i][1]]
-            r1 = coords[varRx[leafSites[idx][i][1]]]
-            r2 = coords[varRx[leafSites[idx][i][2]]]
+            r1 = collect(varR[leafSites[idx][i][1]])
+            r2 = collect(varR[leafSites[idx][i][2]])
 
             order = leafOrders[idx][i][1]
             orbital = leaforbitals_i[idx][i][1]
             leafval[idx][i] = hopping_counterterm_PBC(para, τ, r1, r2, orbital, order)
-        elseif lftype == 5  # GreenNId
-            println("No any GreenNId leaftype for the new recursive SCE!")
-
-            Np = Int(length(leafSites[idx][i]) / 2)
-            sites_i = varRx[leafSites[idx][i][1:Np]]
-            sites_o = varRx[leafSites[idx][i][Np+1:end]]
-            r_dict = find_duplicates_with_indices(sites_i, sites_o)
-
-            if isnothing(r_dict)
-                leafval[idx][i] = 0.0
-                continue
-            end
-
-            leafval[idx][i] = permu_sign(collect(Iterators.flatten(zip(sites_i, sites_o))))
-
-            τi, τo = varT[leafτ_i[idx][i]], varT[leafτ_o[idx][i]]
-            orbitals_i, orbitals_o = leaforbitals_i[idx][i], leaforbitals_o[idx][i]
-
-            for (loc_i, loc_o) in values(r_dict)
-                τ = vcat(τi[loc_i], τo[loc_o])
-                orbitals = vcat(orbitals_i[loc_i], orbitals_o[loc_o])
-
-                _gn = Green.GreenN(model, τ, orbitals)
-                leafval[idx][i] *= Green.Gn(model, _gn)
-            end
         else
             error("this leaftype $lftype not implemented!")
         end
@@ -264,19 +212,6 @@ function integrand(idx, vars, config)
     graphfuncs![idx](root, leafval[idx])
 
     return root[1]
-end
-
-function indices_to_lattice(indices::AbstractVector{Int}, L::Int)
-    n = length(indices)
-    coords = Vector{Vector{Int}}(undef, n)
-
-    @inbounds for i in 1:n
-        idx = indices[i] - 1
-        rx = (idx ÷ L) + 1
-        ry = (idx % L) + 1
-        coords[i] = [rx, ry]
-    end
-    return coords
 end
 
 function freeE(model, para::ParaMC, diagram, _neighbor; neval=1e6, print=0, dtype=ComplexF64, kwargs...)
@@ -295,20 +230,16 @@ function freeE(model, para::ParaMC, diagram, _neighbor; neval=1e6, print=0, dtyp
     T = Continuous(0.0, para.β; offset=1, adapt=true)
     # T = Continuous(0.0, para.β; offset=1, adapt=false)
     T.data[1] = 0.0
-    Rx = Discrete(1, para.Lx * para.Ly; offset=1, adapt=true, alpha=3.0)
-    Rx.data[1] = 1
-    coords = indices_to_lattice(collect(1:para.Lx*para.Ly), para.Ly)
+    R = Discrete([(1, para.Lx), (1, para.Ly)]; offset=1, adapt=true, alpha=3.0) # the fixed R is [1, 1]
 
     dof = build_dof(diagpara)
     obs = zeros(dtype, length(diagpara))
     # global_updates = [false, true]
-    global_updates = [false, false]
 
     println("dof: ", dof)
 
-    # config = Configuration(; var=(T, Rx), dof=dof, obs=obs, type=dtype, global_updates=global_updates,
-    config = Configuration(; var=(T, Rx), dof=dof, obs=obs, type=dtype, neighbor=_neighbor,
-        userdata=(para, root, funcGraphs!, leafStat, model, coords))
+    config = Configuration(; var=(T, R), dof=dof, obs=obs, type=dtype, neighbor=_neighbor, #global_updates=global_updates,
+        userdata=(para, root, funcGraphs!, leafStat, model))
     result = integrate(integrand; config=config, neval=neval, thermal_ratio=0.2, print=print, solver=:mcmc, kwargs...)
 
     if isnothing(result) == false

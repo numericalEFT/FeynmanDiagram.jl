@@ -190,7 +190,7 @@ function integrand(idx, vars, config)
             order = leafOrders[idx][i][1]
             orbital = leaforbitals_i[idx][i][1]
             leafval[idx][i] = hopping_counterterm_PBC(para, τ, r1, r2, orbital, order)
-        elseif lftype == 5  # BareGreenNId
+        elseif lftype == 5  # GreenNId
             Np = Int(length(leafSites[idx][i]) / 2)
             sites_i = varRx[leafSites[idx][i][1:Np]]
             sites_o = varRx[leafSites[idx][i][Np+1:end]]
@@ -318,19 +318,21 @@ function double_occupancy(model, para::ParaMC, diagram; neval=1e6, print=0, dtyp
     T.data[1] = 0.0
     # T = Continuous(0.0, para.β; adapt=true)
     # R = Discrete(1, para.Lx, adapt=false)
-    R = Discrete(1, para.Lx * para.Ly, adapt=true, alpha=3.0)
+    R = Discrete(1, para.Lx * para.Ly, offset=1, adapt=true, alpha=3.0)
+    R.data[1] = 1
     coords = indices_to_lattice(collect(1:para.Lx*para.Ly), para.Ly)
 
-    dof = [[1, p.totalTauNum - 1, p.innerLoopNum * 2] for p in diagpara]
+    dof = [[1, p.totalTauNum - 1, p.innerLoopNum * 2 - 1] for p in diagpara]
     # dof = [[p.totalTauNum, p.innerLoopNum * 2] for p in diagpara]
     obs = zeros(dtype, length(diagpara))
 
+    global_updates = [false, false, true]
     println("dof: ", dof)
 
-    # config = Configuration(; var=(T, R), dof=dof, obs=obs, type=dtype, global_updates=global_updates,
-    config = Configuration(; var=(T_doublon, T, R), dof=dof, obs=obs, type=dtype,
+    # config = Configuration(; var=(T_doublon, T, R), dof=dof, obs=obs, type=dtype,
+    config = Configuration(; var=(T_doublon, T, R), dof=dof, obs=obs, type=dtype, global_updates=global_updates,
         userdata=(para, root, funcGraphs!, leafStat, model, coords))
-    result = integrate(integrand; config=config, neval=neval, print=print, solver=:mcmc, kwargs...)
+    result = integrate(integrand; config=config, neval=neval, thermal_ratio=0.2, print=print, solver=:mcmc, kwargs...)
 
     if isnothing(result) == false
         if print >= 0
@@ -345,11 +347,8 @@ function double_occupancy(model, para::ParaMC, diagram; neval=1e6, print=0, dtyp
         datadict = Dict{eltype(partition),Any}()
         for (o, key) in enumerate(partition)
             avg, std = result.mean[o], result.stdev[o]
-            datadict[key] = -measurement.(avg, std) / (para.Lx * para.Ly)
-            # r = measurement.(real(avg), real(std))
-            # i = measurement.(imag(avg), imag(std))
-            # data = Complex.(r, i)
-            # datadict[key] = data
+            # datadict[key] = -measurement.(avg, std) / (para.Lx * para.Ly)
+            datadict[key] = -measurement.(avg, std)
         end
         return datadict, result
     else

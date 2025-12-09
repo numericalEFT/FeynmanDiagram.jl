@@ -102,7 +102,8 @@ end
 function integrand(idx, vars, config)
     para, root, graphfuncs! = config.userdata[1:3]
     leafval, leafType, leafOrders, leafSites, leafτ_i, leafτ_o, leaforbitals_i, leaforbitals_o = config.userdata[4]
-    model, ws = config.userdata[5:6]
+    # model, coords = config.userdata[5:6]
+    model = config.userdata[5]
     varT, (varRx, varRy), varT_D = vars
     τp = varT_D[1]
 
@@ -127,9 +128,9 @@ function integrand(idx, vars, config)
             order = leafOrders[idx][i][2]
 
             if order == 0
-                leafval[idx][i] = Green.Gn(model, _gn, ws)
+                leafval[idx][i] = Green.Gn(model, _gn)
             elseif order == 1
-                leafval[idx][i] = Green.dGn_dU_estimator(model, _gn, τp, ws)
+                leafval[idx][i] = Green.dGn_dU_estimator(model, _gn, τp)
             else
                 error("this order $order not implemented!")
             end
@@ -242,10 +243,9 @@ function double_occupancy(model, para::ParaMC, diagram, _neighbor; neval=1e6, pr
     global_updates = [false, false, false]
 
     println("dof: ", dof)
-    ws = Green.GreenWorkspace(model, para.order)
 
     config = Configuration(; var=(T, R, T_doublon), dof=dof, obs=obs, type=dtype,# global_updates=global_updates,
-        neighbor=_neighbor, userdata=(para, root, funcGraphs!, leafStat, model, ws))
+        neighbor=_neighbor, userdata=(para, root, funcGraphs!, leafStat, model))
     result = integrate(integrand; config=config, neval=neval, thermal_ratio=0.2, print=print, solver=:mcmc, kwargs...)
 
     if isnothing(result) == false
@@ -295,8 +295,7 @@ function double_occupancy_MC(model, para::ParaMC; neval=1e6, partition=partition
         _neighbor = neighbor(partition, order_diff=1)
     end
 
-    # Dloc = Green.thermal_expectation(model, model.D)
-    Dloc = Green.thermalavg(model.D, model.w)
+    Dloc = Green.thermal_expectation(model, model.D)
     println("The local double occupancy (0-th order) is: ", Dloc)
 
     doublon, result = double_occupancy(model, para, diagram, _neighbor; neval=neval,

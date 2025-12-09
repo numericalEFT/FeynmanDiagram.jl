@@ -10,7 +10,8 @@ for (_μ, _U, _β, lam, _dμ, order) in Iterators.product(μ, U, β, lambdas, d�
     model = Hubbard.hubbardAtom(:fermi, _U, _μ + _dμ, _β)
 
     # _partition = [(2, 0), (3, 0), (4, 0)]
-    _partition = partition_static(order)
+    # _partition = partition_static(order)
+    _partition = partition_static(order, true)
     # reweight_goal = Float64[]
     # for (order, sOrder) in partition
     # 	reweight_factor = 2.0^(2order + 2sOrder - 2)
