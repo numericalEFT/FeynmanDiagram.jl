@@ -331,72 +331,340 @@ end
 Gn(m::Model, g::GreenN) = Gn(m, g, GreenWorkspace(m, g.N)) # Not recommended for loops
 
 """
-dGn_dU_estimator(m, g, τp, ws)
-Optimized estimator for ∂G/∂U.
+    Gn_1stderiv_estimator(m, g, Op, τp, ws)
+
+    Generic estimator for ∂G/∂λ where H(λ) = H₀ - λ⋅Op.
+Used for:
+  - μ (Op = Ntot)
+  - h (Op = M)
+  - U (Op = D, if using Hubbard-U parameter)
+
+Formula: ∂G/∂λ = ∫ dτ <T G Op(τ)> - <G><Op(τ)>
 """
-function dGn_dU_estimator(m::Model, g::GreenN, τp::Real, ws::GreenWorkspace)
-    # -----------------------------------------------------
-    # Part A: Compute G_with_D ( < T Op... D(τp) > )
-    # -----------------------------------------------------
+function Gn_1stderiv_estimator(m::Model, g::GreenN, Op::Matrix{Float64}, τp::Real, ws::GreenWorkspace)
+    # 1. Setup Buffers
     N = 2 * g.N
     n_ext = N + 1
 
-    # 1. Fill buffers (Op... then D)
     @inbounds for i in 1:N
         ws.τ_buffer[i] = g.τ[i]
         ws.ops_buffer[i] = g.ops[i]
         ws.perm_buffer[i] = i
     end
     ws.τ_buffer[n_ext] = τp
-    ws.ops_buffer[n_ext] = m.D
+    ws.ops_buffer[n_ext] = Op
     ws.perm_buffer[n_ext] = n_ext
 
-    # 2. Sort permutation for time ordering
+    # 2. Compute <T Legs... Op>
+    # Sort permutation for time ordering
     p_view = view(ws.perm_buffer, 1:n_ext)
     sort!(p_view, by=i -> ws.τ_buffer[i], rev=true)
 
     # 3. Fermion Sign
-    # The D operator is bosonic (even parity), so inserting it doesn't change 
-    # the relative order of fermions. We pass the perm of the N+1 operators,
-    # but tell fermionic_sign to only look for the original N legs (indices <= N).
+    # Fermion sign depends only on the first N indices (the fermions)
+    # The Op operator is bosonic (even parity), so inserting it doesn't change the relative order of fermions. 
     fsign = fermionic_sign(m, p_view, N)
+    GwOp = chain_trace_perm!(ws, m, p_view, n_ext) * fsign
 
-    # 4. Trace
-    GwD = chain_trace_perm!(ws, m, p_view, n_ext) * fsign
-
-    # -----------------------------------------------------
-    # Part B: Compute Gval * Dloc
-    # -----------------------------------------------------
-    # For maximum performance, we could cache Gval if calculated before.
-    # Here we recalculate it efficiently using the same workspace (carefully).
-
-    # Note: We must restore the perm buffer for N items, or just reuse the first N slots.
-    # The data in τ_buffer and ops_buffer 1:N is still valid and untouched!
-    # We just need to resort the first N indices.
-
+    # 4. Compute Gval (Legs only)
+    # We re-sort the first N indices. Data in buffer 1:N is untouched.
     p_view_G = view(ws.perm_buffer, 1:N)
     @inbounds for i in 1:N
-        p_view_G[i] = i # Reset indices
+        p_view_G[i] = i
     end
     sort!(p_view_G, by=i -> ws.τ_buffer[i], rev=true)
 
-    # Sign for G
     fsign_G = fermionic_sign(m, p_view_G, N)
-
-    # Trace for G
     Gval = chain_trace_perm!(ws, m, p_view_G, N) * fsign_G
 
-    # Local Double Occupancy
-    Dloc = thermalavg(m.D, m.w)
+    # 5. Local average <Op>
+    Oploc = thermalavg(Op, m.w)
 
-    # Result
-    return -GwD + Gval * Dloc
+    # Result: Connected part (with minus sign for derivative definition usually)
+    # If just measuring correlator <T G Op>, remove the minus.
+    # Assuming derivative definition:
+    return GwOp - Gval * Oploc
 end
 
+"""
+    Gn_2ndderiv_estimator(m, g, Op1, τ1, Op2, τ2, ws)
+
+Efficient estimator for the second order derivative with respect to fields coupling to Op1 and Op2.
+Computes the connected 3-point correlator <T Legs... Op1 Op2>_connected.
+"""
+function Gn_2ndderiv_estimator(m::Model, g::GreenN,
+    Op1::Matrix{Float64}, τ1::Real,
+    Op2::Matrix{Float64}, τ2::Real,
+    ws::GreenWorkspace)
+
+    N = 2 * g.N
+    idx_1 = N + 1
+    idx_2 = N + 2
+    total_len = N + 2
+
+    # =========================================================
+    # 1. Fill Buffer ONCE (Legs + Op1 + Op2)
+    # =========================================================
+    @inbounds for i in 1:N
+        ws.τ_buffer[i] = g.τ[i]
+        ws.ops_buffer[i] = g.ops[i]
+    end
+    ws.τ_buffer[idx_1] = τ1
+    ws.ops_buffer[idx_1] = Op1
+    ws.τ_buffer[idx_2] = τ2
+    ws.ops_buffer[idx_2] = Op2
+
+    # Averages <Op> (Fast, scalar)
+    O1_loc = thermalavg(Op1, m.w)
+    O2_loc = thermalavg(Op2, m.w)
+
+    # =========================================================
+    # 2. Term A: < T Legs... Op1 Op2 >
+    # =========================================================
+    # Reset perm buffer for all items
+    @inbounds for i in 1:total_len
+        ws.perm_buffer[i] = i
+    end
+
+    p_view_all = view(ws.perm_buffer, 1:total_len)
+    sort!(p_view_all, by=i -> ws.τ_buffer[i], rev=true)
+
+    # Sign only depends on original legs (indices <= N)
+    fsign = fermionic_sign(m, p_view_all, N)
+    GwO1O2 = chain_trace_perm!(ws, m, p_view_all, total_len) * fsign
+
+    # =========================================================
+    # 3. Term B: < T Legs... Op1 >
+    # =========================================================
+    # We use the buffer slots 1:N and idx_1
+    # We must construct a specific permutation list
+    # (We cannot overwrite the main buffer, but we can overwrite perm_buffer)
+
+    # Construct indices for this subset
+    p_subset = view(ws.perm_buffer, 1:(N+1))
+    @inbounds for i in 1:N
+        p_subset[i] = i
+    end
+    p_subset[N+1] = idx_1
+
+    sort!(p_subset, by=i -> ws.τ_buffer[i], rev=true)
+    fsign_1 = fermionic_sign(m, p_subset, N)
+    GwO1 = chain_trace_perm!(ws, m, p_subset, N + 1) * fsign_1
+
+    # =========================================================
+    # 4. Term C: < T Legs... Op2 >
+    # =========================================================
+    # Indices: 1:N and idx_2
+    @inbounds for i in 1:N
+        p_subset[i] = i
+    end
+    p_subset[N+1] = idx_2
+
+    sort!(p_subset, by=i -> ws.τ_buffer[i], rev=true)
+    fsign_2 = fermionic_sign(m, p_subset, N)
+    GwO2 = chain_trace_perm!(ws, m, p_subset, N + 1) * fsign_2
+
+    # =========================================================
+    # 5. Term D: < T Legs... > (Gval)
+    # =========================================================
+    p_legs = view(ws.perm_buffer, 1:N)
+    @inbounds for i in 1:N
+        p_legs[i] = i
+    end
+    sort!(p_legs, by=i -> ws.τ_buffer[i], rev=true)
+
+    fsign_G = fermionic_sign(m, p_legs, N)
+    Gval = chain_trace_perm!(ws, m, p_legs, N) * fsign_G
+
+    # =========================================================
+    # 6. Term E: < T Op1 Op2 > (Bosonic Correlator)
+    # =========================================================
+    # Indices: idx_1, idx_2
+    # We reuse the start of perm buffer
+    p_corr = view(ws.perm_buffer, 1:2)
+    p_corr[1] = idx_1
+    p_corr[2] = idx_2
+    sort!(p_corr, by=i -> ws.τ_buffer[i], rev=true)
+
+    # No fermion sign for bosonic operators
+    O1O2_corr = chain_trace_perm!(ws, m, p_corr, 2)
+
+    # =========================================================
+    # Final Combination (Connected Part)
+    # =========================================================
+    # Formula: <AB>_c = <AB> - <A><B>
+    # Here A = GreenLegs, B = (Op1, Op2 insertions)
+    # The full expanded form for ∂²G/∂U² is:
+
+    # < T G O1 O2 >
+    # - < T G O1 > <O2>
+    # - < T G O2 > <O1>
+    # + 2 < G > <O1> <O2>
+    # - < G > ( < T O1 O2 > - <O1><O2> )
+
+    term1 = GwO1O2
+    term2 = GwO1 * O2_loc
+    term3 = GwO2 * O1_loc
+    term4 = 2 * Gval * O1_loc * O2_loc
+    term5 = Gval * (O1O2_corr - O1_loc * O2_loc)
+
+    return term1 - term2 - term3 + term4 - term5
+end
+
+"""
+dGn_dU_estimator(m, g, τp, ws)
+
+Correct estimator for ∂G/∂U = - ∫ dτ [ <T G D(τ)> - <G><D> ].
+It inserts D at time τp (sampled by MC) and computes the trace.
+"""
+dGn_dU_estimator(m::Model, g::GreenN, τp::Real, ws::GreenWorkspace) = (-1) * Gn_1stderiv_estimator(m, g, m.D, τp, ws)
 # Backward compatibility (slow, allocates)
 function dGn_dU_estimator(m::Model, g::GreenN, τp::Real)
     ws = GreenWorkspace(m, g.N)
     return dGn_dU_estimator(m, g, τp, ws)
+end
+
+dGn_dμ_estimator(m::Model, g::GreenN, τp::Real, ws::GreenWorkspace) = Gn_1stderiv_estimator(m, g, m.Ntot, τp, ws)
+function dGn_dμ_estimator(m::Model, g::GreenN, τp::Real)
+    ws = GreenWorkspace(m, g.N)
+    return dGn_dμ_estimator(m, g, τp, ws)
+end
+
+dGn_dh_estimator(m::Model, g::GreenN, τp::Real, ws::GreenWorkspace) = Gn_1stderiv_estimator(m, g, m.M, τp, ws)
+function dGn_dh_estimator(m::Model, g::GreenN, τp::Real)
+    ws = GreenWorkspace(m, g.N)
+    return dGn_dh_estimator(m, g, τp, ws)
+end
+
+
+"""
+    chain_trace_moments(ws, m, perm, nops, diag_Op)
+
+Compute trace moments for a diagonal operator `diag_Op` (vector).
+Returns (Tr[G], Tr[Op * G], Tr[Op^2 * G]).
+Cost: One matrix multiplication chain + 3 dot products.
+"""
+function chain_trace_moments(ws::GreenWorkspace, m::Model, perm::AbstractVector{Int}, nops::Int, diag_Op::AbstractVector{Float64})
+    # 1. Compute G
+    current = ws.mat_A
+    next_op = ws.mat_B
+    product = ws.mat_C
+    τs, ops = ws.τ_buffer, ws.ops_buffer
+
+    idx1, idx_end = perm[1], perm[nops]
+
+    scale = propagator(m, m.β + τs[idx_end] - τs[idx1])
+    copy_scaled!(current, ops[idx1], scale)
+
+    @inbounds for i in 2:nops
+        p_curr, p_prev = perm[i], perm[i-1]
+        dt = τs[p_prev] - τs[p_curr]
+        scale = propagator(m, dt)
+        copy_scaled!(next_op, ops[p_curr], scale)
+        mul!(product, current, next_op)
+        current, product = product, current
+    end
+
+    # 2. compute trace moments for diagonal operator
+    # Tr[Op * M] = sum(Op[i] * M[i,i]) 
+    tr_0 = 0.0 # <G>
+    tr_1 = 0.0 # <Op G>
+    tr_2 = 0.0 # <Op^2 G>
+
+    @inbounds for i in 1:m.dim
+        val = current[i, i]
+        op_val = diag_Op[i]
+
+        tr_0 += val
+        tr_1 += val * op_val
+        tr_2 += val * op_val * op_val
+    end
+
+    return tr_0, tr_1, tr_2
+end
+
+"""
+    dGn_dβ_estimator(m, g, ws)
+
+Estimator for ∂G/∂β = -(<HG> - <H><G>).
+Efficient: No extra operator insertion, just weighted trace.
+"""
+function dGn_dβ_estimator(m::Model, g::GreenN, ws::GreenWorkspace)
+    n_legs = 2 * g.N
+
+    # 1. Setup Buffers & Sort
+    @inbounds for i in 1:n_legs
+        ws.τ_buffer[i] = g.τ[i]
+        ws.ops_buffer[i] = g.ops[i]
+        ws.perm_buffer[i] = i
+    end
+    p_view = view(ws.perm_buffer, 1:n_legs)
+    sort!(p_view, by=i -> ws.τ_buffer[i], rev=true)
+    fsign = fermionic_sign(m, p_view, n_legs)
+
+    # 2. Compute <G> and <HG>
+    tr_G, tr_HG, _ = chain_trace_moments(ws, m, p_view, n_legs, m.E)
+
+    Gval = fsign * tr_G
+    HGval = fsign * tr_HG
+
+    # 3. Compute <H>
+    E_avg = dot(m.E, m.w)
+
+    # 4. Result - <HG> + <H><G>
+    return -(HGval - E_avg * Gval)
+end
+
+function dGn_dβ_estimator(m::Model, g::GreenN)
+    ws = GreenWorkspace(m, g.N)
+    return dGn_dβ_estimator(m, g, ws)
+end
+
+"""
+    d2Gn_dβ2_estimator(m, g, ws)
+
+Efficient estimator for the second derivative ∂²G/∂β².
+Formula: (<H²G> - <H²><G>) - 2<H>(<HG> - <H><G>)
+Cost: Same as computing G (O(dim) overhead only). No τ_p sampling needed.
+"""
+function d2Gn_dβ2_estimator(m::Model, g::GreenN, ws::GreenWorkspace)
+    n_legs = 2 * g.N
+
+    # 1. Setup Buffers & Sort
+    @inbounds for i in 1:n_legs
+        ws.τ_buffer[i] = g.τ[i]
+        ws.ops_buffer[i] = g.ops[i]
+        ws.perm_buffer[i] = i
+    end
+    p_view = view(ws.perm_buffer, 1:n_legs)
+    sort!(p_view, by=i -> ws.τ_buffer[i], rev=true)
+
+    # 2. Fermion Sign
+    fsign = fermionic_sign(m, p_view, n_legs)
+
+    # 3. Compute Traces: <G>, <HG>, <H²G> in one pass
+    # We pass 'm.E' (Eigenvalues) as the diagonal operator
+    tr_G, tr_HG, tr_H2G = chain_trace_moments(ws, m, p_view, n_legs, m.E)
+
+    # Apply sign
+    Gval = fsign * tr_G
+    HGval = fsign * tr_HG
+    H2Gval = fsign * tr_H2G
+
+    # 4. Compute Static Moments <H> and <H²>
+    # m.w are the normalized Boltzmann weights
+    E_avg = dot(m.E, m.w)
+    E2_avg = dot(m.E .^ 2, m.w)
+
+    # 5. Assemble Formula
+    # Term A: <H²G> - <H²><G>
+    term_A = H2Gval - E2_avg * Gval
+
+    # Term B: <HG> - <H><G>
+    term_B = HGval - E_avg * Gval
+
+    # Result = Term A - 2 * <H> * Term B
+    return term_A - 2 * E_avg * term_B
 end
 
 function G2(m::Model, g::GreenN)

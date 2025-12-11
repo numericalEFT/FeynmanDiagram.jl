@@ -175,7 +175,7 @@ end
 function integrand(idx, vars, config)
     para, root, graphfuncs! = config.userdata[1:3]
     leafval, leafType, leafOrders, leafSites, leafτ_i, leafτ_o, leaforbitals_i, leaforbitals_o = config.userdata[4]
-    model, coords = config.userdata[5:6]
+    model, coords, ws = config.userdata[5:end]
     varT_D, varT, varRx = vars
     τp = varT_D[1]
 
@@ -213,7 +213,7 @@ function integrand(idx, vars, config)
                     orbitals = vcat(orbitals_i[loc_i], orbitals_o[loc_o])
 
                     _gn = Green.GreenN(model, τ, orbitals)
-                    leafval[idx][i] *= Green.Gn(model, _gn)
+                    leafval[idx][i] *= Green.Gn(model, _gn, ws)
                 end
             elseif order == 1
                 len_greenN = length(r_dict)
@@ -224,15 +224,15 @@ function integrand(idx, vars, config)
                     orbitals = vcat(orbitals_i, orbitals_o)
 
                     _gn = Green.GreenN(model, τ, orbitals)
-                    leafval[idx][i] *= Green.dGn_dU_estimator(model, _gn, τp)
+                    leafval[idx][i] *= Green.dGn_dU_estimator(model, _gn, τp, ws)
                 else
                     for (i, (loc_i, loc_o)) in enumerate(values(r_dict))
                         τ = vcat(τi[loc_i], τo[loc_o])
                         orbitals = vcat(orbitals_i[loc_i], orbitals_o[loc_o])
 
                         _gn = Green.GreenN(model, τ, orbitals)
-                        Gvec[i] = Green.Gn(model, _gn)
-                        dGvec_dU[i] = Green.dGn_dU_estimator(model, _gn, τp)
+                        Gvec[i] = Green.Gn(model, _gn, ws)
+                        dGvec_dU[i] = Green.dGn_dU_estimator(model, _gn, τp, ws)
                     end
                     leafval[idx][i] *= deriv_prod(Gvec, dGvec_dU)
                 end
@@ -328,10 +328,11 @@ function double_occupancy(model, para::ParaMC, diagram; neval=1e6, print=0, dtyp
 
     global_updates = [false, false, true]
     println("dof: ", dof)
+    ws = Green.GreenWorkspace(model, para.order)
 
     # config = Configuration(; var=(T_doublon, T, R), dof=dof, obs=obs, type=dtype,
     config = Configuration(; var=(T_doublon, T, R), dof=dof, obs=obs, type=dtype, global_updates=global_updates,
-        userdata=(para, root, funcGraphs!, leafStat, model, coords))
+        userdata=(para, root, funcGraphs!, leafStat, model, coords, ws))
     result = integrate(integrand; config=config, neval=neval, thermal_ratio=0.2, print=print, solver=:mcmc, kwargs...)
 
     if isnothing(result) == false
@@ -378,7 +379,8 @@ function double_occupancy_MC(model, para::ParaMC; neval=1e6, partition=partition
         _neighbor = neighbor(partition)
     end
 
-    Dloc = Green.thermal_expectation(model, model.D)
+    # Dloc = Green.thermal_expectation(model, model.D)
+    Dloc = Green.thermalavg(model.D, model.w)
     println("The local double occupancy (0-th order) is: ", Dloc)
 
     doublon, result = double_occupancy(model, para, diagram; neval=neval, neighbor=_neighbor,

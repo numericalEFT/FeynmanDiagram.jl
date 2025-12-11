@@ -13,19 +13,42 @@ using Dates
 
 include("generate_freeE_NLErec.jl")
 include("dof_utils.jl")
+include("pretab_propagator_C4v.jl")
 
 struct ParaMC
     μ::Float64
     U::Float64
     t::Float64
     β::Float64
-    n::Int
+    n::Int # external Matsubara frequency
     Lx::Int
     Ly::Int
     lambda::Float64
     dμ::Float64
     order::Int
-    ϵk::Array{Float64,4}
+    # ϵk::Array{Float64,4}
+    Lkx::Int
+    Lky::Int
+    Rmax::Int
+    function ParaMC(;
+        U=1.0,
+        μ=U / 2,
+        t=1.0,
+        β=1.0,
+        n=0,
+        Lx=16,
+        Ly=16,
+        lambda=1.0,
+        dμ=0.0,
+        order=1,
+        # ϵk=disperion_PBC(Lx, Ly, t, dμ),
+        Lkx=64,
+        Lky=64,
+        # Rmax=32,
+        Rmax=12,
+    )
+        return new(μ, U, t, β, n, Lx, Ly, lambda, dμ, order, Lkx, Lky, Rmax)
+    end
 end
 
 paraid(p::ParaMC) = Dict(
@@ -175,35 +198,24 @@ end
 function integrand(idx, vars, config)
     para, root, graphfuncs! = config.userdata[1:3]
     leafval, leafType, leafOrders, leafSites, leafτ_i, leafτ_o, leaforbitals_i, leaforbitals_o = config.userdata[4]
-    model = config.userdata[5]
+    model, pretab, ws = config.userdata[5:end]
     varT, (varRx, varRy), varT_D = vars
     τp = varT_D[1]
 
+    Lx, Ly = para.Lx, para.Ly
+
     num_varR = config.dof[idx][2] + 1
-    # varR = collect(zip(varRx[1:num_varR], varRy[1:num_varR]))
-    # if length(Set(varR)) != length(varR)
-    #     return 0.0
-    # end
     # 使用双重循环检查重叠 (O(N^2) 但无内存分配，对于小阶数 N 极快)
-    has_overlap = false
     @inbounds for i in 1:num_varR
         xi, yi = varRx[i], varRy[i]
         for j in (i+1):num_varR
             if xi == varRx[j] && yi == varRy[j]
-                has_overlap = true
-                break
+                return zero(eltype(leafval[idx]))
             end
         end
-        if has_overlap
-            break
-        end
     end
 
-    if has_overlap
-        return 0.0
-    end
-
-    for (i, lftype) in enumerate(leafType[idx])
+    @inbounds for (i, lftype) in enumerate(leafType[idx])
         if lftype == 0
             continue
         elseif lftype == 3  # BareGreenNId
@@ -213,18 +225,26 @@ function integrand(idx, vars, config)
             order = leafOrders[idx][i][2]
 
             if order == 0
-                leafval[idx][i] = Green.Gn(model, _gn)
+                leafval[idx][i] = Green.Gn(model, _gn, ws)
             elseif order == 1
-                leafval[idx][i] = Green.dGn_dU_estimator(model, _gn, τp)
+                leafval[idx][i] = Green.dGn_dU_estimator(model, _gn, τp, ws)
             end
         elseif lftype == 4  # BareHoppingId
-            τ = varT[leafτ_o[idx][i][1]] - varT[leafτ_i[idx][i][1]]
-            r1 = collect(varR[leafSites[idx][i][1]])
-            r2 = collect(varR[leafSites[idx][i][2]])
+            Δτ = varT[leafτ_o[idx][i][1]] - varT[leafτ_i[idx][i][1]]
+            idx1 = leafSites[idx][i][1]
+            idx2 = leafSites[idx][i][2]
+            # r1 = [varRx[idx1], varRy[idx1]]
+            # r2 = [varRx[idx2], varRy[idx2]]
+            dx = abs(varRx[idx1] - varRx[idx2])
+            dy = abs(varRy[idx1] - varRy[idx2])
+            dx = min(dx, Lx - dx)
+            dy = min(dy, Ly - dy)
+            Δr = SVector(dx, dy)
 
             order = leafOrders[idx][i][1]
             orbital = leaforbitals_i[idx][i][1]
-            leafval[idx][i] = hopping_counterterm_PBC(para, τ, r1, r2, orbital, order)
+            # leafval[idx][i] = hopping_counterterm_PBC(para, τ, r1, r2, orbital, order)
+            leafval[idx][i] = bare_line_fast(pretab, Δr, Δτ, orbital, order)
         else
             error("this leaftype $lftype not implemented!")
         end
@@ -235,7 +255,8 @@ function integrand(idx, vars, config)
     return root[1]
 end
 
-function double_occupancy(model, para::ParaMC, diagram, _neighbor; neval=1e6, print=0, dtype=ComplexF64, kwargs...)
+function double_occupancy(model, para::ParaMC, diagram, _neighbor;
+    neval=1e6, print=0, dtype=ComplexF64, Ntau=Ntau, kwargs...)
     partition, diagpara, FeynGraphs = diagram
 
     println("Start compiling...", now())
@@ -252,7 +273,6 @@ function double_occupancy(model, para::ParaMC, diagram, _neighbor; neval=1e6, pr
     root = zeros(dtype, 1)
     T_doublon = Continuous(0.0, para.β; adapt=true, alpha=3.0)
     T = Continuous(0.0, para.β; offset=1, adapt=true, alpha=3.0)
-    # T = Continuous(0.0, para.β; offset=1, adapt=false)
     T.data[1] = 0.0
 
     R = Discrete([(1, para.Lx), (1, para.Ly)]; offset=1, adapt=true, alpha=3.0) # the fixed R is [1, 1]
@@ -261,9 +281,17 @@ function double_occupancy(model, para::ParaMC, diagram, _neighbor; neval=1e6, pr
     obs = zeros(dtype, length(diagpara))
 
     println("dof: ", dof)
+    ws = Green.GreenWorkspace(model, para.order)
+
+    power = 4
+    taugrid = [(i / (Ntau - 1))^power * para.β for i in 0:(Ntau-1)]
+    minorder = 2
+    pretab = build_pretab(para.t, para.β, taugrid;
+        lambda=para.lambda, dμ=para.dμ, deriv_order=para.order - minorder,
+        Lkx=para.Lkx, Lky=para.Lky, Rtable=para.Rmax)
 
     config = Configuration(; var=(T, R, T_doublon), dof=dof, obs=obs, type=dtype, neighbor=_neighbor,
-        userdata=(para, root, funcGraphs!, leafStat, model))
+        userdata=(para, root, funcGraphs!, leafStat, model, pretab, ws))
     result = integrate(integrand; config=config, neval=neval, thermal_ratio=0.2, print=print, solver=:mcmc, kwargs...)
 
     if isnothing(result) == false
@@ -288,11 +316,11 @@ function double_occupancy(model, para::ParaMC, diagram, _neighbor; neval=1e6, pr
 end
 
 function double_occupancy_MC(model, para::ParaMC; neval=1e6, partition=partition(para.order), reweight_goal=nothing,
-    print=0, filename::Union{String,Nothing}=nothing, dtype=ComplexF64, _neighbor=nothing)
+    print=0, filename::Union{String,Nothing}=nothing, dtype=ComplexF64, _neighbor=nothing, Ntau=20000)
 
     println("Generating diagrams...", now())
     diagram = generate_Gnderiv1(partition)
-    prinln("Generate finished.", now())
+    println("Generate finished.", now())
 
     partition = diagram[1]
     println("partition: ", partition)
@@ -309,15 +337,16 @@ function double_occupancy_MC(model, para::ParaMC; neval=1e6, partition=partition
     end
 
     if isnothing(_neighbor)
-        # _neighbor = neighbor(partition, order_diff=2)
-        _neighbor = neighbor(partition, order_diff=1)
+        _neighbor = neighbor(partition, order_diff=2)
+        # _neighbor = neighbor(partition, order_diff=1)
     end
 
-    Dloc = Green.thermal_expectation(model, model.D)
+    # Dloc = Green.thermal_expectation(model, model.D)
+    Dloc = Green.thermalavg(model.D, model.w)
     println("The local double occupancy (0-th order) is: ", Dloc)
 
     doublon, result = double_occupancy(model, para, diagram, _neighbor; neval=neval,
-        reweight_goal=reweight_goal, dtype=dtype, print=print)
+        reweight_goal=reweight_goal, dtype=dtype, print=print, Ntau=Ntau)
 
     if isnothing(doublon) == false
         if isnothing(filename) == false

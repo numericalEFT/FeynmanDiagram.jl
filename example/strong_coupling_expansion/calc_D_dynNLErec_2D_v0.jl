@@ -22,13 +22,16 @@ struct ParaMC
     n::Int
     Lx::Int
     Ly::Int
+    lambda::Float64
     dμ::Float64
     order::Int
+    ϵk::Array{Float64,4}
 end
 
 paraid(p::ParaMC) = Dict(
     "order" => p.order,
     "beta" => p.β,
+    "lambda" => p.lambda,
     "mu" => p.μ,
     "dmu" => p.dμ,
     "U" => p.U,
@@ -63,40 +66,110 @@ function neighbor(partitions; order_diff=1)
     return n
 end
 
-# @inline function hopping_PBC(para::ParaMC, r1::Vector{Int}, r2::Vector{Int}, orbital::Int)
-@inline function hopping_PBC(para::ParaMC, x1::Int, y1::Int, x2::Int, y2::Int)
-    # L = [para.Lx, para.Ly]
-    # delta12 = abs.(r1 - r2)
-    # delta = min.(delta12, L .- delta12)
-    # sum_d = sum(delta)
-    dx = abs(x1 - x2)
-    dy = abs(y1 - y2)
-    dx = min(dx, para.Lx - dx)
-    dy = min(dy, para.Ly - dy)
-    sum_d = dx + dy
+function disperion_PBC(Lx, Ly, t, dμ=0.0)
+    No = 2 # spin up/down
+    ϵk = zeros(Float64, (No, No, Lx, Ly)) # julia column major, the first index is the major index
 
-    if sum_d == 1
-        return para.t
-    elseif sum_d == 0
-        return para.dμ
+    for xi in 1:Lx
+        for yi in 1:Ly
+            k = [2π * (xi - 1) / Lx, 2π * (yi - 1) / Ly]
+            ϵk[1, 1, xi, yi] = -2t * sum(cos.(k)) + dμ
+            ϵk[2, 2, xi, yi] = -2t * sum(cos.(k)) + dμ
+        end
+    end
+    return ϵk
+end
+
+function disperion_FBC(Lx, Ly, t, dμ=0.0)
+    No = 2 # spin up/down
+    ϵk = zeros(Float64, (No, No, Lx, Ly)) # julia column major, the first index is the major index
+
+    for xi in 1:Lx
+        for yi in 1:Ly
+            k = [π * xi / (Lx + 1), π * yi / (Ly + 1)]
+            ϵk[1, 1, xi, yi] = -2t * sum(cos.(k)) + dμ
+            ϵk[2, 2, xi, yi] = -2t * sum(cos.(k)) + dμ
+        end
+    end
+    return ϵk
+end
+
+@fastmath function propagator(τ::T, ω::T, β::T) where {T}
+    if τ ≈ T(0.0)
+        τ = -1e-10
+    end
+    if τ > T(0.0)
+        return ω > T(0.0) ?
+               exp(-ω * τ) / (1 + exp(-ω * β)) :
+               exp(ω * (β - τ)) / (1 + exp(ω * β))
     else
-        return 0.0
+        return ω > T(0.0) ?
+               -exp(-ω * (τ + β)) / (1 + exp(-ω * β)) :
+               -exp(-ω * τ) / (1 + exp(ω * β))
     end
 end
 
-function hopping_FBC(para::ParaMC, r1::Vector{Int}, r2::Vector{Int}, orbital::Int)
-    delta = abs.(r1 - r2)
-
-    sum_d = sum(delta)
-    if sum_d == 1
-        # return para.t - para.dμ
-        return para.t
-    elseif sum_d == 0
-        return -para.dμ
-        # return para.dμ
+function propagator_derivative(τ, ϵ, β, order)
+    if order == 0
+        result = propagator(τ, ϵ, β)
+    elseif order == 1
+        result = -Spectral.kernelFermiT_dω(τ, ϵ, β)
+    elseif order == 2
+        result = Spectral.kernelFermiT_dω2(τ, ϵ, β) / 2.0
+    elseif order == 3
+        result = -Spectral.kernelFermiT_dω3(τ, ϵ, β) / 6.0
+    elseif order == 4
+        result = Spectral.kernelFermiT_dω4(τ, ϵ, β) / 24.0
+    elseif order == 5
+        result = -Spectral.kernelFermiT_dω5(τ, ϵ, β) / 120.0
     else
-        return 0.0
+        error("not implemented!")
     end
+    return result
+end
+
+function hopping_counterterm_PBC(para::ParaMC, τ::T, r1::Vector{Int}, r2::Vector{Int}, orbital::Int, order::Int) where {T}
+    β, Lx, Ly, ϵk = para.β, para.Lx, para.Ly, para.ϵk
+    g2c = 0.0
+    N = Lx * Ly
+    for xi in 1:Lx
+        for yi in 1:Ly
+            k = [2π * (xi - 1) / Lx, 2π * (yi - 1) / Ly]
+            ω = -1.0 / ϵk[orbital, orbital, xi, yi]
+            lambda = sign(ω) * para.lambda
+            ω /= lambda
+            g2c_τ = 0.0
+            for o in 0:order
+                g2c_τ += propagator_derivative(τ, ω, β, o) * ω^o * binomial(order, o) * (-1)^o
+            end
+            g2c += cos(dot(k, (r1 - r2))) * g2c_τ / lambda / N
+        end
+    end
+    return g2c
+end
+
+function hopping_counterterm_FBC(para::ParaMC, r1::Vector{Int}, r2::Vector{Int}, orbital::Int)
+    β, Lx, Ly, ϵk = para.β, para.Lx, para.Ly, para.ϵk
+    g2c = 0.0
+    prefactor = 4 / (Lx + 1) / (Ly + 1)
+    for xi in 1:Lx
+        for yi in 1:Ly
+            k = [π * xi / (Lx + 1), π * yi / (Ly + 1)]
+            ω = -1.0 / ϵk[orbital, orbital, xi, yi]
+            lambda = sign(ω) * para.lambda
+            ω /= lambda
+
+            g2c_τ = 0.0
+            for o in 0:order
+                g2c_τ += propagator_derivative(τ, ω, β, o) * ω^o * binomial(order, o) * (-1)^o
+            end
+
+            phi_r1 = prod(sin.(k .* r1))
+            phi_r2 = prod(sin.(k .* r2))
+            g2c += phi_r1 * phi_r2 * g2c_τ / lambda
+        end
+    end
+    return g2c * prefactor
 end
 
 function integrand(idx, vars, config)
@@ -130,17 +203,19 @@ function integrand(idx, vars, config)
                 leafval[idx][i] = Green.Gn(model, _gn, ws)
             elseif order == 1
                 leafval[idx][i] = Green.dGn_dU_estimator(model, _gn, τp, ws)
-            else
-                error("this order $order not implemented!")
             end
         elseif lftype == 4  # BareHoppingId
+            τ = varT[leafτ_o[idx][i][1]] - varT[leafτ_i[idx][i][1]]
+            # r1 = collect(varR[leafSites[idx][i][1]])
+            # r2 = collect(varR[leafSites[idx][i][2]])
             idx1 = leafSites[idx][i][1]
             idx2 = leafSites[idx][i][2]
+            r1 = [varRx[idx1], varRy[idx1]]
+            r2 = [varRx[idx2], varRy[idx2]]
 
-            x1, y1 = varRx[idx1], varRy[idx1]
-            x2, y2 = varRx[idx2], varRy[idx2]
-            # orbital = leaforbitals_i[idx][i][1]
-            leafval[idx][i] = hopping_PBC(para, x1, y1, x2, y2)
+            order = leafOrders[idx][i][1]
+            orbital = leaforbitals_i[idx][i][1]
+            leafval[idx][i] = hopping_counterterm_PBC(para, τ, r1, r2, orbital, order)
         else
             error("this leaftype $lftype not implemented!")
         end
@@ -149,65 +224,6 @@ function integrand(idx, vars, config)
     graphfuncs![idx](root, leafval[idx])
 
     return root[1]
-end
-
-# minimum-image displacement on a periodic chain of length L
-@inline function min_image(dx::Int, L::Int)
-    half = div(L, 2)  # floor(L/2)
-    if dx > half
-        dx -= L
-    elseif dx < -half
-        dx += L
-    end
-    return dx
-end
-
-"""
-Build an importance-sampling histogram p0 over site indices 1:Ns
-for a finite Lx×Ly PBC lattice, given that site 1 is the pinned root.
-
-Arguments:
-  Lx, Ly :: Int
-  α      :: Float64  (range parameter for exp(-α r))
-
-Returns:
-  p0 :: Vector{Float64} of length Ns, normalized to sum(p0)=1.
-"""
-function build_spatial_histogram(Lx::Int, Ly::Int; α::Float64=1.0)
-    Ns = Lx * Ly
-
-    # lattice coordinates for each site index
-    site_indices = collect(1:Ns)
-    coords = indices_to_lattice(site_indices, Ly)
-
-    # root is index 1
-    (x_root, y_root) = coords[1]
-
-    # unnormalized weights
-    w = zeros(Float64, Ns)
-
-    @inbounds for s in 1:Ns
-        (xs, ys) = coords[s]
-
-        # displacement with periodic wrap (minimum image)
-        dx = min_image(xs - x_root, Lx)
-        dy = min_image(ys - y_root, Ly)
-
-        # Euclidean distance on torus
-        r = sqrt(dx * dx + dy * dy)
-
-        # importance weight: decays with distance
-        w[s] = exp(-α * r)
-    end
-
-    # normalize to get probabilities
-    Z = sum(w)
-    if Z == 0.0
-        # fallback to uniform just in case
-        return fill(1.0 / Ns, Ns)
-    else
-        return w ./ Z
-    end
 end
 
 function double_occupancy(model, para::ParaMC, diagram, _neighbor; neval=1e6, print=0, dtype=ComplexF64, kwargs...)
@@ -220,7 +236,6 @@ function double_occupancy(model, para::ParaMC, diagram, _neighbor; neval=1e6, pr
         funcGraphs![i], leafmap = Compilers.compile(FeynGraphs[key])
         push!(leaf_maps, leafmap)
     end
-
     println("Compile finished.", now())
 
     leafStat = FeynmanDiagram.leafstates(leaf_maps, dtype=dtype)
@@ -229,19 +244,17 @@ function double_occupancy(model, para::ParaMC, diagram, _neighbor; neval=1e6, pr
     T_doublon = Continuous(0.0, para.β; adapt=true, alpha=3.0)
     T = Continuous(0.0, para.β; offset=1, adapt=true, alpha=3.0)
     T.data[1] = 0.0
-    # R = Discrete(1, para.Lx * para.Ly; offset=1, adapt=true, alpha=3.0,
-    # distribution=build_spatial_histogram(para.Lx, para.Ly))
+
     R = Discrete([(1, para.Lx), (1, para.Ly)]; offset=1, adapt=true, alpha=3.0) # the fixed R is [1, 1]
 
     dof = build_dof(diagpara; include_probe=true)
     obs = zeros(dtype, length(diagpara))
-    # global_updates = [false, false, true]
 
     println("dof: ", dof)
     ws = Green.GreenWorkspace(model, para.order)
 
-    config = Configuration(; var=(T, R, T_doublon), dof=dof, obs=obs, type=dtype,# global_updates=global_updates,
-        neighbor=_neighbor, userdata=(para, root, funcGraphs!, leafStat, model, ws))
+    config = Configuration(; var=(T, R, T_doublon), dof=dof, obs=obs, type=dtype, neighbor=_neighbor,
+        userdata=(para, root, funcGraphs!, leafStat, model, ws))
     result = integrate(integrand; config=config, neval=neval, thermal_ratio=0.2, print=print, solver=:mcmc, kwargs...)
 
     if isnothing(result) == false
@@ -269,7 +282,7 @@ function double_occupancy_MC(model, para::ParaMC; neval=1e6, partition=partition
     print=0, filename::Union{String,Nothing}=nothing, dtype=ComplexF64, _neighbor=nothing)
 
     println("Generating diagrams...", now())
-    diagram = generate_Gnderiv1(partition, dynamic_hop=false)
+    diagram = generate_Gnderiv1(partition)
     println("Generate finished.", now())
 
     partition = diagram[1]
