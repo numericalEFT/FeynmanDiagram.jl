@@ -3,7 +3,6 @@ using LinearAlgebra
 using Printf
 using Lehmann
 using FFTW
-using JLD2
 
 # --- Basic Physics Kernels (Unchanged) ---
 
@@ -67,7 +66,6 @@ struct RealSpacePreTab
     # Layout: [τ, orbital, order, spatial_index]
     Ctable::Array{Float64,4}
     Rtable::Int
-    IndexMap::Matrix{Int}             # (m, l) -> linear_index mapping
     # width::Int
 end
 
@@ -81,7 +79,7 @@ function dispersion_kmesh(Lkx::Int, Lky::Int, t::Float64, dμ::Float64)
     for ix in 1:Lkx, iy in 1:Lky
         kx = 2π * (ix - 1) / Lkx
         ky = 2π * (iy - 1) / Lky
-        ek = -2t * (cos(kx) + cos(ky)) - dμ
+        ek = -2t * (cos(kx) + cos(ky)) + dμ
         ϵk[1, 1, ix, iy] = ek
         ϵk[2, 2, ix, iy] = ek
         kx_arr[ix, iy] = kx
@@ -151,6 +149,9 @@ end
 
     # === 情况 1: M = 0 (无 mu 导数) ===
     if M == 0
+        # 此时只需要返回 (ωsc)^k * G^{(n)}
+        # 这里的 scaling 是 1.0 (即 λ^0)。
+        # 主函数最后除以 λ，得到 λ^{-1}，符合 M=0, L=0 的 propagator 定义。
         return (ωsc^k) * propagator_derivative(τval, ωsc, β, n)
     end
 
@@ -160,21 +161,18 @@ end
     res = 0.0
 
     # 莱布尼茨展开: sum_{j=0}^{M} binomial(M, j) * [d^j (ωsc)^k] * [d^{M-j} G^{(n)}]
-    for j in 0:M
+    # 注意：只在 j <= k 时 d^j (ωsc)^k 才不为零
+    for j in 0:min(M, k)
 
         # --- Part A: (ωsc)^k 关于 μ 的 j 阶导数 ---
-        # 假设 ωsc = -1 / [λ * (ϵ - μ)]
-        # 导数公式: d^j/dμ^j (W^k) = (-1)^j * λ^j * [k*(k+1)*...*(k+j-1)] * W^{k+j}
-        if k == 0 && j > 0
-            term_A = 0.0
-            deriv_A_coeff = 0.0
-        else
-            deriv_A_coeff = 1.0
-            for i in 0:(j-1)
-                deriv_A_coeff *= (k + i)
-            end
-            term_A = deriv_A_coeff * (ωsc)^(k + j)
+        # 导数公式: k * (k-1) * ... * (k-j+1) * (ωsc)^(k-j) * (-1/λ)^j
+        # 我们把 (-1/λ)^j 拆解为：(-1)^j * (1/λ)^j
+
+        deriv_A_coeff = 1.0
+        for i in 0:(j-1)
+            deriv_A_coeff *= (k - i)
         end
+        term_A = deriv_A_coeff * (ωsc)^(k - j)
 
         # --- Part B: G^{(n)} 关于 μ 的 P = M-j 阶导数 ---
         # 使用您 muderiv! 中的逻辑：
@@ -202,19 +200,22 @@ end
             acc_B *= (-ωsc)^P * fact_P
         end
 
+        # --- 组合 Part A 和 Part B ---
+        # 总项 = C(M,j) * [Part A] * [Part B]
+        # 缩放因子分析：
+        # Part A 带来了 (1/λ)^j
+        # Part B 我们赋予 λ^P 的权重 (P = M-j)
+        # 总 λ 因子: λ^P * (1/λ)^j = λ^{M-j} * λ^{-j} = λ^{M-2j}
+
+        lambda_factor = λ^(M - 2 * j)
+
         # 符号 (-1)^j 来自 d(ωsc)/dμ
         sign_factor = (-1)^j
 
-        if term_A != 0.0
-            res += binomial(M, j) * (term_A * sign_factor) * acc_B
-        end
+        res += binomial(M, j) * (term_A * sign_factor) * acc_B * lambda_factor
     end
 
-    # 3. Scaling: 
-    #    Part A 贡献 λ^j (来自链式法则)
-    #    Part B 贡献 λ^P (即 λ^{M-j}, 来自 muderiv 定义)
-    #    总 Scaling: λ^j * λ^{M-j} = λ^M
-    return res * (λ^M)
+    return res
 end
 
 @inline function propagator_mixderiv!(Gk_buffer, Lkx, Lky, M, L, τval, λeff_arr, ωscaled_arr, β)
@@ -226,7 +227,9 @@ end
         ωsc = ωscaled_arr[ix, iy]
 
         total_acc = 0.0
+
         # sum C(L, o) * (ωsc)^o * G^{(o)} 
+
         for o in 0:L
             term_val = calc_mu_deriv_component(M, o, o, τval, ωsc, β, λ)
             total_acc += binomial(L, o) * term_val
@@ -241,54 +244,32 @@ end
 Builds the lookup table for an arbitrary τgrid. 
 Automatically detects if τgrid is uniform to enable O(1) lookups.
 """
-function build_pretab(t, β, τgrid::Vector{Float64};
-    lambda, dμ, max_total_order, Lkx, Lky, Rtable, filename=nothing)
+function build_pretab(t, β, τgrid::Vector{Float64}, propagator!::Function=propagator_lamderiv!;
+    lambda, dμ, deriv_order, Lkx, Lky, Rtable)
 
     # println("Info: Starting memory-efficient pre-tabulation...")
-    @assert min(Lkx, Lky) ÷ 2 >= Rtable "Error: Rtable too large for given Lkx, Lky."
 
     Ntau = length(τgrid)
-    # Norb = 2
-    Norb = 1
-
-    dim_size = max_total_order + 1
-    IndexMap = fill(-1, dim_size, dim_size)
-    valid_pairs = Tuple{Int,Int}[]
-    counter = 0
-
-    # m + l <= max_total_order 
-    for m in 0:max_total_order
-        for l in 0:(max_total_order-m)
-            counter += 1
-            IndexMap[m+1, l+1] = counter
-            push!(valid_pairs, (m, l))
-        end
-    end
-    NumDerivPairs = counter
-
+    Norb = 2
+    Mplus1 = deriv_order + 1
     # Sum_{x=0 to R} (x+1) = (R+1)(R+2)/2
     Nr = ((Rtable + 1) * (Rtable + 2)) ÷ 2
 
-    mem_gb = Ntau * Norb * NumDerivPairs * Nr * 8 / 1024^3
+    mem_gb = Ntau * Norb * Mplus1 * Nr * 8 / 1024^3
     # println("Info: Rtable=$Rtable. Storing $Nr spatial points (vs original $(2*Rtable+1)^2).")
-    println("Info: Final Ctable Size: $(round(mem_gb, digits=4)) GB")
+    # println("Info: Final Ctable Size: $(round(mem_gb, digits=2)) GB")
 
     # Check uniformity with a small tolerance
     dτ = τgrid[2] - τgrid[1]
     is_uniform = all(isapprox.(diff(τgrid), dτ; atol=1e-9))
 
-    Ctable = zeros(Float64, Ntau, Norb, NumDerivPairs, Nr)
+    Ctable = zeros(Float64, Ntau, Norb, Mplus1, Nr)
 
     ϵk, _, _ = dispersion_kmesh(Lkx, Lky, t, dμ)
-    # println("Minimal ek: ", minimum(abs.(ϵk[1, 1, :, :])))
-    min_ek = minimum(abs.(ϵk[1, 1, :, :]))
-    if min_ek < 1e-6
-        warn("Warning: Minimal |ek| is very small ($min_ek). This may lead to numerical instability.")
-    end
-
     Gk_buffer = zeros(ComplexF64, Lkx, Lky)
     p_ifft = plan_ifft(Gk_buffer)
-    # Gk_buffer1 = zeros(ComplexF64, Lkx, Lky)
+
+    Gk_buffer1 = zeros(ComplexF64, Lkx, Lky)
 
     # println("Info: Computing & FFT per tau point...")
 
@@ -308,16 +289,29 @@ function build_pretab(t, β, τgrid::Vector{Float64};
         # if itau % 1000 == 0
         #     print("\rProgress: $itau / $Ntau")
         # end
-        for (idx_linear, (m, l)) in enumerate(valid_pairs)
+
+        for m1 in 1:Mplus1 # m1 = order + 1
+            m = m1 - 1
+
+
             # Assume orb=1,1 and orb=2,2 symmetric
-            propagator_mixderiv!(Gk_buffer, Lkx, Lky, m, l, τval, λeff_arr, ωscaled_arr, β)
+            # propagator!(Gk_buffer, Lkx, Lky, m, τval, λeff_arr, ωscaled_arr, β)
+            propagator_mixderiv!(Gk_buffer, Lkx, Lky, m, 0, τval, λeff_arr, ωscaled_arr, β)
+            # propagator_mixderiv!(Gk_buffer1, Lkx, Lky, 0, m, τval, λeff_arr, ωscaled_arr, β)
+
+
+            # idx = findfirst(.!isapprox.(Gk_buffer, Gk_buffer1))
+            # if idx !== nothing
+            #     println(idx, " ", Gk_buffer[idx])
+            #     println(Gk_buffer1[idx])
+            #     @warn "Propagator mismatch for m=$m, tau=$τval"
+            # end
 
             # B. Perform FFT (k -> r)
             Gr_full = p_ifft * Gk_buffer
-            # println(Gr_full)
 
             # C. Truncate and fill Ctable
-            # Ctable layout: [itau, orb, idx_linear, ridx]
+            # Ctable layout: [itau, orb, m1, ridx]
             idx_compact = 0
             for dx in 0:Rtable
                 for dy in 0:dx
@@ -330,40 +324,21 @@ function build_pretab(t, β, τgrid::Vector{Float64};
                     # map to linear index
                     idx_compact += 1
 
-                    Ctable[itau, 1, idx_linear, idx_compact] = val_r
-                    # Ctable[itau, 2, idx_linear, idx_compact] = val_r
+                    Ctable[itau, 1, m1, idx_compact] = val_r
+                    Ctable[itau, 2, m1, idx_compact] = val_r
                 end
             end
         end
     end
-    println("\nInfo: Pre-tabulation finished.")
+    # println("\nInfo: Pre-tabulation finished.")
 
-    pre = RealSpacePreTab(is_uniform, dτ, τgrid, β, Ctable, Rtable, IndexMap)
-    if !isnothing(filename)
-        key = generate_key(lambda, dμ, max_total_order, Lkx, Lky, Rtable, Ntau)
-        jldopen(filename, "a+", compress=true) do file
-            if haskey(file, key)
-                @info "Loading precomputed table from $key"
-                # return file[key]
-            else
-                file[key] = pre
-                # @info "Saved precomputed table to $key
-            end
-        end
-    end
-
-    return pre
-end
-
-function generate_key(lambda, dμ, max_order, Lkx, Lky, Rtable, Ntau)
-    # 格式化参数，例如: "pretab/L1.0_dmu0.1_O4_R10_G64x64"
-    return "pretab/lambda$(lambda)_dmu$(dμ)_order$(max_order)_R$(Rtable)_L$(Lkx)x$(Lky)_Ntau$(Ntau)"
+    return RealSpacePreTab(is_uniform, dτ, τgrid, β, Ctable, Rtable)
 end
 
 # --- The Generalized Hot Path ---
 
 """
-    bare_line_fast(pretab, Δr, Δτ, orbital, m, l)
+    bare_line_fast(pretab, Δr, Δτ, orbital, m)
 
 Computes hopping counterterm. Uses O(1) arithmetic if grid is uniform,
 otherwise uses O(log N) binary search.
@@ -372,7 +347,7 @@ otherwise uses O(log N) binary search.
     Δr::SVector{2,Int},
     Δτ::Float64,
     orbital::Int,
-    m::Int, l::Int)
+    m::Int)
 
     # 1. Spatial Check (Early Exit)
     R = pre.Rtable
@@ -381,12 +356,6 @@ otherwise uses O(log N) binary search.
     ay = abs(dy)
     if ax > R || ay > R
         return 0.0
-    end
-
-    # derivative Indexing
-    deriv_idx = pre.IndexMap[m+1, l+1]
-    if deriv_idx == -1
-        error("Invalid derivative index: m=$m, l=$l")
     end
 
     # Spatial Indexing
@@ -405,18 +374,16 @@ otherwise uses O(log N) binary search.
 
     if pre.is_uniform
         # --- Fast Path (Arithmetic) ---
-        x = (τ_mod - pre.τgrid[1]) / pre.dτ
+        x = τ_mod / pre.dτ
         idx = floor(Int, x) + 1
 
         # Clamp upper bound (if τ_mod ≈ β)
-        if idx < 1
-            idx = 1
-        elseif idx >= Ntau
+        if idx >= Ntau
             idx = Ntau - 1
         end
 
         # Weight (x - floor(x))
-        w = (τ_mod - (pre.τgrid[1] + (idx - 1) * pre.dτ)) / pre.dτ
+        w = (τ_mod - (idx - 1) * pre.dτ) / pre.dτ
     else
         # --- General Path (Binary Search) ---
         # Returns index of the last value <= τ_mod
@@ -440,8 +407,8 @@ otherwise uses O(log N) binary search.
     # 4. Interpolate
     # Ctable layout: [τ, orb, m, r]
     @inbounds begin
-        yL = pre.Ctable[idx, orbital, deriv_idx, ridx]
-        yR = pre.Ctable[idx+1, orbital, deriv_idx, ridx]
+        yL = pre.Ctable[idx, orbital, m+1, ridx]
+        yR = pre.Ctable[idx+1, orbital, m+1, ridx]
     end
 
     val = yL + w * (yR - yL)

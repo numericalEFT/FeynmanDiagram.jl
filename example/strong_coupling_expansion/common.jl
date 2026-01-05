@@ -33,3 +33,20 @@ function partition_dyn(order::Int, hasodd::Bool=false; minorder=2)
         return sort([p for p in par if p[1] + p[2] <= order && p[1] >= minorder && iseven(p[1])])
     end
 end
+
+function partition_dynmu(order::Int, hasodd::Bool=false; minorder=2)
+    # 1. n1 + n2 + n3 <= order
+    # 2. If !hasodd, then n1 must be even
+
+    start_n1 = (!hasodd && isodd(minorder)) ? minorder + 1 : minorder
+    step_n1 = hasodd ? 1 : 2
+
+    partitions = [
+        (n1, n2, n3)
+        for n1 in start_n1:step_n1:order
+        for n2 in 0:(order-n1)
+        for n3 in 0:(order-n1-n2)
+    ]
+
+    return partitions
+end

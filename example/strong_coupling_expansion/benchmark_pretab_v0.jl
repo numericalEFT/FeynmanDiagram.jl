@@ -1,10 +1,10 @@
 include("pretab_propagator_C4v.jl")
+# include("pretab_propagator_general.jl")
 using BenchmarkTools
 using Test
 using Random
-using PyPlot
-# using Plots
-# gr()
+using Plots
+gr()
 
 function exact_hopping_value(t, β, dμ, lambda, deriv_order, Lx, Ly,
     τ::Float64, r)
@@ -25,7 +25,7 @@ function exact_hopping_value(t, β, dμ, lambda, deriv_order, Lx, Ly,
             g2c_τ = 0.0
             for o in 0:deriv_order
                 val = propagator_derivative(τ, ωscaled, β, o)
-                g2c_τ += val * (ωscaled^o) * binomial(deriv_order, o) #* (-1)^o
+                g2c_τ += val * (ωscaled^o) * binomial(deriv_order, o) * (-1)^o
             end
 
             phase = kx * r[1] + ky * r[2]
@@ -67,49 +67,15 @@ function exact_hopping_muderiv(t, β, dμ, lambda, deriv_order, Lx, Ly,
     return g2c / N
 end
 
-function run_test()
-    println("=== Setting up Parameters ===")
-    Lx, Ly = 4, 4
-    t = 1.0
-    β = 10.0
-    # lambda = 0.01
-    lambda = 0.1
-    dμ = -0.2
-    order = 1
-    Ntau = 4
-    # Ntau = 20000
-    # Rtable = 20
-    Rtable = 2
-
-    # # Case A: Uniform Grid
-    # grid_uniform = collect(range(0.0, β; length=Ntau))
-    # grid_uniform[1] = 1e-10
-    # println("\n[Building Uniform Table...]")
-    # pretab_uni = build_pretab(t, β, grid_uniform;
-    #     lambda=lambda, dμ=dμ, max_total_order=order, Lkx=Lx, Lky=Ly, Rtable=Rtable)
-
-    # Case B: Non-Uniform Grid (e.g., Power Grid)
-    # Dense near 0 and β, sparse in middle
-    # power = 5
-    power = 4
-    grid_power = [(i / (Ntau - 1))^power * β for i in 0:(Ntau-1)]
-    # grid_power[1] = 1e-10
-    println("[Building Non-Uniform Table...]")
-    pretab_non = build_pretab(t, β, grid_power;
-        lambda=lambda, dμ=dμ, max_total_order=order, Lkx=Lx, Lky=Ly, Rtable=Rtable)
-
-end
-
 function run_general_test()
     println("=== Setting up Parameters ===")
     # Lx, Ly = 32, 32
     Lx, Ly = 64, 64
     t = 1.0
     β = 10.0
-    # lambda = 0.01
-    lambda = 0.1
+    lambda = 0.01
     dμ = -0.2
-    order = 2
+    order = 1
     # Ntau = 2000
     Ntau = 20000
     # Rtable = 20
@@ -119,18 +85,17 @@ function run_general_test()
     grid_uniform = collect(range(0.0, β; length=Ntau))
     grid_uniform[1] = 1e-10
     println("\n[Building Uniform Table...]")
-    pretab_uni = build_pretab(t, β, grid_uniform;
-        lambda=lambda, dμ=dμ, max_total_order=order, Lkx=Lx, Lky=Ly, Rtable=Rtable)
+    pretab_uni = build_pretab(t, β, grid_uniform, propagator_muderiv!;
+        lambda=lambda, dμ=dμ, deriv_order=order, Lkx=Lx, Lky=Ly, Rtable=Rtable)
 
     # Case B: Non-Uniform Grid (e.g., Power Grid)
     # Dense near 0 and β, sparse in middle
-    # power = 5
-    power = 4
+    power = 3
     grid_power = [(i / (Ntau - 1))^power * β for i in 0:(Ntau-1)]
     # grid_power[1] = 1e-10
     println("[Building Non-Uniform Table...]")
-    pretab_non = build_pretab(t, β, grid_power;
-        lambda=lambda, dμ=dμ, max_total_order=order, Lkx=Lx, Lky=Ly, Rtable=Rtable)
+    pretab_non = build_pretab(t, β, grid_power, propagator_muderiv!;
+        lambda=lambda, dμ=dμ, deriv_order=order, Lkx=Lx, Lky=Ly, Rtable=Rtable)
 
     println("\n=== 1. 精度测试: 密集 Tau 扫描 ===")
 
@@ -138,64 +103,40 @@ function run_general_test()
     # r_test = SVector{2,Int}(1, 0)    # 测试相邻格点 hopping
     r_test = SVector{2,Int}(2, 0)
     # r_test = SVector{2,Int}(20, 0)    # 测试相邻格点 hopping
-    # m_test = 0         # 0阶导数
-    m_test = 1
-    l_test = 1
-    # l_test = 0
+    m_test = 1         # 0阶导数
 
     # 生成测试点：比插值网格密得多的点，且故意避开网格点
     # test_points = range(0.001, β - 0.001, length=5000)
     test_points = range(0.001, β - 0.001, length=550)
 
-    pretab_exact = build_pretab(t, β, collect(test_points);
-        lambda=lambda, dμ=dμ, max_total_order=order, Lkx=Lx, Lky=Ly, Rtable=Rtable)
-
     errors = Float64[]
     vals_exact = Float64[]
     vals_fast = Float64[]
 
-
     println("正在扫描 $(length(test_points)) 个测试点...")
-    # deriv_idx = pretab_exact.IndexMap[m_test+1, l_test+1]
-    # dx, dy = r_test
-    # ax = abs(dx)
-    # ay = abs(dy)
-    # if ay > ax
-    #     ax, ay = ay, ax
-    # end
-    # ridx = (ax * (ax + 1)) >> 1 + ay + 1
-    # println(pretab_exact.Ctable[1:20, 1, deriv_idx, ridx])
 
     for τ in test_points
-        # v_ex = exact_hopping_value(t, β, dμ, lambda, l_test, Lx, Ly, τ, r_test)
-        # v_ex = exact_hopping_muderiv(t, β, dμ, lambda, m_test, Lx, Ly, τ, r_test)
-        v_ex = bare_line_fast(pretab_exact, r_test, τ, 1, m_test, l_test)
+        # v_ex = exact_hopping_value(t, β, dμ, lambda, m_test, Lx, Ly, τ, r_test)
+        v_ex = exact_hopping_muderiv(t, β, dμ, lambda, m_test, Lx, Ly, τ, r_test)
 
-        # v_fast = bare_line_fast(pretab_uni, r_test, τ, 1, m_test, l_test)
-        v_fast = bare_line_fast(pretab_non, r_test, τ, 1, m_test, l_test)
+        # v_fast = bare_line_fast(pretab_uni, r_test, τ, 1, m_test)
+        v_fast = bare_line_fast(pretab_non, r_test, τ, 1, m_test)
 
         push!(vals_exact, v_ex)
         push!(vals_fast, v_fast)
         push!(errors, abs(v_ex - v_fast))
     end
 
-    # println(vals_exact[1:20])
-    # println(vals_fast[1:20])
-
     rel_err = errors ./ vals_exact
     max_err = maximum(errors)
     avg_err = sum(errors) / length(errors)
     max_val = maximum(abs.(vals_exact))
-
-    println(rel_err[1:20])
-    max_val, max_idx = findmax(rel_err)
 
     println("-"^50)
     @printf "测试点数量: %d\n" length(test_points)
     @printf "最大绝对值: %.6f\n" max_val
     @printf "最大绝对误差: %.2e\n" max_err
     @printf "最大相对误差: %.2e\n" maximum(rel_err)
-    @printf "最大相对误差位置: %d, τ=%.4e\n" max_idx test_points[max_idx]
     @printf "平均绝对误差: %.2e\n" avg_err
     @printf "相对误差(Avg): %.2e\n" (avg_err / max_val)
     println("-"^50)
@@ -206,53 +147,38 @@ function run_general_test()
         println("⚠️ 注意：精度误差较大，建议增加 N_grid 大小")
     end
 
-    # num_pltpt = 550
-    num_pltpt = 60
-    x = test_points[1:num_pltpt]
-    y_exact = vals_exact[1:num_pltpt]
-    y_fast = vals_fast[1:num_pltpt]
+    num_pltpt = 550
 
-    figure(figsize=(8, 6), dpi=300)
+    p1 = plot(test_points[1:num_pltpt], vals_exact[1:num_pltpt], label="Exact", lw=2, color=:black, alpha=0.6, title="Interpolation Check")
+    plot!(p1, test_points[1:num_pltpt], vals_fast[1:num_pltpt], label="Interp", style=:dash, color=:red, lw=1.5)
+    # scatter!(p1, grid_visual, [bare_line_fast(pretab_vis, r_test, g, 0) for g in grid_visual],
+    #     label="Grid Points", color=:red, markersize=3)
+    ylabel!(p1, "G(τ)")
 
-    plot(x, y_exact, label="Exact", color="black", linewidth=2, alpha=0.6)
-    plot(x, y_fast, label="Interp", linestyle="--", color="red", linewidth=1.5)
-
-    title("Interpolation Check")
-    ylabel("G(τ)")
-    legend()
-
-    savefig("benchmark_pretab_nonuni_lam$(lambda)r20_m$(m_test)l$(l_test).pdf")
-
-    figure(figsize=(8, 6), dpi=300)
-
-    plot(x, errors[1:num_pltpt], label="Interp", linestyle="--", color="red", linewidth=1.5)
-
-    title("Interpolation Check")
-    ylabel("G(τ) error")
-    legend()
-
-    savefig("benchmark_pretabErr_nonuni_lam$(lambda)r20_m$(m_test)l$(l_test).pdf")
+    final_plot = plot(p1, layout=(1, 1), size=(800, 600), dpi=300)
+    # savefig(final_plot, "benchmark_pretab_uni_m$m_test.pdf")
+    # savefig(final_plot, "benchmark_pretab_nonuni_m$m_test.pdf")
+    # savefig(final_plot, "benchmark_pretab_nonuni_r20_m$m_test.pdf")
+    savefig(final_plot, "benchmark_pretab_muderiv_nonuni_r20_m$m_test.pdf")
     println("✅ 图片已保存为 'benchmark_pretab.pdf'")
 
     println("\n=== Performance Benchmark ===")
     r_bench = SVector{2,Int}(1, 0)
     τ_bench = 1.2345
-    m_bench = 1
-    l_bench = 1
+    m_bench = 0
 
     println("-> Exact Calculation (Loop over k):")
-    # b_ex = @benchmark exact_hopping_value($t, $β, $dμ, $lambda, $m_bench, $Lx, $Ly, $τ_bench, $r_bench)
-    # display(b_ex)
-    # @btime exact_hopping_value($t, $β, $dμ, $lambda, $m_bench, $Lx, $Ly, $τ_bench, $r_bench)
+    b_ex = @benchmark exact_hopping_value($t, $β, $dμ, $lambda, $m_bench, $Lx, $Ly, $τ_bench, $r_bench)
+    display(b_ex)
+    @btime exact_hopping_value($t, $β, $dμ, $lambda, $m_bench, $Lx, $Ly, $τ_bench, $r_bench)
 
     println("\n1. Uniform Grid (Should utilize O(1) path):")
     # This should be very fast (~5-10ns)
-    @btime bare_line_fast($pretab_uni, $r_bench, $τ_bench, 1, $m_bench, $l_bench)
+    @btime bare_line_fast($pretab_uni, $r_bench, $τ_bench, 1, 0)
 
     println("\n2. Non-Uniform Grid (Should utilize O(log N) path):")
     # This should be slower due to searchsortedlast (~40-80ns depending on Ntau)
-    @btime bare_line_fast($pretab_non, $r_bench, $τ_bench, 1, $m_bench, $l_bench)
+    @btime bare_line_fast($pretab_non, $r_bench, $τ_bench, 1, 0)
 end
 
-run_test()
-# run_general_test()
+run_general_test()

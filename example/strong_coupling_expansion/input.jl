@@ -2,17 +2,17 @@
 t = 1.0
 # t = 2.0
 # t = 10.0
-Lx, Ly = 10, 10
+Lx, Ly = 32, 32
 # Lx, Ly = 3, 1
 # Lx, Ly = 3, 2
 # Lx, Ly = 4, 4
 
-Rsample = 24
-# Rsample = 12
-# Rsample = 6
-Lkx, Lky = 128, 128
+Rmax = 16
+# Rsample = Rmax
+# Lkx, Lky = 128, 128
+Lkx, Lky = 32, 32
 # Ntau = 256
-Ntau = 128
+# Ntau = 128
 
 # orders = [8]
 # orders = [6]
@@ -25,14 +25,15 @@ orders = [4]
 # U = [2.0]
 
 # β = [2.5, 5.0, 10.0]
-β = [2.5]
-U = [12.0,]
-μ = [6.0]
+# β = [2.5]
+# U = [12.0,]
+# μ = [6.0]
 
-# β = [0.2]
+β = [5.0]
 # # β = [1.0]
 # μ = [1.0]
-# U = [4.0]
+μ = [0.2505525872]
+U = [4.0]
 
 # β = [1.0]
 # U = [10.0]
@@ -41,7 +42,8 @@ U = [12.0,]
 # μ = [5.0]
 
 ### lambda * t ~ 0.01
-lambdas = [0.01]
+# lambdas = [0.01, 0.1, 0.2]
+lambdas = [0.05, 0.4, 0.8, 1.0]
 # lambdas = [0.005]
 # lambdas = [0.005, 0.02]
 
@@ -54,8 +56,8 @@ lambdas = [0.01]
 # dμ = [-0.05, 0.05]
 # dμ = [-0.1, -0.05, 0.05, 0.1]
 # dμ = [-0.1]
-dμ = [0.01]
-# dμ = [2.0]
+# dμ = [0.01]
+dμ = [0.9]
 
 # neval = 8e6
 # neval = 4e6
@@ -65,3 +67,5 @@ neval = 2e6
 freeE_filename = "data_freeE.jld2"
 D_filename = "data_D.jld2"
 N_filename = "data_N.jld2"
+
+pretab_filename = "pretab_propagator_C4v.jld2"

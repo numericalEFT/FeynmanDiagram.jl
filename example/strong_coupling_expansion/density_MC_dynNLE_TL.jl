@@ -1,36 +1,19 @@
 include("./input.jl")
-include("./calc_N_dynNLE_2DTL.jl")
+# include("./calc_N_dynNLE_2DTL.jl")
+include("./calc_N_dynNLErec_2D.jl")
 
-function neighbor(partitions)
-    n = Vector{Tuple{Int,Int}}()
-    Nnorm = length(partitions) + 1 # the index of the normalization diagram is the N+1
-    for (ip, p) in enumerate(partitions)
-        if p[1] in [0, 1] # if there is only one loop, then the diagram can be connected to the normalization diagram
-            push!(n, (ip, Nnorm))
-        end
-        for (idx, np) in enumerate(partitions)
-            if idx >= ip
-                continue
-            end
-            if np[1] == p[1] || np[1] == p[1] + 1 || np[1] == p[1] - 1 #the first index is the number of loops
-                # if np[1] == p[1] || np[1] == p[1] + 2 || np[1] == p[1] - 2 #the first index is the number of loops
-                push!(n, (ip, idx))
-            end
-        end
-    end
-    # println(n)
-    return n
-end
 
 for (_μ, _U, _β, lam, _dμ, order) in Iterators.product(μ, U, β, lambdas, dμ, orders)
     model = Hubbard.hubbardAtom(:fermi, _U, _μ + _dμ, _β)
 
     # _partition = [(2, 0), (2, 1), (2, 2), (3, 0), (3, 1), (3, 2)]
     # _partition = [(2, 0), (2, 1), (2, 2), (2, 3), (3, 0), (3, 1), (3, 2), (3, 3)]
-    _partition = [(1, 0), (1, 1), (1, 2), (2, 0), (2, 1), (2, 2), (3, 0), (3, 1), (3, 2)]
-    deriv_order = maximum(p[2] for p in _partition)
+    # _partition = [(1, 0), (1, 1), (1, 2), (2, 0), (2, 1), (2, 2), (3, 0), (3, 1), (3, 2)]
+    # deriv_order = maximum(p[2] for p in _partition)
 
-    para = build_paraMC_TL_SC(
+    _partition = partition_dynmu(order)
+
+    para = ParaMC(
         μ=_μ,
         U=_U,
         t=1.0,
@@ -38,12 +21,11 @@ for (_μ, _U, _β, lam, _dμ, order) in Iterators.product(μ, U, β, lambdas, d�
         lambda=lam,
         dμ=_dμ,
         order=order,
-        deriv_order=deriv_order,
         Lkx=Lkx,
         Lky=Lky,
-        Rsample=Rsample,
-        Rtable=2Rsample,
-        Ntau=Ntau
+        Lx=Lx,
+        Ly=Ly,
+        Rmax=Rmax
     )
 
     # _partition = [(2, 0), (2, 1), (2, 2), (2, 3), (2, 4), (3, 0), (3, 1)]
@@ -60,5 +42,5 @@ for (_μ, _U, _β, lam, _dμ, order) in Iterators.product(μ, U, β, lambdas, d�
     # push!(reweight_goal, 4.0)
 
     density_MC(model, para, partition=_partition, neval=neval, filename=N_filename,
-        dtype=Float64, _neighbor=neighbor(_partition))#, print=1)
+        dtype=Float64, Ntau=20000, file_pretab=pretab_filename)#, print=1)
 end

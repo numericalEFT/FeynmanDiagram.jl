@@ -58,6 +58,70 @@ function hubbardAtom(type, U, μ, β, h=0.0)
     return m
 end
 
+"""
+    get_mu_from_n(target_n::Float64, beta, U, h=0.0)
+
+Calculate chemical potential mu given density n for Hubbard atom model.
+Uses a numerically stable quadratic solver to handle large beta/U.
+"""
+function get_mu_from_n(target_n::Float64, beta, U, h=0.0)
+    if target_n <= 1e-14
+        return -Inf
+    elseif target_n >= 2.0 - 1e-14
+        return Inf
+    end
+
+    # 2. Coefficients for quadratic equation: Ax^2 + Bx + C = 0
+    # where x = exp(beta * mu)
+
+    # Handle potential underflow for very large beta * U
+    # exp(-beta * U) might become 0.0, which is fine, but we must handle it gracefully.
+    factor_double = exp(-beta * U)
+    factor_single = 2.0 * cosh(beta * h)
+
+    a = (2.0 - target_n) * factor_double
+    b = (1.0 - target_n) * factor_single
+    c = -target_n
+
+    discriminant = b^2 - 4 * a * c
+
+    if discriminant < 0
+        error("Discriminant < 0. This should not happen for physical n.")
+    end
+
+    sqrt_disc = sqrt(discriminant)
+    x = 0.0
+
+    # 3. Stable Quadratic Solver (Citardauq Formula)
+    # To avoid cancellation errors when b is large and close to sqrt(b^2 - 4ac)
+
+    if b > 0
+        # Case: n < 1. b is positive and large.
+        # Standard formula (-b + sqrt(...)) involves cancellation (large - large).
+        # Use rationalized form: x = -2c / (b + sqrt(...))
+        x = -2 * c / (b + sqrt_disc)
+    else
+        # Case: n >= 1. b is negative or zero.
+        # -b is positive. No cancellation in (-b + sqrt(...)).
+        numerator = -b + sqrt_disc
+        denominator = 2 * a
+
+        # Check for division by zero if A is extremely small (U very large)
+        if abs(denominator) < 1e-100
+            # Fallback to linear solution Bx + C = 0 -> x = -C/B
+            x = -c / b
+        else
+            x = numerator / denominator
+        end
+    end
+
+    if x <= 0
+        error("Solver returned non-positive x: $x. Parameters might be too extreme.")
+    end
+
+    return log(x) / beta
+end
+
 function hubbardAtom2(type, t, U, μ, β)
     Nsite = 2
     bonds = [(1, 2), (2, 1)]

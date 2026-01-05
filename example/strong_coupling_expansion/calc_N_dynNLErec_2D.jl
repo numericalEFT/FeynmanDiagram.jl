@@ -1,0 +1,279 @@
+push!(LOAD_PATH, pwd())
+using Atom
+using Lehmann
+using MCIntegration
+using Printf
+using Measurements
+using JLD2
+using CodecZlib
+using DataStructures
+# using LinearAlgebra: det
+using LinearAlgebra
+using Random
+using Dates
+
+include("common.jl")
+include("generate_freeE_NLErec.jl")
+include("dof_utils.jl")
+include("pretab_propagator_C4v.jl")
+
+struct ParaMC
+    μ::Float64
+    U::Float64
+    t::Float64
+    β::Float64
+    n::Int # external Matsubara frequency
+    Lx::Int
+    Ly::Int
+    lambda::Float64
+    dμ::Float64
+    order::Int
+    # ϵk::Array{Float64,4}
+    Lkx::Int
+    Lky::Int
+    Rmax::Int
+    function ParaMC(;
+        U=1.0,
+        μ=U / 2,
+        t=1.0,
+        β=1.0,
+        n=0,
+        Lx=16,
+        Ly=16,
+        lambda=1.0,
+        dμ=0.0,
+        order=1,
+        # ϵk=disperion_PBC(Lx, Ly, t, dμ),
+        Lkx=64,
+        Lky=64,
+        # Rmax=32,
+        Rmax=12,
+    )
+        return new(μ, U, t, β, n, Lx, Ly, lambda, dμ, order, Lkx, Lky, Rmax)
+    end
+end
+
+paraid(p::ParaMC) = Dict(
+    "order" => p.order,
+    "beta" => p.β,
+    "lambda" => p.lambda,
+    "mu" => p.μ,
+    "dmu" => p.dμ,
+    "U" => p.U,
+    "Lx" => p.Lx,
+    "Ly" => p.Ly,
+)
+short(p::ParaMC) = join(["$(k)_$(v)" for (k, v) in sort!(OrderedDict(paraid(p)))], "_")
+
+function neighbor(partitions; order_diff=2)
+    n = Vector{Tuple{Int,Int}}()
+    Nnorm = length(partitions) + 1 # the index of the normalization diagram is the N+1
+    for (ip, p) in enumerate(partitions)
+        # if p[1] == 1 # if there is only one loop, then the diagram can be connected to the normalization diagram
+        if p[1] in [0, 1, 2] # if there is only one loop, then the diagram can be connected to the normalization diagram
+            push!(n, (ip, Nnorm))
+        end
+        for (idx, np) in enumerate(partitions)
+            if idx >= ip
+                continue
+            end
+            if (np[1] == p[1] && (np[2] == p[2] || np[2] == p[2] + 1 || np[2] == p[2] - 1)) ||
+               ((np[1] == p[1] + 2 || np[1] == p[1] - 2) && np[2] == p[2]) ||
+               ((np[1] == p[1] + order_diff || np[1] == p[1] - order_diff) && np[2] == p[2]) ||
+               ((np[1] == p[1] + order_diff || np[1] == p[1] - order_diff) && (np[2] == p[2] + 1 || np[2] == p[2] - 1)) ||
+               ((np[1] == p[1] + order_diff || np[1] == p[1] - order_diff) && (np[2] == p[2] + 2 || np[2] == p[2] - 2))
+                #the first index is the number of loops; the second index is the number of space variables
+                push!(n, (ip, idx))
+            end
+        end
+    end
+    # println(n)
+    return n
+end
+
+function integrand(idx, vars, config)
+    para, root, graphfuncs! = config.userdata[1:3]
+    leafval, leafType, leafOrders, leafSites, leafτ_i, leafτ_o, leaforbitals_i, leaforbitals_o = config.userdata[4]
+    model, pretab, ws = config.userdata[5:end]
+    # varT, (varRx, varRy), varT_D = vars
+    varT, (varRx, varRy) = vars
+    # τp = varT_D[1]
+
+    Lx, Ly = para.Lx, para.Ly
+
+    num_varR = config.dof[idx][2] + 1
+    # 使用双重循环检查重叠 (O(N^2) 但无内存分配，对于小阶数 N 极快)
+    @inbounds for i in 1:num_varR
+        xi, yi = varRx[i], varRy[i]
+        for j in (i+1):num_varR
+            if xi == varRx[j] && yi == varRy[j]
+                return zero(eltype(leafval[idx]))
+            end
+        end
+    end
+
+    @inbounds for (i, lftype) in enumerate(leafType[idx])
+        if lftype == 0
+            continue
+        elseif lftype == 3  # BareGreenNId
+            τi, τo = varT[leafτ_i[idx][i]], varT[leafτ_o[idx][i]]
+            orbitals_i, orbitals_o = leaforbitals_i[idx][i], leaforbitals_o[idx][i]
+            _gn = Green.GreenN(model, vcat(τi, τo), vcat(orbitals_i, orbitals_o))
+            # order = leafOrders[idx][i][2]
+            # if order == 0
+            leafval[idx][i] = Green.Gn(model, _gn, ws)
+            # elseif order == 1
+            #     leafval[idx][i] = Green.dGn_dμ_estimator(model, _gn, τp, ws)
+            # end
+        elseif lftype == 4  # BareHoppingId
+            Δτ = varT[leafτ_o[idx][i][1]] - varT[leafτ_i[idx][i][1]]
+            idx1 = leafSites[idx][i][1]
+            idx2 = leafSites[idx][i][2]
+            # r1 = [varRx[idx1], varRy[idx1]]
+            # r2 = [varRx[idx2], varRy[idx2]]
+            dx = abs(varRx[idx1] - varRx[idx2])
+            dy = abs(varRy[idx1] - varRy[idx2])
+            dx = min(dx, Lx - dx)
+            dy = min(dy, Ly - dy)
+            Δr = SVector(dx, dy)
+
+            lam_order, mu_order = leafOrders[idx][i][1:2]
+            orbital = leaforbitals_i[idx][i][1]
+            # println(mu_order, " ", lam_order)
+            # leafval[idx][i] = hopping_counterterm_PBC(para, τ, r1, r2, orbital, order)
+            leafval[idx][i] = bare_line_fast(pretab, Δr, Δτ, orbital, mu_order, lam_order)
+        else
+            error("this leaftype $lftype not implemented!")
+        end
+    end
+
+    graphfuncs![idx](root, leafval[idx])
+
+    return root[1]
+end
+
+function density(model, para::ParaMC, diagram, _neighbor;
+    neval=1e6, print=0, dtype=ComplexF64, Ntau=Ntau, file_pretab=nothing, kwargs...)
+    partition, diagpara, FeynGraphs = diagram
+
+    println("Start compiling...", now())
+    funcGraphs! = Dict{Int,Function}()
+    leaf_maps = Vector{Dict{Int,Graph}}()
+    for (i, key) in enumerate(partition)
+        funcGraphs![i], leafmap = Compilers.compile(FeynGraphs[key])
+        push!(leaf_maps, leafmap)
+    end
+    println("Compile finished.", now())
+
+    leafStat = FeynmanDiagram.leafstates(leaf_maps, dtype=dtype)
+
+    root = zeros(dtype, 1)
+    # T_doublon = Continuous(0.0, para.β; adapt=true, alpha=3.0)
+    T = Continuous(0.0, para.β; offset=1, adapt=true, alpha=3.0)
+    T.data[1] = 0.0
+
+    R = Discrete([(1, para.Lx), (1, para.Ly)]; offset=1, adapt=true, alpha=3.0) # the fixed R is [1, 1]
+
+    dof = build_dof(diagpara)
+    obs = zeros(dtype, length(diagpara))
+
+    println("dof: ", dof)
+    ws = Green.GreenWorkspace(model, para.order)
+
+    if isnothing(file_pretab)
+        power = 4
+        taugrid = [(i / (Ntau - 1))^power * para.β for i in 0:(Ntau-1)]
+        minorder = 2
+        pretab = build_pretab(para.t, para.β, taugrid;
+            lambda=para.lambda, dμ=para.dμ, max_total_order=para.order - minorder + 1,
+            Lkx=para.Lkx, Lky=para.Lky, Rtable=para.Rmax)
+    else
+        key = generate_key(para.lambda, para.dμ, para.order - 2 + 1, para.Lkx, para.Lky, para.Rmax, Ntau)
+        println("Loading pretab from file with key: $key")
+        jldopen(file_pretab, "r") do f
+            pretab = f[key]
+        end
+    end
+
+    # config = Configuration(; var=(T, R, T_doublon), dof=dof, obs=obs, type=dtype, neighbor=_neighbor,
+    config = Configuration(; var=(T, R), dof=dof, obs=obs, type=dtype, neighbor=_neighbor,
+        userdata=(para, root, funcGraphs!, leafStat, model, pretab, ws))
+    result = integrate(integrand; config=config, neval=neval, thermal_ratio=0.2, print=print, solver=:mcmc, kwargs...)
+
+    if isnothing(result) == false
+        if print >= 0
+            report(result.config)
+            println(report(result, pick=o -> first(o)))
+            println(result)
+        end
+        if print >= -2
+            println(result)
+        end
+
+        datadict = Dict{eltype(partition),Any}()
+        for (o, key) in enumerate(partition)
+            avg, std = result.mean[o], result.stdev[o]
+            datadict[key] = -measurement.(avg, std)
+        end
+        return datadict, result
+    else
+        return nothing, nothing
+    end
+end
+
+function density_MC(model, para::ParaMC; neval=1e6, partition=partition_dynmu(para.order), reweight_goal=nothing,
+    print=0, filename::Union{String,Nothing}=nothing, file_pretab=nothing, dtype=ComplexF64, _neighbor=nothing, Ntau=20000)
+
+    println("Generating diagrams...", now())
+    diagram = generate_Nderiv(partition)
+    println("Generate finished.", now())
+
+    partition = diagram[1]
+    println("partition: ", partition)
+    if isnothing(reweight_goal)
+        reweight_goal = Float64[]
+        for (order, sOrder) in partition
+            if sOrder == 0
+                push!(reweight_goal, 4.0)
+            else
+                push!(reweight_goal, 1.0)
+            end
+        end
+        push!(reweight_goal, 2.0)
+    end
+
+    if isnothing(_neighbor)
+        _neighbor = neighbor(partition, order_diff=2)
+        # _neighbor = neighbor(partition, order_diff=1)
+    end
+
+    println("neighbor: ", _neighbor)
+
+    # Dloc = Green.thermalavg(model.D, model.w)
+    # println("The local double occupancy (0-th order) is: ", Dloc)
+
+    doublon, result = density(model, para, diagram, _neighbor; neval=neval,
+        reweight_goal=reweight_goal, dtype=dtype, print=print, Ntau=Ntau, file_pretab=file_pretab)
+
+    if isnothing(doublon) == false
+        if isnothing(filename) == false
+            jldopen(filename, "a+") do f
+                key = "$(short(para))"
+                if haskey(f, key)
+                    @warn("replacing existing data for $key")
+                    delete!(f, key)
+                end
+                f[key] = (doublon,)
+            end
+        end
+        for (ip, key) in enumerate(partition)
+            println("Group ", key)
+            # @printf("%10s   %10s \n", "avg", "err")
+            @printf("%10s   %10s   %10s   %10s \n", "real(avg)", "err", "imag(avg)", "err")
+            # @printf("%10.6f ± %10.6f\n", doublon[key].val, doublon[key].err)
+            r, i = real(doublon[key]), imag(doublon[key])
+            @printf("%10.6f ± %10.6f    %10.6f ± %10.6f\n", r.val, r.err, i.val, i.err)
+        end
+    end
+    return doublon, result
+end
