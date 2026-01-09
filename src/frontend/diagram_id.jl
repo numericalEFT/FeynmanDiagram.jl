@@ -275,6 +275,29 @@ function Base.isequal(a::BareHoppingId, b::BareHoppingId)
     return a.site == b.site && a.orbital == b.orbital && a.extT == b.extT && a.para == b.para
 end
 
+struct DetHoppingId{P} <: DiagramId
+    para::P
+    site::Vector{Int}
+    extT::Vector{Int}
+    orbital::Int
+    index::Int
+    N::Int
+    function DetHoppingId(para::P, r::Vector{Int}, orbital::Int, t::Vector{Int}, index::Int, N=length(r)) where {P}
+        @assert length(r) == length(t) == N
+        return new{P}(para, r, t, orbital, index, N)
+    end
+    function DetHoppingId(para::P; index=0, orbital=1, t=[], r=[]) where {P}
+        @assert length(t) == length(r)
+        return new{P}(para, r, t, orbital, index, length(r))
+    end
+end
+function isequal(a::DetHoppingId, b::DetHoppingId)
+    if typeof(a) != typeof(b)
+        return false
+    end
+    return a.N == b.N && a.orbital == b.orbital && a.site == b.site && a.extT == b.extT && a.para == b.para
+end
+
 """
 time-ordered N-point Bare Green's function
 """
@@ -383,6 +406,8 @@ function index(type)
         return 4
     elseif type <: GreenNId
         return 5
+    elseif type <: DetHoppingId
+        return 6
     else
         # error("Not Implemented!")
         return 0

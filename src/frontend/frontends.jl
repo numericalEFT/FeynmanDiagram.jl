@@ -282,6 +282,13 @@ function leafstates(leaf_maps::Vector{Dict{Int,G}}; dtype::DataType=Float64) whe
                 push!(leafOutOrbitals[ikey], diagId.orbital[.!diagId.creation])
                 # push!(leafSites[ikey], collect(diagId.site))
                 push!(leafSites[ikey], vcat(diagId.site[diagId.creation], diagId.site[.!diagId.creation]))
+            elseif typeof(diagId) <: DetHoppingId
+                push!(leafInTaus[ikey], diagId.extT)
+                push!(leafOutTaus[ikey], diagId.extT)
+                push!(leafInOrbitals[ikey], [diagId.orbital])
+                push!(leafOutOrbitals[ikey], [diagId.orbital])
+                # push!(leafSites[ikey], diagId.site)
+                push!(leafSites[ikey], [diagId.index])
             elseif isnothing(diagId)
                 push!(leafInTaus[ikey], [])
                 push!(leafOutTaus[ikey], [])
