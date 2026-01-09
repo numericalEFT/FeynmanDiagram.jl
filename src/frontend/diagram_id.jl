@@ -280,15 +280,14 @@ struct DetHoppingId{P} <: DiagramId
     site::Vector{Int}
     extT::Vector{Int}
     orbital::Int
-    index::Int
     N::Int
-    function DetHoppingId(para::P, r::Vector{Int}, orbital::Int, t::Vector{Int}, index::Int, N=length(r)) where {P}
+    function DetHoppingId(para::P, r::Vector{Int}, orbital::Int, t::Vector{Int}, N=length(r)) where {P}
         @assert length(r) == length(t) == N
-        return new{P}(para, r, t, orbital, index, N)
+        return new{P}(para, r, t, orbital, N)
     end
     function DetHoppingId(para::P; index=0, orbital=1, t=[], r=[]) where {P}
         @assert length(t) == length(r)
-        return new{P}(para, r, t, orbital, index, length(r))
+        return new{P}(para, r, t, orbital, length(r))
     end
 end
 function isequal(a::DetHoppingId, b::DetHoppingId)
