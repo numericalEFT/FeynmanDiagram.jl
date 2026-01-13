@@ -16,7 +16,7 @@ end
 3. 自底向上计算图的“随机指纹”。
 4. 根据指纹合并重复的中间节点。
 """
-function optimize_randomized!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}};
+function optimize!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}};
     digits=10, verbose=0, normalize=nothing, seed=1234)
     verbose > 0 && println("Starting randomized optimization...")
 
@@ -172,7 +172,7 @@ end
     In-place optimization of given `graphs`. 
     Uses a fused post-order traversal with memoization to perform flattening, merging, and zero-removal in a single pass.
 """
-function optimize!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; level=0, verbose=0, normalize=nothing)
+function optimize_v0!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; level=0, verbose=0, normalize=nothing)
     if isempty(graphs)
         return nothing
     end
@@ -274,9 +274,10 @@ end
 # Returns:
 - A tuple/vector of optimized graphs.
 """
-function optimize(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; level=0, verbose=0, normalize=nothing)
+function optimize(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0, normalize=nothing)
     graphs_new = deepcopy(graphs)
-    optimize!(graphs_new, level=level, verbose=verbose, normalize=normalize)
+    # optimize!(graphs_new, level=level, verbose=verbose, normalize=normalize)
+    optimize!(graphs_new, verbose=verbose, normalize=normalize)
     return graphs_new
 end
 
