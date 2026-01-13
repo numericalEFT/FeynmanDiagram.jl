@@ -23,63 +23,45 @@ function Base.isequal(a::LeafKey, b::LeafKey)
 end
 
 """
-    optimize_randomized!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; 
-                         digits=10, verbose=0, normalize=nothing)
-
-基于随机化求值的高效去重优化。
-1. 首先去除重复 Leaf。
-2. 给所有 Unique Leaf 赋予随机复数权值。
-3. 自底向上计算图的“随机指纹”。
-4. 根据指纹合并重复的中间节点。
+    optimize!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; 
+                         digits=12, verbose=0, normalize=nothing, seed=1234)
 """
 function optimize!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}};
-    digits=10, verbose=0, normalize=nothing, seed=1234)
+    digits=12, verbose=0, normalize=nothing, seed=1234)
     verbose > 0 && println("Starting randomized optimization...")
 
-    # 1. 先用精确哈希去重 Leaf (复用之前的优化函数)
-    #    这是必须的，保证同一个物理变量对应同一个随机值
+    # 1. Unique Leaf
     remove_duplicated_leaves!(graphs, verbose=verbose, normalize=normalize)
 
-    # 2. 为每个 Unique Leaf 分配随机值
-    #    使用 Dict 存储: Leaf ID -> Random Value
+    #   Dict: Leaf ID -> Random Value
     rng = MersenneTwister(seed) # 固定种子以保证可复现性
     leaf_vals = Dict{Int,ComplexF64}()
 
-    # 收集所有 graphs 中的 unique leaf 并赋值
-    # 这里不需要显式收集，我们在遍历时动态赋值即可，或者先遍历一遍收集
-    # 为了简单，我们在 recursive_eval 中动态查表
-
-    # 3. 缓存表
-    # val_map: 节点 ID -> 计算出的随机值 (防止 DAG 重复计算)
+    # val_map: node ID -> evaluated Complex Value
     val_map = Dict{Int,ComplexF64}()
-
-    # unique_table: (Operator, RoundedValue) -> 规范化节点
-    # Key 使用 Tuple{DataType, ComplexF64}，其中 Value 经过 round 处理
     unique_table = Dict{Any,eltype(graphs)}()
-
-    # 访问记录，用于构建 DAG
     memo_node = Dict{Int,eltype(graphs)}()
 
-    # --- 核心递归函数 ---
     function recursive_build(g::AbstractGraph)
-        # 1. 记忆化：如果已经处理过该节点结构，直接返回规范化节点
         if haskey(memo_node, g.id)
             return memo_node[g.id]
         end
 
-        # 2. 计算当前节点的随机值 (Value)
-        current_val = zero(ComplexF64)
+        # the current node's evaluated value (Algebraic Fingerprint)
+        if g.operator == Prod
+            current_val = one(ComplexF64)
+        else
+            current_val = zero(ComplexF64)
+        end
 
         if isleaf(g)
-            # 如果是 Leaf，获取或分配随机值
             if !haskey(leaf_vals, g.id)
-                # 生成一个随机复数，实部虚部都在 [0, 100) 之间避免太小
-                leaf_vals[g.id] = complex(rand(rng) * 100, rand(rng) * 100)
+                r = 0.9 + rand(rng) * 0.2 # [0.9, 1.1)
+                theta = rand(rng) * 2π
+                leaf_vals[g.id] = r * exp(im * theta)
             end
             current_val = leaf_vals[g.id]
         else
-            # 如果是 Branch，递归处理子节点
-            # 先递归优化子节点，确保存储在 g.subgraphs 中的已经是规范化节点
             for (i, sub_g) in enumerate(subgraphs(g))
                 canonical_sub = recursive_build(sub_g)
                 set_subgraph!(g, canonical_sub, i)
@@ -87,20 +69,28 @@ function optimize!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}};
                 sub_val = val_map[canonical_sub.id]
                 factor = subgraph_factor(g, i)
 
-                current_val += sub_val * factor
+                if g.operator == Sum
+                    current_val += sub_val * factor
+                elseif g.operator == Prod
+                    current_val *= (sub_val * factor)
+                elseif g.operator <: Power
+                    # Power has only one subgraph
+                    # val = (sub_val * factor) ^ power
+                    N = g.operator.parameters[1] # 获取 Power{N} 的 N
+                    current_val += (sub_val * factor)^N
+                else
+                    @warn "Unsupported operator $(g.operator) in optimize!."
+                    current_val += sub_val * factor
+                end
             end
         end
 
-        # 记录计算出的值
         val_map[g.id] = current_val
 
-        # 3. 查表去重 (Dedup)
-        # 将复数 round 一下，作为 Key
-        # round 的目的是消除 1.000000000000001 和 1.0 的区别
+        # 3. Dedup
         rounded_val = round(current_val, digits=digits)
 
-        # 构造指纹 Key: (Operator, 随机计算值, Orders)
-        # 注意：Orders 也要相同才算相等
+        # Fingerprint Key: (Operator, evaluated_value, Orders)
         dedup_key = (g.operator, rounded_val, g.orders)
 
         if haskey(unique_table, dedup_key)
