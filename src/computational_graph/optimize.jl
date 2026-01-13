@@ -604,7 +604,6 @@ function remove_duplicated_leaves!(graphs::Union{Tuple,AbstractVector{<:Abstract
             if isleaf(sub_g)
                 key = LeafKey(sub_g.operator, sub_g.orders, sub_g.properties)
                 if haskey(leaf_cache, key)
-                    println(sub_g.id, "hit")
                     set_subgraph!(g, leaf_cache[key], i)
                 else
                     # if !isnothing(normalize); normalize(sub_g.id); end
@@ -615,8 +614,6 @@ function remove_duplicated_leaves!(graphs::Union{Tuple,AbstractVector{<:Abstract
                 _process_node_children!(sub_g)
             end
         end
-        println("leaf_cache keys: ", collect(keys(leaf_cache)))
-
     end
 
     if graphs isa AbstractVector
