@@ -5,7 +5,7 @@ using StaticArrays
 using Printf, PyCall, DataFrames
 using Random
 macro todo()
-	return :(error("Not yet implemented!"))
+    return :(error("Not yet implemented!"))
 end
 
 import ..QuantumOperators: QuantumOperator, OperatorProduct, 𝑓⁻, 𝑓⁺, 𝑓, 𝑏⁻, 𝑏⁺, 𝜙, iscreation, isannihilation, isfermionic, parity, normal_order, correlator_order
@@ -52,7 +52,7 @@ export relabel!, standardize_labels!, replace_subgraph!, merge_linear_combinatio
 export relabel, standardize_labels, replace_subgraph, merge_linear_combination, merge_multi_product, remove_zero_valued_subgraphs
 export open_parenthesis, open_parenthesis!, flatten_prod!, flatten_prod, flatten_sum!, flatten_sum, flatten_chains!, flatten_chains
 include("optimize.jl")
-export optimize!, optimize, flatten_all_chains!, merge_all_linear_combinations!, merge_all_multi_products!, remove_all_zero_valued_subgraphs!, remove_duplicated_leaves!, remove_duplicated_nodes!
+export optimize!, optimize, optimize_randomized!, flatten_all_chains!, merge_all_linear_combinations!, merge_all_multi_products!, remove_all_zero_valued_subgraphs!, remove_duplicated_leaves!, remove_duplicated_nodes!
 
 
 end

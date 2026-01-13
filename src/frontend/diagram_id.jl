@@ -285,16 +285,17 @@ struct DetHoppingId{P} <: DiagramId
         @assert length(r) == length(t) == N
         return new{P}(para, r, t, orbital, N)
     end
-    function DetHoppingId(para::P; index=0, orbital=1, t=[], r=[]) where {P}
+    function DetHoppingId(para::P; orbital=1, t=[], r=[]) where {P}
         @assert length(t) == length(r)
         return new{P}(para, r, t, orbital, length(r))
     end
 end
-function isequal(a::DetHoppingId, b::DetHoppingId)
+function Base.isequal(a::DetHoppingId, b::DetHoppingId)
     if typeof(a) != typeof(b)
         return false
     end
-    return a.N == b.N && a.orbital == b.orbital && a.site == b.site && a.extT == b.extT && a.para == b.para
+    # return a.N == b.N && a.orbital == b.orbital && a.site == b.site && a.extT == b.extT && a.para == b.para
+    return a.site == b.site && a.orbital == b.orbital
 end
 
 """

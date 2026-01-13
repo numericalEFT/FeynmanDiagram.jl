@@ -80,7 +80,7 @@ end
 
 include("diagram_id.jl")
 export DiagramId, GenericId, VacuumId, Ver4Id, Ver3Id, GreenId, SigmaId, PolarId, GreenNId, ConnectedGreenNId
-export PropagatorId, BareGreenId, BareInteractionId, BareHoppingId, BareGreenNId
+export PropagatorId, BareGreenId, BareInteractionId, BareHoppingId, BareGreenNId, DetHoppingId
 
 include("pool.jl")
 export LoopPool
