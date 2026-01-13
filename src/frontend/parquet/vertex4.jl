@@ -71,13 +71,13 @@ function vertex4(para::DiagPara,
         bareVer4(ver4df, para, legK, permutation)
     else # loopNum>0
         for c in channels
-            if c == Alli
-                if 3 ≤ loopNum ≤ 4
-                    addAlli!(ver4df, para, legK)
-                else
-                    continue
-                end
-            end
+            # if c == Alli
+            #     if 3 ≤ loopNum ≤ 4
+            #         addAlli!(ver4df, para, legK)
+            #     else
+            #         continue
+            #     end
+            # end
 
             partition = orderedPartition(loopNum - 1, 4, 0)
 

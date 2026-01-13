@@ -6,6 +6,22 @@ struct LeafKey
     properties::Any
 end
 
+function Base.hash(v::LeafKey, h::UInt)
+    h = hash(v.operator, h)
+    h = hash(v.orders, h)
+    h = hash(v.properties, h)
+    # h = hash(string(v.properties), h)
+    return h
+end
+
+function Base.isequal(a::LeafKey, b::LeafKey)
+    if a.operator != b.operator || a.orders != b.orders
+        return false
+    end
+    # return string(a.properties) == string(b.properties)
+    return isequal(a.properties, b.properties)
+end
+
 """
     optimize_randomized!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; 
                          digits=10, verbose=0, normalize=nothing)
@@ -68,28 +84,10 @@ function optimize!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}};
                 canonical_sub = recursive_build(sub_g)
                 set_subgraph!(g, canonical_sub, i)
 
-                # 累加子节点的值
-                # Value = Σ (sub_factor * sub_val)  (对于 Sum)
-                # Value = Π (sub_val ^ sub_factor)  (对于 Prod - 这里的数学定义需要小心)
-                # 为了去重目的，我们不需要严格遵循物理求和/求积规则，
-                # 只要保证运算不仅是对称的（Symmetric）而且对结构敏感即可。
-                # 但最稳妥的是遵循实际算子逻辑：
-
                 sub_val = val_map[canonical_sub.id]
                 factor = subgraph_factor(g, i)
 
-                # if g.operator == Sum
                 current_val += sub_val * factor
-                # elseif g.operator == Prod
-                # 注意：对于 Prod，初始值应该是 1
-                # 但这里 current_val 初始化为 0，需要在循环前处理，或者改逻辑
-                # 简单起见，我们假设是 Sum，如果是 Prod，我们用对数求和或者乘法
-                # 为了避免数值爆炸，Prod 节点可以定义为： Σ (sub_val * factor * 某个大质数) + weight
-                # 只要能区分结构即可！不要用真实的乘法，容易溢出或下溢。
-
-                # 使用“结构哈希”式的线性组合来代表 Prod，避免数值问题：
-                # hash = hash(op) + Σ (sub_val * factor) 
-                # 这可能导致 Sum(A,B) 和 Prod(A,B) 碰撞，所以要把 Operator 加入 Key
             end
         end
 
@@ -547,44 +545,100 @@ end
 使用哈希表原地去重叶子节点。复杂度从 O(N^2) 降低为 O(N)。
 遵循 isequiv(a, b, :id, :name, :weight) 规则，即忽略 id, name, weight 进行比较。
 """
+# function remove_duplicated_leaves!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0, normalize=nothing)
+#     verbose > 0 && println("Optimizing leaves with Hash Map...")
+
+
+#     # 2. 全局叶子缓存：LeafKey -> 唯一的 Leaf 节点对象
+#     leaf_cache = Dict{LeafKey,eltype(graphs)}()
+
+#     # 3. 遍历去重
+#     visited = Set{Int}()
+
+#     function _optimize_leaves_recursive!(g::AbstractGraph)
+#         if g.id in visited
+#             return
+#         end
+
+#         for (i, sub_g) in enumerate(subgraphs(g))
+#             if isleaf(sub_g)
+#                 key = LeafKey(sub_g.operator, sub_g.orders, sub_g.properties)
+
+#                 if haskey(leaf_cache, key)
+#                     canonical_leaf = leaf_cache[key]
+#                     set_subgraph!(g, canonical_leaf, i)
+#                 else
+#                     # if !isnothing(normalize)
+#                     #     normalize(sub_g.id)
+#                     # end
+#                     leaf_cache[key] = sub_g
+#                 end
+#             else
+#                 _optimize_leaves_recursive!(sub_g)
+#             end
+#         end
+
+#         push!(visited, g.id)
+#     end
+
+#     for g in graphs
+#         _optimize_leaves_recursive!(g)
+#     end
+
+#     return graphs
+# end
+
 function remove_duplicated_leaves!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}}; verbose=0, normalize=nothing)
     verbose > 0 && println("Optimizing leaves with Hash Map...")
 
-
-    # 2. 全局叶子缓存：LeafKey -> 唯一的 Leaf 节点对象
     leaf_cache = Dict{LeafKey,eltype(graphs)}()
-
-    # 3. 遍历去重
     visited = Set{Int}()
 
-    function _optimize_leaves_recursive!(g::AbstractGraph)
+    function _process_node_children!(g::AbstractGraph)
         if g.id in visited
             return
         end
+        push!(visited, g.id)
 
         for (i, sub_g) in enumerate(subgraphs(g))
             if isleaf(sub_g)
                 key = LeafKey(sub_g.operator, sub_g.orders, sub_g.properties)
-
                 if haskey(leaf_cache, key)
-                    canonical_leaf = leaf_cache[key]
-                    set_subgraph!(g, canonical_leaf, i)
+                    println(sub_g.id, "hit")
+                    set_subgraph!(g, leaf_cache[key], i)
                 else
-                    # if !isnothing(normalize)
-                    #     normalize(sub_g.id)
-                    # end
+                    # if !isnothing(normalize); normalize(sub_g.id); end
                     leaf_cache[key] = sub_g
                 end
+                # --------------------
             else
-                _optimize_leaves_recursive!(sub_g)
+                _process_node_children!(sub_g)
             end
         end
+        println("leaf_cache keys: ", collect(keys(leaf_cache)))
 
-        push!(visited, g.id)
     end
 
-    for g in graphs
-        _optimize_leaves_recursive!(g)
+    if graphs isa AbstractVector
+        for (i, g) in enumerate(graphs)
+            if isleaf(g)
+                key = LeafKey(g.operator, g.orders, g.properties)
+                if haskey(leaf_cache, key)
+                    graphs[i] = leaf_cache[key]
+                else
+
+                    leaf_cache[key] = g
+                end
+            else
+                _process_node_children!(g)
+            end
+        end
+    else
+        for g in graphs
+            if !isleaf(g)
+                _process_node_children!(g)
+            end
+        end
     end
 
     return graphs

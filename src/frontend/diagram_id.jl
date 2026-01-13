@@ -28,8 +28,15 @@ struct BareGreenId <: PropagatorId
     end
 end
 Base.show(io::IO, v::BareGreenId) = print(io, "$(short(v.type)), k$(v.extK), t$(v.extT)")
+function Base.hash(v::BareGreenId, h::UInt)
+    h = hash(BareGreenId, h)
+    h = hash(v.type, h)
+    h = hash(v.extK, h)
+    h = hash(v.extT, h)
+    return h
+end
 function Base.isequal(a::BareGreenId, b::BareGreenId)
-    return a.type == b.type && a.extT == b.extT && a.extK == b.extK
+    return a.type == b.type && isequal(a.extK, b.extK) && a.extT == b.extT
 end
 
 struct BareInteractionId <: PropagatorId # bare W-type interaction, with only one extK
@@ -45,27 +52,29 @@ struct BareInteractionId <: PropagatorId # bare W-type interaction, with only on
     end
 end
 Base.show(io::IO, v::BareInteractionId) = print(io, "$(short(v.response))$(short(v.type)), k$(v.extK), t$(v.extT)")
+function Base.hash(v::BareInteractionId, h::UInt)
+    h = hash(BareInteractionId, h)
+    h = hash(v.response, h)
+    h = hash(v.type, h)
+    h = hash(v.extK, h)
+    # h = hash(round.(v.extK, digits=8), h)
 
+    if v.extT[1] == v.extT[2]
+        # the interaction is not time-dependent, then the specific time is not important
+        h = hash(:time_independent, h)
+    else
+        h = hash(v.extT, h)
+    end
+
+    return h
+end
 function Base.isequal(a::BareInteractionId, b::BareInteractionId)
     # Check if response, type, and extK are not equal
-    if (a.response != b.response) || (a.type != b.type) || ((a.extK ≈ b.extK) == false)
+    if (a.response != b.response) || (a.type != b.type) || !isequal(a.extK, b.extK)
         return false
     end
 
-    # Check the conditions for Instant and Dynamic types
-    # both Instant or Dynamic can have extT = [1, 1] or [1, 2]
-    # This is because that Instant interaction may need an auxiliary time index to increase the number of the internal time variables to two.
-
-    # if extT[1] == extT[2], that means the interaction is not time-dependent, then the specific time is not important
-
-    # For example, if a.extT = [1, 1] and b.extT = [2, 2], then return true
-    # Or, if a.extT = [1, 2] and b.extT = [1, 2], then return true
-    # otherwise, return false
-
     return ((a.extT[1] == a.extT[2]) && (b.extT[1] == b.extT[2])) || (a.extT == b.extT)
-
-    # If none of the conditions are met, return false
-    return false
 end
 
 struct GenericId{P} <: DiagramId
@@ -74,6 +83,12 @@ struct GenericId{P} <: DiagramId
     GenericId(para::P, extra=nothing) where {P} = new{P}(para, extra)
 end
 Base.show(io::IO, v::GenericId) = print(io, isnothing(v.extra) ? "" : "$(v.extra)")
+function Base.hash(v::GenericId, h::UInt)
+    h = hash(GenericId, h)
+    h = hash(v.para, h)
+    h = hash(v.extra, h)
+    return h
+end
 function Base.isequal(a::GenericId, b::GenericId)
     return a.para == b.para && a.extra == b.extra
 end
@@ -108,8 +123,16 @@ struct GreenId{P} <: DiagramId
     end
 end
 Base.show(io::IO, v::GreenId) = print(io, "$(short(v.type)), k$(v.extK), t$(v.extT)")
+function Base.hash(v::GreenId, h::UInt)
+    h = hash(GreenId, h)
+    h = hash(v.para, h)
+    h = hash(v.type, h)
+    h = hash(v.extK, h)
+    h = hash(v.extT, h)
+    return h
+end
 function Base.isequal(a::GreenId, b::GreenId)
-    return a.type == b.type && a.extT == b.extT && a.extK == b.extK && a.para == b.para
+    return a.type == b.type && a.extT == b.extT && isequal(a.extK, b.extK) && a.para == b.para
 end
 
 struct VacuumId{P} <: DiagramId
@@ -119,6 +142,11 @@ struct VacuumId{P} <: DiagramId
     end
 end
 Base.show(io::IO, v::VacuumId) = print(io, "vacuum")
+function Base.hash(v::VacuumId, h::UInt)
+    h = hash(VacuumId, h)
+    h = hash(v.para, h)
+    return h
+end
 function Base.isequal(a::VacuumId, b::VacuumId)
     return a.para == b.para
 end
@@ -136,11 +164,19 @@ struct SigmaId{P} <: DiagramId
     end
 end
 Base.show(io::IO, v::SigmaId) = print(io, "$(short(v.type)), k$(v.extK), t$(v.extT)")
+function Base.hash(v::SigmaId, h::UInt)
+    h = hash(SigmaId, h)
+    h = hash(v.para, h)
+    h = hash(v.type, h)
+    h = hash(v.extK, h)
+    h = hash(v.extT, h)
+    return h
+end
 function Base.isequal(a::SigmaId, b::SigmaId)
     if typeof(a) != typeof(b)
         return false
     end
-    return a.type == b.type && a.extT == b.extT && a.extK == b.extK && a.para == b.para
+    return a.type == b.type && a.extT == b.extT && isequal(a.extK, b.extK) && a.para == b.para
 end
 
 struct PolarId{P} <: DiagramId
@@ -156,11 +192,19 @@ struct PolarId{P} <: DiagramId
     end
 end
 Base.show(io::IO, v::PolarId) = print(io, "$(short(v.response)), k$(v.extK), t$(v.extT)")
+function Base.hash(v::PolarId, h::UInt)
+    h = hash(PolarId, h)
+    h = hash(v.para, h)
+    h = hash(v.response, h)
+    h = hash(v.extK, h)
+    h = hash(v.extT, h)
+    return h
+end
 function Base.isequal(a::PolarId, b::PolarId)
     if typeof(a) != typeof(b)
         return false
     end
-    return a.response == b.response && a.extT == b.extT && a.extK == b.extK && a.para == b.para
+    return a.response == b.response && a.extT == b.extT && isequal(a.extK, b.extK) && a.para == b.para
 end
 
 struct Ver3Id{P} <: DiagramId
@@ -176,11 +220,19 @@ struct Ver3Id{P} <: DiagramId
     end
 end
 Base.show(io::IO, v::Ver3Id) = print(io, "$(short(v.response)),t$(v.extT)")
+function Base.hash(v::Ver3Id, h::UInt)
+    h = hash(Ver3Id, h)
+    h = hash(v.para, h)
+    h = hash(v.response, h)
+    h = hash(v.extK, h)
+    h = hash(v.extT, h)
+    return h
+end
 function Base.isequal(a::Ver3Id, b::Ver3Id)
     if typeof(a) != typeof(b)
         return false
     end
-    return a.response == b.response && a.extT == b.extT && a.extK == b.extK && a.para == b.para
+    return a.response == b.response && a.extT == b.extT && isequal(a.extK, b.extK) && a.para == b.para
 end
 
 struct Ver4Id{P} <: DiagramId
@@ -199,11 +251,21 @@ struct Ver4Id{P} <: DiagramId
     end
 end
 Base.show(io::IO, v::Ver4Id) = print(io, (v.channel == AnyChan ? "" : "$(v.channel) ") * "$(short(v.response))$(short(v.type)),t$(v.extT)")
+function Base.hash(v::Ver4Id, h::UInt)
+    h = hash(Ver4Id, h)
+    h = hash(v.para, h)
+    h = hash(v.response, h)
+    h = hash(v.type, h)
+    h = hash(v.channel, h)
+    h = hash(v.extK, h)
+    h = hash(v.extT, h)
+    return h
+end
 function Base.isequal(a::Ver4Id, b::Ver4Id)
     if typeof(a) != typeof(b)
         return false
     end
-    return a.response == b.response && a.type == b.type && a.channel == b.channel && a.extT == b.extT && a.extK == b.extK && a.para == b.para
+    return a.response == b.response && a.type == b.type && a.channel == b.channel && a.extT == b.extT && isequal(a.extK, b.extK) && a.para == b.para
 end
 
 function vstr(r, c)
@@ -247,6 +309,15 @@ struct OperatorId{P} <: DiagramId
         return new{P}(para, r, c, orbital, t)
     end
 end
+function Base.hash(v::OperatorId, h::UInt)
+    h = hash(OperatorId, h)
+    h = hash(v.para, h)
+    h = hash(v.site, h)
+    h = hash(v.creation, h)
+    h = hash(v.orbital, h)
+    h = hash(v.extT, h)
+    return h
+end
 function Base.isequal(a::OperatorId, b::OperatorId)
     if typeof(a) != typeof(b)
         return false
@@ -268,6 +339,14 @@ struct BareHoppingId{P} <: PropagatorId
     end
 end
 Base.show(io::IO, v::BareHoppingId) = print(io, "($(vstr(v.site, "ᵣ"))|$(vstr(v.orbital, "ₒ"))|$(vcstr(v.extT, [true, false])))")
+function Base.hash(v::BareHoppingId, h::UInt)
+    h = hash(BareHoppingId, h)
+    h = hash(v.para, h)
+    h = hash(v.site, h)
+    h = hash(v.orbital, h)
+    h = hash(v.extT, h)
+    return h
+end
 function Base.isequal(a::BareHoppingId, b::BareHoppingId)
     if typeof(a) != typeof(b)
         return false
@@ -289,6 +368,15 @@ struct DetHoppingId{P} <: DiagramId
         @assert length(t) == length(r)
         return new{P}(para, r, t, orbital, length(r))
     end
+end
+function Base.hash(v::DetHoppingId, h::UInt)
+    h = hash(DetHoppingId, h)
+    # h = hash(v.para, h)
+    h = hash(v.site, h)
+    # h = hash(v.extT, h)
+    h = hash(v.orbital, h)
+    h = hash(v.N, h)
+    return h
 end
 function Base.isequal(a::DetHoppingId, b::DetHoppingId)
     if typeof(a) != typeof(b)
@@ -318,6 +406,16 @@ struct BareGreenNId{P} <: PropagatorId
     end
 end
 Base.show(io::IO, v::BareGreenNId) = print(io, "($(v.site)ᵣ|$(vstr(v.orbital, "ₒ"))|$(vcstr(v.extT, v.creation)))")
+function Base.hash(v::BareGreenNId, h::UInt)
+    h = hash(BareGreenNId, h)
+    h = hash(v.para, h)
+    h = hash(v.site, h)
+    h = hash(v.creation, h)
+    h = hash(v.orbital, h)
+    h = hash(v.extT, h)
+    h = hash(v.N, h)
+    return h
+end
 function Base.isequal(a::BareGreenNId, b::BareGreenNId)
     if typeof(a) != typeof(b)
         return false
@@ -347,6 +445,16 @@ struct GreenNId{P} <: DiagramId
     end
 end
 Base.show(io::IO, v::GreenNId) = print(io, "($(vstr(v.site, "ᵣ"))|$(vstr(v.orbital, "ₒ"))|$(vcstr(v.extT, v.creation)))")
+function Base.hash(v::GreenNId, h::UInt)
+    h = hash(GreenNId, h)
+    h = hash(v.para, h)
+    h = hash(v.site, h)
+    h = hash(v.creation, h)
+    h = hash(v.orbital, h)
+    h = hash(v.extT, h)
+    h = hash(v.N, h)
+    return h
+end
 function Base.isequal(a::GreenNId, b::GreenNId)
     if typeof(a) != typeof(b)
         return false
@@ -376,6 +484,16 @@ struct ConnectedGreenNId{P} <: DiagramId
     end
 end
 Base.show(io::IO, v::ConnectedGreenNId) = print(io, "($(vstr(v.site, "ᵣ"))|$(vstr(v.orbital, "ₒ"))|$(vcstr(v.extT, v.creation)))")
+function Base.hash(v::ConnectedGreenNId, h::UInt)
+    h = hash(ConnectedGreenNId, h)
+    h = hash(v.para, h)
+    h = hash(v.site, h)
+    h = hash(v.creation, h)
+    h = hash(v.orbital, h)
+    h = hash(v.extT, h)
+    h = hash(v.N, h)
+    return h
+end
 function Base.isequal(a::ConnectedGreenNId, b::ConnectedGreenNId)
     if typeof(a) != typeof(b)
         return false
@@ -383,17 +501,18 @@ function Base.isequal(a::ConnectedGreenNId, b::ConnectedGreenNId)
     return a.N == b.N && a.site == b.site && a.creation == b.creation && a.orbital == b.orbital && a.extT == b.extT && a.para == b.para
 end
 
-function Base.isequal(a::DiagramId, b::DiagramId)
-    if typeof(a) != typeof(b)
-        return false
-    end
-    for field in fieldnames(typeof(a))
-        if getproperty(a, field) != getproperty(b, field)
-            return false
-        end
-    end
-    return true
-end
+# Must define Base.hash and Base.isequal for new DiagramId types!
+# function Base.isequal(a::DiagramId, b::DiagramId)
+#     if typeof(a) != typeof(b)
+#         return false
+#     end
+#     for field in fieldnames(typeof(a))
+#         if getproperty(a, field) != getproperty(b, field)
+#             return false
+#         end
+#     end
+#     return true
+# end
 
 function index(type)
     if type == BareGreenId
