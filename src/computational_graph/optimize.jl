@@ -104,13 +104,31 @@ function optimize!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}};
         return canonical_node
     end
 
+    function copy_structure!(dest::AbstractGraph, src::AbstractGraph)
+        if dest === src
+            return
+        end
+        dest.operator = src.operator
+        dest.subgraphs = src.subgraphs
+        dest.subgraph_factors = src.subgraph_factors
+        dest.orders = src.orders
+        dest.weight = src.weight
+        ### Keep the original id, name, and properties of dest
+        # dest.id = dest.id
+        # dest.name = dest.name
+        # dest.properties = dest.properties
+    end
+
     if graphs isa AbstractVector
-        for (i, g) in enumerate(graphs)
-            graphs[i] = recursive_build(g)
+        for root in graphs
+            canonical = recursive_build(root)
+            copy_structure!(root, canonical)
+            # graphs[i] = root 
         end
     else
-        for g in graphs
-            recursive_build(g)
+        for root in graphs
+            canonical = recursive_build(root)
+            copy_structure!(root, canonical)
         end
     end
 
