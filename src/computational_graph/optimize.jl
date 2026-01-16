@@ -34,7 +34,7 @@ function optimize!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}};
     remove_duplicated_leaves!(graphs, verbose=verbose, normalize=normalize)
 
     #   Dict: Leaf ID -> Random Value
-    rng = MersenneTwister(seed) # 固定种子以保证可复现性
+    rng = MersenneTwister(seed)
     leaf_vals = Dict{Int,ComplexF64}()
 
     # val_map: node ID -> evaluated Complex Value
@@ -104,32 +104,18 @@ function optimize!(graphs::Union{Tuple,AbstractVector{<:AbstractGraph}};
         return canonical_node
     end
 
-    function copy_structure!(dest::AbstractGraph, src::AbstractGraph)
-        if dest === src
-            return
-        end
-        dest.operator = src.operator
-        dest.subgraphs = src.subgraphs
-        dest.subgraph_factors = src.subgraph_factors
-        dest.orders = src.orders
-        dest.weight = src.weight
-        ### Keep the original id, name, and properties of dest
-        # dest.id = dest.id
-        # dest.name = dest.name
-        # dest.properties = dest.properties
-    end
 
-    if graphs isa AbstractVector
-        for root in graphs
-            canonical = recursive_build(root)
-            copy_structure!(root, canonical)
-            # graphs[i] = root 
+    roots = graphs isa Tuple ? graphs : collect(graphs)
+
+    for root in roots
+        for (i, sub_g) in enumerate(subgraphs(root))
+            canonical_child = recursive_build(sub_g)
+            set_subgraph!(root, canonical_child, i)
         end
-    else
-        for root in graphs
-            canonical = recursive_build(root)
-            copy_structure!(root, canonical)
-        end
+
+        remove_zero_valued_subgraphs!(root)
+        _flatten_chains_shallow!(root)
+        merge_linear_combination!(root)
     end
 
     return graphs
