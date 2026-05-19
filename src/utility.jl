@@ -8,7 +8,7 @@ using ..Taylor
 using LinearAlgebra
 
 export taylorAD
-
+export taylorAD_nest
 @inline apply(::Type{ComputationalGraphs.Sum}, diags::Vector{T}, factors::Vector{F}) where {T <: TaylorSeries, F <: Number} = sum(diags .* factors)
 @inline apply(::Type{ComputationalGraphs.Prod}, diags::Vector{T}, factors::Vector{F}) where {T <: TaylorSeries, F <: Number} = prod(diags .* factors)
 @inline apply(::Type{ComputationalGraphs.Power{N}}, diags::Vector{T}, factors::Vector{F}) where {N, T <: TaylorSeries, F <: Number} = (diags[1])^N * factors[1]
@@ -17,6 +17,146 @@ export taylorAD
 	return det(reshape(diags .* factors, (size, size)))
 end
 
+function taylorexpansion_first_order!(graph::G, var_dependence::Dict{Int,Vector{Bool}},
+    leaf_map::Dict{Int,TaylorSeries{G}},
+    to_coeff_map::Dict{Int,TaylorSeries{G}}
+) where {G<:Graph}
+    if haskey(to_coeff_map, graph.id)
+        return to_coeff_map[graph.id], to_coeff_map
+    elseif isleaf(graph)
+        if haskey(var_dependence, graph.id)
+            var = var_dependence[graph.id]
+        else
+            var = fill(false, get_numvars())
+        end
+        ordtuple = ((var[idx]) ? (0:get_orders(idx)) : (0:0) for idx in 1:get_numvars())
+        result = TaylorSeries{G}()
+        parent_orders = (length(graph.orders) == get_numvars() && any(x -> x != 0, graph.orders)) ?
+            graph.orders : zeros(Int, get_numvars())
+        for order in collect(Iterators.product(ordtuple...))
+            o = collect(order)
+            if sum(o) == 0
+                result.coeffs[o] = graph
+            else
+                accumulated_orders = parent_orders .+ o
+                active = findfirst(x -> x != 0, o)
+                coeff = Graph([]; operator=ComputationalGraphs.Sum(),
+                              properties=graph.properties, orders=accumulated_orders)
+                result.coeffs[o] = coeff
+                dep = fill(false, get_numvars())
+                dep[findall(x -> x != 0, accumulated_orders)] .= true
+				if isempty(coeff.subgraphs)
+                	var_dependence[coeff.id] = dep
+				else
+					var_dependence[coeff.subgraphs[1].id] = dep
+				end
+                # immediately add new derivative node to leaf_map   
+            end
+        end
+		leaf_map[graph.id] = result
+        to_coeff_map[graph.id] = result
+        return result, to_coeff_map
+    else
+		sub_taylor = [taylorexpansion_first_order!(sub, var_dependence, leaf_map, to_coeff_map)[1] for sub in graph.subgraphs]
+        to_coeff_map[graph.id] = apply(graph.operator,
+            sub_taylor,
+            graph.subgraph_factors)
+        for g in values(to_coeff_map[graph.id].coeffs)
+            g.properties = graph.properties
+        end
+        return to_coeff_map[graph.id], to_coeff_map
+    end
+end
+
+function taylorAD_nest(graphs::Vector{G}, deriv_orders::Vector{Int}, leaf_dep_funcs::Vector{Function};
+    dict_graphs::Dict{Vector{Int},Vector{Graph}}=Dict{Vector{Int},Vector{Graph}}()
+) where {G<:Graph}
+    @assert length(deriv_orders) == length(leaf_dep_funcs) "Lengths of deriv_orders and leaf_dep_funcs must be equal."
+    nonzero_indices = findall(x -> x != 0, deriv_orders)
+    @assert length(nonzero_indices) == 1 "Exactly one entry in deriv_orders must be nonzero."
+    active_idx = nonzero_indices[1]
+    max_order = deriv_orders[active_idx]
+
+    charset = 'a':'z'
+    variables_strings = []
+    for i in eachindex(deriv_orders)
+        if i ≤ 26
+            push!(variables_strings, string(charset[i]))
+        else
+            j = i % 26
+            j = j == 0 ? 26 : j
+            push!(variables_strings, variables_strings[i-26] * string(charset[j]))
+        end
+    end
+    varnames = join(variables_strings, " ")
+
+    active_orders = copy(deriv_orders)
+    active_orders[active_idx] = 1
+    set_variables(varnames; orders=active_orders)
+
+    zero_order = zeros(Int, get_numvars())
+    one_key = zeros(Int, get_numvars())
+    one_key[active_idx] = 1
+
+    # leaf_map persists across all iterations, grows monotonically
+    leaf_map = Dict{Int,TaylorSeries{G}}()
+
+    # Build var_dependence once from original leaves
+    var_dependence = Dict{Int,Vector{Bool}}()
+    visited = Set{Int}()
+    for diag in graphs
+        for leaf in Leaves(diag)
+            hash = leaf.id
+            if hash in visited
+                continue
+            else
+                push!(visited, hash)
+            end
+            var_dependence[hash] = map(f -> f(leaf.properties), leaf_dep_funcs)
+        end
+    end
+
+    # Store order-0 graphs
+    for g in graphs
+        if haskey(dict_graphs, zero_order)
+            push!(dict_graphs[zero_order], g)
+        else
+            dict_graphs[zero_order] = [g]
+        end
+    end
+
+    current_graphs = graphs
+    for k in 1:max_order
+        order_key = zeros(Int, get_numvars())
+        order_key[active_idx] = k
+
+        next_graphs = G[]
+        for diag in current_graphs
+			to_coeff_map = copy(leaf_map)
+            taylor, _ = taylorexpansion_first_order!(diag, var_dependence, leaf_map, to_coeff_map)
+            # on first iteration, replace original graph with reconstructed zeroth order
+            if k == 1
+                idx = findfirst(x -> x === diag, dict_graphs[zero_order])
+                if idx !== nothing
+                    dict_graphs[zero_order][idx] = taylor.coeffs[zero_order]
+                end
+            end
+            if haskey(taylor.coeffs, one_key)
+                deriv_graph = taylor.coeffs[one_key]
+                push!(next_graphs, deriv_graph)
+                if haskey(dict_graphs, order_key)
+                    push!(dict_graphs[order_key], deriv_graph)
+                else
+                    dict_graphs[order_key] = [deriv_graph]
+                end
+            end
+        end
+
+        current_graphs = next_graphs
+    end
+
+    return dict_graphs
+end
 """
 	function taylorAD(graphs::Vector{G}, deriv_orders::Vector{Int}, leaf_dep_funcs::Vector{Function};
 		dict_graphs::Dict{Vector{Int},Vector{Graph}}=Dict{Vector{Int},Vector{Graph}}()
@@ -121,6 +261,7 @@ function taylorexpansion!(graph::G, var_dependence::Dict{Int, Vector{Bool}} = Di
 		result = TaylorSeries{G}()
 		for order in collect(Iterators.product(ordtuple...)) #varidx specifies the variables graph depends on. Iterate over all taylor coefficients of those variables.
 			o = collect(order)
+			
 			if sum(o) == 0      # For a graph the zero order taylor coefficient is just itself.
 				result.coeffs[o] = graph
 			else
