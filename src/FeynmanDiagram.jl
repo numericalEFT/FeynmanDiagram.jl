@@ -56,6 +56,7 @@ include("utility.jl")
 using .Utility
 export Utility
 export taylorAD
+export taylorAD_nest
 
 include("backend/compiler.jl")
 using .Compilers

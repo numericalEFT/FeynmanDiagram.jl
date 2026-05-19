@@ -1,43 +1,40 @@
 using FeynmanDiagram
-using FeynmanDiagram.Taylor
+import FeynmanDiagram.FrontEnds: NoHartree
+import FeynmanDiagram.Compilers
 using FeynmanDiagram.ComputationalGraphs:
-    eval!, Leaves
-using FeynmanDiagram.Utility:
-    taylorexpansion!, count_operation
+        eval!
+using FeynmanDiagram.ComputationalGraphs.AbstractTrees
 
-
-function assign_leaves(g::FeynmanGraph, taylormap)
-    leafmap = Dict{Int,Int}()
-    leafvec = Vector{Float64}()
-    idx = 0
-    for leaf in Leaves(g)
-        taylor = taylormap[leaf.id]
-        for (order, coeff) in taylor.coeffs
-            idx += 1
-            push!(leafvec, 1.0 / taylor_factorial(order))
-            leafmap[coeff.id] = idx
-            print("assign $(order) $(coeff.id)  $(taylor_factorial(order)) $(leafvec[idx])\n")
-        end
-    end
-    return leafmap, leafvec
+function visualize_graph(g::Graph, fname::String)
+    Compilers.compile_dot([g], "$fname.dot")
+    run(`dot -Tpdf -o $fname.pdf $fname.dot`)
+    println("Generated $fname.pdf")
 end
 
-#dict_g, fl, bl, leafmap = diagdictGV(:sigma, [(2, 0, 0), (2, 0, 1), (2, 0, 2), (2, 1, 0), (2, 1, 1), (2, 2, 0), (2, 1, 2), (2, 2, 2)], 3)
-dict_g, lp, leafmap = diagdictGV(:sigma, [(3, 0, 0), (3, 0, 3), (3, 0, 2), (3, 0, 1)])
-g = dict_g[(3, 0, 0)]
+para = Parquet.DiagPara(type = Parquet.SigmaDiag, innerLoopNum = 2, hasTau = true, filter=[NoHartree,]);
+sigmadf = Parquet.build(para) 
 
-set_variables("x y", orders=[1, 3])
-propagator_var = ([true, false], [false, true]) # Specify variable dependence of fermi (first element) and bose (second element) particles.
-t, taylormap, from_coeff_map = taylorexpansion!(g[1][1], propagator_var)
+optimize!(sigmadf.diagram)
+print(typeof(sigmadf.diagram)) 
 
-for (order, graph) in dict_g
-    if graph[2][1] == g[2][1]
-        idx = 1
-    else
-        idx = 2
-    end
-    print("$(count_operation(t.coeffs[[order[2],order[3]]]))\n")
-    print("$(count_operation(graph[1][idx]))\n")
-    print("$(order) $(eval!(graph[1][idx])) $(eval!(t.coeffs[[order[2],order[3]]]))\n")
+renormalization_orders = [0, 3];
+
+leaf_dep_funcs = [pr -> pr isa FrontEnds.BareGreenId, pr -> pr isa FrontEnds.BareInteractionId];
+dict_sigma = taylorAD([sigmadf.diagram[2]], renormalization_orders, leaf_dep_funcs)
+dict_sigma_nest = taylorAD_nest([sigmadf.diagram[2]], renormalization_orders, leaf_dep_funcs)
+
+
+
+
+for (order, graph) in dict_sigma
+    graph_nest = dict_sigma_nest[order]
+    print("order $(order)\n")
+    print("taylor $(count_operation(graph[1])), $(eval!(graph[1]))\n")
+    print("nest $(count_operation(graph_nest[1])), $(eval!(graph_nest[1]))\n")
+    # Visualize each graph for this order
+    # order_str = join(order, "_")
+    # for (i, (g_taylor, g_nest)) in enumerate(zip(graph, graph_nest))
+    #     visualize_graph(g_taylor, "sigma_taylor_order$(order_str)_graph$(i)")
+    #     visualize_graph(g_nest,   "sigma_nest_order$(order_str)_graph$(i)")
+    # end
 end
-

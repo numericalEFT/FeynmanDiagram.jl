@@ -7,13 +7,13 @@ end
 function to_dotstatic(::Type{ComputationalGraphs.Sum}, id::Int, subgraphs::Vector{Graph{F,W}}, subgraph_factors::Vector{F}) where {F,W}
     node_temp = ""
     arrow_temp = ""
-    opr_node = "g$(id)[shape=box, label = <<b>&oplus;</b>>, style=filled, color= darkturquoise, fontsize=18, width = 0.5, height = 0.4]\n"
+    opr_node = "g$(id)[shape=box, label = <<b>&oplus;</b><br/><font point-size='10'>id=$id</font>>, style=filled, color=darkturquoise, fontsize=18, width=0.5, height=0.4]\n"
     node_temp *= opr_node
     for (g, gfactor) in zip(subgraphs, subgraph_factors)
         if gfactor != 1
-            arrow_temp *= "g$(g.id)->g$(id)[arrowhead=vee,label=$gfactor,fontsize=16, penwidth = 0.2,arrowsize = 0.3]\n"
+            arrow_temp *= "g$(g.id)->g$(id)[arrowhead=vee,label=$gfactor,fontsize=16, penwidth=0.2,arrowsize=0.3]\n"
         else
-            arrow_temp *= "g$(g.id)->g$(id)[arrowhead=vee,penwidth = 0.2,arrowsize = 0.3]\n"
+            arrow_temp *= "g$(g.id)->g$(id)[arrowhead=vee,penwidth=0.2,arrowsize=0.3]\n"
         end
     end
     return node_temp, arrow_temp
@@ -22,28 +22,27 @@ end
 function to_dotstatic(::Type{ComputationalGraphs.Prod}, id::Int, subgraphs::Vector{Graph{F,W}}, subgraph_factors::Vector{F}) where {F,W}
     node_temp = ""
     arrow_temp = ""
-    opr_node = "g$id[shape=box, label = <<b>&otimes;</b>>, style=filled, color=lightpink, fontsize=18, width = 0.5, height = 0.4]\n"
+    opr_node = "g$(id)[shape=box, label = <<b>&otimes;</b><br/><font point-size='10'>id=$id</font>>, style=filled, color=lightpink, fontsize=18, width=0.5, height=0.4]\n"
     node_temp *= opr_node
     for (g, gfactor) in zip(subgraphs, subgraph_factors)
         if gfactor != 1
-            arrow_temp *= "g$(g.id)->g$(id)[arrowhead=vee,label=$gfactor,fontsize=16,penwidth = 0.2,arrowsize = 0.3]\n"
+            arrow_temp *= "g$(g.id)->g$(id)[arrowhead=vee,label=$gfactor,fontsize=16,penwidth=0.2,arrowsize=0.3]\n"
         else
-            arrow_temp *= "g$(g.id)->g$(id)[arrowhead=vee,penwidth = 0.2,arrowsize = 0.3]\n"
+            arrow_temp *= "g$(g.id)->g$(id)[arrowhead=vee,penwidth=0.2,arrowsize=0.3]\n"
         end
     end
-    # end
     return node_temp, arrow_temp
 end
 
 function to_dotstatic(::Type{ComputationalGraphs.Power{N}}, id::Int, subgraphs::Vector{Graph{F,W}}, subgraph_factors::Vector{F}) where {N,F,W}
     node_temp = ""
     arrow_temp = ""
-    opr_node = "g$id[shape=box, label = <Pow($N)>, style=filled, color=darkolivegreen,fontsize=18, width = 0.8, height = 0.4]\n"
+    opr_node = "g$(id)[shape=box, label = <Pow($N)<br/><font point-size='10'>id=$id</font>>, style=filled, color=darkolivegreen, fontsize=18, width=0.8, height=0.4]\n"
     node_temp *= opr_node
     if subgraph_factors[1] != 1
-        arrow_temp *= "g$(subgraphs[1].id)->$opr_name[arrowhead=vee,label=$gfactor,fontsize=16, penwidth = 0.2,arrowsize = 0.3]\n"
+        arrow_temp *= "g$(subgraphs[1].id)->g$id[arrowhead=vee,label=$(subgraph_factors[1]),fontsize=16, penwidth=0.2,arrowsize=0.3]\n"
     else
-        arrow_temp *= "g$(subgraphs[1].id)->$opr_name[arrowhead=vee, penwidth = 0.2,arrowsize = 0.3]\n"
+        arrow_temp *= "g$(subgraphs[1].id)->g$id[arrowhead=vee, penwidth=0.2,arrowsize=0.3]\n"
     end
     return node_temp, arrow_temp
 end
@@ -51,14 +50,14 @@ end
 function to_dotstatic(::Type{ComputationalGraphs.Sum}, id::Int, subgraphs::Vector{FeynmanGraph{F,W}}, subgraph_factors::Vector{F}) where {F,W}
     node_temp = ""
     arrow_temp = ""
-    opr_node = "g$(id)[shape=box, label = <<b>&oplus;</b>>, style=filled, color=darkturquoise ,fontsize=18, width = 0.5, height = 0.4]\n"
+    opr_node = "g$(id)[shape=box, label = <<b>&oplus;</b><br/><font point-size='10'>id=$id</font>>, style=filled, color=darkturquoise, fontsize=18, width=0.5, height=0.4]\n"
     opr_name = "g$id"
     node_temp *= opr_node
     for (g, gfactor) in zip(subgraphs, subgraph_factors)
         if gfactor != 1
-            arrow_temp *= "g$(g.id)->$opr_name[arrowhead=vee,label=$gfactor,fontsize=16,penwidth = 0.2,arrowsize = 0.3]\n"
+            arrow_temp *= "g$(g.id)->$opr_name[arrowhead=vee,label=$gfactor,fontsize=16,penwidth=0.2,arrowsize=0.3]\n"
         else
-            arrow_temp *= "g$(g.id)->$opr_name[arrowhead=vee, penwidth = 0.2,arrowsize = 0.3]\n"
+            arrow_temp *= "g$(g.id)->$opr_name[arrowhead=vee, penwidth=0.2,arrowsize=0.3]\n"
         end
     end
     return node_temp, arrow_temp
@@ -67,28 +66,27 @@ end
 function to_dotstatic(::Type{ComputationalGraphs.Prod}, id::Int, subgraphs::Vector{FeynmanGraph{F,W}}, subgraph_factors::Vector{F}) where {F,W}
     node_temp = ""
     arrow_temp = ""
-    opr_node = "g$id[shape=box, label = <<b>&otimes;</b>>, style=filled, color=lightpink,fontsize=18, width = 0.5, height = 0.4]\n"
+    opr_node = "g$(id)[shape=box, label = <<b>&otimes;</b><br/><font point-size='10'>id=$id</font>>, style=filled, color=lightpink, fontsize=18, width=0.5, height=0.4]\n"
     node_temp *= opr_node
     for (g, gfactor) in zip(subgraphs, subgraph_factors)
         if gfactor != 1
-            arrow_temp *= "g$(g.id)->g$(id)[arrowhead=vee,label=$gfactor,fontsize=16,penwidth = 0.2,arrowsize = 0.3]\n"
+            arrow_temp *= "g$(g.id)->g$(id)[arrowhead=vee,label=$gfactor,fontsize=16,penwidth=0.2,arrowsize=0.3]\n"
         else
-            arrow_temp *= "g$(g.id)->g$(id)[arrowhead=vee,penwidth = 0.2,arrowsize = 0.3]\n"
+            arrow_temp *= "g$(g.id)->g$(id)[arrowhead=vee,penwidth=0.2,arrowsize=0.3]\n"
         end
     end
-    # end
     return node_temp, arrow_temp
 end
 
 function to_dotstatic(::Type{ComputationalGraphs.Power{N}}, id::Int, subgraphs::Vector{FeynmanGraph{F,W}}, subgraph_factors::Vector{F}) where {N,F,W}
     node_temp = ""
     arrow_temp = ""
-    opr_node = "g$id[shape=box, label = <Pow($N)>, style=filled, color=darkolivegreen,fontsize=18, width = 0.8, height = 0.4]\n"
+    opr_node = "g$(id)[shape=box, label = <Pow($N)<br/><font point-size='10'>id=$id</font>>, style=filled, color=darkolivegreen, fontsize=18, width=0.8, height=0.4]\n"
     node_temp *= opr_node
     if subgraph_factors[1] != 1
-        arrow_temp *= "g$(subgraphs[1].id)->$opr_name[arrowhead=vee,label=$gfactor,fontsize=16, penwidth = 0.2, arrowsize = 0.3]\n"
+        arrow_temp *= "g$(subgraphs[1].id)->g$id[arrowhead=vee,label=$(subgraph_factors[1]),fontsize=16, penwidth=0.2, arrowsize=0.3]\n"
     else
-        arrow_temp *= "g$(subgraphs[1].id)->$opr_name[arrowhead=vee, penwidth = 0.2, arrowsize = 0.3]\n"
+        arrow_temp *= "g$(subgraphs[1].id)->g$id[arrowhead=vee, penwidth=0.2, arrowsize=0.3]\n"
     end
     return node_temp, arrow_temp
 end
@@ -122,7 +120,7 @@ function to_dot_str(graphs::AbstractVector{<:AbstractGraph}, name::String="")
             if isempty(subgraphs(g)) #leaf
                 g_id in inds_visitedleaf && continue
                 leafname = get_leafname(g, leafidx)
-                gnode_str = "g$g_id[label=<$leafname>, style=filled, color=lightcyan, fontsize=18]\n"
+                gnode_str = "g$g_id[label=<$leafname<br/><font point-size='10'>id=$g_id</font>>, style=filled, color=lightcyan, fontsize=18]\n"
                 body_node *= gnode_str
                 leafidx += 1
                 push!(inds_visitedleaf, g_id)
@@ -134,14 +132,13 @@ function to_dot_str(graphs::AbstractVector{<:AbstractGraph}, name::String="")
                 push!(inds_visitednode, g_id)
             end
             if isroot
-                body_arrow *= "g$(g_id)->ReturnNode[arrowhead=vee, penwidth = 0.2, arrowsize = 0.3]\n"
+                body_arrow *= "g$(g_id)->ReturnNode[arrowhead=vee, penwidth=0.2, arrowsize=0.3]\n"
                 rootidx += 1
             end
         end
     end
     tail = "   }\n"
     expr = head * body_node * body_arrow * tail
-    # println(expr)
     return expr
 end
 
