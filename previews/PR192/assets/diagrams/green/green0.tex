@@ -1,0 +1,16 @@
+% standalone document border convention: {left bottom right top}
+\documentclass[varwidth,border={6pt 16pt 6pt 5pt}]{standalone}
+\usepackage[force]{feynmp-auto}
+
+\begin{document}
+\begin{fmffile}{green0_diag}
+	\begin{fmfgraph*}(42,50)
+		\fmfstraight
+		\fmfbottom{l,r}
+		\fmf{fermion}{l,r}
+		\fmfdot{l,r}
+		\fmfv{d.sh=circle, d.fi=full, d.si=2thick, l.a=-90, label=$1$}{l}
+		\fmfv{d.sh=circle, d.fi=full, d.si=2thick, l.a=-90, label=$2$}{r}
+	\end{fmfgraph*}
+\end{fmffile}
+\end{document}
