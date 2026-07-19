@@ -173,7 +173,7 @@ function read_diagrams(filename::AbstractString; labelProd::Union{Nothing,LabelP
         gr = _group(diagrams, extT_labels)
         unique!(extT_labels)
         graphvec = FeynmanGraph[]
-        staticextT_idx = findfirst(allequal, extT_labels)
+        staticextT_idx = findfirst(IR.alleq, extT_labels)
         if staticextT_idx > 1
             extT_labels[staticextT_idx], extT_labels[1] = extT_labels[1], extT_labels[staticextT_idx]
         end

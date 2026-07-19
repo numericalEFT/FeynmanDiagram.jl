@@ -76,6 +76,11 @@ Graphs.unary_istrivial(::Type{O}) where {O<:Union{O1,O2,O3}} = true
         @test string(g) == repr(g) == "4: black=O(1,2,3)=1.0"
         @test string(gp) == repr(gp) == "5: black=O(1,2,3)=1.0"
         @test string(h) == repr(h) == "6: h, black=O(1,2,3)=1.0"
+        @test sprint(show, Graphs.Power{2}) == "^2"
+        @test sprint(show, Graphs.Power) == "Power"
+        @test sprint(print, Graphs.Power{2}) == "Power{2}"
+        @test sprint(print, Graphs.Power) == "Power"
+        @test occursin("Power", string(which(show, (IO, Type{Graphs.Power{2}})).sig))
     end
     @testset "Traits" begin
         @test Graphs.unary_istrivial(g1) == true
@@ -1149,4 +1154,3 @@ end
         @test count_post == 5
     end
 end
-

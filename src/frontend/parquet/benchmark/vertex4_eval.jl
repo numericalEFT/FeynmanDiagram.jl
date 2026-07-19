@@ -25,7 +25,7 @@ end
 #     end
 # end
 
-function eval(para, ver4::Ver4, varK, varT, legK, evalG::Function, evalV::Function, fast=false; kwargs...)
+function eval!(para, ver4::Ver4, varK, varT, legK, evalG::Function, evalV::Function, fast=false; kwargs...)
     KinL, KoutL, KinR, KoutR = legK
     spin = para.spin
     T0idx = para.firstTauIdx
@@ -93,15 +93,15 @@ function eval(para, ver4::Ver4, varK, varT, legK, evalG::Function, evalV::Functi
         end
 
         if c == T
-            eval(para, b.Lver, varK, varT, [KinL, KoutL, Kt, K], evalG, evalV; kwargs...)
-            eval(para, b.Rver, varK, varT, [K, Kt, KinR, KoutR], evalG, evalV; kwargs...)
+            eval!(para, b.Lver, varK, varT, [KinL, KoutL, Kt, K], evalG, evalV; kwargs...)
+            eval!(para, b.Rver, varK, varT, [K, Kt, KinR, KoutR], evalG, evalV; kwargs...)
         elseif c == U
-            eval(para, b.Lver, varK, varT, [KinL, KoutR, Ku, K], evalG, evalV; kwargs...)
-            eval(para, b.Rver, varK, varT, [K, Ku, KinR, KoutL], evalG, evalV; kwargs...)
+            eval!(para, b.Lver, varK, varT, [KinL, KoutR, Ku, K], evalG, evalV; kwargs...)
+            eval!(para, b.Rver, varK, varT, [K, Ku, KinR, KoutL], evalG, evalV; kwargs...)
         elseif c == S
             # S channel
-            eval(para, b.Lver, varK, varT, [KinL, Ks, KinR, K], evalG, evalV; kwargs...)
-            eval(para, b.Rver, varK, varT, [K, KoutL, Ks, KoutR], evalG, evalV; kwargs...)
+            eval!(para, b.Lver, varK, varT, [KinL, Ks, KinR, K], evalG, evalV; kwargs...)
+            eval!(para, b.Rver, varK, varT, [K, KoutL, Ks, KoutR], evalG, evalV; kwargs...)
         else
             error("not implemented")
         end
