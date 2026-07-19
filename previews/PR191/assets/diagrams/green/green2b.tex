@@ -1,0 +1,24 @@
+% standalone document border convention: {left bottom right top}
+%\documentclass[varwidth=\maxdimen,border={16pt 19pt 12pt -15pt}]{standalone}
+\documentclass[varwidth,border={6pt 16pt 6pt 2pt}]{standalone}
+\usepackage[force]{feynmp-auto}		    
+\usepackage{amsmath}
+
+\begin{document}
+\begin{fmffile}{green2b_diag}
+	\begin{fmfgraph*}(208,53)
+		\fmfstraight
+		\fmfbottom{v1,a,c,d,b,v2}
+		\fmf{fermion}{v1,a,c,d,b,v2}
+		\fmf{boson,left}{a,d}
+		\fmf{boson,left}{c,b}
+		\fmfdot{a,b,c,d,v1,v2}
+		\fmfv{d.sh=circle, d.fi=full, d.si=2thick, l.a=-90, label=$1$}{v1}
+		\fmfv{d.sh=circle, d.fi=full, d.si=2thick, l.a=-90, label=$3$}{a}
+		\fmfv{d.sh=circle, d.fi=full, d.si=2thick, l.a=-90, label=$5$}{c}
+		\fmfv{d.sh=circle, d.fi=full, d.si=2thick, l.a=-90, label=$4$}{d}
+		\fmfv{d.sh=circle, d.fi=full, d.si=2thick, l.a=-90, label=$6$}{b}
+		\fmfv{d.sh=circle, d.fi=full, d.si=2thick, l.a=-90, label=$2$}{v2}
+	\end{fmfgraph*}
+\end{fmffile}
+\end{document}
