@@ -20,13 +20,25 @@ Base.print(io::IO, o::AbstractOperator) = print(io, typeof(o))
 Base.print(io::IO, ::Type{Sum}) = print(io, "Sum")
 Base.print(io::IO, ::Type{Prod}) = print(io, "Prod")
 Base.print(io::IO, ::Type{Unitary}) = print(io, "Unitary")
-Base.print(io::IO, ::Type{Power{N}}) where {N} = print(io, "Power{$N}")
+function Base.print(io::IO, P::Type{<:Power})
+    if isconcretetype(P)
+        print(io, "Power{", eltype(P), "}")
+    else
+        print(io, "Power")
+    end
+end
 
 Base.show(io::IO, o::AbstractOperator) = print(io, typeof(o))
 Base.show(io::IO, ::Type{Sum}) = print(io, "⨁")
 Base.show(io::IO, ::Type{Prod}) = print(io, "Ⓧ ")
 Base.show(io::IO, ::Type{Unitary}) = print(io, "𝟙")
-Base.show(io::IO, ::Type{Power{N}}) where {N} = print(io, "^$N")
+function Base.show(io::IO, P::Type{<:Power})
+    if isconcretetype(P)
+        print(io, "^", eltype(P))
+    else
+        print(io, "Power")
+    end
+end
 
 # Is the unary form of operator 𝓞 trivial: 𝓞(G) ≡ G?
 # NOTE: this property implies that 𝓞(c * G) = c * G = c * 𝓞(G), so
